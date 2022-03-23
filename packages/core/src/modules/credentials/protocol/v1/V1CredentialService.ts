@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
@@ -5,23 +6,28 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionRecord } from '../../../connections'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
+  AcceptCredentialOptions,
   CredentialOfferTemplate,
   CredentialProposeOptions,
   CredentialProtocolMsgReturnType,
-  ServiceAcceptOfferOptions,
+  ServiceCreateOfferOptions,
   ServiceAcceptRequestOptions,
   ServiceRequestCredentialOptions,
 } from '../../CredentialServiceOptions'
-import type { CredentialFormatService } from '../../formats/CredentialFormatService'
-import type { CredProposeOfferRequestFormat } from '../../formats/models/CredentialFormatServiceOptions'
 import type {
   AcceptProposalOptions,
   CredentialFormatType,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-} from '../../interfaces'
-import type { CredPropose } from './models/CredentialFormatOptions'
+} from '../../CredentialsModuleOptions'
+import type { CredentialFormatService } from '../../formats/CredentialFormatService'
+import type {
+  CredentialFormats,
+  CredPropose,
+  FormatServiceRequestCredentialOptions,
+  HandlerAutoAcceptOptions,
+} from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredOffer } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -31,15 +37,12 @@ import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../error'
-import { ConsoleLogger, LogLevel } from '../../../../logger'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 import { isLinkedAttachment } from '../../../../utils/attachment'
-import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services/ConnectionService'
-import { IndyHolderService, IndyIssuerService } from '../../../indy'
-import { IndyLedgerService } from '../../../ledger'
 import { MediationRecipientService } from '../../../routing'
+import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialService } from '../../CredentialService'
@@ -51,8 +54,8 @@ import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord 
 
 import { V1CredentialPreview } from './V1CredentialPreview'
 import {
-  CredentialAckHandler,
-  CredentialProblemReportHandler,
+  V1CredentialAckHandler,
+  V1CredentialProblemReportHandler,
   V1IssueCredentialHandler,
   V1OfferCredentialHandler as V1OfferCredentialHandler,
   V1RequestCredentialHandler,
@@ -66,17 +69,102 @@ import {
   V1IssueCredentialMessage,
   V1RequestCredentialMessage,
   V1OfferCredentialMessage,
-  CredentialAckMessage,
+  V1CredentialAckMessage,
 } from './messages'
-
-const logger = new ConsoleLogger(LogLevel.info)
 
 @scoped(Lifecycle.ContainerScoped)
 export class V1CredentialService extends CredentialService {
+  public shouldAutoRespondToCredential(
+    credentialRecord: CredentialExchangeRecord,
+    credentialMessage: V1IssueCredentialMessage
+  ): boolean {
+    const formatService: CredentialFormatService = this.getFormatService()
+
+    let credentialAttachment: Attachment | undefined
+    if (credentialMessage) {
+      credentialAttachment = credentialMessage.getAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
+    }
+    const handlerOptions: HandlerAutoAcceptOptions = {
+      credentialRecord,
+      autoAcceptType: this.agentConfig.autoAcceptCredentials,
+      credentialAttachment,
+    }
+
+    const shouldAutoReturn =
+      this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
+      formatService.shouldAutoRespondToCredential(handlerOptions)
+
+    return shouldAutoReturn
+  }
+
+  public shouldAutoRespondToRequest(
+    credentialRecord: CredentialExchangeRecord,
+    requestMessage: V1RequestCredentialMessage,
+    proposeMessage?: V1ProposeCredentialMessage,
+    offerMessage?: V1OfferCredentialMessage
+  ): boolean {
+    const formatService: CredentialFormatService = this.getFormatService()
+
+    let proposalAttachment, offerAttachment, requestAttachment: Attachment | undefined
+    if (proposeMessage && proposeMessage.appendedAttachments) {
+      proposalAttachment = proposeMessage.appendedAttachments[0]
+    }
+    if (offerMessage) {
+      offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    }
+    if (requestMessage) {
+      requestAttachment = requestMessage.getAttachmentIncludingFormatId(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
+    }
+    const handlerOptions: HandlerAutoAcceptOptions = {
+      credentialRecord,
+      autoAcceptType: this.agentConfig.autoAcceptCredentials,
+      proposalAttachment,
+      offerAttachment,
+      requestAttachment,
+    }
+    const shouldAutoReturn =
+      this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
+      formatService.shouldAutoRespondToProposal(handlerOptions)
+
+    return shouldAutoReturn
+  }
+
+  public shouldAutoRespondToProposal(
+    credentialRecord: CredentialExchangeRecord,
+    proposeMessage: V1ProposeCredentialMessage,
+    offerMessage?: V1OfferCredentialMessage
+  ): boolean {
+    return false // not implemented
+  }
+  public shouldAutoRespondToOffer(
+    credentialRecord: CredentialExchangeRecord,
+    offerMessage: V1OfferCredentialMessage,
+    proposeMessage?: V1ProposeCredentialMessage
+  ): boolean {
+    const formatService: CredentialFormatService = this.getFormatService()
+    let proposalAttachment: Attachment | undefined
+
+    const offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    if (proposeMessage && proposeMessage.appendedAttachments) {
+      proposalAttachment = proposeMessage.appendedAttachments[0]
+    }
+    const offerValues = offerMessage.credentialPreview?.attributes
+
+    const handlerOptions: HandlerAutoAcceptOptions = {
+      credentialRecord,
+      autoAcceptType: this.agentConfig.autoAcceptCredentials,
+      messageAttributes: offerValues,
+      proposalAttachment,
+      offerAttachment,
+    }
+    const shouldAutoReturn =
+      this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
+      formatService.shouldAutoRespondToProposal(handlerOptions)
+
+    return shouldAutoReturn
+  }
+
   private connectionService: ConnectionService
-  private indyIssuerService: IndyIssuerService
-  private indyLedgerService: IndyLedgerService
-  private indyHolderService: IndyHolderService
   private formatService: IndyCredentialFormatService
 
   public constructor(
@@ -87,9 +175,7 @@ export class V1CredentialService extends CredentialService {
     dispatcher: Dispatcher,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
-    indyIssuerService: IndyIssuerService,
-    indyLedgerService: IndyLedgerService,
-    indyHolderService: IndyHolderService
+    formatService: IndyCredentialFormatService
   ) {
     super(
       credentialRepository,
@@ -100,17 +186,7 @@ export class V1CredentialService extends CredentialService {
       didCommMessageRepository
     )
     this.connectionService = connectionService
-    this.indyIssuerService = indyIssuerService
-    this.indyLedgerService = indyLedgerService
-    this.indyHolderService = indyHolderService
-    this.formatService = new IndyCredentialFormatService(
-      credentialRepository,
-      eventEmitter,
-      indyIssuerService,
-      indyLedgerService,
-      indyHolderService,
-      connectionService
-    )
+    this.formatService = formatService
   }
 
   /**
@@ -123,8 +199,8 @@ export class V1CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions,
-    did?: string
+    options: FormatServiceRequestCredentialOptions,
+    holderDid: string
   ): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
     record.assertState(CredentialState.OfferReceived)
@@ -147,9 +223,8 @@ export class V1CredentialService extends CredentialService {
     } else {
       throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
     }
-    // options.offer = offer
     options.attachId = INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
-    const { attachment: requestAttach } = await this.formatService.createRequest(options, record, did)
+    const { attachment: requestAttach } = await this.formatService.createRequest(options, record, holderDid)
     if (!requestAttach) {
       throw new AriesFrameworkError(`Failed to create attachment for request; credential record = ${record.id}`)
     }
@@ -186,7 +261,7 @@ export class V1CredentialService extends CredentialService {
   ): Promise<CredentialExchangeRecord> {
     const { message: issueMessage, connection } = messageContext
 
-    logger.debug(`Processing credential with id ${issueMessage.id}`)
+    this.logger.debug(`Processing credential with id ${issueMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(issueMessage.threadId, connection?.id)
 
@@ -223,15 +298,20 @@ export class V1CredentialService extends CredentialService {
       )
     }
 
-    const credentialDefinition = await this.indyLedgerService.getCredentialDefinition(indyCredential.cred_def_id)
+    // get the revocation registry and pass it to the process (store) credential method
+    const issueAttachment = issueMessage.getAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
+    if (!issueAttachment) {
+      throw new AriesFrameworkError('Missing credential attachment in processCredential')
+    }
+    const revocationRegistry = await this.formatService.getRevocationRegistry(issueAttachment)
 
-    const credentialId = await this.indyHolderService.storeCredential({
-      credentialId: uuid(),
-      credentialRequestMetadata,
-      credential: indyCredential,
-      credentialDefinition,
-    })
-    credentialRecord.credentialId = credentialId
+    const options: AcceptCredentialOptions = {
+      credential: issueAttachment,
+      revocationRegistry,
+    }
+
+    await this.formatService.processCredential(options, credentialRecord)
+
     await this.updateState(credentialRecord, CredentialState.CredentialReceived)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: issueMessage,
@@ -255,7 +335,7 @@ export class V1CredentialService extends CredentialService {
   ): Promise<CredentialExchangeRecord> {
     const { message: requestMessage, connection } = messageContext
 
-    logger.debug(`Processing credential request with id ${requestMessage.id}`)
+    this.logger.debug(`Processing credential request with id ${requestMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(requestMessage.threadId, connection?.id)
 
@@ -276,7 +356,7 @@ export class V1CredentialService extends CredentialService {
       previousSentMessage: offerMessage ? offerMessage : undefined,
     })
 
-    logger.trace('Credential record found when processing credential request', credentialRecord)
+    this.logger.trace('Credential record found when processing credential request', credentialRecord)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: requestMessage,
       role: DidCommMessageRole.Receiver,
@@ -285,38 +365,6 @@ export class V1CredentialService extends CredentialService {
     await this.updateState(credentialRecord, CredentialState.RequestReceived)
 
     return credentialRecord
-  }
-  /**
-   * Create a {@link ProposePresentationMessage} as response to a received credential offer.
-   * To create a proposal not bound to an existing credential exchange, use {@link createProposal}.
-   *
-   * @param credentialRecord The credential record for which to create the credential proposal
-   * @param config Additional configuration to use for the proposal
-   * @returns Object containing proposal message and associated credential record
-   *
-   */
-  public async createProposalAsResponse(
-    credentialRecord: CredentialExchangeRecord,
-    options: CredentialProposeOptions
-  ): Promise<CredentialProtocolMsgReturnType<V1ProposeCredentialMessage>> {
-    // Assert
-    credentialRecord.assertState(CredentialState.OfferReceived)
-
-    // Create message
-    const proposalMessage = new V1ProposeCredentialMessage(options ?? {})
-
-    proposalMessage.setThread({ threadId: credentialRecord.threadId })
-
-    // Update record
-    credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
-    this.updateState(credentialRecord, CredentialState.ProposalSent)
-    await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: proposalMessage,
-      role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
-    })
-
-    return { message: proposalMessage, credentialRecord }
   }
 
   /**
@@ -335,7 +383,7 @@ export class V1CredentialService extends CredentialService {
     let credentialRecord: CredentialExchangeRecord
     const { message: offerMessage, connection } = messageContext
 
-    logger.debug(`Processing credential offer with id ${offerMessage.id}`)
+    this.logger.debug(`Processing credential offer with id ${offerMessage.id}`)
 
     const indyCredentialOffer = offerMessage.indyCredentialOffer
 
@@ -387,6 +435,7 @@ export class V1CredentialService extends CredentialService {
         credentialAttributes: offerMessage.credentialPreview.attributes,
         state: CredentialState.OfferReceived,
         protocolVersion: CredentialProtocolVersion.V1,
+        credentials: [],
       })
 
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
@@ -425,14 +474,13 @@ export class V1CredentialService extends CredentialService {
 
     // Create message
     const { credentialDefinitionId, comment, preview, linkedAttachments } = credentialTemplate
-    const options: ServiceAcceptOfferOptions = {
+    const options: ServiceCreateOfferOptions = {
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialRecordId: '',
       credentialFormats: {
         indy: {
           credentialDefinitionId,
         },
-        jsonld: undefined,
       },
     }
     const { attachment: offersAttach } = await this.formatService.createOffer(options)
@@ -441,7 +489,7 @@ export class V1CredentialService extends CredentialService {
       throw new AriesFrameworkError('Missing offers attach in Offer')
     }
 
-    // Create and link credential to attacment
+    // Create and link credential to attachment
     const credentialPreview = linkedAttachments
       ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
       : preview
@@ -463,6 +511,7 @@ export class V1CredentialService extends CredentialService {
       state: CredentialState.OfferSent,
       autoAcceptCredential: credentialTemplate.autoAcceptCredential,
       protocolVersion: CredentialProtocolVersion.V1,
+      credentials: [],
     })
 
     const offer = offersAttach.getDataAsJson<CredOffer>()
@@ -553,11 +602,11 @@ export class V1CredentialService extends CredentialService {
    *
    */
   public async processAck(
-    messageContext: InboundMessageContext<CredentialAckMessage>
+    messageContext: InboundMessageContext<V1CredentialAckMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: credentialAckMessage, connection } = messageContext
 
-    logger.debug(`Processing credential ack with id ${credentialAckMessage.id}`)
+    this.logger.debug(`Processing credential ack with id ${credentialAckMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(credentialAckMessage.threadId, connection?.id)
 
@@ -598,7 +647,7 @@ export class V1CredentialService extends CredentialService {
     let credentialRecord: CredentialExchangeRecord
     const { message: proposalMessage, connection } = messageContext
 
-    logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
+    this.logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
 
     try {
       // Credential record already exists
@@ -635,6 +684,7 @@ export class V1CredentialService extends CredentialService {
         credentialAttributes: proposalMessage.credentialProposal?.attributes,
         state: CredentialState.ProposalReceived,
         protocolVersion: CredentialProtocolVersion.V1,
+        credentials: [],
       })
 
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
@@ -682,19 +732,23 @@ export class V1CredentialService extends CredentialService {
     // Create message
     const { credentialDefinitionId, comment, preview, attachments } = credentialTemplate
 
-    const credOffer = await this.indyIssuerService.createCredentialOffer(credentialDefinitionId)
-    const options: ServiceAcceptOfferOptions = {
+    const options: ServiceCreateOfferOptions = {
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-      credentialRecordId: '',
+      credentialRecordId: credentialRecord.id,
       credentialFormats: {
         indy: {
           credentialDefinitionId,
         },
-        jsonld: undefined,
       },
     }
 
     const { attachment: offersAttach } = await this.formatService.createOffer(options)
+
+    if (!offersAttach) {
+      throw new AriesFrameworkError('No offer attachment for credential')
+    }
+
+    const credOffer = offersAttach.getDataAsJson<CredOffer>()
 
     if (!offersAttach) {
       throw new AriesFrameworkError('Missing offers attach in Offer')
@@ -746,8 +800,8 @@ export class V1CredentialService extends CredentialService {
       new V1RequestCredentialHandler(this, this.agentConfig, this.didCommMessageRepository)
     )
     this.dispatcher.registerHandler(new V1IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
-    this.dispatcher.registerHandler(new CredentialAckHandler(this))
-    this.dispatcher.registerHandler(new CredentialProblemReportHandler(this))
+    this.dispatcher.registerHandler(new V1CredentialAckHandler(this))
+    this.dispatcher.registerHandler(new V1CredentialProblemReportHandler(this))
   }
 
   /**
@@ -769,26 +823,24 @@ export class V1CredentialService extends CredentialService {
    */
   public async createProposal(
     proposal: ProposeCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1ProposeCredentialMessage>> {
     const connection = await this.connectionService.getById(proposal.connectionId)
     connection.assertReady()
 
     let credentialProposal: V1CredentialPreview | undefined
 
-    const credPropose: CredPropose = proposal.credentialFormats.indy?.payload.credentialPayload as CredPropose
+    const credPropose: CredPropose = proposal.credentialFormats.indy?.payload as CredPropose
 
-    if (credPropose.attributes) {
-      credentialProposal = new V1CredentialPreview({ attributes: credPropose.attributes })
+    if (proposal.credentialFormats.indy?.attributes) {
+      credentialProposal = new V1CredentialPreview({ attributes: proposal.credentialFormats.indy?.attributes })
     }
 
     const config: CredentialProposeOptions = {
       credentialProposal: credentialProposal,
       credentialDefinitionId: credPropose.credentialDefinitionId,
-      linkedAttachments: credPropose.linkedAttachments,
+      linkedAttachments: proposal.credentialFormats.indy?.linkedAttachments,
       schemaId: credPropose.schemaId,
     }
-
-    // MJR-TODO flip these params around to save a line of code
 
     const options = { ...config }
 
@@ -812,6 +864,7 @@ export class V1CredentialService extends CredentialService {
       credentialAttributes: message.credentialProposal?.attributes,
       autoAcceptCredential: config?.autoAcceptCredential,
       protocolVersion: CredentialProtocolVersion.V1,
+      credentials: [],
     })
 
     // Set the metadata
@@ -847,7 +900,7 @@ export class V1CredentialService extends CredentialService {
   public async acceptProposal(
     proposal: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
@@ -862,6 +915,10 @@ export class V1CredentialService extends CredentialService {
       throw new AriesFrameworkError(
         `Credential record with id ${proposal.credentialRecordId} is missing required credential proposal`
       )
+    }
+
+    if (!proposal.credentialFormats) {
+      throw new AriesFrameworkError('Missing credential formats in V1 acceptProposal')
     }
 
     const credentialDefinitionId =
@@ -895,7 +952,7 @@ export class V1CredentialService extends CredentialService {
   public async negotiateProposal(
     credentialOptions: NegotiateProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
@@ -923,14 +980,12 @@ export class V1CredentialService extends CredentialService {
       )
     }
 
-    let newCredentialProposal: V1CredentialPreview
-    if (credentialOptions?.credentialFormats.indy?.attributes) {
-      newCredentialProposal = new V1CredentialPreview({
-        attributes: credentialOptions?.credentialFormats.indy?.attributes,
-      })
-    } else {
+    if (!credentialOptions?.credentialFormats.indy?.attributes) {
       throw new AriesFrameworkError('No proposal attributes in the negotiation options!')
     }
+    const newCredentialProposal = new V1CredentialPreview({
+      attributes: credentialOptions?.credentialFormats.indy?.attributes,
+    })
 
     const { message } = await this.createOfferAsResponse(credentialRecord, {
       preview: newCredentialProposal,
@@ -954,30 +1009,44 @@ export class V1CredentialService extends CredentialService {
   public async negotiateOffer(
     credentialOptions: ProposeCredentialOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1ProposeCredentialMessage>> {
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
       )
     }
-    let credentialPreview: V1CredentialPreview
-    const proposal: CredPropose = credentialOptions.credentialFormats.indy?.payload.credentialPayload as CredPropose
-    if (proposal.attributes) {
-      credentialPreview = new V1CredentialPreview({
-        attributes: proposal.attributes,
-      })
-      const options: CredentialProposeOptions = {
-        credentialProposal: credentialPreview,
-      }
-      const { message } = await this.createProposalAsResponse(credentialRecord, options)
-      return { credentialRecord, message }
+    if (!credentialOptions.credentialFormats.indy?.attributes) {
+      throw new AriesFrameworkError('Missing attributes in V1 Negotiate Offer Options')
     }
-    throw new AriesFrameworkError('Missing attributes in V1 Negotiate Offer Options')
+    const credentialPreview = new V1CredentialPreview({
+      attributes: credentialOptions.credentialFormats.indy?.attributes,
+    })
+    const options: CredentialProposeOptions = {
+      credentialProposal: credentialPreview,
+    }
+
+    credentialRecord.assertState(CredentialState.OfferReceived)
+
+    // Create message
+    const message = new V1ProposeCredentialMessage(options ?? {})
+
+    message.setThread({ threadId: credentialRecord.threadId })
+
+    // Update record
+    credentialRecord.credentialAttributes = message.credentialProposal?.attributes
+    this.updateState(credentialRecord, CredentialState.ProposalSent)
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: message,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
+
+    return { credentialRecord, message }
   }
 
   public async createOutOfBandOffer(
     credentialOptions: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialOptions.credentialFormats.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing credential definition id for out of band credential')
     }
@@ -1025,45 +1094,69 @@ export class V1CredentialService extends CredentialService {
    */
   public async createOffer(
     credentialOptions: OfferCredentialOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
+  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (!credentialOptions.connectionId) {
       throw new AriesFrameworkError('Connection id missing from offer credential options')
     }
     const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
     if (
-      credentialOptions?.credentialFormats.indy?.attributes &&
-      credentialOptions?.credentialFormats.indy?.credentialDefinitionId
+      !credentialOptions?.credentialFormats.indy?.attributes ||
+      !credentialOptions?.credentialFormats.indy?.credentialDefinitionId
     ) {
-      const preview: V1CredentialPreview = new V1CredentialPreview({
-        attributes: credentialOptions.credentialFormats.indy?.attributes,
-      })
+      throw new AriesFrameworkError('Missing properties from OfferCredentialOptions object: cannot create Offer!')
+    }
+    const preview: V1CredentialPreview = new V1CredentialPreview({
+      attributes: credentialOptions.credentialFormats.indy?.attributes,
+    })
 
-      const linkedAttachments = credentialOptions.credentialFormats.indy?.linkedAttachments
+    const linkedAttachments = credentialOptions.credentialFormats.indy?.linkedAttachments
 
-      const template: CredentialOfferTemplate = {
-        ...credentialOptions,
-        preview: preview,
-        credentialDefinitionId: credentialOptions?.credentialFormats.indy?.credentialDefinitionId,
-        linkedAttachments,
-      }
-
-      const { credentialRecord, message } = await this.createOfferProcessing(template, connection)
-
-      await this.credentialRepository.save(credentialRecord)
-      this.eventEmitter.emit<CredentialStateChangedEvent>({
-        type: CredentialEventTypes.CredentialStateChanged,
-        payload: {
-          credentialRecord,
-          previousState: null,
-        },
-      })
-      return { credentialRecord, message }
+    const template: CredentialOfferTemplate = {
+      ...credentialOptions,
+      preview: preview,
+      credentialDefinitionId: credentialOptions?.credentialFormats.indy?.credentialDefinitionId,
+      linkedAttachments,
     }
 
-    throw new AriesFrameworkError('Missing properties from OfferCredentialOptions object: cannot create Offer!')
+    const { credentialRecord, message } = await this.createOfferProcessing(template, connection)
+
+    await this.credentialRepository.save(credentialRecord)
+    this.eventEmitter.emit<CredentialStateChangedEvent>({
+      type: CredentialEventTypes.CredentialStateChanged,
+      payload: {
+        credentialRecord,
+        previousState: null,
+      },
+    })
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: message,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
+    return { credentialRecord, message }
   }
 
+  public async getOfferMessage(id: string): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: id,
+      messageClass: V1OfferCredentialMessage,
+    })
+  }
+
+  public async getRequestMessage(id: string): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: id,
+      messageClass: V1RequestCredentialMessage,
+    })
+  }
+
+  public async getCredentialMessage(id: string): Promise<AgentMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: id,
+      messageClass: V1IssueCredentialMessage,
+    })
+  }
   /**
    * Create a {@link CredentialAckMessage} as response to a received credential.
    *
@@ -1073,11 +1166,11 @@ export class V1CredentialService extends CredentialService {
    */
   public async createAck(
     credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialProtocolMsgReturnType<CredentialAckMessage>> {
+  ): Promise<CredentialProtocolMsgReturnType<V1CredentialAckMessage>> {
     credentialRecord.assertState(CredentialState.CredentialReceived)
 
     // Create message
-    const ackMessage = new CredentialAckMessage({
+    const ackMessage = new V1CredentialAckMessage({
       status: AckStatus.OK,
       threadId: credentialRecord.threadId,
     })
@@ -1086,20 +1179,12 @@ export class V1CredentialService extends CredentialService {
 
     return { message: ackMessage, credentialRecord }
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public getFormats(credentialFormats: CredProposeOfferRequestFormat): CredentialFormatService[] {
+  public getFormats(credentialFormats: CredentialFormats): CredentialFormatService[] {
     throw new Error('Method not implemented.')
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public getFormatService(credentialFormatType?: CredentialFormatType): CredentialFormatService {
-    return new IndyCredentialFormatService(
-      this.credentialRepository,
-      this.eventEmitter,
-      this.indyIssuerService,
-      this.indyLedgerService,
-      this.indyHolderService,
-      this.connectionService
-    )
+    return this.formatService
   }
 }

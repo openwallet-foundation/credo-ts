@@ -1,5 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
+import type { CredPropose } from '../../../formats/models/CredentialFormatServiceOptions'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -7,7 +8,7 @@ import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-} from '../../../interfaces'
+} from '../../../CredentialsModuleOptions'
 import type { Schema } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
@@ -17,8 +18,7 @@ import { sleep } from '../../../../../utils/sleep'
 import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
-import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
+import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
 describe('credentials', () => {
@@ -30,11 +30,11 @@ describe('credentials', () => {
   let aliceConnection: ConnectionRecord
   // let faberCredentialRecord: CredentialRecord
   let aliceCredentialRecord: CredentialExchangeRecord
-  const credentialPreview = V1CredentialPreview.fromRecord({
+  const credentialPreview = V2CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
   })
-  const newCredentialPreview = V1CredentialPreview.fromRecord({
+  const newCredentialPreview = V2CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
     lastname: 'Appleseed',
@@ -65,16 +65,14 @@ describe('credentials', () => {
         protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
+            attributes: credentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
+              schemaIssuerDid: faberAgent.publicDid?.did,
+              schemaName: schema.name,
+              schemaVersion: schema.version,
+              schemaId: schema.id,
+              issuerDid: faberAgent.publicDid?.did,
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -127,7 +125,6 @@ describe('credentials', () => {
         offerOptions
       )
       testLogger.test('Alice waits for credential from Faber')
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
@@ -190,16 +187,14 @@ describe('credentials', () => {
         protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
+            attributes: credentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
+              schemaIssuerDid: faberAgent.publicDid?.did,
+              schemaName: schema.name,
+              schemaVersion: schema.version,
+              schemaId: schema.id,
+              issuerDid: faberAgent.publicDid?.did,
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -290,28 +285,6 @@ describe('credentials', () => {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
       })
-      // expect(aliceCredentialRecord.offerMessage?.messageAttachment).toBeTruthy()
-      // expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-      //   createdAt: expect.any(Date),
-      //   offerMessage: {
-      //     '@id': expect.any(String),
-      //     '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
-      //     credential_preview: {
-      //       '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
-      //       attributes: [
-      //         {
-      //           name: 'name',
-      //           value: 'John',
-      //         },
-      //         {
-      //           name: 'age',
-      //           value: '99',
-      //         },
-      //       ],
-      //     },
-      //   },
-      //   state: CredentialState.OfferReceived,
-      // })
 
       // below values are not in json object
       expect(aliceCredentialRecord.id).not.toBeNull()
@@ -319,6 +292,7 @@ describe('credentials', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 
@@ -373,22 +347,21 @@ describe('credentials', () => {
       }
     })
     test('Alice starts with V2 credential proposal to Faber, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
+      const credPropose: CredPropose = {
+        schemaIssuerDid: faberAgent.publicDid?.did,
+        schemaName: schema.name,
+        schemaVersion: schema.version,
+        schemaId: schema.id,
+        issuerDid: faberAgent.publicDid?.did,
+        credentialDefinitionId: credDefId,
+      }
       const proposeOptions: ProposeCredentialOptions = {
         connectionId: aliceConnection.id,
         protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
-            payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
-            },
+            payload: credPropose,
+            attributes: credentialPreview.attributes,
           },
         },
         comment: 'v2 propose credential test',
@@ -419,32 +392,6 @@ describe('credentials', () => {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.OfferReceived,
       })
-      // expect(record.offerMessage?.messageAttachment).toBeTruthy()
-      // expect(JsonTransformer.toJSON(record)).toMatchObject({
-      //   createdAt: expect.any(Date),
-      //   offerMessage: {
-      //     '@id': expect.any(String),
-      //     '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
-      //     credential_preview: {
-      //       '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
-      //       attributes: [
-      //         {
-      //           name: 'name',
-      //           value: 'John',
-      //         },
-      //         {
-      //           name: 'age',
-      //           value: '99',
-      //         },
-      //         {
-      //           name: 'lastname',
-      //           value: 'Appleseed',
-      //         },
-      //       ],
-      //     },
-      //   },
-      //   state: CredentialState.OfferReceived,
-      // })
 
       // below values are not in json object
       expect(record.id).not.toBeNull()
@@ -452,6 +399,7 @@ describe('credentials', () => {
         threadId: record.threadId,
         state: record.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(record.type).toBe(CredentialExchangeRecord.name)
 
@@ -482,28 +430,6 @@ describe('credentials', () => {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
       })
-      // expect(aliceCredentialRecord.offerMessage?.messageAttachment).toBeTruthy()
-      // expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-      //   createdAt: expect.any(Date),
-      //   offerMessage: {
-      //     '@id': expect.any(String),
-      //     '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
-      //     credential_preview: {
-      //       '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
-      //       attributes: [
-      //         {
-      //           name: 'name',
-      //           value: 'John',
-      //         },
-      //         {
-      //           name: 'age',
-      //           value: '99',
-      //         },
-      //       ],
-      //     },
-      //   },
-      //   state: CredentialState.OfferReceived,
-      // })
 
       // below values are not in json object
       expect(aliceCredentialRecord.id).not.toBeNull()
@@ -511,6 +437,7 @@ describe('credentials', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 
@@ -521,11 +448,9 @@ describe('credentials', () => {
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
           indy: {
+            attributes: newCredentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: newCredentialPreview.attributes,
-                credentialDefinitionId: credDefId,
-              },
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -540,33 +465,6 @@ describe('credentials', () => {
         threadId: aliceExchangeCredentialRecord.threadId,
         state: CredentialState.ProposalReceived,
       })
-      // expect(faberCredentialRecord.offerMessage?.messageAttachment).toBeTruthy()
-      // expect(JsonTransformer.toJSON(faberCredentialRecord)).toMatchObject({
-      //   createdAt: expect.any(Date),
-      //   proposalMessage: {
-      //     '@type': 'https://didcomm.org/issue-credential/2.0/propose-credential',
-      //     '@id': expect.any(String),
-      //     credential_proposal: {
-      //       '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
-      //       attributes: [
-      //         {
-      //           name: 'name',
-      //           value: 'John',
-      //         },
-      //         {
-      //           name: 'age',
-      //           value: '99',
-      //         },
-      //         {
-      //           name: 'lastname',
-      //           value: 'Appleseed',
-      //         },
-      //       ],
-      //     },
-      //     '~thread': { thid: expect.any(String) },
-      //   },
-      //   state: CredentialState.ProposalReceived,
-      // })
 
       // Check if the state of fabers credential record did not change
       const faberRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)

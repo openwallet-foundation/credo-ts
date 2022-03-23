@@ -8,7 +8,7 @@ import { IsOptional, IsString } from 'class-validator'
 import { SingleOrArray } from '../../../../utils/type'
 import { IsUri } from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
-import { CredentialSubjectTransformer, IssuerTransformer } from '../../transformers'
+import { IssuerTransformer, CredentialSubjectTransformer } from '../../transformers'
 import { IsIssuer, IsJsonLdContext, IsVerifiableCredentialType } from '../../validators'
 
 export interface W3cCredentialOptions {
@@ -33,7 +33,29 @@ export class W3cCredential {
       this.credentialSubject = options.credentialSubject
     }
   }
-
+  // export interface W3CCredentialFormat {
+  //   credential: {
+  //     '@context': string
+  //     issuer: string
+  //     type: string[]
+  //     issuanceDate?: Date
+  //     expirationDate?: Date
+  //     credentialSubject: {
+  //       [key: string]: unknown
+  //     }
+  //   }
+  //   options?: {
+  //     proofPurpose: string
+  //     created: Date
+  //     domain: string
+  //     challenge: string
+  //     proofType: ProofType
+  //     credentialStatus?: {
+  //       type: string
+  //     }
+  //   }
+  //   extendedTypes?: string[]
+  // }
   @Expose({ name: '@context' })
   @IsJsonLdContext()
   public context!: Array<string> | ContextDefinition

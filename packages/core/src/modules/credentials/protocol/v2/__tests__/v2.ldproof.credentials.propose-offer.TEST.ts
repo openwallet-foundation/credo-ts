@@ -1,29 +1,14 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
-import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
-import type { W3CCredentialFormat } from '../../../formats/models/CredentialFormatServiceOptions'
-import type {
-  AcceptOfferOptions,
-  AcceptProposalOptions,
-  AcceptRequestOptions,
-  OfferCredentialOptions,
-  ProposeCredentialOptions,
-} from '../../../interfaces'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
+import type { AcceptProposalOptions, ProposeCredentialOptions } from '../../../CredentialsModuleOptions'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 
-import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { DidCommMessageRepository } from '../../../../../../src/storage'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { JsonTransformer } from '../../../../../utils'
-import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
-import { ProofType } from '../../../formats/models/CredentialFormatServiceOptions'
-import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
-import { V1OfferCredentialMessage } from '../../v1/messages/V1OfferCredentialMessage'
-import { V2CredentialPreview } from '../V2CredentialPreview'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 describe('credentials', () => {
@@ -34,9 +19,6 @@ describe('credentials', () => {
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
   let faberCredentialRecord: CredentialExchangeRecord
-
-  const TEST_DID_SOV = 'did:sov:LjgpST2rjsoxYegQDRm7EL'
-  const TEST_DID_KEY = 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
 
   let didCommMessageRepository: DidCommMessageRepository
   beforeAll(async () => {
@@ -58,103 +40,27 @@ describe('credentials', () => {
   test('Alice starts with V2 (ld format) credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
     // set the propose options
-    // we should set the version to V1.0 and V2.0 in separate tests, one as a regression test
 
-    // this is the aca-py definition of ld proof object...
-    //   {
-    //     "@context": [
-    //         "https://www.w3.org/2018/credentials/v1",
-    //         "https://www.w3.org/2018/credentials/examples/v1",
-    //         "https://w3id.org/security/bbs/v1",
-    //     ],
-    //     "id": "https://example.gov/credentials/3732",
-    //     "type": ["VerifiableCredential", "UniversityDegreeCredential"],
-    //     "issuer": "did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa",
-    //     "issuanceDate": "2020-03-10T04:24:12.164Z",
-    //     "credentialSubject": {
-    //         "id": "did:sov:WgWxqztrNooG92RXvxSTWv",
-    //         "degree": {
-    //             "type": "BachelorDegree",
-    //             "name": "Bachelor of Science and Arts",
-    //             "degreeType": "Underwater Basket Weaving",
-    //         },
-    //         "college": "Contoso University",
-    //     },
-    //     "proof": {
-    //         "type": "BbsBlsSignature2020",
-    //         "verificationMethod": "did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa#zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa",
-    //         "created": "2019-12-11T03:50:55",
-    //         "proofPurpose": "assertionMethod",
-    //         "proofValue": "iGAQ4bOxuqkoCbX3RoxTqFkJsoqPcEeRN2vqIzd/zWLS+VHCwYkQHu/TeMOrit4eb6eugbJFUBaoenZyy2VU/7Rsj614sNzumJFuJ6ZaDTlv0k70CkO9GheQTc+Gwv749Y3JzPJ0dwYGUzzcyytFCQ==",
-    //     },
-    // },
-    // [
-    //     "https://www.w3.org/2018/credentials#VerifiableCredential",
-    //     "https://example.org/examples#UniversityDegreeCredential",
-    // ],
-
-    //   "@context": [
-    //     "https://www.w3.org/2018/credentials/v1",
-    //     "https://w3id.org/citizenship/v1",
-    //     "https://w3id.org/security/bbs/v1",
-    // ],
-    // "id": "https://issuer.oidp.uscis.gov/credentials/83627465",
-    // "type": ["VerifiableCredential", "PermanentResidentCard"],
-    // "issuer": "did:example:489398593",
-    // "identifier": "83627465",
-    // "name": "Permanent Resident Card",
-    // "description": "Government of Example Permanent Resident Card.",
-    // "issuanceDate": "2019-12-03T12:19:52Z",
-    // "expirationDate": "2029-12-03T12:19:52Z",
-    // "credentialSubject": {
-    //     "id": "did:example:b34ca6cd37bbf23",
-    //     "type": ["PermanentResident", "Person"],
-    //     "givenName": "JOHN",
-    //     "familyName": "SMITH",
-    //     "gender": "Male",
-    //     "image": "data:image/png;base64,iVBORw0KGgokJggg==",
-    //     "residentSince": "2015-01-01",
-    //     "lprCategory": "C09",
-    //     "lprNumber": "999-999-999",
-    //     "commuterClassification": "C1",
-    //     "birthCountry": "Bahamas",
-    //     "birthDate": "1958-07-17",
-    // },
-
-    const ldProofVcDetail: W3CCredentialFormat = {
-      credential: {
-        '@context': 'https://www.w3.org/2018/',
-        issuer: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
-        type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-        issuanceDate: new Date('2020-01-01T19:23:24Z'),
-        expirationDate: new Date('2021-01-01T19:23:24Z'),
-        credentialSubject: {
-          id: 'did:example:b34ca6cd37bbf23',
-          type: ['PermanentResident', 'Person'],
-          givenName: 'JOHN',
-          familyName: 'SMITH',
-          gender: 'Male',
-          image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-          residentSince: '2015-01-01',
-          lprCategory: 'C09',
-          lprNumber: '999-999-999',
-          commuterClassification: 'C1',
-          birthCountry: 'Bahamas',
-          birthDate: '1958-07-17',
-        },
+    const ldProofVcDetail: W3cCredential = {
+      context: ['https://www.w3.org/2018/'],
+      issuer: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
+      type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+      issuanceDate: '2020-01-01T19:23:24Z',
+      expirationDate: '2021-01-01T19:23:24Z',
+      credentialSubject: {
+        id: 'did:example:b34ca6cd37bbf23',
+        type: ['PermanentResident', 'Person'],
+        givenName: 'JOHN',
+        familyName: 'SMITH',
+        gender: 'Male',
+        image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+        residentSince: '2015-01-01',
+        lprCategory: 'C09',
+        lprNumber: '999-999-999',
+        commuterClassification: 'C1',
+        birthCountry: 'Bahamas',
+        birthDate: '1958-07-17',
       },
-      options: {
-        proofPurpose: 'assertionMethod',
-        created: new Date('2020-04-02T18:48:36Z'),
-        domain: 'example.com',
-        challenge: '9450a9c1-4db5-4ab9-bc0c-b7a9b2edac38',
-        proofType: ProofType.Ed,
-      },
-      credentialDefinitionId: credDefId,
-      extendedTypes: [
-        'https://www.w3.org/2018/credentials#VerifiableCredential',
-        'https://example.org/examples#UniversityDegreeCredential',
-      ],
     }
 
     const proposeOptions: ProposeCredentialOptions = {
@@ -163,7 +69,7 @@ describe('credentials', () => {
       credentialFormats: {
         jsonld: ldProofVcDetail,
       },
-      comment: 'v2 propose credential test',
+      comment: 'v2 propose credential test for W3C Credentials',
     }
     testLogger.test('Alice sends (v2, Indy) credential proposal to Faber')
 
@@ -177,7 +83,7 @@ describe('credentials', () => {
     expect(credentialExchangeRecord.threadId).not.toBeNull()
 
     testLogger.test('Faber waits for credential proposal from Alice')
-    const faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+    faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
       threadId: credentialExchangeRecord.threadId,
       state: CredentialState.ProposalReceived,
     })

@@ -1,21 +1,23 @@
 import type { AgentConfig } from '../../../../src/agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { ServiceRequestCredentialOptions } from '../CredentialServiceOptions'
-import type { CredentialRequestFormat } from '../formats/models/CredentialFormatServiceOptions'
-import type { AcceptRequestOptions, RequestCredentialOptions } from '../interfaces'
+import type { AcceptRequestOptions } from '../CredentialsModuleOptions'
+import type {
+  CredentialFormatSpec,
+  FormatServiceRequestCredentialOptions,
+  RequestCredentialFormats,
+} from '../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { V2IssueCredentialMessageProps } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import type { V2RequestCredentialMessageOptions } from '../protocol/v2/messages/V2RequestCredentialMessage'
-import type { CustomCredentialTags } from '../repository/CredentialRecord'
+import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
 
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { Dispatcher } from '../../../agent/Dispatcher'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { MessageSender } from '../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../storage'
@@ -31,21 +33,22 @@ import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
 import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
+import { IndyCredentialFormatService } from '../formats'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import {
-  CredentialAckMessage,
-  CredentialProblemReportMessage,
   INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   V1OfferCredentialMessage,
 } from '../protocol/v1/messages'
 import { V2CredentialService } from '../protocol/v2/V2CredentialService'
+import { V2CredentialAckMessage } from '../protocol/v2/messages/V2CredentialAckMessage'
+import { V2CredentialProblemReportMessage } from '../protocol/v2/messages/V2CredentialProblemReportMessage'
 import { V2IssueCredentialMessage } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from '../protocol/v2/messages/V2RequestCredentialMessage'
+import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
-import { CredentialExchangeRecord } from '../repository/CredentialRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 
 import { credDef, credReq, credOffer } from './fixtures'
@@ -62,7 +65,6 @@ const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRep
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
 const IndyIssuerServiceMock = IndyIssuerService as jest.Mock<IndyIssuerService>
-const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 
@@ -103,7 +105,7 @@ const credentialAttachment = new Attachment({
   }),
 })
 
-const v2CredentialRequest: CredentialRequestFormat = {
+const v2CredentialRequest: RequestCredentialFormats = {
   indy: {
     attributes: credentialPreview.attributes,
     credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
@@ -123,14 +125,14 @@ const offerOptions: V2OfferCredentialMessageOptions = {
   offerAttachments: [offerAttachment],
   replacementId: '',
 }
+const requestFormat: CredentialFormatSpec = {
+  attachId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
+  format: 'hlindy/cred-req@v2.0',
+}
+
 const requestOptions: V2RequestCredentialMessageOptions = {
   id: '',
-  formats: [
-    {
-      attachId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
-      format: 'hlindy/cred-req@v2.0',
-    },
-  ],
+  formats: [requestFormat],
   requestsAttach: [requestAttachment],
 }
 
@@ -167,6 +169,7 @@ const mockCredentialRecord = ({
     connectionId: connectionId ?? '123',
     tags,
     protocolVersion: CredentialProtocolVersion.V2,
+    credentials: [],
   })
 
   if (metadata?.indyRequest) {
@@ -201,7 +204,6 @@ describe('CredentialService', () => {
   let eventEmitter: EventEmitter
   let didCommMessageRepository: DidCommMessageRepository
   let mediationRecipientService: MediationRecipientService
-  let messageSender: MessageSender
   let agentConfig: AgentConfig
 
   let dispatcher: Dispatcher
@@ -223,7 +225,6 @@ describe('CredentialService', () => {
   beforeEach(async () => {
     credentialRepository = new CredentialRepositoryMock()
     indyIssuerService = new IndyIssuerServiceMock()
-    messageSender = new MessageSenderMock()
     mediationRecipientService = new MediationRecipientServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     indyLedgerService = new IndyLedgerServiceMock()
@@ -240,14 +241,17 @@ describe('CredentialService', () => {
       } as unknown as ConnectionService,
       credentialRepository,
       eventEmitter,
-      messageSender,
       dispatcher,
       agentConfig,
-      indyIssuerService,
       mediationRecipientService,
-      indyLedgerService,
-      indyHolderService,
-      didCommMessageRepository
+      didCommMessageRepository,
+      new IndyCredentialFormatService(
+        credentialRepository,
+        eventEmitter,
+        indyIssuerService,
+        indyLedgerService,
+        indyHolderService
+      )
     )
   })
 
@@ -275,13 +279,13 @@ describe('CredentialService', () => {
         associatedRecordId: credentialRecord.id,
       })
 
-      const requestOptions: ServiceRequestCredentialOptions = {
+      const requestOptions: FormatServiceRequestCredentialOptions = {
         credentialFormats: v2CredentialRequest,
       }
 
       // when
 
-      await credentialService.createRequest(credentialRecord, requestOptions)
+      await credentialService.createRequest(credentialRecord, requestOptions, 'holderDid')
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
@@ -295,18 +299,19 @@ describe('CredentialService', () => {
     test('returns credential request message base on existing credential offer message', async () => {
       // given
       const comment = 'credential request comment'
-      const options: RequestCredentialOptions = {
+      const options: FormatServiceRequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
-        // holderDid: connection.did,
         comment: 'credential request comment',
         credentialDefinition: {
-          indy: {
-            credDef: credDef,
-          },
+          credDef: credDef,
         },
       }
       // when
-      const { message: credentialRequest } = await credentialService.createRequest(credentialRecord, options)
+      const { message: credentialRequest } = await credentialService.createRequest(
+        credentialRecord,
+        options,
+        'holderDid'
+      )
 
       // then
       expect(credentialRequest.toJSON()).toMatchObject({
@@ -333,9 +338,9 @@ describe('CredentialService', () => {
     test(`throws an error when state transition is invalid`, async () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
-          await expect(credentialService.createRequest(mockCredentialRecord({ state }), {})).rejects.toThrowError(
-            `Credential record is in invalid state ${state}. Valid states are: ${validState}.`
-          )
+          await expect(
+            credentialService.createRequest(mockCredentialRecord({ state }), {}, 'mockDid')
+          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )
     })
@@ -615,13 +620,13 @@ describe('CredentialService', () => {
 
   describe('processAck', () => {
     let credential: CredentialExchangeRecord
-    let messageContext: InboundMessageContext<CredentialAckMessage>
+    let messageContext: InboundMessageContext<V2CredentialAckMessage>
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: CredentialState.CredentialIssued,
       })
 
-      const credentialRequest = new CredentialAckMessage({
+      const credentialRequest = new V2CredentialAckMessage({
         status: AckStatus.OK,
         threadId: 'somethreadid',
       })
@@ -672,7 +677,7 @@ describe('CredentialService', () => {
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       // when
-      const credentialProblemReportMessage = new CredentialProblemReportMessage({
+      const credentialProblemReportMessage = new V2CredentialProblemReportMessage({
         description: {
           en: 'Indy error',
           code: CredentialProblemReportReason.IssuanceAbandoned,
@@ -683,7 +688,7 @@ describe('CredentialService', () => {
       // then
       expect(credentialProblemReportMessage.toJSON()).toMatchObject({
         '@id': expect.any(String),
-        '@type': 'https://didcomm.org/issue-credential/1.0/problem-report',
+        '@type': 'https://didcomm.org/issue-credential/2.0/problem-report',
         '~thread': {
           thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         },
@@ -693,14 +698,14 @@ describe('CredentialService', () => {
 
   describe('processProblemReport', () => {
     let credential: CredentialExchangeRecord
-    let messageContext: InboundMessageContext<CredentialProblemReportMessage>
+    let messageContext: InboundMessageContext<V2CredentialProblemReportMessage>
 
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: CredentialState.OfferReceived,
       })
 
-      const credentialProblemReportMessage = new CredentialProblemReportMessage({
+      const credentialProblemReportMessage = new V2CredentialProblemReportMessage({
         description: {
           en: 'Indy error',
           code: CredentialProblemReportReason.IssuanceAbandoned,

@@ -1,14 +1,12 @@
-import type { Attachment } from '../../../../../../src/decorators/attachment/Attachment'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
-import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
+import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
-import { INDY_CREDENTIAL_ATTACHMENT_ID, V1IssueCredentialMessage, V1RequestCredentialMessage } from '../messages'
+import { V1IssueCredentialMessage, V1RequestCredentialMessage } from '../messages'
 
 export class V1IssueCredentialHandler implements Handler {
   private credentialService: V1CredentialService
@@ -32,18 +30,10 @@ export class V1IssueCredentialHandler implements Handler {
       associatedRecordId: credentialRecord.id,
       messageClass: V1IssueCredentialMessage,
     })
-    const formatService: CredentialFormatService = this.credentialService.getFormatService()
-
-    let credentialAttachment: Attachment | undefined
-    if (credentialMessage) {
-      credentialAttachment = credentialMessage.getAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
+    if (!credentialMessage) {
+      throw new AriesFrameworkError('Missing credential message in V2RequestCredentialHandler')
     }
-    const handlerOptions: HandlerAutoAcceptOptions = {
-      credentialRecord,
-      autoAcceptType: this.agentConfig.autoAcceptCredentials,
-      credentialAttachment,
-    }
-    if (formatService.shouldAutoRespondToCredential(handlerOptions)) {
+    if (this.credentialService.shouldAutoRespondToCredential(credentialRecord, credentialMessage)) {
       return await this.createAck(credentialRecord, credentialMessage, messageContext)
     }
   }

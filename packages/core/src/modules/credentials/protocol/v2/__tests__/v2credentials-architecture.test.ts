@@ -1,39 +1,41 @@
 import type { CredentialService } from '../../../CredentialService'
+import type { ProposeCredentialOptions } from '../../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
-import type { ProposeCredentialOptions } from '../../../interfaces'
+import type {
+  FormatServiceProposeCredentialFormats,
+  IndyProposeCredentialFormat,
+} from '../../../formats/models/CredentialFormatServiceOptions'
 
 import { getBaseConfig } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialsModule } from '../../../CredentialsModule'
-import { CredentialFormatType } from '../../../interfaces'
+import { CredentialFormatType } from '../../../CredentialsModuleOptions'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { CredentialMessageBuilder } from '../CredentialMessageBuilder'
 
-const { config, agentDependencies: dependencies } = getBaseConfig('Format Servive Test')
+const { config, agentDependencies: dependencies } = getBaseConfig('Format Service Test')
 
 const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
 })
-const testAttributes = {
+const testAttributes: IndyProposeCredentialFormat = {
   attributes: credentialPreview.attributes,
-  schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-  schemaName: 'ahoy',
-  schemaVersion: '1.0',
-  schemaId: '1560364003',
-  issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-  credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
+  payload: {
+    schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+    schemaName: 'ahoy',
+    schemaVersion: '1.0',
+    schemaId: '1560364003',
+    issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+    credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
+  },
 }
 const proposal: ProposeCredentialOptions = {
   connectionId: '',
   protocolVersion: CredentialProtocolVersion.V1,
   credentialFormats: {
-    indy: {
-      payload: {
-        credentialPayload: testAttributes,
-      },
-    },
+    indy: testAttributes,
   },
   comment: 'v2 propose credential test',
 }
@@ -42,34 +44,7 @@ const multiFormatProposal: ProposeCredentialOptions = {
   connectionId: '',
   protocolVersion: CredentialProtocolVersion.V2,
   credentialFormats: {
-    indy: {
-      payload: {
-        credentialPayload: testAttributes,
-      },
-    },
-    // jsonld: {
-    //   credential: {
-    //     '@context': 'https://www.w3.org/2018/',
-    //     issuer: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
-    //     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-    //     issuanceDate: '2020-01-01T19:23:24Z',
-    //     expirationDate: '2021-01-01T19:23:24Z',
-    //     credentialSubject: {
-    //       id: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
-    //       degree: {
-    //         type: 'BachelorDegree',
-    //         name: 'Bachelor of Science and Arts',
-    //       },
-    //     },
-    //   },
-    //   options: {
-    //     proofPurpose: 'assertionMethod',
-    //     created: '2020-04-02T18:48:36Z',
-    //     domain: 'example.com',
-    //     challenge: '9450a9c1-4db5-4ab9-bc0c-b7a9b2edac38',
-    //     proofType: 'Ed25519Signature2018',
-    //   },
-    // },
+    indy: testAttributes,
   },
   comment: 'v2 propose credential test',
 }
@@ -118,7 +93,9 @@ describe('V2 Credential Architecture', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
 
-      const formats: CredentialFormatService[] = service.getFormats(multiFormatProposal.credentialFormats)
+      const credFormats: FormatServiceProposeCredentialFormats =
+        multiFormatProposal.credentialFormats as FormatServiceProposeCredentialFormats
+      const formats: CredentialFormatService[] = service.getFormats(credFormats)
       expect(formats.length).toBe(1) // for now will be added to with jsonld
       const messageBuilder: CredentialMessageBuilder = new CredentialMessageBuilder()
 

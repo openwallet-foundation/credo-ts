@@ -12,7 +12,7 @@ import type {
   ProofStateChangedEvent,
   SchemaTemplate,
 } from '../src'
-import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/interfaces'
+import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
 import type { CredentialOfferTemplate } from '../src/modules/credentials/protocol'
 import type { Schema, CredDef } from 'indy-sdk'
 import type { Observable } from 'rxjs'
@@ -360,6 +360,7 @@ export async function issueCredential({
   const offerOptions: OfferCredentialOptions = {
     comment: 'some comment about credential',
     connectionId: issuerConnectionId,
+    protocolVersion: CredentialProtocolVersion.V1,
     credentialFormats: {
       indy: {
         attributes: credentialTemplate.preview.attributes,
@@ -367,7 +368,6 @@ export async function issueCredential({
         linkedAttachments: credentialTemplate.linkedAttachments,
       },
     },
-    protocolVersion: CredentialProtocolVersion.V1,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
   let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(offerOptions)
@@ -381,7 +381,6 @@ export async function issueCredential({
     credentialRecordId: holderCredentialRecord.id,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
-  holderCredentialRecord.protocolVersion = CredentialProtocolVersion.V1
 
   await holderAgent.credentials.acceptOffer(acceptOfferOptions)
 
@@ -423,14 +422,15 @@ export async function issueConnectionLessCredential({
 
   const offerOptions: OfferCredentialOptions = {
     comment: 'V1 Out of Band offer',
+    protocolVersion: CredentialProtocolVersion.V1,
     credentialFormats: {
       indy: {
         attributes: credentialTemplate.preview.attributes,
         credentialDefinitionId: credentialTemplate.credentialDefinitionId,
       },
     },
-    protocolVersion: CredentialProtocolVersion.V1,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+    connectionId: '',
   }
   // eslint-disable-next-line prefer-const
   let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOutOfBandOffer(
@@ -447,7 +447,6 @@ export async function issueConnectionLessCredential({
     credentialRecordId: holderCredentialRecord.id,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
-  holderCredentialRecord.protocolVersion = CredentialProtocolVersion.V1
 
   await holderAgent.credentials.acceptOffer(acceptOfferOptions)
 

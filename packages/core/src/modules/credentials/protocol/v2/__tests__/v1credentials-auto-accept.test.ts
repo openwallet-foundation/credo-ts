@@ -7,7 +7,7 @@ import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-} from '../../../interfaces'
+} from '../../../CredentialsModuleOptions'
 import type { Schema } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
@@ -18,7 +18,7 @@ import { sleep } from '../../../../../utils/sleep'
 import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
@@ -66,16 +66,9 @@ describe('credentials', () => {
         protocolVersion: CredentialProtocolVersion.V1,
         credentialFormats: {
           indy: {
+            attributes: credentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -152,7 +145,12 @@ describe('credentials', () => {
             },
           },
         },
-        credentialId: expect.any(String),
+        credentials: [
+          {
+            credentialRecordType: 'Indy',
+            credentialRecordId: expect.any(String),
+          },
+        ],
         state: CredentialState.Done,
       })
       expect(faberCredentialRecord).toMatchObject({
@@ -194,16 +192,9 @@ describe('credentials', () => {
         protocolVersion: CredentialProtocolVersion.V1,
         credentialFormats: {
           indy: {
+            attributes: credentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -256,7 +247,12 @@ describe('credentials', () => {
             },
           },
         },
-        credentialId: expect.any(String),
+        credentials: [
+          {
+            credentialRecordType: 'Indy',
+            credentialRecordId: expect.any(String),
+          },
+        ],
         state: CredentialState.Done,
       })
 
@@ -330,6 +326,7 @@ describe('credentials', () => {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: aliceCredentialExchangeRecord.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(aliceCredentialExchangeRecord.type).toBe(CredentialExchangeRecord.name)
 
@@ -365,7 +362,12 @@ describe('credentials', () => {
               },
             },
           },
-          credentialId: expect.any(String),
+          credentials: [
+            {
+              credentialRecordType: 'Indy',
+              credentialRecordId: expect.any(String),
+            },
+          ],
           state: CredentialState.Done,
         })
 
@@ -386,16 +388,9 @@ describe('credentials', () => {
         protocolVersion: CredentialProtocolVersion.V1,
         credentialFormats: {
           indy: {
+            attributes: credentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: credentialPreview.attributes,
-                schemaIssuerDid: faberAgent.publicDid?.did,
-                schemaName: schema.name,
-                schemaVersion: schema.version,
-                schemaId: schema.id,
-                issuerDid: faberAgent.publicDid?.did,
-                credentialDefinitionId: credDefId,
-              },
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -428,39 +423,13 @@ describe('credentials', () => {
         state: CredentialState.OfferReceived,
       })
 
-      // expect(JsonTransformer.toJSON(record)).toMatchObject({
-      //   createdAt: expect.any(Date),
-      //   offerMessage: {
-      //     '@id': expect.any(String),
-      //     '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
-      //     credential_preview: {
-      //       '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
-      //       attributes: [
-      //         {
-      //           name: 'name',
-      //           value: 'John',
-      //         },
-      //         {
-      //           name: 'age',
-      //           value: '99',
-      //         },
-      //         {
-      //           name: 'lastname',
-      //           value: 'Appleseed',
-      //         },
-      //       ],
-      //     },
-      //     'offers~attach': expect.any(Array),
-      //   },
-      //   state: CredentialState.OfferReceived,
-      // })
-
       // below values are not in json object
       expect(record.id).not.toBeNull()
       expect(record.getTags()).toEqual({
         threadId: record.threadId,
         state: record.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(record.type).toBe(CredentialExchangeRecord.name)
 
@@ -493,35 +462,13 @@ describe('credentials', () => {
         state: CredentialState.OfferReceived,
       })
 
-      // expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-      //   createdAt: expect.any(Date),
-      //   offerMessage: {
-      //     '@id': expect.any(String),
-      //     '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
-      //     credential_preview: {
-      //       '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
-      //       attributes: [
-      //         {
-      //           name: 'name',
-      //           value: 'John',
-      //         },
-      //         {
-      //           name: 'age',
-      //           value: '99',
-      //         },
-      //       ],
-      //     },
-      //     'offers~attach': expect.any(Array),
-      //   },
-      //   state: CredentialState.OfferReceived,
-      // })
-
       // below values are not in json object
       expect(aliceCredentialExchangeRecord.id).not.toBeNull()
       expect(aliceCredentialExchangeRecord.getTags()).toEqual({
         threadId: aliceCredentialExchangeRecord.threadId,
         state: aliceCredentialExchangeRecord.state,
         connectionId: aliceConnection.id,
+        credentialIds: [],
       })
       expect(aliceCredentialExchangeRecord.type).toBe(CredentialExchangeRecord.name)
 
@@ -532,11 +479,9 @@ describe('credentials', () => {
         credentialRecordId: aliceCredentialExchangeRecord.id,
         credentialFormats: {
           indy: {
+            attributes: newCredentialPreview.attributes,
             payload: {
-              credentialPayload: {
-                attributes: newCredentialPreview.attributes,
-                credentialDefinitionId: credDefId,
-              },
+              credentialDefinitionId: credDefId,
             },
           },
         },
@@ -549,33 +494,6 @@ describe('credentials', () => {
         threadId: aliceExchangeCredentialRecord.threadId,
         state: CredentialState.ProposalReceived,
       })
-
-      // expect(JsonTransformer.toJSON(faberCredentialRecord)).toMatchObject({
-      //   createdAt: expect.any(Date),
-      //   proposalMessage: {
-      //     '@type': 'https://didcomm.org/issue-credential/1.0/propose-credential',
-      //     '@id': expect.any(String),
-      //     credential_proposal: {
-      //       '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
-      //       attributes: [
-      //         {
-      //           name: 'name',
-      //           value: 'John',
-      //         },
-      //         {
-      //           name: 'age',
-      //           value: '99',
-      //         },
-      //         {
-      //           name: 'lastname',
-      //           value: 'Appleseed',
-      //         },
-      //       ],
-      //     },
-      //     '~thread': { thid: expect.any(String) },
-      //   },
-      //   state: CredentialState.ProposalReceived,
-      // })
 
       await sleep(5000)
 

@@ -4,7 +4,7 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 import type { CredOffer } from 'indy-sdk'
 
@@ -70,7 +70,10 @@ export class V1ProposeCredentialHandler implements Handler {
       offerAttachment,
       credentialDefinitionId: proposalMessage.credentialDefinitionId,
     }
-    if (this.shouldAutoRespondToProposal(handlerOptions)) {
+    if (
+      this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
+      this.shouldAutoRespondToProposal(handlerOptions)
+    ) {
       return await this.createOffer(credentialRecord, messageContext, proposalMessage)
     }
   }
@@ -81,9 +84,7 @@ export class V1ProposeCredentialHandler implements Handler {
       handlerOptions.autoAcceptType
     )
 
-    if (autoAccept === AutoAcceptCredential.Always) {
-      return true
-    } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
+    if (autoAccept === AutoAcceptCredential.ContentApproved) {
       return (
         this.areProposalValuesValid(handlerOptions.credentialRecord, handlerOptions.messageAttributes) &&
         this.areProposalAndOfferDefinitionIdEqual(handlerOptions.credentialDefinitionId, handlerOptions.offerAttachment)

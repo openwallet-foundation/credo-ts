@@ -5,11 +5,12 @@ import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ServiceAcceptRequestOptions } from '../../../CredentialServiceOptions'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
 import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { DidCommMessageRole } from '../../../../../storage'
+import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
   V1ProposeCredentialMessage,
@@ -57,7 +58,7 @@ export class V1RequestCredentialHandler implements Handler {
 
     let proposalAttachment, offerAttachment, requestAttachment: Attachment | undefined
     if (proposeMessage && proposeMessage.appendedAttachments) {
-      proposalAttachment = proposeMessage.appendedAttachments[0] // MJR: is this right for propose messages?
+      proposalAttachment = proposeMessage.appendedAttachments[0]
     }
     if (offerMessage) {
       offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
@@ -72,7 +73,10 @@ export class V1RequestCredentialHandler implements Handler {
       offerAttachment,
       requestAttachment,
     }
-    if (formatService.shouldAutoRespondToRequest(handlerOptions)) {
+    if (
+      this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
+      formatService.shouldAutoRespondToRequest(handlerOptions)
+    ) {
       return await this.createCredential(credentialRecord, messageContext, offerMessage, requestMessage)
     }
   }

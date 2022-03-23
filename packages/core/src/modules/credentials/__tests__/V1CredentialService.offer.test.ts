@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { OfferCredentialOptions } from '../interfaces'
+import type { OfferCredentialOptions } from '../CredentialsModuleOptions'
 
 import { Agent } from '../../../../src/agent/Agent'
 import { Dispatcher } from '../../../../src/agent/Dispatcher'
@@ -19,10 +19,11 @@ import { MediationRecipientService } from '../../routing'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
+import { IndyCredentialFormatService } from '../formats'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import { V1CredentialService } from '../protocol/v1/V1CredentialService'
 import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../protocol/v1/messages'
-import { CredentialExchangeRecord } from '../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 
 import { credDef } from './fixtures'
@@ -102,9 +103,13 @@ describe('CredentialService', () => {
       dispatcher,
       eventEmitter,
       credentialRepository,
-      indyIssuerService,
-      indyLedgerService,
-      indyHolderService
+      new IndyCredentialFormatService(
+        credentialRepository,
+        eventEmitter,
+        indyIssuerService,
+        indyLedgerService,
+        indyHolderService
+      )
     )
   })
 
@@ -161,40 +166,38 @@ describe('CredentialService', () => {
       })
     })
 
-    //   test('returns credential offer message', async () => {
-    //     const { message: credentialOffer } = await credentialService.createOffer(offerOptions)
-
-    //     expect(credentialOffer.toJSON()).toMatchObject({
-    //       '@id': expect.any(String),
-    //       '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
-    //       comment: 'some comment',
-    //       credential_preview: {
-    //         '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
-    //         attributes: [
-    //           {
-    //             name: 'name',
-    //             'mime-type': 'text/plain',
-    //             value: 'John',
-    //           },
-    //           {
-    //             name: 'age',
-    //             'mime-type': 'text/plain',
-    //             value: '99',
-    //           },
-    //         ],
-    //       },
-    //       'offers~attach': [
-    //         {
-    //           '@id': expect.any(String),
-    //           'mime-type': 'application/json',
-    //           data: {
-    //             base64: expect.any(String),
-    //           },
-    //         },
-    //       ],
-    //     })
-    //   })
-    // })
+    test('returns credential offer message', async () => {
+      const { message: credentialOffer } = await credentialService.createOffer(offerOptions)
+      expect(credentialOffer.toJSON()).toMatchObject({
+        '@id': expect.any(String),
+        '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
+        comment: 'some comment',
+        credential_preview: {
+          '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
+          attributes: [
+            {
+              name: 'name',
+              'mime-type': 'text/plain',
+              value: 'John',
+            },
+            {
+              name: 'age',
+              'mime-type': 'text/plain',
+              value: '99',
+            },
+          ],
+        },
+        'offers~attach': [
+          {
+            '@id': expect.any(String),
+            'mime-type': 'application/json',
+            data: {
+              base64: expect.any(String),
+            },
+          },
+        ],
+      })
+    })
   })
   describe('processCredentialOffer', () => {
     let messageContext: InboundMessageContext<V1OfferCredentialMessage>
@@ -234,9 +237,13 @@ describe('CredentialService', () => {
         dispatcher,
         eventEmitter,
         credentialRepository,
-        indyIssuerService,
-        indyLedgerService,
-        indyHolderService
+        new IndyCredentialFormatService(
+          credentialRepository,
+          eventEmitter,
+          indyIssuerService,
+          indyLedgerService,
+          indyHolderService
+        )
       )
       // when
       const returnedCredentialRecord = await credentialService.processOffer(messageContext)

@@ -1,13 +1,9 @@
-import type { Attachment } from '../../../../../../src/decorators/attachment/Attachment'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
-import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
-import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
@@ -53,31 +49,13 @@ export class V2OfferCredentialHandler implements Handler {
     if (!offerMessage) {
       throw new AriesFrameworkError('Missing offer message in V2OfferCredentialHandler')
     }
-    let offerValues: CredentialPreviewAttribute[] | undefined
 
-    const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(offerMessage.formats)
-    let shouldAutoRespond = true
-    for (const formatService of formatServices) {
-      let proposalAttachment, offerAttachment: Attachment | undefined
+    const shouldAutoRespond = this.credentialService.shouldAutoRespondToOffer(
+      credentialRecord,
+      offerMessage,
+      proposeMessage ? proposeMessage : undefined
+    )
 
-      if (proposeMessage) {
-        proposalAttachment = formatService.getAttachment(proposeMessage)
-      }
-      if (offerMessage) {
-        offerAttachment = formatService.getAttachment(offerMessage)
-        offerValues = offerMessage.credentialPreview?.attributes
-      }
-      const handlerOptions: HandlerAutoAcceptOptions = {
-        credentialRecord,
-        autoAcceptType: this.agentConfig.autoAcceptCredentials,
-        messageAttributes: offerValues,
-        proposalAttachment,
-        offerAttachment,
-      }
-      const formatShouldAutoRespond = formatService.shouldAutoRespondToProposal(handlerOptions)
-
-      shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
-    }
     if (shouldAutoRespond) {
       return await this.createRequest(credentialRecord, messageContext, offerMessage)
     }
@@ -93,7 +71,11 @@ export class V2OfferCredentialHandler implements Handler {
     )
 
     if (messageContext.connection) {
-      const { message, credentialRecord } = await this.credentialService.createRequest(record, {})
+      const { message, credentialRecord } = await this.credentialService.createRequest(
+        record,
+        {},
+        messageContext.connection.did
+      )
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: message,
         role: DidCommMessageRole.Receiver,

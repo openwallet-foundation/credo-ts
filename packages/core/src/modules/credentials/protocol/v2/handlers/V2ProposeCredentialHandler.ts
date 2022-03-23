@@ -1,13 +1,9 @@
-import type { Attachment } from '../../../../../../src/decorators/attachment/Attachment'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
-import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
-import type { AcceptProposalOptions } from '../../../interfaces'
-import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { AcceptProposalOptions } from '../../../CredentialsModuleOptions'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { AriesFrameworkError } from '../../../../../../src/error'
@@ -36,11 +32,16 @@ export class V2ProposeCredentialHandler implements Handler {
     const credentialRecord = await this.credentialService.processProposal(messageContext)
 
     let offerMessage: V2OfferCredentialMessage | undefined
-    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: credentialRecord.id,
-      messageClass: V2ProposeCredentialMessage,
-    })
+    let proposalMessage: V2ProposeCredentialMessage | undefined
 
+    try {
+      proposalMessage = await this.didCommMessageRepository.getAgentMessage({
+        associatedRecordId: credentialRecord.id,
+        messageClass: V2ProposeCredentialMessage,
+      })
+    } catch (RecordNotFoundError) {
+      throw new AriesFrameworkError('Missing proposal message in V2RequestCredentialHandler')
+    }
     try {
       offerMessage = await this.didCommMessageRepository.getAgentMessage({
         associatedRecordId: credentialRecord.id,
@@ -50,44 +51,19 @@ export class V2ProposeCredentialHandler implements Handler {
       // can happen sometimes
     }
 
-    if (!proposalMessage) {
-      throw new AriesFrameworkError(`No proposal message found for credential record ${credentialRecord.id}`)
-    }
-    const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(
-      proposalMessage.formats
+    const shouldAutoRespond = this.credentialService.shouldAutoRespondToProposal(
+      credentialRecord,
+      proposalMessage,
+      offerMessage ? offerMessage : undefined
     )
-
-    let shouldAutoRespond = true
-    let proposalValues: CredentialPreviewAttribute[] | undefined
-    for (const formatService of formatServices) {
-      let proposalAttachment, offerAttachment: Attachment | undefined
-      if (proposalMessage && proposalMessage.appendedAttachments) {
-        proposalAttachment = formatService.getAttachment(proposalMessage)
-        proposalValues = proposalMessage.credentialProposal?.attributes
-      }
-      if (offerMessage) {
-        offerAttachment = formatService.getAttachment(proposalMessage)
-      }
-      const handlerOptions: HandlerAutoAcceptOptions = {
-        credentialRecord,
-        autoAcceptType: this.agentConfig.autoAcceptCredentials,
-        messageAttributes: proposalValues,
-        proposalAttachment,
-        offerAttachment,
-      }
-      const formatShouldAutoRespond = formatService.shouldAutoRespondToProposal(handlerOptions)
-      shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
-      if (shouldAutoRespond) {
-        const offerAttachment = formatService.getAttachment(proposalMessage)
-        return await this.createOffer(credentialRecord, messageContext, offerAttachment)
-      }
+    if (shouldAutoRespond) {
+      return await this.createOffer(credentialRecord, messageContext)
     }
   }
 
   private async createOffer(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>,
-    offerAttachment?: Attachment
+    messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>
   ) {
     this.agentConfig.logger.info(
       `Automatically sending offer with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
@@ -99,8 +75,8 @@ export class V2ProposeCredentialHandler implements Handler {
     }
 
     const options: AcceptProposalOptions = await this.credentialService.createAcceptProposalOptions(credentialRecord)
-    options.offerAttachment = offerAttachment
     const message = await this.credentialService.createOfferAsResponse(credentialRecord, options)
+
     return createOutboundMessage(messageContext.connection, message)
   }
 }

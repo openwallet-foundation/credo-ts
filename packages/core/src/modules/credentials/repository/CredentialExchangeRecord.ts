@@ -2,7 +2,7 @@ import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import type { CredentialState } from '../CredentialState'
-import type { CredentialRecordType } from '../interfaces'
+import type { CredentialFormatType } from '../CredentialsModuleOptions'
 import type { CredentialMetadata } from './CredentialMetadataTypes'
 
 import { Type } from 'class-transformer'
@@ -14,7 +14,7 @@ import { uuid } from '../../../utils/uuid'
 import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import { CredentialInfo } from '../protocol/v1/models/CredentialInfo'
 
-export interface CredentialRecordProps {
+export interface CredentialExchangeRecordProps {
   id?: string
   createdAt?: Date
   state: CredentialState
@@ -22,12 +22,12 @@ export interface CredentialRecordProps {
   threadId: string
   protocolVersion: CredentialProtocolVersion
 
-  credentialId?: string
   tags?: CustomCredentialTags
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential
   linkedAttachments?: Attachment[]
   errorMessage?: string
+  credentials?: CredentialRecordBinding[]
 }
 
 export type CustomCredentialTags = TagsBase
@@ -35,11 +35,11 @@ export type DefaultCredentialTags = {
   threadId: string
   connectionId?: string
   state: CredentialState
-  credentialId?: string
+  credentialIds: string[]
 }
 
 export interface CredentialRecordBinding {
-  credentialRecordType: CredentialRecordType
+  credentialRecordType: CredentialFormatType
   credentialRecordId: string
 }
 
@@ -50,7 +50,6 @@ export class CredentialExchangeRecord extends BaseRecord<
 > {
   public connectionId?: string
   public threadId!: string
-  public credentialId?: string
   public state!: CredentialState
   public autoAcceptCredential?: AutoAcceptCredential
   public errorMessage?: string
@@ -66,7 +65,7 @@ export class CredentialExchangeRecord extends BaseRecord<
   public static readonly type = 'CredentialExchangeRecord'
   public readonly type = CredentialExchangeRecord.type
 
-  public constructor(props: CredentialRecordProps) {
+  public constructor(props: CredentialExchangeRecordProps) {
     super()
 
     if (props) {
@@ -74,7 +73,6 @@ export class CredentialExchangeRecord extends BaseRecord<
       this.createdAt = props.createdAt ?? new Date()
       this.state = props.state
       this.connectionId = props.connectionId
-      this.credentialId = props.credentialId
       this.threadId = props.threadId
       this.protocolVersion = props.protocolVersion
       this._tags = props.tags ?? {}
@@ -83,8 +81,8 @@ export class CredentialExchangeRecord extends BaseRecord<
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments
       this.errorMessage = props.errorMessage
+      this.credentials = props.credentials ?? []
     }
-    this.credentials = []
   }
 
   public getTags() {
@@ -93,7 +91,7 @@ export class CredentialExchangeRecord extends BaseRecord<
       threadId: this.threadId,
       connectionId: this.connectionId,
       state: this.state,
-      credentialId: this.credentialId,
+      credentialIds: this.credentials.map((c) => c.credentialRecordId),
     }
   }
 
@@ -113,6 +111,14 @@ export class CredentialExchangeRecord extends BaseRecord<
       attachments: this.linkedAttachments,
       metadata: this.metadata.data,
     })
+  }
+
+  public assertVersion(version: string) {
+    if (this.protocolVersion != version) {
+      throw new AriesFrameworkError(
+        `Credential record has invalid protocol version ${this.protocolVersion}. Expected version ${version}`
+      )
+    }
   }
 
   public assertState(expectedStates: CredentialState | CredentialState[]) {

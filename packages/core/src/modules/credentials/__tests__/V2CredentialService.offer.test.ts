@@ -1,7 +1,8 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { OfferCredentialOptions } from '../interfaces'
+import type { OfferCredentialOptions } from '../CredentialsModuleOptions'
+import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
@@ -19,10 +20,12 @@ import { MediationRecipientService } from '../../routing'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
+import { IndyCredentialFormatService } from '../formats/indy/IndyCredentialFormatService'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
-import { V1CredentialService } from '../protocol/v1/V1CredentialService'
-import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../protocol/v1/messages'
-import { CredentialExchangeRecord } from '../repository/CredentialRecord'
+import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID } from '../protocol/v1/messages'
+import { V2CredentialService } from '../protocol/v2/V2CredentialService'
+import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
+import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 
 import { credDef } from './fixtures'
@@ -77,7 +80,7 @@ describe('CredentialService', () => {
   let agentConfig: AgentConfig
 
   let dispatcher: Dispatcher
-  let credentialService: V1CredentialService
+  let credentialService: V2CredentialService
   beforeEach(async () => {
     credentialRepository = new CredentialRepositoryMock()
     indyIssuerService = new IndyIssuerServiceMock()
@@ -92,20 +95,24 @@ describe('CredentialService', () => {
 
     dispatcher = new Dispatcher(messageSender, eventEmitter, agentConfig)
 
-    credentialService = new V1CredentialService(
+    credentialService = new V2CredentialService(
       {
         getById: () => Promise.resolve(connection),
         assertConnectionOrServiceDecorator: () => true,
       } as unknown as ConnectionService,
-      didCommMessageRepository,
+      credentialRepository,
+      eventEmitter,
+      dispatcher,
       agentConfig,
       mediationRecipientService,
-      dispatcher,
-      eventEmitter,
-      credentialRepository,
-      indyIssuerService,
-      indyLedgerService,
-      indyHolderService
+      didCommMessageRepository,
+      new IndyCredentialFormatService(
+        credentialRepository,
+        eventEmitter,
+        indyIssuerService,
+        indyLedgerService,
+        indyHolderService
+      )
     )
   })
 
@@ -166,51 +173,59 @@ describe('CredentialService', () => {
       })
     })
 
-    //   test('returns credential offer message', async () => {
-    //     const { message: credentialOffer } = await credentialService.createOffer(offerOptions)
+    test('returns credential offer message', async () => {
+      const { message: credentialOffer } = await credentialService.createOffer(offerOptions)
 
-    //     expect(credentialOffer.toJSON()).toMatchObject({
-    //       '@id': expect.any(String),
-    //       '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
-    //       comment: 'some comment',
-    //       credential_preview: {
-    //         '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
-    //         attributes: [
-    //           {
-    //             name: 'name',
-    //             'mime-type': 'text/plain',
-    //             value: 'John',
-    //           },
-    //           {
-    //             name: 'age',
-    //             'mime-type': 'text/plain',
-    //             value: '99',
-    //           },
-    //         ],
-    //       },
-    //       'offers~attach': [
-    //         {
-    //           '@id': expect.any(String),
-    //           'mime-type': 'application/json',
-    //           data: {
-    //             base64: expect.any(String),
-    //           },
-    //         },
-    //       ],
-    //     })
-    //   })
-    // })
+      expect(credentialOffer.toJSON()).toMatchObject({
+        '@id': expect.any(String),
+        '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
+        comment: 'some comment',
+        credential_preview: {
+          '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
+          attributes: [
+            {
+              name: 'name',
+              'mime-type': 'text/plain',
+              value: 'John',
+            },
+            {
+              name: 'age',
+              'mime-type': 'text/plain',
+              value: '99',
+            },
+          ],
+        },
+        'offers~attach': [
+          {
+            '@id': expect.any(String),
+            'mime-type': 'application/json',
+            data: {
+              base64: expect.any(String),
+            },
+          },
+        ],
+      })
+    })
   })
   describe('processCredentialOffer', () => {
-    let messageContext: InboundMessageContext<V1OfferCredentialMessage>
-    let credentialOfferMessage: V1OfferCredentialMessage
+    let messageContext: InboundMessageContext<V2OfferCredentialMessage>
+    let credentialOfferMessage: V2OfferCredentialMessage
 
     beforeEach(async () => {
-      credentialOfferMessage = new V1OfferCredentialMessage({
+      const offerOptions: V2OfferCredentialMessageOptions = {
+        id: '',
+        formats: [
+          {
+            attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+            format: 'hlindy/cred-abstract@v2.0',
+          },
+        ],
         comment: 'some comment',
         credentialPreview: credentialPreview,
         offerAttachments: [offerAttachment],
-      })
+        replacementId: '',
+      }
+      credentialOfferMessage = new V2OfferCredentialMessage(offerOptions)
       messageContext = new InboundMessageContext(credentialOfferMessage, {
         connection,
       })
@@ -228,20 +243,24 @@ describe('CredentialService', () => {
       const dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
       const mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
 
-      credentialService = new V1CredentialService(
+      credentialService = new V2CredentialService(
         {
           getById: () => Promise.resolve(connection),
           assertConnectionOrServiceDecorator: () => true,
         } as unknown as ConnectionService,
-        didCommMessageRepository,
+        credentialRepository,
+        eventEmitter,
+        dispatcher,
         agentConfig,
         mediationRecipientService,
-        dispatcher,
-        eventEmitter,
-        credentialRepository,
-        indyIssuerService,
-        indyLedgerService,
-        indyHolderService
+        didCommMessageRepository,
+        new IndyCredentialFormatService(
+          credentialRepository,
+          eventEmitter,
+          indyIssuerService,
+          indyLedgerService,
+          indyHolderService
+        )
       )
       // when
       const returnedCredentialRecord = await credentialService.processOffer(messageContext)

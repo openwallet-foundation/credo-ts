@@ -1,11 +1,8 @@
-import type { Attachment } from '../../../../../../src/decorators/attachment/Attachment'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
-import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
@@ -44,29 +41,8 @@ export class V2IssueCredentialHandler implements Handler {
     if (!credentialMessage) {
       throw new AriesFrameworkError(`Missing credential message from credential record ${credentialRecord.id}`)
     }
-    // 1. Get all formats for this message
-    const formatServices: CredentialFormatService[] = this.credentialService.getFormatsFromMessage(
-      credentialMessage.formats
-    )
 
-    // 2. loop through found formats
-    let shouldAutoRespond = true
-    let credentialAttachment: Attachment | undefined
-
-    for (const formatService of formatServices) {
-      if (credentialMessage) {
-        credentialAttachment = formatService.getAttachment(credentialMessage)
-      }
-      const handlerOptions: HandlerAutoAcceptOptions = {
-        credentialRecord,
-        autoAcceptType: this.agentConfig.autoAcceptCredentials,
-        credentialAttachment,
-      }
-      // 3. Call format.shouldRespondToProposal for each one
-      const formatShouldAutoRespond = formatService.shouldAutoRespondToCredential(handlerOptions)
-      shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
-    }
-    // 4. if all formats are eligibile for auto response then call create offer
+    const shouldAutoRespond = this.credentialService.shouldAutoRespondToCredential(credentialRecord, credentialMessage)
     if (shouldAutoRespond) {
       return await this.createAck(
         credentialRecord,

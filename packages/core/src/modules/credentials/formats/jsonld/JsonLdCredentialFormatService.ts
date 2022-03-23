@@ -1,32 +1,30 @@
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
 /* eslint-disable @typescript-eslint/adjacent-overload-signatures */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { AgentMessage } from '../../../../../src/agent/AgentMessage'
 import type { EventEmitter } from '../../../../agent/EventEmitter'
 import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionService } from '../../../connections/services/ConnectionService'
-import type { IndyHolderService } from '../../../indy/services/IndyHolderService'
-import type { IndyIssuerService } from '../../../indy/services/IndyIssuerService'
-import type { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
-import type { ServiceAcceptOfferOptions } from '../../CredentialServiceOptions'
 import type {
   AcceptCredentialOptions,
+  ServiceCreateOfferOptions,
+  ServiceAcceptProposalOptions,
+} from '../../CredentialServiceOptions'
+import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
-  NegotiateProposalOptions,
-  OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
-} from '../../interfaces'
-import type { CredentialExchangeRecord } from '../../repository/CredentialRecord'
+} from '../../CredentialsModuleOptions'
+import type { CredentialExchangeRecord } from '../../repository'
 import type { CredentialRepository } from '../../repository/CredentialRepository'
 import type {
-  CredentialAttachmentFormats,
   CredentialFormatSpec,
+  FormatServiceCredentialAttachmentFormats,
+  FormatServiceOfferAttachmentFormats,
+  FormatServiceProposeAttachmentFormats,
   HandlerAutoAcceptOptions,
-  OfferAttachmentFormats,
+  RevocationRegistry,
 } from '../models/CredentialFormatServiceOptions'
-import type { CredOffer } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../../../../../src/error'
 import { uuid } from '../../../../../src/utils/uuid'
@@ -35,78 +33,61 @@ import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinat
 import { CredentialFormatService } from '../CredentialFormatService'
 
 export class JsonLdCredentialFormatService extends CredentialFormatService {
-  private indyIssuerService: IndyIssuerService
-  private indyLedgerService: IndyLedgerService
-  private indyHolderService: IndyHolderService
+  processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+  createRequest(
+    options: RequestCredentialOptions,
+    credentialRecord: CredentialExchangeRecord,
+    holderDid?: string
+  ): Promise<FormatServiceCredentialAttachmentFormats> {
+    throw new Error('Method not implemented.')
+  }
+  createCredential(
+    options: AcceptRequestOptions,
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<FormatServiceCredentialAttachmentFormats> {
+    throw new Error('Method not implemented.')
+  }
+  getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry> {
+    throw new Error('Method not implemented.')
+  }
+  getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
+    throw new Error('Method not implemented.')
+  }
   private connectionService: ConnectionService
   protected credentialRepository: CredentialRepository // protected as in base class
 
   public constructor(
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
-    indyIssuerService: IndyIssuerService,
-    indyLedgerService: IndyLedgerService,
-    indyHolderService: IndyHolderService,
     connectionService: ConnectionService
   ) {
     super(credentialRepository, eventEmitter)
     this.credentialRepository = credentialRepository
-    this.indyIssuerService = indyIssuerService // temporaary until the new w3ccredentialservice is avaialable
-    this.indyLedgerService = indyLedgerService
-    this.indyHolderService = indyHolderService
     this.connectionService = connectionService
   }
   public async processProposal(
-    options: AcceptProposalOptions,
+    options: ServiceAcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<AcceptProposalOptions> {
+  ): Promise<void> {
     // no meta data set for ld proofs
-    return options
   }
 
-  public async createOffer(options: ServiceAcceptOfferOptions): Promise<OfferAttachmentFormats> {
+  // public async createOffer(options: ServiceAcceptOfferOptions): Promise<OfferAttachmentFormats> {
+  public async createOffer(options: ServiceAcceptProposalOptions): Promise<FormatServiceOfferAttachmentFormats> {
     const formats: CredentialFormatSpec = {
       attachId: uuid(),
       format: 'aries/ld-proof-vc-detail@v1.0',
     }
-    const offer = await this.createCredentialOffer(options)
+    // const offer = await this.createCredentialOffer(options)
 
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const attachmentId = options.attachId ? options.attachId : formats.attachId
 
-    const offersAttach: Attachment = this.getFormatData(offer, attachmentId)
+    const offersAttach: Attachment = this.getFormatData(options.proposalAttachment, attachmentId)
 
     return { format: formats, attachment: offersAttach }
-  }
-
-  /**
-   * Create a credential offer for the given credential definition id.
-   *
-   * @param credentialDefinitionId The credential definition to create an offer for
-   * @returns The created credential offer
-   */
-  private async createCredentialOffer(
-    options: ServiceAcceptOfferOptions | NegotiateProposalOptions | OfferCredentialOptions
-  ): Promise<CredOffer> {
-    if (!options.credentialFormats.jsonld) {
-      throw new AriesFrameworkError('Missing jsonld credential format in createCredentialOffer')
-    }
-    const credOffer: CredOffer = await this.indyIssuerService.createCredentialOffer(
-      options.credentialFormats.jsonld?.credentialDefinitionId
-    )
-    return credOffer
-  }
-  createRequest(
-    options: RequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialAttachmentFormats> {
-    throw new Error('Method not implemented.')
-  }
-  createCredential(
-    options: AcceptRequestOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialAttachmentFormats> {
-    throw new Error('Method not implemented.')
   }
 
   public shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): boolean {
@@ -136,9 +117,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean {
     throw new Error('Method not implemented.')
   }
-  processOffer(options: AcceptProposalOptions, credentialRecord: CredentialExchangeRecord): void {
-    // empty: no metadata set for offer
-  }
+
   processCredential(options: AcceptCredentialOptions, credentialRecord: CredentialExchangeRecord): Promise<void> {
     throw new Error('Method not implemented.')
   }
@@ -146,17 +125,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     throw new Error('Method not implemented.')
   }
 
-  public createProposal(options: ProposeCredentialOptions): CredentialAttachmentFormats {
+  public createProposal(options: ProposeCredentialOptions): FormatServiceProposeAttachmentFormats {
     const format: CredentialFormatSpec = {
       attachId: 'ld_proof',
       format: 'aries/ld-proof-vc-detail@v1.0',
     }
 
     const attachment: Attachment = this.getFormatData(options.credentialFormats.jsonld, format.attachId)
-
-    // For now we will not handle linked attachments in the W3C credential. So the credentialProposal array
-    // should just contain standard crede
-
     return { format, attachment }
   }
 }

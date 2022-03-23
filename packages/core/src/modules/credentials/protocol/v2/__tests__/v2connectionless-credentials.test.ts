@@ -1,6 +1,6 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { AcceptOfferOptions, AcceptRequestOptions, OfferCredentialOptions } from '../../../interfaces'
+import type { AcceptOfferOptions, AcceptRequestOptions, OfferCredentialOptions } from '../../../CredentialsModuleOptions'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -13,7 +13,7 @@ import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
 const faberConfig = getBaseConfig('Faber connection-less Credentials V2', {
@@ -79,7 +79,6 @@ describe('credentials', () => {
 
   test('Faber starts with V2 Indy connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
-    // eslint-disable-next-line prefer-const
 
     const offerOptions: OfferCredentialOptions = {
       comment: 'V2 Out of Band offer',
@@ -90,6 +89,7 @@ describe('credentials', () => {
         },
       },
       protocolVersion: CredentialProtocolVersion.V2,
+      connectionId: '',
     }
     // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(
@@ -122,7 +122,7 @@ describe('credentials', () => {
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     }
-    faberCredentialRecord = await faberAgent.credentials.acceptCredentialRequest(options)
+    faberCredentialRecord = await faberAgent.credentials.acceptRequest(options)
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -174,7 +174,6 @@ describe('credentials', () => {
   })
 
   test('Faber starts with V2 Indy connection-less credential offer to Alice with auto-accept enabled', async () => {
-    // eslint-disable-next-line prefer-const
     const offerOptions: OfferCredentialOptions = {
       comment: 'V2 Out of Band offer',
       credentialFormats: {
@@ -185,6 +184,7 @@ describe('credentials', () => {
       },
       protocolVersion: CredentialProtocolVersion.V2,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+      connectionId: '',
     }
     // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(

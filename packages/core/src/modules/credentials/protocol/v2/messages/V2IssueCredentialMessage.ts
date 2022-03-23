@@ -1,10 +1,9 @@
-import type { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
-
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
 
 export interface V2IssueCredentialMessageProps {
   id?: string
@@ -14,8 +13,6 @@ export interface V2IssueCredentialMessageProps {
 }
 
 export class V2IssueCredentialMessage extends AgentMessage {
-  public formats!: CredentialFormatSpec[]
-
   public constructor(options: V2IssueCredentialMessageProps) {
     super()
 
@@ -26,6 +23,11 @@ export class V2IssueCredentialMessage extends AgentMessage {
       this.messageAttachment = options.credentialsAttach
     }
   }
+  @Type(() => CredentialFormatSpec)
+  @ValidateNested()
+  @IsArray()
+  // @IsInstance(CredentialFormatSpec, { each: true }) -> this causes message validation to fail
+  public formats!: CredentialFormatSpec[]
 
   @Equals(V2IssueCredentialMessage.type)
   public readonly type = V2IssueCredentialMessage.type

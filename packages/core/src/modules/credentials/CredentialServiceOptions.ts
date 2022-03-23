@@ -2,17 +2,20 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
-import type { CredProposeOfferRequestFormat } from './CredentialService'
 import type {
-  W3CCredentialFormat,
-  CredentialRequestFormat,
-  CredentialDefinitionFormat,
-} from './formats/models/CredentialFormatServiceOptions'
-import type { AcceptOfferOptions, RequestCredentialOptions, AcceptRequestOptions } from './interfaces'
+  AcceptOfferOptions as CreateOfferOptions,
+  AcceptProposalOptions,
+  AcceptRequestOptions,
+  NegotiateOfferOptions,
+  NegotiateProposalOptions,
+  OfferCredentialOptions,
+  RequestCredentialOptions,
+} from './CredentialsModuleOptions'
+import type { RevocationRegistry } from './formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
 import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
 import type { ProposeCredentialMessageOptions } from './protocol/v1/messages'
-import type { CredentialExchangeRecord } from './repository/CredentialRecord'
+import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 
 export interface IndyCredentialPreview {
   credentialDefinitionId?: string
@@ -33,36 +36,48 @@ export interface CredentialOfferTemplate {
   linkedAttachments?: LinkedAttachment[]
 }
 
-export interface CredentialRequestOptions {
-  holderDid: string
-  comment?: string
-  autoAcceptCredential?: AutoAcceptCredential
-}
-
-export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
+export interface ServiceCreateOfferOptions extends CreateOfferOptions {
   attachId?: string
   credentialFormats: {
     indy?: IndyCredentialPreview
-    jsonld?: W3CCredentialFormat
+    jsonld?: {
+      // todo
+    }
   }
 }
 
-export interface ServiceRequestCredentialOptions extends RequestCredentialOptions {
-  attachId?: string
-  connectionId?: string
-  // holderDid: string
-  // As indy cannot start from request and w3c is not supported in v1 we always use v2 here
-  credentialFormats?: CredentialRequestFormat
-  autoAcceptCredential?: AutoAcceptCredential
-  comment?: string
-  offer?: CredProposeOfferRequestFormat // will not be there if this is a W3C request rather than an indy response to offer
+export interface ServiceOfferCredentialOptions extends OfferCredentialOptions {
   offerAttachment?: Attachment
-  requestAttachment?: Attachment
-  credentialDefinition?: CredentialDefinitionFormat
+}
+
+export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {
+  attachId?: string
+  offerAttachment?: Attachment
+  proposalAttachment?: Attachment
 }
 
 export interface ServiceAcceptRequestOptions extends AcceptRequestOptions {
   attachId?: string
+  offerAttachment?: Attachment
+  requestAttachment?: Attachment
+}
+export interface ServiceNegotiateProposalOptions extends NegotiateProposalOptions {
+  offerAttachment?: Attachment
+}
+
+export interface ServiceNegotiateOfferOptions extends NegotiateOfferOptions {
+  offerAttachment?: Attachment
+}
+
+export interface ServiceRequestCredentialOptions extends RequestCredentialOptions {
+  attachId?: string
+  offerAttachment?: Attachment
+  requestAttachment?: Attachment
+}
+
+export interface AcceptCredentialOptions {
+  credential?: Attachment
+  revocationRegistry: RevocationRegistry
 }
 
 export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id'> & {

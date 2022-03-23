@@ -1,13 +1,13 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
-import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
+import type { ServiceCreateOfferOptions } from '../../../CredentialServiceOptions'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
   AcceptRequestOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-} from '../../../interfaces'
+} from '../../../CredentialsModuleOptions'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { DidCommMessageRepository } from '../../../../../../src/storage'
@@ -18,7 +18,7 @@ import { JsonTransformer } from '../../../../../utils'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialRecord'
+import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { V1OfferCredentialMessage } from '../../v1/messages/V1OfferCredentialMessage'
 import { V2CredentialPreview } from '../V2CredentialPreview'
@@ -57,11 +57,6 @@ describe('credentials', () => {
     })
     const testAttributes = {
       attributes: credentialPreview.attributes,
-      schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-      schemaName: 'ahoy',
-      schemaVersion: '1.0',
-      schemaId: '1560364003',
-      issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
       credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
       linkedAttachments: [
         new LinkedAttachment({
@@ -72,6 +67,13 @@ describe('credentials', () => {
           }),
         }),
       ],
+      payload: {
+        schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+        schemaName: 'ahoy',
+        schemaVersion: '1.0',
+        schemaId: '1560364003',
+        issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+      },
     }
     testLogger.test('Alice sends (v1) credential proposal to Faber')
     // set the propose options
@@ -79,11 +81,7 @@ describe('credentials', () => {
       connectionId: aliceConnection.id,
       protocolVersion: CredentialProtocolVersion.V1,
       credentialFormats: {
-        indy: {
-          payload: {
-            credentialPayload: testAttributes,
-          },
-        },
+        indy: testAttributes,
       },
       comment: 'v1 propose credential test',
     }
@@ -160,6 +158,7 @@ describe('credentials', () => {
       threadId: faberCredentialRecord.threadId,
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,
+      credentialIds: [],
     })
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
     if (aliceCredentialRecord.connectionId) {
@@ -184,7 +183,7 @@ describe('credentials', () => {
         comment: 'V1 Indy Credential',
       }
       testLogger.test('Faber sends credential to Alice')
-      await faberAgent.credentials.acceptCredentialRequest(options)
+      await faberAgent.credentials.acceptRequest(options)
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -223,6 +222,13 @@ describe('credentials', () => {
           }),
         }),
       ],
+      payload: {
+        schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+        schemaName: 'ahoy',
+        schemaVersion: '1.0',
+        schemaId: '1560364003',
+        issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+      },
     }
     testLogger.test('Alice sends (v2) credential proposal to Faber')
     // set the propose options
@@ -231,11 +237,7 @@ describe('credentials', () => {
       connectionId: aliceConnection.id,
       protocolVersion: CredentialProtocolVersion.V2,
       credentialFormats: {
-        indy: {
-          payload: {
-            credentialPayload: testAttributes,
-          },
-        },
+        indy: testAttributes,
       },
       comment: 'v2 propose credential test',
     }
@@ -310,17 +312,17 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.getTags()).toEqual({
       threadId: faberCredentialRecord.threadId,
+      credentialIds: [],
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,
     })
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 
     if (aliceCredentialRecord.connectionId) {
-      const acceptOfferOptions: ServiceAcceptOfferOptions = {
+      const acceptOfferOptions: ServiceCreateOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
           indy: undefined,
-          jsonld: undefined,
         },
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord =
@@ -343,7 +345,7 @@ describe('credentials', () => {
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Credential',
       }
-      await faberAgent.credentials.acceptCredentialRequest(options)
+      await faberAgent.credentials.acceptRequest(options)
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -371,7 +373,7 @@ describe('credentials', () => {
       throw new AriesFrameworkError('Missing Connection Id')
     }
   })
-  test('Feber starts with V2 offer; Alice declines', async () => {
+  test('Faber starts with V2 offer; Alice declines', async () => {
     testLogger.test('Faber sends credential offer to Alice')
     const credentialPreview = V2CredentialPreview.fromRecord({
       name: 'John',
@@ -401,11 +403,12 @@ describe('credentials', () => {
       threadId: aliceCredentialRecord.threadId,
       state: aliceCredentialRecord.state,
       connectionId: aliceConnection.id,
+      credentialIds: [],
     })
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
     testLogger.test('Alice declines offer')
     if (aliceCredentialRecord.id) {
-      await aliceAgent.credentials.declineCredentialOffer(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
+      await aliceAgent.credentials.declineCredentialOffer(aliceCredentialRecord.id)
     } else {
       throw new AriesFrameworkError('Missing credential record id')
     }
