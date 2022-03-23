@@ -84,7 +84,6 @@ describe('MessageSender', () => {
     serviceEndpoint: 'https://www.second-endpoint.com',
     recipientKeys: ['verkey'],
   })
-  const transportServiceFindServicesMock = mockFunction(transportService.findDidCommServices)
 
   let messageSender: MessageSender
   let outboundTransport: OutboundTransport
@@ -109,11 +108,12 @@ describe('MessageSender', () => {
         didResolverService
       )
       connection = getMockConnection({ id: 'test-123', theirLabel: 'Test 123' })
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      connection.theirDidDoc!.service = [firstDidCommService, secondDidCommService]
 
       outboundMessage = createOutboundMessage(connection, new TestMessage())
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
-      transportServiceFindServicesMock.mockReturnValue([firstDidCommService, secondDidCommService])
     })
 
     afterEach(() => {
@@ -126,7 +126,8 @@ describe('MessageSender', () => {
 
     test('throw error when there is no service or queue', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
-      transportServiceFindServicesMock.mockReturnValue([])
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      connection.theirDidDoc!.service = []
 
       await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(
         `Message is undeliverable to connection test-123 (Test 123)`

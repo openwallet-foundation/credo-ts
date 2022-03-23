@@ -1,13 +1,12 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { ConnectionRole, DidExchangeRole, HandshakeProtocol } from '../models'
+import type { HandshakeProtocol } from '../models'
 
 import { Type } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage'
-import { DidDoc, ConnectionState, DidExchangeState } from '../models'
+import { ConnectionRole, DidExchangeRole, DidDoc, ConnectionState, DidExchangeState } from '../models'
 
 export interface ConnectionRecordProps {
   id?: string
@@ -18,7 +17,6 @@ export interface ConnectionRecordProps {
   theirDid?: string
   theirDidDoc?: DidDoc
   theirLabel?: string
-  invitation?: ConnectionInvitationMessage
   state?: ConnectionState | DidExchangeState
   role?: ConnectionRole | DidExchangeRole
   alias?: string
@@ -37,7 +35,6 @@ export type CustomConnectionTags = TagsBase
 export type DefaultConnectionTags = {
   state?: ConnectionState | DidExchangeState
   role?: ConnectionRole | DidExchangeRole
-  invitationKey?: string
   threadId?: string
   verkey?: string
   theirKey?: string
@@ -64,8 +61,6 @@ export class ConnectionRecord
   public theirDid?: string
   public theirLabel?: string
 
-  @Type(() => ConnectionInvitationMessage)
-  public invitation?: ConnectionInvitationMessage
   public alias?: string
   public autoAcceptConnection?: boolean
   public imageUrl?: string
@@ -97,7 +92,6 @@ export class ConnectionRecord
       this.alias = props.alias
       this.autoAcceptConnection = props.autoAcceptConnection
       this._tags = props.tags ?? {}
-      this.invitation = props.invitation
       this.threadId = props.threadId
       this.imageUrl = props.imageUrl
       this.multiUseInvitation = props.multiUseInvitation || false
@@ -109,13 +103,10 @@ export class ConnectionRecord
   }
 
   public getTags() {
-    const invitationKey = (this.invitation?.recipientKeys && this.invitation.recipientKeys[0]) || undefined
-
     return {
       ...this._tags,
       state: this.state,
       role: this.role,
-      invitationKey,
       threadId: this.threadId,
       verkey: this.verkey,
       theirKey: this.theirKey || undefined,
@@ -144,6 +135,10 @@ export class ConnectionRecord
     }
 
     return service.recipientKeys[0]
+  }
+
+  public get isRequester() {
+    return this.role === ConnectionRole.Invitee || this.role === DidExchangeRole.Requester
   }
 
   public get isReady() {

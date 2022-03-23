@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
-import type { ConnectionService, Routing } from '../services/ConnectionService'
+import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
@@ -35,36 +35,20 @@ export class ConnectionRequestHandler implements Handler {
     const { recipientVerkey } = messageContext
     const outOfBandRecord = await this.outOfBandService.findByRecipientKey(recipientVerkey)
 
-    let connectionRecord
-    if (outOfBandRecord) {
-      const oobRouting = await this.mediationRecipientService.getRouting()
-      connectionRecord = await this.connectionService.protocolProcessRequest(
-        messageContext,
-        outOfBandRecord,
-        oobRouting
-      )
-    } else {
-      connectionRecord = await this.connectionService.findByVerkey(messageContext.recipientVerkey)
-      if (!connectionRecord) {
-        throw new AriesFrameworkError(
-          `Neither connection nor out-of-band record for verkey ${messageContext.recipientVerkey} found!`
-        )
-      }
-
-      let routing: Routing | undefined
-
-      // routing object is required for multi use invitation, because we're creating a
-      // new keypair that possibly needs to be registered at a mediator
-      if (connectionRecord.multiUseInvitation) {
-        routing = await this.mediationRecipientService.getRouting()
-      }
-
-      connectionRecord = await this.connectionService.processRequest(messageContext, routing)
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError(`Out-of-band record for recipientKey ${recipientVerkey} was not found.`)
     }
 
+    const oobRouting = await this.mediationRecipientService.getRouting()
+    const connectionRecord = await this.connectionService.protocolProcessRequest(
+      messageContext,
+      outOfBandRecord,
+      oobRouting
+    )
+
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord || undefined)
-      return createOutboundMessage(connectionRecord, message)
+      const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord)
+      return createOutboundMessage(connectionRecord, message, outOfBandRecord)
     }
   }
 }

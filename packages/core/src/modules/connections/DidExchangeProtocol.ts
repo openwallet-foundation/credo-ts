@@ -34,6 +34,7 @@ import { ConnectionService } from './services'
 
 interface DidExchangeRequestParams {
   label?: string
+  alias?: string
   goal?: string
   goalCode?: string
   routing: Routing
@@ -68,11 +69,12 @@ export class DidExchangeProtocol {
     this.logger.debug(`Create message ${DidExchangeRequestMessage.type} start`, { outOfBandRecord, params })
 
     const { outOfBandMessage } = outOfBandRecord
-    const { goal, goalCode, routing, autoAcceptConnection } = params
+    const { alias, goal, goalCode, routing, autoAcceptConnection } = params
 
     const connectionRecord = await this.connectionService.createConnection({
       protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Requester,
+      alias,
       state: DidExchangeState.InvitationReceived,
       theirLabel: outOfBandMessage.label,
       multiUseInvitation: false,
@@ -197,7 +199,7 @@ export class DidExchangeProtocol {
 
   public async createResponse(
     connectionRecord: ConnectionRecord,
-    outOfBandRecord?: OutOfBandRecord,
+    outOfBandRecord: OutOfBandRecord,
     routing?: Routing
   ): Promise<DidExchangeResponseMessage> {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} start`, connectionRecord)

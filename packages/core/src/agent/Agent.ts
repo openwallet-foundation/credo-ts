@@ -186,7 +186,9 @@ export class Agent {
     // Also requests mediation ans sets as default mediator
     // Because this requires the connections module, we do this in the agent constructor
     if (mediatorConnectionsInvite) {
-      await this.mediationRecipient.provision(mediatorConnectionsInvite)
+      this.logger.debug('Provision mediation with invitation', { mediatorConnectionsInvite })
+      const mediatonConnection = await this.getMediationConnection(mediatorConnectionsInvite)
+      await this.mediationRecipient.provision(mediatonConnection)
     }
 
     await this.mediationRecipient.initialize()
@@ -225,5 +227,34 @@ export class Agent {
 
   public get config() {
     return this.agentConfig
+  }
+
+  private async getMediationConnection(mediatorInvitationUrl: string) {
+    const outOfBandMessage = await this.oob.parseInvitation(mediatorInvitationUrl)
+    const outOfBandRecord = await this.oob.findByMessageId(outOfBandMessage.id)
+    const connection = outOfBandRecord && (await this.connections.findByOutOfBandId(outOfBandRecord.id))
+
+    if (!connection) {
+      this.logger.debug('Mediation connection does not exist, creating connection')
+      // We don't want to use the current default mediator when connecting to another mediator
+      const routing = await this.mediationRecipient.getRouting({ useDefaultMediator: false })
+
+      this.logger.debug('Routing created', routing)
+      const { connectionRecord: newConnection } = await this.oob.receiveInvitation(outOfBandMessage, {
+        routing,
+      })
+      this.logger.debug(`Mediation invitation processed`, { outOfBandMessage })
+
+      if (!newConnection) {
+        throw new AriesFrameworkError('No connection record to provision mediation.')
+      }
+
+      return this.connections.returnWhenIsConnected(newConnection.id)
+    }
+
+    if (!connection.isReady) {
+      return this.connections.returnWhenIsConnected(connection.id)
+    }
+    return connection
   }
 }

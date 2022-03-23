@@ -5,6 +5,7 @@ import type { OutboundMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
+import type { GetRoutingOptions } from './services/MediationRecipientService'
 
 import { firstValueFrom, interval, of, ReplaySubject, timer } from 'rxjs'
 import { filter, first, takeUntil, throttleTime, timeout, tap, delayWhen, catchError, map } from 'rxjs/operators'
@@ -19,7 +20,6 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
 import { parseMessageType } from '../../utils/messageType'
-import { ConnectionInvitationMessage } from '../connections'
 import { ConnectionService } from '../connections/services'
 import { DiscloseMessage, DiscoverFeaturesModule } from '../discover-features'
 
@@ -332,66 +332,33 @@ export class RecipientModule {
     return event.payload.mediationRecord
   }
 
-  public async provision(mediatorConnInvite: string) {
-    this.logger.debug('Provision Mediation with invitation', { invite: mediatorConnInvite })
-    // Connect to mediator through provided invitation
-    // Also requests mediation and sets as default mediator
-    // Assumption: processInvitation is a URL-encoded invitation
-    const invitation = await ConnectionInvitationMessage.fromUrl(mediatorConnInvite)
+  /**
+   * Requests mediation for a given connection and sets that as default mediator.
+   *
+   * @param connection connection record which will be used for mediation
+   * @returns mediation record
+   */
+  public async provision(connection: ConnectionRecord) {
+    this.logger.debug('Connection completed, requesting mediation')
 
-    // Check if invitation has been used already
-    if (!invitation || !invitation.recipientKeys || !invitation.recipientKeys[0]) {
-      throw new AriesFrameworkError(`Invalid mediation invitation. Invitation must have at least one recipient key.`)
-    }
-
-    let mediationRecord: MediationRecord | null = null
-
-    const connection = await this.connectionService.findByInvitationKey(invitation.recipientKeys[0])
-    if (!connection) {
-      this.logger.debug('Mediation Connection does not exist, creating connection')
-      // We don't want to use the current default mediator when connecting to another mediator
-      const routing = await this.mediationRecipientService.getRouting({ useDefaultMediator: false })
-
-      const invitationConnectionRecord = await this.connectionService.processInvitation(invitation, {
-        autoAcceptConnection: true,
-        routing,
-      })
-      this.logger.debug('Processed mediation invitation', {
-        connectionId: invitationConnectionRecord.id,
-      })
-      const { message } = await this.connectionService.createRequest(invitationConnectionRecord)
-      const outbound = createOutboundMessage(invitationConnectionRecord, message)
-      await this.messageSender.sendMessage(outbound)
-
-      const completedConnectionRecord = await this.connectionService.returnWhenIsConnected(
-        invitationConnectionRecord.id
-      )
-      this.logger.debug('Connection completed, requesting mediation')
-      mediationRecord = await this.requestAndAwaitGrant(completedConnectionRecord, 60000) // TODO: put timeout as a config parameter
-      this.logger.debug('Mediation Granted, setting as default mediator')
-      await this.setDefaultMediator(mediationRecord)
+    let mediation = await this.findByConnectionId(connection.id)
+    if (!mediation) {
+      this.agentConfig.logger.info(`Requesting mediation for connection ${connection.id}`)
+      mediation = await this.requestAndAwaitGrant(connection, 60000) // TODO: put timeout as a config parameter
+      this.logger.debug('Mediation granted, setting as default mediator')
+      await this.setDefaultMediator(mediation)
       this.logger.debug('Default mediator set')
-    } else if (connection && !connection.isReady) {
-      const connectionRecord = await this.connectionService.returnWhenIsConnected(connection.id)
-      mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
-      await this.setDefaultMediator(mediationRecord)
     } else {
-      this.agentConfig.logger.warn('Mediator Invitation in configuration has already been used to create a connection.')
-      const mediator = await this.findByConnectionId(connection.id)
-      if (!mediator) {
-        this.agentConfig.logger.warn('requesting mediation over connection.')
-        mediationRecord = await this.requestAndAwaitGrant(connection, 60000) // TODO: put timeout as a config parameter
-        await this.setDefaultMediator(mediationRecord)
-      } else {
-        this.agentConfig.logger.warn(
-          `Mediator Invitation in configuration has already been ${
-            mediator.isReady ? 'granted' : 'requested'
-          } mediation`
-        )
-      }
+      this.agentConfig.logger.warn(
+        `Mediator invitation has already been ${mediation.isReady ? 'granted' : 'requested'}`
+      )
     }
 
-    return mediationRecord
+    return mediation
+  }
+
+  public async getRouting(options: GetRoutingOptions) {
+    return this.mediationRecipientService.getRouting(options)
   }
 
   // Register handlers for the several messages for the mediator.

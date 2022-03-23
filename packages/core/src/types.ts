@@ -4,6 +4,7 @@ import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
 import type { DidCommService } from './modules/dids/domain/service/DidCommService'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
+import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 
@@ -88,6 +89,7 @@ export interface DecryptedMessageContext {
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   payload: T
   connection: ConnectionRecord
+  outOfBand?: OutOfBandRecord
 }
 
 export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {
