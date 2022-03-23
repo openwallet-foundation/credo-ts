@@ -71,6 +71,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_issuer_did' })
   @IsString()
   @IsOptional()
+  @Matches(/^(did:sov:)?[a-zA-Z0-9]{21,22}$/)
   public schemaIssuerDid?: string
 
   /**
@@ -79,6 +80,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_id' })
   @IsString()
   @IsOptional()
+  @Matches(/^[a-zA-Z0-9]{21,22}:2:.+:[0-9.]+$/)
   public schemaId?: string
 
   /**
@@ -106,6 +108,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'cred_def_id' })
   @IsString()
   @IsOptional()
+  @Matches(/^([a-zA-Z0-9]{21,22}):3:CL:(([1-9][0-9]*)|([a-zA-Z0-9]{21,22}:2:.+:[0-9.]+)):(.+)?$/)
   public credentialDefinitionId?: string
 
   /**
