@@ -8,8 +8,18 @@ import type {
 import type { PresentationPreview } from '../src/modules/proofs/models/PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
-import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
+import {
+  V1PresentationMessage,
+  V1RequestPresentationMessage,
+  V1ProposePresentationMessage,
+  AttributeFilter,
+  PredicateType,
+  ProofAttributeInfo,
+  ProofPredicateInfo,
+  ProofState,
+} from '../src'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
+import { DidCommMessageRepository } from '../src/storage/didcomm'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
@@ -23,6 +33,7 @@ describe('Present Proof', () => {
   let faberProofRecord: ProofRecord
   let aliceProofRecord: ProofRecord
   let presentationPreview: PresentationPreview
+  let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -64,6 +75,40 @@ describe('Present Proof', () => {
       state: ProofState.ProposalReceived,
     })
 
+    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+
+    const proposal = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V1ProposePresentationMessage,
+    })
+
+    expect(proposal).toMatchObject({
+      type: 'https://didcomm.org/present-proof/1.0/propose-presentation',
+      id: expect.any(String),
+      presentationProposal: {
+        type: 'https://didcomm.org/present-proof/1.0/presentation-preview',
+        attributes: [
+          {
+            name: 'name',
+            credentialDefinitionId: presentationPreview.attributes[0].credentialDefinitionId,
+            value: 'John',
+            referent: '0',
+          },
+          {
+            name: 'image_0',
+            credentialDefinitionId: presentationPreview.attributes[1].credentialDefinitionId,
+          },
+        ],
+        predicates: [
+          {
+            name: 'age',
+            credentialDefinitionId: presentationPreview.predicates[0].credentialDefinitionId,
+            predicate: '>=',
+            threshold: 50,
+          },
+        ],
+      },
+    })
     expect(faberProofRecord.id).not.toBeNull()
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
@@ -96,6 +141,28 @@ describe('Present Proof', () => {
       state: ProofState.RequestReceived,
     })
 
+    const request = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V1RequestPresentationMessage,
+    })
+
+    expect(request).toMatchObject({
+      type: 'https://didcomm.org/present-proof/1.0/request-presentation',
+      id: expect.any(String),
+      requestPresentationAttachments: [
+        {
+          id: 'libindy-request-presentation-0',
+          mimeType: 'application/json',
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+      thread: {
+        threadId: faberProofRecord.threadId,
+      },
+    })
+
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
     const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
@@ -125,6 +192,37 @@ describe('Present Proof', () => {
     faberProofRecord = await waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
+    })
+
+    const presentation = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V1PresentationMessage,
+    })
+
+    expect(presentation).toMatchObject({
+      type: 'https://didcomm.org/present-proof/1.0/presentation',
+      id: expect.any(String),
+      presentationAttachments: [
+        {
+          id: 'libindy-presentation-0',
+          mimeType: 'application/json',
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+      attachments: [
+        {
+          id: expect.any(String),
+          filename: expect.any(String),
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+      thread: {
+        threadId: expect.any(String),
+      },
     })
 
     expect(faberProofRecord.id).not.toBeNull()
@@ -224,6 +322,27 @@ describe('Present Proof', () => {
       state: ProofState.RequestReceived,
     })
 
+    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+
+    const request = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V1RequestPresentationMessage,
+    })
+
+    expect(request).toMatchObject({
+      type: 'https://didcomm.org/present-proof/1.0/request-presentation',
+      id: expect.any(String),
+      requestPresentationAttachments: [
+        {
+          id: 'libindy-request-presentation-0',
+          mimeType: 'application/json',
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+    })
+
     expect(aliceProofRecord.id).not.toBeNull()
     expect(aliceProofRecord).toMatchObject({
       threadId: aliceProofRecord.threadId,
@@ -260,6 +379,37 @@ describe('Present Proof', () => {
     faberProofRecord = await waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
+    })
+
+    const presentation = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V1PresentationMessage,
+    })
+
+    expect(presentation).toMatchObject({
+      type: 'https://didcomm.org/present-proof/1.0/presentation',
+      id: expect.any(String),
+      presentationAttachments: [
+        {
+          id: 'libindy-presentation-0',
+          mimeType: 'application/json',
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+      attachments: [
+        {
+          id: expect.any(String),
+          filename: expect.any(String),
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+      thread: {
+        threadId: expect.any(String),
+      },
     })
 
     expect(faberProofRecord.id).not.toBeNull()

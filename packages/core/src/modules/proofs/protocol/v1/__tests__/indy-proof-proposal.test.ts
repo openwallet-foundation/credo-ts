@@ -6,8 +6,10 @@ import type { ProofRecord } from '../../../repository/ProofRecord'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
+import { DidCommMessageRepository } from '../../../../../storage'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
+import { V1ProposePresentationMessage } from '../messages'
 
 describe('Present Proof', () => {
   let faberAgent: Agent
@@ -16,6 +18,7 @@ describe('Present Proof', () => {
   let presentationPreview: PresentationPreview
   let faberProofRecord: ProofRecord
   let aliceProofRecord: ProofRecord
+  let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -56,6 +59,42 @@ describe('Present Proof', () => {
     faberProofRecord = await waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.ProposalReceived,
+    })
+
+    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+
+    const proposal = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V1ProposePresentationMessage,
+    })
+
+    expect(proposal).toMatchObject({
+      type: 'https://didcomm.org/present-proof/1.0/propose-presentation',
+      id: expect.any(String),
+      comment: 'V1 propose proof test',
+      presentationProposal: {
+        type: 'https://didcomm.org/present-proof/1.0/presentation-preview',
+        attributes: [
+          {
+            name: 'name',
+            credentialDefinitionId: presentationPreview.attributes[0].credentialDefinitionId,
+            value: 'John',
+            referent: '0',
+          },
+          {
+            name: 'image_0',
+            credentialDefinitionId: presentationPreview.attributes[1].credentialDefinitionId,
+          },
+        ],
+        predicates: [
+          {
+            name: 'age',
+            credentialDefinitionId: presentationPreview.predicates[0].credentialDefinitionId,
+            predicate: '>=',
+            threshold: 50,
+          },
+        ],
+      },
     })
 
     expect(faberProofRecord.id).not.toBeNull()

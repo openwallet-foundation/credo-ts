@@ -10,6 +10,12 @@ import type { CredDefId } from 'indy-sdk'
 
 import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
+import {
+  V2PresentationMessage,
+  V2ProposalPresentationMessage,
+  V2RequestPresentationMessage,
+} from '../src/modules/proofs/protocol/v2/messages'
+import { DidCommMessageRepository } from '../src/storage/didcomm'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
@@ -23,6 +29,7 @@ describe('Present Proof', () => {
   let faberProofRecord: ProofRecord
   let aliceProofRecord: ProofRecord
   let presentationPreview: PresentationPreview
+  let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -63,6 +70,32 @@ describe('Present Proof', () => {
       state: ProofState.ProposalReceived,
     })
 
+    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+
+    const proposal = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V2ProposalPresentationMessage,
+    })
+
+    expect(proposal).toMatchObject({
+      type: 'https://didcomm.org/present-proof/2.0/propose-presentation',
+      formats: [
+        {
+          attachmentId: expect.any(String),
+          format: 'hlindy/proof-req@v2.0',
+        },
+      ],
+      proposalsAttach: [
+        {
+          id: expect.any(String),
+          mimeType: 'application/json',
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+      id: expect.any(String),
+    })
     expect(faberProofRecord.id).not.toBeNull()
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
@@ -93,6 +126,34 @@ describe('Present Proof', () => {
     aliceProofRecord = await waitForProofRecord(aliceAgent, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.RequestReceived,
+    })
+
+    const request = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V2RequestPresentationMessage,
+    })
+
+    expect(request).toMatchObject({
+      type: 'https://didcomm.org/present-proof/2.0/request-presentation',
+      formats: [
+        {
+          attachmentId: expect.any(String),
+          format: 'hlindy/proof-req@v2.0',
+        },
+      ],
+      requestPresentationsAttach: [
+        {
+          id: expect.any(String),
+          mimeType: 'application/json',
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+      id: expect.any(String),
+      thread: {
+        threadId: faberProofRecord.threadId,
+      },
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
@@ -126,6 +187,33 @@ describe('Present Proof', () => {
       state: ProofState.PresentationReceived,
     })
 
+    const presentation = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V2PresentationMessage,
+    })
+
+    expect(presentation).toMatchObject({
+      type: 'https://didcomm.org/present-proof/2.0/presentation',
+      formats: [
+        {
+          attachmentId: expect.any(String),
+          format: 'hlindy/proof@v2.0',
+        },
+      ],
+      presentationsAttach: [
+        {
+          id: expect.any(String),
+          mimeType: 'application/json',
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+      id: expect.any(String),
+      thread: {
+        threadId: faberProofRecord.threadId,
+      },
+    })
     expect(faberProofRecord.id).not.toBeNull()
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
@@ -223,6 +311,31 @@ describe('Present Proof', () => {
       state: ProofState.RequestReceived,
     })
 
+    const request = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V2RequestPresentationMessage,
+    })
+
+    expect(request).toMatchObject({
+      type: 'https://didcomm.org/present-proof/2.0/request-presentation',
+      formats: [
+        {
+          attachmentId: expect.any(String),
+          format: 'hlindy/proof-req@v2.0',
+        },
+      ],
+      requestPresentationsAttach: [
+        {
+          id: expect.any(String),
+          mimeType: 'application/json',
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+      id: expect.any(String),
+    })
+
     expect(aliceProofRecord.id).not.toBeNull()
     expect(aliceProofRecord).toMatchObject({
       threadId: aliceProofRecord.threadId,
@@ -261,6 +374,33 @@ describe('Present Proof', () => {
       state: ProofState.PresentationReceived,
     })
 
+    const presentation = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V2PresentationMessage,
+    })
+
+    expect(presentation).toMatchObject({
+      type: 'https://didcomm.org/present-proof/2.0/presentation',
+      formats: [
+        {
+          attachmentId: expect.any(String),
+          format: 'hlindy/proof@v2.0',
+        },
+      ],
+      presentationsAttach: [
+        {
+          id: expect.any(String),
+          mimeType: 'application/json',
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+      id: expect.any(String),
+      thread: {
+        threadId: faberProofRecord.threadId,
+      },
+    })
     expect(faberProofRecord.id).not.toBeNull()
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,

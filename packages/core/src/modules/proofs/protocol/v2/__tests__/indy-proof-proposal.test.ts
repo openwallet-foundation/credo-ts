@@ -6,8 +6,10 @@ import type { ProofRecord } from '../../../repository'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
+import { DidCommMessageRepository } from '../../../../../storage'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
+import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
 describe('Present Proof', () => {
   let faberAgent: Agent
@@ -16,6 +18,7 @@ describe('Present Proof', () => {
   let presentationPreview: PresentationPreview
   let faberPresentationRecord: ProofRecord
   let alicePresentationRecord: ProofRecord
+  let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -58,6 +61,33 @@ describe('Present Proof', () => {
       state: ProofState.ProposalReceived,
     })
 
+    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+
+    const proposal = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberPresentationRecord.id,
+      messageClass: V2ProposalPresentationMessage,
+    })
+
+    expect(proposal).toMatchObject({
+      type: 'https://didcomm.org/present-proof/2.0/propose-presentation',
+      formats: [
+        {
+          attachmentId: expect.any(String),
+          format: 'hlindy/proof-req@v2.0',
+        },
+      ],
+      proposalsAttach: [
+        {
+          id: expect.any(String),
+          mimeType: 'application/json',
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+      id: expect.any(String),
+      comment: 'V2 propose proof test',
+    })
     expect(faberPresentationRecord.id).not.toBeNull()
     expect(faberPresentationRecord).toMatchObject({
       threadId: faberPresentationRecord.threadId,
