@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
-  AcceptProposalOptions,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
@@ -15,13 +14,13 @@ import type {
   ServiceAcceptRequestOptions,
 } from '../../protocol'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
+import type { CredPropose } from '../models/CredPropose'
 import type {
-  CredentialAttachmentFormats,
+  FormatServiceCredentialAttachmentFormats,
   CredentialFormatSpec,
-  CredPropose,
   HandlerAutoAcceptOptions,
-  OfferAttachmentFormats,
-  ProposeAttachmentFormats,
+  FormatServiceOfferAttachmentFormats,
+  FormatServiceProposeAttachmentFormats,
   FormatServiceRequestCredentialOptions,
   RevocationRegistry,
 } from '../models/CredentialFormatServiceOptions'
@@ -33,7 +32,7 @@ import { AriesFrameworkError } from '../../../../../src/error'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
-import { IndyLedgerService, ParseRevocationRegistryDefitinionTemplate } from '../../../ledger'
+import { IndyLedgerService } from '../../../ledger'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialUtils } from '../../CredentialUtils'
@@ -107,7 +106,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns object containing associated attachment, formats and filtersAttach elements
    *
    */
-  public createProposal(options: ProposeCredentialOptions): ProposeAttachmentFormats {
+  public createProposal(options: ProposeCredentialOptions): FormatServiceProposeAttachmentFormats {
     const formats: CredentialFormatSpec = {
       attachId: this.generateId(),
       format: 'hlindy/cred-filter@v2.0',
@@ -130,7 +129,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns object containing associated attachment, formats and offersAttach elements
    *
    */
-  public async createOffer(proposal: ServiceAcceptOfferOptions): Promise<OfferAttachmentFormats> {
+  public async createOffer(proposal: ServiceAcceptOfferOptions): Promise<FormatServiceOfferAttachmentFormats> {
     const formats: CredentialFormatSpec = {
       attachId: this.generateId(),
       format: 'hlindy/cred-abstract@v2.0',
@@ -165,7 +164,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     options: FormatServiceRequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord,
     holderDid: string
-  ): Promise<CredentialAttachmentFormats> {
+  ): Promise<FormatServiceCredentialAttachmentFormats> {
     if (!options.offerAttachment) {
       throw new AriesFrameworkError(
         `Missing attachment from offer message, credential record id = ${credentialRecord.id}`
@@ -229,18 +228,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       )
     }
     return { attachments, previewWithAttachments }
-  }
-
-  /**
-   *
-   * @param options Gets the credential definition id if present for an indy credential
-   * @returns the credential definition id for this credential
-   */
-  private getCredentialDefinitionId(options: ProposeCredentialOptions): string | undefined {
-    if (options.credentialFormats.indy?.payload && options.credentialFormats.indy?.payload) {
-      const credPropose: CredPropose = options.credentialFormats.indy?.payload as CredPropose
-      return credPropose.credentialDefinitionId
-    }
   }
 
   /**
@@ -333,7 +320,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   public async createCredential(
     options: ServiceAcceptRequestOptions,
     record: CredentialExchangeRecord
-  ): Promise<CredentialAttachmentFormats> {
+  ): Promise<FormatServiceCredentialAttachmentFormats> {
     // Assert credential attributes
     const credentialAttributes = record.credentialAttributes
     if (!credentialAttributes) {

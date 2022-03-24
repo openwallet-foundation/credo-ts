@@ -6,6 +6,7 @@ import type { ServiceRequestCredentialOptions } from '../../CredentialServiceOpt
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
+import type { CredPropose } from './CredPropose'
 import type { CredOffer, CredReq, Cred, CredDef } from 'indy-sdk'
 
 import { Expose } from 'class-transformer'
@@ -13,20 +14,15 @@ import { IsString } from 'class-validator'
 
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
 
-export type CredentialFormats = OfferCredentialFormats | ProposeCredentialFormats | RequestCredentialFormats
+export type CredentialFormats =
+  | FormatServiceOfferCredentialFormats
+  | FormatServiceProposeCredentialFormats
+  | FormatServiceRequestCredentialFormats
 export interface IndyCredentialPreview {
   credentialDefinitionId?: string
   attributes?: CredentialPreviewAttribute[]
 }
 
-export interface CredPropose {
-  schemaIssuerDid?: string
-  schemaName?: string
-  schemaVersion?: string
-  schemaId?: string
-  issuerDid?: string
-  credentialDefinitionId?: string
-}
 export interface IndyProposeCredentialFormat {
   attributes: CredentialPreviewAttribute[]
   linkedAttachments?: LinkedAttachment[]
@@ -62,16 +58,16 @@ export type FormatKeys = {
   [id: string]: CredentialFormatType
 }
 
-export interface CredentialAttachmentFormats {
+export interface FormatServiceCredentialAttachmentFormats {
   format: CredentialFormatSpec
   attachment?: Attachment
 }
 
-export interface ProposeAttachmentFormats extends CredentialAttachmentFormats {
+export interface FormatServiceProposeAttachmentFormats extends FormatServiceCredentialAttachmentFormats {
   preview?: V2CredentialPreview
 }
 
-export interface OfferAttachmentFormats extends CredentialAttachmentFormats {
+export interface FormatServiceOfferAttachmentFormats extends FormatServiceCredentialAttachmentFormats {
   preview?: V2CredentialPreview
 }
 export const FORMAT_KEYS: FormatKeys = {
@@ -84,22 +80,22 @@ export interface FormatServiceRequestCredentialOptions extends ServiceRequestCre
   }
 }
 
-export interface OfferCredentialFormats {
+export interface FormatServiceOfferCredentialFormats {
   indy?: IndyOfferCredentialFormat
   jsonld?: undefined
 }
 
-export interface ProposeCredentialFormats {
+export interface FormatServiceProposeCredentialFormats {
   indy?: IndyProposeCredentialFormat
   jsonld?: undefined
 }
 
-export interface RequestCredentialFormats {
+export interface FormatServiceRequestCredentialFormats {
   indy?: IndyRequestCredentialFormat
   jsonld?: undefined
 }
 
-export interface IssueCredentialFormats {
+export interface FormatServiceIssueCredentialFormats {
   indy?: IndyIssueCredentialFormat
   jsonld?: undefined
 }

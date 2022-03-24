@@ -5,7 +5,7 @@ import type { AcceptRequestOptions } from '../CredentialsModuleOptions'
 import type {
   CredentialFormatSpec,
   FormatServiceRequestCredentialOptions,
-  RequestCredentialFormats,
+  FormatServiceRequestCredentialFormats,
 } from '../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
@@ -105,7 +105,7 @@ const credentialAttachment = new Attachment({
   }),
 })
 
-const v2CredentialRequest: RequestCredentialFormats = {
+const v2CredentialRequest: FormatServiceRequestCredentialFormats = {
   indy: {
     attributes: credentialPreview.attributes,
     credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',

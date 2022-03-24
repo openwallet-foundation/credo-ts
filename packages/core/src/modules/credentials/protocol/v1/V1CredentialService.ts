@@ -24,7 +24,6 @@ import type {
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type {
   CredentialFormats,
-  CredPropose,
   FormatServiceRequestCredentialOptions,
   HandlerAutoAcceptOptions,
 } from '../../formats/models/CredentialFormatServiceOptions'
@@ -829,7 +828,7 @@ export class V1CredentialService extends CredentialService {
 
     let credentialProposal: V1CredentialPreview | undefined
 
-    const credPropose: CredPropose = proposal.credentialFormats.indy?.payload as CredPropose
+    const credPropose = proposal.credentialFormats.indy?.payload
 
     if (proposal.credentialFormats.indy?.attributes) {
       credentialProposal = new V1CredentialPreview({ attributes: proposal.credentialFormats.indy?.attributes })
@@ -837,9 +836,9 @@ export class V1CredentialService extends CredentialService {
 
     const config: CredentialProposeOptions = {
       credentialProposal: credentialProposal,
-      credentialDefinitionId: credPropose.credentialDefinitionId,
+      credentialDefinitionId: credPropose?.credentialDefinitionId,
       linkedAttachments: proposal.credentialFormats.indy?.linkedAttachments,
-      schemaId: credPropose.schemaId,
+      schemaId: credPropose?.schemaId,
     }
 
     const options = { ...config }

@@ -1,10 +1,9 @@
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import type {
-  IndyOfferCredentialFormat,
-  OfferCredentialFormats,
-  ProposeCredentialFormats,
-  RequestCredentialFormats,
+  FormatServiceOfferCredentialFormats,
+  FormatServiceProposeCredentialFormats as FormatServiceProposeCredentialFormats,
+  FormatServiceRequestCredentialFormats,
 } from './formats/models/CredentialFormatServiceOptions'
 
 // keys used to create a format service
@@ -23,30 +22,25 @@ interface BaseOptions {
 interface ProposeCredentialOptions extends BaseOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersion
-  credentialFormats: ProposeCredentialFormats
+  credentialFormats: FormatServiceProposeCredentialFormats
 }
 
 interface AcceptProposalOptions extends BaseOptions {
   connectionId?: string
   credentialRecordId: string
-  credentialFormats: {
-    indy?: IndyOfferCredentialFormat
-    jsonld?: {
-      // todo
-    }
-  }
+  credentialFormats: FormatServiceOfferCredentialFormats
 }
 
 interface NegotiateProposalOptions extends BaseOptions {
   connectionId?: string
   credentialRecordId: string
-  credentialFormats: OfferCredentialFormats
+  credentialFormats: FormatServiceOfferCredentialFormats
 }
 // CREDENTIAL OFFER
 interface OfferCredentialOptions extends BaseOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersion
-  credentialFormats: OfferCredentialFormats
+  credentialFormats: FormatServiceOfferCredentialFormats
 }
 
 interface AcceptOfferOptions extends BaseOptions {
@@ -60,7 +54,7 @@ interface NegotiateOfferOptions extends ProposeCredentialOptions {
 // CREDENTIAL REQUEST
 interface RequestCredentialOptions extends BaseOptions {
   connectionId?: string
-  credentialFormats?: RequestCredentialFormats
+  credentialFormats?: FormatServiceRequestCredentialFormats
 }
 
 interface AcceptRequestOptions extends BaseOptions {

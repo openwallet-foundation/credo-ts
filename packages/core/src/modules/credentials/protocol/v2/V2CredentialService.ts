@@ -46,7 +46,6 @@ import { CredentialProblemReportError, CredentialProblemReportReason } from '../
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { FORMAT_KEYS } from '../../formats/models/CredentialFormatServiceOptions'
 import { CredentialRepository, CredentialExchangeRecord } from '../../repository'
-import { INDY_CREDENTIAL_ATTACHMENT_ID } from '../v1/messages'
 
 import { CredentialMessageBuilder } from './CredentialMessageBuilder'
 import { V2CredentialAckHandler } from './handlers/V2CredentialAckHandler'
