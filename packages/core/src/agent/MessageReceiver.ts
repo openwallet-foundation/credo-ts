@@ -11,7 +11,7 @@ import { AriesFrameworkError } from '../error'
 import { ConnectionRepository } from '../modules/connections'
 import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
-import { isValidJweStucture } from '../utils'
+import { isValidJweStructure } from '../utils/JWE'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
@@ -153,7 +153,7 @@ export class MessageReceiver {
 
   private isEncryptedMessage(message: unknown): message is EncryptedMessage {
     // If the message does has valid JWE structure, we can assume the message is encrypted.
-    return isValidJweStucture(message)
+    return isValidJweStructure(message)
   }
 
   private async transformAndValidate(
