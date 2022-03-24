@@ -11,6 +11,7 @@ import { AriesFrameworkError } from '../error'
 import { ConnectionRepository } from '../modules/connections'
 import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
+import { isValidJweStucture } from '../utils'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
@@ -144,18 +145,15 @@ export class MessageReceiver {
 
   private isPlaintextMessage(message: unknown): message is PlaintextMessage {
     if (typeof message !== 'object' || message == null) {
-      throw new AriesFrameworkError('Invalid message received. Message should be object')
+      return false
     }
-    // If the message does have an @type field we assume the message is in plaintext and it is not encrypted.
+    // If the message has a @type field we assume the message is in plaintext and it is not encrypted.
     return '@type' in message
   }
 
   private isEncryptedMessage(message: unknown): message is EncryptedMessage {
-    if (typeof message !== 'object' || message == null) {
-      throw new AriesFrameworkError('Invalid message received. Message should be object')
-    }
-    // If the message does has both the ciphertext and protected fields, we can assume the message is encrypted.
-    return 'ciphertext' in message && 'protected' in message
+    // If the message does has valid JWE structure, we can assume the message is encrypted.
+    return isValidJweStucture(message)
   }
 
   private async transformAndValidate(
