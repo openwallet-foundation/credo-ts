@@ -67,7 +67,7 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
       .reduce((acc, curr) => [...acc, ...curr], [])
   }
 
-  public assertRole(expectedRole: OutOfBandRole | undefined) {
+  public assertRole(expectedRole: OutOfBandRole) {
     if (this.role !== expectedRole) {
       throw new AriesFrameworkError(`Invalid out-of-band record role ${this.role}, expected is ${expectedRole}.`)
     }

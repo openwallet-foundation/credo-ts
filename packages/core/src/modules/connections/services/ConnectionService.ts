@@ -81,7 +81,7 @@ export class ConnectionService {
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
     this.logger.debug(`Create message ${ConnectionRequestMessage.type} start`, outOfBandRecord)
     outOfBandRecord.assertRole(OutOfBandRole.Receiver)
-    outOfBandRecord.assertState([OutOfBandState.Initial, OutOfBandState.PrepareResponse])
+    outOfBandRecord.assertState(OutOfBandState.PrepareResponse)
 
     // TODO check there is no connection record for particular oob record
 
@@ -127,7 +127,7 @@ export class ConnectionService {
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} start`, messageContext)
     outOfBandRecord.assertRole(OutOfBandRole.Sender)
-    outOfBandRecord.assertState([OutOfBandState.Initial, OutOfBandState.AwaitResponse])
+    outOfBandRecord.assertState(OutOfBandState.AwaitResponse)
 
     // TODO check there is no connection record for particular oob record
 

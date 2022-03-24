@@ -63,7 +63,7 @@ describe('ConnectionService', () => {
     it('returns a connection request message containing the information from the connection record', async () => {
       expect.assertions(5)
 
-      const outOfBand = getMockOutOfBand()
+      const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse })
       const config = { routing: myRouting }
 
       const { connectionRecord, message } = await connectionService.createRequest(outOfBand, config)
@@ -78,7 +78,7 @@ describe('ConnectionService', () => {
     it('returns a connection request message containing a custom label', async () => {
       expect.assertions(1)
 
-      const outOfBand = getMockOutOfBand()
+      const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse })
       const config = { label: 'Custom label', routing: myRouting }
 
       const { message } = await connectionService.createRequest(outOfBand, config)
@@ -89,7 +89,7 @@ describe('ConnectionService', () => {
     it('returns a connection request message containing a custom image url', async () => {
       expect.assertions(1)
 
-      const outOfBand = getMockOutOfBand()
+      const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse })
       const config = { imageUrl: 'custom-image-url', routing: myRouting }
 
       const { message } = await connectionService.createRequest(outOfBand, config)
@@ -100,23 +100,17 @@ describe('ConnectionService', () => {
     it(`throws an error when out-of-band role is not ${OutOfBandRole.Receiver}`, async () => {
       expect.assertions(1)
 
-      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender })
+      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.PrepareResponse })
       const config = { routing: myRouting }
 
-      mockFunction(connectionRepository.getById).mockReturnValue(
-        Promise.resolve(getMockConnection({ role: ConnectionRole.Inviter }))
-      )
       return expect(connectionService.createRequest(outOfBand, config)).rejects.toThrowError(
         `Invalid out-of-band record role ${OutOfBandRole.Sender}, expected is ${OutOfBandRole.Receiver}.`
       )
     })
 
-    const invalidConnectionStates = [OutOfBandState.AwaitResponse, OutOfBandState.Done]
+    const invalidConnectionStates = [OutOfBandState.Initial, OutOfBandState.AwaitResponse, OutOfBandState.Done]
     test.each(invalidConnectionStates)(
-      `throws an error when out-of-band state is %s and not ${[
-        OutOfBandState.Initial,
-        OutOfBandState.PrepareResponse,
-      ]}`,
+      `throws an error when out-of-band state is %s and not ${OutOfBandState.PrepareResponse}`,
       (state) => {
         expect.assertions(1)
 
@@ -124,7 +118,7 @@ describe('ConnectionService', () => {
         const config = { routing: myRouting }
 
         return expect(connectionService.createRequest(outOfBand, config)).rejects.toThrowError(
-          `Invalid out-of-band record state ${state}, valid states are: ${OutOfBandState.Initial}, ${OutOfBandState.PrepareResponse}.`
+          `Invalid out-of-band record state ${state}, valid states are: ${OutOfBandState.PrepareResponse}.`
         )
       }
     )
@@ -161,7 +155,7 @@ describe('ConnectionService', () => {
         recipientVerkey: 'my-key',
       })
 
-      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender })
+      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand, myRouting)
 
       expect(processedConnection.state).toBe(ConnectionState.Requested)
@@ -183,7 +177,6 @@ describe('ConnectionService', () => {
         role: ConnectionRole.Inviter,
         multiUseInvitation: true,
       })
-      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connectionRecord))
 
       const theirDid = 'their-did'
       const theirVerkey = 'their-verkey'
@@ -212,7 +205,7 @@ describe('ConnectionService', () => {
         recipientVerkey: 'my-key',
       })
 
-      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender })
+      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand, myRouting)
 
       expect(processedConnection.state).toBe(ConnectionState.Requested)
@@ -241,7 +234,7 @@ describe('ConnectionService', () => {
         senderVerkey: 'senderVerkey',
       })
 
-      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender })
+      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
 
       return expect(connectionService.processRequest(messageContext, outOfBand, myRouting)).rejects.toThrowError(
         `Public DIDs are not supported yet`
@@ -256,16 +249,16 @@ describe('ConnectionService', () => {
         senderVerkey: 'senderVerkey',
       })
 
-      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Receiver })
+      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Receiver, state: OutOfBandState.AwaitResponse })
 
       return expect(connectionService.processRequest(inboundMessage, outOfBand, myRouting)).rejects.toThrowError(
         `Invalid out-of-band record role ${OutOfBandRole.Receiver}, expected is ${OutOfBandRole.Sender}.`
       )
     })
 
-    const invalidOutOfBandStates = [OutOfBandState.PrepareResponse, OutOfBandState.Done]
+    const invalidOutOfBandStates = [OutOfBandState.Initial, OutOfBandState.PrepareResponse, OutOfBandState.Done]
     test.each(invalidOutOfBandStates)(
-      `throws an error when out-of-band state is %s and not ${[OutOfBandState.Initial, OutOfBandState.AwaitResponse]}`,
+      `throws an error when out-of-band state is %s and not ${OutOfBandState.AwaitResponse}`,
       (state) => {
         expect.assertions(1)
 
@@ -276,7 +269,7 @@ describe('ConnectionService', () => {
         const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state })
 
         return expect(connectionService.processRequest(inboundMessage, outOfBand, myRouting)).rejects.toThrowError(
-          `Invalid out-of-band record state ${state}, valid states are: ${OutOfBandState.Initial}, ${OutOfBandState.AwaitResponse}.`
+          `Invalid out-of-band record state ${state}, valid states are: ${OutOfBandState.AwaitResponse}.`
         )
       }
     )
