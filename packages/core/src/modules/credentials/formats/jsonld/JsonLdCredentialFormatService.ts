@@ -1,14 +1,8 @@
 /* eslint-disable @typescript-eslint/explicit-member-accessibility */
 /* eslint-disable @typescript-eslint/adjacent-overload-signatures */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { EventEmitter } from '../../../../agent/EventEmitter'
 import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import type { ConnectionService } from '../../../connections/services/ConnectionService'
-import type {
-  AcceptCredentialOptions,
-  ServiceCreateOfferOptions,
-  ServiceAcceptProposalOptions,
-} from '../../CredentialServiceOptions'
+import type { AcceptCredentialOptions, ServiceAcceptProposalOptions } from '../../CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
@@ -16,7 +10,6 @@ import type {
   RequestCredentialOptions,
 } from '../../CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from '../../repository'
-import type { CredentialRepository } from '../../repository/CredentialRepository'
 import type {
   CredentialFormatSpec,
   FormatServiceCredentialAttachmentFormats,
@@ -26,15 +19,21 @@ import type {
   RevocationRegistry,
 } from '../models/CredentialFormatServiceOptions'
 
+import { Lifecycle, scoped } from 'tsyringe'
+
 import { AriesFrameworkError } from '../../../../../src/error'
 import { uuid } from '../../../../../src/utils/uuid'
+import { EventEmitter } from '../../../../agent/EventEmitter'
+import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
+import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
 
+@scoped(Lifecycle.ContainerScoped)
 export class JsonLdCredentialFormatService extends CredentialFormatService {
   processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void> {
-    throw new Error('Method not implemented.')
+    // not needed in jsonld
   }
   createRequest(
     options: RequestCredentialOptions,
@@ -53,8 +52,11 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     throw new Error('Method not implemented.')
   }
   getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
-    throw new Error('Method not implemented.')
+    const formatId = formats.find((f) => f.format.includes('aries'))
+    const attachment = messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
+    return attachment
   }
+
   private connectionService: ConnectionService
   protected credentialRepository: CredentialRepository // protected as in base class
 
@@ -80,11 +82,11 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
       attachId: uuid(),
       format: 'aries/ld-proof-vc-detail@v1.0',
     }
-    // const offer = await this.createCredentialOffer(options)
-
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const attachmentId = options.attachId ? options.attachId : formats.attachId
 
+    console.log("QUACK proposal attachment = ", options.proposalAttachment)
+    
     const offersAttach: Attachment = this.getFormatData(options.proposalAttachment, attachmentId)
 
     return { format: formats, attachment: offersAttach }

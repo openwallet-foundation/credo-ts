@@ -112,7 +112,6 @@ describe('credentials', () => {
       messageClass: V2OfferCredentialMessage,
     })
 
-    console.log('QUACK offerMessage= ', offerMessage)
     // expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
     //   '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
     //   comment: 'V2 Indy Offer',

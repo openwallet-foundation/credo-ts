@@ -9,7 +9,7 @@ import type {
 // keys used to create a format service
 export enum CredentialFormatType {
   Indy = 'Indy',
-  // JsonLd = 'jsonld',
+  JsonLd = 'jsonld',
   // others to follow
 }
 
@@ -37,16 +37,13 @@ interface NegotiateProposalOptions extends BaseOptions {
   credentialFormats: FormatServiceOfferCredentialFormats
 }
 // CREDENTIAL OFFER
-// interface OfferCredentialOptions extends BaseOptions {
-//   connectionId: string
-//   protocolVersion: CredentialProtocolVersion
-//   credentialFormats: FormatServiceOfferCredentialFormats
-// }
-
-interface CreateOfferOptions extends BaseOptions {
+interface OfferCredentialOptions extends BaseOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersion
   credentialFormats: FormatServiceOfferCredentialFormats
+}
+
+interface AcceptOfferOptions extends BaseOptions {
   credentialRecordId: string
 }
 
@@ -70,7 +67,7 @@ export {
   AcceptProposalOptions,
   NegotiateProposalOptions,
   NegotiateOfferOptions,
-  CreateOfferOptions as AcceptOfferOptions,
+  AcceptOfferOptions,
   RequestCredentialOptions,
   AcceptRequestOptions,
 }

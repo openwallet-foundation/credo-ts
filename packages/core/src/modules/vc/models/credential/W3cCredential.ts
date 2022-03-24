@@ -8,6 +8,7 @@ import { IsOptional, IsString } from 'class-validator'
 import { SingleOrArray } from '../../../../utils/type'
 import { IsUri } from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
+// eslint-disable-next-line import/no-cycle
 import { IssuerTransformer, CredentialSubjectTransformer } from '../../transformers'
 import { IsIssuer, IsJsonLdContext, IsVerifiableCredentialType } from '../../validators'
 

@@ -1,7 +1,7 @@
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type {
   AcceptCredentialOptions,
-  ServiceCreateOfferOptions,
+  ServiceAcceptOfferOptions,
   ServiceAcceptProposalOptions,
 } from '../CredentialServiceOptions'
 import type {
@@ -38,7 +38,7 @@ export abstract class CredentialFormatService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<void>
 
-  abstract createOffer(proposal: ServiceCreateOfferOptions): Promise<FormatServiceOfferAttachmentFormats>
+  abstract createOffer(proposal: ServiceAcceptOfferOptions): Promise<FormatServiceOfferAttachmentFormats>
 
   abstract processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void>
 

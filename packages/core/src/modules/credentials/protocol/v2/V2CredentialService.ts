@@ -44,6 +44,7 @@ import { CredentialState } from '../../CredentialState'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
+import { JsonLdCredentialFormatService } from '../../formats/jsonld/JsonLdCredentialFormatService'
 import { FORMAT_KEYS } from '../../formats/models/CredentialFormatServiceOptions'
 import { CredentialRepository, CredentialExchangeRecord } from '../../repository'
 
@@ -65,7 +66,11 @@ export class V2CredentialService extends CredentialService {
   private connectionService: ConnectionService
   private credentialMessageBuilder: CredentialMessageBuilder
   private indyCredentialFormatService: IndyCredentialFormatService
-  private serviceFormatMap: { Indy: IndyCredentialFormatService } // jsonld todo
+  private jsonldCredentialFormatService: JsonLdCredentialFormatService
+  private serviceFormatMap: {
+    Indy: IndyCredentialFormatService
+    jsonld: JsonLdCredentialFormatService
+  }
 
   public constructor(
     connectionService: ConnectionService,
@@ -75,7 +80,8 @@ export class V2CredentialService extends CredentialService {
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
-    indyCredentialFormatService: IndyCredentialFormatService
+    indyCredentialFormatService: IndyCredentialFormatService,
+    jsonldCredentialFormatService: JsonLdCredentialFormatService
   ) {
     super(
       credentialRepository,
@@ -87,9 +93,11 @@ export class V2CredentialService extends CredentialService {
     )
     this.connectionService = connectionService
     this.indyCredentialFormatService = indyCredentialFormatService
+    this.jsonldCredentialFormatService = jsonldCredentialFormatService
     this.credentialMessageBuilder = new CredentialMessageBuilder()
     this.serviceFormatMap = {
       [CredentialFormatType.Indy]: this.indyCredentialFormatService,
+      [CredentialFormatType.JsonLd]: this.jsonldCredentialFormatService,
     }
   }
 
@@ -322,7 +330,7 @@ export class V2CredentialService extends CredentialService {
       if (msg.format.includes('indy')) {
         formats.push(this.getFormatService(CredentialFormatType.Indy))
       } else if (msg.format.includes('aries')) {
-        // todo
+        formats.push(this.getFormatService(CredentialFormatType.JsonLd))
       } else {
         throw new AriesFrameworkError(`Unknown Message Format: ${msg.format}`)
       }
@@ -440,7 +448,7 @@ export class V2CredentialService extends CredentialService {
   }
 
   public async acceptProposal(
-    proposal: AcceptProposalOptions,
+    proposal: ServiceAcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     if (!credentialRecord.connectionId) {
@@ -448,7 +456,26 @@ export class V2CredentialService extends CredentialService {
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
       )
     }
+    const proposeCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2ProposeCredentialMessage,
+    })
+    if (proposeCredentialMessage) {
+      const formats: CredentialFormatService[] = this.getFormatsFromMessage(proposeCredentialMessage.formats)
 
+      for (const format of formats) {
+        const attachment = format.getAttachment(
+          proposeCredentialMessage.formats,
+          proposeCredentialMessage.messageAttachment
+        )
+
+        if (!attachment) {
+          throw new AriesFrameworkError(`Missing attachment in credential propose message`)
+        }
+        proposal.proposalAttachment = attachment
+        await format.processProposal(proposal, credentialRecord)
+      }
+    }
     const message = await this.createOfferAsResponse(credentialRecord, proposal)
 
     return { credentialRecord, message }
@@ -465,7 +492,7 @@ export class V2CredentialService extends CredentialService {
    */
   public async createOfferAsResponse(
     credentialRecord: CredentialExchangeRecord,
-    proposal: AcceptProposalOptions | NegotiateProposalOptions
+    proposal: ServiceAcceptProposalOptions | NegotiateProposalOptions
   ): Promise<V2OfferCredentialMessage> {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)

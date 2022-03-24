@@ -10,7 +10,7 @@ import type {
   CredentialOfferTemplate,
   CredentialProposeOptions,
   CredentialProtocolMsgReturnType,
-  ServiceCreateOfferOptions,
+  ServiceAcceptOfferOptions,
   ServiceAcceptRequestOptions,
   ServiceRequestCredentialOptions,
 } from '../../CredentialServiceOptions'
@@ -474,7 +474,7 @@ export class V1CredentialService extends CredentialService {
 
     // Create message
     const { credentialDefinitionId, comment, preview, linkedAttachments } = credentialTemplate
-    const options: ServiceCreateOfferOptions = {
+    const options: ServiceAcceptOfferOptions = {
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialRecordId: '',
       credentialFormats: {
@@ -732,7 +732,7 @@ export class V1CredentialService extends CredentialService {
     // Create message
     const { credentialDefinitionId, comment, preview, attachments } = credentialTemplate
 
-    const options: ServiceCreateOfferOptions = {
+    const options: ServiceAcceptOfferOptions = {
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialRecordId: credentialRecord.id,
       credentialFormats: {

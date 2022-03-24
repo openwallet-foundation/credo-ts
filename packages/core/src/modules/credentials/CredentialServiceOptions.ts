@@ -3,7 +3,7 @@ import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type {
-  AcceptOfferOptions as CreateOfferOptions,
+  AcceptOfferOptions,
   AcceptProposalOptions,
   AcceptRequestOptions,
   NegotiateOfferOptions,
@@ -36,7 +36,7 @@ export interface CredentialOfferTemplate {
   linkedAttachments?: LinkedAttachment[]
 }
 
-export interface ServiceCreateOfferOptions extends CreateOfferOptions {
+export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
   attachId?: string
   credentialFormats: {
     indy?: IndyCredentialPreview

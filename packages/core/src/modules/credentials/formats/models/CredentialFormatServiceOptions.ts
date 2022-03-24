@@ -80,6 +80,7 @@ export interface FormatServiceOfferAttachmentFormats extends FormatServiceCreden
 }
 export const FORMAT_KEYS: FormatKeys = {
   indy: CredentialFormatType.Indy,
+  jsonld: CredentialFormatType.JsonLd,
 }
 
 export interface FormatServiceRequestCredentialOptions extends ServiceRequestCredentialOptions {

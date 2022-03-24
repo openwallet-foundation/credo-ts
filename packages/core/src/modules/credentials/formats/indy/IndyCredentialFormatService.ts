@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
+  AcceptProposalOptions,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
@@ -9,7 +10,7 @@ import type {
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type {
   AcceptCredentialOptions,
-  ServiceCreateOfferOptions,
+  ServiceAcceptOfferOptions,
   ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
 } from '../../protocol'
@@ -129,7 +130,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns object containing associated attachment, formats and offersAttach elements
    *
    */
-  public async createOffer(proposal: ServiceCreateOfferOptions): Promise<FormatServiceOfferAttachmentFormats> {
+  public async createOffer(proposal: ServiceAcceptOfferOptions): Promise<FormatServiceOfferAttachmentFormats> {
     const formats: CredentialFormatSpec = {
       attachId: this.generateId(),
       format: 'hlindy/cred-abstract@v2.0',
@@ -262,7 +263,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns The created credential offer
    */
   private async createCredentialOffer(
-    proposal: ServiceCreateOfferOptions | NegotiateProposalOptions | OfferCredentialOptions
+    proposal: ServiceAcceptOfferOptions | NegotiateProposalOptions | OfferCredentialOptions
   ): Promise<CredOffer> {
     if (!proposal.credentialFormats?.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing Credential Definition id')
