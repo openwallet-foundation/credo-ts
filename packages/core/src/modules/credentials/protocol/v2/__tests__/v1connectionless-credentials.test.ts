@@ -93,7 +93,8 @@ describe('credentials', () => {
       protocolVersion: CredentialProtocolVersion.V1,
       connectionId: '',
     }
-    const { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(
+    // eslint-disable-next-line prefer-const
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(
       offerOptions
     )
 
