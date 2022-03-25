@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
   NegotiateProposalOptions,
