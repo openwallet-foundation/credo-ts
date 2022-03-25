@@ -1,7 +1,6 @@
 import type { CredentialService } from '../../../CredentialService'
 import type { ProposeCredentialOptions } from '../../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
-import type { CredPropose } from '../../../formats/models/CredPropose'
 import type {
   FormatServiceProposeCredentialFormats,
   IndyProposeCredentialFormat,
