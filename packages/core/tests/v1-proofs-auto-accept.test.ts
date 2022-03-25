@@ -59,17 +59,17 @@ describe('Auto accept present proof', () => {
         },
       }
 
-      const alicePresExchRecord = await aliceAgent.proofs.proposeProof(proposeProofOptions)
+      const aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeProofOptions)
 
       testLogger.test('Faber waits for presentation from Alice')
       await waitForProofRecord(faberAgent, {
-        threadId: alicePresExchRecord.threadId,
+        threadId: aliceProofRecord.threadId,
         state: ProofState.Done,
       })
 
       testLogger.test('Alice waits till it receives presentation ack')
       await waitForProofRecord(aliceAgent, {
-        threadId: alicePresExchRecord.threadId,
+        threadId: aliceProofRecord.threadId,
         state: ProofState.Done,
       })
     })
@@ -161,12 +161,12 @@ describe('Auto accept present proof', () => {
         },
       }
 
-      const alicePresExchRecord = await aliceAgent.proofs.proposeProof(proposal)
+      const aliceProofRecord = await aliceAgent.proofs.proposeProof(proposal)
 
       testLogger.test('Faber waits for presentation proposal from Alice')
 
       const faberProofRecord = await waitForProofRecord(faberAgent, {
-        threadId: alicePresExchRecord.threadId,
+        threadId: aliceProofRecord.threadId,
         state: ProofState.ProposalReceived,
       })
 
@@ -190,12 +190,12 @@ describe('Auto accept present proof', () => {
       testLogger.test('Faber waits for presentation from Alice')
 
       await waitForProofRecord(faberAgent, {
-        threadId: alicePresExchRecord.threadId,
+        threadId: aliceProofRecord.threadId,
         state: ProofState.Done,
       })
       // Alice waits till it receives presentation ack
       await waitForProofRecord(aliceAgent, {
-        threadId: alicePresExchRecord.threadId,
+        threadId: aliceProofRecord.threadId,
         state: ProofState.Done,
       })
     })
