@@ -121,6 +121,19 @@ describe('out of band', () => {
       )
     })
 
+    test('create OOB record', async () => {
+      const outOfBandRecord = await faberAgent.oob.createInvitation(makeConnectionConfig)
+      // expect contains services
+
+      expect(outOfBandRecord.autoAcceptConnection).toBe(true)
+      expect(outOfBandRecord.role).toBe(OutOfBandRole.Sender)
+      expect(outOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
+      expect(outOfBandRecord.reusable).toBe(false)
+      expect(outOfBandRecord.outOfBandMessage.goal).toBe('To make a connection')
+      expect(outOfBandRecord.outOfBandMessage.goalCode).toBe('p2p-messaging')
+      expect(outOfBandRecord.outOfBandMessage.label).toBe('Faber College')
+    })
+
     test('create OOB message only with handshake', async () => {
       const { outOfBandMessage } = await faberAgent.oob.createInvitation(makeConnectionConfig)
 
@@ -206,13 +219,9 @@ describe('out of band', () => {
       )
 
       expect(connectionRecord).not.toBeDefined()
-      expect(outOfBandRecord.role).toBe(OutOfBandRole.Sender)
-      expect(outOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
-
-      expect(connectionRecord).not.toBeDefined()
-      expect(receivedOutOfBandRecord.outOfBandMessage).toEqual(outOfBandMessage)
       expect(receivedOutOfBandRecord.role).toBe(OutOfBandRole.Receiver)
-      expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
+      expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.Initial)
+      expect(receivedOutOfBandRecord.outOfBandMessage).toEqual(outOfBandMessage)
     })
 
     test(`make a connection with ${HandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
@@ -220,7 +229,10 @@ describe('out of band', () => {
       const { outOfBandMessage } = outOfBandRecord
       const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
 
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
+      // eslint-disable-next-line prefer-const
+      let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: aliceFaberConnection } =
+        await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
+      expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
 
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
       expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)

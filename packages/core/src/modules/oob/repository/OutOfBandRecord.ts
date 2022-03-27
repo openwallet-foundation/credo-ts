@@ -67,6 +67,12 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
       .reduce((acc, curr) => [...acc, ...curr], [])
   }
 
+  public assertRole(expectedRole: OutOfBandRole) {
+    if (this.role !== expectedRole) {
+      throw new AriesFrameworkError(`Invalid out-of-band record role ${this.role}, expected is ${expectedRole}.`)
+    }
+  }
+
   public assertState(expectedStates: OutOfBandState | OutOfBandState[]) {
     if (!Array.isArray(expectedStates)) {
       expectedStates = [expectedStates]
@@ -74,7 +80,7 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
 
     if (!expectedStates.includes(this.state)) {
       throw new AriesFrameworkError(
-        `OutOfBand record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
+        `Invalid out-of-band record state ${this.state}, valid states are: ${expectedStates.join(', ')}.`
       )
     }
   }
