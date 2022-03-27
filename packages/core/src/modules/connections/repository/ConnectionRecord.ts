@@ -13,7 +13,6 @@ export interface ConnectionRecordProps {
   createdAt?: Date
   did: string
   didDoc: DidDoc
-  verkey: string
   theirDid?: string
   theirDidDoc?: DidDoc
   theirLabel?: string
@@ -36,8 +35,6 @@ export type DefaultConnectionTags = {
   state?: ConnectionState | DidExchangeState
   role?: ConnectionRole | DidExchangeRole
   threadId?: string
-  verkey?: string
-  theirKey?: string
   mediatorId?: string
   did: string
   theirDid?: string
@@ -54,7 +51,6 @@ export class ConnectionRecord
   @Type(() => DidDoc)
   public didDoc!: DidDoc
   public did!: string
-  public verkey!: string
 
   @Type(() => DidDoc)
   public theirDidDoc?: DidDoc
@@ -83,7 +79,6 @@ export class ConnectionRecord
       this.createdAt = props.createdAt ?? new Date()
       this.did = props.did
       this.didDoc = props.didDoc
-      this.verkey = props.verkey
       this.theirDid = props.theirDid
       this.theirDidDoc = props.theirDidDoc
       this.theirLabel = props.theirLabel
@@ -108,8 +103,6 @@ export class ConnectionRecord
       state: this.state,
       role: this.role,
       threadId: this.threadId,
-      verkey: this.verkey,
-      theirKey: this.theirKey || undefined,
       mediatorId: this.mediatorId,
       did: this.did,
       theirDid: this.theirDid,
@@ -119,16 +112,6 @@ export class ConnectionRecord
 
   public get myKey() {
     const [service] = this.didDoc?.didCommServices ?? []
-
-    if (!service) {
-      return null
-    }
-
-    return service.recipientKeys[0]
-  }
-
-  public get theirKey() {
-    const [service] = this.theirDidDoc?.didCommServices ?? []
 
     if (!service) {
       return null

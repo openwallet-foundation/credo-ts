@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionService } from '../services/ConnectionService'
 
@@ -9,6 +10,7 @@ import { ConnectionResponseMessage } from '../messages'
 
 export class ConnectionResponseHandler implements Handler {
   private connectionService: ConnectionService
+  private didRepository: DidRepository
   private outOfBandService: OutOfBandService
 
   private agentConfig: AgentConfig
@@ -16,10 +18,12 @@ export class ConnectionResponseHandler implements Handler {
 
   public constructor(
     connectionService: ConnectionService,
+    didRepository: DidRepository,
     outOfBandService: OutOfBandService,
     agentConfig: AgentConfig
   ) {
     this.connectionService = connectionService
+    this.didRepository = didRepository
     this.outOfBandService = outOfBandService
     this.agentConfig = agentConfig
   }
@@ -29,7 +33,14 @@ export class ConnectionResponseHandler implements Handler {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
     }
 
-    const connectionRecord = await this.connectionService.findByVerkey(messageContext.recipientVerkey)
+    const { recipientVerkey } = messageContext
+
+    let connectionRecord
+    const ourDidRecords = await this.didRepository.findMultipleByVerkey(recipientVerkey)
+    for (const ourDidRecord of ourDidRecords) {
+      connectionRecord = await this.connectionService.findByOurDid(ourDidRecord.id)
+    }
+
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }
@@ -41,6 +52,7 @@ export class ConnectionResponseHandler implements Handler {
       throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} was not found.`)
     }
 
+    messageContext.connection = connectionRecord
     // The presence of outOfBandRecord is not mandatory when the old connection invitation is used
     const connection = await this.connectionService.processResponse(messageContext, outOfBandRecord)
 

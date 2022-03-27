@@ -46,8 +46,8 @@ export class DidExchangeProtocol {
   private config: AgentConfig
   private connectionService: ConnectionService
   private jwsService: JwsService
-  private logger: Logger
   private didRepository: DidRepository
+  private logger: Logger
 
   public constructor(
     config: AgentConfig,
@@ -100,7 +100,6 @@ export class DidExchangeProtocol {
     }
 
     connectionRecord.did = peerDid.did
-    connectionRecord.verkey = verkey
     connectionRecord.threadId = message.id
 
     if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {

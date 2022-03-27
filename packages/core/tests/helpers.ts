@@ -209,7 +209,6 @@ export function getMockConnection({
   id = 'test',
   did = 'test-did',
   threadId = 'threadId',
-  verkey = 'key-1',
   didDoc = new DidDoc({
     id: did,
     publicKey: [],
@@ -218,7 +217,7 @@ export function getMockConnection({
       new DidCommService({
         id: `${did};indy`,
         serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [verkey],
+        recipientKeys: [],
       }),
     ],
   }),
@@ -233,7 +232,7 @@ export function getMockConnection({
       new DidCommService({
         id: `${did};indy`,
         serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [verkey],
+        recipientKeys: [],
       }),
     ],
   }),
@@ -249,7 +248,6 @@ export function getMockConnection({
     role,
     state,
     tags,
-    verkey,
     theirLabel,
     multiUseInvitation,
   })
@@ -259,11 +257,13 @@ export function getMockOutOfBand({
   label,
   serviceEndpoint,
   recipientKeys,
+  did,
   role,
   state,
 }: {
   label?: string
   serviceEndpoint?: string
+  did?: string
   recipientKeys?: string[]
   role?: OutOfBandRole
   state?: OutOfBandState
@@ -284,6 +284,7 @@ export function getMockOutOfBand({
   }
   const outOfBandMessage = new OutOfBandMessage(options)
   const outOfBandRecord = new OutOfBandRecord({
+    did: did || '',
     role: role || OutOfBandRole.Receiver,
     state: state || OutOfBandState.Initial,
     outOfBandMessage: outOfBandMessage,

@@ -7,20 +7,27 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
+import { ConsoleLogger, LogLevel } from '../../../logger'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
+import { DidPeer } from '../../dids'
 import { DidCommService } from '../../dids/domain/service/DidCommService'
+import { PeerDidNumAlgo } from '../../dids/methods/peer/DidPeer'
+import { DidRepository } from '../../dids/repository'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 import { Connection, ConnectionState, ConnectionRole, DidDoc } from '../models'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 import { ConnectionService } from '../services/ConnectionService'
+import { convertToNewDidDocument } from '../services/helpers'
 
 jest.mock('../repository/ConnectionRepository')
+jest.mock('../../dids/repository/DidRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
+const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
 const connectionImageUrl = 'https://example.com/image.png'
 
@@ -28,10 +35,12 @@ describe('ConnectionService', () => {
   const agentConfig = getAgentConfig('ConnectionServiceTest', {
     endpoints: ['http://agent.com:8080'],
     connectionImageUrl,
+    logger: new ConsoleLogger(LogLevel.debug),
   })
 
   let wallet: Wallet
   let connectionRepository: ConnectionRepository
+  let didRepository: DidRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
   let myRouting: Routing
@@ -49,7 +58,8 @@ describe('ConnectionService', () => {
   beforeEach(async () => {
     eventEmitter = new EventEmitter(agentConfig)
     connectionRepository = new ConnectionRepositoryMock()
-    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, eventEmitter)
+    didRepository = new DidRepositoryMock()
+    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, didRepository, eventEmitter)
     myRouting = {
       did: 'fakeDid',
       verkey: 'fakeVerkey',
@@ -126,10 +136,10 @@ describe('ConnectionService', () => {
 
   describe('processRequest', () => {
     it('returns a connection record containing the information from the connection request', async () => {
-      expect.assertions(7)
+      expect.assertions(6)
 
       const theirDid = 'their-did'
-      const theirVerkey = 'their-verkey'
+      const theirVerkey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
       const theirDidDoc = new DidDoc({
         id: theirDid,
         publicKey: [],
@@ -152,34 +162,32 @@ describe('ConnectionService', () => {
 
       const messageContext = new InboundMessageContext(connectionRequest, {
         senderVerkey: theirVerkey,
-        recipientVerkey: 'my-key',
+        recipientVerkey: '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K',
       })
 
       const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand, myRouting)
 
       expect(processedConnection.state).toBe(ConnectionState.Requested)
-      expect(processedConnection.theirDid).toBe(theirDid)
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmXUaPPhPCbUVZ3hGYmQmGxWTwyDfhqESXCpMFhKaF9Y2A')
       expect(processedConnection.theirDidDoc).toEqual(theirDidDoc)
-      expect(processedConnection.theirKey).toBe(theirVerkey)
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
       expect(processedConnection.imageUrl).toBe(connectionImageUrl)
     })
 
     it('returns a new connection record containing the information from the connection request when multiUseInvitation is enabled on the connection', async () => {
-      expect.assertions(10)
+      expect.assertions(9)
 
       const connectionRecord = getMockConnection({
         id: 'test',
         state: ConnectionState.Invited,
-        verkey: 'my-key',
         role: ConnectionRole.Inviter,
         multiUseInvitation: true,
       })
 
       const theirDid = 'their-did'
-      const theirVerkey = 'their-verkey'
+      const theirVerkey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
       const theirDidDoc = new DidDoc({
         id: theirDid,
         publicKey: [],
@@ -202,16 +210,15 @@ describe('ConnectionService', () => {
       const messageContext = new InboundMessageContext(connectionRequest, {
         connection: connectionRecord,
         senderVerkey: theirVerkey,
-        recipientVerkey: 'my-key',
+        recipientVerkey: '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K',
       })
 
       const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand, myRouting)
 
       expect(processedConnection.state).toBe(ConnectionState.Requested)
-      expect(processedConnection.theirDid).toBe(theirDid)
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmXUaPPhPCbUVZ3hGYmQmGxWTwyDfhqESXCpMFhKaF9Y2A')
       expect(processedConnection.theirDidDoc).toEqual(theirDidDoc)
-      expect(processedConnection.theirKey).toBe(theirVerkey)
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
 
@@ -282,8 +289,6 @@ describe('ConnectionService', () => {
       // Needed for signing connection~sig
       const { did, verkey } = await wallet.createDid()
       const mockConnection = getMockConnection({
-        did,
-        verkey,
         state: ConnectionState.Requested,
         role: ConnectionRole.Inviter,
         tags: {
@@ -291,7 +296,7 @@ describe('ConnectionService', () => {
         },
       })
       const recipientKeys = [verkey]
-      const outOfBand = getMockOutOfBand({ recipientKeys })
+      const outOfBand = getMockOutOfBand({ did, recipientKeys })
 
       const { message, connectionRecord: connectionRecord } = await connectionService.createResponse(
         mockConnection,
@@ -299,7 +304,7 @@ describe('ConnectionService', () => {
       )
 
       const connection = new Connection({
-        did: mockConnection.did,
+        did,
         didDoc: mockConnection.didDoc,
       })
       const plainConnection = JsonTransformer.toJSON(connection)
@@ -345,11 +350,9 @@ describe('ConnectionService', () => {
 
       const connectionRecord = getMockConnection({
         did,
-        verkey,
         state: ConnectionState.Requested,
         role: ConnectionRole.Invitee,
       })
-      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connectionRecord))
 
       const otherPartyConnection = new Connection({
         did: theirDid,
@@ -378,16 +381,19 @@ describe('ConnectionService', () => {
       const outOfBandRecord = getMockOutOfBand({ recipientKeys: [theirVerkey] })
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        senderVerkey: connectionRecord.theirKey!,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        recipientVerkey: connectionRecord.myKey!,
+        senderVerkey: theirVerkey,
+        recipientVerkey: verkey,
       })
 
       const processedConnection = await connectionService.processResponse(messageContext, outOfBandRecord)
 
+      const peerDid = DidPeer.fromDidDocument(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        convertToNewDidDocument(otherPartyConnection.didDoc!),
+        PeerDidNumAlgo.GenesisDoc
+      )
       expect(processedConnection.state).toBe(ConnectionState.Responded)
-      expect(processedConnection.theirDid).toBe(theirDid)
+      expect(processedConnection.theirDid).toBe(peerDid.did)
       expect(processedConnection.theirDidDoc).toEqual(otherPartyConnection.didDoc)
     })
 
@@ -395,19 +401,15 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const outOfBandRecord = getMockOutOfBand()
+      const connectionRecord = getMockConnection({
+        role: ConnectionRole.Inviter,
+        state: ConnectionState.Requested,
+      })
       const messageContext = new InboundMessageContext(jest.fn()(), {
+        connection: connectionRecord,
         senderVerkey: 'senderVerkey',
         recipientVerkey: 'recipientVerkey',
       })
-
-      mockFunction(connectionRepository.findByVerkey).mockReturnValue(
-        Promise.resolve(
-          getMockConnection({
-            role: ConnectionRole.Inviter,
-            state: ConnectionState.Requested,
-          })
-        )
-      )
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
         `Connection record has invalid role ${ConnectionRole.Inviter}. Expected role ${ConnectionRole.Invitee}.`
@@ -421,11 +423,9 @@ describe('ConnectionService', () => {
       const { did: theirDid, verkey: theirVerkey } = await wallet.createDid()
       const connectionRecord = getMockConnection({
         did,
-        verkey,
         role: ConnectionRole.Invitee,
         state: ConnectionState.Requested,
       })
-      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connectionRecord))
 
       const otherPartyConnection = new Connection({
         did: theirDid,
@@ -453,10 +453,8 @@ describe('ConnectionService', () => {
       const outOfBandRecord = getMockOutOfBand()
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        senderVerkey: connectionRecord.theirKey!,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        recipientVerkey: connectionRecord.myKey!,
+        senderVerkey: theirVerkey,
+        recipientVerkey: verkey,
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
@@ -466,64 +464,33 @@ describe('ConnectionService', () => {
       )
     })
 
-    it('throws an error when the connection cannot be found by verkey', async () => {
+    it('throws an error when the message does not contain a DID Document', async () => {
       expect.assertions(1)
 
-      const connectionResponse = new ConnectionResponseMessage({
-        threadId: uuid(),
-        connectionSig: new SignatureDecorator({
-          signature: '',
-          signatureData: '',
-          signatureType: '',
-          signer: '',
-        }),
-      })
-
-      const outOfBandRecord = getMockOutOfBand()
-      const messageContext = new InboundMessageContext(connectionResponse, {
-        recipientVerkey: 'test-verkey',
-        senderVerkey: 'sender-verkey',
-      })
-      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(null))
-
-      return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
-        'Unable to process connection response: connection for verkey test-verkey not found'
-      )
-    })
-
-    it('throws an error when the message does not contain a did doc with any recipientKeys', async () => {
-      expect.assertions(1)
-
-      const { did, verkey } = await wallet.createDid()
+      const { did } = await wallet.createDid()
       const { did: theirDid, verkey: theirVerkey } = await wallet.createDid()
       const connectionRecord = getMockConnection({
         did,
-        verkey,
         state: ConnectionState.Requested,
         theirDid: undefined,
         theirDidDoc: undefined,
       })
-      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(connectionRecord))
 
-      const otherPartyConnection = new Connection({
-        did: theirDid,
-      })
+      const otherPartyConnection = new Connection({ did: theirDid })
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection)
       const connectionSig = await signData(plainConnection, wallet, theirVerkey)
 
-      const connectionResponse = new ConnectionResponseMessage({
-        threadId: uuid(),
-        connectionSig,
-      })
+      const connectionResponse = new ConnectionResponseMessage({ threadId: uuid(), connectionSig })
 
       const outOfBandRecord = getMockOutOfBand({ recipientKeys: [theirVerkey] })
       const messageContext = new InboundMessageContext(connectionResponse, {
+        connection: connectionRecord,
         senderVerkey: 'senderVerkey',
         recipientVerkey: 'recipientVerkey',
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
-        `Connection with id ${connectionRecord.id} has no recipient keys.`
+        `DID Document is missing.`
       )
     })
   })
@@ -812,24 +779,6 @@ describe('ConnectionService', () => {
       mockFunction(connectionRepository.findById).mockReturnValue(Promise.resolve(expected))
       const result = await connectionService.findById(expected.id)
       expect(connectionRepository.findById).toBeCalledWith(expected.id)
-
-      expect(result).toBe(expected)
-    })
-
-    it('findByVerkey should return value from connectionRepository.findSingleByQuery', async () => {
-      const expected = getMockConnection()
-      mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(expected))
-      const result = await connectionService.findByVerkey('verkey')
-      expect(connectionRepository.findByVerkey).toBeCalledWith('verkey')
-
-      expect(result).toBe(expected)
-    })
-
-    it('findByTheirKey should return value from connectionRepository.findSingleByQuery', async () => {
-      const expected = getMockConnection()
-      mockFunction(connectionRepository.findByTheirKey).mockReturnValue(Promise.resolve(expected))
-      const result = await connectionService.findByTheirKey('theirKey')
-      expect(connectionRepository.findByTheirKey).toBeCalledWith('theirKey')
 
       expect(result).toBe(expected)
     })

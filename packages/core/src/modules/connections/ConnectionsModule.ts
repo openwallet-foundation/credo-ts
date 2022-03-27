@@ -9,6 +9,7 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
+import { DidRepository } from '../dids/repository'
 import { OutOfBandService } from '../oob/OutOfBandService'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
@@ -36,6 +37,7 @@ export class ConnectionsModule {
   private messageSender: MessageSender
   private trustPingService: TrustPingService
   private mediationRecipientService: MediationRecipientService
+  private didRepository: DidRepository
 
   public constructor(
     dispatcher: Dispatcher,
@@ -45,6 +47,7 @@ export class ConnectionsModule {
     outOfBandService: OutOfBandService,
     trustPingService: TrustPingService,
     mediationRecipientService: MediationRecipientService,
+    didRepository: DidRepository,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
@@ -53,6 +56,7 @@ export class ConnectionsModule {
     this.outOfBandService = outOfBandService
     this.trustPingService = trustPingService
     this.mediationRecipientService = mediationRecipientService
+    this.didRepository = didRepository
     this.messageSender = messageSender
     this.registerHandlers(dispatcher)
   }
@@ -212,26 +216,26 @@ export class ConnectionsModule {
     return this.connectionService.deleteById(connectionId)
   }
 
-  /**
-   * Find connection by verkey.
-   *
-   * @param verkey the verkey to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
-   */
-  public findByVerkey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.findByVerkey(verkey)
-  }
+  public async findByKeys({ senderKey, recipientKey }: { senderKey: string; recipientKey: string }) {
+    let connectionRecord
+    const theirDidRs = await this.didRepository.findMultipleByVerkey(senderKey)
+    for (const theirDidR of theirDidRs) {
+      const ourDidRecords = await this.didRepository.findMultipleByVerkey(recipientKey)
 
-  /**
-   * Find connection by their verkey.
-   *
-   * @param verkey the verkey to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
-   */
-  public findByTheirKey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.findByTheirKey(verkey)
+      for (const ourDidRecord of ourDidRecords) {
+        connectionRecord = await this.connectionService.findSingleByQuery({
+          did: ourDidRecord.id,
+          theirDid: theirDidR.id,
+        })
+        if (connectionRecord) return connectionRecord
+      }
+    }
+    if (!connectionRecord) {
+      this.agentConfig.logger.debug(
+        `No connection record found for encrypted message with recipient key ${recipientKey} and sender key ${senderKey}`
+      )
+    }
+    return null
   }
 
   public async findByOutOfBandId(outOfBandId: string) {
@@ -264,7 +268,7 @@ export class ConnectionsModule {
       )
     )
     dispatcher.registerHandler(
-      new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.agentConfig)
+      new ConnectionResponseHandler(this.connectionService, this.didRepository, this.outOfBandService, this.agentConfig)
     )
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
@@ -284,6 +288,7 @@ export class ConnectionsModule {
         this.didExchangeProtocol,
         this.outOfBandService,
         this.connectionService,
+        this.didRepository,
         this.agentConfig
       )
     )

@@ -7,7 +7,7 @@ import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
 import testLogger from '../../../tests/logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { DidDocument } from '../../modules/dids'
+import { DidDocument, DidDocumentService, IndyAgentService, VerificationMethod } from '../../modules/dids'
 import { DidCommService } from '../../modules/dids/domain/service/DidCommService'
 import { DidResolverService } from '../../modules/dids/services/DidResolverService'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
@@ -40,6 +40,22 @@ class DummyOutboundTransport implements OutboundTransport {
     return Promise.resolve()
   }
 }
+
+const didDocumentInstance = new DidDocument({
+  id: 'did:sov:SKJVx2kn373FNgvff1SbJo',
+  alsoKnownAs: ['did:sov:SKJVx2kn373FNgvff1SbJo'],
+  controller: ['did:sov:SKJVx2kn373FNgvff1SbJo'],
+  verificationMethod: [],
+  service: [],
+  authentication: [
+    new VerificationMethod({
+      id: 'did:sov:SKJVx2kn373FNgvff1SbJo#authentication-1',
+      type: 'Ed25519VerificationKey2018',
+      controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
+      publicKeyBase58: 'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
+    }),
+  ],
+})
 
 describe('MessageSender', () => {
   const EnvelopeService = <jest.Mock<EnvelopeServiceImpl>>(<unknown>EnvelopeServiceImpl)
@@ -114,6 +130,13 @@ describe('MessageSender', () => {
       outboundMessage = createOutboundMessage(connection, new TestMessage())
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
+
+      const resolveMock = mockFunction(didResolverService.resolve)
+      resolveMock.mockResolvedValue({
+        didDocument: didDocumentInstance,
+        didResolutionMetadata: {},
+        didDocumentMetadata: {},
+      })
     })
 
     afterEach(() => {
@@ -230,7 +253,7 @@ describe('MessageSender', () => {
       expect(sendMessageToServiceSpy).toHaveBeenCalledWith({
         connectionId: 'test-123',
         message: outboundMessage.payload,
-        senderKey: connection.verkey,
+        senderKey: 'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
         service: firstDidCommService,
         returnRoute: false,
       })
@@ -251,7 +274,7 @@ describe('MessageSender', () => {
       expect(sendMessageToServiceSpy).toHaveBeenNthCalledWith(2, {
         connectionId: 'test-123',
         message: outboundMessage.payload,
-        senderKey: connection.verkey,
+        senderKey: 'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
         service: secondDidCommService,
         returnRoute: false,
       })
@@ -362,7 +385,7 @@ describe('MessageSender', () => {
       const keys = {
         recipientKeys: ['service.recipientKeys'],
         routingKeys: [],
-        senderKey: connection.verkey,
+        senderKey: 'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
       }
       const result = await messageSender.packMessage({ message, keys, endpoint })
 

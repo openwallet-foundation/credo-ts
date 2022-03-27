@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService } from '../services'
@@ -14,6 +15,7 @@ export class DidExchangeResponseHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   private connectionService: ConnectionService
+  private didRepository: DidRepository
   private agentConfig: AgentConfig
   public supportedMessages = [DidExchangeResponseMessage]
 
@@ -21,11 +23,13 @@ export class DidExchangeResponseHandler implements Handler {
     didExchangeProtocol: DidExchangeProtocol,
     outOfBandService: OutOfBandService,
     connectionService: ConnectionService,
+    didRepository: DidRepository,
     agentConfig: AgentConfig
   ) {
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
     this.connectionService = connectionService
+    this.didRepository = didRepository
     this.agentConfig = agentConfig
   }
 
@@ -34,7 +38,14 @@ export class DidExchangeResponseHandler implements Handler {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
     }
 
-    const connectionRecord = await this.connectionService.findByVerkey(messageContext.recipientVerkey)
+    const { recipientVerkey } = messageContext
+
+    let connectionRecord
+    const ourDidRecords = await this.didRepository.findMultipleByVerkey(recipientVerkey)
+    for (const ourDidRecord of ourDidRecords) {
+      connectionRecord = await this.connectionService.findByOurDid(ourDidRecord.id)
+    }
+
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
     }

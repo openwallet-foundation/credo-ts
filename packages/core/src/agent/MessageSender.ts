@@ -13,6 +13,7 @@ import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
+import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
@@ -192,6 +193,16 @@ export class MessageSender {
       outOfBand
     )
 
+    const senderDidDocument = await this.resolveDidDocument(connection.did)
+    const senderAuthenticationKeys = senderDidDocument.authentication.map((authentication) => {
+      const verificationMethod =
+        typeof authentication === 'string' ? senderDidDocument.dereferenceKey(authentication) : authentication
+      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+      const key = getKeyFromVerificationMethod(verificationMethod)
+      return key.publicKeyBase58
+    })
+    const [firstSenderAuthenticationKey] = senderAuthenticationKeys
+
     // Loop trough all available services and try to send the message
     for await (const service of services) {
       try {
@@ -201,7 +212,7 @@ export class MessageSender {
         await this.sendMessageToService({
           message: payload,
           service,
-          senderKey: connection.verkey,
+          senderKey: firstSenderAuthenticationKey,
           returnRoute: shouldUseReturnRoute,
           connectionId: connection.id,
         })
@@ -226,7 +237,7 @@ export class MessageSender {
       const keys = {
         recipientKeys: queueService.recipientKeys,
         routingKeys: queueService.routingKeys || [],
-        senderKey: connection.verkey,
+        senderKey: firstSenderAuthenticationKey,
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(payload, keys)

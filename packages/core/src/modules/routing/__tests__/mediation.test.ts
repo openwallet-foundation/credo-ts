@@ -52,7 +52,7 @@ describe('mediator establishment', () => {
     }
 
     // Initialize mediatorReceived message
-    mediatorAgent = new Agent(mediatorConfig.config, recipientConfig.agentDependencies)
+    mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(mediatorMessages, subjectMap))
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
@@ -139,7 +139,7 @@ describe('mediator establishment', () => {
     }
 
     // Initialize mediator
-    mediatorAgent = new Agent(mediatorConfig.config, recipientConfig.agentDependencies)
+    mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(mediatorMessages, subjectMap))
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
