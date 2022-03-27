@@ -40,11 +40,7 @@ export class ConnectionRequestHandler implements Handler {
     }
 
     const oobRouting = await this.mediationRecipientService.getRouting()
-    const connectionRecord = await this.connectionService.protocolProcessRequest(
-      messageContext,
-      outOfBandRecord,
-      oobRouting
-    )
+    const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord, oobRouting)
 
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord)

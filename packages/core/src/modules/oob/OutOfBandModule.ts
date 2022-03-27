@@ -152,6 +152,8 @@ export class OutOfBandModule {
 
     const options = {
       label,
+      goal: config.goal,
+      goalCode: config.goalCode,
       imageUrl,
       accept: didCommProfiles,
       services,
@@ -288,7 +290,7 @@ export class OutOfBandModule {
 
     const outOfBandRecord = new OutOfBandRecord({
       role: OutOfBandRole.Receiver,
-      state: OutOfBandState.PrepareResponse,
+      state: OutOfBandState.Initial,
       outOfBandMessage: outOfBandMessage,
       autoAcceptConnection,
     })
@@ -340,6 +342,8 @@ export class OutOfBandModule {
     const messages = outOfBandMessage.getRequests()
 
     const existingConnection = await this.findExistingConnection(services)
+
+    await this.outOfBandService.updateState(outOfBandRecord, OutOfBandState.PrepareResponse)
 
     if (handshakeProtocols) {
       this.logger.debug('Out of band message contains handshake protocols.')
