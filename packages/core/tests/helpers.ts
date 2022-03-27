@@ -260,7 +260,15 @@ export function getMockOutOfBand({
   label,
   serviceEndpoint,
   recipientKeys,
-}: { label?: string; serviceEndpoint?: string; recipientKeys?: string[] } = {}) {
+  role,
+  state,
+}: {
+  label?: string
+  serviceEndpoint?: string
+  recipientKeys?: string[]
+  role?: OutOfBandRole
+  state?: OutOfBandState
+} = {}) {
   const options = {
     label: label ?? 'label',
     accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
@@ -277,8 +285,8 @@ export function getMockOutOfBand({
   }
   const outOfBandMessage = new OutOfBandMessage(options)
   const outOfBandRecord = new OutOfBandRecord({
-    role: OutOfBandRole.Sender,
-    state: OutOfBandState.AwaitResponse,
+    role: role || OutOfBandRole.Receiver,
+    state: state || OutOfBandState.Initial,
     outOfBandMessage: outOfBandMessage,
   })
   return outOfBandRecord

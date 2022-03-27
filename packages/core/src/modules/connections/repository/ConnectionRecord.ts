@@ -173,7 +173,7 @@ export class ConnectionRecord
     }
   }
 
-  public assertRole(expectedRole: ConnectionRole | undefined) {
+  public assertRole(expectedRole: ConnectionRole) {
     if (this.role !== expectedRole) {
       throw new AriesFrameworkError(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }
