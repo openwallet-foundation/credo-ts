@@ -377,7 +377,7 @@ export class IndyWallet implements Wallet {
     try {
       if (key.keyType === KeyType.Ed25519) {
         // Checks to see if it is an not an Array of messages, but just a single one
-        if (typeof data[0] !== 'number') {
+        if (!TypedArrayEncoder.isTypedArray(data)) {
           throw new WalletError(`${KeyType.Ed25519} does not support multiple singing of multiple messages`)
         }
         return await this.indy.cryptoSign(this.handle, key.publicKeyBase58, data as Buffer)
@@ -415,7 +415,7 @@ export class IndyWallet implements Wallet {
     try {
       if (key.keyType === KeyType.Ed25519) {
         // Checks to see if it is an not an Array of messages, but just a single one
-        if (typeof data[0] !== 'number') {
+        if (!TypedArrayEncoder.isTypedArray(data)) {
           throw new WalletError(`${KeyType.Ed25519} does not support multiple singing of multiple messages`)
         }
         return await this.indy.cryptoVerify(key.publicKeyBase58, data as Buffer, signature)
