@@ -4,8 +4,8 @@ This file is intended for developers working on the internals of the framework. 
 
 ## Installing dependencies
 
-Right now, as a patch that will later be changed, some platforms will have an "error" when installing the dependencies with yarn. This is because the BBS signatures library that we use is built for Linux x86 and MacOS x86. This means that it will show that it could not download the binary.
-This is not an error for developers, the library that fails is `node-bbs-signaturs` and is an optional dependency for perfomance improvements. It will fallback, when not available, to a wasm build.
+Right now, as a patch that will later be changed, some platforms will have an "error" when installing the dependencies with yarn. This is because the BBS signatures library that we use is built for Linux x86 and MacOS x86 (and not Windows and MacOS arm). This means that it will show that it could not download the binary.
+This is not an error for developers, the library that fails is `node-bbs-signaturs` and is an optional dependency for perfomance improvements. It will fallback to a, slower, wasm build.
 
 ## Running tests
 

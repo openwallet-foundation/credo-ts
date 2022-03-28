@@ -64,9 +64,9 @@ export class TypedArrayEncoder {
   /**
    * Check whether an array is byte, or typed, array
    *
-   * @param array The array that has to be checked
+   * @param array unknown The array that has to be checked
    *
-   * @return A boolean if the array is a byte array
+   * @returns A boolean if the array is a byte array
    */
   public static isTypedArray(array: unknown): boolean {
     // Checks whether the static property 'BYTES_PER_ELEMENT' exists on the provided array.

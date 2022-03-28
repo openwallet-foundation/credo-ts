@@ -114,7 +114,7 @@ export class BbsService {
   }
 
   /**
-   * Verify an arbitrary amount of messages with their signature created by with their public key
+   * Verify an arbitrary amount of messages with their signature created with their key pair
    *
    * @param publicKey Buffer The public key used to sign the messages
    * @param messages Buffer[] The messages that have to be verified if they are signed
