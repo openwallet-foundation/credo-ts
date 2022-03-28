@@ -221,14 +221,17 @@ export class RecipientModule {
     this.eventEmitter
       .observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
       .pipe(
-        // filter by mediator connection id
-        filter((e) => e.payload.connection?.id === mediator.connectionId),
-        // Search for the query disclose
-        filter((e) => e.payload.message.type === DiscloseMessage.type),
-        // Map to only the message (and cast type)
-        map((e) => e.payload.message as DiscloseMessage),
-        // Map to whether the protocol is supported
-        map((message) => message.protocols.map((p) => p.protocolId).includes(protocolUri)),
+        // Stop when the agent shuts down
+        takeUntil(this.agentConfig.stop$),
+        // filter by mediator connection id and query disclose message type
+        filter(
+          (e) => e.payload.connection?.id === mediator.connectionId && e.payload.message.type === DiscloseMessage.type
+        ),
+        // Return whether the protocol is supported
+        map((e) => {
+          const message = e.payload.message as DiscloseMessage
+          return message.protocols.map((p) => p.protocolId).includes(protocolUri)
+        }),
         // TODO: make configurable
         // If we don't have an answer in 7 seconds (no response, not supported, etc...) error
         timeout(7000),
