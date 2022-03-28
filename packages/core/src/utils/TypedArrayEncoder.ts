@@ -60,4 +60,18 @@ export class TypedArrayEncoder {
   public static toUtf8String(buffer: Buffer | Uint8Array) {
     return Buffer.from(buffer).toString()
   }
+
+  /**
+   * Check whether an array is byte, or typed, array
+   *
+   * @param array The array that has to be checked
+   *
+   * @return A boolean if the array is a byte array
+   */
+  public static isTypedArray(array: unknown): boolean {
+    // Checks whether the static property 'BYTES_PER_ELEMENT' exists on the provided array.
+    // This has to be done, since the TypedArrays, e.g. Uint8Array and Float32Array, do not
+    // extend a single base class
+    return 'BYTES_PER_ELEMENT' in (array as Record<string, unknown>)
+  }
 }
