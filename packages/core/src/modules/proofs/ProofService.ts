@@ -1,4 +1,3 @@
-import type { ProofRequest, ProofState, ProofStateChangedEvent, RequestedCredentials, RetrievedCredentials } from '.'
 import type { AgentConfig } from '../../agent/AgentConfig'
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Dispatcher } from '../../agent/Dispatcher'
@@ -9,7 +8,11 @@ import type { DidCommMessageRepository, DidCommMessageRole } from '../../storage
 import type { Wallet } from '../../wallet/Wallet'
 import type { ConnectionService } from '../connections/services'
 import type { MediationRecipientService } from '../routing'
+import type { ProofStateChangedEvent } from './ProofEvents'
 import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
+import type { ProofRequest } from './formats/indy/models/ProofRequest'
+import type { RequestedCredentials } from './formats/indy/models/RequestedCredentials'
+import type { RetrievedCredentials } from './formats/indy/models/RetrievedCredentials'
 import type { CreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
 import type { GetRequestedCredentialsConfig } from './models/GetRequestedCredentialsConfig'
 import type { ProofProtocolVersion } from './models/ProofProtocolVersion'
@@ -21,6 +24,7 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
 } from './models/ProofServiceOptions'
+import type { ProofState } from './models/ProofState'
 import type { ProofRecord, ProofRepository } from './repository'
 
 import { ProofEventTypes } from './ProofEvents'

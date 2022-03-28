@@ -7,8 +7,8 @@ import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+import { ProofRequest } from '../../../formats/indy/models/ProofRequest'
 import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
-import { ProofRequest } from '../models'
 
 export interface RequestPresentationOptions {
   id?: string

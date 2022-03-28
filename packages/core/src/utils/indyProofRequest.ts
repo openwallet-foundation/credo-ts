@@ -1,4 +1,4 @@
-import type { ProofRequest } from '../modules/proofs/protocol/v1/models/ProofRequest'
+import type { ProofRequest } from '../modules/proofs/formats/indy/models/ProofRequest'
 
 import { assertNoDuplicatesInArray } from './assertNoDuplicates'
 

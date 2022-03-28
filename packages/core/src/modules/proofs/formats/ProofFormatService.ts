@@ -1,8 +1,11 @@
-import type { RetrievedCredentials, RequestedCredentials, ProofRequest } from '..'
+import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { DidCommMessageRepository } from '../../../storage'
 import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
 import type { PresentationPreview } from '../models/PresentationPreview'
+import type { ProofRequest } from './indy/models/ProofRequest'
+import type { RequestedCredentials } from './indy/models/RequestedCredentials'
+import type { RetrievedCredentials } from './indy/models/RetrievedCredentials'
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
   CreatePresentationOptions,
@@ -23,9 +26,11 @@ import type {
  */
 export abstract class ProofFormatService {
   protected didCommMessageRepository: DidCommMessageRepository
+  protected agentConfig: AgentConfig
 
-  public constructor(didCommMessageRepository: DidCommMessageRepository) {
+  public constructor(didCommMessageRepository: DidCommMessageRepository, agentConfig: AgentConfig) {
     this.didCommMessageRepository = didCommMessageRepository
+    this.agentConfig = agentConfig
   }
 
   abstract createProposal(options: CreateProposalOptions): ProofAttachmentFormat

@@ -5,9 +5,8 @@ import { ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { RecordTransformer } from '../../../../../utils/transformers'
-
-import { RequestedAttribute } from './RequestedAttribute'
-import { RequestedPredicate } from './RequestedPredicate'
+import { RequestedAttribute } from '../../../protocol/v1/models/RequestedAttribute'
+import { RequestedPredicate } from '../../../protocol/v1/models/RequestedPredicate'
 
 export interface RequestedCredentialsOptions {
   requestedAttributes?: Record<string, RequestedAttribute>

@@ -5,6 +5,7 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import type { RetrievedCredentials } from '../../formats/indy/models/RetrievedCredentials'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
 import type { PresentationPreviewAttribute } from '../../models/PresentationPreview'
@@ -16,7 +17,6 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
 } from '../../models/ProofServiceOptions'
-import type { RetrievedCredentials } from './models'
 import type { CredDef, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
@@ -40,6 +40,8 @@ import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
+import { ProofRequest } from '../../formats/indy/models/ProofRequest'
+import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
 import { PresentationPreview } from '../../models/PresentationPreview'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
@@ -63,9 +65,7 @@ import {
   V1ProposePresentationMessage,
   V1RequestPresentationMessage,
 } from './messages'
-import { AttributeFilter, ProofPredicateInfo, ProofRequest, RequestedCredentials, ProofAttributeInfo } from './models'
-
-// const logger = new ConsoleLogger(LogLevel.debug)
+import { AttributeFilter, ProofPredicateInfo, ProofAttributeInfo } from './models'
 
 /**
  * @todo add method to check if request matches proposal. Useful to see if a request I received is the same as the proposal I sent.
@@ -170,7 +170,7 @@ export class V1ProofService extends ProofService {
         presentationProposal: proofFormats.indy?.proofPreview,
       })
     } else {
-      throw new AriesFrameworkError('')
+      throw new AriesFrameworkError('Missing presentation preview.')
     }
 
     proposalMessage.setThread({ threadId: proofRecord.threadId })

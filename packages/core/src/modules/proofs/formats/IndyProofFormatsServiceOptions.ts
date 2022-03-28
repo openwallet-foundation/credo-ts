@@ -5,9 +5,10 @@ import type {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
 } from '../models/PresentationPreview'
-import type { ProofRequest, RequestedAttribute, RequestedPredicate } from '../protocol/v1/models'
+import type { RequestedAttribute, RequestedPredicate } from '../protocol/v1/models'
 import type { ProofAttributeInfo } from '../protocol/v1/models/ProofAttributeInfo'
 import type { ProofPredicateInfo } from '../protocol/v1/models/ProofPredicateInfo'
+import type { ProofRequest } from './indy/models/ProofRequest'
 
 export interface IndyProposeProofFormat {
   attributes?: PresentationPreviewAttribute[]

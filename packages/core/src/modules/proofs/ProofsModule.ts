@@ -1,5 +1,8 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { ProofService } from './ProofService'
+import type { ProofRequestOptions } from './formats/indy/models/ProofRequest'
+import type { RequestedCredentials } from './formats/indy/models/RequestedCredentials'
+import type { RetrievedCredentials } from './formats/indy/models/RetrievedCredentials'
 import type { GetRequestedCredentialsConfig } from './models/GetRequestedCredentialsConfig'
 import type {
   AcceptPresentationOptions,
@@ -15,7 +18,6 @@ import type {
   CreateProposalOptions,
   CreateRequestOptions,
 } from './models/ProofServiceOptions'
-import type { ProofRequestOptions, RequestedCredentials, RetrievedCredentials } from './protocol/v1/models'
 import type { ProofRecord } from './repository/ProofRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'

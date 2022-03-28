@@ -73,8 +73,6 @@ export class ProofResponseCoordinator {
    * Checks whether it should automatically respond to a presentation of proof
    */
   public shouldAutoRespondToPresentation(proofRecord: ProofRecord) {
-    // K-TODO:
-
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
       proofRecord.autoAcceptProof,
       this.agentConfig.autoAcceptProofs

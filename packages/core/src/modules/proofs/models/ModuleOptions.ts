@@ -1,4 +1,5 @@
-import type { AutoAcceptProof, ProofRequestOptions } from '..'
+import type { ProofRequestOptions } from '../formats/indy/models/ProofRequest'
+import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
 import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
 

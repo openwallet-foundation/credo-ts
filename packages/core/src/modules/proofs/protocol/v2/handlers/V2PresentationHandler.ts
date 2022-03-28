@@ -1,9 +1,9 @@
-import type { V2ProofService } from '..'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { ProofRecord } from '../../../repository'
+import type { V2ProofService } from '../V2ProofService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'

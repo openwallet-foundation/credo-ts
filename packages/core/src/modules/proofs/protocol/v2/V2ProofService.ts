@@ -5,6 +5,8 @@ import type { MediationRecipientService } from '../../../routing/services/Mediat
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
+import type { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
+import type { RetrievedCredentials } from '../../formats/indy/models/RetrievedCredentials'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
@@ -16,7 +18,6 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
 } from '../../models/ProofServiceOptions'
-import type { RetrievedCredentials, RequestedCredentials } from '../v1/models'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -32,13 +33,13 @@ import { ConnectionService } from '../../../connections'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
+import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { PresentationPreview } from '../../models/PresentationPreview'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
 import { V1PresentationProblemReportError } from '../v1/errors/V1PresentationProblemReportError'
 import { V1PresentationProblemReportReason } from '../v1/errors/V1PresentationProblemReportReason'
-import { ProofRequest } from '../v1/models/ProofRequest'
 
 import { V2PresentationProblemReportError, V2PresentationProblemReportReason } from './errors'
 import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'

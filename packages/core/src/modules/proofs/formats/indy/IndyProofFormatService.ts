@@ -17,6 +17,7 @@ import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { ConsoleLogger, LogLevel } from '../../../../logger'
@@ -29,10 +30,7 @@ import { Credential, CredentialUtils, IndyCredentialInfo } from '../../../creden
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import {
-  RetrievedCredentials,
   PartialProof,
-  ProofRequest,
-  RequestedCredentials,
   RequestedPredicate,
   RequestedAttribute,
   ProofAttributeInfo,
@@ -44,6 +42,10 @@ import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
+import { ProofRequest } from './models/ProofRequest'
+import { RequestedCredentials } from './models/RequestedCredentials'
+import { RetrievedCredentials } from './models/RetrievedCredentials'
+
 @scoped(Lifecycle.ContainerScoped)
 export class IndyProofFormatService extends ProofFormatService {
   private indyHolderService: IndyHolderService
@@ -53,13 +55,14 @@ export class IndyProofFormatService extends ProofFormatService {
   private logger: Logger
 
   public constructor(
+    agentConfig: AgentConfig,
     indyHolderService: IndyHolderService,
     indyVerifierService: IndyVerifierService,
     indyRevocationService: IndyRevocationService,
     ledgerService: IndyLedgerService,
     didCommMessageRepository: DidCommMessageRepository
   ) {
-    super(didCommMessageRepository)
+    super(didCommMessageRepository, agentConfig)
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
     this.indyRevocationService = indyRevocationService
@@ -240,7 +243,13 @@ export class IndyProofFormatService extends ProofFormatService {
     return supportedFormats.includes(formatIdentifier)
   }
 
-  // K-TODO compare presentation attrs with request/proposal attrs (auto-accept)
+  /**
+   * Compare presentation attrs with request/proposal attrs (auto-accept)
+   *
+   * @param proposalAttachments attachment data from the proposal
+   * @param requestAttachments  attachment data from the request
+   * @returns boolean value
+   */
   public proposalAndRequestAreEqual(
     proposalAttachments: ProofAttachmentFormat[],
     requestAttachments: ProofAttachmentFormat[]
@@ -575,7 +584,6 @@ export class IndyProofFormatService extends ProofFormatService {
       proofRequest.requestedAttributes.set(referent, requestedAttribute)
     }
 
-    // this.logger.debug('proposal predicates', indyFormat.presentationProposal.predicates)
     // Transform proposed predicates to requested predicates
     for (const proposedPredicate of proposalJson.predicates) {
       const requestedPredicate = new ProofPredicateInfo({

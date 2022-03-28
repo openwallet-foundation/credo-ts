@@ -1,4 +1,4 @@
-import type { AutoAcceptProof } from '..'
+import type { AutoAcceptProof } from '../models/ProofAutoAcceptType'
 import type { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import type { ProofRole } from '../models/ProofRole'
 import type { ProofState } from '../models/ProofState'

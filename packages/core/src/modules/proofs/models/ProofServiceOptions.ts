@@ -1,6 +1,8 @@
-import type { AutoAcceptProof, ProofRecord, ProofRequest } from '..'
 import type { ConnectionRecord } from '../../connections'
+import type { ProofRequest } from '../formats/indy/models/ProofRequest'
+import type { ProofRecord } from '../repository'
 import type { PresentationPreview } from './PresentationPreview'
+import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
 import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
 

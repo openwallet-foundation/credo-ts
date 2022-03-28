@@ -1,5 +1,5 @@
 import type { Logger } from '../../../logger'
-import type { RequestedCredentials } from '../../proofs'
+import type { RequestedCredentials } from '../../proofs/formats/indy/models/RequestedCredentials'
 import type * as Indy from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'

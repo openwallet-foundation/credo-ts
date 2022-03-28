@@ -1,5 +1,5 @@
-import type { V2ProofService } from '..'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { V2ProofService } from '../V2ProofService'
 
 import { V2PresentationProblemReportMessage } from '../messages'
 

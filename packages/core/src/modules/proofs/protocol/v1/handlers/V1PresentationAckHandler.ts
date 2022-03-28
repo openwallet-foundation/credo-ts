@@ -1,5 +1,5 @@
-import type { ProofService } from '../../..'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { ProofService } from '../../../ProofService'
 
 import { V1PresentationAckMessage } from '../messages'
 
