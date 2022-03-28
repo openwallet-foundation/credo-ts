@@ -20,6 +20,7 @@ const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
 })
+
 const testAttributes: IndyProposeCredentialFormat = {
   attributes: credentialPreview.attributes,
   payload: {
@@ -31,6 +32,7 @@ const testAttributes: IndyProposeCredentialFormat = {
     credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
   },
 }
+
 const proposal: ProposeCredentialOptions = {
   connectionId: '',
   protocolVersion: CredentialProtocolVersion.V1,
@@ -80,6 +82,16 @@ describe('V2 Credential Architecture', () => {
     })
 
     test('propose credential format service returns correct format and filters~attach', () => {
+      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
+      const service: CredentialService = api.getService(version)
+      const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
+      const { format: formats, attachment: filtersAttach } = formatService.createProposal(proposal)
+
+      expect(formats.attachId.length).toBeGreaterThan(0)
+      expect(formats.format).toEqual('hlindy/cred-filter@v2.0')
+      expect(filtersAttach).toBeTruthy()
+    })
+    test('propose credential format service transforms and validates CredPropose payload correctly', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)

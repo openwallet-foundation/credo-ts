@@ -106,6 +106,9 @@ export class V2CredentialService extends CredentialService {
     proposeMessage: V2ProposeCredentialMessage,
     offerMessage?: V2OfferCredentialMessage
   ): boolean {
+    if (this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Never) {
+      return false
+    }
     const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(proposeMessage.formats)
     let shouldAutoRespond = true
     let proposalValues: CredentialPreviewAttribute[] | undefined
@@ -139,6 +142,10 @@ export class V2CredentialService extends CredentialService {
     offerMessage: V2OfferCredentialMessage,
     proposeMessage?: V2ProposeCredentialMessage
   ): boolean {
+    if (this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Never) {
+      return false
+    }
+
     let offerValues: CredentialPreviewAttribute[] | undefined
     let shouldAutoRespond = true
     const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(offerMessage.formats)
@@ -209,6 +216,9 @@ export class V2CredentialService extends CredentialService {
     credentialRecord: CredentialExchangeRecord,
     credentialMessage: V2IssueCredentialMessage
   ): boolean {
+    if (this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Never) {
+      return false
+    }
     // 1. Get all formats for this message
     const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(credentialMessage.formats)
 
@@ -685,8 +695,8 @@ export class V2CredentialService extends CredentialService {
       offerMessage,
       holderDid
     )
-
     await this.updateState(credentialRecord, CredentialState.RequestSent)
+
     return { message, credentialRecord }
   }
 

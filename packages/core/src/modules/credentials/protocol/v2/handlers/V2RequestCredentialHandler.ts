@@ -8,6 +8,7 @@ import type { V2CredentialService } from '../V2CredentialService'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
@@ -50,12 +51,19 @@ export class V2RequestCredentialHandler implements Handler {
       messageClass: V2ProposeCredentialMessage,
     })
 
-    const shouldAutoRespond = this.credentialService.shouldAutoRespondToRequest(
-      credentialRecord,
-      requestMessage,
-      proposeMessage ? proposeMessage : undefined,
-      offerMessage ? offerMessage : undefined
-    )
+    let shouldAutoRespond
+
+    if (this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Never) {
+      shouldAutoRespond = false
+    } else {
+      shouldAutoRespond = this.credentialService.shouldAutoRespondToRequest(
+        credentialRecord,
+        requestMessage,
+        proposeMessage ? proposeMessage : undefined,
+        offerMessage ? offerMessage : undefined
+      )
+    }
+
     if (shouldAutoRespond) {
       return await this.createCredential(credentialRecord, messageContext, requestMessage, offerMessage)
     }

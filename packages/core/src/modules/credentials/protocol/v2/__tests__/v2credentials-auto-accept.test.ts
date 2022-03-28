@@ -1,6 +1,5 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
-import type { CredPropose } from '../../../formats/models/CredentialFormatServiceOptions'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -9,6 +8,7 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
 } from '../../../CredentialsModuleOptions'
+import type { CredPropose } from '../../../formats/models/CredPropose'
 import type { Schema } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'

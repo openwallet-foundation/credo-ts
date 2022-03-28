@@ -7,6 +7,7 @@ import type { ServiceRequestCredentialOptions } from '../../CredentialServiceOpt
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
+import type { CredPropose } from './CredPropose'
 import type { CredOffer, CredReq, Cred, CredDef } from 'indy-sdk'
 
 import { Expose } from 'class-transformer'
@@ -23,14 +24,6 @@ export interface IndyCredentialPreview {
   attributes?: CredentialPreviewAttribute[]
 }
 
-export interface CredPropose {
-  schemaIssuerDid?: string
-  schemaName?: string
-  schemaVersion?: string
-  schemaId?: string
-  issuerDid?: string
-  credentialDefinitionId?: string
-}
 export interface IndyProposeCredentialFormat {
   attributes: CredentialPreviewAttribute[]
   linkedAttachments?: LinkedAttachment[]
@@ -84,9 +77,12 @@ export const FORMAT_KEYS: FormatKeys = {
 }
 
 export interface FormatServiceRequestCredentialOptions extends ServiceRequestCredentialOptions {
-  credentialDefinition?: {
-    credDef: CredDef
+  indy?: {
+    credentialDefinition?: {
+      credDef: CredDef
+    }
   }
+  jsonld?: W3cCredential
 }
 
 export interface FormatServiceOfferCredentialFormats {
@@ -101,12 +97,12 @@ export interface FormatServiceProposeCredentialFormats {
 
 export interface FormatServiceRequestCredentialFormats {
   indy?: IndyRequestCredentialFormat
-  jsonld?: undefined
+  jsonld?: W3cCredential
 }
 
 export interface FormatServiceIssueCredentialFormats {
   indy?: IndyIssueCredentialFormat
-  jsonld?: undefined
+  jsonld?: W3cCredential
 }
 
 export interface HandlerAutoAcceptOptions {

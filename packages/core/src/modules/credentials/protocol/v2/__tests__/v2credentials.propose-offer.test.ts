@@ -1,6 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
-import type { ServiceCreateOfferOptions } from '../../../CredentialServiceOptions'
+import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -319,7 +319,7 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 
     if (aliceCredentialRecord.connectionId) {
-      const acceptOfferOptions: ServiceCreateOfferOptions = {
+      const acceptOfferOptions: ServiceAcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
           indy: undefined,

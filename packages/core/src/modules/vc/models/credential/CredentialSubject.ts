@@ -1,3 +1,6 @@
+import { Transform, TransformationType, plainToInstance, instanceToPlain } from 'class-transformer'
+import { isString } from 'class-validator'
+
 import { IsUri } from '../../../../utils/validators'
 
 /**
@@ -17,8 +20,25 @@ export class CredentialSubject {
       this.key = options.key
     }
   }
-  [key: string]: unknown
 
   @IsUri()
-  public id!: string
+  public id!: string;
+
+  [key: string]: unknown
+}
+
+// Custom transformers
+
+export function CredentialSubjectTransformer() {
+  return Transform(({ value, type }: { value: string | CredentialSubjectOptions; type: TransformationType }) => {
+    if (type === TransformationType.PLAIN_TO_CLASS) {
+      if (isString(value)) return value
+      return plainToInstance(CredentialSubject, value)
+    } else if (type === TransformationType.CLASS_TO_PLAIN) {
+      if (isString(value)) return value
+      return instanceToPlain(value)
+    }
+    // PLAIN_TO_PLAIN
+    return value
+  })
 }

@@ -11,6 +11,7 @@ import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
+import { CredentialSubject } from '../../vc/models/credential/CredentialSubject'
 import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import { CredentialInfo } from '../protocol/v1/models/CredentialInfo'
 
@@ -28,6 +29,7 @@ export interface CredentialExchangeRecordProps {
   linkedAttachments?: Attachment[]
   errorMessage?: string
   credentials?: CredentialRecordBinding[]
+  credentialSubject?: CredentialSubject // W3c only
 }
 
 export type CustomCredentialTags = TagsBase
@@ -58,6 +60,9 @@ export class CredentialExchangeRecord extends BaseRecord<
 
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]
+
+  @Type(() => CredentialSubject)
+  public w3cAttributes?: CredentialSubject[]
 
   @Type(() => Attachment)
   public linkedAttachments?: Attachment[]
