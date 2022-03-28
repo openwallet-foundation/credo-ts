@@ -1,5 +1,5 @@
 import type { CreateKeyOptions } from '../wallet'
-import type { BbsSignRequest, BlsKeyPair as _BlsKeyPair } from '@mattrglobal/bbs-signatures'
+import type { BlsKeyPair as _BlsKeyPair } from '@mattrglobal/bbs-signatures'
 
 import {
   bls12381toBbs,
@@ -126,15 +126,20 @@ export class BbsService {
    * @throws {WalletError} When the verification process failed
    */
   public static async verify({ signature, messages, publicKey }: BbsVerifyOptions): Promise<boolean> {
-    if (messages.length === 0) throw new WalletError('Unable to verify without any messages')
+    if (messages.length === 0) throw new WalletError('Unable to create a signature without any messages')
     // Check if it is a single message or list and if it is a single message convert it to a list
-    if (typeof messages[0] === 'number') messages = [messages as Buffer]
+    const normalizedMessages = (typeof messages[0] === 'number' ? [messages as Buffer] : messages) as Buffer[]
 
     // Get the Uint8Array variant of all the messages
-    const messageBuffers = (messages as Buffer[]).map(Uint8Array.from)
+    const messageBuffers = normalizedMessages.map((m) => Uint8Array.from(m))
+
+    const bbsKeyPair = await bls12381toBbs({
+      keyPair: { publicKey: Uint8Array.from(publicKey) },
+      messageCount: normalizedMessages.length,
+    })
 
     // Verify the signature against the messages with their public key
-    const { verified, error } = await verify({ signature, messages: messageBuffers, publicKey })
+    const { verified, error } = await verify({ signature, messages: messageBuffers, publicKey: bbsKeyPair.publicKey })
 
     // If the messages could not be verified and an error occured
     if (!verified && error) {

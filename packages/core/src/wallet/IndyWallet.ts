@@ -5,7 +5,6 @@ import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo, DidConfig, CreateKeyOptions, VerifyOptions, SignOptions } from './Wallet'
 import type { default as Indy } from 'indy-sdk'
 
-import { bls12381toBbs } from '@mattrglobal/bbs-signatures'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
@@ -367,7 +366,7 @@ export class IndyWallet implements Wallet {
   /**
    * sign a Buffer with an instance of a Key class
    *
-   * Bls12381g1g2 and Bls12381g1 are not supported.
+   * Bls12381g1g2, Bls12381g1 and X25519 are not supported.
    *
    * @param data Buffer The data that needs to be signed
    * @param key Key The key that is used to sign the data
@@ -401,7 +400,7 @@ export class IndyWallet implements Wallet {
   /**
    * Verify the signature with the data and the used key
    *
-   * Bls12381g1g2 and Bls12381g1 are not supported.
+   * Bls12381g1g2, Bls12381g1 and X25519 are not supported.
    *
    * @param data Buffer The data that has to be confirmed to be signed
    * @param key Key The key that was used in the signing process
@@ -461,7 +460,7 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  public async generateNonce() {
+  public async generateNonce(): Promise<string> {
     try {
       return await this.indy.generateNonce()
     } catch (error) {
