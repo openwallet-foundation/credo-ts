@@ -16,7 +16,7 @@ describe('IndyWallet', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    const { config, agentDependencies } = getBaseConfig('IndyWalletTest')
+    const { config, agentDependencies } = getBaseConfig('IndyWallettest')
     agent = new Agent(config, agentDependencies)
     indyWallet = agent.injectionContainer.resolve(IndyWallet)
     await agent.initialize()
@@ -35,7 +35,7 @@ describe('IndyWallet', () => {
   })
 
   test('Get the Master Secret', () => {
-    expect(indyWallet.masterSecretId).toEqual('Wallet: IndyWalletTest')
+    expect(indyWallet.masterSecretId).toEqual('Wallet: IndyWallettest')
   })
 
   test('Get the wallet handle', () => {
