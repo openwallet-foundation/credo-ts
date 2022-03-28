@@ -40,17 +40,17 @@ export function createWalletKeyPairClass(wallet: Wallet) {
     }
 
     public static async fromVerificationMethod(verificationMethod: Record<string, any>): Promise<WalletKeyPair> {
-      const a = JsonTransformer.fromJSON(verificationMethod, VerificationMethod)
-      await MessageValidator.validate(a)
-      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(a)
-      const key = getKeyFromVerificationMethod(a)
+      const vMethod = JsonTransformer.fromJSON(verificationMethod, VerificationMethod)
+      await MessageValidator.validate(vMethod)
+      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(vMethod)
+      const key = getKeyFromVerificationMethod(vMethod)
 
       return new WalletKeyPair({
         id: verificationMethod.id,
         controller: verificationMethod.controller,
         revoked: verificationMethod.revoked ?? undefined,
         wallet: wallet,
-        key,
+        key: key,
       })
     }
 
@@ -59,14 +59,14 @@ export function createWalletKeyPairClass(wallet: Wallet) {
      */
     public signer(): { sign: (data: Uint8Array | Uint8Array[]) => Promise<Uint8Array> } {
       // wrap function for conversion
-      const wrappedSign = async (data: Uint8Array | Uint8Array[]): Promise<Uint8Array> => {
+      const wrappedSign = async (data: { data: Uint8Array | Uint8Array[] }): Promise<Uint8Array> => {
         let converted: Buffer | Buffer[] = []
 
         // convert uint8array to buffer
-        if (Array.isArray(data)) {
-          converted = data.map((d) => Buffer.from(d))
+        if (Array.isArray(data.data)) {
+          converted = data.data.map((d) => Buffer.from(d))
         } else {
-          converted = Buffer.from(data)
+          converted = Buffer.from(data.data)
         }
 
         // sign

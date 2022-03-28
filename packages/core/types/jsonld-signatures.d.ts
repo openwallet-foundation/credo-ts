@@ -3,5 +3,9 @@ declare module '@digitalcredentials/jsonld-signatures' {
     LinkedDataSignature: any
   }
 
+  export const purposes: {
+    AssertionProofPurpose: any
+  }
+
   // export default suites
 }

@@ -5,7 +5,7 @@ import type { LdKeyPair } from './LdKeyPair'
 
 import jsigs from '@digitalcredentials/jsonld-signatures'
 
-import { BufferEncoder, JsonEncoder } from '../utils'
+import { TypedArrayEncoder, JsonEncoder } from '../utils'
 
 const LinkedDataSignature = jsigs.suites.LinkedDataSignature
 
@@ -127,7 +127,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     const signature = await this.signer.sign({ data })
 
     // create detached content signature
-    const encodedSignature = BufferEncoder.toBase64URL(signature)
+    const encodedSignature = TypedArrayEncoder.toBase64URL(signature)
     options.proof.jws = encodedHeader + '..' + encodedSignature
     return options.proof
   }
@@ -176,7 +176,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     }
 
     // do signature verification
-    const signature = BufferEncoder.fromBase64(encodedSignature)
+    const signature = TypedArrayEncoder.fromBase64(encodedSignature)
 
     const data = _createJws({ encodedHeader, verifyData: options.verifyData })
 
@@ -279,7 +279,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
  * @returns {Uint8Array} A combined byte array for signing.
  */
 function _createJws(options: { encodedHeader: string; verifyData: Uint8Array }): Uint8Array {
-  const encodedHeaderBytes = BufferEncoder.fromString(options.encodedHeader + '.')
+  const encodedHeaderBytes = TypedArrayEncoder.fromString(options.encodedHeader + '.')
 
   // concatenate the two uint8arrays
   const data = new Uint8Array(encodedHeaderBytes.length + options.verifyData.length)

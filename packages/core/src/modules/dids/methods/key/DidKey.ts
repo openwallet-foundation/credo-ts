@@ -20,6 +20,10 @@ export class DidKey {
     return `did:key:${this.key.fingerprint}`
   }
 
+  public get keyId(): string {
+    return `${this.did}#${this.key.fingerprint}`
+  }
+
   public get didDocument() {
     const { getDidDocument } = getKeyDidMappingByKeyType(this.key.keyType)
 
