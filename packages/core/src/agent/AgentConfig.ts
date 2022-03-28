@@ -10,7 +10,6 @@ import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
 import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
 import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
-import { MediatorPickupStrategy } from '../modules/routing/MediatorPickupStrategy'
 import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
@@ -77,7 +76,7 @@ export class AgentConfig {
   }
 
   public get mediatorPickupStrategy() {
-    return this.initConfig.mediatorPickupStrategy ?? MediatorPickupStrategy.Explicit
+    return this.initConfig.mediatorPickupStrategy
   }
 
   public get endpoints(): [string, ...string[]] {
