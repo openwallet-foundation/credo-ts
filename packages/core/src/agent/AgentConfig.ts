@@ -77,7 +77,7 @@ export class AgentConfig {
   }
 
   public get mediatorPickupStrategy() {
-    return this.initConfig.mediatorPickupStrategy ?? MediatorPickupStrategy.Explicit
+    return this.initConfig.mediatorPickupStrategy
   }
 
   public get endpoints(): [string, ...string[]] {
