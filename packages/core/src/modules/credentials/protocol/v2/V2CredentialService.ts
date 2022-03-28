@@ -145,7 +145,6 @@ export class V2CredentialService extends CredentialService {
     if (this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Never) {
       return false
     }
-
     let offerValues: CredentialPreviewAttribute[] | undefined
     let shouldAutoRespond = true
     const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(offerMessage.formats)

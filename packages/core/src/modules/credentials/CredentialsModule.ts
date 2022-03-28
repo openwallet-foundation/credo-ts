@@ -226,9 +226,6 @@ export class CredentialsModule implements CredentialsModule {
    *
    */
   public async acceptCredentialOffer(credentialOptions: AcceptOfferOptions): Promise<CredentialExchangeRecord> {
-    // this.logger.info('>> IN CREDENTIAL API => acceptCredentialOffer')
-
-    // will get back a credential record -> map to Credential Exchange Record
     const { credentialRecord } = await this.acceptOffer(credentialOptions)
 
     return credentialRecord

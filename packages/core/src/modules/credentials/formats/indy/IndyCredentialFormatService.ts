@@ -29,6 +29,7 @@ import type { Cred, CredDef, CredOffer, CredReq, CredReqMetadata } from 'indy-sd
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../../../../../src/error'
+import { MessageValidator } from '../../../../../src/utils/MessageValidator'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
@@ -293,10 +294,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<void> {
     const credPropose = options.proposalAttachment?.getDataAsJson<CredPropose>()
-
     if (!credPropose) {
       throw new AriesFrameworkError('Missing indy credential proposal data payload')
     }
+    await MessageValidator.validate(credPropose)
+
     if (credentialRecord.credentialAttributes && credPropose.credentialDefinitionId) {
       options.credentialFormats = {
         indy: {
