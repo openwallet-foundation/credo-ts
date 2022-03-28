@@ -55,10 +55,7 @@ export class V2ProposalPresentationMessage extends AgentMessage {
         throw new AriesFrameworkError(`Could not find a matching attachment with attachId: ${format.attachmentId}`)
       }
 
-      attachmentFormats.push({
-        format: format,
-        attachment: attachment,
-      })
+      attachmentFormats.push({ format, attachment })
     })
     return attachmentFormats
   }

@@ -63,9 +63,7 @@ export class V2RequestPresentationHandler implements Handler {
       },
     })
 
-    const requestedCredentials = await this.proofService.autoSelectCredentialsForProofRequest({
-      ...retrievedCredentials,
-    })
+    const requestedCredentials = await this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
 
     const { message, proofRecord } = await this.proofService.createPresentation({
       proofRecord: record,

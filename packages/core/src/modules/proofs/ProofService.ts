@@ -10,7 +10,6 @@ import type { Wallet } from '../../wallet/Wallet'
 import type { ConnectionService } from '../connections/services'
 import type { MediationRecipientService } from '../routing'
 import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
-import type { ProofFormatService } from './formats/ProofFormatService'
 import type { CreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
 import type { GetRequestedCredentialsConfig } from './models/GetRequestedCredentialsConfig'
 import type { ProofProtocolVersion } from './models/ProofProtocolVersion'
@@ -23,13 +22,8 @@ import type {
   CreateRequestOptions,
 } from './models/ProofServiceOptions'
 import type { ProofRecord, ProofRepository } from './repository'
-import type { PresentationRecordType } from './repository/PresentationExchangeRecord'
-
-import { ConsoleLogger, LogLevel } from '../../logger'
 
 import { ProofEventTypes } from './ProofEvents'
-
-const logger = new ConsoleLogger(LogLevel.debug)
 
 /**
  * - creates records & messages
@@ -59,8 +53,6 @@ export abstract class ProofService {
     this.eventEmitter = eventEmitter
     this.wallet = wallet
     this.logger = agentConfig.logger
-
-    // this.registerHandlers(dispatcher, agentConfig, mediationRecipientService)
   }
 
   public async generateProofRequestNonce() {
@@ -156,11 +148,6 @@ export abstract class ProofService {
     options: CreateProblemReportOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
   abstract processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
-
-  public getFormatService(presentationRecordType: PresentationRecordType): ProofFormatService {
-    logger.debug(presentationRecordType.toString())
-    throw Error('Not Implemented')
-  }
 
   public abstract shouldAutoRespondToRequest(proofRecord: ProofRecord): Promise<boolean>
 
