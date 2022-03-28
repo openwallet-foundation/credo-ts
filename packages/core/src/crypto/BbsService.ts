@@ -18,11 +18,11 @@ import { KeyType } from './KeyType'
 export interface BlsKeyPair {
   publicKeyBase58: string
   privateKeyBase58: string
-  keyType: Exclude<KeyType, KeyType.Ed25519 | KeyType.X25519>
+  keyType: Extract<KeyType, KeyType.Bls12381g1 | KeyType.Bls12381g2 | KeyType.Bls12381g1g2>
 }
 
 interface BbsCreateKeyOptions extends CreateKeyOptions {
-  keyType: Exclude<KeyType, KeyType.X25519 | KeyType.Ed25519 | KeyType.Bls12381g1g2>
+  keyType: Extract<KeyType, KeyType.Bls12381g1 | KeyType.Bls12381g2>
 }
 
 interface BbsSignOptions {
