@@ -88,12 +88,12 @@ When using AFJ inside the React Native environment, temporarily, a dependency fo
 with bbs keys must be swapped. Inside your package.json the following must be added:
 
 ```diff
-  + "resolutions": {
-  +   "@mattrglobal/bbs-signatures": "react-native-bbs-signatures@0.1.0",
-  + },
++   "resolutions": {
++     "@mattrglobal/bbs-signatures": "react-native-bbs-signatures@0.1.0",
++   },
     "dependencies": {
       ...
-      + "react-native-bbs-signatures": "0.1.0",
++     "react-native-bbs-signatures": "0.1.0",
     }
 ```
 
