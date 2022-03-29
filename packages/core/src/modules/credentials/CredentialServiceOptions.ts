@@ -74,8 +74,8 @@ export interface ServiceRequestCredentialOptions extends RequestCredentialOption
   requestAttachment?: Attachment
 }
 
-export interface AcceptCredentialOptions {
-  credential?: Attachment
+export interface ServiceAcceptCredentialOptions {
+  credentialAttachment?: Attachment
   revocationRegistry: RevocationRegistry
 }
 

@@ -4,7 +4,7 @@ import type { InboundMessageContext } from '../../../../agent/models/InboundMess
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
-  AcceptCredentialOptions,
+  ServiceAcceptCredentialOptions,
   CredentialProtocolMsgReturnType,
   ServiceAcceptProposalOptions,
 } from '../../CredentialServiceOptions'
@@ -951,8 +951,8 @@ export class V2CredentialService extends CredentialService {
       }
       const revocationRegistry = await formatService.getRevocationRegistry(issueAttachment)
 
-      const options: AcceptCredentialOptions = {
-        credential: issueAttachment,
+      const options: ServiceAcceptCredentialOptions = {
+        credentialAttachment: issueAttachment,
         revocationRegistry,
       }
       await formatService.processCredential(options, credentialRecord)

@@ -8,7 +8,7 @@ import type {
 } from '../../CredentialsModuleOptions'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type {
-  AcceptCredentialOptions,
+  ServiceAcceptCredentialOptions,
   ServiceAcceptOfferOptions,
   ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
@@ -368,7 +368,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @param credentialRecord the credential exchange record for this credential
    */
   public async processCredential(
-    options: AcceptCredentialOptions,
+    options: ServiceAcceptCredentialOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<void> {
     const credentialRequestMetadata = credentialRecord.metadata.get(CredentialMetadataKeys.IndyRequest)
@@ -379,10 +379,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
       )
     }
-    if (!options.credential) {
+    if (!options.credentialAttachment) {
       throw new AriesFrameworkError(`Missing credential for record id ${credentialRecord.id}`)
     }
-    const indyCredential: Cred = options.credential.getDataAsJson<Cred>()
+    const indyCredential: Cred = options.credentialAttachment.getDataAsJson<Cred>()
 
     const credentialDefinition = await this.indyLedgerService.getCredentialDefinition(indyCredential.cred_def_id)
 

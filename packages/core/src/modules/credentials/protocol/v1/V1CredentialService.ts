@@ -6,7 +6,7 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionRecord } from '../../../connections'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
-  AcceptCredentialOptions,
+  ServiceAcceptCredentialOptions,
   CredentialOfferTemplate,
   CredentialProposeOptions,
   CredentialProtocolMsgReturnType,
@@ -304,8 +304,8 @@ export class V1CredentialService extends CredentialService {
     }
     const revocationRegistry = await this.formatService.getRevocationRegistry(issueAttachment)
 
-    const options: AcceptCredentialOptions = {
-      credential: issueAttachment,
+    const options: ServiceAcceptCredentialOptions = {
+      credentialAttachment: issueAttachment,
       revocationRegistry,
     }
 
