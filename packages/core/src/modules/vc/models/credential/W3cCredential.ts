@@ -1,5 +1,5 @@
 import type { CredentialSubjectOptions } from './CredentialSubject'
-import type { Issuer, IssuerOptions } from './Issuer'
+import type { IssuerOptions } from './Issuer'
 import type { ValidationOptions } from 'class-validator'
 import type { ContextDefinition } from 'jsonld'
 
@@ -13,7 +13,7 @@ import { IsJsonLdContext } from '../../validators'
 
 import { CredentialSchema, CredentialSchemaTransformer } from './CredentialSchema'
 import { CredentialSubjectTransformer, CredentialSubject } from './CredentialSubject'
-import { IsIssuer, IssuerTransformer } from './Issuer'
+import { Issuer, IsIssuer, IssuerTransformer } from './Issuer'
 
 export interface W3cCredentialOptions {
   context: Array<string> | ContextDefinition
@@ -68,6 +68,10 @@ export class W3cCredential {
   @CredentialSchemaTransformer()
   @IsInstanceOrArrayOfInstances({ classType: CredentialSchema })
   public credentialSchema?: SingleOrArray<CredentialSchema>
+
+  public get issuerId(): string {
+    return this.issuer instanceof Issuer ? this.issuer.id : this.issuer
+  }
 }
 
 // Custom validator

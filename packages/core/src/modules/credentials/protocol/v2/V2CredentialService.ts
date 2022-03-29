@@ -184,8 +184,6 @@ export class V2CredentialService extends CredentialService {
     const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(requestMessage.formats)
     let shouldAutoRespond = true
 
-    console.log("OOOPS HERE WE GO")
-
     for (const formatService of formatServices) {
       let proposalAttachment, offerAttachment, requestAttachment: Attachment | undefined
       if (proposeMessage) {

@@ -10,21 +10,17 @@ import { IsUri } from '../../../../utils/validators'
 
 export interface CredentialSubjectOptions {
   id: string
-  [key: string]: unknown
 }
 
 export class CredentialSubject {
   public constructor(options: CredentialSubjectOptions) {
     if (options) {
       this.id = options.id
-      this.key = options.key
     }
   }
 
   @IsUri()
-  public id!: string;
-
-  [key: string]: unknown
+  public id!: string
 }
 
 // Custom transformers

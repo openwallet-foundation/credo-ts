@@ -4,7 +4,7 @@ import type { KeyDidMapping } from './keyDidMapping'
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
 import { KeyType } from '../../../../crypto'
-import { Key } from '../Key'
+import { Key } from '../../../../crypto/Key'
 
 import { getSignatureKeyBase } from './getSignatureKeyBase'
 import { getX25519VerificationMethod } from './x25519'
