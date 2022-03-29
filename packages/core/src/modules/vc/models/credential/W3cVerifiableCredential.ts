@@ -15,8 +15,8 @@ export interface W3cVerifiableCredentialOptions extends W3cCredentialOptions {
 
 export class W3cVerifiableCredential extends W3cCredential {
   public constructor(options: W3cVerifiableCredentialOptions) {
-    if (options.proof) {
-      super(options)
+    super(options)
+    if (options) {
       this.proof = Array.isArray(options.proof)
         ? options.proof.map((proof) => new LinkedDataProof(proof))
         : new LinkedDataProof(options.proof)

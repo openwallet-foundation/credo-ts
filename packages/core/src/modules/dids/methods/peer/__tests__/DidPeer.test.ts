@@ -1,10 +1,11 @@
+import { Key } from '../../../../../crypto'
 import { JsonTransformer } from '../../../../../utils'
 import didKeyBls12381g1 from '../../../__tests__/__fixtures__/didKeyBls12381g1.json'
 import didKeyBls12381g1g2 from '../../../__tests__/__fixtures__/didKeyBls12381g1g2.json'
 import didKeyBls12381g2 from '../../../__tests__/__fixtures__/didKeyBls12381g2.json'
 import didKeyEd25519 from '../../../__tests__/__fixtures__/didKeyEd25519.json'
 import didKeyX25519 from '../../../__tests__/__fixtures__/didKeyX25519.json'
-import { DidDocument, Key } from '../../../domain'
+import { DidDocument } from '../../../domain'
 import { DidPeer, PeerDidNumAlgo } from '../DidPeer'
 
 import didPeer1zQmR from './__fixtures__/didPeer1zQmR.json'

@@ -1,8 +1,8 @@
-import type { KeyType } from '../../../crypto'
+import type { KeyType } from '.'
 
-import { Buffer, TypedArrayEncoder, MultiBaseEncoder, VarintEncoder } from '../../../utils'
+import { Buffer, TypedArrayEncoder, MultiBaseEncoder, VarintEncoder } from '../utils'
 
-import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeytype } from './key-type/multiCodecKey'
+import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeytype } from './multiCodecKey'
 
 export class Key {
   public readonly publicKey: Buffer
