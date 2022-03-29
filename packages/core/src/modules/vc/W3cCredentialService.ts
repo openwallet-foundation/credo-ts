@@ -1,18 +1,17 @@
 import type { JwsLinkedDataSignature } from '../../crypto/JwsLinkedDataSignature'
-import type { DidInfo } from '../../wallet'
 import type { VerifyCredentialResult, W3cCredential, W3cVerifyCredentialResult } from './models'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
 import type { W3cPresentation } from './models/presentation/W3Presentation'
 import type { RemoteDocument, Url } from 'jsonld/jsonld-spec'
 
-// @ts-ignore
-import { expand } from '@digitalcredentials/jsonld'
+import jsonld, { expand } from '@digitalcredentials/jsonld'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import documentLoaderXhr from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
 import vc from '@digitalcredentials/vc'
-import exp from 'constants'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'

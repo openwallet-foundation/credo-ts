@@ -18,6 +18,8 @@ jest.mock('../../ledger/services/IndyLedgerService')
 
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const DidRepositoryMock = DidRepository as unknown as jest.Mock<DidRepository>
+
+jest.mock('../models/credential/W3cCredentialRepository')
 const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
 
 describe('W3cCredentialService', () => {
@@ -76,7 +78,21 @@ describe('W3cCredentialService', () => {
         W3cVerifiableCredential
       )
 
-      await expect(w3cCredentialService.storeCredential(credential)).resolves.toMatchObject({ id: expect.any(String) })
+      const w3cCredentialRecord = await w3cCredentialService.storeCredential(credential)
+
+      expect(w3cCredentialRecord).toMatchObject({
+        type: 'W3cCredentialRecord',
+        id: expect.any(String),
+        createdAt: expect.any(Date),
+        credential: expect.any(W3cVerifiableCredential),
+      })
+
+      expect(w3cCredentialRecord.getTags()).toMatchObject({
+        expandedTypes: [
+          'https://www.w3.org/2018/credentials#VerifiableCredential',
+          'https://example.org/examples#UniversityDegreeCredential',
+        ],
+      })
     })
   })
 
