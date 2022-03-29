@@ -353,7 +353,7 @@ describe('credentials', () => {
         state: CredentialState.CredentialReceived,
       })
 
-      // testLogger.test('Alice sends credential ack to Faber')
+      testLogger.test('Alice sends credential ack to Faber')
       await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
 
       testLogger.test('Faber waits for credential ack from Alice')

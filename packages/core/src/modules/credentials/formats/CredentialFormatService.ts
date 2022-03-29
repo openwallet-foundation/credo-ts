@@ -64,7 +64,7 @@ export abstract class CredentialFormatService {
   abstract shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean
   abstract shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean
 
-  abstract getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry>
+  abstract getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry | undefined>
 
   /**
    *

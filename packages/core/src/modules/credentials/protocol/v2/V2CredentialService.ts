@@ -983,7 +983,7 @@ export class V2CredentialService extends CredentialService {
 
       const options: AcceptCredentialOptions = {
         credential: issueAttachment,
-        revocationRegistry,
+        revocationRegistry: revocationRegistry ? revocationRegistry : undefined,
       }
       await formatService.processCredential(options, credentialRecord)
     }

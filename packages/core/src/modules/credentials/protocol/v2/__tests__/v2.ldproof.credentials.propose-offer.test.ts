@@ -1,3 +1,4 @@
+import type { W3cVerifiableCredential } from '../../../../../../src/modules/vc/models'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
 import type { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
@@ -15,6 +16,7 @@ import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
+import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 describe('credentials', () => {
@@ -201,6 +203,50 @@ describe('credentials', () => {
         threadId: expect.any(String),
         connectionId: expect.any(String),
         state: CredentialState.CredentialReceived,
+      })
+
+      const credentialMessage = await didCommMessageRepository.findAgentMessage({
+        associatedRecordId: faberCredentialRecord.id,
+        messageClass: V2IssueCredentialMessage,
+      })
+
+      const data = credentialMessage?.messageAttachment[0].getDataAsJson<W3cVerifiableCredential>()
+
+      console.log('====> V2 Credential (JsonLd) = ', credentialMessage)
+
+      console.log('====> W3C VerifiableCredential = ', data)
+
+      expect(JsonTransformer.toJSON(credentialMessage)).toMatchObject({
+        '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',
+        '@id': expect.any(String),
+        comment: 'V2 Indy Credential',
+        formats: [
+          {
+            attach_id: expect.any(String),
+            format: 'aries/ld-proof-vc@1.0',
+          },
+        ],
+        'credentials~attach': [
+          {
+            '@id': expect.any(String),
+            'mime-type': 'application/json',
+            data: expect.any(Object),
+            lastmod_time: undefined,
+            byte_count: undefined,
+          },
+        ],
+        '~thread': {
+          thid: expect.any(String),
+          pthid: undefined,
+          sender_order: undefined,
+          received_orders: undefined,
+        },
+        '~please_ack': { on: ['RECEIPT'] },
+        '~service': undefined,
+        '~attach': undefined,
+        '~timing': undefined,
+        '~transport': undefined,
+        '~l10n': undefined,
       })
     } else {
       throw new Error('Missing Connection Id')

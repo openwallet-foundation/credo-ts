@@ -2,6 +2,8 @@ import type { VerifyCredentialResult, W3cCredential, W3cVerifyCredentialResult }
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
 import type { W3cPresentation } from './models/presentation/W3Presentation'
 
+import { uuid } from '../../utils/uuid'
+
 import { W3cVerifiableCredential } from './models'
 import { W3cCredentialRecord } from './models/credential/W3cCredentialRecord'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
@@ -90,9 +92,11 @@ export class W3cCredentialService {
    */
   public async storeCredential(record: W3cVerifiableCredential): Promise<W3cCredentialRecord> {
     // MOCK
-    return new W3cCredentialRecord({
+    record.id = uuid()
+    const rec = new W3cCredentialRecord({
       credential: record,
     })
+    return rec
   }
 
   /**

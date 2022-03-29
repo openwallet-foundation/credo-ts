@@ -63,6 +63,7 @@
     "node": ">= 12"
   },
   "dependencies": {
+    "@types/jsonld": "^1.5.6",
     "jsonld": "^5.2.0"
   }
 }

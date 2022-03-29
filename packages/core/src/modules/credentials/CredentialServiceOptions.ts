@@ -77,7 +77,7 @@ export interface ServiceRequestCredentialOptions extends RequestCredentialOption
 
 export interface AcceptCredentialOptions {
   credential?: Attachment
-  revocationRegistry: RevocationRegistry
+  revocationRegistry?: RevocationRegistry
 }
 
 export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id'> & {

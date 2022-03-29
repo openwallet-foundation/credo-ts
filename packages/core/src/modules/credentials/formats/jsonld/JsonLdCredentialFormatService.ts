@@ -2,18 +2,14 @@
 /* eslint-disable @typescript-eslint/adjacent-overload-signatures */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import type { W3cCredential } from '../../../vc/models'
+import type { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
+import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
 import type {
   AcceptCredentialOptions,
   ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
 } from '../../CredentialServiceOptions'
-import type {
-  AcceptProposalOptions,
-  AcceptRequestOptions,
-  ProposeCredentialOptions,
-  RequestCredentialOptions,
-} from '../../CredentialsModuleOptions'
+import type { ProposeCredentialOptions, RequestCredentialOptions } from '../../CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from '../../repository'
 import type {
   CredentialFormatSpec,
@@ -30,10 +26,10 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AriesFrameworkError } from '../../../../../src/error'
 import { uuid } from '../../../../../src/utils/uuid'
 import { EventEmitter } from '../../../../agent/EventEmitter'
-import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { W3cCredentialService } from '../../../vc'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
+import { CredentialFormatType } from '../../CredentialsModuleOptions'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
 
@@ -74,7 +70,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
 
     const formats: CredentialFormatSpec = {
       attachId: uuid(),
-      format: 'hlindy/cred-abstract@v2.0',
+      format: 'aries/ld-proof-vc@1.0',
     }
 
     const attachmentId = options.attachId ? options.attachId : formats.attachId
@@ -90,8 +86,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     return { format: formats, attachment: issueAttachment }
   }
 
-  getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry> {
-    throw new Error('Method not implemented.')
+  public async getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry | undefined> {
+    return undefined
   }
 
   getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
@@ -108,13 +104,18 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const attachmentId = options.attachId ? options.attachId : formats.attachId
 
+    // exchange can begin with proposoal or offer
+    let messageAttachment
     if (!options.proposalAttachment) {
-      throw new AriesFrameworkError('create JsonLd offer: missing proposal attachment')
+      if (!options.credentialFormats.jsonld) {
+        throw new AriesFrameworkError('create JsonLd offer: missing credential attachment')
+      }
+      messageAttachment = options.credentialFormats.jsonld
+    } else {
+      messageAttachment = options.proposalAttachment.getDataAsJson<W3cCredential>()
     }
 
-    const credPropose = options.proposalAttachment.getDataAsJson<W3cCredential>()
-
-    const offersAttach: Attachment = this.getFormatData(credPropose, attachmentId)
+    const offersAttach: Attachment = this.getFormatData(messageAttachment, attachmentId)
 
     return { format: formats, attachment: offersAttach }
   }
@@ -211,9 +212,35 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     throw new Error('Method not implemented.')
   }
 
-  processCredential(options: AcceptCredentialOptions, credentialRecord: CredentialExchangeRecord): Promise<void> {
-    throw new Error('Method not implemented.')
+  public async processCredential(
+    options: AcceptCredentialOptions,
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<void> {
+    // 1. check credential attachment is present
+    // 2. Retrieve the credential attachment
+    // 3. save the credential (store using w3cCredentialService)
+    // 4. save the binding to credentials array in credential exchange record
+    if (!options.credential) {
+      throw new AriesFrameworkError(
+        `JsonLd processCredential - Missing credential attachment for record id ${credentialRecord.id}`
+      )
+    }
+    const credential = options.credential.getDataAsJson<W3cVerifiableCredential>()
+
+    const verifiableCredential: W3cCredentialRecord = await this.w3cCredentialService.storeCredential(credential)
+
+    // verifiableCredential.id = uu
+    if (!verifiableCredential.credential.id) {
+      throw new AriesFrameworkError(
+        `JsonLd processCredential - Missing credential id in verifiable credential for record id ${credentialRecord.id}`
+      )
+    }
+    credentialRecord.credentials.push({
+      credentialRecordType: CredentialFormatType.JsonLd,
+      credentialRecordId: verifiableCredential.id,
+    })
   }
+
   processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void {
     throw new Error('Method not implemented.')
   }
