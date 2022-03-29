@@ -1,7 +1,7 @@
 import type { ConnectionRecord } from '../../connections'
 import type { ProofRequest } from '../formats/indy/models/ProofRequest'
+import type { PresentationPreview } from '../protocol/v1/models/PresentationPreview'
 import type { ProofRecord } from '../repository'
-import type { PresentationPreview } from './PresentationPreview'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
 import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'

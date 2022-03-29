@@ -1,6 +1,6 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { PresentationPreview } from '../../models/PresentationPreview'
 import type { CreatePresentationFormats, ProposeProofFormats } from '../../models/SharedOptions'
+import type { PresentationPreview } from '../../protocol/v1/models/PresentationPreview'
 import type { ProofRecord } from '../../repository'
 import type { ProofRequestOptions } from '../indy/models/ProofRequest'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'

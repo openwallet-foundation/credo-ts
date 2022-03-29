@@ -8,7 +8,6 @@ import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { RetrievedCredentials } from '../../formats/indy/models/RetrievedCredentials'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
-import type { PresentationPreviewAttribute } from '../../models/PresentationPreview'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -17,6 +16,7 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
 } from '../../models/ProofServiceOptions'
+import type { PresentationPreviewAttribute } from './models/PresentationPreview'
 import type { CredDef, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
@@ -42,7 +42,6 @@ import { ProofService } from '../../ProofService'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
-import { PresentationPreview } from '../../models/PresentationPreview'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { ProofRecord } from '../../repository/ProofRecord'
@@ -66,6 +65,7 @@ import {
   V1RequestPresentationMessage,
 } from './messages'
 import { AttributeFilter, ProofPredicateInfo, ProofAttributeInfo } from './models'
+import { PresentationPreview } from './models/PresentationPreview'
 
 /**
  * @todo add method to check if request matches proposal. Useful to see if a request I received is the same as the proposal I sent.

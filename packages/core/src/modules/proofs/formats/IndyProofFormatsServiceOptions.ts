@@ -1,11 +1,11 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { RevocationInterval } from '../../credentials/models/RevocationInterval'
+import type { RequestedAttribute, RequestedPredicate } from '../protocol/v1/models'
 import type {
   PresentationPreview,
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
-} from '../models/PresentationPreview'
-import type { RequestedAttribute, RequestedPredicate } from '../protocol/v1/models'
+} from '../protocol/v1/models/PresentationPreview'
 import type { ProofAttributeInfo } from '../protocol/v1/models/ProofAttributeInfo'
 import type { ProofPredicateInfo } from '../protocol/v1/models/ProofPredicateInfo'
 import type { ProofRequest } from './indy/models/ProofRequest'
