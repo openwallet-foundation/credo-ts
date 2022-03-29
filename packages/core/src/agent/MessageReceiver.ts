@@ -11,6 +11,7 @@ import { AriesFrameworkError } from '../error'
 import { ConnectionRepository } from '../modules/connections'
 import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
+import { isValidJweStructure } from '../utils/JWE'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
@@ -66,11 +67,12 @@ export class MessageReceiver {
    */
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
     this.logger.debug(`Agent ${this.config.label} received message`)
-
-    if (this.isPlaintextMessage(inboundMessage)) {
+    if (this.isEncryptedMessage(inboundMessage)) {
+      await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
+    } else if (this.isPlaintextMessage(inboundMessage)) {
       await this.receivePlaintextMessage(inboundMessage)
     } else {
-      await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
+      throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
     }
   }
 
@@ -143,10 +145,15 @@ export class MessageReceiver {
 
   private isPlaintextMessage(message: unknown): message is PlaintextMessage {
     if (typeof message !== 'object' || message == null) {
-      throw new AriesFrameworkError('Invalid message received. Message should be object')
+      return false
     }
-    // If the message does have an @type field we assume the message is in plaintext and it is not encrypted.
+    // If the message has a @type field we assume the message is in plaintext and it is not encrypted.
     return '@type' in message
+  }
+
+  private isEncryptedMessage(message: unknown): message is EncryptedMessage {
+    // If the message does has valid JWE structure, we can assume the message is encrypted.
+    return isValidJweStructure(message)
   }
 
   private async transformAndValidate(
