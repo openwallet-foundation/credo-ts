@@ -4,7 +4,7 @@ import type { InboundMessageContext } from '../../../../agent/models/InboundMess
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
-  AcceptCredentialOptions,
+  ServiceAcceptCredentialOptions,
   CredentialProtocolMsgReturnType,
   ServiceAcceptProposalOptions,
 } from '../../CredentialServiceOptions'
@@ -184,6 +184,8 @@ export class V2CredentialService extends CredentialService {
     const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(requestMessage.formats)
     let shouldAutoRespond = true
 
+    console.log("OOOPS HERE WE GO")
+
     for (const formatService of formatServices) {
       let proposalAttachment, offerAttachment, requestAttachment: Attachment | undefined
       if (proposeMessage) {
@@ -205,7 +207,6 @@ export class V2CredentialService extends CredentialService {
       const formatShouldAutoRespond =
         this.agentConfig.autoAcceptCredentials == AutoAcceptCredential.Always ||
         formatService.shouldAutoRespondToRequest(handlerOptions)
-
       shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
     }
     return shouldAutoRespond
@@ -981,8 +982,8 @@ export class V2CredentialService extends CredentialService {
       }
       const revocationRegistry = await formatService.getRevocationRegistry(issueAttachment)
 
-      const options: AcceptCredentialOptions = {
-        credential: issueAttachment,
+      const options: ServiceAcceptCredentialOptions = {
+        credentialAttachment: issueAttachment,
         revocationRegistry: revocationRegistry ? revocationRegistry : undefined,
       }
       await formatService.processCredential(options, credentialRecord)

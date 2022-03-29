@@ -19,11 +19,11 @@ import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 
-const faberConfig = getBaseConfig('Faber connection-less Credentials V2', {
+const faberConfig = getBaseConfig('Faber LD connection-less Credentials V2', {
   endpoints: ['rxjs:faber'],
 })
 
-const aliceConfig = getBaseConfig('Alice connection-less Credentials V2', {
+const aliceConfig = getBaseConfig('Alice LD connection-less Credentials V2', {
   endpoints: ['rxjs:alice'],
 })
 

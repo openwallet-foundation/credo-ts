@@ -6,15 +6,6 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionRecord } from '../../../connections'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
-  AcceptCredentialOptions,
-  CredentialOfferTemplate,
-  CredentialProposeOptions,
-  CredentialProtocolMsgReturnType,
-  ServiceAcceptOfferOptions,
-  ServiceAcceptRequestOptions,
-  ServiceRequestCredentialOptions,
-} from '../../CredentialServiceOptions'
-import type {
   AcceptProposalOptions,
   CredentialFormatType,
   NegotiateProposalOptions,
@@ -27,6 +18,14 @@ import type {
   FormatServiceRequestCredentialOptions,
   HandlerAutoAcceptOptions,
 } from '../../formats/models/CredentialFormatServiceOptions'
+import type {
+  CredentialProtocolMsgReturnType,
+  ServiceAcceptCredentialOptions,
+  CredentialOfferTemplate,
+  ServiceAcceptOfferOptions,
+  ServiceAcceptRequestOptions,
+  CredentialProposeOptions,
+} from '../v2'
 import type { CredOffer } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -304,8 +303,8 @@ export class V1CredentialService extends CredentialService {
     }
     const revocationRegistry = await this.formatService.getRevocationRegistry(issueAttachment)
 
-    const options: AcceptCredentialOptions = {
-      credential: issueAttachment,
+    const options: ServiceAcceptCredentialOptions = {
+      credentialAttachment: issueAttachment,
       revocationRegistry,
     }
 

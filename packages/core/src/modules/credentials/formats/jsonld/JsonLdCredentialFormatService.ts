@@ -5,7 +5,7 @@ import type { Attachment, AttachmentData } from '../../../../decorators/attachme
 import type { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
 import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
 import type {
-  AcceptCredentialOptions,
+  ServiceAcceptCredentialOptions,
   ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
 } from '../../CredentialServiceOptions'
@@ -104,7 +104,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const attachmentId = options.attachId ? options.attachId : formats.attachId
 
-    // exchange can begin with proposoal or offer
+    // exchange can begin with proposal or offer
     let messageAttachment
     if (!options.proposalAttachment) {
       if (!options.credentialFormats.jsonld) {
@@ -213,19 +213,19 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   }
 
   public async processCredential(
-    options: AcceptCredentialOptions,
+    options: ServiceAcceptCredentialOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<void> {
     // 1. check credential attachment is present
     // 2. Retrieve the credential attachment
     // 3. save the credential (store using w3cCredentialService)
     // 4. save the binding to credentials array in credential exchange record
-    if (!options.credential) {
+    if (!options.credentialAttachment) {
       throw new AriesFrameworkError(
         `JsonLd processCredential - Missing credential attachment for record id ${credentialRecord.id}`
       )
     }
-    const credential = options.credential.getDataAsJson<W3cVerifiableCredential>()
+    const credential = options.credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
 
     const verifiableCredential: W3cCredentialRecord = await this.w3cCredentialService.storeCredential(credential)
 
