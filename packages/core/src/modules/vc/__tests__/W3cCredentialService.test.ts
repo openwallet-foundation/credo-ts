@@ -9,7 +9,8 @@ import { DidResolverService } from '../../dids'
 import { DidRepository } from '../../dids/repository'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { W3cCredentialService } from '../W3cCredentialService'
-import { W3cCredential } from '../models'
+import { W3cCredential, W3cVerifiableCredential } from '../models'
+import { W3cCredentialRepository } from '../models/credential/W3cCredentialRepository'
 
 const TEST_DID_KEY = 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
 
@@ -17,6 +18,7 @@ jest.mock('../../ledger/services/IndyLedgerService')
 
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const DidRepositoryMock = DidRepository as unknown as jest.Mock<DidRepository>
+const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
 
 describe('W3cCredentialService', () => {
   let wallet: IndyWallet
@@ -24,6 +26,7 @@ describe('W3cCredentialService', () => {
   let didResolverService: DidResolverService
   let logger: TestLogger
   let w3cCredentialService: W3cCredentialService
+  let w3cCredentialRepository: W3cCredentialRepository
 
   beforeAll(async () => {
     agentConfig = getAgentConfig('W3cCredentialServiceTest')
@@ -33,14 +36,51 @@ describe('W3cCredentialService', () => {
     await wallet.createAndOpen(agentConfig.walletConfig!)
     await wallet.initPublicDid({})
     didResolverService = new DidResolverService(agentConfig, new IndyLedgerServiceMock(), new DidRepositoryMock())
-    w3cCredentialService = new W3cCredentialService(wallet, didResolverService, agentConfig, logger)
+    w3cCredentialRepository = new W3cCredentialRepositoryMock()
+    w3cCredentialService = new W3cCredentialService(
+      wallet,
+      w3cCredentialRepository,
+      didResolverService,
+      agentConfig,
+      logger
+    )
   })
 
   afterAll(async () => {
     await wallet.delete()
   })
 
-  describe('sign', () => {
+  describe('store', () => {
+    test('Store a credential', async () => {
+      const credential = JsonTransformer.fromJSON(
+        {
+          '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+          type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+          issuer: 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
+          issuanceDate: '2017-10-22T12:23:48Z',
+          credentialSubject: {
+            degree: {
+              type: 'BachelorDegree',
+              name: 'Bachelor of Science and Arts',
+            },
+          },
+          proof: {
+            verificationMethod:
+              'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV#z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
+            type: 'Ed25519Signature2018',
+            created: '2022-03-28T15:54:59Z',
+            proofPurpose: 'assertionMethod',
+            jws: 'eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..b0MD_c-8EyGATDuCda1A72qbjD3o8MfiipicmhnYmcdqoIyZzE9MlZ9FZn5sxsIJ3LPqPQj7y1jLlINwCwNSDg',
+          },
+        },
+        W3cVerifiableCredential
+      )
+
+      await expect(w3cCredentialService.storeCredential(credential)).resolves.toMatchObject({ id: expect.any(String) })
+    })
+  })
+
+  xdescribe('sign', () => {
     it('returns a signed credential', async () => {
       const credential = JsonTransformer.fromJSON(
         {

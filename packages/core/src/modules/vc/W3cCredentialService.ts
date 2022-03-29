@@ -6,12 +6,13 @@ import type { W3cPresentation } from './models/presentation/W3Presentation'
 import type { RemoteDocument, Url } from 'jsonld/jsonld-spec'
 
 // @ts-ignore
-import jsonld from '@digitalcredentials/jsonld'
+import { expand } from '@digitalcredentials/jsonld'
 // @ts-ignore
 import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
 // @ts-ignore
 import documentLoaderXhr from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
 import vc from '@digitalcredentials/vc'
+import exp from 'constants'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -20,12 +21,13 @@ import { Ed25519Signature2018 } from '../../crypto/Ed25519Signature2018'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
-import { JsonTransformer } from '../../utils'
+import { JsonTransformer, orArrayToArray } from '../../utils'
 import { Wallet } from '../../wallet'
 import { DidKey, DidResolverService } from '../dids'
 
 import { W3cVerifiableCredential } from './models'
 import { W3cCredentialRecord } from './models/credential/W3cCredentialRecord'
+import { W3cCredentialRepository } from './models/credential/W3cCredentialRepository'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
 
 interface LdProofDetailOptions {
@@ -68,6 +70,7 @@ class SignatureSuiteRegistry {
 @scoped(Lifecycle.ContainerScoped)
 export class W3cCredentialService {
   private wallet: Wallet
+  private w3cCredentialRepository: W3cCredentialRepository
   private didResolver: DidResolverService
   private agentConfig: AgentConfig
   private logger: Logger
@@ -79,11 +82,13 @@ export class W3cCredentialService {
 
   public constructor(
     @inject('Wallet') wallet: Wallet,
+    w3cCredentialRepository: W3cCredentialRepository,
     didResolver: DidResolverService,
     agentConfig: AgentConfig,
     logger: Logger
   ) {
     this.wallet = wallet
+    this.w3cCredentialRepository = w3cCredentialRepository
     this.didResolver = didResolver
     this.agentConfig = agentConfig
     this.logger = logger
@@ -196,10 +201,21 @@ export class W3cCredentialService {
    * @returns the credential record that was written to storage
    */
   public async storeCredential(record: W3cVerifiableCredential): Promise<W3cCredentialRecord> {
-    // MOCK
-    return new W3cCredentialRecord({
+    // Get the expanded types
+    const expandedTypes = (await expand(JsonTransformer.toJSON(record), { documentLoader: this.documentLoader }))[0][
+      '@type'
+    ]
+
+    // Create an instance of the w3cCredentialRecord
+    const w3cCredentialRecord = new W3cCredentialRecord({
+      tags: { expandedTypes: orArrayToArray(expandedTypes) },
       credential: record,
     })
+
+    // Store the w3c credential record
+    await this.w3cCredentialRepository.save(w3cCredentialRecord)
+
+    return w3cCredentialRecord
   }
 
   /**
