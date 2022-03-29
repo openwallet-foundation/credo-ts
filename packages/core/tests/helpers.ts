@@ -36,7 +36,6 @@ import {
   CredentialEventTypes,
   CredentialPreview,
   CredentialState,
-  DidDoc,
   PredicateType,
   PresentationPreview,
   PresentationPreviewAttribute,
@@ -209,41 +208,15 @@ export function getMockConnection({
   id = 'test',
   did = 'test-did',
   threadId = 'threadId',
-  didDoc = new DidDoc({
-    id: did,
-    publicKey: [],
-    authentication: [],
-    service: [
-      new DidCommService({
-        id: `${did};indy`,
-        serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [],
-      }),
-    ],
-  }),
   tags = {},
   theirLabel,
   theirDid = 'their-did',
-  theirDidDoc = new DidDoc({
-    id: theirDid,
-    publicKey: [],
-    authentication: [],
-    service: [
-      new DidCommService({
-        id: `${did};indy`,
-        serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [],
-      }),
-    ],
-  }),
   multiUseInvitation = false,
 }: Partial<ConnectionRecordProps> = {}) {
   return new ConnectionRecord({
     did,
-    didDoc,
     threadId,
     theirDid,
-    theirDidDoc,
     id,
     role,
     state,

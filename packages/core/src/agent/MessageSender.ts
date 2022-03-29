@@ -1,4 +1,5 @@
 import type { ConnectionRecord } from '../modules/connections'
+import type { DidDocument } from '../modules/dids'
 import type { IndyAgentService, DidCommService } from '../modules/dids/domain/service'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
@@ -194,21 +195,15 @@ export class MessageSender {
     )
 
     const senderDidDocument = await this.resolveDidDocument(connection.did)
-    const senderAuthenticationKeys = senderDidDocument.authentication.map((authentication) => {
-      const verificationMethod =
-        typeof authentication === 'string' ? senderDidDocument.dereferenceKey(authentication) : authentication
-      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
-      const key = getKeyFromVerificationMethod(verificationMethod)
-      return key.publicKeyBase58
-    })
+    const senderAuthenticationKeys = getAuthenticationKeys(senderDidDocument)
+    // TODO We're selecting just the first authentication key. Is it ok?
     const [firstSenderAuthenticationKey] = senderAuthenticationKeys
+    const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(senderDidDocument)
 
     // Loop trough all available services and try to send the message
     for await (const service of services) {
       try {
-        // Enable return routing if the
-        const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(connection.didDoc)
-
+        // Enable return routing if the our did document does not have any inbound endpoint for given sender key
         await this.sendMessageToService({
           message: payload,
           service,
@@ -329,10 +324,6 @@ export class MessageSender {
       this.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
       const didDocument = await this.resolveDidDocument(connection.theirDid)
       didCommServices = didDocument.didCommServices
-    } else if (connection.theirDidDoc) {
-      this.logger.debug(`Resolving services from connection theirDidDoc.`)
-      // Old school method, did document is stored inside the connection record or out-of-band record
-      didCommServices = connection.theirDidDoc.didCommServices
     } else if (outOfBand) {
       this.logger.debug(`Resolving services from out-of-band record ${outOfBand?.id}.`)
       if (connection.isRequester && outOfBand) {
@@ -392,4 +383,14 @@ export class MessageSender {
 
 export function isDidCommTransportQueue(serviceEndpoint: string): serviceEndpoint is typeof DID_COMM_TRANSPORT_QUEUE {
   return serviceEndpoint === DID_COMM_TRANSPORT_QUEUE
+}
+
+function getAuthenticationKeys(didDocument: DidDocument) {
+  return didDocument.authentication.map((authentication) => {
+    const verificationMethod =
+      typeof authentication === 'string' ? didDocument.dereferenceKey(authentication) : authentication
+    const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+    const key = getKeyFromVerificationMethod(verificationMethod)
+    return key.publicKeyBase58
+  })
 }

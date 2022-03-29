@@ -77,41 +77,6 @@ export class ConnectionService {
     this.logger = config.logger
   }
 
-  private async createDid({
-    did,
-    role,
-    recipientKeys,
-    didDocument,
-  }: {
-    did?: string
-    role: DidDocumentRole
-    recipientKeys: string[]
-    didDocument: DidDocument
-  }) {
-    const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
-    const didRecord = new DidRecord({
-      id: peerDid.did,
-      role,
-      didDocument,
-      tags: {
-        // We need to save the recipientKeys, so we can find the associated did
-        // of a key when we receive a message from another connection.
-        recipientKeys,
-      },
-    })
-
-    this.logger.debug('Saving DID record', {
-      id: didRecord.id,
-      role: didRecord.role,
-      tags: didRecord.getTags(),
-      didDocument: 'omitted...',
-    })
-
-    await this.didRepository.save(didRecord)
-    this.logger.debug('Did record created.', didRecord)
-    return { did: peerDid.did, didDocument }
-  }
-
   /**
    * Create a connection request message for a given out-of-band.
    *
@@ -131,6 +96,7 @@ export class ConnectionService {
 
     const { outOfBandMessage } = outOfBandRecord
 
+    const didDoc = this.createDidDoc(config.routing)
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
       role: ConnectionRole.Invitee,
@@ -145,10 +111,9 @@ export class ConnectionService {
 
     const routing = config.routing
     const { did: peerDid } = await this.createDid({
-      did: routing.did,
       recipientKeys: [routing.verkey],
       role: DidDocumentRole.Created,
-      didDocument: convertToNewDidDocument(connectionRecord.didDoc),
+      didDocument: convertToNewDidDocument(didDoc),
     })
 
     const { label, imageUrl, autoAcceptConnection } = config
@@ -156,7 +121,7 @@ export class ConnectionService {
     const connectionRequest = new ConnectionRequestMessage({
       label: label ?? this.config.label,
       did: connectionRecord.did,
-      didDoc: connectionRecord.didDoc,
+      didDoc,
       imageUrl: imageUrl ?? this.config.connectionImageUrl,
     })
 
@@ -218,14 +183,12 @@ export class ConnectionService {
     // TODO Could we use authentication key from did doc?
     const theirVerkeys = message.connection.didDoc?.didCommServices[0].recipientKeys ?? []
     const { did: peerDid } = await this.createDid({
-      did: message.connection.did,
       role: DidDocumentRole.Received,
       recipientKeys: theirVerkeys,
       didDocument: convertToNewDidDocument(message.connection.didDoc),
     })
 
     connectionRecord.theirDid = peerDid
-    connectionRecord.theirDidDoc = message.connection.didDoc
     connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.id
     connectionRecord.imageUrl = message.imageUrl
@@ -254,16 +217,37 @@ export class ConnectionService {
       throw new AriesFrameworkError('No did on oob record')
     }
 
+    const routing: Routing = {
+      did: connectionRecord.did,
+      endpoints: Array.from(
+        new Set(
+          outOfBandRecord.outOfBandMessage.services
+            .filter((s): s is DidCommService => typeof s !== 'string')
+            .map((s) => s.serviceEndpoint)
+        )
+      ),
+      verkey: outOfBandRecord.getTags().recipientKey,
+      routingKeys: Array.from(
+        new Set(
+          outOfBandRecord.outOfBandMessage.services
+            .filter((s): s is DidCommService => typeof s !== 'string')
+            .map((s) => s.routingKeys)
+            .filter((r): r is string[] => r !== undefined)
+            .reduce((acc, curr) => acc.concat(curr), [])
+        )
+      ),
+    }
+
+    const didDoc = this.createDidDoc(routing)
     const { did: peerDid } = await this.createDid({
-      did: outOfBandRecord.did,
       recipientKeys: outOfBandRecord.getRecipientKeys(),
       role: DidDocumentRole.Created,
-      didDocument: convertToNewDidDocument(connectionRecord.didDoc),
+      didDocument: convertToNewDidDocument(didDoc),
     })
 
     const connection = new Connection({
       did: outOfBandRecord.did,
-      didDoc: connectionRecord.didDoc,
+      didDoc,
     })
 
     const connectionJson = JsonTransformer.toJSON(connection)
@@ -359,14 +343,12 @@ export class ConnectionService {
 
     const theirVerkeys = connection.didDoc?.didCommServices[0].recipientKeys ?? []
     const { did: peerDid } = await this.createDid({
-      did: connection.did,
       role: DidDocumentRole.Received,
       recipientKeys: theirVerkeys,
       didDocument: convertToNewDidDocument(connection.didDoc),
     })
 
     connectionRecord.theirDid = peerDid
-    connectionRecord.theirDidDoc = connection.didDoc
     connectionRecord.threadId = message.threadId
 
     await this.updateState(connectionRecord, ConnectionState.Responded)
@@ -650,7 +632,62 @@ export class ConnectionService {
     protocol?: HandshakeProtocol
     outOfBandId?: string
   }): Promise<ConnectionRecord> {
-    const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
+    const { did, mediatorId } = options.routing
+
+    const connectionRecord = new ConnectionRecord({
+      did,
+      state: options.state,
+      role: options.role,
+      tags: options.tags,
+      alias: options.alias,
+      theirLabel: options.theirLabel,
+      autoAcceptConnection: options.autoAcceptConnection,
+      imageUrl: options.imageUrl,
+      multiUseInvitation: options.multiUseInvitation,
+      mediatorId,
+      protocol: options.protocol,
+      outOfBandId: options.outOfBandId,
+    })
+
+    await this.connectionRepository.save(connectionRecord)
+    return connectionRecord
+  }
+
+  private async createDid({
+    role,
+    recipientKeys,
+    didDocument,
+  }: {
+    role: DidDocumentRole
+    recipientKeys: string[]
+    didDocument: DidDocument
+  }) {
+    const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
+    const didRecord = new DidRecord({
+      id: peerDid.did,
+      role,
+      didDocument,
+      tags: {
+        // We need to save the recipientKeys, so we can find the associated did
+        // of a key when we receive a message from another connection.
+        recipientKeys,
+      },
+    })
+
+    this.logger.debug('Saving DID record', {
+      id: didRecord.id,
+      role: didRecord.role,
+      tags: didRecord.getTags(),
+      didDocument: 'omitted...',
+    })
+
+    await this.didRepository.save(didRecord)
+    this.logger.debug('Did record created.', didRecord)
+    return { did: peerDid.did, didDocument }
+  }
+
+  private createDidDoc(routing: Routing) {
+    const { endpoints, did, verkey, routingKeys } = routing
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
@@ -682,24 +719,7 @@ export class ConnectionService {
       publicKey: [publicKey],
     })
 
-    const connectionRecord = new ConnectionRecord({
-      did,
-      didDoc,
-      state: options.state,
-      role: options.role,
-      tags: options.tags,
-      alias: options.alias,
-      theirLabel: options.theirLabel,
-      autoAcceptConnection: options.autoAcceptConnection,
-      imageUrl: options.imageUrl,
-      multiUseInvitation: options.multiUseInvitation,
-      mediatorId,
-      protocol: options.protocol,
-      outOfBandId: options.outOfBandId,
-    })
-
-    await this.connectionRepository.save(connectionRecord)
-    return connectionRecord
+    return didDoc
   }
 
   public async returnWhenIsConnected(connectionId: string, timeoutMs = 20000): Promise<ConnectionRecord> {

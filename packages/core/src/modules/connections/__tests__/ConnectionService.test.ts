@@ -5,21 +5,20 @@ import { getAgentConfig, getMockConnection, getMockOutOfBand, mockFunction } fro
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { ConsoleLogger, LogLevel } from '../../../logger'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
-import { DidPeer } from '../../dids'
+import { DidPeer, IndyAgentService } from '../../dids'
 import { DidCommService } from '../../dids/domain/service/DidCommService'
 import { PeerDidNumAlgo } from '../../dids/methods/peer/DidPeer'
 import { DidRepository } from '../../dids/repository'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
-import { Connection, ConnectionState, ConnectionRole, DidDoc } from '../models'
+import { Connection, ConnectionState, ConnectionRole, DidDoc, EmbeddedAuthentication, Ed25119Sig2018 } from '../models'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 import { ConnectionService } from '../services/ConnectionService'
 import { convertToNewDidDocument } from '../services/helpers'
@@ -81,7 +80,35 @@ describe('ConnectionService', () => {
       expect(connectionRecord.state).toBe(ConnectionState.Requested)
       expect(message.label).toBe(agentConfig.label)
       expect(message.connection.did).toBe('fakeDid')
-      expect(message.connection.didDoc).toEqual(connectionRecord.didDoc)
+      expect(message.connection.didDoc).toEqual(
+        new DidDoc({
+          id: 'fakeDid',
+          publicKey: [
+            new Ed25119Sig2018({
+              id: `fakeDid#1`,
+              controller: 'fakeDid',
+              publicKeyBase58: 'fakeVerkey',
+            }),
+          ],
+          authentication: [
+            new EmbeddedAuthentication(
+              new Ed25119Sig2018({
+                id: `fakeDid#1`,
+                controller: 'fakeDid',
+                publicKeyBase58: 'fakeVerkey',
+              })
+            ),
+          ],
+          service: [
+            new IndyAgentService({
+              id: `fakeDid#IndyAgentService`,
+              serviceEndpoint: agentConfig.endpoints[0],
+              recipientKeys: ['fakeVerkey'],
+              routingKeys: [],
+            }),
+          ],
+        })
+      )
       expect(message.imageUrl).toBe(connectionImageUrl)
     })
 
@@ -136,7 +163,7 @@ describe('ConnectionService', () => {
 
   describe('processRequest', () => {
     it('returns a connection record containing the information from the connection request', async () => {
-      expect.assertions(6)
+      expect.assertions(5)
 
       const theirDid = 'their-did'
       const theirVerkey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
@@ -170,14 +197,13 @@ describe('ConnectionService', () => {
 
       expect(processedConnection.state).toBe(ConnectionState.Requested)
       expect(processedConnection.theirDid).toBe('did:peer:1zQmXUaPPhPCbUVZ3hGYmQmGxWTwyDfhqESXCpMFhKaF9Y2A')
-      expect(processedConnection.theirDidDoc).toEqual(theirDidDoc)
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
       expect(processedConnection.imageUrl).toBe(connectionImageUrl)
     })
 
     it('returns a new connection record containing the information from the connection request when multiUseInvitation is enabled on the connection', async () => {
-      expect.assertions(9)
+      expect.assertions(8)
 
       const connectionRecord = getMockConnection({
         id: 'test',
@@ -218,7 +244,6 @@ describe('ConnectionService', () => {
 
       expect(processedConnection.state).toBe(ConnectionState.Requested)
       expect(processedConnection.theirDid).toBe('did:peer:1zQmXUaPPhPCbUVZ3hGYmQmGxWTwyDfhqESXCpMFhKaF9Y2A')
-      expect(processedConnection.theirDidDoc).toEqual(theirDidDoc)
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
 
@@ -295,8 +320,36 @@ describe('ConnectionService', () => {
           threadId: 'test',
         },
       })
+
       const recipientKeys = [verkey]
       const outOfBand = getMockOutOfBand({ did, recipientKeys })
+      const mockDidDoc = new DidDoc({
+        id: 'test-did',
+        publicKey: [
+          new Ed25119Sig2018({
+            id: `test-did#1`,
+            controller: 'test-did',
+            publicKeyBase58: verkey,
+          }),
+        ],
+        authentication: [
+          new EmbeddedAuthentication(
+            new Ed25119Sig2018({
+              id: `test-did#1`,
+              controller: 'test-did',
+              publicKeyBase58: verkey,
+            })
+          ),
+        ],
+        service: [
+          new IndyAgentService({
+            id: `test-did#IndyAgentService`,
+            serviceEndpoint: 'http://example.com',
+            recipientKeys,
+            routingKeys: [],
+          }),
+        ],
+      })
 
       const { message, connectionRecord: connectionRecord } = await connectionService.createResponse(
         mockConnection,
@@ -305,7 +358,7 @@ describe('ConnectionService', () => {
 
       const connection = new Connection({
         did,
-        didDoc: mockConnection.didDoc,
+        didDoc: mockDidDoc,
       })
       const plainConnection = JsonTransformer.toJSON(connection)
 
@@ -343,7 +396,7 @@ describe('ConnectionService', () => {
 
   describe('processResponse', () => {
     it('returns a connection record containing the information from the connection response', async () => {
-      expect.assertions(3)
+      expect.assertions(2)
 
       const { did, verkey } = await wallet.createDid()
       const { did: theirDid, verkey: theirVerkey } = await wallet.createDid()
@@ -394,7 +447,6 @@ describe('ConnectionService', () => {
       )
       expect(processedConnection.state).toBe(ConnectionState.Responded)
       expect(processedConnection.theirDid).toBe(peerDid.did)
-      expect(processedConnection.theirDidDoc).toEqual(otherPartyConnection.didDoc)
     })
 
     it(`throws an error when connection role is ${ConnectionRole.Inviter} and not ${ConnectionRole.Invitee}`, async () => {

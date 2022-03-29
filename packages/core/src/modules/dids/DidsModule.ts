@@ -26,4 +26,8 @@ export class DidsModule {
   public findMultipleByVerkey(verkey: string) {
     return this.didRepository.findMultipleByVerkey(verkey)
   }
+
+  public findByDid(did: string) {
+    return this.didRepository.findSingleByQuery({ did })
+  }
 }

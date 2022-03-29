@@ -1,18 +1,16 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { HandshakeProtocol } from '../models'
-
-import { Type } from 'class-transformer'
+import type { HandshakeProtocol, DidDoc } from '../models'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { ConnectionRole, DidExchangeRole, DidDoc, ConnectionState, DidExchangeState } from '../models'
+import { ConnectionRole, DidExchangeRole, ConnectionState, DidExchangeState } from '../models'
 
 export interface ConnectionRecordProps {
   id?: string
   createdAt?: Date
   did: string
-  didDoc: DidDoc
+  didDoc?: DidDoc
   theirDid?: string
   theirDidDoc?: DidDoc
   theirLabel?: string
@@ -48,12 +46,8 @@ export class ConnectionRecord
   public state?: ConnectionState | DidExchangeState
   public role?: ConnectionRole | DidExchangeRole
 
-  @Type(() => DidDoc)
-  public didDoc!: DidDoc
   public did!: string
 
-  @Type(() => DidDoc)
-  public theirDidDoc?: DidDoc
   public theirDid?: string
   public theirLabel?: string
 
@@ -78,9 +72,7 @@ export class ConnectionRecord
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.did = props.did
-      this.didDoc = props.didDoc
       this.theirDid = props.theirDid
-      this.theirDidDoc = props.theirDidDoc
       this.theirLabel = props.theirLabel
       this.state = props.state
       this.role = props.role
@@ -108,16 +100,6 @@ export class ConnectionRecord
       theirDid: this.theirDid,
       outOfBandId: this.outOfBandId,
     }
-  }
-
-  public get myKey() {
-    const [service] = this.didDoc?.didCommServices ?? []
-
-    if (!service) {
-      return null
-    }
-
-    return service.recipientKeys[0]
   }
 
   public get isRequester() {
