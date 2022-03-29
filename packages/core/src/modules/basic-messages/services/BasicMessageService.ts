@@ -26,7 +26,6 @@ export class BasicMessageService {
     const basicMessage = new BasicMessage({ content: message })
 
     const basicMessageRecord = new BasicMessageRecord({
-      id: basicMessage.id,
       sentTime: basicMessage.sentTime.toISOString(),
       content: basicMessage.content,
       connectionId: connectionRecord.id,
@@ -47,7 +46,6 @@ export class BasicMessageService {
    */
   public async save({ message }: InboundMessageContext<BasicMessage>, connection: ConnectionRecord) {
     const basicMessageRecord = new BasicMessageRecord({
-      id: message.id,
       sentTime: message.sentTime.toISOString(),
       content: message.content,
       connectionId: connection.id,
