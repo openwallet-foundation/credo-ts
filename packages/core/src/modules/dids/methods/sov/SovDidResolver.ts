@@ -74,18 +74,18 @@ export class SovDidResolver implements DidResolver {
   }
 
   // Process Indy Attrib Endpoint Types according to: https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html > Read (Resolve) > DID Service Endpoint
-  private processEndpointTypes(types?: string[]){
+  private processEndpointTypes(types?: string[]) {
     const expectedTypes = ['endpoint', 'did-communication', 'DIDComm']
-    const defaultTypes = ["endpoint", "did-communication"]
+    const defaultTypes = ['endpoint', 'did-communication']
 
     // Return default types if types "is NOT present [or] empty"
-    if(!types || types?.length <= 0){
+    if (!types || types?.length <= 0) {
       return defaultTypes
     }
 
     // Return default types if types "contain any other values"
-    for(const type of types){
-      if(!expectedTypes.includes(type)){
+    for (const type of types) {
+      if (!expectedTypes.includes(type)) {
         return defaultTypes
       }
     }
