@@ -1,5 +1,6 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { RevocationInterval } from '../../credentials/models/RevocationInterval'
+import type { RequestedCredentialConfigOptions } from '../models/SharedOptions'
 import type { RequestedAttribute, RequestedPredicate } from '../protocol/v1/models'
 import type {
   PresentationPreview,
@@ -39,4 +40,10 @@ export interface IndyPresentationProofFormat {
   requestedAttributes?: Record<string, RequestedAttribute>
   requestedPredicates?: Record<string, RequestedPredicate>
   selfAttestedAttributes?: Record<string, string>
+}
+
+export interface IndyGetRequestedCredentialsFormat {
+  proofRequest: ProofRequest
+  presentationProposal?: PresentationPreview
+  config: RequestedCredentialConfigOptions
 }

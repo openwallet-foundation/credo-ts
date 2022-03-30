@@ -1,6 +1,11 @@
 import type { Logger } from '../../../../logger'
-import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
+import type {
+  AutoSelectCredentialOptions,
+  ProofRequestFormats,
+  RequestedCredentialsFormats,
+} from '../../models/SharedOptions'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../../protocol/v1/models/PresentationPreview'
+import type { IndyGetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationOptions,
@@ -298,11 +303,9 @@ export class IndyProofFormatService extends ProofFormatService {
     return credentialDefinitions
   }
 
-  public async getRequestedCredentialsForProofRequest(options: {
-    proofRequest: ProofRequest
-    presentationProposal?: PresentationPreview
-    config: { indy?: GetRequestedCredentialsConfig | undefined; jsonLd?: undefined }
-  }): Promise<{ indy?: RetrievedCredentials | undefined; jsonLd?: undefined }> {
+  public async getRequestedCredentialsForProofRequest(
+    options: IndyGetRequestedCredentialsFormat
+  ): Promise<AutoSelectCredentialOptions> {
     const retrievedCredentials = new RetrievedCredentials({})
     const { proofRequest, presentationProposal } = options
     const filterByNonRevocationRequirements = options.config.indy?.filterByNonRevocationRequirements
@@ -409,10 +412,9 @@ export class IndyProofFormatService extends ProofFormatService {
     return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
   }
 
-  public async autoSelectCredentialsForProofRequest(options: {
-    indy?: RetrievedCredentials | undefined
-    jsonLd?: undefined
-  }): Promise<{ indy?: RequestedCredentials | undefined; jsonLd?: undefined }> {
+  public async autoSelectCredentialsForProofRequest(
+    options: AutoSelectCredentialOptions
+  ): Promise<RequestedCredentialsFormats> {
     const indy = options.indy
 
     if (!indy) {
@@ -513,7 +515,7 @@ export class IndyProofFormatService extends ProofFormatService {
     config?:
       | { indy?: { name: string; version: string; nonce?: string | undefined } | undefined; jsonLd?: undefined }
       | undefined
-  }): Promise<{ indy?: ProofRequest | undefined; jsonLd?: undefined }> {
+  }): Promise<ProofRequestFormats> {
     const indyFormat = options.formats.indy
     const indyConfig = options.config?.indy
 

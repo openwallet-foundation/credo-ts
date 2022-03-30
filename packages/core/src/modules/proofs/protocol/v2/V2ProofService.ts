@@ -5,11 +5,8 @@ import type { MediationRecipientService } from '../../../routing/services/Mediat
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
-import type { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
-import type { RetrievedCredentials } from '../../formats/indy/models/RetrievedCredentials'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
-import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -17,7 +14,13 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
+  GetRequestedCredentialforProofRequestoptions,
 } from '../../models/ProofServiceOptions'
+import type {
+  AutoSelectCredentialOptions,
+  ProofRequestFormats,
+  RequestedCredentialsFormats,
+} from '../../models/SharedOptions'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -665,10 +668,7 @@ export class V2ProofService extends ProofService {
       jsonLd?: never
     }
     config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
-  }): Promise<{
-    indy?: ProofRequest
-    jsonLd?: never
-  }> {
+  }): Promise<ProofRequestFormats> {
     let result = {}
 
     for (const [format, value] of Object.entries(options.formats)) {
@@ -731,10 +731,9 @@ export class V2ProofService extends ProofService {
     })
   }
 
-  public async getRequestedCredentialsForProofRequest(options: {
-    proofRecord: ProofRecord
-    config: { indy?: GetRequestedCredentialsConfig | undefined; jsonLd?: undefined }
-  }): Promise<{ indy?: RetrievedCredentials | undefined; jsonLd?: undefined }> {
+  public async getRequestedCredentialsForProofRequest(
+    options: GetRequestedCredentialforProofRequestoptions
+  ): Promise<AutoSelectCredentialOptions> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
       messageClass: V2RequestPresentationMessage,
@@ -778,10 +777,9 @@ export class V2ProofService extends ProofService {
     return result
   }
 
-  public async autoSelectCredentialsForProofRequest(options: {
-    indy?: RetrievedCredentials | undefined
-    jsonLd?: undefined
-  }): Promise<{ indy?: RequestedCredentials | undefined; jsonLd?: undefined }> {
+  public async autoSelectCredentialsForProofRequest(
+    options: AutoSelectCredentialOptions
+  ): Promise<RequestedCredentialsFormats> {
     let returnValue = {}
 
     for (const [id, format] of Object.entries(options)) {

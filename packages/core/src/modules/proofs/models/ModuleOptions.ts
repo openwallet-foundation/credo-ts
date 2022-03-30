@@ -40,7 +40,7 @@ export interface RequestProofsOptions {
 
 export interface OutOfBandRequestOptions {
   protocolVersion: ProofProtocolVersion
-  proofRequestOptions: ProposeProofFormats | RequestProofFormats
+  proofRequestOptions: RequestProofFormats
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }

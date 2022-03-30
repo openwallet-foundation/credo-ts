@@ -1,11 +1,12 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { DidCommMessageRepository } from '../../../storage'
-import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
-import type { PresentationPreview } from '../protocol/v1/models/PresentationPreview'
-import type { ProofRequest } from './indy/models/ProofRequest'
-import type { RequestedCredentials } from './indy/models/RequestedCredentials'
-import type { RetrievedCredentials } from './indy/models/RetrievedCredentials'
+import type {
+  AutoSelectCredentialOptions,
+  ProofRequestFormats,
+  RequestedCredentialsFormats,
+} from '../models/SharedOptions'
+import type { IndyGetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
   CreatePresentationOptions,
@@ -53,30 +54,15 @@ export abstract class ProofFormatService {
       jsonLd?: never
     }
     config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
-  }): Promise<{
-    indy?: ProofRequest
-    jsonLd?: never
-  }>
+  }): Promise<ProofRequestFormats>
 
-  public abstract getRequestedCredentialsForProofRequest(options: {
-    proofRequest: ProofRequest
-    presentationProposal?: PresentationPreview
-    config: {
-      indy?: GetRequestedCredentialsConfig
-      jsonLd?: never
-    }
-  }): Promise<{
-    indy?: RetrievedCredentials
-    jsonLd?: never
-  }>
+  public abstract getRequestedCredentialsForProofRequest(
+    options: IndyGetRequestedCredentialsFormat
+  ): Promise<AutoSelectCredentialOptions>
 
-  public abstract autoSelectCredentialsForProofRequest(options: {
-    indy?: RetrievedCredentials
-    jsonLd?: never
-  }): Promise<{
-    indy?: RequestedCredentials
-    jsonLd?: never
-  }>
+  public abstract autoSelectCredentialsForProofRequest(
+    options: AutoSelectCredentialOptions
+  ): Promise<RequestedCredentialsFormats>
 
   abstract proposalAndRequestAreEqual(
     proposalAttachments: ProofAttachmentFormat[],

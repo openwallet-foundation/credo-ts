@@ -4,7 +4,9 @@ import type {
   IndyVerifyProofFormat,
 } from '../formats/IndyProofFormatsServiceOptions'
 import type { ProofRequest } from '../formats/indy/models/ProofRequest'
-import type { RequestedCredentialsOptions } from '../formats/indy/models/RequestedCredentials'
+import type { RequestedCredentials, RequestedCredentialsOptions } from '../formats/indy/models/RequestedCredentials'
+import type { RetrievedCredentials } from '../formats/indy/models/RetrievedCredentials'
+import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 
 export interface ProposeProofFormats {
   // If you want to propose an indy proof without attributes or
@@ -37,6 +39,26 @@ export interface AcceptProposalFormats {
 export interface VerifyProofFormats {
   indy?: IndyVerifyProofFormat
   presentationExchange?: never
+}
+
+export interface RequestedCredentialConfigOptions {
+  indy?: GetRequestedCredentialsConfig
+  jsonLd?: never
+}
+
+export interface AutoSelectCredentialOptions {
+  indy?: RetrievedCredentials | undefined
+  jsonLd?: undefined
+}
+
+export interface ProofRequestFormats {
+  indy?: ProofRequest | undefined
+  jsonLd?: undefined
+}
+
+export interface RequestedCredentialsFormats {
+  indy?: RequestedCredentials | undefined
+  jsonLd?: undefined
 }
 
 interface AcceptProposal {

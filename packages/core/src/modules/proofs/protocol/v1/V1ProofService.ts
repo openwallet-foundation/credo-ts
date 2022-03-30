@@ -5,9 +5,7 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { RetrievedCredentials } from '../../formats/indy/models/RetrievedCredentials'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
-import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -15,7 +13,13 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
+  GetRequestedCredentialforProofRequestoptions,
 } from '../../models/ProofServiceOptions'
+import type {
+  AutoSelectCredentialOptions,
+  ProofRequestFormats,
+  RequestedCredentialsFormats,
+} from '../../models/SharedOptions'
 import type { PresentationPreviewAttribute } from './models/PresentationPreview'
 import type { CredDef, Schema } from 'indy-sdk'
 
@@ -622,10 +626,7 @@ export class V1ProofService extends ProofService {
       jsonLd?: never
     }
     config?: { indy?: { name: string; version: string; nonce: string }; jsonLd?: never }
-  }): Promise<{
-    indy?: ProofRequest
-    jsonLd?: never
-  }> {
+  }): Promise<ProofRequestFormats> {
     const indyFormat = options.formats.indy
     const indyConfig = options.config?.indy
 
@@ -858,13 +859,9 @@ export class V1ProofService extends ProofService {
     return true
   }
 
-  public async getRequestedCredentialsForProofRequest(options: {
-    proofRecord: ProofRecord
-    config: {
-      indy?: GetRequestedCredentialsConfig
-      jsonLd?: never
-    }
-  }): Promise<{ indy?: RetrievedCredentials | undefined; w3c?: undefined }> {
+  public async getRequestedCredentialsForProofRequest(
+    options: GetRequestedCredentialforProofRequestoptions
+  ): Promise<AutoSelectCredentialOptions> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
       messageClass: V1RequestPresentationMessage,
@@ -888,10 +885,9 @@ export class V1ProofService extends ProofService {
     })
   }
 
-  public async autoSelectCredentialsForProofRequest(options: {
-    indy?: RetrievedCredentials | undefined
-    jsonLd?: undefined
-  }): Promise<{ indy?: RequestedCredentials | undefined; jsonLd?: undefined }> {
+  public async autoSelectCredentialsForProofRequest(
+    options: AutoSelectCredentialOptions
+  ): Promise<RequestedCredentialsFormats> {
     return await this.indyProofFormatService.autoSelectCredentialsForProofRequest(options)
   }
 

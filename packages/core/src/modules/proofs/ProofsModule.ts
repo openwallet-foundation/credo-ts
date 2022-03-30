@@ -1,8 +1,6 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { ProofService } from './ProofService'
 import type { ProofRequestOptions } from './formats/indy/models/ProofRequest'
-import type { RequestedCredentials } from './formats/indy/models/RequestedCredentials'
-import type { RetrievedCredentials } from './formats/indy/models/RetrievedCredentials'
 import type { GetRequestedCredentialsConfig } from './models/GetRequestedCredentialsConfig'
 import type {
   AcceptPresentationOptions,
@@ -18,6 +16,7 @@ import type {
   CreateProposalOptions,
   CreateRequestOptions,
 } from './models/ProofServiceOptions'
+import type { AutoSelectCredentialOptions, RequestedCredentialsFormats } from './models/SharedOptions'
 import type { ProofRecord } from './repository/ProofRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -416,10 +415,7 @@ export class ProofsModule {
     proofRecordId: string,
     version: ProofProtocolVersion,
     config?: GetRequestedCredentialsConfig
-  ): Promise<{
-    indy?: RetrievedCredentials
-    jsonLd?: never
-  }> {
+  ): Promise<AutoSelectCredentialOptions> {
     const service = this.getService(version)
 
     const proofRecord = await service.getById(proofRecordId)
@@ -443,15 +439,9 @@ export class ProofsModule {
    * @returns RequestedCredentials
    */
   public async autoSelectCredentialsForProofRequest(options: {
-    formats: {
-      indy?: RetrievedCredentials
-      jsonLd?: never
-    }
+    formats: AutoSelectCredentialOptions
     version: ProofProtocolVersion
-  }): Promise<{
-    indy?: RequestedCredentials
-    jsonLd?: never
-  }> {
+  }): Promise<RequestedCredentialsFormats> {
     const service = this.getService(options.version)
     return await service.autoSelectCredentialsForProofRequest(options.formats)
   }

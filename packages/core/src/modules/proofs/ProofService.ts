@@ -10,11 +10,7 @@ import type { ConnectionService } from '../connections/services'
 import type { MediationRecipientService } from '../routing'
 import type { ProofStateChangedEvent } from './ProofEvents'
 import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
-import type { ProofRequest } from './formats/indy/models/ProofRequest'
-import type { RequestedCredentials } from './formats/indy/models/RequestedCredentials'
-import type { RetrievedCredentials } from './formats/indy/models/RetrievedCredentials'
 import type { CreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
-import type { GetRequestedCredentialsConfig } from './models/GetRequestedCredentialsConfig'
 import type { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import type {
   CreateAckOptions,
@@ -23,8 +19,14 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
+  GetRequestedCredentialforProofRequestoptions,
 } from './models/ProofServiceOptions'
 import type { ProofState } from './models/ProofState'
+import type {
+  AutoSelectCredentialOptions,
+  ProofRequestFormats,
+  RequestedCredentialsFormats,
+} from './models/SharedOptions'
 import type { ProofRecord, ProofRepository } from './repository'
 
 import { ProofEventTypes } from './ProofEvents'
@@ -182,24 +184,13 @@ export abstract class ProofService {
     })
   }
 
-  public abstract getRequestedCredentialsForProofRequest(options: {
-    proofRecord: ProofRecord
-    config: {
-      indy?: GetRequestedCredentialsConfig
-      jsonLd?: never
-    }
-  }): Promise<{
-    indy?: RetrievedCredentials
-    jsonLd?: never
-  }>
+  public abstract getRequestedCredentialsForProofRequest(
+    options: GetRequestedCredentialforProofRequestoptions
+  ): Promise<AutoSelectCredentialOptions>
 
-  public abstract autoSelectCredentialsForProofRequest(options: {
-    indy?: RetrievedCredentials
-    jsonLd?: never
-  }): Promise<{
-    indy?: RequestedCredentials
-    jsonLd?: never
-  }>
+  public abstract autoSelectCredentialsForProofRequest(
+    options: AutoSelectCredentialOptions
+  ): Promise<RequestedCredentialsFormats>
 
   public abstract createProofRequestFromProposal(options: {
     formats: {
@@ -209,10 +200,7 @@ export abstract class ProofService {
       jsonLd?: never
     }
     config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
-  }): Promise<{
-    indy?: ProofRequest
-    jsonLd?: never
-  }>
+  }): Promise<ProofRequestFormats>
 
   /**
    * Retrieve all proof records

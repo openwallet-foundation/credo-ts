@@ -4,7 +4,12 @@ import type { PresentationPreview } from '../protocol/v1/models/PresentationPrev
 import type { ProofRecord } from '../repository'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
-import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
+import type {
+  CreatePresentationFormats,
+  ProposeProofFormats,
+  RequestedCredentialConfigOptions,
+  RequestProofFormats,
+} from './SharedOptions'
 
 // ----- Create Proposal ----- //
 export interface CreateProposalOptions {
@@ -74,4 +79,8 @@ export interface CreateAckOptions {
 export interface RequestedCredentialForProofRequestOptions {
   proofRequest: ProofRequest
   presentationProposal?: PresentationPreview
+}
+export interface GetRequestedCredentialforProofRequestoptions {
+  proofRecord: ProofRecord
+  config: RequestedCredentialConfigOptions
 }
