@@ -4,7 +4,7 @@ import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { credDefIdRegex, issuerDidRegex, schemaIdRegex, schemaIssuerDidRegex, schemaVersionRegex } from '../../../utils'
+import { credDefIdRegex, indyDidRegex, schemaIdRegex, schemaVersionRegex } from '../../../utils'
 
 import { CredentialPreview } from './CredentialPreview'
 
@@ -72,7 +72,7 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_issuer_did' })
   @IsString()
   @IsOptional()
-  @Matches(schemaIssuerDidRegex)
+  @Matches(indyDidRegex)
   public schemaIssuerDid?: string
 
   /**
@@ -118,6 +118,6 @@ export class ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'issuer_did' })
   @IsString()
   @IsOptional()
-  @Matches(issuerDidRegex)
+  @Matches(indyDidRegex)
   public issuerDid?: string
 }
