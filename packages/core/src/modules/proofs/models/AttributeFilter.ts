@@ -1,5 +1,6 @@
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
+
 import { credDefIdRegex, issuerDidRegex, schemaIdRegex, schemaIssuerDidRegex, schemaVersionRegex } from '../../../utils'
 
 export class AttributeValue {
