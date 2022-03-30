@@ -61,6 +61,7 @@ export class MediationRecord
       this.role = props.role
       this.endpoint = props.endpoint ?? undefined
       this.pickupStrategy = props.pickupStrategy
+      this._tags = props.tags ?? {}
     }
   }
 
