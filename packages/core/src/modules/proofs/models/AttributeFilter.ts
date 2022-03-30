@@ -1,5 +1,12 @@
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
+import {
+  schemaVersionRegex,
+  schemaIssuerDidRegex,
+  schemaIdRegex,
+  credDefIdRegex,
+  issuerDidRegex,
+} from 'packages/core/src/utils/regex'
 
 export class AttributeValue {
   public constructor(options: AttributeValue) {
@@ -32,13 +39,13 @@ export class AttributeFilter {
   @Expose({ name: 'schema_id' })
   @IsOptional()
   @IsString()
-  @Matches(/^[a-zA-Z0-9]{21,22}:2:.+:[0-9.]+$/)
+  @Matches(schemaIdRegex)
   public schemaId?: string
 
   @Expose({ name: 'schema_issuer_did' })
   @IsOptional()
   @IsString()
-  @Matches(/^(did:sov:)?[a-zA-Z0-9]{21,22}$/)
+  @Matches(schemaIssuerDidRegex)
   public schemaIssuerDid?: string
 
   @Expose({ name: 'schema_name' })
@@ -49,7 +56,7 @@ export class AttributeFilter {
   @Expose({ name: 'schema_version' })
   @IsOptional()
   @IsString()
-  @Matches(/^(\d+\.)?(\d+\.)?(\*|\d+)$/, {
+  @Matches(schemaVersionRegex, {
     message: 'Version must be X.X or X.X.X',
   })
   public schemaVersion?: string
@@ -57,13 +64,13 @@ export class AttributeFilter {
   @Expose({ name: 'issuer_did' })
   @IsOptional()
   @IsString()
-  @Matches(/^(did:sov:)?[a-zA-Z0-9]{21,22}$/)
+  @Matches(issuerDidRegex)
   public issuerDid?: string
 
   @Expose({ name: 'cred_def_id' })
   @IsOptional()
   @IsString()
-  @Matches(/^([a-zA-Z0-9]{21,22}):3:CL:(([1-9][0-9]*)|([a-zA-Z0-9]{21,22}:2:.+:[0-9.]+)):(.+)?$/)
+  @Matches(credDefIdRegex)
   public credentialDefinitionId?: string
 
   @IsOptional()
