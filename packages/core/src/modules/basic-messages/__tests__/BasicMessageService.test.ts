@@ -29,7 +29,7 @@ describe('BasicMessageService', () => {
     agentConfig = getAgentConfig('BasicMessageServiceTest')
     wallet = new IndyWallet(agentConfig)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(agentConfig.walletConfig!)
+    await wallet.createAndOpen(agentConfig.walletConfig!)
     storageService = new IndyStorageService(wallet, agentConfig)
   })
 
@@ -69,7 +69,7 @@ describe('BasicMessageService', () => {
         payload: {
           basicMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
-            id: basicMessage.id,
+            id: expect.any(String),
             sentTime: basicMessage.sentTime.toISOString(),
             content: basicMessage.content,
             role: BasicMessageRole.Receiver,
