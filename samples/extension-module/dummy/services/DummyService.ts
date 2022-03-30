@@ -21,6 +21,13 @@ export class DummyService {
     this.eventEmitter = eventEmitter
   }
 
+  /**
+   * Create a {@link DummyRequestMessage}.
+   *
+   * @param connectionRecord The connection for which to create the dummy request
+   * @returns Object containing dummy request message and associated dummy record
+   *
+   */
   public async createRequest(connectionRecord: ConnectionRecord) {
     // Create message
     const message = new DummyRequestMessage({})
@@ -45,6 +52,12 @@ export class DummyService {
     return { record, message }
   }
 
+  /**
+   * Create a dummy response message for the specified dummy record.
+   *
+   * @param record the dummy record for which to create a dummy response
+   * @returns outbound message containing dummy response
+   */
   public async createResponse(record: DummyRecord) {
     const responseMessage = new DummyResponseMessage({
       threadId: record.threadId,
@@ -53,6 +66,13 @@ export class DummyService {
     return responseMessage
   }
 
+  /**
+   * Process a received {@link DummyRequestMessage}.
+   *
+   * @param messageContext The message context containing a dummy request message
+   * @returns dummy record associated with the dummy request message
+   *
+   */
   public async processRequest(messageContext: InboundMessageContext<DummyRequestMessage>) {
     const connectionRecord = messageContext.connection
 
@@ -76,10 +96,17 @@ export class DummyService {
     return record
   }
 
+  /**
+   * Process a received {@link DummyResponseMessage}.
+   *
+   * @param messageContext The message context containing a dummy response message
+   * @returns dummy record associated with the dummy response message
+   *
+   */
   public async processResponse(messageContext: InboundMessageContext<DummyResponseMessage>) {
     const { connection, message } = messageContext
 
-    // Identity Verification record already exists
+    // Dummy record already exists
     const record = await this.findByThreadAndConnectionId(message.threadId, connection?.id)
 
     if (record) {
@@ -88,7 +115,7 @@ export class DummyService {
 
       await this.updateState(record, DummyState.ResponseReceived)
     } else {
-      throw new Error(`Dummy record Verification not found with threadId ${message.threadId}`)
+      throw new Error(`Dummy record not found with threadId ${message.threadId}`)
     }
 
     return record
@@ -106,9 +133,9 @@ export class DummyService {
   /**
    * Retrieve a dummy record by id
    *
-   * @param identityVerificationRecordId The credential record id
+   * @param dummyRecordId The dummy record id
    * @throws {RecordNotFoundError} If no record is found
-   * @return The credential record
+   * @return The dummy record
    *
    */
   public getById(dummyRecordId: string): Promise<DummyRecord> {

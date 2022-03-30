@@ -29,7 +29,7 @@ export class DummyModule {
   /**
    * Send a Dummy Request
    *
-   * @param connection record of the target issuer (must be active)
+   * @param connection record of the target responder (must be active)
    * @returns created Dummy Record
    */
   public async request(connection: ConnectionRecord) {
@@ -67,7 +67,7 @@ export class DummyModule {
   /**
    * Retrieve all dummy records
    *
-   * @returns List containing all identity verification records
+   * @returns List containing all records
    */
   public getAll(): Promise<DummyRecord[]> {
     return this.dummyService.getAll()
