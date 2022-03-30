@@ -1,12 +1,8 @@
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
+
 import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
-import {
-  schemaVersionRegex,
-  schemaIssuerDidRegex,
-  schemaIdRegex,
-  credDefIdRegex,
-  issuerDidRegex,
-} from 'packages/core/src/utils/regex'
+
+import { credDefIdRegex, issuerDidRegex, schemaIdRegex, schemaIssuerDidRegex, schemaVersionRegex } from '../../../utils'
 
 export class AttributeValue {
   public constructor(options: AttributeValue) {
