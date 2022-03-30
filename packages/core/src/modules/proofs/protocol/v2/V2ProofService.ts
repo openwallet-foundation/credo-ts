@@ -671,7 +671,7 @@ export class V2ProofService extends ProofService {
   }): Promise<ProofRequestFormats> {
     let result = {}
 
-    for (const [format, value] of Object.entries(options.formats)) {
+    for (const [format] of Object.entries(options.formats)) {
       const service = this.formatServiceMap[format]
 
       const indyFormat = options.formats.indy
@@ -782,7 +782,7 @@ export class V2ProofService extends ProofService {
   ): Promise<RequestedCredentialsFormats> {
     let returnValue = {}
 
-    for (const [id, format] of Object.entries(options)) {
+    for (const [id] of Object.entries(options)) {
       const service = this.formatServiceMap[id]
       const credentials = await service.autoSelectCredentialsForProofRequest(options)
       returnValue = { ...returnValue, ...credentials }

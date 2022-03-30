@@ -14,8 +14,6 @@ import type {
   CreateRequestAttachmentOptions,
   CreateRequestOptions,
   ProcessPresentationOptions,
-  ProcessProposalOptions,
-  ProcessRequestOptions,
   VerifyProofOptions,
 } from '../models/ProofFormatServiceOptions'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
@@ -127,10 +125,6 @@ export class IndyProofFormatService extends ProofFormatService {
     })
   }
 
-  public processProposal(options: ProcessProposalOptions): void {
-    throw new Error('Method not implemented.')
-  }
-
   public createRequest(options: CreateRequestOptions): ProofAttachmentFormat {
     if (!options.formats.indy) {
       throw new AriesFrameworkError(
@@ -142,10 +136,6 @@ export class IndyProofFormatService extends ProofFormatService {
       attachId: options.attachId ?? uuid(),
       proofRequestOptions: options.formats.indy,
     })
-  }
-
-  public processRequest(options: ProcessRequestOptions): void {
-    throw new Error('Method not implemented.')
   }
 
   public async createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat> {

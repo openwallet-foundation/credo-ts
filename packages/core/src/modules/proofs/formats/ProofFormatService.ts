@@ -13,8 +13,6 @@ import type {
   CreateProposalOptions,
   CreateRequestOptions,
   ProcessPresentationOptions,
-  ProcessProposalOptions,
-  ProcessRequestOptions,
 } from './models/ProofFormatServiceOptions'
 
 /**
@@ -36,11 +34,7 @@ export abstract class ProofFormatService {
 
   abstract createProposal(options: CreateProposalOptions): ProofAttachmentFormat
 
-  abstract processProposal(options: ProcessProposalOptions): void
-
   abstract createRequest(options: CreateRequestOptions): ProofAttachmentFormat
-
-  abstract processRequest(options: ProcessRequestOptions): void
 
   abstract createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat>
 
@@ -70,6 +64,4 @@ export abstract class ProofFormatService {
   ): boolean
 
   abstract supportsFormat(formatIdentifier: string): boolean
-
-  // abstract getRequestedCredentialsForProofRequest(record: ProofRecord):
 }

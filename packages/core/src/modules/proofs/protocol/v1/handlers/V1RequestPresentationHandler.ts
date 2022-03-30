@@ -11,7 +11,7 @@ import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecor
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { DidCommMessageRole } from '../../../../../storage'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
-import { V1ProposePresentationMessage, V1RequestPresentationMessage } from '../messages'
+import { V1RequestPresentationMessage } from '../messages'
 
 export class V1RequestPresentationHandler implements Handler {
   private proofService: ProofService
@@ -61,11 +61,6 @@ export class V1RequestPresentationHandler implements Handler {
       this.agentConfig.logger.error('Proof request is undefined.')
       return
     }
-
-    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: record.id,
-      messageClass: V1ProposePresentationMessage,
-    })
 
     const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest({
       proofRecord: record,
