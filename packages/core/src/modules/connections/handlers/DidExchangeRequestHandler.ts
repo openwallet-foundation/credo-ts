@@ -51,8 +51,11 @@ export class DidExchangeRequestHandler implements Handler {
       )
     }
 
-    // TODO Rotate keys or reuse the keys from oob invitation according to a config flag or method param.
-    const routing = await this.mediationRecipientService.getRouting()
+    // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
+    let routing
+    if (outOfBandRecord.reusable) {
+      routing = await this.mediationRecipientService.getRouting()
+    }
 
     const connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, outOfBandRecord, routing)
 

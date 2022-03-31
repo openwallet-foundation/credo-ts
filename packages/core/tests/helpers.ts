@@ -231,12 +231,14 @@ export function getMockOutOfBand({
   serviceEndpoint,
   recipientKeys,
   did,
+  mediatorId,
   role,
   state,
 }: {
   label?: string
   serviceEndpoint?: string
   did?: string
+  mediatorId?: string
   recipientKeys?: string[]
   role?: OutOfBandRole
   state?: OutOfBandState
@@ -257,7 +259,8 @@ export function getMockOutOfBand({
   }
   const outOfBandMessage = new OutOfBandMessage(options)
   const outOfBandRecord = new OutOfBandRecord({
-    did: did || '',
+    did: did || 'test-did',
+    mediatorId,
     role: role || OutOfBandRole.Receiver,
     state: state || OutOfBandState.Initial,
     outOfBandMessage: outOfBandMessage,

@@ -96,6 +96,7 @@ export class ConnectionService {
 
     const { outOfBandMessage } = outOfBandRecord
 
+    const { did, mediatorId } = config.routing
     const didDoc = this.createDidDoc(config.routing)
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
@@ -103,7 +104,8 @@ export class ConnectionService {
       state: ConnectionState.Invited,
       theirLabel: outOfBandMessage.label,
       alias: config?.alias,
-      routing: config.routing,
+      did,
+      mediatorId,
       autoAcceptConnection: config?.autoAcceptConnection,
       multiUseInvitation: false,
     })
@@ -141,7 +143,7 @@ export class ConnectionService {
   public async processRequest(
     messageContext: InboundMessageContext<ConnectionRequestMessage>,
     outOfBandRecord: OutOfBandRecord,
-    routing: Routing
+    routing?: Routing
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} start`, messageContext)
     outOfBandRecord.assertRole(OutOfBandRole.Sender)
@@ -149,38 +151,31 @@ export class ConnectionService {
 
     // TODO check there is no connection record for particular oob record
 
-    const { message } = messageContext
+    const { did, mediatorId } = routing ? routing : outOfBandRecord
+    if (!did) {
+      throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
+    }
 
+    const { message } = messageContext
     if (!message.connection.didDoc) {
       throw new ConnectionProblemReportError('Public DIDs are not supported yet', {
         problemCode: ConnectionProblemReportReason.RequestNotAccepted,
       })
     }
 
-    // TODO
-    routing.verkey = outOfBandRecord.getTags().recipientKey
-    routing.routingKeys = Array.from(
-      new Set(
-        outOfBandRecord.outOfBandMessage.services
-          .filter((s): s is DidCommService => typeof s !== 'string')
-          .map((s) => s.routingKeys)
-          .filter((r): r is string[] => r !== undefined)
-          .reduce((acc, curr) => acc.concat(curr), [])
-      )
-    )
-
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
       role: ConnectionRole.Inviter,
       multiUseInvitation: false,
-      routing,
+      did,
+      mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       tags: {
         invitationKey: outOfBandRecord.getTags().recipientKey,
       },
     })
 
-    // TODO Could we use authentication key from did doc?
+    // TODO Could we use authentication key from did doc instead of did comm services?
     const theirVerkeys = message.connection.didDoc?.didCommServices[0].recipientKeys ?? []
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Received,
@@ -207,46 +202,50 @@ export class ConnectionService {
    */
   public async createResponse(
     connectionRecord: ConnectionRecord,
-    outOfBandRecord: OutOfBandRecord
+    outOfBandRecord: OutOfBandRecord,
+    routing?: Routing
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
     this.logger.debug(`Create message ${ConnectionResponseMessage.type} start`, connectionRecord)
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
-    if (!outOfBandRecord.did) {
-      throw new AriesFrameworkError('No did on oob record')
+    const { did } = routing ? routing : outOfBandRecord
+    if (!did) {
+      throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
     }
 
-    const routing: Routing = {
-      did: connectionRecord.did,
-      endpoints: Array.from(
-        new Set(
-          outOfBandRecord.outOfBandMessage.services
-            .filter((s): s is DidCommService => typeof s !== 'string')
-            .map((s) => s.serviceEndpoint)
-        )
-      ),
-      verkey: outOfBandRecord.getTags().recipientKey,
-      routingKeys: Array.from(
-        new Set(
-          outOfBandRecord.outOfBandMessage.services
-            .filter((s): s is DidCommService => typeof s !== 'string')
-            .map((s) => s.routingKeys)
-            .filter((r): r is string[] => r !== undefined)
-            .reduce((acc, curr) => acc.concat(curr), [])
-        )
-      ),
-    }
+    const didDocRouting: Routing = routing
+      ? routing
+      : {
+          did,
+          endpoints: Array.from(
+            new Set(
+              outOfBandRecord.outOfBandMessage.services
+                .filter((s): s is DidCommService => typeof s !== 'string')
+                .map((s) => s.serviceEndpoint)
+            )
+          ),
+          verkey: outOfBandRecord.getTags().recipientKey,
+          routingKeys: Array.from(
+            new Set(
+              outOfBandRecord.outOfBandMessage.services
+                .filter((s): s is DidCommService => typeof s !== 'string')
+                .map((s) => s.routingKeys)
+                .filter((r): r is string[] => r !== undefined)
+                .reduce((acc, curr) => acc.concat(curr), [])
+            )
+          ),
+        }
 
-    const didDoc = this.createDidDoc(routing)
+    const didDoc = this.createDidDoc(didDocRouting)
     const { did: peerDid } = await this.createDid({
-      recipientKeys: outOfBandRecord.getRecipientKeys(),
+      recipientKeys: [didDocRouting.verkey],
       role: DidDocumentRole.Created,
       didDocument: convertToNewDidDocument(didDoc),
     })
 
     const connection = new Connection({
-      did: outOfBandRecord.did,
+      did,
       didDoc,
     })
 
@@ -623,7 +622,8 @@ export class ConnectionService {
     role?: ConnectionRole | DidExchangeRole
     state?: ConnectionState | DidExchangeState
     alias?: string
-    routing: Routing
+    did: string
+    mediatorId?: string
     theirLabel?: string
     autoAcceptConnection?: boolean
     multiUseInvitation: boolean
@@ -632,10 +632,8 @@ export class ConnectionService {
     protocol?: HandshakeProtocol
     outOfBandId?: string
   }): Promise<ConnectionRecord> {
-    const { did, mediatorId } = options.routing
-
     const connectionRecord = new ConnectionRecord({
-      did,
+      did: options.did,
       state: options.state,
       role: options.role,
       tags: options.tags,
@@ -644,11 +642,10 @@ export class ConnectionService {
       autoAcceptConnection: options.autoAcceptConnection,
       imageUrl: options.imageUrl,
       multiUseInvitation: options.multiUseInvitation,
-      mediatorId,
+      mediatorId: options.mediatorId,
       protocol: options.protocol,
       outOfBandId: options.outOfBandId,
     })
-
     await this.connectionRepository.save(connectionRecord)
     return connectionRecord
   }

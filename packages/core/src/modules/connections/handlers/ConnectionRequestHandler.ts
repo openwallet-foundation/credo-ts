@@ -39,11 +39,15 @@ export class ConnectionRequestHandler implements Handler {
       throw new AriesFrameworkError(`Out-of-band record for recipientKey ${recipientVerkey} was not found.`)
     }
 
-    const oobRouting = await this.mediationRecipientService.getRouting()
-    const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord, oobRouting)
+    // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
+    let routing
+    if (outOfBandRecord.reusable) {
+      routing = await this.mediationRecipientService.getRouting()
+    }
+    const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord, routing)
 
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord)
+      const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord, routing)
       return createOutboundMessage(connectionRecord, message, outOfBandRecord)
     }
   }

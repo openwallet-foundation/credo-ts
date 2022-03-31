@@ -192,8 +192,13 @@ describe('ConnectionService', () => {
         recipientVerkey: '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K',
       })
 
-      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
-      const processedConnection = await connectionService.processRequest(messageContext, outOfBand, myRouting)
+      const outOfBand = getMockOutOfBand({
+        did: 'fakeDid',
+        mediatorId: 'fakeMediatorId',
+        role: OutOfBandRole.Sender,
+        state: OutOfBandState.AwaitResponse,
+      })
+      const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(ConnectionState.Requested)
       expect(processedConnection.theirDid).toBe('did:peer:1zQmXUaPPhPCbUVZ3hGYmQmGxWTwyDfhqESXCpMFhKaF9Y2A')
@@ -239,8 +244,13 @@ describe('ConnectionService', () => {
         recipientVerkey: '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K',
       })
 
-      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
-      const processedConnection = await connectionService.processRequest(messageContext, outOfBand, myRouting)
+      const outOfBand = getMockOutOfBand({
+        did: 'fakeDid',
+        mediatorId: 'fakeMediatorId',
+        role: OutOfBandRole.Sender,
+        state: OutOfBandState.AwaitResponse,
+      })
+      const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(ConnectionState.Requested)
       expect(processedConnection.theirDid).toBe('did:peer:1zQmXUaPPhPCbUVZ3hGYmQmGxWTwyDfhqESXCpMFhKaF9Y2A')
@@ -268,7 +278,7 @@ describe('ConnectionService', () => {
 
       const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
 
-      return expect(connectionService.processRequest(messageContext, outOfBand, myRouting)).rejects.toThrowError(
+      return expect(connectionService.processRequest(messageContext, outOfBand)).rejects.toThrowError(
         `Public DIDs are not supported yet`
       )
     })
@@ -283,7 +293,7 @@ describe('ConnectionService', () => {
 
       const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Receiver, state: OutOfBandState.AwaitResponse })
 
-      return expect(connectionService.processRequest(inboundMessage, outOfBand, myRouting)).rejects.toThrowError(
+      return expect(connectionService.processRequest(inboundMessage, outOfBand)).rejects.toThrowError(
         `Invalid out-of-band record role ${OutOfBandRole.Receiver}, expected is ${OutOfBandRole.Sender}.`
       )
     })
@@ -300,7 +310,7 @@ describe('ConnectionService', () => {
         })
         const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state })
 
-        return expect(connectionService.processRequest(inboundMessage, outOfBand, myRouting)).rejects.toThrowError(
+        return expect(connectionService.processRequest(inboundMessage, outOfBand)).rejects.toThrowError(
           `Invalid out-of-band record state ${state}, valid states are: ${OutOfBandState.AwaitResponse}.`
         )
       }
@@ -324,26 +334,26 @@ describe('ConnectionService', () => {
       const recipientKeys = [verkey]
       const outOfBand = getMockOutOfBand({ did, recipientKeys })
       const mockDidDoc = new DidDoc({
-        id: 'test-did',
+        id: did,
         publicKey: [
           new Ed25119Sig2018({
-            id: `test-did#1`,
-            controller: 'test-did',
+            id: `${did}#1`,
+            controller: did,
             publicKeyBase58: verkey,
           }),
         ],
         authentication: [
           new EmbeddedAuthentication(
             new Ed25119Sig2018({
-              id: `test-did#1`,
-              controller: 'test-did',
+              id: `${did}#1`,
+              controller: did,
               publicKeyBase58: verkey,
             })
           ),
         ],
         service: [
           new IndyAgentService({
-            id: `test-did#IndyAgentService`,
+            id: `${did}#IndyAgentService`,
             serviceEndpoint: 'http://example.com',
             recipientKeys,
             routingKeys: [],

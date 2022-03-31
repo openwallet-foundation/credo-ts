@@ -173,6 +173,7 @@ export class OutOfBandModule {
 
     const outOfBandRecord = new OutOfBandRecord({
       did: routing.did,
+      mediatorId: routing.mediatorId,
       role: OutOfBandRole.Sender,
       state: OutOfBandState.AwaitResponse,
       outOfBandMessage: outOfBandMessage,
