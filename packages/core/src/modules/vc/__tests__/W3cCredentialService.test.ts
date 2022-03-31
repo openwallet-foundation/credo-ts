@@ -54,7 +54,7 @@ describe('W3cCredentialService', () => {
     await wallet.delete()
   })
 
-  xdescribe('store', () => {
+  describe('store', () => {
     test('Store a credential', async () => {
       const credential = JsonTransformer.fromJSON(
         {
@@ -98,7 +98,7 @@ describe('W3cCredentialService', () => {
     })
   })
 
-  xdescribe('signCredential', () => {
+  describe('signCredential', () => {
     it('returns a signed credential', async () => {
       const pubDid = wallet.publicDid
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -131,7 +131,7 @@ describe('W3cCredentialService', () => {
       })
     })
   })
-  xdescribe('verifyCredential', () => {
+  describe('verifyCredential', () => {
     it('credential should verify successfully', async () => {
       const vc = JsonTransformer.fromJSON(validEd25519Signature2018VerifiableCredentialJson, W3cVerifiableCredential)
       const result = await w3cCredentialService.verifyCredential(vc)

@@ -49,22 +49,29 @@ export interface LdProofDetail {
 }
 
 class SignatureSuiteRegistry {
-  private suites: typeof JwsLinkedDataSignature[] = [Ed25519Signature2018]
+  private suiteMapping = [
+    {
+      suiteClass: Ed25519Signature2018,
+      proofType: 'Ed25519Signature2018',
+      requiredKeyType: 'Ed25519VerificationKey2018',
+      keyType: KeyType.Ed25519,
+    },
+  ]
 
   public get supportedProofTypes(): string[] {
-    return this.suites.map((suite) => suite.type)
+    return this.suiteMapping.map((x) => x.proofType)
   }
 
-  public getSuiteByKeyType(keyType: KeyType): typeof JwsLinkedDataSignature | undefined {
-    return this.suites.find((suite) => suite.keyType === keyType)
+  public getByKeyType(keyType: KeyType) {
+    return this.suiteMapping.find((x) => x.keyType === keyType)
   }
 
-  public getSuiteByProofType(proofType: string): typeof JwsLinkedDataSignature | undefined {
-    return this.suites.find((suite) => suite.proofType === proofType)
+  public getByProofType(proofType: string) {
+    return this.suiteMapping.find((x) => x.proofType === proofType)
   }
 
-  public getKeyTypeBySuite(suiteClass: typeof JwsLinkedDataSignature): KeyType {
-    return suiteClass.key
+  public getKeyTypeByProofType(proofType: string): KeyType | undefined {
+    return this.suiteMapping.find((x) => x.proofType === proofType)?.keyType
   }
 }
 
@@ -76,11 +83,6 @@ export class W3cCredentialService {
   private agentConfig: AgentConfig
   private logger: Logger
   private suiteRegistry: SignatureSuiteRegistry
-
-  private static SIGNATURE_SUITE_MAP: { [type in KeyType]?: typeof Ed25519Signature2018 } = {
-    [KeyType.Ed25519]: Ed25519Signature2018,
-    // [KeyType.Bls12381g2]:
-  }
 
   public constructor(
     @inject('Wallet') wallet: Wallet,
@@ -107,7 +109,6 @@ export class W3cCredentialService {
     // create keyPair
     const WalletKeyPair = createWalletKeyPairClass(this.wallet)
 
-    // VERIFY check where we should get out pub lic key from
     // Replace this later on with
     const publicKey = this.wallet.publicDid?.verkey
 
@@ -115,18 +116,22 @@ export class W3cCredentialService {
       throw new AriesFrameworkError('No public key found in wallet')
     }
 
-    // const suite = this.suiteRegistry.getSuiteByProofType(options.proofType)
+    const suiteInfo = this.suiteRegistry.getByProofType(options.proofType)
 
-    // if (!suite) throw new AriesFrameworkError(`The proofType that was provided (${options.proofType}) is not supported`)
+    if (!suiteInfo) {
+      throw new AriesFrameworkError(`The requested proofType ${options.proofType} is not supported`)
+    }
 
     const keyPair = new WalletKeyPair({
       controller: credential.issuerId,
       id: options.verificationMethod,
-      key: Key.fromPublicKeyBase58(publicKey, KeyType.Ed25519),
+      key: Key.fromPublicKeyBase58(publicKey, suiteInfo.keyType),
       wallet: this.wallet,
     })
 
-    const suite = new Ed25519Signature2018({
+    const SuiteClass = suiteInfo.suiteClass
+
+    const suite = new SuiteClass({
       key: keyPair,
       LDKeyClass: WalletKeyPair,
       proof: {
@@ -155,27 +160,29 @@ export class W3cCredentialService {
     // create keyPair
     const WalletKeyPair = createWalletKeyPairClass(this.wallet)
 
-    let proof: LinkedDataProof | undefined
+    let proofs = credential.proof
 
-    if (Array.isArray(credential.proof)) {
-      proof = credential.proof.find((p) => p.type === 'Ed25519Signature2018')
-    } else {
-      proof = credential.proof
+    if (!Array.isArray(proofs)) {
+      proofs = [proofs]
     }
 
-    const suite = new Ed25519Signature2018({
-      LDKeyClass: WalletKeyPair,
-      proof: {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        verificationMethod: proof!.verificationMethod,
-      },
-      useNativeCanonize: false,
-      date: credential.issuanceDate ?? new Date().toISOString(),
+    const suites = proofs.map((x) => {
+      const SuiteClass = this.suiteRegistry.getByProofType(x.type)?.suiteClass
+      if (SuiteClass) {
+        return new SuiteClass({
+          LDKeyClass: WalletKeyPair,
+          proof: {
+            verificationMethod: x.verificationMethod,
+          },
+          date: x.created,
+          useNativeCanonize: false,
+        })
+      }
     })
 
     const result = await vc.verifyCredential({
       credential: JsonTransformer.toJSON(credential),
-      suite: suite,
+      suite: suites,
       documentLoader: this.documentLoader,
     })
 
@@ -276,10 +283,6 @@ export class W3cCredentialService {
    * @returns the signed presentation
    */
   public async signPresentation(presentation: W3cPresentation): Promise<W3cVerifiablePresentation> {
-    // create presentation using vcjs
-
-    // sign presentation using vcjs
-
     // MOCK
     return new W3cVerifiablePresentation({
       ...presentation,
