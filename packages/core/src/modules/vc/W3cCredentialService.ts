@@ -1,8 +1,8 @@
 import type { JwsLinkedDataSignature } from '../../crypto/JwsLinkedDataSignature'
+import type { SingleOrArray } from '../../utils/type'
 import type { VerifyCredentialResult, W3cCredential, W3cVerifyCredentialResult } from './models'
 import type { LinkedDataProof } from './models/LinkedDataProof'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
-import type { W3cPresentation } from './models/presentation/W3Presentation'
 import type { RemoteDocument, Url } from 'jsonld/jsonld-spec'
 
 import jsonld, { expand } from '@digitalcredentials/jsonld'
@@ -28,6 +28,7 @@ import { DidKey, DidResolverService } from '../dids'
 import { W3cVerifiableCredential } from './models'
 import { W3cCredentialRecord } from './models/credential/W3cCredentialRecord'
 import { W3cCredentialRepository } from './models/credential/W3cCredentialRepository'
+import { W3cPresentation } from './models/presentation/W3Presentation'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
 
 export interface LdProofDetailOptions {
@@ -241,12 +242,44 @@ export class W3cCredentialService {
   }
 
   /**
+   * Utility method that creates a {@link W3cPresentation} from one or more {@link W3cVerifiableCredential}s.
+   *
+   * **NOTE: the presentation that is returned is unsigned.**
+   *
+   * @param credentials One or more instances of {@link W3cVerifiableCredential}
+   * @param [id] an optional unique identifier for the presentation
+   * @param [holderUrl] an optional identifier identifying the entity that is generating the presentation
+   * @returns An instance of {@link W3cPresentation}
+   */
+  public async createPresentation(
+    credentials: SingleOrArray<W3cVerifiableCredential>,
+    id?: string,
+    holderUrl?: string
+  ): Promise<W3cPresentation> {
+    if (!Array.isArray(credentials)) {
+      credentials = [credentials]
+    }
+
+    const presentationJson = vc.createPresentation({
+      verifiableCredential: credentials.map((x) => JsonTransformer.toJSON(x)),
+      id: id,
+      holder: holderUrl,
+    })
+
+    return JsonTransformer.fromJSON(presentationJson, W3cPresentation)
+  }
+
+  /**
    * Signs a presentation including the credentials it includes
    *
    * @param presentation the presentation to be signed
    * @returns the signed presentation
    */
   public async signPresentation(presentation: W3cPresentation): Promise<W3cVerifiablePresentation> {
+    // create presentation using vcjs
+
+    // sign presentation using vcjs
+
     // MOCK
     return new W3cVerifiablePresentation({
       ...presentation,
