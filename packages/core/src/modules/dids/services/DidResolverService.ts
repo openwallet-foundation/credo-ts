@@ -7,9 +7,9 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndyLedgerService } from '../../ledger'
 import { parseDid } from '../domain/parse'
-import { IndyDidResolver } from '../methods/indy/IndyDidResolver'
 import { KeyDidResolver } from '../methods/key/KeyDidResolver'
 import { PeerDidResolver } from '../methods/peer/PeerDidResolver'
+import { SovDidResolver } from '../methods/sov/SovDidResolver'
 import { WebDidResolver } from '../methods/web/WebDidResolver'
 import { DidRepository } from '../repository'
 
@@ -22,7 +22,7 @@ export class DidResolverService {
     this.logger = agentConfig.logger
 
     this.resolvers = [
-      new IndyDidResolver(indyLedgerService),
+      new SovDidResolver(indyLedgerService),
       new WebDidResolver(),
       new KeyDidResolver(),
       new PeerDidResolver(didRepository),

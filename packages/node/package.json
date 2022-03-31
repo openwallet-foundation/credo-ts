@@ -40,6 +40,6 @@
     "@types/node-fetch": "^2.5.10",
     "@types/ws": "^7.4.6",
     "rimraf": "~3.0.2",
-    "typescript": "~4.3.0"
+    "typescript": "~4.6.2"
   }
 }

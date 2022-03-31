@@ -3,6 +3,7 @@ import { inject, scoped, Lifecycle } from 'tsyringe'
 import { InjectionSymbols } from '../../../constants'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
+import { DidDocumentRole } from '../domain/DidDocumentRole'
 
 import { DidRecord } from './DidRecord'
 
@@ -14,5 +15,12 @@ export class DidRepository extends Repository<DidRecord> {
 
   public findByVerkey(verkey: string) {
     return this.findSingleByQuery({ recipientKeys: [verkey] })
+  }
+
+  public getCreatedDids({ method }: { method?: string }) {
+    return this.findByQuery({
+      role: DidDocumentRole.Created,
+      method,
+    })
   }
 }

@@ -80,7 +80,7 @@ export class IndyLedgerService {
         verkey,
         alias,
         role,
-        pool,
+        pool: pool.id,
       })
 
       throw error

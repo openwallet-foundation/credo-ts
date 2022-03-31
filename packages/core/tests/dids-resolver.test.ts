@@ -4,7 +4,7 @@ import { getBaseConfig } from './helpers'
 
 import { JsonTransformer } from '@aries-framework/core'
 
-const { config, agentDependencies } = getBaseConfig('Faber Dids', {})
+const { config, agentDependencies } = getBaseConfig('Faber Dids Resolver', {})
 
 describe('dids', () => {
   let agent: Agent
