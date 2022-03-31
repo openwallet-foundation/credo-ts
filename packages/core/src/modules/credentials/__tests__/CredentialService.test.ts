@@ -1087,6 +1087,25 @@ describe('CredentialService', () => {
     })
   })
 
+  describe('deleteCredential', () => {
+    it('should delete credential from repository', async () => {
+      const credential = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
+
+      const repositoryDeleteSpy = jest.spyOn(credentialRepository, 'delete')
+      await credentialService.deleteById(credential.id)
+      expect(repositoryDeleteSpy).toBeCalledWith(credential)
+    })
+
+    it('deleteFromWallet parameter should call deleteCredential in indyHolderService', async () => {
+      const credential = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
+      const indyHolderServiceDeleteCredentialSpy = jest.spyOn(indyHolderService, 'deleteCredential')
+      await credentialService.deleteById(credential.id, true)
+      expect(indyHolderServiceDeleteCredentialSpy).toBeCalledWith(credential.id)
+    })
+  })
+
   describe('declineOffer', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249754'
     let credential: CredentialRecord
