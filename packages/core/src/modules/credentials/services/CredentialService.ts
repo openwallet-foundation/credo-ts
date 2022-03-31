@@ -807,12 +807,11 @@ export class CredentialService {
   public async deleteById(credentialId: string, deleteFromWallet?: boolean): Promise<void> {
     const credentialRecord = await this.getById(credentialId)
 
-    if (deleteFromWallet) {
-      await this.credentialRepository.delete(credentialRecord)
-      return this.indyHolderService.deleteCredential(credentialId)
-    }
+    await this.credentialRepository.delete(credentialRecord)
 
-    return this.credentialRepository.delete(credentialRecord)
+    if (deleteFromWallet && credentialRecord.credentialId) {
+      await this.indyHolderService.deleteCredential(credentialRecord.credentialId)
+    }
   }
 
   /**
