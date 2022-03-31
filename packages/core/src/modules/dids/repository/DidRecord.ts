@@ -6,6 +6,7 @@ import { IsEnum, ValidateNested } from 'class-validator'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { DidDocument } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
+import { parseDid } from '../domain/parse'
 
 export interface DidRecordProps {
   id: string
@@ -19,7 +20,10 @@ interface CustomDidTags extends TagsBase {
   recipientKeys?: string[]
 }
 
-export type DefaultDidTags = TagsBase
+type DefaultDidTags = {
+  role: DidDocumentRole
+  method: string
+}
 
 export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> implements DidRecordProps {
   @Type(() => DidDocument)
@@ -44,8 +48,12 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
   }
 
   public getTags() {
+    const did = parseDid(this.id)
+
     return {
       ...this._tags,
+      role: this.role,
+      method: did.method,
     }
   }
 }
