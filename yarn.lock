@@ -5443,10 +5443,10 @@ indent-string@^4.0.0:
   resolved "https://registry.yarnpkg.com/indent-string/-/indent-string-4.0.0.tgz#624f8f4497d619b2d9768531d58f4122854d7251"
   integrity sha512-EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg==
 
-indy-sdk-react-native@^0.1.16:
-  version "0.1.20"
-  resolved "https://registry.yarnpkg.com/indy-sdk-react-native/-/indy-sdk-react-native-0.1.20.tgz#be9f192ec1f6b047ea606b4b42b2279433dd0744"
-  integrity sha512-MfSDDofRcmxwUCsDxqeR4RQZ7aSdvSRIUkoKCGpTHXVrPLDXf/5VyAdp9C1xpJaYIegmsoFPk3ICfdv+sGONrw==
+indy-sdk-react-native@^0.1.21:
+  version "0.1.21"
+  resolved "https://registry.yarnpkg.com/indy-sdk-react-native/-/indy-sdk-react-native-0.1.21.tgz#19f8cfd2afbe10775cef4f48682499dd963b9e02"
+  integrity sha512-AvOle3xfY3xWfwQe4fit2Pxmx0dKAuamm1L+nOoLRMVzNQNvdMdH8oxXs8eSUWh/7F6raL+ghAG3B4OEEeH3DA==
   dependencies:
     buffer "^6.0.2"
 
@@ -7319,9 +7319,9 @@ minimist-options@4.1.0:
     kind-of "^6.0.3"
 
 minimist@^1.1.1, minimist@^1.2.0, minimist@^1.2.5:
-  version "1.2.5"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.5.tgz#67d66014b66a6a8aaa0c083c5fd58df4e4e97602"
-  integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
+  integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
 
 minipass-collect@^1.0.2:
   version "1.0.2"
@@ -8235,9 +8235,9 @@ pkg-dir@^4.2.0:
     find-up "^4.0.0"
 
 plist@^3.0.1, plist@^3.0.4:
-  version "3.0.4"
-  resolved "https://registry.yarnpkg.com/plist/-/plist-3.0.4.tgz#a62df837e3aed2bb3b735899d510c4f186019cbe"
-  integrity sha512-ksrr8y9+nXOxQB2osVNqrgvX/XQPOXaU4BQMKjYq8PvaY1U18mo+fKgBSwzK+luSyinOuPae956lSVcBwxlAMg==
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/plist/-/plist-3.0.5.tgz#2cbeb52d10e3cdccccf0c11a63a85d830970a987"
+  integrity sha512-83vX4eYdQp3vP9SxuYgEM/G/pJQqLUz/V/xzPrzruLs7fz7jxGQ1msZ/mg1nwZxUSuOp4sb+/bEIbRrbzZRxDA==
   dependencies:
     base64-js "^1.5.1"
     xmlbuilder "^9.0.7"

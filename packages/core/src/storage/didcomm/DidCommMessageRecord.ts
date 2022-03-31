@@ -4,7 +4,7 @@ import type { DidCommMessageRole } from './DidCommMessageRole'
 
 import { AriesFrameworkError } from '../../error'
 import { JsonTransformer } from '../../utils/JsonTransformer'
-import { rightSplit } from '../../utils/string'
+import { parseMessageType } from '../../utils/messageType'
 import { isJsonObject } from '../../utils/type'
 import { uuid } from '../../utils/uuid'
 import { BaseRecord } from '../BaseRecord'
@@ -59,7 +59,7 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
   public getTags() {
     const messageId = this.message['@id'] as string
     const messageType = this.message['@type'] as string
-    const [, /* baseUri, */ protocolName /* , protocolVersion, */, , messageName] = rightSplit(messageType, '/', 3)
+    const { protocolName, messageName } = parseMessageType(messageType)
 
     const thread = this.message['~thread']
     let threadId = messageId
