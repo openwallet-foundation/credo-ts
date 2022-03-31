@@ -1,5 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { HandshakeProtocol, DidDoc } from '../models'
+import type { HandshakeProtocol } from '../models'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -10,9 +10,7 @@ export interface ConnectionRecordProps {
   id?: string
   createdAt?: Date
   did: string
-  didDoc?: DidDoc
   theirDid?: string
-  theirDidDoc?: DidDoc
   theirLabel?: string
   state?: ConnectionState | DidExchangeState
   role?: ConnectionRole | DidExchangeRole

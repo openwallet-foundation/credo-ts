@@ -535,7 +535,6 @@ describe('ConnectionService', () => {
         did,
         state: ConnectionState.Requested,
         theirDid: undefined,
-        theirDidDoc: undefined,
       })
 
       const otherPartyConnection = new Connection({ did: theirDid })
