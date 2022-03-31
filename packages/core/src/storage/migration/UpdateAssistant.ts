@@ -2,7 +2,6 @@ import type { Agent } from '../../agent/Agent'
 import type { UpdateConfig } from './updates'
 
 import { AriesFrameworkError } from '../../error'
-import { uuid } from '../../utils/uuid'
 import { WalletError } from '../../wallet/error/WalletError'
 
 import { StorageUpdateService } from './StorageUpdateService'

@@ -1,7 +1,6 @@
 import type { StorageUpdateError } from '../error/StorageUpdateError'
 
 import { readFileSync, unlinkSync } from 'fs'
-import { unlink } from 'fs/promises'
 import path from 'path'
 import { container } from 'tsyringe'
 
@@ -53,6 +52,7 @@ describe('UpdateAssistant | Backup', () => {
   it('should create a backup', async () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
       const record = JsonTransformer.fromJSON(data.value, CredentialRecord)
 
@@ -88,6 +88,7 @@ describe('UpdateAssistant | Backup', () => {
   it('should restore the backup if an error occurs backup', async () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
       const record = JsonTransformer.fromJSON(data.value, CredentialRecord)
 
