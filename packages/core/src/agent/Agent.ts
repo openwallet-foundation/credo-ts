@@ -23,9 +23,11 @@ import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
-import { StorageUpgradeService } from '../storage'
+import { StorageUpdateService } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
+import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
+import { DEFAULT_UPDATE_CONFIG } from '../storage/migration/updates'
 import { IndyWallet } from '../wallet/IndyWallet'
 import { WalletModule } from '../wallet/WalletModule'
 import { WalletError } from '../wallet/error'
@@ -176,19 +178,24 @@ export class Agent {
     }
 
     // Make sure the storage is up to date
-    const storageUpgradeService = this.container.resolve(StorageUpgradeService)
-    const isStorageUpToDate = await storageUpgradeService.isUpToDate()
+    const storageUpdateService = this.container.resolve(StorageUpdateService)
+    const isStorageUpToDate = await storageUpdateService.isUpToDate()
     this.logger.info(`Agent storage is ${isStorageUpToDate ? '' : 'not '}up to date.`)
 
-    if (!isStorageUpToDate) {
-      const currentVersion = await storageUpgradeService.getCurrentStorageVersion()
+    if (!isStorageUpToDate && this.agentConfig.autoUpdateStorageOnStartup) {
+      const updateAssistant = new UpdateAssistant(this, DEFAULT_UPDATE_CONFIG)
+
+      await updateAssistant.initialize()
+      await updateAssistant.update()
+    } else if (!isStorageUpToDate) {
+      const currentVersion = await storageUpdateService.getCurrentStorageVersion()
       // Close wallet to prevent un-initialized agent with initialized wallet
       await this.wallet.close()
       throw new AriesFrameworkError(
-        // TODO: add link to where documentation on how to upgrade can be found.
+        // TODO: add link to where documentation on how to update can be found.
         `Current agent storage is not up to date. ` +
           `To prevent the framework state from getting corrupted the agent initialization is aborted. ` +
-          `Make sure to update the agent storage (currently at ${currentVersion}) to the latest version (${storageUpgradeService.frameworkStorageVersion}). ` +
+          `Make sure to update the agent storage (currently at ${currentVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). ` +
           `You can also downgrade your version of Aries Framework JavaScript.`
       )
     }
@@ -206,11 +213,11 @@ export class Agent {
     }
 
     for (const transport of this.inboundTransports) {
-      transport.start(this)
+      await transport.start(this)
     }
 
     for (const transport of this.outboundTransports) {
-      transport.start(this)
+      await transport.start(this)
     }
 
     // Connect to mediator through provided invitation if provided in config

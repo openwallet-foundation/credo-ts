@@ -210,7 +210,7 @@ export class IndyWallet implements Wallet {
       this.logger.debug(`Exporting wallet ${this.walletConfig?.id} to path ${exportConfig.path}`)
       await this.indy.exportWallet(this.handle, exportConfig)
     } catch (error) {
-      const errorMessage = `Error exporting wallet': ${error.message}`
+      const errorMessage = `Error exporting wallet: ${error.message}`
       this.logger.error(errorMessage, {
         error,
       })

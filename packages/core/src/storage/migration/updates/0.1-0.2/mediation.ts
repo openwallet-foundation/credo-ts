@@ -1,4 +1,4 @@
-import type { V0_1ToV0_2UpgradeConfig } from '.'
+import type { V0_1ToV0_2UpdateConfig } from '.'
 import type { Agent } from '../../../../agent/Agent'
 import type { MediationRecord } from '../../../../modules/routing'
 
@@ -12,14 +12,14 @@ import { MediationRepository, MediationRole } from '../../../../modules/routing'
  * The following transformations are applied:
  *  - {@link updateMediationRole}
  */
-export async function migrateMediationRecordToV0_2(agent: Agent, upgradeConfig: V0_1ToV0_2UpgradeConfig) {
+export async function migrateMediationRecordToV0_2(agent: Agent, upgradeConfig: V0_1ToV0_2UpdateConfig) {
   agent.config.logger.info('Migrating mediation records to storage version 0.2')
   const mediationRepository = agent.injectionContainer.resolve(MediationRepository)
 
   agent.config.logger.debug(`Fetching all mediation records from storage`)
   const allMediationRecords = await mediationRepository.getAll()
 
-  agent.config.logger.debug(`Found a total of ${allMediationRecords} mediation records to update.`)
+  agent.config.logger.debug(`Found a total of ${allMediationRecords.length} mediation records to update.`)
   for (const mediationRecord of allMediationRecords) {
     agent.config.logger.debug(`Migrating mediation record with id ${mediationRecord.id} to storage version 0.2`)
 
@@ -53,7 +53,7 @@ export async function migrateMediationRecordToV0_2(agent: Agent, upgradeConfig: 
 export async function updateMediationRole(
   agent: Agent,
   mediationRecord: MediationRecord,
-  { mediationRoleUpdateStrategy }: V0_1ToV0_2UpgradeConfig
+  { mediationRoleUpdateStrategy }: V0_1ToV0_2UpdateConfig
 ) {
   agent.config.logger.debug(`Updating mediation record role using strategy '${mediationRoleUpdateStrategy}'`)
 

@@ -13,7 +13,7 @@ interface StorageRecord {
 }
 
 @scoped(Lifecycle.ContainerScoped)
-export class InMemoryStorageService<T extends BaseRecord> implements StorageService<T> {
+export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implements StorageService<T> {
   public records: { [id: string]: StorageRecord }
 
   public constructor(records: { [id: string]: StorageRecord } = {}) {
