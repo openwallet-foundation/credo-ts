@@ -8,6 +8,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error/IndySdkError'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+import { CredentialRecord } from '../../credentials/repository'
 
 import { IndyRevocationService } from './IndyRevocationService'
 
@@ -202,6 +203,18 @@ export class IndyHolderService {
       }
 
       throw error
+    }
+  }
+
+  public async deleteCredential(credentialId: Indy.CredentialId): Promise<void> {
+    try {
+      return await this.indy.deleteWalletRecord(this.wallet.handle, CredentialRecord.type, credentialId)
+    } catch (error) {
+      this.logger.error(`Error deleting Indy Credential from Wallet`, {
+        error,
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 
