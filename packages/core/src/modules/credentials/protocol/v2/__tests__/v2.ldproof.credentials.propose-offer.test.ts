@@ -30,7 +30,7 @@ describe('credentials', () => {
 
   let didCommMessageRepository: DidCommMessageRepository
   beforeAll(async () => {
-    ; ({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupCredentialTests(
+    ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD',
       'Alice Agent Credentials LD'
     ))
@@ -186,101 +186,101 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.id).not.toBeNull()
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
 
-    if (aliceCredentialRecord.connectionId) {
-      const acceptOfferOptions: ServiceAcceptOfferOptions = {
-        credentialRecordId: aliceCredentialRecord.id,
-      }
-      const offerCredentialExchangeRecord: CredentialExchangeRecord =
-        await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
+    // if (aliceCredentialRecord.connectionId) {
+    //   const acceptOfferOptions: ServiceAcceptOfferOptions = {
+    //     credentialRecordId: aliceCredentialRecord.id,
+    //   }
+    //   const offerCredentialExchangeRecord: CredentialExchangeRecord =
+    //     await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
 
-      expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-      expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
-      expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
-      expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
+    //   expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
+    //   expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
+    //   expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
+    //   expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
 
-      testLogger.test('Faber waits for credential request from Alice')
-      await waitForCredentialRecord(faberAgent, {
-        threadId: aliceCredentialRecord.threadId,
-        state: CredentialState.RequestReceived,
-      })
+    //   testLogger.test('Faber waits for credential request from Alice')
+    //   await waitForCredentialRecord(faberAgent, {
+    //     threadId: aliceCredentialRecord.threadId,
+    //     state: CredentialState.RequestReceived,
+    //   })
 
-      testLogger.test('Faber sends credential to Alice')
+    //   testLogger.test('Faber sends credential to Alice')
 
-      const options: AcceptRequestOptions = {
-        credentialRecordId: faberCredentialRecord.id,
-        comment: 'V2 Indy Credential',
-      }
-      await faberAgent.credentials.acceptRequest(options)
+    //   const options: AcceptRequestOptions = {
+    //     credentialRecordId: faberCredentialRecord.id,
+    //     comment: 'V2 Indy Credential',
+    //   }
+    //   await faberAgent.credentials.acceptRequest(options)
 
-      testLogger.test('Alice waits for credential from Faber')
-      aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-        threadId: faberCredentialRecord.threadId,
-        state: CredentialState.CredentialReceived,
-      })
+    //   testLogger.test('Alice waits for credential from Faber')
+    //   aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+    //     threadId: faberCredentialRecord.threadId,
+    //     state: CredentialState.CredentialReceived,
+    //   })
 
-      testLogger.test('Alice sends credential ack to Faber')
-      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
+    //   testLogger.test('Alice sends credential ack to Faber')
+    //   await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
 
-      testLogger.test('Faber waits for credential ack from Alice')
-      faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
-        threadId: faberCredentialRecord.threadId,
-        state: CredentialState.Done,
-      })
-      expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
-        id: expect.any(String),
-        createdAt: expect.any(Date),
-        threadId: expect.any(String),
-        connectionId: expect.any(String),
-        state: CredentialState.CredentialReceived,
-      })
+    //   testLogger.test('Faber waits for credential ack from Alice')
+    //   faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+    //     threadId: faberCredentialRecord.threadId,
+    //     state: CredentialState.Done,
+    //   })
+    //   expect(aliceCredentialRecord).toMatchObject({
+    //     type: CredentialExchangeRecord.name,
+    //     id: expect.any(String),
+    //     createdAt: expect.any(Date),
+    //     threadId: expect.any(String),
+    //     connectionId: expect.any(String),
+    //     state: CredentialState.CredentialReceived,
+    //   })
 
-      const credentialMessage = await didCommMessageRepository.findAgentMessage({
-        associatedRecordId: faberCredentialRecord.id,
-        messageClass: V2IssueCredentialMessage,
-      })
+    //   const credentialMessage = await didCommMessageRepository.findAgentMessage({
+    //     associatedRecordId: faberCredentialRecord.id,
+    //     messageClass: V2IssueCredentialMessage,
+    //   })
 
-      const data = credentialMessage?.messageAttachment[0].getDataAsJson<W3cVerifiableCredential>()
+    //   const data = credentialMessage?.messageAttachment[0].getDataAsJson<W3cVerifiableCredential>()
 
-      // console.log('====> V2 Credential (JsonLd) = ', credentialMessage)
+    //   // console.log('====> V2 Credential (JsonLd) = ', credentialMessage)
 
-      // console.log('====> W3C VerifiableCredential = ', data)
+    //   // console.log('====> W3C VerifiableCredential = ', data)
 
-      expect(JsonTransformer.toJSON(credentialMessage)).toMatchObject({
-        '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',
-        '@id': expect.any(String),
-        comment: 'V2 Indy Credential',
-        formats: [
-          {
-            attach_id: expect.any(String),
-            format: 'aries/ld-proof-vc@1.0',
-          },
-        ],
-        'credentials~attach': [
-          {
-            '@id': expect.any(String),
-            'mime-type': 'application/json',
-            data: expect.any(Object),
-            lastmod_time: undefined,
-            byte_count: undefined,
-          },
-        ],
-        '~thread': {
-          thid: expect.any(String),
-          pthid: undefined,
-          sender_order: undefined,
-          received_orders: undefined,
-        },
-        '~please_ack': { on: ['RECEIPT'] },
-        '~service': undefined,
-        '~attach': undefined,
-        '~timing': undefined,
-        '~transport': undefined,
-        '~l10n': undefined,
-      })
-    } else {
-      throw new Error('Missing Connection Id')
-    }
+    //   expect(JsonTransformer.toJSON(credentialMessage)).toMatchObject({
+    //     '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',
+    //     '@id': expect.any(String),
+    //     comment: 'V2 Indy Credential',
+    //     formats: [
+    //       {
+    //         attach_id: expect.any(String),
+    //         format: 'aries/ld-proof-vc@1.0',
+    //       },
+    //     ],
+    //     'credentials~attach': [
+    //       {
+    //         '@id': expect.any(String),
+    //         'mime-type': 'application/json',
+    //         data: expect.any(Object),
+    //         lastmod_time: undefined,
+    //         byte_count: undefined,
+    //       },
+    //     ],
+    //     '~thread': {
+    //       thid: expect.any(String),
+    //       pthid: undefined,
+    //       sender_order: undefined,
+    //       received_orders: undefined,
+    //     },
+    //     '~please_ack': { on: ['RECEIPT'] },
+    //     '~service': undefined,
+    //     '~attach': undefined,
+    //     '~timing': undefined,
+    //     '~transport': undefined,
+    //     '~l10n': undefined,
+    //   })
+    // } else {
+    //   throw new Error('Missing Connection Id')
+    // }
   })
 })
 // -------------------------- V2 TEST END --------------------------------------------
