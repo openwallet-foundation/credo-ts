@@ -63,6 +63,9 @@
     "node": ">= 12"
   },
   "dependencies": {
+    "@digitalcredentials/jsonld": "^5.2.1",
+    "@digitalcredentials/jsonld-signatures": "^9.3.1",
+    "@digitalcredentials/vc": "^1.1.2",
     "@types/jsonld": "^1.5.6",
     "jsonld": "^5.2.0"
   }

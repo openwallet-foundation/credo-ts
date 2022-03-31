@@ -6,15 +6,18 @@ import type { W3cPresentation } from './models/presentation/W3Presentation'
 import type { RemoteDocument, Url } from 'jsonld/jsonld-spec'
 
 // @ts-ignore
-// import jsonld from '@digitalcredentials/jsonld'
-// // @ts-ignore
-// import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
-// // @ts-ignore
+import jsonld from '@digitalcredentials/jsonld'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 // import documentLoaderXhr from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
 import vc from '@digitalcredentials/vc'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
+import { InjectionSymbols } from '../../constants'
 import { Key, KeyType } from '../../crypto'
 import { Ed25519Signature2018 } from '../../crypto/Ed25519Signature2018'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
@@ -28,7 +31,7 @@ import { W3cVerifiableCredential } from './models'
 import { W3cCredentialRecord } from './models/credential/W3cCredentialRecord'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
 
-interface LdProofDetailOptions {
+export interface LdProofDetailOptions {
   proofType: string // TODO replace with enum
   proofPurpose?: string // TODO replace with enum
   verificationMethod: string
@@ -40,12 +43,12 @@ interface LdProofDetailOptions {
   }
 }
 
-interface LdProofDetail {
+export interface LdProofDetail {
   credential: W3cCredential
   options: LdProofDetailOptions
 }
 
-class SignatureSuiteRegistry {
+export class SignatureSuiteRegistry {
   private suites: typeof JwsLinkedDataSignature[] = [Ed25519Signature2018]
 
   public get supportedProofTypes(): string[] {
@@ -70,7 +73,7 @@ export class W3cCredentialService {
   private wallet: Wallet
   private didResolver: DidResolverService
   private agentConfig: AgentConfig
-  private logger: Logger
+  // private logger: Loggery
   private suiteRegistry: SignatureSuiteRegistry
 
   private static SIGNATURE_SUITE_MAP: { [type in KeyType]?: typeof Ed25519Signature2018 } = {
@@ -78,15 +81,16 @@ export class W3cCredentialService {
   }
 
   public constructor(
-    @inject('Wallet') wallet: Wallet,
+    // @inject('Wallet') wallet: Wallet,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     didResolver: DidResolverService,
-    agentConfig: AgentConfig,
-    logger: Logger
+    agentConfig: AgentConfig
+    // logger: Logger
   ) {
     this.wallet = wallet
     this.didResolver = didResolver
     this.agentConfig = agentConfig
-    this.logger = logger
+    // this.logger = logger
     this.suiteRegistry = new SignatureSuiteRegistry()
   }
 
@@ -287,6 +291,7 @@ export class W3cCredentialService {
     // }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private getSignatureSuiteForDetail(detail: LdProofDetail) {}
 
   // private getSignatureSuite(options: {

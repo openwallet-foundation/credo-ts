@@ -1,6 +1,7 @@
 import type { LinkedAttachment } from '../../../../../src/utils/LinkedAttachment'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ParseRevocationRegistryDefitinionTemplate } from '../../../ledger/services'
+import type { LdProofDetail } from '../../../vc/W3cCredentialService'
 import type { W3cCredential } from '../../../vc/models/credential/W3cCredential'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import type { ServiceRequestCredentialOptions } from '../../CredentialServiceOptions'
@@ -87,22 +88,22 @@ export interface FormatServiceRequestCredentialOptions extends ServiceRequestCre
 
 export interface FormatServiceOfferCredentialFormats {
   indy?: IndyOfferCredentialFormat
-  jsonld?: W3cCredential
+  jsonld?: LdProofDetail
 }
 
 export interface FormatServiceProposeCredentialFormats {
   indy?: IndyProposeCredentialFormat
-  jsonld?: W3cCredential
+  jsonld?: LdProofDetail
 }
 
 export interface FormatServiceRequestCredentialFormats {
   indy?: IndyRequestCredentialFormat
-  jsonld?: W3cCredential
+  jsonld?: LdProofDetail
 }
 
 export interface FormatServiceIssueCredentialFormats {
   indy?: IndyIssueCredentialFormat
-  jsonld?: W3cCredential
+  jsonld?: LdProofDetail
 }
 
 export interface HandlerAutoAcceptOptions {

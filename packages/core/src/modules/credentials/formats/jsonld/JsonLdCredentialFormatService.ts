@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/adjacent-overload-signatures */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import type { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
+import type { LdProofDetail } from '../../../vc'
+import type { W3cVerifiableCredential } from '../../../vc/models'
 import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
 import type {
   ServiceAcceptCredentialOptions,
@@ -24,9 +25,11 @@ import type {
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../../../../../src/error'
+import { JsonTransformer } from '../../../../../src/utils/JsonTransformer'
 import { uuid } from '../../../../../src/utils/uuid'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { W3cCredentialService } from '../../../vc'
+import { W3cCredential } from '../../../vc/models'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
@@ -77,9 +80,14 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
 
     // sign credential here. The credential subject is received as the request attachment
     // (attachment in the request message from holder to issuer)
-    const credential = options.requestAttachment?.getDataAsJson<W3cCredential>()
+    const credential = options.requestAttachment?.getDataAsJson<LdProofDetail>()
 
-    const verifiableCredential = await this.w3cCredentialService.signCredential(credential)
+    const proof: LdProofDetail = {
+      credential: JsonTransformer.fromJSON(credential.credential, W3cCredential),
+      options: credential.options,
+    }
+
+    const verifiableCredential = await this.w3cCredentialService.signCredential(proof)
 
     const issueAttachment: Attachment = this.getFormatData(verifiableCredential, attachmentId)
 
@@ -112,7 +120,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
       }
       messageAttachment = options.credentialFormats.jsonld
     } else {
-      messageAttachment = options.proposalAttachment.getDataAsJson<W3cCredential>()
+      messageAttachment = options.proposalAttachment.getDataAsJson<LdProofDetail>()
     }
 
     const offersAttach: Attachment = this.getFormatData(messageAttachment, attachmentId)
@@ -139,7 +147,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     // Use offer attachment as the credential if present
     // otherwise use the credential format payload passed in the options object
 
-    const credOffer = options.offerAttachment.getDataAsJson<W3cCredential>()
+    const credOffer = options.offerAttachment.getDataAsJson<LdProofDetail>()
     const attachment = credOffer ? credOffer : options.jsonld?.credentialSubject
 
     const requestAttach: Attachment = this.getFormatData(attachment, formats.attachId)

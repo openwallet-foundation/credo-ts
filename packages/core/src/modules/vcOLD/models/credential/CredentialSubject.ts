@@ -1,5 +1,5 @@
 import { Transform, TransformationType, plainToInstance, instanceToPlain } from 'class-transformer'
-import { isString } from 'class-validator'
+import { IsArray, isString } from 'class-validator'
 
 import { IsUri } from '../../../../utils/validators'
 

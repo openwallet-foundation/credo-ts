@@ -1,7 +1,7 @@
+import type { LdProofDetailOptions, LdProofDetail } from '../../../../../../src/modules/vc'
 import type { W3cVerifiableCredential } from '../../../../../../src/modules/vc/models'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
-import type { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
 import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
@@ -13,6 +13,7 @@ import { setupCredentialTests, waitForCredentialRecord } from '../../../../../..
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -29,7 +30,7 @@ describe('credentials', () => {
 
   let didCommMessageRepository: DidCommMessageRepository
   beforeAll(async () => {
-    ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupCredentialTests(
+    ; ({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD',
       'Alice Agent Credentials LD'
     ))
@@ -43,38 +44,67 @@ describe('credentials', () => {
   })
 
   // -------------------------- V2 TEST BEGIN --------------------------------------------
+  const TEST_DID_KEY = 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
+
+  const options: LdProofDetailOptions = {
+    proofType: 'Ed25519Signature2018',
+    verificationMethod:
+      'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+  }
+  const credential: W3cCredential = JsonTransformer.fromJSON(
+    {
+      '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+      id: 'http://example.edu/credentials/temporary/28934792387492384',
+      type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+      issuer: TEST_DID_KEY,
+      issuanceDate: '2017-10-22T12:23:48Z',
+      credentialSubject: {
+        id: 'did:example:b34ca6cd37bbf23',
+        degree: {
+          type: 'BachelorDegree',
+          name: 'Bachelor of Science and Arts',
+        },
+      },
+    },
+    W3cCredential
+  )
+
+  const ldProof: LdProofDetail = {
+    credential: credential,
+    options: options,
+  }
+  // const ldProofVcDetail: W3cCredential = {
+  //   context: ['https://www.w3.org/2018/'],
+  //   issuerId: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
+  //   issuer: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
+  //   type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+  //   issuanceDate: '2020-01-01T19:23:24Z',
+  //   expirationDate: '2021-01-01T19:23:24Z',
+  //   credentialSubject: {
+  //     id: 'did:example:b34ca6cd37bbf23',
+  //     type: ['PermanentResident', 'Person'],
+  //     givenName: 'JOHN',
+  //     familyName: 'SMITH',
+  //     gender: 'Male',
+  //     image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+  //     residentSince: '2015-01-01',
+  //     lprCategory: 'C09',
+  //     lprNumber: '999-999-999',
+  //     commuterClassification: 'C1',
+  //     birthCountry: 'Bahamas',
+  //     birthDate: '1958-07-17',
+  //   },
+  // }
 
   test('Alice starts with V2 (ld format) credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
     // set the propose options
 
-    const ldProofVcDetail: W3cCredential = {
-      context: ['https://www.w3.org/2018/'],
-      issuer: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
-      type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-      issuanceDate: '2020-01-01T19:23:24Z',
-      expirationDate: '2021-01-01T19:23:24Z',
-      credentialSubject: {
-        id: 'did:example:b34ca6cd37bbf23',
-        type: ['PermanentResident', 'Person'],
-        givenName: 'JOHN',
-        familyName: 'SMITH',
-        gender: 'Male',
-        image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-        residentSince: '2015-01-01',
-        lprCategory: 'C09',
-        lprNumber: '999-999-999',
-        commuterClassification: 'C1',
-        birthCountry: 'Bahamas',
-        birthDate: '1958-07-17',
-      },
-    }
-
     const proposeOptions: ProposeCredentialOptions = {
       connectionId: aliceConnection.id,
       protocolVersion: CredentialProtocolVersion.V2,
       credentialFormats: {
-        jsonld: ldProofVcDetail,
+        jsonld: ldProof,
       },
       comment: 'v2 propose credential test for W3C Credentials',
     }
@@ -100,7 +130,7 @@ describe('credentials', () => {
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
       credentialFormats: {
-        jsonld: ldProofVcDetail,
+        jsonld: ldProof,
       },
     }
     testLogger.test('Faber sends credential offer to Alice')
@@ -212,9 +242,9 @@ describe('credentials', () => {
 
       const data = credentialMessage?.messageAttachment[0].getDataAsJson<W3cVerifiableCredential>()
 
-      console.log('====> V2 Credential (JsonLd) = ', credentialMessage)
+      // console.log('====> V2 Credential (JsonLd) = ', credentialMessage)
 
-      console.log('====> W3C VerifiableCredential = ', data)
+      // console.log('====> W3C VerifiableCredential = ', data)
 
       expect(JsonTransformer.toJSON(credentialMessage)).toMatchObject({
         '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',
