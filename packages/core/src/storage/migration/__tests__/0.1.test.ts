@@ -1,7 +1,6 @@
 import type { V0_1ToV0_2UpdateConfig } from '../updates/0.1-0.2'
 
-import { unlinkSync } from 'fs'
-import { readFile } from 'fs/promises'
+import { unlinkSync, readFileSync } from 'fs'
 import path from 'path'
 import { container as baseContainer } from 'tsyringe'
 
@@ -29,7 +28,7 @@ const mediationRoleUpdateStrategies: V0_1ToV0_2UpdateConfig['mediationRoleUpdate
 
 describe('UpdateAssistant | v0.1 - v0.2', () => {
   it(`should correctly update the role in the mediation record`, async () => {
-    const aliceMediationRecordsString = await readFile(
+    const aliceMediationRecordsString = await readFileSync(
       path.join(__dirname, '__fixtures__/alice-4-mediators-0.1.json'),
       'utf8'
     )
@@ -84,7 +83,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
   })
 
   it(`should correctly update the metadata in credential records`, async () => {
-    const aliceCredentialRecordsString = await readFile(
+    const aliceCredentialRecordsString = await readFileSync(
       path.join(__dirname, '__fixtures__/alice-4-credentials-0.1.json'),
       'utf8'
     )
@@ -139,7 +138,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
   })
 
   it(`should correctly update the metadata in credential records with auto update`, async () => {
-    const aliceCredentialRecordsString = await readFile(
+    const aliceCredentialRecordsString = await readFileSync(
       path.join(__dirname, '__fixtures__/alice-4-credentials-0.1.json'),
       'utf8'
     )
