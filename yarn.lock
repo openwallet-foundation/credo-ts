@@ -2816,6 +2816,11 @@
   "resolved" "https://registry.npmjs.org/@types/jsonld/-/jsonld-1.5.6.tgz"
   "version" "1.5.6"
 
+"@types/digitalcredentials__jsonld@npm:@types/jsonld@^1.5.6", "@types/jsonld@^1.5.6":
+  version "1.5.6"
+  resolved "https://registry.yarnpkg.com/@types/jsonld/-/jsonld-1.5.6.tgz#4396c0b17128abf5773bb68b5453b88fc565b0d4"
+  integrity sha512-OUcfMjRie5IOrJulUQwVNvV57SOdKcTfBj3pjXNxzXqeOIrY2aGDNGW/Tlp83EQPkz4tCE6YWVrGuc/ZeaAQGg==
+
 "@types/eslint@^7.2.13":
   "integrity" "sha512-VNcvioYDH8/FxaeTKkM4/TiTwt6pBV9E3OfGmvaw8tPl0rrHCJ4Ll15HRT+pMiFAf/MLQvAzC+6RzUMEL9Ceng=="
   "resolved" "https://registry.npmjs.org/@types/eslint/-/eslint-7.29.0.tgz"
@@ -2924,11 +2929,14 @@
   "resolved" "https://registry.npmjs.org/@types/json5/-/json5-0.0.29.tgz"
   "version" "0.0.29"
 
+<<<<<<< HEAD
 "@types/jsonld@^1.5.6":
   "integrity" "sha512-OUcfMjRie5IOrJulUQwVNvV57SOdKcTfBj3pjXNxzXqeOIrY2aGDNGW/Tlp83EQPkz4tCE6YWVrGuc/ZeaAQGg=="
   "resolved" "https://registry.npmjs.org/@types/jsonld/-/jsonld-1.5.6.tgz"
   "version" "1.5.6"
 
+=======
+>>>>>>> 40aafe6bbe503ad834dcfb6a168327c0e7b1b265
 "@types/luxon@^1.27.0":
   "integrity" "sha512-cPiXpOvPFDr2edMnOXlz3UBDApwUfR+cpizvxCy0n3vp9bz/qe8BWzHPIEFcy+ogUOyjKuCISgyq77ELZPmkkg=="
   "resolved" "https://registry.npmjs.org/@types/luxon/-/luxon-1.27.1.tgz"
