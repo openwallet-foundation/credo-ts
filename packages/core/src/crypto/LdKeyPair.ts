@@ -1,18 +1,18 @@
 import type { Buffer } from '../utils/buffer'
 import type { JsonLdDocument } from 'jsonld'
 
-export abstract class KeyPair {
-  abstract sign(message: Buffer): Promise<Buffer>
+// export abstract class KeyPair {
+//   abstract sign(message: Buffer): Promise<Buffer>
 
-  abstract verify(message: Buffer, signature: Buffer): Promise<boolean>
+//   abstract verify(message: Buffer, signature: Buffer): Promise<boolean>
 
-  abstract get hasPublicKey(): boolean
+//   abstract get hasPublicKey(): boolean
 
-  abstract get publicKey(): Buffer | undefined
+//   abstract get publicKey(): Buffer | undefined
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  abstract fromVerificationMethod(verificationMethod: Record<string, any>): KeyPair
-}
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   abstract from(verificationMethod: Record<string, any>): Promise<KeyPair>
+// }
 
 export interface LdKeyPairOptions {
   id: string
@@ -20,7 +20,6 @@ export interface LdKeyPairOptions {
   revoked?: string
 }
 
-// K-TODO Rename to LDKeyClass
 export abstract class LdKeyPair {
   public readonly id: string
   public readonly controller: string
@@ -57,7 +56,7 @@ export abstract class LdKeyPair {
   //   return this.from(document)
   // }
 
-  public static async from() {
+  public static async from(verificationMethod: Record<string, any>): Promise<LdKeyPair> {
     throw new Error('Abstract method from() must be implemented in subclass.')
   }
 
@@ -83,10 +82,10 @@ export abstract class LdKeyPair {
   public abstract verifyFingerprint(fingerprint: string): boolean
 
   public abstract signer(): {
-    sign: (data: Uint8Array | Array<Uint8Array>) => Promise<Uint8Array | Array<Uint8Array>>
+    sign: (data: { data: Uint8Array | Uint8Array[] }) => Promise<Uint8Array | Array<Uint8Array>>
   }
 
   public abstract verifier(): {
-    verify: (data: Uint8Array | Array<Uint8Array>, signature: Uint8Array) => Promise<boolean>
+    verify: (data: { data: Uint8Array | Uint8Array[]; signature: Uint8Array }) => Promise<boolean>
   }
 }

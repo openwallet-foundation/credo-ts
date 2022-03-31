@@ -1,5 +1,6 @@
 import type { JwsLinkedDataSignature } from '../../crypto/JwsLinkedDataSignature'
 import type { VerifyCredentialResult, W3cCredential, W3cVerifyCredentialResult } from './models'
+import type { LinkedDataProof } from './models/LinkedDataProof'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
 import type { W3cPresentation } from './models/presentation/W3Presentation'
 import type { RemoteDocument, Url } from 'jsonld/jsonld-spec'
@@ -29,7 +30,7 @@ import { W3cCredentialRecord } from './models/credential/W3cCredentialRecord'
 import { W3cCredentialRepository } from './models/credential/W3cCredentialRepository'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
 
-interface LdProofDetailOptions {
+export interface LdProofDetailOptions {
   proofType: string // TODO replace with enum
   proofPurpose?: string // TODO replace with enum
   verificationMethod: string
@@ -41,7 +42,7 @@ interface LdProofDetailOptions {
   }
 }
 
-interface LdProofDetail {
+export interface LdProofDetail {
   credential: W3cCredential
   options: LdProofDetailOptions
 }
@@ -77,6 +78,7 @@ export class W3cCredentialService {
 
   private static SIGNATURE_SUITE_MAP: { [type in KeyType]?: typeof Ed25519Signature2018 } = {
     [KeyType.Ed25519]: Ed25519Signature2018,
+    // [KeyType.Bls12381g2]:
   }
 
   public constructor(
@@ -112,6 +114,10 @@ export class W3cCredentialService {
       throw new AriesFrameworkError('No public key found in wallet')
     }
 
+    // const suite = this.suiteRegistry.getSuiteByProofType(options.proofType)
+
+    // if (!suite) throw new AriesFrameworkError(`The proofType that was provided (${options.proofType}) is not supported`)
+
     const keyPair = new WalletKeyPair({
       controller: credential.issuerId,
       id: options.verificationMethod,
@@ -145,17 +151,34 @@ export class W3cCredentialService {
    * @returns the verification result
    */
   public async verifyCredential(credential: W3cVerifiableCredential): Promise<W3cVerifyCredentialResult> {
-    // MOCK
-    return {
-      verified: true,
-      statusResult: {},
-      results: [
-        {
-          credential: new W3cVerifiableCredential(credential),
-          verified: true,
-        },
-      ],
+    // create keyPair
+    const WalletKeyPair = createWalletKeyPairClass(this.wallet)
+
+    let proof: LinkedDataProof | undefined
+
+    if (Array.isArray(credential.proof)) {
+      proof = credential.proof.find((p) => p.type === 'Ed25519Signature2018')
+    } else {
+      proof = credential.proof
     }
+
+    const suite = new Ed25519Signature2018({
+      LDKeyClass: WalletKeyPair,
+      proof: {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        verificationMethod: proof!.verificationMethod,
+      },
+      useNativeCanonize: false,
+      date: credential.issuanceDate ?? new Date().toISOString(),
+    })
+
+    const result = await vc.verifyCredential({
+      credential: JsonTransformer.toJSON(credential),
+      suite: suite,
+      documentLoader: this.documentLoader,
+    })
+
+    return result as unknown as W3cVerifyCredentialResult
   }
 
   /**
@@ -275,31 +298,32 @@ export class W3cCredentialService {
   public documentLoader = async (url: Url): Promise<RemoteDocument> => {
     if (url.startsWith('did:')) {
       const result = await this.didResolver.resolve(url)
+
       if (result.didResolutionMetadata.error || !result.didDocument) {
         // TODO: we should probably handle this more gracefully
         throw new AriesFrameworkError(`Unable to resolve DID: ${url}`)
       }
+
+      const framed = await jsonld.frame(
+        result.didDocument.toJSON(),
+        {
+          '@context': result.didDocument.context,
+          '@embed': '@never',
+          id: url,
+        },
+        { compactToRelative: false }
+      )
+
       return {
         contextUrl: result.didDocument.context[0],
         documentUrl: url,
-        document: result.didDocument.toJSON(),
+        document: framed,
       }
     }
 
     const loader = documentLoaderNode.apply(jsonld, [])
 
     return await loader(url)
-
-    // // @ts-ignore
-    // if (!navigator) {
-    //   // nodejs
-    //   console.log('DOCUMENT LOADER -- NODEJS')
-
-    //   // @ts-ignore
-    // } else {
-    //   console.log('DOCUMENT LOADER -- RN')
-    //   return documentLoaderXhr(url)
-    // }
   }
 
   private getSignatureSuiteForDetail(detail: LdProofDetail) {}
