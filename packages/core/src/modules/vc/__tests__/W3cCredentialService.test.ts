@@ -1,5 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 
+import { validateSync } from 'class-validator'
+
 import { getAgentConfig } from '../../../../tests/helpers'
 import { TestLogger } from '../../../../tests/logger'
 import { Key, KeyType } from '../../../crypto'
@@ -13,8 +15,13 @@ import { W3cCredentialService } from '../W3cCredentialService'
 import { W3cCredential, W3cVerifiableCredential } from '../models'
 import { W3cCredentialRepository } from '../models/credential/W3cCredentialRepository'
 import { W3cPresentation } from '../models/presentation/W3Presentation'
+import { W3cVerifiablePresentation } from '../models/presentation/W3cVerifiablePresentation'
+import { CredentialIssuancePurpose } from '../purposes/CredentialIssuancePurpose'
 
-import { validEd25519Signature2018VerifiableCredentialJson } from './fixtures'
+import {
+  validEd25519Signature2018VerifiableCredentialJson,
+  validEd25519Signature2018VerifiablePresentationJson,
+} from './fixtures'
 
 jest.mock('../../ledger/services/IndyLedgerService')
 
@@ -31,6 +38,7 @@ describe('W3cCredentialService', () => {
   let logger: TestLogger
   let w3cCredentialService: W3cCredentialService
   let w3cCredentialRepository: W3cCredentialRepository
+  let issuerDidKey: DidKey
 
   beforeAll(async () => {
     agentConfig = getAgentConfig('W3cCredentialServiceTest')
@@ -48,6 +56,11 @@ describe('W3cCredentialService', () => {
       agentConfig,
       logger
     )
+
+    const pubDid = wallet.publicDid
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
+    issuerDidKey = new DidKey(key)
   })
 
   afterAll(async () => {
@@ -100,17 +113,12 @@ describe('W3cCredentialService', () => {
 
   describe('signCredential', () => {
     it('returns a signed credential', async () => {
-      const pubDid = wallet.publicDid
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-      const didKey = new DidKey(key)
-
       const credential = JsonTransformer.fromJSON(
         {
           '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
           // id: 'http://example.edu/credentials/temporary/28934792387492384',
           type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-          issuer: didKey.did,
+          issuer: issuerDidKey.did,
           issuanceDate: '2017-10-22T12:23:48Z',
           credentialSubject: {
             degree: {
@@ -125,7 +133,7 @@ describe('W3cCredentialService', () => {
       const vc = await w3cCredentialService.signCredential({
         options: {
           proofType: 'Ed25519Signature2018',
-          verificationMethod: didKey.keyId,
+          verificationMethod: issuerDidKey.keyId,
         },
         credential,
       })
@@ -134,7 +142,7 @@ describe('W3cCredentialService', () => {
   describe('verifyCredential', () => {
     it('credential should verify successfully', async () => {
       const vc = JsonTransformer.fromJSON(validEd25519Signature2018VerifiableCredentialJson, W3cVerifiableCredential)
-      const result = await w3cCredentialService.verifyCredential(vc)
+      const result = await w3cCredentialService.verifyCredential({ credential: vc })
     })
   })
 
@@ -163,6 +171,45 @@ describe('W3cCredentialService', () => {
 
       expect(result.verifiableCredential).toHaveLength(2)
       expect(result.verifiableCredential).toEqual(expect.arrayContaining([vc1, vc2]))
+    })
+  })
+
+  describe('signPresentation', () => {
+    it('Should successfully create a presentation from single verifiable credential', async () => {
+      const vc = JsonTransformer.fromJSON(validEd25519Signature2018VerifiableCredentialJson, W3cVerifiableCredential)
+      const presentation = await w3cCredentialService.createPresentation(vc)
+      const purpose = new CredentialIssuancePurpose({
+        controller: {},
+        date: new Date().toISOString(),
+      })
+
+      const verifiablePresentation = await w3cCredentialService.signPresentation(
+        presentation,
+        'Ed25519Signature2018',
+        purpose,
+        issuerDidKey.keyId
+      )
+    })
+  })
+
+  describe('verifyPresentation', () => {
+    it('Should successfully verify a presentation containing a single verifiable credential', async () => {
+      const vp = JsonTransformer.fromJSON(
+        validEd25519Signature2018VerifiablePresentationJson,
+        W3cVerifiablePresentation
+      )
+
+      const purpose = new CredentialIssuancePurpose({
+        controller: {},
+        date: new Date().toISOString(),
+      })
+
+      const result = await w3cCredentialService.verifyPresentation({
+        presentation: vp,
+        proofType: 'Ed25519Signature2018',
+        purpose: purpose,
+        verificationMethod: issuerDidKey.keyId,
+      })
     })
   })
 })

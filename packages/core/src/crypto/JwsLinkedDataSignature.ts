@@ -5,7 +5,6 @@ import type { LdKeyPair } from './LdKeyPair'
 
 import jsigs from '@digitalcredentials/jsonld-signatures'
 
-import { ProofAttribute } from '../modules/proofs'
 import { TypedArrayEncoder, JsonEncoder } from '../utils'
 
 const LinkedDataSignature = jsigs.suites.LinkedDataSignature
@@ -25,7 +24,7 @@ export type DocumentLoaderResult = Promise<Record<string, unknown>>
 
 export type DocumentLoader = (url: string) => DocumentLoaderResult
 
-export type ProofPurpose = unknown
+export type ProofPurpose = any
 
 export interface JwsLinkedDataSignatureOptions {
   type: string
