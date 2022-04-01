@@ -96,6 +96,7 @@ const mockCredentialRecord = ({
   metadata,
   threadId,
   connectionId,
+  credentialId,
   tags,
   id,
   credentialAttributes,
@@ -106,6 +107,7 @@ const mockCredentialRecord = ({
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string
+  credentialId?: string
   id?: string
   credentialAttributes?: CredentialPreviewAttribute[]
 } = {}) => {
@@ -123,6 +125,7 @@ const mockCredentialRecord = ({
     state: state || CredentialState.OfferSent,
     threadId: threadId ?? offerMessage.id,
     connectionId: connectionId ?? '123',
+    credentialId: credentialId ?? '123',
     tags,
   })
 
@@ -1097,13 +1100,14 @@ describe('CredentialService', () => {
       expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, credential)
     })
 
-    it('deleteFromWallet parameter should call deleteCredential in indyHolderService', async () => {
-      const deleteCredentialMock = indyHolderService.deleteCredential as jest.Mock<Promise<void>, [string]>
+    it('deleteFromWallet parameter should call deleteCredential in indyHolderService with credentialId', async () => {
+      const storeCredentialMock = indyHolderService.deleteCredential as jest.Mock<Promise<void>, [string]>
+
       const credential = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       await credentialService.deleteById(credential.id, true)
-      expect(deleteCredentialMock).toHaveBeenNthCalledWith(1, credential.id)
+      expect(storeCredentialMock).toHaveBeenNthCalledWith(1, credential.credentialId)
     })
   })
 
