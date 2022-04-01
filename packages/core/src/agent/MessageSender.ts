@@ -194,11 +194,11 @@ export class MessageSender {
       outOfBand
     )
 
-    const senderDidDocument = await this.resolveDidDocument(connection.did)
-    const senderAuthenticationKeys = getAuthenticationKeys(senderDidDocument)
+    const ourDidDocument = await this.resolveDidDocument(connection.did)
+    const ourAuthenticationKeys = getAuthenticationKeys(ourDidDocument)
     // TODO We're selecting just the first authentication key. Is it ok?
-    const [firstSenderAuthenticationKey] = senderAuthenticationKeys
-    const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(senderDidDocument)
+    const [firstOurAuthenticationKey] = ourAuthenticationKeys
+    const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(ourDidDocument)
 
     // Loop trough all available services and try to send the message
     for await (const service of services) {
@@ -207,7 +207,7 @@ export class MessageSender {
         await this.sendMessageToService({
           message: payload,
           service,
-          senderKey: firstSenderAuthenticationKey,
+          senderKey: firstOurAuthenticationKey,
           returnRoute: shouldUseReturnRoute,
           connectionId: connection.id,
         })
@@ -232,7 +232,7 @@ export class MessageSender {
       const keys = {
         recipientKeys: queueService.recipientKeys,
         routingKeys: queueService.routingKeys || [],
-        senderKey: firstSenderAuthenticationKey,
+        senderKey: firstOurAuthenticationKey,
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(payload, keys)
@@ -320,7 +320,7 @@ export class MessageSender {
     let didCommServices: Array<IndyAgentService | DidCommService> = []
     // If theirDid starts with a did: prefix it means we're using the new did syntax
     // and we should use the did resolver
-    if (connection.theirDid?.startsWith('did:')) {
+    if (connection.theirDid) {
       this.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
       const didDocument = await this.resolveDidDocument(connection.theirDid)
       didCommServices = didDocument.didCommServices
