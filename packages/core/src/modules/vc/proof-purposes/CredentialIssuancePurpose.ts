@@ -1,4 +1,8 @@
-import type { DocumentLoader, JwsLinkedDataSignature, Proof } from '../../../crypto/JwsLinkedDataSignature'
+import type {
+  DocumentLoader,
+  JwsLinkedDataSignature,
+  Proof,
+} from '../../../crypto/signature-suites/JwsLinkedDataSignature'
 
 // @ts-ignore
 import jsonld from '@digitalcredentials/jsonld'

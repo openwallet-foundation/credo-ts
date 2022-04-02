@@ -1,11 +1,11 @@
 /*!
  * Copyright (c) 2020-2021 Digital Bazaar, Inc. All rights reserved.
  */
-import type { LdKeyPair } from './LdKeyPair'
+import type { LdKeyPair } from '../LdKeyPair'
 
 import jsigs from '@digitalcredentials/jsonld-signatures'
 
-import { TypedArrayEncoder, JsonEncoder } from '../utils'
+import { TypedArrayEncoder, JsonEncoder } from '../../utils'
 
 const LinkedDataSignature = jsigs.suites.LinkedDataSignature
 

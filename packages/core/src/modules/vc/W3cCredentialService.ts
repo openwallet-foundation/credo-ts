@@ -1,25 +1,21 @@
 import type { Key } from '../../crypto'
-import type { JwsLinkedDataSignature, ProofPurpose } from '../../crypto/JwsLinkedDataSignature'
+import type { ProofPurpose } from '../../crypto/signature-suites/JwsLinkedDataSignature'
 import type { SingleOrArray } from '../../utils/type'
-import type { VerifyCredentialResult, W3cCredential, W3cVerifyCredentialResult } from './models'
-import type { LinkedDataProof } from './models/LinkedDataProof'
+import type { W3cCredential, W3cVerifyCredentialResult } from './models'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
 import type { RemoteDocument, Url } from 'jsonld/jsonld-spec'
 
 import jsonld, { expand } from '@digitalcredentials/jsonld'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import jsigs, { purposes } from '@digitalcredentials/jsonld-signatures'
-import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
+import jsigs from '@digitalcredentials/jsonld-signatures'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import documentLoaderXhr from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
+import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
 import vc from '@digitalcredentials/vc'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
-import { KeyType } from '../../crypto'
-import { Ed25519Signature2018 } from '../../crypto/Ed25519Signature2018'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
@@ -28,14 +24,13 @@ import { Wallet } from '../../wallet'
 import { DidKey, DidResolverService, VerificationMethod } from '../dids'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 
+import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
 import { W3cVerifiableCredential } from './models'
 import { W3cCredentialRecord } from './models/credential/W3cCredentialRecord'
 import { W3cCredentialRepository } from './models/credential/W3cCredentialRepository'
 import { W3cPresentation } from './models/presentation/W3Presentation'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
-import { CredentialIssuancePurpose } from './purposes/CredentialIssuancePurpose'
 
-const LinkedDataSignature = jsigs.suites.LinkedDataSignature
 export interface LdProofDetailOptions {
   proofType: string // TODO replace with enum
   proofPurpose?: ProofPurpose // TODO replace with enum
@@ -52,49 +47,6 @@ export interface LdProofDetail {
   credential: W3cCredential
   options: LdProofDetailOptions
 }
-
-// SUITE REGISTRY
-
-interface SuiteInfo {
-  suiteClass: typeof LinkedDataSignature
-  proofType: string
-  requiredKeyType: string
-  keyType: string
-}
-
-class SignatureSuiteRegistry {
-  private suiteMapping: SuiteInfo[] = [
-    {
-      suiteClass: Ed25519Signature2018,
-      proofType: 'Ed25519Signature2018',
-      requiredKeyType: 'Ed25519VerificationKey2018',
-      keyType: KeyType.Ed25519,
-    },
-  ]
-
-  public get supportedProofTypes(): string[] {
-    return this.suiteMapping.map((x) => x.proofType)
-  }
-
-  public getByKeyType(keyType: KeyType) {
-    return this.suiteMapping.find((x) => x.keyType === keyType)
-  }
-
-  public getByProofType(proofType: string) {
-    const suiteInfo = this.suiteMapping.find((x) => x.proofType === proofType)
-
-    if (!suiteInfo) {
-      throw new AriesFrameworkError(`No signature suite for proof type: ${proofType}`)
-    }
-
-    return suiteInfo
-  }
-
-  public getKeyTypeByProofType(proofType: string): KeyType | undefined {
-    return this.suiteMapping.find((x) => x.proofType === proofType)?.keyType
-  }
-}
-
 @scoped(Lifecycle.ContainerScoped)
 export class W3cCredentialService {
   private wallet: Wallet

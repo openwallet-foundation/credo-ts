@@ -16,7 +16,7 @@ import { W3cCredential, W3cVerifiableCredential } from '../models'
 import { W3cCredentialRepository } from '../models/credential/W3cCredentialRepository'
 import { W3cPresentation } from '../models/presentation/W3Presentation'
 import { W3cVerifiablePresentation } from '../models/presentation/W3cVerifiablePresentation'
-import { CredentialIssuancePurpose } from '../purposes/CredentialIssuancePurpose'
+import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuancePurpose'
 
 import {
   validEd25519Signature2018VerifiableCredentialJson,
@@ -112,30 +112,32 @@ describe('W3cCredentialService', () => {
   })
 
   describe('signCredential', () => {
-    it('returns a signed credential', async () => {
-      const credential = JsonTransformer.fromJSON(
-        {
-          '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
-          // id: 'http://example.edu/credentials/temporary/28934792387492384',
-          type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-          issuer: issuerDidKey.did,
-          issuanceDate: '2017-10-22T12:23:48Z',
-          credentialSubject: {
-            degree: {
-              type: 'BachelorDegree',
-              name: 'Bachelor of Science and Arts',
+    describe('Ed25519Signature2018', () => {
+      it('Should return a successfully signed credential', async () => {
+        const credential = JsonTransformer.fromJSON(
+          {
+            '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+            // id: 'http://example.edu/credentials/temporary/28934792387492384',
+            type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+            issuer: issuerDidKey.did,
+            issuanceDate: '2017-10-22T12:23:48Z',
+            credentialSubject: {
+              degree: {
+                type: 'BachelorDegree',
+                name: 'Bachelor of Science and Arts',
+              },
             },
           },
-        },
-        W3cCredential
-      )
+          W3cCredential
+        )
 
-      const vc = await w3cCredentialService.signCredential({
-        options: {
-          proofType: 'Ed25519Signature2018',
-          verificationMethod: issuerDidKey.keyId,
-        },
-        credential,
+        const vc = await w3cCredentialService.signCredential({
+          options: {
+            proofType: 'Ed25519Signature2018',
+            verificationMethod: issuerDidKey.keyId,
+          },
+          credential,
+        })
       })
     })
   })
