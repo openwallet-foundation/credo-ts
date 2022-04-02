@@ -12,8 +12,7 @@ import { KeyType } from '../crypto'
 import { BbsService } from '../crypto/BbsService'
 import { Key } from '../crypto/Key'
 import { AriesFrameworkError, IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
-import { BufferEncoder } from '../utils'
-import { JsonEncoder } from '../utils/JsonEncoder'
+import { TypedArrayEncoder, JsonEncoder } from '../utils'
 import { isIndyError } from '../utils/indyError'
 
 import { WalletDuplicateError, WalletNotFoundError, WalletError } from './error'
@@ -330,9 +329,10 @@ export class IndyWallet implements Wallet {
   }
 
   /**
-   * Create a key with an optional seed and keyType
+   * Create a key with an optional seed and keyType.
+   * The keypair is also automatically stored in the wallet afterwards
    *
-   * Bls12381g1g2 is not supported.
+   * Bls12381g1g2 and X25519 are not supported.
    *
    * @param seed string The seed for creating a key
    * @param keyType KeyType the type of key that should be created
@@ -345,7 +345,10 @@ export class IndyWallet implements Wallet {
   public async createKey({ seed, keyType }: CreateKeyOptions): Promise<Key> {
     try {
       if (keyType === KeyType.Ed25519) {
-        return Key.fromPublicKeyBase58(await this.indy.createKey(this.handle, { seed }), keyType)
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //@ts-ignore
+        const verkey = await this.indy.createKey(this.handle, { seed, crypto_type: 'ed25519' })
+        return Key.fromPublicKeyBase58(verkey, keyType)
       }
 
       if (keyType === KeyType.Bls12381g1 || keyType === KeyType.Bls12381g2) {
@@ -363,7 +366,7 @@ export class IndyWallet implements Wallet {
   /**
    * sign a Buffer with an instance of a Key class
    *
-   * Bls12381g1g2 and Bls12381g1 are not supported.
+   * Bls12381g1g2, Bls12381g1 and X25519 are not supported.
    *
    * @param data Buffer The data that needs to be signed
    * @param key Key The key that is used to sign the data
@@ -374,7 +377,7 @@ export class IndyWallet implements Wallet {
     try {
       if (key.keyType === KeyType.Ed25519) {
         // Checks to see if it is an not an Array of messages, but just a single one
-        if (typeof data[0] !== 'number') {
+        if (!TypedArrayEncoder.isTypedArray(data)) {
           throw new WalletError(`${KeyType.Ed25519} does not support multiple singing of multiple messages`)
         }
         return await this.indy.cryptoSign(this.handle, key.publicKeyBase58, data as Buffer)
@@ -385,7 +388,7 @@ export class IndyWallet implements Wallet {
         return BbsService.sign({
           messages: data,
           publicKey: key.publicKey,
-          privateKey: BufferEncoder.fromBase58(blsKeyPair.publicKeyBase58),
+          privateKey: TypedArrayEncoder.fromBase58(blsKeyPair.privateKeyBase58),
         })
       }
     } catch (error) {
@@ -397,7 +400,7 @@ export class IndyWallet implements Wallet {
   /**
    * Verify the signature with the data and the used key
    *
-   * Bls12381g1g2 and Bls12381g1 are not supported.
+   * Bls12381g1g2, Bls12381g1 and X25519 are not supported.
    *
    * @param data Buffer The data that has to be confirmed to be signed
    * @param key Key The key that was used in the signing process
@@ -412,7 +415,7 @@ export class IndyWallet implements Wallet {
     try {
       if (key.keyType === KeyType.Ed25519) {
         // Checks to see if it is an not an Array of messages, but just a single one
-        if (typeof data[0] !== 'number') {
+        if (!TypedArrayEncoder.isTypedArray(data)) {
           throw new WalletError(`${KeyType.Ed25519} does not support multiple singing of multiple messages`)
         }
         return await this.indy.cryptoVerify(key.publicKeyBase58, data as Buffer, signature)
@@ -457,7 +460,7 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  public async generateNonce() {
+  public async generateNonce(): Promise<string> {
     try {
       return await this.indy.generateNonce()
     } catch (error) {
@@ -465,17 +468,9 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  /**
-   * @todo fix the query
-   */
   private async retrieveKeyPair(publicKeyBase58: string): Promise<BlsKeyPair> {
     try {
-      const { value } = await this.indy.getWalletRecord(
-        this.handle,
-        'KeyPairRecord',
-        `{publicKeyBase58: ${publicKeyBase58}}`,
-        {}
-      )
+      const { value } = await this.indy.getWalletRecord(this.handle, 'KeyPairRecord', `keypair-${publicKeyBase58}`, {})
       if (value) {
         return JsonEncoder.fromString(value) as BlsKeyPair
       } else {
@@ -492,17 +487,19 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  /**
-   * @todo fix the query
-   */
   private async storeKeyPair(blsKeyPair: BlsKeyPair): Promise<void> {
     try {
-      await this.indy.addWalletRecord(this.handle, 'KeyPairRecord', 'ID', JSON.stringify(blsKeyPair), {})
+      await this.indy.addWalletRecord(
+        this.handle,
+        'KeyPairRecord',
+        `keypair-${blsKeyPair.publicKeyBase58}`,
+        JSON.stringify(blsKeyPair),
+        {}
+      )
     } catch (error) {
       if (isIndyError(error, 'WalletItemAlreadyExists')) {
         throw new RecordDuplicateError(`Record already exists`, { recordType: 'KeyPairRecord' })
       }
-
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }

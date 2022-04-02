@@ -1,9 +1,15 @@
 import type { CreateKeyOptions } from '../wallet'
 import type { BlsKeyPair as _BlsKeyPair } from '@mattrglobal/bbs-signatures'
 
-import { generateBls12381G2KeyPair, generateBls12381G1KeyPair, sign, verify } from '@mattrglobal/bbs-signatures'
+import {
+  bls12381toBbs,
+  generateBls12381G2KeyPair,
+  generateBls12381G1KeyPair,
+  sign,
+  verify,
+} from '@mattrglobal/bbs-signatures'
 
-import { BufferEncoder } from '../utils'
+import { TypedArrayEncoder } from '../utils/TypedArrayEncoder'
 import { Buffer } from '../utils/buffer'
 import { WalletError } from '../wallet/error'
 
@@ -12,11 +18,11 @@ import { KeyType } from './KeyType'
 export interface BlsKeyPair {
   publicKeyBase58: string
   privateKeyBase58: string
-  keyType: Exclude<KeyType, KeyType.Ed25519 | KeyType.X25519>
+  keyType: Extract<KeyType, KeyType.Bls12381g1 | KeyType.Bls12381g2 | KeyType.Bls12381g1g2>
 }
 
 interface BbsCreateKeyOptions extends CreateKeyOptions {
-  keyType: Exclude<KeyType, KeyType.X25519 | KeyType.Ed25519 | KeyType.Bls12381g1g2>
+  keyType: Extract<KeyType, KeyType.Bls12381g1 | KeyType.Bls12381g2>
 }
 
 interface BbsSignOptions {
@@ -46,7 +52,7 @@ export class BbsService {
    */
   public static async createKey({ keyType, seed }: BbsCreateKeyOptions): Promise<BlsKeyPair> {
     // Generate bytes from the seed as required by the bbs-signatures libraries
-    const seedBytes = seed ? BufferEncoder.fromString(seed) : undefined
+    const seedBytes = seed ? TypedArrayEncoder.fromString(seed) : undefined
 
     // Temporary keypair holder
     let blsKeyPair: Required<_BlsKeyPair>
@@ -68,8 +74,8 @@ export class BbsService {
 
     return {
       keyType,
-      publicKeyBase58: BufferEncoder.toBase58(blsKeyPair.publicKey),
-      privateKeyBase58: BufferEncoder.toBase58(blsKeyPair.secretKey),
+      publicKeyBase58: TypedArrayEncoder.toBase58(blsKeyPair.publicKey),
+      privateKeyBase58: TypedArrayEncoder.toBase58(blsKeyPair.secretKey),
     }
   }
 
@@ -86,18 +92,20 @@ export class BbsService {
    */
   public static async sign({ messages, publicKey, privateKey }: BbsSignOptions): Promise<Buffer> {
     if (messages.length === 0) throw new WalletError('Unable to create a signature without any messages')
-    if (typeof messages[0] === 'number') messages = [messages as Buffer]
+    // Check if it is a single message or list and if it is a single message convert it to a list
+    const normalizedMessages = (TypedArrayEncoder.isTypedArray(messages) ? [messages as Buffer] : messages) as Buffer[]
 
     // Get the Uint8Array variant of all the messages
-    const messageBuffers = (messages as Buffer[]).map(Uint8Array.from)
+    const messageBuffers = normalizedMessages.map((m) => Uint8Array.from(m))
+
+    const bbsKeyPair = await bls12381toBbs({
+      keyPair: { publicKey: Uint8Array.from(publicKey), secretKey: Uint8Array.from(privateKey) },
+      messageCount: normalizedMessages.length,
+    })
 
     // Sign the messages via the keyPair
     const signature = await sign({
-      keyPair: {
-        publicKey: Uint8Array.from(publicKey),
-        secretKey: Uint8Array.from(privateKey),
-        messageCount: messages.length,
-      },
+      keyPair: bbsKeyPair,
       messages: messageBuffers,
     })
 
@@ -106,7 +114,7 @@ export class BbsService {
   }
 
   /**
-   * Verify an arbitrary amount of messages with their signature created by with their public key
+   * Verify an arbitrary amount of messages with their signature created with their key pair
    *
    * @param publicKey Buffer The public key used to sign the messages
    * @param messages Buffer[] The messages that have to be verified if they are signed
@@ -118,14 +126,20 @@ export class BbsService {
    * @throws {WalletError} When the verification process failed
    */
   public static async verify({ signature, messages, publicKey }: BbsVerifyOptions): Promise<boolean> {
-    if (messages.length === 0) throw new WalletError('Unable to verify without any messages')
-    if (typeof messages[0] === 'number') messages = [messages as Buffer]
+    if (messages.length === 0) throw new WalletError('Unable to create a signature without any messages')
+    // Check if it is a single message or list and if it is a single message convert it to a list
+    const normalizedMessages = (TypedArrayEncoder.isTypedArray(messages) ? [messages as Buffer] : messages) as Buffer[]
 
     // Get the Uint8Array variant of all the messages
-    const messageBuffers = (messages as Buffer[]).map(Uint8Array.from)
+    const messageBuffers = normalizedMessages.map((m) => Uint8Array.from(m))
+
+    const bbsKeyPair = await bls12381toBbs({
+      keyPair: { publicKey: Uint8Array.from(publicKey) },
+      messageCount: normalizedMessages.length,
+    })
 
     // Verify the signature against the messages with their public key
-    const { verified, error } = await verify({ signature, messages: messageBuffers, publicKey })
+    const { verified, error } = await verify({ signature, messages: messageBuffers, publicKey: bbsKeyPair.publicKey })
 
     // If the messages could not be verified and an error occured
     if (!verified && error) {
