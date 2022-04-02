@@ -9,7 +9,7 @@ import {
   verify,
 } from '@mattrglobal/bbs-signatures'
 
-import { TypedArrayEncoder } from '../utils/TypedArrayEncoder'
+import { TypedArrayEncoder } from '../utils'
 import { Buffer } from '../utils/buffer'
 import { WalletError } from '../wallet/error'
 

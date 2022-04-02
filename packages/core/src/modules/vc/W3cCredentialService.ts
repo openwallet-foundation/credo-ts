@@ -5,7 +5,7 @@ import type { W3cCredential, W3cVerifyCredentialResult } from './models'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
 import type { RemoteDocument, Url } from 'jsonld/jsonld-spec'
 
-import jsonld, { expand } from '@digitalcredentials/jsonld'
+import jsonld, { expand, frame } from '@digitalcredentials/jsonld'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import jsigs from '@digitalcredentials/jsonld-signatures'
@@ -16,6 +16,8 @@ import vc from '@digitalcredentials/vc'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
+import { KeyType } from '../../crypto'
+import { BbsService } from '../../crypto/BbsService'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
@@ -83,10 +85,6 @@ export class W3cCredentialService {
     const signingKey = await this.getPublicKeyFromVerificationMethod(options.verificationMethod)
 
     const suiteInfo = this.suiteRegistry.getByProofType(options.proofType)
-
-    if (!suiteInfo) {
-      throw new AriesFrameworkError(`The requested proofType ${options.proofType} is not supported`)
-    }
 
     const keyPair = new WalletKeyPair({
       controller: credential.issuerId, // should we check this against the verificationMethod.controller?
@@ -164,57 +162,6 @@ export class W3cCredentialService {
     const result = await vc.verifyCredential(verifyOptions)
 
     return result as unknown as W3cVerifyCredentialResult
-  }
-
-  /**
-   * Verifies a presentation including the credentials it includes
-   *
-   * @param presentation the presentation to be verified
-   * @returns the verification result
-   */
-  public async verifyPresentation(options: {
-    presentation: W3cVerifiablePresentation
-    proofType: string
-    verificationMethod: string
-    purpose: ProofPurpose
-  }): Promise<VerifyPresentationResult> {
-    // create keyPair
-    const WalletKeyPair = createWalletKeyPairClass(this.wallet)
-
-    let proofs = options.presentation.proof
-
-    if (!Array.isArray(proofs)) {
-      proofs = [proofs]
-    }
-
-    proofs = proofs.filter((x) => x.proofPurpose === options.purpose.term)
-
-    const suites = proofs.map((x) => {
-      const SuiteClass = this.suiteRegistry.getByProofType(x.type).suiteClass
-      return new SuiteClass({
-        LDKeyClass: WalletKeyPair,
-        proof: {
-          verificationMethod: x.verificationMethod,
-        },
-        date: x.created,
-        useNativeCanonize: false,
-      })
-    })
-
-    const verifyOptions: Record<string, any> = {
-      presentation: JsonTransformer.toJSON(options.presentation),
-      suite: suites,
-      documentLoader: this.documentLoader,
-    }
-
-    // this is a hack because vcjs throws if purpose is passed as undefined or null
-    if (options.purpose) {
-      verifyOptions['presentationPurpose'] = options.purpose
-    }
-
-    const result = await vc.verify(verifyOptions)
-
-    return result as unknown as VerifyPresentationResult
   }
 
   /**
@@ -320,6 +267,57 @@ export class W3cCredentialService {
   }
 
   /**
+   * Verifies a presentation including the credentials it includes
+   *
+   * @param presentation the presentation to be verified
+   * @returns the verification result
+   */
+  public async verifyPresentation(options: {
+    presentation: W3cVerifiablePresentation
+    proofType: string
+    verificationMethod: string
+    purpose: ProofPurpose
+  }): Promise<VerifyPresentationResult> {
+    // create keyPair
+    const WalletKeyPair = createWalletKeyPairClass(this.wallet)
+
+    let proofs = options.presentation.proof
+
+    if (!Array.isArray(proofs)) {
+      proofs = [proofs]
+    }
+
+    proofs = proofs.filter((x) => x.proofPurpose === options.purpose.term)
+
+    const suites = proofs.map((x) => {
+      const SuiteClass = this.suiteRegistry.getByProofType(x.type).suiteClass
+      return new SuiteClass({
+        LDKeyClass: WalletKeyPair,
+        proof: {
+          verificationMethod: x.verificationMethod,
+        },
+        date: x.created,
+        useNativeCanonize: false,
+      })
+    })
+
+    const verifyOptions: Record<string, any> = {
+      presentation: JsonTransformer.toJSON(options.presentation),
+      suite: suites,
+      documentLoader: this.documentLoader,
+    }
+
+    // this is a hack because vcjs throws if purpose is passed as undefined or null
+    if (options.purpose) {
+      verifyOptions['presentationPurpose'] = options.purpose
+    }
+
+    const result = await vc.verify(verifyOptions)
+
+    return result as unknown as VerifyPresentationResult
+  }
+
+  /**
    * K-TODO: make sure this method validates that all given credential attributes are also in the JSON-LD context
    * @see https://github.com/gjgd/jsonld-checker
    * NOTE: the library above has NodeJS specific dependencies. We should consider copying it into this codebase
@@ -327,31 +325,6 @@ export class W3cCredentialService {
    */
   public validateCredential(jsonLd: string): Promise<any> {
     throw new Error('Method not implemented.')
-  }
-
-  private getVerificationMethod(did: string): string {
-    // TODO resolve verification method through DID resolver / documentloader
-    if (did.startsWith('did:key:')) {
-      return DidKey.fromDid(did).keyId
-    }
-    if (did.startsWith('did:sov:')) {
-      return did + '#key-1'
-    }
-    throw new AriesFrameworkError(`Unable to get verification method for DID: ${did}`)
-  }
-
-  private assertCanIssueWithIssuerIdAndProofType(issuerId: string, proofType: string): void {
-    if (!this.suiteRegistry.supportedProofTypes.includes(proofType)) {
-      throw new AriesFrameworkError(`Unsupported proof type: ${proofType}`)
-    }
-
-    if (!issuerId.startsWith('did:')) {
-      throw new AriesFrameworkError(
-        `Unable to issue credential with issuer id: ${issuerId}. Only issuance with DIDs is supported`
-      )
-    }
-
-    // TODO validate if the DID is allowed to issue with this proof type
   }
 
   public documentLoader = async (url: Url): Promise<RemoteDocument> => {
@@ -363,15 +336,11 @@ export class W3cCredentialService {
         throw new AriesFrameworkError(`Unable to resolve DID: ${url}`)
       }
 
-      const framed = await jsonld.frame(
-        result.didDocument.toJSON(),
-        {
-          '@context': result.didDocument.context,
-          '@embed': '@never',
-          id: url,
-        },
-        { compactToRelative: false }
-      )
+      const framed = await frame(result.didDocument.toJSON(), {
+        '@context': result.didDocument.context,
+        '@embed': '@never',
+        id: url,
+      })
 
       return {
         contextUrl: result.didDocument.context[0],
@@ -395,30 +364,4 @@ export class W3cCredentialService {
 
     return key.getKeyFromVerificationMethod(verificationMethodClass)
   }
-
-  // private getSignatureSuite(options: {
-  //   proofType: KeyType
-  //   didInfo: DidInfo
-  //   verificationMethod?: string
-  //   proof?: Record<string, unknown>
-  // }): JwsLinkedDataSignature {
-  //   const SignatureClass = W3cCredentialService.SIGNATURE_SUITE_MAP[options.proofType]
-
-  //   const WalletKeyPair = createWalletKeyPairClass(this.wallet)
-
-  //   const proof = new LinkedDataProof({
-  //     created: o
-  //   })
-
-  //   const walletKeyPair = new WalletKeyPair({
-  //       controller: '',
-  //       id: '',
-  //       key: Key.fromPublicKeyBase58(options.didInfo.verkey, options.proofType),
-  //       wallet: this.wallet,
-  //     }),
-
-  //   return new SignatureClass({
-  //     key:
-  //   })
-  // }
 }

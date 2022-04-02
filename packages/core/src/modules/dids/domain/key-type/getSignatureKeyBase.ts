@@ -16,6 +16,7 @@ export function getSignatureKeyBase({
 
   return new DidDocumentBuilder(did)
     .addVerificationMethod(verificationMethod)
+    .addKeyAgreement(verificationMethod)
     .addAuthentication(keyId)
     .addAssertionMethod(keyId)
     .addCapabilityDelegation(keyId)
