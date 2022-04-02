@@ -7,6 +7,7 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { getBaseConfig, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ConnectionRecord } from '../../connections'
+import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
 const recipientConfig = getBaseConfig('Mediation: Recipient')
@@ -93,6 +94,7 @@ describe('mediator establishment', () => {
     expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
+    expect(recipientMediator?.pickupStrategy).toBe(MediatorPickupStrategy.Explicit)
 
     // Initialize sender agent
     senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)
