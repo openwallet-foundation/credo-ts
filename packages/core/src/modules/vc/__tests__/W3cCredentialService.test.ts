@@ -134,11 +134,9 @@ describe('W3cCredentialService', () => {
         )
 
         const vc = await w3cCredentialService.signCredential({
-          options: {
-            proofType: 'Ed25519Signature2018',
-            verificationMethod: issuerDidKey.keyId,
-          },
           credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod: issuerDidKey.keyId,
         })
       })
     })
@@ -153,7 +151,6 @@ describe('W3cCredentialService', () => {
             'https://www.w3.org/2018/credentials/v1',
             'https://w3id.org/citizenship/v1',
             'https://w3id.org/security/bbs/v1',
-            'https://w3id.org/security/suites/bls12381-2020/v1',
           ],
           id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
           type: ['VerifiableCredential', 'PermanentResidentCard'],
@@ -182,11 +179,9 @@ describe('W3cCredentialService', () => {
         const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
 
         const vc = await w3cCredentialService.signCredential({
-          options: {
-            proofType: 'BbsBlsSignature2020',
-            verificationMethod: issuerDidKey.keyId,
-          },
           credential,
+          proofType: 'BbsBlsSignature2020',
+          verificationMethod: issuerDidKey.keyId,
         })
       })
     })

@@ -295,9 +295,11 @@ export class W3cCredentialService {
     return result as unknown as VerifyPresentationResult
   }
 
-  public async deriveProof() {}
+  // public async deriveProof() {}
 
   public documentLoader = async (url: Url): Promise<RemoteDocument> => {
+    console.log(url)
+
     if (url.startsWith('did:')) {
       const result = await this.didResolver.resolve(url)
 

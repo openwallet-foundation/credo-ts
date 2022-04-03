@@ -1,8 +1,8 @@
 import jsigs from '@digitalcredentials/jsonld-signatures'
-import { BbsBlsSignature2020 } from '@transmute/bbs-bls12381-signature-2020'
 
 import { KeyType } from '../../crypto'
 import { Ed25519Signature2018 } from '../../crypto/signature-suites'
+import { BbsBlsSignature2020 } from '../../crypto/signature-suites/BbsBlsSignature2020'
 import { AriesFrameworkError } from '../../error'
 
 const LinkedDataSignature = jsigs.suites.LinkedDataSignature
