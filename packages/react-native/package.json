@@ -29,7 +29,7 @@
     "events": "^3.3.0"
   },
   "devDependencies": {
-    "@types/indy-sdk-react-native": "npm:@types/indy-sdk@^1.16.12",
+    "@types/indy-sdk-react-native": "npm:@types/indy-sdk@^1.16.15",
     "@types/react-native": "^0.64.10",
     "indy-sdk-react-native": "^0.1.16",
     "react": "17.0.1",
