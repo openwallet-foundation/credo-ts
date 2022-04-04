@@ -2242,7 +2242,7 @@
   dependencies:
     "@types/node" "*"
 
-"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.15", "@types/indy-sdk@^1.16.15":
+"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.16", "@types/indy-sdk@^1.16.16":
   version "1.16.16"
   resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.16.tgz#dc9e51c61c266eff616991fa7df88309975d9f1e"
   integrity sha512-bSWG56bAFvjTTLHJoGEXylbbN533g9XEtOTPS9G1EvIv5AsVcy/OIZOkXXElbzvYdZ1Q+qCxZDD5T0OqMYNmjg==

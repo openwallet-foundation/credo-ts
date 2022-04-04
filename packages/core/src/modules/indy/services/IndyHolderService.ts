@@ -205,6 +205,24 @@ export class IndyHolderService {
     }
   }
 
+  /**
+   * Delete a credential stored in the wallet by id.
+   *
+   * @param credentialId the id (referent) of the credential
+   *
+   */
+  public async deleteCredential(credentialId: Indy.CredentialId): Promise<void> {
+    try {
+      return await this.indy.proverDeleteCredential(this.wallet.handle, credentialId)
+    } catch (error) {
+      this.logger.error(`Error deleting Indy Credential from Wallet`, {
+        error,
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
+    }
+  }
+
   private async fetchCredentialsForReferent(searchHandle: number, referent: string, limit?: number) {
     try {
       let credentials: Indy.IndyCredential[] = []
