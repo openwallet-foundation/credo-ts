@@ -1,5 +1,5 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import type { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
+import type { LdProofDetailOptions, LdProofDetail } from '../../../../../../src/modules/vc'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type {
   AcceptOfferOptions,
@@ -11,9 +11,11 @@ import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
+import { JsonTransformer } from '../../../../../../src/utils'
 import { prepareForIssuance, waitForCredentialRecordSubject, getBaseConfig } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
+import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
@@ -27,26 +29,34 @@ const aliceConfig = getBaseConfig('Alice LD connection-less Credentials V2', {
   endpoints: ['rxjs:alice'],
 })
 
-const ldProofVcDetail: W3cCredential = {
-  context: ['https://www.w3.org/2018/'],
-  issuer: 'did:key:z6MkodKV3mnjQQMB9jhMZtKD9Sm75ajiYq51JDLuRSPZTXrr',
-  type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-  issuanceDate: '2020-01-01T19:23:24Z',
-  expirationDate: '2021-01-01T19:23:24Z',
-  credentialSubject: {
-    id: 'did:example:b34ca6cd37bbf23',
-    type: ['PermanentResident', 'Person'],
-    givenName: 'JOHN',
-    familyName: 'SMITH',
-    gender: 'Male',
-    image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-    residentSince: '2015-01-01',
-    lprCategory: 'C09',
-    lprNumber: '999-999-999',
-    commuterClassification: 'C1',
-    birthCountry: 'Bahamas',
-    birthDate: '1958-07-17',
+const TEST_DID_KEY = 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
+
+const options: LdProofDetailOptions = {
+  proofType: 'Ed25519Signature2018',
+  verificationMethod:
+    'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+}
+const credential: W3cCredential = JsonTransformer.fromJSON(
+  {
+    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+    id: 'http://example.edu/credentials/temporary/28934792387492384',
+    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+    issuer: TEST_DID_KEY,
+    issuanceDate: '2017-10-22T12:23:48Z',
+    credentialSubject: {
+      id: 'did:example:b34ca6cd37bbf23',
+      degree: {
+        type: 'BachelorDegree',
+        name: 'Bachelor of Science and Arts',
+      },
+    },
   },
+  W3cCredential
+)
+
+const ldProof: LdProofDetail = {
+  credential: credential,
+  options: options,
 }
 
 describe('credentials', () => {
@@ -99,7 +109,7 @@ describe('credentials', () => {
     const offerOptions: OfferCredentialOptions = {
       comment: 'V2 Out of Band offer (W3C)',
       credentialFormats: {
-        jsonld: ldProofVcDetail,
+        jsonld: ldProof,
       },
       protocolVersion: CredentialProtocolVersion.V2,
       connectionId: '',

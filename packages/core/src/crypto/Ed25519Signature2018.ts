@@ -76,19 +76,19 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
     this.requiredKeyType = 'Ed25519VerificationKey2018'
   }
 
-  public async assertVerificationMethod(verificationMethod: VerificationMethod) {
-    if (!_includesCompatibleContext({ document: verificationMethod })) {
+  public async assertVerificationMethod(document: JsonLdDoc) {
+    if (!_includesCompatibleContext({ document: document })) {
       // For DID Documents, since keys do not have their own contexts,
       // the suite context is usually provided by the documentLoader logic
       throw new TypeError(`The verification method (key) must contain "${this.contextUrl}".`)
     }
 
-    if (!(_isEd2018Key(verificationMethod) || _isEd2020Key(verificationMethod))) {
+    if (!(_isEd2018Key(document) || _isEd2020Key(document))) {
       throw new Error(`Invalid key type. Key type must be "${this.requiredKeyType}".`)
     }
 
     // ensure verification method has not been revoked
-    if (verificationMethod.revoked !== undefined) {
+    if (document.revoked !== undefined) {
       throw new Error('The verification method has been revoked.')
     }
   }
@@ -196,15 +196,15 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
   // TODO: log commented warnings
   if (hasEd2018 && hasCred) {
     // Warn if both are present
-    // console.warn('Warning: The ed25519-2018/v1 and credentials/v1 ' + 'contexts are incompatible.')
-    // console.warn('For VCs using Ed25519Signature2018 suite,' + ' using the credentials/v1 context is sufficient.')
+    console.warn('Warning: The ed25519-2018/v1 and credentials/v1 ' + 'contexts are incompatible.')
+    console.warn('For VCs using Ed25519Signature2018 suite,' + ' using the credentials/v1 context is sufficient.')
     return false
   }
 
   if (hasEd2018 && hasSecV2) {
     // Warn if both are present
-    // console.warn('Warning: The ed25519-2018/v1 and security/v2 ' + 'contexts are incompatible.')
-    // console.warn('For VCs using Ed25519Signature2018 suite,' + ' using the security/v2 context is sufficient.')
+    console.warn('Warning: The ed25519-2018/v1 and security/v2 ' + 'contexts are incompatible.')
+    console.warn('For VCs using Ed25519Signature2018 suite,' + ' using the security/v2 context is sufficient.')
     return false
   }
 
@@ -224,10 +224,11 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
  */
 function _includesContext(options: { document: JsonLdDoc; contextUrl: string }) {
   const context = options.document['@context']
+
   return context === options.contextUrl || (Array.isArray(context) && context.includes(options.contextUrl))
 }
 
-function _isEd2018Key(verificationMethod: VerificationMethod) {
+function _isEd2018Key(verificationMethod: JsonLdDoc) {
   const hasEd2018 = _includesContext({
     document: verificationMethod,
     contextUrl: SUITE_CONTEXT_URL,
@@ -237,7 +238,7 @@ function _isEd2018Key(verificationMethod: VerificationMethod) {
   return hasEd2018 && jsonld.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2018')
 }
 
-function _isEd2020Key(verificationMethod: VerificationMethod) {
+function _isEd2020Key(verificationMethod: JsonLdDoc) {
   const hasEd2020 = _includesContext({
     document: verificationMethod,
     contextUrl: SUITE_CONTEXT_URL_2020,

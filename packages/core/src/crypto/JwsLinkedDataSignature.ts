@@ -30,7 +30,7 @@ export interface JwsLinkedDataSignatureOptions {
   type: string
   algorithm: string
   LDKeyClass: typeof LdKeyPair
-  key: LdKeyPair
+  key?: LdKeyPair
   proof: Proof
   date: string
   contextUrl: string
@@ -206,11 +206,18 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
       throw new Error('No "verificationMethod" found in proof.')
     }
 
+    // const verificationMethod = await super.getVerificationMethod({
+    //   proof: options.proof,
+    //   documentLoader: options.documentLoader,
+    // })
+
+    // console.log(vMethod)
+
     const { document } = await options.documentLoader(verificationMethod)
 
     verificationMethod = typeof document === 'string' ? JSON.parse(document) : document
 
-    await this.assertVerificationMethod({ verificationMethod })
+    await this.assertVerificationMethod(verificationMethod)
     return verificationMethod
   }
 
@@ -253,7 +260,6 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
       return false
     }
     // NOTE: When subclassing this suite: Extending suites will need to check
-    // for the presence their contexts here and in sign()
 
     if (!this.key) {
       // no key specified, so assume this suite matches and it can be retrieved

@@ -260,6 +260,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (!proposal.credentialFormats?.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing Credential Definition id')
     }
+
     const credOffer: CredOffer = await this.indyIssuerService.createCredentialOffer(
       proposal.credentialFormats.indy.credentialDefinitionId
     )

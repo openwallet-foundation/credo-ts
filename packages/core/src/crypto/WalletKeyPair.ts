@@ -39,7 +39,7 @@ export function createWalletKeyPairClass(wallet: Wallet) {
       throw new Error('Method not implemented.')
     }
 
-    public static async fromVerificationMethod(verificationMethod: Record<string, any>): Promise<WalletKeyPair> {
+    public static async from(verificationMethod: Record<string, any>): Promise<WalletKeyPair> {
       const vMethod = JsonTransformer.fromJSON(verificationMethod, VerificationMethod)
       await MessageValidator.validate(vMethod)
       const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(vMethod)
@@ -57,7 +57,7 @@ export function createWalletKeyPairClass(wallet: Wallet) {
     /**
      * This method returns a wrapped wallet.sign method. The method is being wrapped so we can covert between Uint8Array and Buffer. This is to make it compatible with the external signature libraries.
      */
-    public signer(): { sign: (data: Uint8Array | Uint8Array[]) => Promise<Uint8Array> } {
+    public signer(): { sign: (data: { data: Uint8Array | Uint8Array[] }) => Promise<Uint8Array> } {
       // wrap function for conversion
       const wrappedSign = async (data: { data: Uint8Array | Uint8Array[] }): Promise<Uint8Array> => {
         let converted: Buffer | Buffer[] = []
@@ -87,21 +87,26 @@ export function createWalletKeyPairClass(wallet: Wallet) {
     /**
      * This method returns a wrapped wallet.verify method. The method is being wrapped so we can covert between Uint8Array and Buffer. This is to make it compatible with the external signature libraries.
      */
-    public verifier(): { verify: (data: Uint8Array | Uint8Array[], signature: Uint8Array) => Promise<boolean> } {
-      const wrappedVerify = async (data: Uint8Array | Uint8Array[], signature: Uint8Array): Promise<boolean> => {
+    public verifier(): {
+      verify: (data: { data: Uint8Array | Uint8Array[]; signature: Uint8Array }) => Promise<boolean>
+    } {
+      const wrappedVerify = async (data: {
+        data: Uint8Array | Uint8Array[]
+        signature: Uint8Array
+      }): Promise<boolean> => {
         let converted: Buffer | Buffer[] = []
 
         // convert uint8array to buffer
-        if (Array.isArray(data)) {
-          converted = data.map((d) => Buffer.from(d))
+        if (Array.isArray(data.data)) {
+          converted = data.data.map((d) => Buffer.from(d))
         } else {
-          converted = Buffer.from(data)
+          converted = Buffer.from(data.data)
         }
 
         // verify
         return wallet.verify({
           data: converted,
-          signature: Buffer.from(signature),
+          signature: Buffer.from(data.signature),
           key: this.key,
         })
       }
