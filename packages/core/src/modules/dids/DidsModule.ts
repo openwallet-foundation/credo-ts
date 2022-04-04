@@ -19,6 +19,10 @@ export class DidsModule {
     return this.resolverService.resolve(didUrl, options)
   }
 
+  public resolveDidDocument(didUrl: string) {
+    return this.resolverService.resolveDidDocument(didUrl)
+  }
+
   public findByVerkey(recipientKey: string) {
     return this.didRepository.findByVerkey(recipientKey)
   }

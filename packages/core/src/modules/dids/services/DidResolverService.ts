@@ -5,6 +5,7 @@ import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../ty
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { AriesFrameworkError } from '../../../error'
 import { IndyLedgerService } from '../../ledger'
 import { parseDid } from '../domain/parse'
 import { IndyDidResolver } from '../methods/indy/IndyDidResolver'
@@ -57,6 +58,18 @@ export class DidResolverService {
     }
 
     return resolver.resolve(parsed.did, parsed, options)
+  }
+
+  public async resolveDidDocument(did: string) {
+    const {
+      didDocument,
+      didResolutionMetadata: { error, message },
+    } = await this.resolve(did)
+
+    if (!didDocument) {
+      throw new AriesFrameworkError(`Unable to resolve did document for did '${did}': ${error} ${message}`)
+    }
+    return didDocument
   }
 
   private findResolver(parsed: ParsedDid): DidResolver | null {

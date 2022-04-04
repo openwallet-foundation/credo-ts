@@ -102,8 +102,8 @@ export class RecipientModule {
     })
 
     const websocketSchemes = ['ws', 'wss']
-    const didRecord = connectionRecord.theirDid && (await this.dids.findByDid(connectionRecord.theirDid))
-    const services = didRecord && didRecord.didDocument?.didCommServices
+    const didDocument = connectionRecord.theirDid && (await this.dids.resolveDidDocument(connectionRecord.theirDid))
+    const services = didDocument && didDocument?.didCommServices
     const hasWebSocketTransport = services && services.some((s) => websocketSchemes.includes(s.protocolScheme))
 
     if (!hasWebSocketTransport) {
