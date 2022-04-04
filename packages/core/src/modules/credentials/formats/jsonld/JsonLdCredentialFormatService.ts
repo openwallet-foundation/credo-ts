@@ -3,7 +3,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import type { LdProofDetail } from '../../../vc'
-import type { W3cVerifiableCredential } from '../../../vc/models'
 import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
 import type {
   ServiceAcceptCredentialOptions,
@@ -29,7 +28,7 @@ import { JsonTransformer } from '../../../../../src/utils/JsonTransformer'
 import { uuid } from '../../../../../src/utils/uuid'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { W3cCredentialService } from '../../../vc'
-import { W3cCredential } from '../../../vc/models'
+import { W3cVerifiableCredential, W3cCredential } from '../../../vc/models'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
@@ -197,7 +196,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     return false
   }
 
-  shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean {
+  public shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
       options.credentialRecord.autoAcceptCredential,
       options.autoAcceptType
@@ -215,9 +214,22 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     }
     return false
   }
+  private areCredentialValuesValid(credentialRecord: CredentialExchangeRecord, credentialAttachment: Attachment) {
+    return true // temporary until we have the credential attributes to compare with credential attachment
+  }
 
-  shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean {
-    throw new Error('Method not implemented.')
+  public shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean {
+    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+      options.credentialRecord.autoAcceptCredential,
+      options.autoAcceptType
+    )
+
+    if (autoAccept === AutoAcceptCredential.ContentApproved) {
+      if (options.credentialAttachment) {
+        return this.areCredentialValuesValid(options.credentialRecord, options.credentialAttachment)
+      }
+    }
+    return false
   }
 
   public async processCredential(
@@ -233,7 +245,9 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
         `JsonLd processCredential - Missing credential attachment for record id ${credentialRecord.id}`
       )
     }
-    const credential = options.credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
+    const credentialAsJson = options.credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
+
+    const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
 
     const verifiableCredential: W3cCredentialRecord = await this.w3cCredentialService.storeCredential(credential)
 
