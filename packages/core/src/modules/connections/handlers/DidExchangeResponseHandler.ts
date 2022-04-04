@@ -1,6 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DidRepository } from '../../dids/repository'
+import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService } from '../services'
@@ -12,42 +12,48 @@ import { DidExchangeResponseMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
 
 export class DidExchangeResponseHandler implements Handler {
+  private agentConfig: AgentConfig
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   private connectionService: ConnectionService
-  private didRepository: DidRepository
-  private agentConfig: AgentConfig
+  private didResolverService: DidResolverService
   public supportedMessages = [DidExchangeResponseMessage]
 
   public constructor(
+    agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
     outOfBandService: OutOfBandService,
     connectionService: ConnectionService,
-    didRepository: DidRepository,
-    agentConfig: AgentConfig
+    didResolverService: DidResolverService
   ) {
+    this.agentConfig = agentConfig
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
     this.connectionService = connectionService
-    this.didRepository = didRepository
-    this.agentConfig = agentConfig
+    this.didResolverService = didResolverService
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeResponseHandler>) {
-    if (!messageContext.recipientVerkey || !messageContext.senderVerkey) {
-      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
+    const { recipientVerkey, senderVerkey, message } = messageContext
+
+    if (!recipientVerkey || !senderVerkey) {
+      throw new AriesFrameworkError('Unable to process connection response without sender key or recipient key')
     }
 
-    const { recipientVerkey } = messageContext
-
-    let connectionRecord
-    const ourDidRecords = await this.didRepository.findMultipleByVerkey(recipientVerkey)
-    for (const ourDidRecord of ourDidRecords) {
-      connectionRecord = await this.connectionService.findByOurDid(ourDidRecord.id)
-    }
-
+    const connectionRecord = await this.connectionService.getByThreadId(message.threadId)
     if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
+    }
+
+    const ourDidDocument = await this.resolveDidDocument(connectionRecord.did)
+    if (!ourDidDocument) {
+      throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved!`)
+    }
+
+    // Validate if recipient key is included in recipient keys of the did document resolved by
+    // connection record did
+    if (!ourDidDocument.recipientKeys.includes(recipientVerkey)) {
+      throw new AriesFrameworkError(`Recipient key ${recipientVerkey} not found in did document recipient keys.`)
     }
 
     const { protocol } = connectionRecord
@@ -90,5 +96,17 @@ export class DidExchangeResponseHandler implements Handler {
       }
       return createOutboundMessage(connection, message)
     }
+  }
+
+  private async resolveDidDocument(did: string) {
+    const {
+      didDocument,
+      didResolutionMetadata: { error, message },
+    } = await this.didResolverService.resolve(did)
+
+    if (!didDocument) {
+      throw new AriesFrameworkError(`Unable to resolve did document for did '${did}': ${error} ${message}`)
+    }
+    return didDocument
   }
 }

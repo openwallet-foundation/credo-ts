@@ -132,6 +132,7 @@ export class ConnectionService {
     }
 
     connectionRecord.did = peerDid
+    connectionRecord.threadId = connectionRequest.id
     await this.updateState(connectionRecord, ConnectionState.Requested)
 
     return {

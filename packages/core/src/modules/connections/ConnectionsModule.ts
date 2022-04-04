@@ -9,6 +9,7 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
+import { DidResolverService } from '../dids'
 import { DidRepository } from '../dids/repository'
 import { OutOfBandService } from '../oob/OutOfBandService'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
@@ -38,6 +39,7 @@ export class ConnectionsModule {
   private trustPingService: TrustPingService
   private mediationRecipientService: MediationRecipientService
   private didRepository: DidRepository
+  private didResolverService: DidResolverService
 
   public constructor(
     dispatcher: Dispatcher,
@@ -48,6 +50,7 @@ export class ConnectionsModule {
     trustPingService: TrustPingService,
     mediationRecipientService: MediationRecipientService,
     didRepository: DidRepository,
+    didResolverService: DidResolverService,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
@@ -58,6 +61,7 @@ export class ConnectionsModule {
     this.mediationRecipientService = mediationRecipientService
     this.didRepository = didRepository
     this.messageSender = messageSender
+    this.didResolverService = didResolverService
     this.registerHandlers(dispatcher)
   }
 
@@ -217,24 +221,22 @@ export class ConnectionsModule {
   }
 
   public async findByKeys({ senderKey, recipientKey }: { senderKey: string; recipientKey: string }) {
-    let connectionRecord
-    const theirDidRs = await this.didRepository.findMultipleByVerkey(senderKey)
-    for (const theirDidR of theirDidRs) {
-      const ourDidRecords = await this.didRepository.findMultipleByVerkey(recipientKey)
-
-      for (const ourDidRecord of ourDidRecords) {
-        connectionRecord = await this.connectionService.findSingleByQuery({
+    const theirDidRecord = await this.didRepository.findByVerkey(senderKey)
+    if (theirDidRecord) {
+      const ourDidRecord = await this.didRepository.findByVerkey(recipientKey)
+      if (ourDidRecord) {
+        const connectionRecord = await this.connectionService.findSingleByQuery({
           did: ourDidRecord.id,
-          theirDid: theirDidR.id,
+          theirDid: theirDidRecord.id,
         })
-        if (connectionRecord) return connectionRecord
+        if (connectionRecord && connectionRecord.isReady) return connectionRecord
       }
     }
-    if (!connectionRecord) {
-      this.agentConfig.logger.debug(
-        `No connection record found for encrypted message with recipient key ${recipientKey} and sender key ${senderKey}`
-      )
-    }
+
+    this.agentConfig.logger.debug(
+      `No connection record found for encrypted message with recipient key ${recipientKey} and sender key ${senderKey}`
+    )
+
     return null
   }
 
@@ -261,14 +263,20 @@ export class ConnectionsModule {
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
       new ConnectionRequestHandler(
+        this.agentConfig,
         this.connectionService,
         this.outOfBandService,
-        this.agentConfig,
-        this.mediationRecipientService
+        this.mediationRecipientService,
+        this.didRepository
       )
     )
     dispatcher.registerHandler(
-      new ConnectionResponseHandler(this.connectionService, this.didRepository, this.outOfBandService, this.agentConfig)
+      new ConnectionResponseHandler(
+        this.agentConfig,
+        this.connectionService,
+        this.outOfBandService,
+        this.didResolverService
+      )
     )
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
@@ -276,20 +284,21 @@ export class ConnectionsModule {
 
     dispatcher.registerHandler(
       new DidExchangeRequestHandler(
+        this.agentConfig,
         this.didExchangeProtocol,
         this.outOfBandService,
-        this.agentConfig,
-        this.mediationRecipientService
+        this.mediationRecipientService,
+        this.didRepository
       )
     )
 
     dispatcher.registerHandler(
       new DidExchangeResponseHandler(
+        this.agentConfig,
         this.didExchangeProtocol,
         this.outOfBandService,
         this.connectionService,
-        this.didRepository,
-        this.agentConfig
+        this.didResolverService
       )
     )
     dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))

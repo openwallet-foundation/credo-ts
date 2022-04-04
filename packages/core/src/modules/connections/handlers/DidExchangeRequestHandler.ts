@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
@@ -14,26 +15,30 @@ export class DidExchangeRequestHandler implements Handler {
   private outOfBandService: OutOfBandService
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
+  private didRepository: DidRepository
   public supportedMessages = [DidExchangeRequestMessage]
 
   public constructor(
+    agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
     outOfBandService: OutOfBandService,
-    agentConfig: AgentConfig,
-    mediationRecipientService: MediationRecipientService
+    mediationRecipientService: MediationRecipientService,
+    didRepository: DidRepository
   ) {
+    this.agentConfig = agentConfig
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
-    this.agentConfig = agentConfig
     this.mediationRecipientService = mediationRecipientService
+    this.didRepository = didRepository
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeRequestHandler>) {
-    if (!messageContext.recipientVerkey || !messageContext.senderVerkey) {
+    const { recipientVerkey, senderVerkey, message, connection } = messageContext
+
+    if (!recipientVerkey || !senderVerkey) {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
     }
 
-    const { message } = messageContext
     if (!message.thread?.parentThreadId) {
       throw new AriesFrameworkError(`Message does not contain 'pthid' attribute`)
     }
@@ -41,6 +46,17 @@ export class DidExchangeRequestHandler implements Handler {
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
+    }
+
+    if (connection && !outOfBandRecord.reusable) {
+      throw new AriesFrameworkError(
+        `Connection record for non-reusable out-of-band ${outOfBandRecord.id} already exists.`
+      )
+    }
+
+    const didRecord = await this.didRepository.findByVerkey(senderVerkey)
+    if (didRecord) {
+      throw new AriesFrameworkError(`Did record for sender key ${senderVerkey} already exists.`)
     }
 
     // TODO Shouln't we check also if the keys match the keys from oob invitation services?
