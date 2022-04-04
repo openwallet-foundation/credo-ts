@@ -176,8 +176,14 @@ export class ConnectionService {
       },
     })
 
-    // TODO Could we use authentication key from did doc instead of did comm services?
-    const theirVerkeys = message.connection.didDoc?.didCommServices[0].recipientKeys ?? []
+    const theirVerkeys = Array.from(
+      new Set(
+        message.connection.didDoc?.didCommServices
+          .filter((s): s is DidCommService => typeof s !== 'string')
+          .map((s) => s.recipientKeys)
+          .reduce((acc, curr) => acc.concat(curr), [])
+      )
+    )
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Received,
       recipientKeys: theirVerkeys,
@@ -341,7 +347,14 @@ export class ConnectionService {
       throw new AriesFrameworkError('DID Document is missing.')
     }
 
-    const theirVerkeys = connection.didDoc?.didCommServices[0].recipientKeys ?? []
+    const theirVerkeys = Array.from(
+      new Set(
+        connection.didDoc?.didCommServices
+          .filter((s): s is DidCommService => typeof s !== 'string')
+          .map((s) => s.recipientKeys)
+          .reduce((acc, curr) => acc.concat(curr), [])
+      )
+    )
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Received,
       recipientKeys: theirVerkeys,
