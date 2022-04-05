@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsNumber, IsOptional, IsString, Matches } from 'class-validator'
 
-import { credDefIdRegex } from '../../../utils'
+import { credDefIdRegex } from '../../../../../utils/regex'
 
 export class ProofIdentifier {
   public constructor(options: ProofIdentifier) {
