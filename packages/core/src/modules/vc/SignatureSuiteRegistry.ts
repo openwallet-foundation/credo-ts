@@ -1,4 +1,5 @@
 import jsigs from '@digitalcredentials/jsonld-signatures'
+import { BbsBlsSignatureProof2020 } from '@mattrglobal/jsonld-signatures-bbs'
 
 import { KeyType } from '../../crypto'
 import { Ed25519Signature2018 } from '../../crypto/signature-suites'
@@ -25,6 +26,12 @@ export class SignatureSuiteRegistry {
     {
       suiteClass: BbsBlsSignature2020,
       proofType: 'BbsBlsSignature2020',
+      requiredKeyType: 'BbsBlsSignatureProof2020',
+      keyType: KeyType.Bls12381g2,
+    },
+    {
+      suiteClass: BbsBlsSignatureProof2020,
+      proofType: 'BbsBlsSignatureProof2020',
       requiredKeyType: 'BbsBlsSignatureProof2020',
       keyType: KeyType.Bls12381g2,
     },

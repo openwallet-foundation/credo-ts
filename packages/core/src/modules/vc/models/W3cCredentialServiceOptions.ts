@@ -10,7 +10,7 @@ export interface SignCredentialOptions {
   credential: W3cCredential
   proofType: string // TODO replace with enum
   verificationMethod: string
-  proofPurpose?: ProofPurpose // TODO replace with enum
+  proofPurpose?: ProofPurpose
   created?: string
   domain?: string
   challenge?: string
@@ -51,4 +51,5 @@ export interface VerifyPresentationOptions {
 export interface DeriveProofOptions {
   credential: W3cVerifiableCredential
   revealDocument: Frame
+  verificationMethod: string
 }

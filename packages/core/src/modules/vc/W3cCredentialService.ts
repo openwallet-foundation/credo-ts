@@ -1,9 +1,8 @@
 import type { Key } from '../../crypto'
-import type { ProofPurpose } from '../../crypto/signature-suites/JwsLinkedDataSignature'
-import type { SingleOrArray } from '../../utils/type'
-import type { W3cCredential, W3cVerifyCredentialResult } from './models'
+import type { W3cVerifyCredentialResult } from './models'
 import type {
   CreatePresentationOptions,
+  DeriveProofOptions,
   SignCredentialOptions,
   SignPresentationOptions,
   StoreCredentialOptions,
@@ -16,22 +15,18 @@ import type { RemoteDocument, Url } from 'jsonld/jsonld-spec'
 import jsonld, { expand, frame } from '@digitalcredentials/jsonld'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import jsigs from '@digitalcredentials/jsonld-signatures'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
 import vc from '@digitalcredentials/vc'
+import { deriveProof } from '@mattrglobal/jsonld-signatures-bbs'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
-import { KeyType } from '../../crypto'
-import { BbsService } from '../../crypto/BbsService'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { JsonTransformer, orArrayToArray } from '../../utils'
 import { Wallet } from '../../wallet'
-import { DidKey, DidResolverService, VerificationMethod } from '../dids'
+import { DidResolverService, VerificationMethod } from '../dids'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
@@ -295,11 +290,36 @@ export class W3cCredentialService {
     return result as unknown as VerifyPresentationResult
   }
 
-  // public async deriveProof() {}
+  public async deriveProof(options: DeriveProofOptions) {
+    const WalletKeyPair = createWalletKeyPairClass(this.wallet)
+
+    const suiteInfo = this.suiteRegistry.getByProofType('BbsBlsSignatureProof2020')
+    const SuiteClass = suiteInfo.suiteClass
+
+    const signingKey = await this.getPublicKeyFromVerificationMethod(options.verificationMethod)
+
+    const keyPair = new WalletKeyPair({
+      controller: options.credential.issuerId, // is this correct? I guess this should be the holders keyId, or not?
+      id: options.verificationMethod, // should the verificationMethod be passed in or can we infer this somehow?
+      key: signingKey,
+      wallet: this.wallet,
+    })
+
+    const suite = new SuiteClass({
+      key: keyPair,
+      LDClass: WalletKeyPair,
+      useNativeCanonize: false,
+    })
+
+    const proof = await deriveProof(JsonTransformer.toJSON(options.credential), options.revealDocument, {
+      suite: suite,
+      documentLoader: this.documentLoader,
+    })
+
+    return proof
+  }
 
   public documentLoader = async (url: Url): Promise<RemoteDocument> => {
-    console.log(url)
-
     if (url.startsWith('did:')) {
       const result = await this.didResolver.resolve(url)
 
@@ -315,7 +335,8 @@ export class W3cCredentialService {
       })
 
       return {
-        contextUrl: result.didDocument.context[0],
+        // contextUrl: result.didDocument.context[0],
+        contextUrl: null,
         documentUrl: url,
         document: framed,
       }
