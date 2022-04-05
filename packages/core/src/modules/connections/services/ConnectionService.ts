@@ -219,28 +219,29 @@ export class ConnectionService {
       throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
     }
 
-    const didDocRouting: Routing = routing
-      ? routing
-      : {
-          did,
-          endpoints: Array.from(
-            new Set(
-              outOfBandRecord.outOfBandMessage.services
-                .filter((s): s is DidCommService => typeof s !== 'string')
-                .map((s) => s.serviceEndpoint)
-            )
-          ),
-          verkey: outOfBandRecord.getTags().recipientKey,
-          routingKeys: Array.from(
-            new Set(
-              outOfBandRecord.outOfBandMessage.services
-                .filter((s): s is DidCommService => typeof s !== 'string')
-                .map((s) => s.routingKeys)
-                .filter((r): r is string[] => r !== undefined)
-                .reduce((acc, curr) => acc.concat(curr), [])
-            )
-          ),
-        }
+    let didDocRouting = routing
+    if (!didDocRouting) {
+      didDocRouting = {
+        did,
+        endpoints: Array.from(
+          new Set(
+            outOfBandRecord.outOfBandMessage.services
+              .filter((s): s is DidCommService => typeof s !== 'string')
+              .map((s) => s.serviceEndpoint)
+          )
+        ),
+        verkey: outOfBandRecord.getTags().recipientKey,
+        routingKeys: Array.from(
+          new Set(
+            outOfBandRecord.outOfBandMessage.services
+              .filter((s): s is DidCommService => typeof s !== 'string')
+              .map((s) => s.routingKeys)
+              .filter((r): r is string[] => r !== undefined)
+              .reduce((acc, curr) => acc.concat(curr), [])
+          )
+        ),
+      }
+    }
 
     const didDoc = this.createDidDoc(didDocRouting)
     const { did: peerDid } = await this.createDid({
