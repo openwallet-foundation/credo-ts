@@ -1,5 +1,7 @@
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
-import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
+
+import { credDefIdRegex, indyDidRegex, schemaIdRegex, schemaVersionRegex } from '../../../utils'
 
 export class AttributeValue {
   public constructor(options: AttributeValue) {
@@ -32,11 +34,13 @@ export class AttributeFilter {
   @Expose({ name: 'schema_id' })
   @IsOptional()
   @IsString()
+  @Matches(schemaIdRegex)
   public schemaId?: string
 
   @Expose({ name: 'schema_issuer_did' })
   @IsOptional()
   @IsString()
+  @Matches(indyDidRegex)
   public schemaIssuerDid?: string
 
   @Expose({ name: 'schema_name' })
@@ -47,16 +51,21 @@ export class AttributeFilter {
   @Expose({ name: 'schema_version' })
   @IsOptional()
   @IsString()
+  @Matches(schemaVersionRegex, {
+    message: 'Version must be X.X or X.X.X',
+  })
   public schemaVersion?: string
 
   @Expose({ name: 'issuer_did' })
   @IsOptional()
   @IsString()
+  @Matches(indyDidRegex)
   public issuerDid?: string
 
   @Expose({ name: 'cred_def_id' })
   @IsOptional()
   @IsString()
+  @Matches(credDefIdRegex)
   public credentialDefinitionId?: string
 
   @IsOptional()

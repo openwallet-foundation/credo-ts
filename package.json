@@ -4,7 +4,8 @@
   "license": "Apache-2.0",
   "workspaces": [
     "packages/*",
-    "demo"
+    "demo",
+    "samples/*"
   ],
   "repository": {
     "url": "https://github.com/hyperledger/aries-framework-javascript",
