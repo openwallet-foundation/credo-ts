@@ -1,21 +1,16 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { HandshakeProtocol } from '../models'
 
-import { Type } from 'class-transformer'
-
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { ConnectionRole, DidExchangeRole, DidDoc, ConnectionState, DidExchangeState } from '../models'
+import { ConnectionRole, DidExchangeRole, ConnectionState, DidExchangeState } from '../models'
 
 export interface ConnectionRecordProps {
   id?: string
   createdAt?: Date
   did: string
-  didDoc: DidDoc
-  verkey: string
   theirDid?: string
-  theirDidDoc?: DidDoc
   theirLabel?: string
   state?: ConnectionState | DidExchangeState
   role?: ConnectionRole | DidExchangeRole
@@ -36,8 +31,6 @@ export type DefaultConnectionTags = {
   state?: ConnectionState | DidExchangeState
   role?: ConnectionRole | DidExchangeRole
   threadId?: string
-  verkey?: string
-  theirKey?: string
   mediatorId?: string
   did: string
   theirDid?: string
@@ -51,13 +44,8 @@ export class ConnectionRecord
   public state?: ConnectionState | DidExchangeState
   public role?: ConnectionRole | DidExchangeRole
 
-  @Type(() => DidDoc)
-  public didDoc!: DidDoc
   public did!: string
-  public verkey!: string
 
-  @Type(() => DidDoc)
-  public theirDidDoc?: DidDoc
   public theirDid?: string
   public theirLabel?: string
 
@@ -82,10 +70,7 @@ export class ConnectionRecord
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.did = props.did
-      this.didDoc = props.didDoc
-      this.verkey = props.verkey
       this.theirDid = props.theirDid
-      this.theirDidDoc = props.theirDidDoc
       this.theirLabel = props.theirLabel
       this.state = props.state
       this.role = props.role
@@ -108,33 +93,11 @@ export class ConnectionRecord
       state: this.state,
       role: this.role,
       threadId: this.threadId,
-      verkey: this.verkey,
-      theirKey: this.theirKey || undefined,
       mediatorId: this.mediatorId,
       did: this.did,
       theirDid: this.theirDid,
       outOfBandId: this.outOfBandId,
     }
-  }
-
-  public get myKey() {
-    const [service] = this.didDoc?.didCommServices ?? []
-
-    if (!service) {
-      return null
-    }
-
-    return service.recipientKeys[0]
-  }
-
-  public get theirKey() {
-    const [service] = this.theirDidDoc?.didCommServices ?? []
-
-    if (!service) {
-      return null
-    }
-
-    return service.recipientKeys[0]
   }
 
   public get isRequester() {

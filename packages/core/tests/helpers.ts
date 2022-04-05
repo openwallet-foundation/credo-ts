@@ -36,7 +36,6 @@ import {
   CredentialEventTypes,
   CredentialPreview,
   CredentialState,
-  DidDoc,
   PredicateType,
   PresentationPreview,
   PresentationPreviewAttribute,
@@ -209,47 +208,19 @@ export function getMockConnection({
   id = 'test',
   did = 'test-did',
   threadId = 'threadId',
-  verkey = 'key-1',
-  didDoc = new DidDoc({
-    id: did,
-    publicKey: [],
-    authentication: [],
-    service: [
-      new DidCommService({
-        id: `${did};indy`,
-        serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [verkey],
-      }),
-    ],
-  }),
   tags = {},
   theirLabel,
   theirDid = 'their-did',
-  theirDidDoc = new DidDoc({
-    id: theirDid,
-    publicKey: [],
-    authentication: [],
-    service: [
-      new DidCommService({
-        id: `${did};indy`,
-        serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [verkey],
-      }),
-    ],
-  }),
   multiUseInvitation = false,
 }: Partial<ConnectionRecordProps> = {}) {
   return new ConnectionRecord({
     did,
-    didDoc,
     threadId,
     theirDid,
-    theirDidDoc,
     id,
     role,
     state,
     tags,
-    verkey,
     theirLabel,
     multiUseInvitation,
   })
@@ -259,11 +230,15 @@ export function getMockOutOfBand({
   label,
   serviceEndpoint,
   recipientKeys,
+  did,
+  mediatorId,
   role,
   state,
 }: {
   label?: string
   serviceEndpoint?: string
+  did?: string
+  mediatorId?: string
   recipientKeys?: string[]
   role?: OutOfBandRole
   state?: OutOfBandState
@@ -284,6 +259,8 @@ export function getMockOutOfBand({
   }
   const outOfBandMessage = new OutOfBandMessage(options)
   const outOfBandRecord = new OutOfBandRecord({
+    did: did || 'test-did',
+    mediatorId,
     role: role || OutOfBandRole.Receiver,
     state: state || OutOfBandState.Initial,
     outOfBandMessage: outOfBandMessage,

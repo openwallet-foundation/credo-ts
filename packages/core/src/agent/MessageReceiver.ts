@@ -8,8 +8,7 @@ import type { TransportSession } from './TransportService'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
-import { ConnectionRepository } from '../modules/connections'
-import { DidRepository } from '../modules/dids/repository/DidRepository'
+import { ConnectionsModule } from '../modules/connections'
 import { OutOfBandService } from '../modules/oob/OutOfBandService'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { isValidJweStructure } from '../utils/JWE'
@@ -33,8 +32,7 @@ export class MessageReceiver {
   private messageSender: MessageSender
   private dispatcher: Dispatcher
   private logger: Logger
-  private didRepository: DidRepository
-  private connectionRepository: ConnectionRepository
+  private connectionsModule: ConnectionsModule
   public readonly inboundTransports: InboundTransport[] = []
   private outOfBandService: OutOfBandService
 
@@ -43,19 +41,17 @@ export class MessageReceiver {
     envelopeService: EnvelopeService,
     transportService: TransportService,
     messageSender: MessageSender,
-    connectionRepository: ConnectionRepository,
+    connectionsModule: ConnectionsModule,
     outOfBandService: OutOfBandService,
-    dispatcher: Dispatcher,
-    didRepository: DidRepository
+    dispatcher: Dispatcher
   ) {
     this.config = config
     this.envelopeService = envelopeService
     this.transportService = transportService
     this.messageSender = messageSender
-    this.connectionRepository = connectionRepository
+    this.connectionsModule = connectionsModule
     this.outOfBandService = outOfBandService
     this.dispatcher = dispatcher
-    this.didRepository = didRepository
     this.logger = this.config.logger
   }
 
@@ -188,39 +184,8 @@ export class MessageReceiver {
     // We only fetch connections that are sent in AuthCrypt mode
     if (!recipientKey || !senderKey) return null
 
-    let connection: ConnectionRecord | null = null
-
     // Try to find the did records that holds the sender and recipient keys
-    const ourDidRecord = await this.didRepository.findByVerkey(recipientKey)
-
-    // If both our did record and their did record is available we can find a matching did record
-    if (ourDidRecord) {
-      const theirDidRecord = await this.didRepository.findByVerkey(senderKey)
-
-      if (theirDidRecord) {
-        connection = await this.connectionRepository.findSingleByQuery({
-          did: ourDidRecord.id,
-          theirDid: theirDidRecord.id,
-        })
-      } else {
-        connection = await this.connectionRepository.findSingleByQuery({
-          did: ourDidRecord.id,
-        })
-
-        // If theirDidRecord was not found, and connection.theirDid is set, it means the sender is not authenticated
-        // to send messages to use
-        if (connection && connection.theirDid) {
-          throw new AriesFrameworkError(`Inbound message senderKey '${senderKey}' is different from connection did`)
-        }
-      }
-    }
-
-    // If no connection was found, we search in the connection record, where legacy did documents are stored
-    if (!connection) {
-      connection = await this.connectionRepository.findByVerkey(recipientKey)
-    }
-
-    return connection
+    return this.connectionsModule.findByKeys({ senderKey, recipientKey })
   }
 
   /**

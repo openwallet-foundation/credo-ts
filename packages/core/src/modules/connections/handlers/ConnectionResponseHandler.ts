@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionService } from '../services/ConnectionService'
 
@@ -8,30 +9,46 @@ import { AriesFrameworkError } from '../../../error'
 import { ConnectionResponseMessage } from '../messages'
 
 export class ConnectionResponseHandler implements Handler {
+  private agentConfig: AgentConfig
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
+  private didResolverService: DidResolverService
 
-  private agentConfig: AgentConfig
   public supportedMessages = [ConnectionResponseMessage]
 
   public constructor(
+    agentConfig: AgentConfig,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
-    agentConfig: AgentConfig
+    didResolverService: DidResolverService
   ) {
+    this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
-    this.agentConfig = agentConfig
+    this.didResolverService = didResolverService
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionResponseHandler>) {
-    if (!messageContext.recipientVerkey || !messageContext.senderVerkey) {
-      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
+    const { recipientVerkey, senderVerkey, message } = messageContext
+
+    if (!recipientVerkey || !senderVerkey) {
+      throw new AriesFrameworkError('Unable to process connection response without senderVerkey or recipientVerkey')
     }
 
-    const connectionRecord = await this.connectionService.findByVerkey(messageContext.recipientVerkey)
+    const connectionRecord = await this.connectionService.getByThreadId(message.threadId)
     if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
+    }
+
+    // Validate if recipient key is included in recipient keys of the did document resolved by
+    // connection record did
+    const ourDidDocument = await this.resolveDidDocument(connectionRecord.did)
+    if (!ourDidDocument) {
+      throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved!`)
+    }
+
+    if (!ourDidDocument.recipientKeys.includes(recipientVerkey)) {
+      throw new AriesFrameworkError(`Recipient key ${recipientVerkey} not found in did document recipient keys.`)
     }
 
     const outOfBandRecord =
@@ -41,6 +58,7 @@ export class ConnectionResponseHandler implements Handler {
       throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} was not found.`)
     }
 
+    messageContext.connection = connectionRecord
     // The presence of outOfBandRecord is not mandatory when the old connection invitation is used
     const connection = await this.connectionService.processResponse(messageContext, outOfBandRecord)
 
@@ -51,5 +69,17 @@ export class ConnectionResponseHandler implements Handler {
       const { message } = await this.connectionService.createTrustPing(connection, { responseRequested: false })
       return createOutboundMessage(connection, message)
     }
+  }
+
+  private async resolveDidDocument(did: string) {
+    const {
+      didDocument,
+      didResolutionMetadata: { error, message },
+    } = await this.didResolverService.resolve(did)
+
+    if (!didDocument) {
+      throw new AriesFrameworkError(`Unable to resolve did document for did '${did}': ${error} ${message}`)
+    }
+    return didDocument
   }
 }
