@@ -1,4 +1,5 @@
 import type { ConnectionRecord } from '../modules/connections'
+import type { DidDocument } from '../modules/dids'
 import type { IndyAgentService, DidCommService } from '../modules/dids/domain/service'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
@@ -13,6 +14,7 @@ import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
+import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
@@ -199,16 +201,20 @@ export class MessageSender {
       outOfBand
     )
 
+    const ourDidDocument = await this.resolveDidDocument(connection.did)
+    const ourAuthenticationKeys = getAuthenticationKeys(ourDidDocument)
+    // TODO We're selecting just the first authentication key. Is it ok?
+    const [firstOurAuthenticationKey] = ourAuthenticationKeys
+    const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(ourDidDocument)
+
     // Loop trough all available services and try to send the message
     for await (const service of services) {
       try {
-        // Enable return routing if the
-        const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(connection.didDoc)
-
+        // Enable return routing if the our did document does not have any inbound endpoint for given sender key
         await this.sendMessageToService({
           message: payload,
           service,
-          senderKey: connection.verkey,
+          senderKey: firstOurAuthenticationKey,
           returnRoute: shouldUseReturnRoute,
           connectionId: connection.id,
         })
@@ -233,7 +239,7 @@ export class MessageSender {
       const keys = {
         recipientKeys: queueService.recipientKeys,
         routingKeys: queueService.routingKeys || [],
-        senderKey: connection.verkey,
+        senderKey: firstOurAuthenticationKey,
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(payload, keys)
@@ -321,14 +327,10 @@ export class MessageSender {
     let didCommServices: Array<IndyAgentService | DidCommService> = []
     // If theirDid starts with a did: prefix it means we're using the new did syntax
     // and we should use the did resolver
-    if (connection.theirDid?.startsWith('did:')) {
+    if (connection.theirDid) {
       this.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
       const didDocument = await this.resolveDidDocument(connection.theirDid)
       didCommServices = didDocument.didCommServices
-    } else if (connection.theirDidDoc) {
-      this.logger.debug(`Resolving services from connection theirDidDoc.`)
-      // Old school method, did document is stored inside the connection record or out-of-band record
-      didCommServices = connection.theirDidDoc.didCommServices
     } else if (outOfBand) {
       this.logger.debug(`Resolving services from out-of-band record ${outOfBand?.id}.`)
       if (connection.isRequester && outOfBand) {
@@ -388,4 +390,14 @@ export class MessageSender {
 
 export function isDidCommTransportQueue(serviceEndpoint: string): serviceEndpoint is typeof DID_COMM_TRANSPORT_QUEUE {
   return serviceEndpoint === DID_COMM_TRANSPORT_QUEUE
+}
+
+function getAuthenticationKeys(didDocument: DidDocument) {
+  return didDocument.authentication.map((authentication) => {
+    const verificationMethod =
+      typeof authentication === 'string' ? didDocument.dereferenceKey(authentication) : authentication
+    const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+    const key = getKeyFromVerificationMethod(verificationMethod)
+    return key.publicKeyBase58
+  })
 }

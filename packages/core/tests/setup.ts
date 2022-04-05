@@ -15,19 +15,17 @@ function toBeConnectedWith(actual: ConnectionRecord, expected: ConnectionRecord)
     // If connections contain resolvebale dids we can just compare them.
     pass = actual.theirDid === expected.did
   } else {
-    pass = actual.theirDid === expected.did && actual.theirKey === expected.verkey
+    pass = actual.theirDid === expected.did
   }
 
   if (pass) {
     return {
-      message: () =>
-        `expected connection ${actual.did}, ${actual.verkey} not to be connected to with ${expected.did}, ${expected.verkey}`,
+      message: () => `expected connection ${actual.theirDid} not to be connected to with ${expected.did}`,
       pass: true,
     }
   } else {
     return {
-      message: () =>
-        `expected connection ${actual.did}, ${actual.verkey} to be connected to with ${expected.did}, ${expected.verkey}`,
+      message: () => `expected connection ${actual.theirDid} to be connected to with ${expected.did}`,
       pass: false,
     }
   }

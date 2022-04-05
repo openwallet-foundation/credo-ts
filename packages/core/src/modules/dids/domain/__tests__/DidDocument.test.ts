@@ -99,7 +99,7 @@ const didDocumentInstance = new DidDocument({
 })
 
 describe('Did | DidDocument', () => {
-  it('should correctly transforms Json to DidDoc class', () => {
+  it('should correctly transforms Json to DidDocument class', () => {
     const didDocument = JsonTransformer.fromJSON(didExample123Fixture, DidDocument)
 
     // Check other properties
