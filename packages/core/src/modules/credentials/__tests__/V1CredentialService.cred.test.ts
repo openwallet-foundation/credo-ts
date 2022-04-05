@@ -113,6 +113,7 @@ const mockCredentialRecord = ({
   metadata,
   threadId,
   connectionId,
+  credentialId,
   tags,
   id,
   credentialAttributes,
@@ -123,6 +124,7 @@ const mockCredentialRecord = ({
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string
+  credentialId?: string
   id?: string
   credentialAttributes?: CredentialPreviewAttribute[]
 } = {}) => {
@@ -138,6 +140,7 @@ const mockCredentialRecord = ({
     state: state || CredentialState.OfferSent,
     threadId: threadId ?? offerMessage.id,
     connectionId: connectionId ?? '123',
+    credentialId: credentialId ?? '123',
     tags,
     protocolVersion: CredentialProtocolVersion.V1,
   })

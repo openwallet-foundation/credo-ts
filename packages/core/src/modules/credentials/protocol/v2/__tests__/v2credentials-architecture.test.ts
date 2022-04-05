@@ -32,7 +32,7 @@ const testAttributes: IndyProposeCredentialFormat = {
     schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
     schemaName: 'ahoy',
     schemaVersion: '1.0',
-    schemaId: '1560364003',
+    schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
     issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
     credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
   },

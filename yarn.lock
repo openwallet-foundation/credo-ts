@@ -2870,6 +2870,7 @@
   dependencies:
     "@types/node" "*"
 
+<<<<<<< HEAD
 "@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.12":
   "integrity" "sha512-6uyHSSAoM+eKQD4XF+KohAjbkDN6D9DnriYWlGi/pLCWkd74kCcEMlm7/REqfMkAgxL52wh7Cyzir+cnIi342g=="
   "resolved" "https://registry.npmjs.org/@types/indy-sdk/-/indy-sdk-1.16.12.tgz"
@@ -2881,6 +2882,16 @@
   "integrity" "sha512-6uyHSSAoM+eKQD4XF+KohAjbkDN6D9DnriYWlGi/pLCWkd74kCcEMlm7/REqfMkAgxL52wh7Cyzir+cnIi342g=="
   "resolved" "https://registry.npmjs.org/@types/indy-sdk/-/indy-sdk-1.16.12.tgz"
   "version" "1.16.12"
+=======
+<<<<<<< HEAD
+"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.12", "@types/indy-sdk@^1.16.12":
+=======
+"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.16", "@types/indy-sdk@^1.16.16":
+>>>>>>> 2b6441a2de5e9940bdf225b1ad9028cdfbf15cd5
+  version "1.16.16"
+  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.16.tgz#dc9e51c61c266eff616991fa7df88309975d9f1e"
+  integrity sha512-bSWG56bAFvjTTLHJoGEXylbbN533g9XEtOTPS9G1EvIv5AsVcy/OIZOkXXElbzvYdZ1Q+qCxZDD5T0OqMYNmjg==
+>>>>>>> 06a02cb6243f27b92f0f12bb8ae17260f84ca31b
   dependencies:
     "buffer" "^6.0.0"
 
@@ -3063,10 +3074,17 @@
   dependencies:
     "@types/node" "*"
 
+<<<<<<< HEAD
 "@types/ws@^7.4.4", "@types/ws@^7.4.6":
   "integrity" "sha512-JQbbmxZTZehdc2iszGKs5oC3NFnjeay7mtAWrdt7qNtAVK0g19muApzAy4bm9byz79xa2ZnO/BOBC2R8RC5Lww=="
   "resolved" "https://registry.npmjs.org/@types/ws/-/ws-7.4.7.tgz"
   "version" "7.4.7"
+=======
+"@types/ws@^7.4.6":
+  version "7.4.7"
+  resolved "https://registry.yarnpkg.com/@types/ws/-/ws-7.4.7.tgz#f7c390a36f7a0679aa69de2d501319f4f8d9b702"
+  integrity sha512-JQbbmxZTZehdc2iszGKs5oC3NFnjeay7mtAWrdt7qNtAVK0g19muApzAy4bm9byz79xa2ZnO/BOBC2R8RC5Lww==
+>>>>>>> 06a02cb6243f27b92f0f12bb8ae17260f84ca31b
   dependencies:
     "@types/node" "*"
 
@@ -10319,6 +10337,7 @@
   dependencies:
     "queue-microtask" "^1.2.2"
 
+<<<<<<< HEAD
 "rxjs@^6.6.0":
   "integrity" "sha512-hTdwr+7yYNIT5n4AMYp85KA6yw2Va0FLa3Rguvbpa4W3I5xynaBZo41cM3XM+4Q6fRMj3sBYIR1VAmZMXYJvRQ=="
   "resolved" "https://registry.npmjs.org/rxjs/-/rxjs-6.6.7.tgz"
@@ -10330,6 +10349,19 @@
   "integrity" "sha512-PwDt186XaL3QN5qXj/H9DGyHhP3/RYYgZZwqBv9Tv8rsAaiwFH1IsJJlcgD37J7UW5a6O67qX0KWKS3/pu0m4w=="
   "resolved" "https://registry.npmjs.org/rxjs/-/rxjs-7.5.2.tgz"
   "version" "7.5.2"
+=======
+<<<<<<< HEAD
+rxjs@^7.1.0, rxjs@^7.2.0:
+  version "7.5.5"
+  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.5.5.tgz#2ebad89af0f560f460ad5cc4213219e1f7dd4e9f"
+  integrity sha512-sy+H0pQofO95VDmFLzyaw9xNJU4KTRSwQIGM6+iG3SypAtCiLDzpeG8sJrNCWn2Up9km+KhkvTdbkrdy+yzZdw==
+=======
+rxjs@^7.2.0:
+  version "7.5.2"
+  resolved "https://registry.npmjs.org/rxjs/-/rxjs-7.5.2.tgz#11e4a3a1dfad85dbf7fb6e33cbba17668497490b"
+  integrity sha512-PwDt186XaL3QN5qXj/H9DGyHhP3/RYYgZZwqBv9Tv8rsAaiwFH1IsJJlcgD37J7UW5a6O67qX0KWKS3/pu0m4w==
+>>>>>>> 2b6441a2de5e9940bdf225b1ad9028cdfbf15cd5
+>>>>>>> 06a02cb6243f27b92f0f12bb8ae17260f84ca31b
   dependencies:
     "tslib" "^2.1.0"
 

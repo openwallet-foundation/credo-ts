@@ -1,5 +1,12 @@
-import type { KeyType, Key } from '../crypto'
-import type { EncryptedMessage, DecryptedMessageContext, WalletConfig, WalletExportImportConfig } from '../types'
+import type { Key } from '../crypto/Key'
+import type { KeyType } from '../crypto/KeyType'
+import type {
+  EncryptedMessage,
+  DecryptedMessageContext,
+  WalletConfig,
+  WalletExportImportConfig,
+  WalletConfigRekey,
+} from '../types'
 import type { Buffer } from '../utils/buffer'
 
 export interface Wallet {
@@ -10,6 +17,7 @@ export interface Wallet {
   create(walletConfig: WalletConfig): Promise<void>
   createAndOpen(walletConfig: WalletConfig): Promise<void>
   open(walletConfig: WalletConfig): Promise<void>
+  rotateKey(walletConfig: WalletConfigRekey): Promise<void>
   close(): Promise<void>
   delete(): Promise<void>
   export(exportConfig: WalletExportImportConfig): Promise<void>
