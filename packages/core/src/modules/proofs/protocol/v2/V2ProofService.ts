@@ -37,6 +37,7 @@ import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
+import { PresentationExchangeFormatService } from '../../formats/presentation-exchange/PresentationExchangeFormatService'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
@@ -68,6 +69,7 @@ export class V2ProofService extends ProofService {
     didCommMessageRepository: DidCommMessageRepository,
     eventEmitter: EventEmitter,
     indyProofFormatService: IndyProofFormatService,
+    presentationExchangeFormatService: PresentationExchangeFormatService,
     @inject(InjectionSymbols.Wallet) wallet: Wallet
   ) {
     super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
@@ -75,6 +77,7 @@ export class V2ProofService extends ProofService {
     this.wallet = wallet
     this.formatServiceMap = {
       [PresentationRecordType.Indy]: indyProofFormatService,
+      [PresentationRecordType.PresentationExchange]: presentationExchangeFormatService,
     }
   }
 

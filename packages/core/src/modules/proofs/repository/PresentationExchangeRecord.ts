@@ -12,7 +12,7 @@ export interface PresentationRecordTags {
 
 export enum PresentationRecordType {
   Indy = 'indy',
-  JsonLD = 'JSON-LD',
+  PresentationExchange = 'presentationExchange',
 }
 export enum W3CFormatType {
   Jsonld = 'Jsonld',
