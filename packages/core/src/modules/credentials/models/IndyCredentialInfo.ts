@@ -1,8 +1,9 @@
 import type { IndyCredentialInfo as IndySDKCredentialInfo } from 'indy-sdk'
 
 import { Expose } from 'class-transformer'
-import { IsOptional, IsString } from 'class-validator'
+import { IsOptional, IsString, Matches } from 'class-validator'
 
+import { credDefIdRegex, schemaIdRegex } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 
 export class IndyCredentialInfo {
@@ -29,10 +30,12 @@ export class IndyCredentialInfo {
 
   @Expose({ name: 'schema_id' })
   @IsString()
+  @Matches(schemaIdRegex)
   public schemaId!: string
 
   @Expose({ name: 'cred_def_id' })
   @IsString()
+  @Matches(credDefIdRegex)
   public credentialDefinitionId!: string
 
   @Expose({ name: 'rev_reg_id' })

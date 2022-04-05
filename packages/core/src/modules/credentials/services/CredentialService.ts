@@ -805,9 +805,14 @@ export class CredentialService {
    *
    * @param credentialId the credential record id
    */
-  public async deleteById(credentialId: string) {
+  public async deleteById(credentialId: string, options?: DeleteCredentialOptions): Promise<void> {
     const credentialRecord = await this.getById(credentialId)
-    return this.credentialRepository.delete(credentialRecord)
+
+    await this.credentialRepository.delete(credentialRecord)
+
+    if (options?.deleteAssociatedCredential && credentialRecord.credentialId) {
+      await this.indyHolderService.deleteCredential(credentialRecord.credentialId)
+    }
   }
 
   /**
@@ -851,6 +856,10 @@ export class CredentialService {
       },
     })
   }
+}
+
+export interface DeleteCredentialOptions {
+  deleteAssociatedCredential: boolean
 }
 
 export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
