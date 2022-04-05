@@ -172,6 +172,8 @@ export class OutOfBandModule {
     }
 
     const outOfBandRecord = new OutOfBandRecord({
+      did: routing.did,
+      mediatorId: routing.mediatorId,
       role: OutOfBandRole.Sender,
       state: OutOfBandState.AwaitResponse,
       outOfBandMessage: outOfBandMessage,
@@ -464,20 +466,18 @@ export class OutOfBandModule {
         throw new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
       }
 
+      let existingConnection
       for (const recipientKey of service.recipientKeys) {
-        let existingConnection = await this.connectionsModule.findByTheirKey(recipientKey)
+        const theirDidRecords = await this.dids.findMultipleByVerkey(recipientKey)
 
-        if (!existingConnection) {
+        for (const theirDidRecord of theirDidRecords) {
           // TODO Encode the key and endpoint of the service block in a Peer DID numalgo 2 and using that DID instead of a service block
-          const theirDidRecord = await this.dids.findByVerkey(recipientKey)
-
-          if (theirDidRecord) {
-            existingConnection = await this.connectionsModule.findByDid(theirDidRecord.id)
-          }
+          existingConnection = await this.connectionsModule.findByDid(theirDidRecord.id)
+          // TODO what if we have more connections?
+          if (existingConnection) return existingConnection
         }
-
-        return existingConnection
       }
+      return existingConnection
     }
   }
 

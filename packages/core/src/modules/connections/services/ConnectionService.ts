@@ -2,10 +2,11 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
+import type { DidCommService, DidDocument } from '../../dids'
 import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
-import type { DidExchangeRole } from '../models'
+import type { DidExchangeRole, PublicKey } from '../models'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -20,7 +21,10 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
-import { IndyAgentService } from '../../dids'
+import { DidPeer, IndyAgentService } from '../../dids'
+import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
+import { PeerDidNumAlgo } from '../../dids/methods/peer/DidPeer'
+import { DidRepository, DidRecord } from '../../dids/repository'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionEventTypes } from '../ConnectionEvents'
@@ -39,6 +43,8 @@ import {
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 
+import { convertToNewDidDocument } from './helpers'
+
 export interface ConnectionRequestParams {
   label?: string
   imageUrl?: string
@@ -52,6 +58,7 @@ export class ConnectionService {
   private wallet: Wallet
   private config: AgentConfig
   private connectionRepository: ConnectionRepository
+  private didRepository: DidRepository
   private eventEmitter: EventEmitter
   private logger: Logger
 
@@ -59,11 +66,13 @@ export class ConnectionService {
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     config: AgentConfig,
     connectionRepository: ConnectionRepository,
+    didRepository: DidRepository,
     eventEmitter: EventEmitter
   ) {
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
+    this.didRepository = didRepository
     this.eventEmitter = eventEmitter
     this.logger = config.logger
   }
@@ -87,24 +96,34 @@ export class ConnectionService {
 
     const { outOfBandMessage } = outOfBandRecord
 
+    const { did, mediatorId } = config.routing
+    const didDoc = this.createDidDoc(config.routing)
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
       role: ConnectionRole.Invitee,
       state: ConnectionState.Invited,
       theirLabel: outOfBandMessage.label,
       alias: config?.alias,
-      routing: config.routing,
+      did,
+      mediatorId,
       autoAcceptConnection: config?.autoAcceptConnection,
       multiUseInvitation: false,
     })
     connectionRecord.outOfBandId = outOfBandRecord.id
+
+    const routing = config.routing
+    const { did: peerDid } = await this.createDid({
+      recipientKeys: [routing.verkey],
+      role: DidDocumentRole.Created,
+      didDocument: convertToNewDidDocument(didDoc),
+    })
 
     const { label, imageUrl, autoAcceptConnection } = config
 
     const connectionRequest = new ConnectionRequestMessage({
       label: label ?? this.config.label,
       did: connectionRecord.did,
-      didDoc: connectionRecord.didDoc,
+      didDoc,
       imageUrl: imageUrl ?? this.config.connectionImageUrl,
     })
 
@@ -112,6 +131,8 @@ export class ConnectionService {
       connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
     }
 
+    connectionRecord.did = peerDid
+    connectionRecord.threadId = connectionRequest.id
     await this.updateState(connectionRecord, ConnectionState.Requested)
 
     return {
@@ -123,7 +144,7 @@ export class ConnectionService {
   public async processRequest(
     messageContext: InboundMessageContext<ConnectionRequestMessage>,
     outOfBandRecord: OutOfBandRecord,
-    routing: Routing
+    routing?: Routing
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} start`, messageContext)
     outOfBandRecord.assertRole(OutOfBandRole.Sender)
@@ -131,8 +152,12 @@ export class ConnectionService {
 
     // TODO check there is no connection record for particular oob record
 
-    const { message } = messageContext
+    const { did, mediatorId } = routing ? routing : outOfBandRecord
+    if (!did) {
+      throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
+    }
 
+    const { message } = messageContext
     if (!message.connection.didDoc) {
       throw new ConnectionProblemReportError('Public DIDs are not supported yet', {
         problemCode: ConnectionProblemReportReason.RequestNotAccepted,
@@ -143,15 +168,27 @@ export class ConnectionService {
       protocol: HandshakeProtocol.Connections,
       role: ConnectionRole.Inviter,
       multiUseInvitation: false,
-      routing,
+      did,
+      mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       tags: {
         invitationKey: outOfBandRecord.getTags().recipientKey,
       },
     })
 
-    connectionRecord.theirDid = message.connection.did
-    connectionRecord.theirDidDoc = message.connection.didDoc
+    const theirVerkeys = message.connection.didDoc?.authentication
+      .map((auth) => auth.publicKey)
+      .filter((publicKey: PublicKey) => publicKey.type === 'Ed25519VerificationKey2018')
+      .map((publicKey: PublicKey) => publicKey.value)
+      .filter((value): value is string => !!value)
+
+    const { did: peerDid } = await this.createDid({
+      role: DidDocumentRole.Received,
+      recipientKeys: theirVerkeys,
+      didDocument: convertToNewDidDocument(message.connection.didDoc),
+    })
+
+    connectionRecord.theirDid = peerDid
     connectionRecord.theirLabel = message.label
     connectionRecord.threadId = message.id
     connectionRecord.imageUrl = message.imageUrl
@@ -170,15 +207,52 @@ export class ConnectionService {
    */
   public async createResponse(
     connectionRecord: ConnectionRecord,
-    outOfBandRecord: OutOfBandRecord
+    outOfBandRecord: OutOfBandRecord,
+    routing?: Routing
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
     this.logger.debug(`Create message ${ConnectionResponseMessage.type} start`, connectionRecord)
     connectionRecord.assertState(ConnectionState.Requested)
     connectionRecord.assertRole(ConnectionRole.Inviter)
 
+    const { did } = routing ? routing : outOfBandRecord
+    if (!did) {
+      throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
+    }
+
+    let didDocRouting = routing
+    if (!didDocRouting) {
+      didDocRouting = {
+        did,
+        endpoints: Array.from(
+          new Set(
+            outOfBandRecord.outOfBandMessage.services
+              .filter((s): s is DidCommService => typeof s !== 'string')
+              .map((s) => s.serviceEndpoint)
+          )
+        ),
+        verkey: outOfBandRecord.getTags().recipientKey,
+        routingKeys: Array.from(
+          new Set(
+            outOfBandRecord.outOfBandMessage.services
+              .filter((s): s is DidCommService => typeof s !== 'string')
+              .map((s) => s.routingKeys)
+              .filter((r): r is string[] => r !== undefined)
+              .reduce((acc, curr) => acc.concat(curr), [])
+          )
+        ),
+      }
+    }
+
+    const didDoc = this.createDidDoc(didDocRouting)
+    const { did: peerDid } = await this.createDid({
+      recipientKeys: [didDocRouting.verkey],
+      role: DidDocumentRole.Created,
+      didDocument: convertToNewDidDocument(didDoc),
+    })
+
     const connection = new Connection({
-      did: connectionRecord.did,
-      didDoc: connectionRecord.didDoc,
+      did,
+      didDoc,
     })
 
     const connectionJson = JsonTransformer.toJSON(connection)
@@ -189,14 +263,14 @@ export class ConnectionService {
 
     const invitationKey = outOfBandRecord.getTags().recipientKey
 
-    // Use invitationKey by default, fall back to verkey
-    const signingKey = invitationKey ?? connectionRecord.verkey
+    const signingKey = invitationKey
 
     const connectionResponse = new ConnectionResponseMessage({
       threadId: connectionRecord.threadId,
       connectionSig: await signData(connectionJson, this.wallet, signingKey),
     })
 
+    connectionRecord.did = peerDid
     await this.updateState(connectionRecord, ConnectionState.Responded)
 
     this.logger.debug(`Create message ${ConnectionResponseMessage.type} end`, {
@@ -223,18 +297,14 @@ export class ConnectionService {
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionResponseMessage.type} start`, messageContext)
-    const { message, recipientVerkey, senderVerkey } = messageContext
+    const { connection: connectionRecord, message, recipientVerkey, senderVerkey } = messageContext
 
     if (!recipientVerkey || !senderVerkey) {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
     }
 
-    const connectionRecord = await this.findByVerkey(recipientVerkey)
-
     if (!connectionRecord) {
-      throw new AriesFrameworkError(
-        `Unable to process connection response: connection for verkey ${recipientVerkey} not found`
-      )
+      throw new AriesFrameworkError('No connection record in message context.')
     }
 
     connectionRecord.assertState(ConnectionState.Requested)
@@ -249,10 +319,15 @@ export class ConnectionService {
           problemCode: ConnectionProblemReportReason.RequestProcessingError,
         })
       }
+      throw error
     }
 
     const connection = JsonTransformer.fromJSON(connectionJson, Connection)
-    await MessageValidator.validate(connection)
+    try {
+      await MessageValidator.validate(connection)
+    } catch (error) {
+      throw new Error(error)
+    }
 
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
     // as the recipient key(s) in the connection invitation message
@@ -267,13 +342,24 @@ export class ConnectionService {
       )
     }
 
-    connectionRecord.theirDid = connection.did
-    connectionRecord.theirDidDoc = connection.didDoc
-    connectionRecord.threadId = message.threadId
-
-    if (!connectionRecord.theirKey) {
-      throw new AriesFrameworkError(`Connection with id ${connectionRecord.id} has no recipient keys.`)
+    if (!connection.didDoc) {
+      throw new AriesFrameworkError('DID Document is missing.')
     }
+
+    const theirVerkeys = connection.didDoc?.authentication
+      .map((auth) => auth.publicKey)
+      .filter((publicKey: PublicKey) => publicKey.type === 'Ed25519VerificationKey2018')
+      .map((publicKey: PublicKey) => publicKey.value)
+      .filter((value): value is string => !!value)
+
+    const { did: peerDid } = await this.createDid({
+      role: DidDocumentRole.Received,
+      recipientKeys: theirVerkeys,
+      didDocument: convertToNewDidDocument(connection.didDoc),
+    })
+
+    connectionRecord.theirDid = peerDid
+    connectionRecord.threadId = message.threadId
 
     await this.updateState(connectionRecord, ConnectionState.Responded)
     return connectionRecord
@@ -354,7 +440,11 @@ export class ConnectionService {
       throw new AriesFrameworkError('Unable to process connection problem report without recipientVerkey')
     }
 
-    const connectionRecord = await this.findByVerkey(recipientVerkey)
+    let connectionRecord
+    const ourDidRecords = await this.didRepository.findMultipleByVerkey(recipientVerkey)
+    for (const ourDidRecord of ourDidRecords) {
+      connectionRecord = await this.findByOurDid(ourDidRecord.id)
+    }
 
     if (!connectionRecord) {
       throw new AriesFrameworkError(
@@ -362,8 +452,12 @@ export class ConnectionService {
       )
     }
 
-    if (connectionRecord.theirKey && connectionRecord.theirKey !== senderVerkey) {
-      throw new AriesFrameworkError("Sender verkey doesn't match verkey of connection record")
+    const theirDidRecord = await this.didRepository.findSingleByQuery({ did: connectionRecord.theirDid })
+
+    if (senderVerkey) {
+      if (!theirDidRecord?.getTags().recipientKeys?.includes(senderVerkey)) {
+        throw new AriesFrameworkError("Sender verkey doesn't match verkey of connection record")
+      }
     }
 
     connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
@@ -507,26 +601,8 @@ export class ConnectionService {
     return this.connectionRepository.delete(connectionRecord)
   }
 
-  /**
-   * Find connection by verkey.
-   *
-   * @param verkey the verkey to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
-   */
-  public findByVerkey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findByVerkey(verkey)
-  }
-
-  /**
-   * Find connection by their verkey.
-   *
-   * @param verkey the verkey to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
-   */
-  public findByTheirKey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findByTheirKey(verkey)
+  public async findSingleByQuery(query: { did: string; theirDid: string }) {
+    return this.connectionRepository.findSingleByQuery(query)
   }
 
   /**
@@ -545,6 +621,10 @@ export class ConnectionService {
     return this.connectionRepository.findSingleByQuery({ theirDid: did })
   }
 
+  public async findByOurDid(did: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findSingleByQuery({ did })
+  }
+
   public async findByOutOfBandId(outOfBandId: string) {
     return this.connectionRepository.findSingleByQuery({ outOfBandId })
   }
@@ -553,7 +633,8 @@ export class ConnectionService {
     role?: ConnectionRole | DidExchangeRole
     state?: ConnectionState | DidExchangeState
     alias?: string
-    routing: Routing
+    did: string
+    mediatorId?: string
     theirLabel?: string
     autoAcceptConnection?: boolean
     multiUseInvitation: boolean
@@ -562,7 +643,59 @@ export class ConnectionService {
     protocol?: HandshakeProtocol
     outOfBandId?: string
   }): Promise<ConnectionRecord> {
-    const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
+    const connectionRecord = new ConnectionRecord({
+      did: options.did,
+      state: options.state,
+      role: options.role,
+      tags: options.tags,
+      alias: options.alias,
+      theirLabel: options.theirLabel,
+      autoAcceptConnection: options.autoAcceptConnection,
+      imageUrl: options.imageUrl,
+      multiUseInvitation: options.multiUseInvitation,
+      mediatorId: options.mediatorId,
+      protocol: options.protocol,
+      outOfBandId: options.outOfBandId,
+    })
+    await this.connectionRepository.save(connectionRecord)
+    return connectionRecord
+  }
+
+  private async createDid({
+    role,
+    recipientKeys,
+    didDocument,
+  }: {
+    role: DidDocumentRole
+    recipientKeys: string[]
+    didDocument: DidDocument
+  }) {
+    const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
+    const didRecord = new DidRecord({
+      id: peerDid.did,
+      role,
+      didDocument,
+      tags: {
+        // We need to save the recipientKeys, so we can find the associated did
+        // of a key when we receive a message from another connection.
+        recipientKeys,
+      },
+    })
+
+    this.logger.debug('Saving DID record', {
+      id: didRecord.id,
+      role: didRecord.role,
+      tags: didRecord.getTags(),
+      didDocument: 'omitted...',
+    })
+
+    await this.didRepository.save(didRecord)
+    this.logger.debug('Did record created.', didRecord)
+    return { did: peerDid.did, didDocument }
+  }
+
+  private createDidDoc(routing: Routing) {
+    const { endpoints, did, verkey, routingKeys } = routing
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
@@ -594,25 +727,7 @@ export class ConnectionService {
       publicKey: [publicKey],
     })
 
-    const connectionRecord = new ConnectionRecord({
-      did,
-      didDoc,
-      verkey,
-      state: options.state,
-      role: options.role,
-      tags: options.tags,
-      alias: options.alias,
-      theirLabel: options.theirLabel,
-      autoAcceptConnection: options.autoAcceptConnection,
-      imageUrl: options.imageUrl,
-      multiUseInvitation: options.multiUseInvitation,
-      mediatorId,
-      protocol: options.protocol,
-      outOfBandId: options.outOfBandId,
-    })
-
-    await this.connectionRepository.save(connectionRecord)
-    return connectionRecord
+    return didDoc
   }
 
   public async returnWhenIsConnected(connectionId: string, timeoutMs = 20000): Promise<ConnectionRecord> {
