@@ -1,9 +1,10 @@
 import type { Attachment } from '../../../../../decorators/attachment/Attachment'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
+import { credDefIdRegex, indyDidRegex, schemaIdRegex, schemaVersionRegex } from '../../../../../utils'
 import { V1CredentialPreview } from '../V1CredentialPreview'
 
 export interface ProposeCredentialMessageOptions {
@@ -70,6 +71,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_issuer_did' })
   @IsString()
   @IsOptional()
+  @Matches(indyDidRegex)
   public schemaIssuerDid?: string
 
   /**
@@ -78,6 +80,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_id' })
   @IsString()
   @IsOptional()
+  @Matches(schemaIdRegex)
   public schemaId?: string
 
   /**
@@ -94,6 +97,9 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_version' })
   @IsString()
   @IsOptional()
+  @Matches(schemaVersionRegex, {
+    message: 'Version must be X.X or X.X.X',
+  })
   public schemaVersion?: string
 
   /**
@@ -102,6 +108,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'cred_def_id' })
   @IsString()
   @IsOptional()
+  @Matches(credDefIdRegex)
   public credentialDefinitionId?: string
 
   /**
@@ -110,5 +117,6 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'issuer_did' })
   @IsString()
   @IsOptional()
+  @Matches(indyDidRegex)
   public issuerDid?: string
 }

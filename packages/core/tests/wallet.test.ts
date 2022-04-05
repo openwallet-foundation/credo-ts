@@ -152,4 +152,27 @@ describe('wallet', () => {
     // Expect same basic message record to exist in new wallet
     expect(await bobBasicMessageRepository.getById(basicMessageRecord.id)).toMatchObject(basicMessageRecord)
   })
+
+  test('changing wallet key', async () => {
+    const walletConfig = {
+      id: 'mywallet',
+      key: 'mysecretwalletkey',
+    }
+
+    await aliceAgent.wallet.createAndOpen(walletConfig)
+    await aliceAgent.initialize()
+
+    //Close agent
+    const walletConfigRekey = {
+      id: 'mywallet',
+      key: 'mysecretwalletkey',
+      rekey: '123',
+    }
+
+    await aliceAgent.shutdown()
+    await aliceAgent.wallet.rotateKey(walletConfigRekey)
+    await aliceAgent.initialize()
+
+    expect(aliceAgent.isInitialized).toBe(true)
+  })
 })
