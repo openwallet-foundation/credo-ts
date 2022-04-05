@@ -46,8 +46,8 @@ export class DidExchangeProtocol {
   private config: AgentConfig
   private connectionService: ConnectionService
   private jwsService: JwsService
-  private logger: Logger
   private didRepository: DidRepository
+  private logger: Logger
 
   public constructor(
     config: AgentConfig,
@@ -71,6 +71,7 @@ export class DidExchangeProtocol {
     const { outOfBandMessage } = outOfBandRecord
     const { alias, goal, goalCode, routing, autoAcceptConnection } = params
 
+    const { did, mediatorId } = routing
     const connectionRecord = await this.connectionService.createConnection({
       protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Requester,
@@ -78,7 +79,8 @@ export class DidExchangeProtocol {
       state: DidExchangeState.InvitationReceived,
       theirLabel: outOfBandMessage.label,
       multiUseInvitation: false,
-      routing,
+      did,
+      mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
     })
@@ -100,7 +102,6 @@ export class DidExchangeProtocol {
     }
 
     connectionRecord.did = peerDid.did
-    connectionRecord.verkey = verkey
     connectionRecord.threadId = message.id
 
     if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
@@ -118,13 +119,18 @@ export class DidExchangeProtocol {
   public async processRequest(
     messageContext: InboundMessageContext<DidExchangeRequestMessage>,
     outOfBandRecord: OutOfBandRecord,
-    routing: Routing
+    routing?: Routing
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type} start`, messageContext)
 
     // TODO check oob role is sender
     // TODO check oob state is await-respons
     // TODO check there is no connection record for particular oob record
+
+    const { did, mediatorId } = routing ? routing : outOfBandRecord
+    if (!did) {
+      throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
+    }
 
     const { message } = messageContext
 
@@ -184,7 +190,8 @@ export class DidExchangeProtocol {
       role: DidExchangeRole.Responder,
       state: DidExchangeState.RequestReceived,
       multiUseInvitation: false,
-      routing,
+      did,
+      mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
     })
@@ -204,6 +211,11 @@ export class DidExchangeProtocol {
   ): Promise<DidExchangeResponseMessage> {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeResponseMessage.type, connectionRecord)
+
+    const { did } = routing ? routing : outOfBandRecord
+    if (!did) {
+      throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
+    }
 
     const { threadId } = connectionRecord
 

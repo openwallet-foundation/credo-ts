@@ -1,5 +1,5 @@
-import type { DidDoc } from '../modules/connections/models'
 import type { ConnectionRecord } from '../modules/connections/repository'
+import type { DidDocument } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
@@ -25,8 +25,8 @@ export class TransportService {
     return Object.values(this.transportSessionTable).find((session) => session.outOfBand?.id === outOfBandId)
   }
 
-  public hasInboundEndpoint(didDoc: DidDoc): boolean {
-    return Boolean(didDoc.didCommServices.find((s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE))
+  public hasInboundEndpoint(didDocument: DidDocument): boolean {
+    return Boolean(didDocument.service.find((s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE))
   }
 
   public findSessionById(sessionId: string) {

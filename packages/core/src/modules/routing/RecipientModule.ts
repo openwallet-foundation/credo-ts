@@ -18,6 +18,7 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
 import { ConnectionService } from '../connections/services'
+import { DidsModule } from '../dids'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RoutingEventTypes } from './RoutingEvents'
@@ -33,6 +34,7 @@ export class RecipientModule {
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
   private connectionService: ConnectionService
+  private dids: DidsModule
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
@@ -42,11 +44,13 @@ export class RecipientModule {
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
     connectionService: ConnectionService,
+    dids: DidsModule,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
+    this.dids = dids
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
@@ -98,9 +102,9 @@ export class RecipientModule {
     })
 
     const websocketSchemes = ['ws', 'wss']
-    const hasWebSocketTransport = connectionRecord.theirDidDoc?.didCommServices?.some((s) =>
-      websocketSchemes.includes(s.protocolScheme)
-    )
+    const didDocument = connectionRecord.theirDid && (await this.dids.resolveDidDocument(connectionRecord.theirDid))
+    const services = didDocument && didDocument?.didCommServices
+    const hasWebSocketTransport = services && services.some((s) => websocketSchemes.includes(s.protocolScheme))
 
     if (!hasWebSocketTransport) {
       throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')

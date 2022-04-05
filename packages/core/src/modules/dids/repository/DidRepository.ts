@@ -15,4 +15,8 @@ export class DidRepository extends Repository<DidRecord> {
   public findByVerkey(verkey: string) {
     return this.findSingleByQuery({ recipientKeys: [verkey] })
   }
+
+  public findMultipleByVerkey(verkey: string) {
+    return this.findByQuery({ recipientKeys: [verkey] })
+  }
 }

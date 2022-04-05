@@ -19,18 +19,6 @@ export class ConnectionRepository extends Repository<ConnectionRecord> {
     })
   }
 
-  public findByVerkey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.findSingleByQuery({
-      verkey,
-    })
-  }
-
-  public findByTheirKey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.findSingleByQuery({
-      theirKey: verkey,
-    })
-  }
-
   public getByThreadId(threadId: string): Promise<ConnectionRecord> {
     return this.getSingleByQuery({ threadId })
   }
