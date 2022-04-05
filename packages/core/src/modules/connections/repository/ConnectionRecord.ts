@@ -24,6 +24,7 @@ export interface ConnectionRecordProps {
   errorMessage?: string
   protocol?: HandshakeProtocol
   outOfBandId?: string
+  invitationDid?: string
 }
 
 export type CustomConnectionTags = TagsBase
@@ -59,6 +60,7 @@ export class ConnectionRecord
   public errorMessage?: string
   public protocol?: HandshakeProtocol
   public outOfBandId?: string
+  public invitationDid?: string
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
@@ -70,6 +72,7 @@ export class ConnectionRecord
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.did = props.did
+      this.invitationDid = props.invitationDid
       this.theirDid = props.theirDid
       this.theirLabel = props.theirLabel
       this.state = props.state
@@ -97,6 +100,7 @@ export class ConnectionRecord
       did: this.did,
       theirDid: this.theirDid,
       outOfBandId: this.outOfBandId,
+      invitationDid: this.invitationDid,
     }
   }
 

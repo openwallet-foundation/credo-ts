@@ -98,6 +98,7 @@ export class ConnectionService {
 
     const { did, mediatorId } = config.routing
     const didDoc = this.createDidDoc(config.routing)
+    // const invitationDid = outOfBandMessage.invitationPeerDid
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
       role: ConnectionRole.Invitee,
@@ -108,6 +109,7 @@ export class ConnectionService {
       mediatorId,
       autoAcceptConnection: config?.autoAcceptConnection,
       multiUseInvitation: false,
+      // invitationDid,
     })
     connectionRecord.outOfBandId = outOfBandRecord.id
 
@@ -642,6 +644,7 @@ export class ConnectionService {
     imageUrl?: string
     protocol?: HandshakeProtocol
     outOfBandId?: string
+    invitationDid?: string
   }): Promise<ConnectionRecord> {
     const connectionRecord = new ConnectionRecord({
       did: options.did,
@@ -656,6 +659,7 @@ export class ConnectionService {
       mediatorId: options.mediatorId,
       protocol: options.protocol,
       outOfBandId: options.outOfBandId,
+      invitationDid: options.invitationDid,
     })
     await this.connectionRepository.save(connectionRecord)
     return connectionRecord

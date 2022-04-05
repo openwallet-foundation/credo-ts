@@ -1,6 +1,6 @@
 import type { PlaintextMessage } from '../../../types'
 import type { HandshakeProtocol } from '../../connections'
-import type { DidCommService } from '../../dids'
+import { DidCommService, DidPeer } from '../../dids'
 
 import { Expose, Type } from 'class-transformer'
 import { ArrayNotEmpty, Equals, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
@@ -12,6 +12,8 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
+import { createDidDocumentFromServices } from '../../dids/domain/createPeerDidFromServices'
+import { PeerDidNumAlgo } from '../../dids/methods/peer/DidPeer'
 
 interface OutOfBandMessageOptions {
   id?: string
@@ -82,6 +84,16 @@ export class OutOfBandMessage extends AgentMessage {
     const invitation = JsonTransformer.fromJSON(json, OutOfBandMessage)
     await MessageValidator.validate(invitation)
     return invitation
+  }
+
+  public get invitationPeerDid() {
+    const services = this.services.filter((s): s is DidCommService => typeof s !== 'string')
+    const invitationDidDocument = createDidDocumentFromServices(services)
+    const invitationDidPeer = DidPeer.fromDidDocument(
+      invitationDidDocument,
+      PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
+    )
+    return invitationDidPeer.did
   }
 
   @Equals(OutOfBandMessage.type)
