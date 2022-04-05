@@ -2370,7 +2370,6 @@
   integrity sha512-vt+kDhq/M2ayberEtJcIN/hxXy1Pk+59g2FV/ZQceeaTyCtCucjL2Q7FXlFjtWn4n15KCr1NE2lNNFhp0lEThw==
 
 "@types/digitalcredentials__jsonld@npm:@types/jsonld@^1.5.6", "@types/jsonld@^1.5.6":
-  name "@types/digitalcredentials__jsonld"
   version "1.5.6"
   resolved "https://registry.yarnpkg.com/@types/jsonld/-/jsonld-1.5.6.tgz#4396c0b17128abf5773bb68b5453b88fc565b0d4"
   integrity sha512-OUcfMjRie5IOrJulUQwVNvV57SOdKcTfBj3pjXNxzXqeOIrY2aGDNGW/Tlp83EQPkz4tCE6YWVrGuc/ZeaAQGg==
@@ -2424,7 +2423,7 @@
   dependencies:
     "@types/node" "*"
 
-"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.12", "@types/indy-sdk@^1.16.12":
+"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.16", "@types/indy-sdk@^1.16.16":
   version "1.16.16"
   resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.16.tgz#dc9e51c61c266eff616991fa7df88309975d9f1e"
   integrity sha512-bSWG56bAFvjTTLHJoGEXylbbN533g9XEtOTPS9G1EvIv5AsVcy/OIZOkXXElbzvYdZ1Q+qCxZDD5T0OqMYNmjg==
@@ -2602,7 +2601,7 @@
   dependencies:
     "@types/node" "*"
 
-"@types/ws@^7.4.4", "@types/ws@^7.4.6":
+"@types/ws@^7.4.6":
   version "7.4.7"
   resolved "https://registry.yarnpkg.com/@types/ws/-/ws-7.4.7.tgz#f7c390a36f7a0679aa69de2d501319f4f8d9b702"
   integrity sha512-JQbbmxZTZehdc2iszGKs5oC3NFnjeay7mtAWrdt7qNtAVK0g19muApzAy4bm9byz79xa2ZnO/BOBC2R8RC5Lww==
@@ -3612,9 +3611,9 @@ camelcase@^6.0.0, camelcase@^6.2.0:
   integrity sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==
 
 caniuse-lite@^1.0.30001317:
-  version "1.0.30001324"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001324.tgz#e17c3a8b34822b02d5d15639d570057550074884"
-  integrity sha512-/eYp1J6zYh1alySQB4uzYFkLmxxI8tk0kxldbNHXp8+v+rdMKdUBNjRLz7T7fz6Iox+1lIdYpc7rq6ZcXfTukg==
+  version "1.0.30001325"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001325.tgz#2b4ad19b77aa36f61f2eaf72e636d7481d55e606"
+  integrity sha512-sB1bZHjseSjDtijV1Hb7PB2Zd58Kyx+n/9EotvZ4Qcz2K3d0lWB8dB4nb8wN/TsOGFq3UuAm0zQZNQ4SoR7TrQ==
 
 canonicalize@^1.0.1:
   version "1.0.8"
@@ -4712,9 +4711,9 @@ eslint-import-resolver-node@^0.3.6:
     resolve "^1.20.0"
 
 eslint-import-resolver-typescript@^2.4.0:
-  version "2.7.0"
-  resolved "https://registry.yarnpkg.com/eslint-import-resolver-typescript/-/eslint-import-resolver-typescript-2.7.0.tgz#1f9d391b636dccdbaa4a3b1a87eb9a8237e23963"
-  integrity sha512-MNHS3u5pebvROX4MjGP9coda589ZGfL1SqdxUV4kSrcclfDRWvNE2D+eljbnWVMvWDVRgT89nhscMHPKYGcObQ==
+  version "2.7.1"
+  resolved "https://registry.yarnpkg.com/eslint-import-resolver-typescript/-/eslint-import-resolver-typescript-2.7.1.tgz#a90a4a1c80da8d632df25994c4c5fdcdd02b8751"
+  integrity sha512-00UbgGwV8bSgUv34igBDbTOtKhqoRMy9bFjNehT40bXg6585PNIct8HhXZ0SybqB9rWtXj9crcku8ndDn/gIqQ==
   dependencies:
     debug "^4.3.4"
     glob "^7.2.0"
@@ -5564,9 +5563,9 @@ globby@^11.0.2, globby@^11.0.3:
     slash "^3.0.0"
 
 graceful-fs@^4.1.11, graceful-fs@^4.1.15, graceful-fs@^4.1.2, graceful-fs@^4.1.3, graceful-fs@^4.1.6, graceful-fs@^4.1.9, graceful-fs@^4.2.0, graceful-fs@^4.2.2, graceful-fs@^4.2.3, graceful-fs@^4.2.4, graceful-fs@^4.2.6, graceful-fs@^4.2.9:
-  version "4.2.9"
-  resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.9.tgz#041b05df45755e587a24942279b9d113146e1c96"
-  integrity sha512-NtNxqUcXgpW2iMrfqSfR73Glt39K+BLwWsPs94yR63v45T0Wbej7eRmL5cWfwEgqXnmjQp3zaJTshdRW/qC2ZQ==
+  version "4.2.10"
+  resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.10.tgz#147d3a006da4ca3ce14728c7aefc287c367d7a6c"
+  integrity sha512-9ByhssR2fPVsNZj478qUUbKfmL0+t5BDVyjShtyZZLiK7ZDAArFFfopyOTj0M05wE2tJPisA4iTnnXl2YoPvOA==
 
 handlebars@^4.7.6, handlebars@^4.7.7:
   version "4.7.7"
@@ -9598,7 +9597,7 @@ rxjs@^6.6.0:
   dependencies:
     tslib "^1.9.0"
 
-rxjs@^7.1.0, rxjs@^7.2.0:
+rxjs@^7.2.0:
   version "7.5.5"
   resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.5.5.tgz#2ebad89af0f560f460ad5cc4213219e1f7dd4e9f"
   integrity sha512-sy+H0pQofO95VDmFLzyaw9xNJU4KTRSwQIGM6+iG3SypAtCiLDzpeG8sJrNCWn2Up9km+KhkvTdbkrdy+yzZdw==
