@@ -6,7 +6,7 @@ import type { DidCommService, DidDocument } from '../../dids'
 import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
-import type { DidExchangeRole } from '../models'
+import type { DidExchangeRole, PublicKey } from '../models'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -176,14 +176,12 @@ export class ConnectionService {
       },
     })
 
-    const theirVerkeys = Array.from(
-      new Set(
-        message.connection.didDoc?.didCommServices
-          .filter((s): s is DidCommService => typeof s !== 'string')
-          .map((s) => s.recipientKeys)
-          .reduce((acc, curr) => acc.concat(curr), [])
-      )
-    )
+    const theirVerkeys = message.connection.didDoc?.authentication
+      .map((auth) => auth.publicKey)
+      .filter((publicKey: PublicKey) => publicKey.type === 'Ed25519VerificationKey2018')
+      .map((publicKey: PublicKey) => publicKey.value)
+      .filter((value): value is string => !!value)
+
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Received,
       recipientKeys: theirVerkeys,
@@ -347,14 +345,12 @@ export class ConnectionService {
       throw new AriesFrameworkError('DID Document is missing.')
     }
 
-    const theirVerkeys = Array.from(
-      new Set(
-        connection.didDoc?.didCommServices
-          .filter((s): s is DidCommService => typeof s !== 'string')
-          .map((s) => s.recipientKeys)
-          .reduce((acc, curr) => acc.concat(curr), [])
-      )
-    )
+    const theirVerkeys = connection.didDoc?.authentication
+      .map((auth) => auth.publicKey)
+      .filter((publicKey: PublicKey) => publicKey.type === 'Ed25519VerificationKey2018')
+      .map((publicKey: PublicKey) => publicKey.value)
+      .filter((value): value is string => !!value)
+
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Received,
       recipientKeys: theirVerkeys,
