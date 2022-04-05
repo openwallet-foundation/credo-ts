@@ -1,5 +1,5 @@
 import { IndyAgentService, VerificationMethod } from '../../dids'
-import { DidDoc, Ed25119Sig2018, EmbeddedAuthentication } from '../models'
+import { DidDoc, Ed25119Sig2018, EddsaSaSigSecp256k1, EmbeddedAuthentication, RsaSig2018 } from '../models'
 import { convertToNewDidDocument } from '../services/helpers'
 
 const didDoc = new DidDoc({
@@ -14,21 +14,21 @@ const didDoc = new DidDoc({
   ],
   id: 'test-id',
   publicKey: [
-    // new RsaSig2018({
-    //   id: '3',
-    //   controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
-    //   publicKeyPem: '-----BEGIN PUBLIC X...',
-    // }),
+    new RsaSig2018({
+      id: '3',
+      controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
+      publicKeyPem: '-----BEGIN PUBLIC X...',
+    }),
     new Ed25119Sig2018({
       id: 'did:sov:SKJVx2kn373FNgvff1SbJo#4',
       controller: 'did:sov:SKJVx2kn373FNgvff1SbJo',
       publicKeyBase58: 'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
     }),
-    // new EddsaSaSigSecp256k1({
-    //   id: '6',
-    //   controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
-    //   publicKeyHex: '-----BEGIN PUBLIC A...',
-    // }),
+    new EddsaSaSigSecp256k1({
+      id: '6',
+      controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
+      publicKeyHex: '-----BEGIN PUBLIC A...',
+    }),
   ],
   service: [
     new IndyAgentService({
@@ -73,8 +73,5 @@ describe('convertToNewDidDocument', () => {
         priority: 5,
       }),
     ])
-
-    // verificationMethod contains all items from publicKey (only type Ed25519VerificationKey2018?)
-    // authentication array contains all items from authentication
   })
 })
