@@ -41,16 +41,28 @@ export class InputDescriptors {
   public id?: string
 
   @IsString()
-  @IsOptional()
-  public name: string
+  public name!: string
 
   @IsString()
   @IsOptional()
   @IsArray()
-  public group: string[]
+  public group!: string[]
 
   @IsArray()
-  public schema: SchemaOptions[]
+  public schema!: SchemaOptions[]
 
-  public constraints: ConstraintOptions
+  public constraints!: ConstraintOptions
+}
+
+export interface InputDescriptorsSchemaOptions {
+  inputDescriptors: InputDescriptors[]
+}
+
+export class InputDescriptorsSchema {
+  public constructor(options: InputDescriptorsSchemaOptions) {
+    this.inputDescriptors = options.inputDescriptors
+  }
+
+  @Expose({ name: 'input_descriptors' })
+  public inputDescriptors: InputDescriptors[]
 }

@@ -24,6 +24,8 @@ import { IndyLedgerService } from '../../../ledger'
 import { ProofFormatService } from '../ProofFormatService'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
+import { InputDescriptorsSchema } from './models'
+
 @scoped(Lifecycle.ContainerScoped)
 export class PresentationExchangeFormatService extends ProofFormatService {
   private indyHolderService: IndyHolderService
@@ -52,11 +54,13 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       format: 'dif/presentation-exchange/definition@v1.0',
     })
 
+    const proposalInputDescriptor = new InputDescriptorsSchema(options.proofProposalOptions)
+
     const attachment = new Attachment({
       id: options.attachId,
       mimeType: 'application/json',
       data: new AttachmentData({
-        json: { inputDescriptors: options.proofProposalOptions },
+        json: { inputDescriptors: proposalInputDescriptor },
       }),
     })
 
@@ -74,7 +78,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     return this.createProofAttachment({
       attachId: options.attachId ?? uuid(),
-      proofProposalOptions: options.formats.presentationExchange.inputDescriptors,
+      proofProposalOptions: options.formats.presentationExchange,
     })
   }
 
@@ -104,13 +108,13 @@ export class PresentationExchangeFormatService extends ProofFormatService {
   ): Promise<AutoSelectCredentialOptions> {
     throw new Error('Method not implemented.')
   }
-  
+
   public autoSelectCredentialsForProofRequest(
     options: AutoSelectCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
     throw new Error('Method not implemented.')
   }
-  
+
   public proposalAndRequestAreEqual(
     proposalAttachments: ProofAttachmentFormat[],
     requestAttachments: ProofAttachmentFormat[]
