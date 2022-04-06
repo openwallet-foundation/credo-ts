@@ -31,7 +31,7 @@ export class JwsService {
     const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
 
     const signature = TypedArrayEncoder.toBase64URL(
-      await this.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), key})
+      await this.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), key })
     )
 
     return {

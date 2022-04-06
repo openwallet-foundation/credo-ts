@@ -1,6 +1,10 @@
 import type { Key, KeyType } from '../crypto'
 import type {
-  DecryptedMessageContext, EncryptedMessage, WalletConfig, WalletConfigRekey, WalletExportImportConfig
+  DecryptedMessageContext,
+  EncryptedMessage,
+  WalletConfig,
+  WalletConfigRekey,
+  WalletExportImportConfig,
 } from '../types'
 import type { Buffer } from '../utils/buffer'
 
