@@ -89,11 +89,11 @@ with bbs keys must be swapped. Inside your package.json the following must be ad
 
 ```diff
 +   "resolutions": {
-+     "@mattrglobal/bbs-signatures": "react-native-bbs-signatures@0.1.0",
++     "@mattrglobal/bbs-signatures": "react-native-bbs-signatures@0.1.1",
 +   },
     "dependencies": {
       ...
-+     "react-native-bbs-signatures": "0.1.0",
++     "react-native-bbs-signatures": "0.1.1",
     }
 ```
 
@@ -101,3 +101,5 @@ The resolution field says that any instance of `@mattrglobal/bbs-signatures` in 
 with `react-native-bbs-signatures`.
 
 The added dependency is required for autolinking and should be the same as the one used in the resolution.
+
+[React Native Bbs Signature](https://github.com/animo/react-native-bbs-signatures) has some quirks with setting it up correctly. If any errors occur while using this library, please refer to their README for the installation guide.
