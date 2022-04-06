@@ -17,7 +17,7 @@ import {
 } from 'ed25519-signature-2018-context'
 import { constants as ed25519Signature2020Constants } from 'ed25519-signature-2020-context'
 
-import { TypedArrayEncoder } from '../utils'
+import { TypedArrayEncoder } from '../../utils'
 
 import { JwsLinkedDataSignature } from './JwsLinkedDataSignature'
 

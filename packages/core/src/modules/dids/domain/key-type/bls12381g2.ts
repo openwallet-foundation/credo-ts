@@ -24,7 +24,9 @@ export function getBls12381g2DidDoc(did: string, key: Key) {
     did,
     key,
     verificationMethod,
-  }).build()
+  })
+    .addContext('https://w3id.org/security/bbs/v1')
+    .build()
 }
 
 export const keyDidBls12381g2: KeyDidMapping = {

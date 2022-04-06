@@ -14,7 +14,9 @@ export interface W3cVerifiablePresentationOptions extends W3cPresentationOptions
 export class W3cVerifiablePresentation extends W3cPresentation {
   public constructor(options: W3cVerifiablePresentationOptions) {
     super(options)
-    this.proof = new LinkedDataProof(options.proof)
+    if (options) {
+      this.proof = new LinkedDataProof(options.proof)
+    }
   }
 
   @LinkedDataProofTransformer()

@@ -1,7 +1,12 @@
-import type { DocumentLoader, JwsLinkedDataSignature, Proof } from '../../../crypto/JwsLinkedDataSignature'
+import type {
+  DocumentLoader,
+  JwsLinkedDataSignature,
+  Proof,
+} from '../../../crypto/signature-suites/JwsLinkedDataSignature'
 
+// @ts-ignore
+import jsonld from '@digitalcredentials/jsonld'
 import jsigs from '@digitalcredentials/jsonld-signatures'
-import jsonld from 'jsonld'
 
 const AssertionProofPurpose = jsigs.purposes.AssertionProofPurpose
 
@@ -20,7 +25,7 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
    * @param {number} [options.maxTimestampDelta=Infinity] - A maximum number
    *   of seconds that the date on the signature can deviate from.
    */
-  public constructor(options: { controller: Record<string, unknown>; date: string; maxTimestampDelta?: number }) {
+  public constructor(options: { controller?: Record<string, unknown>; date: string; maxTimestampDelta?: number }) {
     options.maxTimestampDelta = options.maxTimestampDelta || Infinity
     super(options)
   }
