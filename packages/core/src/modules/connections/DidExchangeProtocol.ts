@@ -69,7 +69,11 @@ export class DidExchangeProtocol {
     const { alias, goal, goalCode, routing, autoAcceptConnection } = params
 
     const { did, mediatorId } = routing
-    // const invitationDid = outOfBandMessage.invitationPeerDid
+
+    // TODO: We should store only one did that we'll use to send the request message with success.
+    // We take just the first one for now.
+    const [invitationDid] = outOfBandMessage.invitationDids
+
     const connectionRecord = await this.connectionService.createConnection({
       protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Requester,
@@ -81,7 +85,7 @@ export class DidExchangeProtocol {
       mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
-      // invitationDid,
+      invitationDid,
     })
 
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
