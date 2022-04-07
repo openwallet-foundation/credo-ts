@@ -5,6 +5,7 @@ import type { AgentMessage } from './AgentMessage'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
+import { didKeyToVerkey, verkeyToDidKey } from '../modules/dids/helpers'
 import { ForwardMessage } from '../modules/routing/messages'
 import { Wallet } from '../wallet/Wallet'
 
@@ -17,7 +18,7 @@ export interface EnvelopeKeys {
 }
 
 @scoped(Lifecycle.ContainerScoped)
-class EnvelopeService {
+export class EnvelopeService {
   private wallet: Wallet
   private logger: Logger
   private config: AgentConfig
@@ -29,38 +30,44 @@ class EnvelopeService {
   }
 
   public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<EncryptedMessage> {
-    const { routingKeys, senderKey } = keys
-    let recipientKeys = keys.recipientKeys
+    const { recipientKeys, routingKeys, senderKey } = keys
+    let recipientVerkeys = recipientKeys.map(didKeyToVerkey)
+    const routingVerkeys = routingKeys.map(didKeyToVerkey)
+    const senderVerkey = senderKey && didKeyToVerkey(senderKey)
 
     // pass whether we want to use legacy did sov prefix
     const message = payload.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
 
     this.logger.debug(`Pack outbound message ${message['@type']}`)
 
-    let encryptedMessage = await this.wallet.pack(message, recipientKeys, senderKey ?? undefined)
+    let encryptedMessage = await this.wallet.pack(message, recipientVerkeys, senderVerkey ?? undefined)
 
     // If the message has routing keys (mediator) pack for each mediator
-    for (const routingKey of routingKeys) {
+    for (const routingVerkey of routingVerkeys) {
       const forwardMessage = new ForwardMessage({
         // Forward to first recipient key
-        to: recipientKeys[0],
+        to: recipientVerkeys[0],
         message: encryptedMessage,
       })
-      recipientKeys = [routingKey]
+      recipientVerkeys = [routingVerkey]
       this.logger.debug('Forward message created', forwardMessage)
 
       const forwardJson = forwardMessage.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
 
       // Forward messages are anon packed
-      encryptedMessage = await this.wallet.pack(forwardJson, [routingKey], undefined)
+      encryptedMessage = await this.wallet.pack(forwardJson, [routingVerkey], undefined)
     }
 
     return encryptedMessage
   }
 
   public async unpackMessage(encryptedMessage: EncryptedMessage): Promise<DecryptedMessageContext> {
-    return this.wallet.unpack(encryptedMessage)
+    const decryptedMessage = await this.wallet.unpack(encryptedMessage)
+    const { recipientKey, senderKey, plaintextMessage } = decryptedMessage
+    return {
+      recipientKey: recipientKey && verkeyToDidKey(recipientKey),
+      senderKey: senderKey && verkeyToDidKey(senderKey),
+      plaintextMessage,
+    }
   }
 }
-
-export { EnvelopeService }

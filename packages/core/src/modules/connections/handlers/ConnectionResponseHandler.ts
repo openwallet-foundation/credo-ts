@@ -6,6 +6,7 @@ import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
+import { verkeyToDidKey } from '../../dids/helpers'
 import { ConnectionResponseMessage } from '../messages'
 
 export class ConnectionResponseHandler implements Handler {
@@ -40,14 +41,14 @@ export class ConnectionResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }
 
-    // Validate if recipient key is included in recipient keys of the did document resolved by
-    // connection record did
     const ourDidDocument = await this.resolveDidDocument(connectionRecord.did)
     if (!ourDidDocument) {
       throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved!`)
     }
 
-    if (!ourDidDocument.recipientKeys.includes(recipientVerkey)) {
+    // Validate if recipient key is included in recipient keys of the did document resolved by
+    // connection record did
+    if (!ourDidDocument.recipientKeys.map(verkeyToDidKey).includes(recipientVerkey)) {
       throw new AriesFrameworkError(`Recipient key ${recipientVerkey} not found in did document recipient keys.`)
     }
 

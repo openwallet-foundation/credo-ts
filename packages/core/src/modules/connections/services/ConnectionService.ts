@@ -23,6 +23,7 @@ import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
 import { DidPeer, IndyAgentService } from '../../dids'
 import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
+import { didKeyToVerkey, verkeyToDidKey } from '../../dids/helpers'
 import { PeerDidNumAlgo } from '../../dids/methods/peer/DidPeer'
 import { DidRepository, DidRecord } from '../../dids/repository'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
@@ -236,7 +237,7 @@ export class ConnectionService {
               .map((s) => s.serviceEndpoint)
           )
         ),
-        verkey: outOfBandRecord.getTags().recipientKey,
+        verkey: didKeyToVerkey(outOfBandRecord.getTags().recipientKey),
         routingKeys: Array.from(
           new Set(
             outOfBandRecord.outOfBandMessage.services
@@ -244,6 +245,7 @@ export class ConnectionService {
               .map((s) => s.routingKeys)
               .filter((r): r is string[] => r !== undefined)
               .reduce((acc, curr) => acc.concat(curr), [])
+              .map(didKeyToVerkey)
           )
         ),
       }
@@ -267,9 +269,7 @@ export class ConnectionService {
       throw new AriesFrameworkError(`Connection record with id ${connectionRecord.id} does not have a thread id`)
     }
 
-    const invitationKey = outOfBandRecord.getTags().recipientKey
-
-    const signingKey = invitationKey
+    const signingKey = didKeyToVerkey(outOfBandRecord.getTags().recipientKey)
 
     const connectionResponse = new ConnectionResponseMessage({
       threadId: connectionRecord.threadId,
@@ -339,7 +339,7 @@ export class ConnectionService {
     // as the recipient key(s) in the connection invitation message
     const signerVerkey = message.connectionSig.signer
 
-    const invitationKey = outOfBandRecord.getTags().recipientKey
+    const invitationKey = didKeyToVerkey(outOfBandRecord.getTags().recipientKey)
 
     if (signerVerkey !== invitationKey) {
       throw new ConnectionProblemReportError(
@@ -504,9 +504,12 @@ export class ConnectionService {
         type: message.type,
       })
 
+      const recipientVerkey = messageContext.recipientVerkey && didKeyToVerkey(messageContext.recipientVerkey)
+      const senderVerkey = messageContext.senderVerkey && didKeyToVerkey(messageContext.senderVerkey)
+
       if (previousSentMessage) {
         // If we have previously sent a message, it is not allowed to receive an OOB/unpacked message
-        if (!messageContext.recipientVerkey) {
+        if (!recipientVerkey) {
           throw new AriesFrameworkError(
             'Cannot verify service without recipientKey on incoming message (received unpacked message)'
           )
@@ -514,10 +517,7 @@ export class ConnectionService {
 
         // Check if the inbound message recipient key is present
         // in the recipientKeys of previously sent message ~service decorator
-        if (
-          !previousSentMessage?.service ||
-          !previousSentMessage.service.recipientKeys.includes(messageContext.recipientVerkey)
-        ) {
+        if (!previousSentMessage?.service || !previousSentMessage.service.recipientKeys.includes(recipientVerkey)) {
           throw new AriesFrameworkError(
             'Previously sent message ~service recipientKeys does not include current received message recipient key'
           )
@@ -526,7 +526,7 @@ export class ConnectionService {
 
       if (previousReceivedMessage) {
         // If we have previously received a message, it is not allowed to receive an OOB/unpacked/AnonCrypt message
-        if (!messageContext.senderVerkey) {
+        if (!senderVerkey) {
           throw new AriesFrameworkError(
             'Cannot verify service without senderKey on incoming message (received AnonCrypt or unpacked message)'
           )
@@ -534,10 +534,7 @@ export class ConnectionService {
 
         // Check if the inbound message sender key is present
         // in the recipientKeys of previously received message ~service decorator
-        if (
-          !previousReceivedMessage.service ||
-          !previousReceivedMessage.service.recipientKeys.includes(messageContext.senderVerkey)
-        ) {
+        if (!previousReceivedMessage.service || !previousReceivedMessage.service.recipientKeys.includes(senderVerkey)) {
           throw new AriesFrameworkError(
             'Previously received message ~service recipientKeys does not include current received message sender key'
           )
@@ -545,7 +542,7 @@ export class ConnectionService {
       }
 
       // If message is received unpacked/, we need to make sure it included a ~service decorator
-      if (!message.service && !messageContext.recipientVerkey) {
+      if (!message.service && !recipientVerkey) {
         throw new AriesFrameworkError('Message recipientKey must have ~service decorator')
       }
     }
@@ -693,7 +690,7 @@ export class ConnectionService {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys,
+        recipientKeys: recipientKeys.map(verkeyToDidKey),
       },
     })
 

@@ -512,7 +512,9 @@ describe('ConnectionService', () => {
         connectionSig,
       })
 
-      const outOfBandRecord = getMockOutOfBand()
+      // Recipient key `verkey` is not the same as theirVerkey which was used to sign message,
+      // therfore it should cause a failure.
+      const outOfBandRecord = getMockOutOfBand({ recipientKeys: [verkey] })
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
         senderVerkey: theirVerkey,
