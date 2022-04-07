@@ -27,8 +27,6 @@ export interface CredentialRecordProps {
   threadId: string
 
   credentialId?: string
-  revocationRegistryId?: string
-  credentialRevocationId?: string
   tags?: CustomCredentialTags
   proposalMessage?: ProposeCredentialMessage
   offerMessage?: OfferCredentialMessage
@@ -53,8 +51,6 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   public connectionId?: string
   public threadId!: string
   public credentialId?: string
-  public revocationRegistryId?: string
-  public credentialRevocationId?: string
   public state!: CredentialState
   public autoAcceptCredential?: AutoAcceptCredential
   public revocationNotification?: RevocationNotification
@@ -88,8 +84,6 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.state = props.state
       this.connectionId = props.connectionId
       this.credentialId = props.credentialId
-      this.revocationRegistryId = props.revocationRegistryId
-      this.credentialRevocationId = props.credentialRevocationId
       this.threadId = props.threadId
       this._tags = props.tags ?? {}
 
@@ -112,8 +106,6 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       connectionId: this.connectionId,
       state: this.state,
       credentialId: this.credentialId,
-      revocationRegistryId: this.revocationRegistryId,
-      credentialRevocationId: this.credentialRevocationId,
     }
   }
 

@@ -677,8 +677,10 @@ export class CredentialService {
     if (indyCredential.rev_reg_id) {
       const credential = await this.indyHolderService.getCredential(credentialId)
 
-      credentialRecord.credentialRevocationId = credential.cred_rev_id?.toString()
-      credentialRecord.revocationRegistryId = indyCredential.rev_reg_id
+      const credentialRevocationId = credential.cred_rev_id
+      const revocationRegistryId = indyCredential.rev_reg_id
+
+      credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {credentialRevocationId, revocationRegistryId})
     }
 
     credentialRecord.credentialId = credentialId
