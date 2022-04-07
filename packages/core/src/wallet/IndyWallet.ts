@@ -15,6 +15,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error'
+import { WalletStorageType } from '../types'
 import { JsonEncoder } from '../utils/JsonEncoder'
 import { isIndyError } from '../utils/indyError'
 
@@ -33,6 +34,14 @@ export class IndyWallet implements Wallet {
   public constructor(agentConfig: AgentConfig) {
     this.logger = agentConfig.logger
     this.indy = agentConfig.agentDependencies.indy
+
+    const { walletConfig, fileSystem } = agentConfig
+
+    if (walletConfig?.storageType === WalletStorageType.Postgres) {
+      if (walletConfig.storageConfig && walletConfig.storageCreds && fileSystem?.loadPostgresPlugin) {
+        fileSystem?.loadPostgresPlugin(walletConfig.storageConfig, walletConfig.storageCreds)
+      }
+    }
   }
 
   public get isProvisioned() {
@@ -67,6 +76,41 @@ export class IndyWallet implements Wallet {
     return this.walletConfig.id
   }
 
+  private walletStorageConfig(walletConfig: WalletConfig): Indy.WalletConfig {
+    const walletStorageConfig: Indy.WalletConfig = {
+      id: walletConfig.id,
+      storage_type: walletConfig.storageType,
+    }
+
+    if (walletConfig.storageConfig) {
+      walletStorageConfig.storage_config = walletConfig.storageConfig
+    }
+
+    return walletStorageConfig
+  }
+
+  private walletCredentials(
+    walletConfig: WalletConfig,
+    rekey?: string,
+    rekeyDerivation?: KeyDerivationMethod
+  ): Indy.OpenWalletCredentials {
+    const walletCredentials: Indy.OpenWalletCredentials = {
+      key: walletConfig.key,
+      key_derivation_method: walletConfig.keyDerivationMethod,
+    }
+    if (rekey) {
+      walletCredentials.rekey = rekey
+    }
+    if (rekeyDerivation) {
+      walletCredentials.rekey_derivation_method = rekeyDerivation
+    }
+    if (walletConfig.storageCreds) {
+      walletCredentials.storage_credentials = walletConfig.storageCreds
+    }
+
+    return walletCredentials
+  }
+
   /**
    * @throws {WalletDuplicateError} if the wallet already exists
    * @throws {WalletError} if another error occurs
@@ -84,11 +128,7 @@ export class IndyWallet implements Wallet {
     this.logger.debug(`Creating wallet '${walletConfig.id}' using SQLite storage`)
 
     try {
-      await this.indy.createWallet(
-        { id: walletConfig.id },
-        { key: walletConfig.key, key_derivation_method: walletConfig.keyDerivationMethod }
-      )
-
+      await this.indy.createWallet(this.walletStorageConfig(walletConfig), this.walletCredentials(walletConfig))
       this.walletConfig = walletConfig
 
       // We usually want to create master secret only once, therefore, we can to do so when creating a wallet.
@@ -139,7 +179,11 @@ export class IndyWallet implements Wallet {
       throw new WalletError('Wallet rekey undefined!. Please specify the new wallet key')
     }
     await this._open(
-      { id: walletConfig.id, key: walletConfig.key, keyDerivationMethod: walletConfig.keyDerivationMethod },
+      {
+        id: walletConfig.id,
+        key: walletConfig.key,
+        keyDerivationMethod: walletConfig.keyDerivationMethod,
+      },
       walletConfig.rekey,
       walletConfig.rekeyDerivationMethod
     )
@@ -162,13 +206,8 @@ export class IndyWallet implements Wallet {
 
     try {
       this.walletHandle = await this.indy.openWallet(
-        { id: walletConfig.id },
-        {
-          key: walletConfig.key,
-          rekey: rekey,
-          key_derivation_method: walletConfig.keyDerivationMethod,
-          rekey_derivation_method: rekeyDerivation,
-        }
+        this.walletStorageConfig(walletConfig),
+        this.walletCredentials(walletConfig, rekey, rekeyDerivation)
       )
       if (rekey) {
         this.walletConfig = { ...walletConfig, key: rekey, keyDerivationMethod: rekeyDerivation }
@@ -224,8 +263,8 @@ export class IndyWallet implements Wallet {
 
     try {
       await this.indy.deleteWallet(
-        { id: this.walletConfig.id },
-        { key: this.walletConfig.key, key_derivation_method: this.walletConfig.keyDerivationMethod }
+        this.walletStorageConfig(this.walletConfig),
+        this.walletCredentials(this.walletConfig)
       )
     } catch (error) {
       if (isIndyError(error, 'WalletNotFoundError')) {

@@ -24,6 +24,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { agentDependencies } from '../../node/src'
 import {
+  WalletScheme,
   LogLevel,
   AgentConfig,
   AriesFrameworkError,
@@ -47,6 +48,7 @@ import {
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { DidCommService } from '../src/modules/dids'
+import { WalletStorageType } from '../src/types'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -64,6 +66,37 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     walletConfig: {
       id: `Wallet: ${name}`,
       key: `Key: ${name}`,
+    },
+    publicDidSeed,
+    autoAcceptConnections: true,
+    indyLedgers: [
+      {
+        id: `pool-${name}`,
+        isProduction: false,
+        genesisPath,
+      },
+    ],
+    logger: new TestLogger(LogLevel.error, name),
+    ...extraConfig,
+  }
+
+  return { config, agentDependencies } as const
+}
+
+export function getBasePostgresConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
+  const config: InitConfig = {
+    label: `Agent: ${name}`,
+    walletConfig: {
+      id: `Wallet${name.replace(/\s/g, '')}`,
+      key: `Key${name}`,
+      storageConfig: { url: 'localhost:5432', wallet_scheme: WalletScheme.DatabasePerWallet },
+      storageCreds: {
+        account: 'postgres',
+        admin_account: 'postgres',
+        admin_password: 'postgres',
+        password: 'postgres',
+      },
+      storageType: WalletStorageType.Postgres,
     },
     publicDidSeed,
     autoAcceptConnections: true,

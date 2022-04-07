@@ -6,6 +6,8 @@ import type { DidCommService } from './modules/dids/domain/service/DidCommServic
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
+import type { WalletStorageCreds } from './storage/FileSystem'
+import type { WalletStorageConfig } from 'indy-sdk'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -20,6 +22,9 @@ export interface WalletConfig {
   id: string
   key: string
   keyDerivationMethod?: KeyDerivationMethod
+  storageType?: WalletStorageType
+  storageConfig?: WalletStorageConfig
+  storageCreds?: WalletStorageCreds
 }
 
 export interface WalletConfigRekey {
@@ -45,6 +50,11 @@ export type EncryptedMessage = {
 export enum DidCommMimeType {
   V0 = 'application/ssi-agent-wire',
   V1 = 'application/didcomm-envelope-enc',
+}
+
+export enum WalletStorageType {
+  Default = 'default',
+  Postgres = 'postgres_storage',
 }
 
 export interface InitConfig {
