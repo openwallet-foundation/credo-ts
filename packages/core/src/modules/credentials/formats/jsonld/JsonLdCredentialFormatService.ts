@@ -1,8 +1,5 @@
-/* eslint-disable @typescript-eslint/explicit-member-accessibility */
-/* eslint-disable @typescript-eslint/adjacent-overload-signatures */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import type { LdProofDetail } from '../../../vc'
+import type { SignCredentialOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
 import type {
   ServiceAcceptCredentialOptions,
@@ -34,6 +31,7 @@ import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinat
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
+import { performance } from 'perf_hooks'
 
 @scoped(Lifecycle.ContainerScoped)
 export class JsonLdCredentialFormatService extends CredentialFormatService {
@@ -56,7 +54,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     // no meta data set for ld proofs
   }
 
-  processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): void {
+  public processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): void {
     // not needed in jsonld
   }
 
@@ -79,15 +77,20 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
 
     // sign credential here. The credential subject is received as the request attachment
     // (attachment in the request message from holder to issuer)
-    const credential = options.requestAttachment?.getDataAsJson<LdProofDetail>()
-
-    const proof: LdProofDetail = {
-      credential: JsonTransformer.fromJSON(credential.credential, W3cCredential),
-      options: credential.options,
+    const credentialOptions = options.requestAttachment?.getDataAsJson<SignCredentialOptions>()
+    const signCredentialOptions: SignCredentialOptions = {
+      credential: JsonTransformer.fromJSON(credentialOptions.credential, W3cCredential),
+      proofType: credentialOptions.proofType,
+      verificationMethod: credentialOptions.verificationMethod,
     }
 
-    const verifiableCredential = await this.w3cCredentialService.signCredential(proof)
+    console.log("----------- SIGN CREDENIAL START ------------")
+    const startTime = performance.now()
 
+    const verifiableCredential = await this.w3cCredentialService.signCredential(signCredentialOptions)
+    const endTime = performance.now()
+
+    console.log(`----------- SIGN CREDENTIAL END ------------ time = ${Math.floor(endTime - startTime)} milliseconds`)
     const issueAttachment: Attachment = this.getFormatData(verifiableCredential, attachmentId)
 
     return { format: formats, attachment: issueAttachment }
@@ -97,7 +100,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     return undefined
   }
 
-  getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
+  public getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
     const formatId = formats.find((f) => f.format.includes('aries'))
     const attachment = messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
     return attachment
@@ -119,7 +122,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
       }
       messageAttachment = options.credentialFormats.jsonld
     } else {
-      messageAttachment = options.proposalAttachment.getDataAsJson<LdProofDetail>()
+      messageAttachment = options.proposalAttachment.getDataAsJson<SignCredentialOptions>()
     }
 
     const offersAttach: Attachment = this.getFormatData(messageAttachment, attachmentId)
@@ -146,7 +149,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     // Use offer attachment as the credential if present
     // otherwise use the credential format payload passed in the options object
 
-    const credOffer = options.offerAttachment.getDataAsJson<LdProofDetail>()
+    const credOffer = options.offerAttachment.getDataAsJson<SignCredentialOptions>()
     const attachment = credOffer ? credOffer : options.jsonld?.credentialSubject
 
     const requestAttach: Attachment = this.getFormatData(attachment, formats.attachId)
@@ -249,7 +252,14 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
 
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
 
-    const verifiableCredential: W3cCredentialRecord = await this.w3cCredentialService.storeCredential(credential)
+    console.log("----------- STORE CREDENIAL START ------------")
+    const startTime = performance.now()
+
+    const verifiableCredential: W3cCredentialRecord = await this.w3cCredentialService.storeCredential({
+      record: credential,
+    })
+    const endTime = performance.now()
+    console.log(`----------- STORE CREDENTIAL END ------------ time = ${Math.floor(endTime - startTime)} milliseconds`)
 
     // verifiableCredential.id = uu
     if (!verifiableCredential.credential.id) {
@@ -263,7 +273,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     })
   }
 
-  processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void {
+  public processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void {
     throw new Error('Method not implemented.')
   }
 

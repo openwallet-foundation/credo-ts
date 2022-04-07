@@ -35,6 +35,7 @@ import { W3cCredentialRecord } from './models/credential/W3cCredentialRecord'
 import { W3cCredentialRepository } from './models/credential/W3cCredentialRepository'
 import { W3cPresentation } from './models/presentation/W3Presentation'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
+import { InjectionSymbols } from '../../constants'
 
 @scoped(Lifecycle.ContainerScoped)
 export class W3cCredentialService {
@@ -42,21 +43,21 @@ export class W3cCredentialService {
   private w3cCredentialRepository: W3cCredentialRepository
   private didResolver: DidResolverService
   private agentConfig: AgentConfig
-  private logger: Logger
+  // private logger: Logger
   private suiteRegistry: SignatureSuiteRegistry
 
   public constructor(
-    @inject('Wallet') wallet: Wallet,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     w3cCredentialRepository: W3cCredentialRepository,
     didResolver: DidResolverService,
     agentConfig: AgentConfig,
-    logger: Logger
+    // logger: Logger
   ) {
     this.wallet = wallet
     this.w3cCredentialRepository = w3cCredentialRepository
     this.didResolver = didResolver
     this.agentConfig = agentConfig
-    this.logger = logger
+    // this.logger = logger
     this.suiteRegistry = new SignatureSuiteRegistry()
   }
 

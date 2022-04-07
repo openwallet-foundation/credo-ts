@@ -66,7 +66,7 @@ export class V2CredentialService extends CredentialService {
   private connectionService: ConnectionService
   private credentialMessageBuilder: CredentialMessageBuilder
   private indyCredentialFormatService: IndyCredentialFormatService
-  private jsonldCredentialFormatService: JsonLdCredentialFormatService
+  private jsonldCredentialFormatService!: JsonLdCredentialFormatService
   private serviceFormatMap: {
     Indy: IndyCredentialFormatService
     jsonld: JsonLdCredentialFormatService
@@ -81,7 +81,7 @@ export class V2CredentialService extends CredentialService {
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
     indyCredentialFormatService: IndyCredentialFormatService,
-    jsonldCredentialFormatService: JsonLdCredentialFormatService
+    jsonldCredentialFormatService?: JsonLdCredentialFormatService
   ) {
     super(
       credentialRepository,
@@ -93,7 +93,9 @@ export class V2CredentialService extends CredentialService {
     )
     this.connectionService = connectionService
     this.indyCredentialFormatService = indyCredentialFormatService
-    this.jsonldCredentialFormatService = jsonldCredentialFormatService
+    if (jsonldCredentialFormatService) {
+      this.jsonldCredentialFormatService = jsonldCredentialFormatService
+    }
     this.credentialMessageBuilder = new CredentialMessageBuilder()
     this.serviceFormatMap = {
       [CredentialFormatType.Indy]: this.indyCredentialFormatService,
@@ -1014,7 +1016,6 @@ export class V2CredentialService extends CredentialService {
       status: AckStatus.OK,
       threadId: credentialRecord.threadId,
     })
-
     await this.updateState(credentialRecord, CredentialState.Done)
 
     return { message: ackMessage, credentialRecord }

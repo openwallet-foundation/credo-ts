@@ -1,5 +1,5 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import type { LdProofDetailOptions, LdProofDetail } from '../../../../../../src/modules/vc'
+import type { SignCredentialOptions } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type {
   AcceptOfferOptions,
@@ -11,15 +11,18 @@ import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
+import { Key, KeyType } from '../../../../../../src/crypto'
+import { DidKey } from '../../../../../../src/modules/dids'
 import { JsonTransformer } from '../../../../../../src/utils'
-import { prepareForIssuance, waitForCredentialRecordSubject, getBaseConfig } from '../../../../../../tests/helpers'
+import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
+import { getBaseConfig, prepareForIssuance, waitForCredentialRecordSubject } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
-import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
+import { W3cCredential } from '../../../../vc/models/'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
+import { CredentialExchangeRecord } from '../../../repository'
 
 const faberConfig = getBaseConfig('Faber LD connection-less Credentials V2', {
   endpoints: ['rxjs:faber'],
@@ -29,35 +32,40 @@ const aliceConfig = getBaseConfig('Alice LD connection-less Credentials V2', {
   endpoints: ['rxjs:alice'],
 })
 
-const TEST_DID_KEY = 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
+let wallet: IndyWallet
+let issuerDidKey: DidKey
+let credential: W3cCredential
+let signCredentialOptions: SignCredentialOptions
 
-const options: LdProofDetailOptions = {
-  proofType: 'Ed25519Signature2018',
-  verificationMethod:
-    'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-}
-const credential: W3cCredential = JsonTransformer.fromJSON(
-  {
-    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
-    id: 'http://example.edu/credentials/temporary/28934792387492384',
-    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-    issuer: TEST_DID_KEY,
-    issuanceDate: '2017-10-22T12:23:48Z',
-    credentialSubject: {
-      id: 'did:example:b34ca6cd37bbf23',
-      degree: {
-        type: 'BachelorDegree',
-        name: 'Bachelor of Science and Arts',
-      },
-    },
-  },
-  W3cCredential
-)
+// const TEST_DID_KEY = 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
 
-const ldProof: LdProofDetail = {
-  credential: credential,
-  options: options,
-}
+// const options: LdProofDetailOptions = {
+//   proofType: 'Ed25519Signature2018',
+//   verificationMethod:
+//     'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+// }
+// const credential: W3cCredential = JsonTransformer.fromJSON(
+//   {
+//     '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+//     id: 'http://example.edu/credentials/temporary/28934792387492384',
+//     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+//     issuer: TEST_DID_KEY,
+//     issuanceDate: '2017-10-22T12:23:48Z',
+//     credentialSubject: {
+//       id: 'did:example:b34ca6cd37bbf23',
+//       degree: {
+//         type: 'BachelorDegree',
+//         name: 'Bachelor of Science and Arts',
+//       },
+//     },
+//   },
+//   W3cCredential
+// )
+
+// const ldProof: LdProofDetail = {
+//   credential: credential,
+//   options: options,
+// }
 
 describe('credentials', () => {
   let faberAgent: Agent
@@ -94,6 +102,51 @@ describe('credentials', () => {
     aliceAgent.events
       .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
       .subscribe(aliceReplay)
+
+    wallet = faberAgent.injectionContainer.resolve(IndyWallet)
+    await wallet.initPublicDid({})
+    const pubDid = wallet.publicDid
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
+    issuerDidKey = new DidKey(key)
+
+    const inputDoc = {
+      '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://w3id.org/citizenship/v1',
+        'https://w3id.org/security/bbs/v1',
+      ],
+      id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+      type: ['VerifiableCredential', 'PermanentResidentCard'],
+      issuer: issuerDidKey.did,
+      identifier: '83627465',
+      name: 'Permanent Resident Card',
+      description: 'Government of Example Permanent Resident Card.',
+      issuanceDate: '2019-12-03T12:19:52Z',
+      expirationDate: '2029-12-03T12:19:52Z',
+      credentialSubject: {
+        id: 'did:example:b34ca6cd37bbf23',
+        type: ['PermanentResident', 'Person'],
+        givenName: 'JOHN',
+        familyName: 'SMITH',
+        gender: 'Male',
+        image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+        residentSince: '2015-01-01',
+        lprCategory: 'C09',
+        lprNumber: '999-999-999',
+        commuterClassification: 'C1',
+        birthCountry: 'Bahamas',
+        birthDate: '1958-07-17',
+      },
+    }
+
+    credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
+
+    signCredentialOptions = {
+      credential,
+      proofType: 'Ed25519Signature2018',
+      verificationMethod: issuerDidKey.keyId,
+    }
   })
 
   afterEach(async () => {
@@ -109,7 +162,7 @@ describe('credentials', () => {
     const offerOptions: OfferCredentialOptions = {
       comment: 'V2 Out of Band offer (W3C)',
       credentialFormats: {
-        jsonld: ldProof,
+        jsonld: signCredentialOptions,
       },
       protocolVersion: CredentialProtocolVersion.V2,
       connectionId: '',

@@ -1,5 +1,6 @@
-import type { LdProofDetailOptions, LdProofDetail } from '../../../../../../src/modules/vc'
 import type { W3cVerifiableCredential } from '../../../../../../src/modules/vc/models'
+import type { SignCredentialOptions } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
+import type { TestLogger } from '../../../../../../tests/logger'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
 import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
@@ -9,10 +10,14 @@ import type {
   ProposeCredentialOptions,
 } from '../../../CredentialsModuleOptions'
 
+import { Key } from '../../../../../../src/crypto/Key'
 import { Attachment, AttachmentData } from '../../../../../../src/decorators/attachment/Attachment'
+import { DidKey } from '../../../../../../src/modules/dids'
 import { LinkedAttachment } from '../../../../../../src/utils/LinkedAttachment'
+import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
+import { KeyType } from '../../../../../crypto/KeyType'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
@@ -31,13 +36,61 @@ describe('credentials', () => {
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
   let faberCredentialRecord: CredentialExchangeRecord
-
+  let wallet: IndyWallet
+  let issuerDidKey: DidKey
   let didCommMessageRepository: DidCommMessageRepository
+  let credential: W3cCredential
+  let signCredentialOptions: SignCredentialOptions
+
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD',
       'Alice Agent Credentials LD'
     ))
+    wallet = faberAgent.injectionContainer.resolve(IndyWallet)
+    await wallet.initPublicDid({})
+    const pubDid = wallet.publicDid
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
+    issuerDidKey = new DidKey(key)
+
+    const inputDoc = {
+      '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://w3id.org/citizenship/v1',
+        'https://w3id.org/security/bbs/v1',
+      ],
+      id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+      type: ['VerifiableCredential', 'PermanentResidentCard'],
+      issuer: issuerDidKey.did,
+      identifier: '83627465',
+      name: 'Permanent Resident Card',
+      description: 'Government of Example Permanent Resident Card.',
+      issuanceDate: '2019-12-03T12:19:52Z',
+      expirationDate: '2029-12-03T12:19:52Z',
+      credentialSubject: {
+        id: 'did:example:b34ca6cd37bbf23',
+        type: ['PermanentResident', 'Person'],
+        givenName: 'JOHN',
+        familyName: 'SMITH',
+        gender: 'Male',
+        image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+        residentSince: '2015-01-01',
+        lprCategory: 'C09',
+        lprNumber: '999-999-999',
+        commuterClassification: 'C1',
+        birthCountry: 'Bahamas',
+        birthDate: '1958-07-17',
+      },
+    }
+
+    credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
+
+    signCredentialOptions = {
+      credential,
+      proofType: 'Ed25519Signature2018',
+      verificationMethod: issuerDidKey.keyId,
+    }
   })
 
   afterAll(async () => {
@@ -48,35 +101,6 @@ describe('credentials', () => {
   })
 
   // -------------------------- V2 TEST BEGIN --------------------------------------------
-  const TEST_DID_KEY = 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
-
-  const options: LdProofDetailOptions = {
-    proofType: 'Ed25519Signature2018',
-    verificationMethod:
-      'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-  }
-  const credential: W3cCredential = JsonTransformer.fromJSON(
-    {
-      '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
-      id: 'http://example.edu/credentials/temporary/28934792387492384',
-      type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-      issuer: TEST_DID_KEY,
-      issuanceDate: '2017-10-22T12:23:48Z',
-      credentialSubject: {
-        id: 'did:example:b34ca6cd37bbf23',
-        degree: {
-          type: 'BachelorDegree',
-          name: 'Bachelor of Science and Arts',
-        },
-      },
-    },
-    W3cCredential
-  )
-
-  const ldProof: LdProofDetail = {
-    credential: credential,
-    options: options,
-  }
 
   test('Alice starts with V2 (ld format) credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
@@ -86,7 +110,7 @@ describe('credentials', () => {
       connectionId: aliceConnection.id,
       protocolVersion: CredentialProtocolVersion.V2,
       credentialFormats: {
-        jsonld: ldProof,
+        jsonld: signCredentialOptions,
       },
       comment: 'v2 propose credential test for W3C Credentials',
     }
@@ -112,7 +136,7 @@ describe('credentials', () => {
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
       credentialFormats: {
-        jsonld: ldProof,
+        jsonld: signCredentialOptions,
       },
     }
     testLogger.test('Faber sends credential offer to Alice')
@@ -302,7 +326,7 @@ describe('credentials', () => {
       protocolVersion: CredentialProtocolVersion.V2,
       credentialFormats: {
         indy: testAttributes,
-        jsonld: ldProof,
+        jsonld: signCredentialOptions,
       },
       comment: 'v2 propose credential test',
     }
@@ -333,7 +357,7 @@ describe('credentials', () => {
           attributes: credentialPreview.attributes,
           credentialDefinitionId: credDefId,
         },
-        jsonld: ldProof,
+        jsonld: signCredentialOptions,
       },
     }
     testLogger.test('Faber sends credential offer to Alice')
