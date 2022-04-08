@@ -7,6 +7,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
+import { MessageReceiver } from '../../agent/MessageReceiver'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ConnectionService } from '../connections/services'
 
@@ -14,12 +15,16 @@ import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler 
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { MediatorService } from './services/MediatorService'
 import { MessagePickupService } from './services/MessagePickupService'
+import { StatusHandler , MessageDeliveryHandler} from './handlers/'
+import { StatusRequestMessage } from './messages'
+
 
 @scoped(Lifecycle.ContainerScoped)
 export class MediatorModule {
   private mediatorService: MediatorService
   private messagePickupService: MessagePickupService
   private messageSender: MessageSender
+  private messageReceiver: MessageReceiver
   public eventEmitter: EventEmitter
   public agentConfig: AgentConfig
   public connectionService: ConnectionService
@@ -29,6 +34,7 @@ export class MediatorModule {
     mediationService: MediatorService,
     messagePickupService: MessagePickupService,
     messageSender: MessageSender,
+    messageReceiver: MessageReceiver,
     eventEmitter: EventEmitter,
     agentConfig: AgentConfig,
     connectionService: ConnectionService
@@ -36,6 +42,7 @@ export class MediatorModule {
     this.mediatorService = mediationService
     this.messagePickupService = messagePickupService
     this.messageSender = messageSender
+    this.messageReceiver = messageReceiver
     this.eventEmitter = eventEmitter
     this.agentConfig = agentConfig
     this.connectionService = connectionService
@@ -64,5 +71,7 @@ export class MediatorModule {
     dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
     dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
     dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig))
+    dispatcher.registerHandler(new StatusHandler(this.mediatorService))
+    dispatcher.registerHandler(new MessageDeliveryHandler(this.mediatorService, this.messageReceiver))
   }
 }

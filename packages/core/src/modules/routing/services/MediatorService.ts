@@ -1,7 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { EncryptedMessage } from '../../../types'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
-import type { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage } from '../messages'
+import { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage } from '../messages'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -24,6 +24,10 @@ import { MediatorRoutingRecord } from '../repository'
 import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
 import { MediatorRoutingRepository } from '../repository/MediatorRoutingRepository'
+import { StatusMessage } from '../messages/StatusMessage'
+import { DeliveryRequestMessage } from '../messages/DeliveryRequestMessage'
+import { Attachment, AttachmentData } from 'packages/core/src/decorators/attachment/Attachment'
+import { MessageReceiver } from 'packages/core/src/agent/MessageReceiver'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MediatorService {
@@ -173,6 +177,38 @@ export class MediatorService {
 
     return mediationRecord
   }
+
+  public processStatus(statusMessage: StatusMessage){
+
+    const {messageCount, recipientKey} = statusMessage
+
+    //No messages to be sent
+    if(messageCount === 0)
+      return null
+
+    const deliveryRequestMessage = new DeliveryRequestMessage({
+      limit: messageCount,
+      recipientKey
+    })
+
+    return deliveryRequestMessage
+  }
+
+  public async processDelivery(messageDeliveryMessage: MessageDeliveryMessage, messageReceiver: MessageReceiver){
+
+    const {attachments} = messageDeliveryMessage
+
+    const ids = await Promise.all(attachments!.map(async (attachment: Attachment) => {
+      await messageReceiver.receiveMessage(attachment.data)
+      return attachment.id
+    }))
+
+    return new MessagesReceivedMessage({
+      messageIdList: ids
+    })
+    
+  }
+
 
   public async findById(mediatorRecordId: string): Promise<MediationRecord | null> {
     return this.mediationRepository.findById(mediatorRecordId)
