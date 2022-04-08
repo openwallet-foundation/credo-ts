@@ -2,6 +2,7 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
+import type { ProofRequestFromProposalOptions } from '../../../models/ProofServiceOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V2ProofService } from '../V2ProofService'
 
@@ -60,12 +61,6 @@ export class V2ProposePresentationHandler implements Handler {
       return
     }
 
-    const proofRequestsOptions = {
-      name: 'proof-request',
-      version: '1.0',
-      nonce: await this.proofService.generateProofRequestNonce(),
-    }
-
     const proposalAttachment = proposalMessage
       .getAttachmentFormats()
       .find((x) => x.format.format === 'hlindy/proof-req@v2.0')
@@ -74,16 +69,14 @@ export class V2ProposePresentationHandler implements Handler {
       throw new AriesFrameworkError('No proposal message could be found')
     }
 
-    const proofRequest = await this.proofService.createProofRequestFromProposal({
-      formats: {
-        indy: {
-          proofRecord: proofRecord,
-        },
-      },
-      config: {
-        indy: proofRequestsOptions,
-      },
-    })
+    const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
+      name: 'proof-request',
+      version: '1.0',
+      nonce: await this.proofService.generateProofRequestNonce(),
+      proofRecord,
+    }
+
+    const proofRequest = await this.proofService.createProofRequestFromProposal(proofRequestFromProposalOptions)
 
     if (!proofRequest.indy) {
       throw new AriesFrameworkError('Failed to create proof request')

@@ -84,3 +84,10 @@ export interface GetRequestedCredentialforProofRequestoptions {
   proofRecord: ProofRecord
   config: RequestedCredentialConfigOptions
 }
+
+export interface ProofRequestFromProposalOptions {
+  name: string
+  version: string
+  nonce: string
+  proofRecord: ProofRecord
+}

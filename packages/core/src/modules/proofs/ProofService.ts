@@ -20,6 +20,7 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
   GetRequestedCredentialforProofRequestoptions,
+  ProofRequestFromProposalOptions,
 } from './models/ProofServiceOptions'
 import type { ProofState } from './models/ProofState'
 import type {
@@ -192,15 +193,7 @@ export abstract class ProofService {
     options: AutoSelectCredentialOptions
   ): Promise<RequestedCredentialsFormats>
 
-  public abstract createProofRequestFromProposal(options: {
-    formats: {
-      indy?: {
-        proofRecord: ProofRecord
-      }
-      jsonLd?: never
-    }
-    config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
-  }): Promise<ProofRequestFormats>
+  public abstract createProofRequestFromProposal(options: ProofRequestFromProposalOptions): Promise<ProofRequestFormats>
 
   /**
    * Retrieve all proof records
