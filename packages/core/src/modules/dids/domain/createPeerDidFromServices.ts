@@ -5,10 +5,10 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { KeyType } from '../../../crypto'
 import { uuid } from '../../../utils/uuid'
 
+import { DidDocumentBuilder } from './DidDocumentBuilder'
+import { Key } from './Key'
 import { getEd25519VerificationMethod } from './key-type/ed25519'
 import { getX25519VerificationMethod } from './key-type/x25519'
-
-import { DidDocumentBuilder, Key } from '.'
 
 export function createDidDocumentFromServices(services: DidCommService[]) {
   const didDocumentBuilder = new DidDocumentBuilder('')
