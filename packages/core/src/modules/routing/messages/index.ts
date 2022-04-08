@@ -11,4 +11,3 @@ export * from './StatusMessage'
 export * from './StatusRequestMessage'
 export * from './MessageDeliveryMessage'
 export * from './MessagesReceivedMessage'
-

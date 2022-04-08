@@ -1,7 +1,10 @@
+import type { MessageReceiver } from '../../../agent/MessageReceiver'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { EncryptedMessage } from '../../../types'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
-import { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage } from '../messages'
+import type { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage, MessageDeliveryMessage } from '../messages'
+import type { StatusMessage } from '../messages/StatusMessage'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -12,22 +15,20 @@ import { AriesFrameworkError } from '../../../error'
 import { Wallet } from '../../../wallet/Wallet'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
+  MessagesReceivedMessage,
   KeylistUpdateAction,
   KeylistUpdateResult,
   KeylistUpdated,
   MediationGrantMessage,
   KeylistUpdateResponseMessage,
 } from '../messages'
+import { DeliveryRequestMessage } from '../messages/DeliveryRequestMessage'
 import { MediationRole } from '../models/MediationRole'
 import { MediationState } from '../models/MediationState'
 import { MediatorRoutingRecord } from '../repository'
 import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
 import { MediatorRoutingRepository } from '../repository/MediatorRoutingRepository'
-import { StatusMessage } from '../messages/StatusMessage'
-import { DeliveryRequestMessage } from '../messages/DeliveryRequestMessage'
-import { Attachment, AttachmentData } from 'packages/core/src/decorators/attachment/Attachment'
-import { MessageReceiver } from 'packages/core/src/agent/MessageReceiver'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MediatorService {
@@ -178,37 +179,36 @@ export class MediatorService {
     return mediationRecord
   }
 
-  public processStatus(statusMessage: StatusMessage){
-
-    const {messageCount, recipientKey} = statusMessage
+  public processStatus(statusMessage: StatusMessage) {
+    const { messageCount, recipientKey } = statusMessage
 
     //No messages to be sent
-    if(messageCount === 0)
-      return null
+    if (messageCount === 0) return null
 
     const deliveryRequestMessage = new DeliveryRequestMessage({
       limit: messageCount,
-      recipientKey
+      recipientKey,
     })
 
     return deliveryRequestMessage
   }
 
-  public async processDelivery(messageDeliveryMessage: MessageDeliveryMessage, messageReceiver: MessageReceiver){
+  public async processDelivery(messageDeliveryMessage: MessageDeliveryMessage, messageReceiver: MessageReceiver) {
+    const { attachments } = messageDeliveryMessage
 
-    const {attachments} = messageDeliveryMessage
+    if (!attachments) throw new AriesFrameworkError('Attachments did not exist')
 
-    const ids = await Promise.all(attachments!.map(async (attachment: Attachment) => {
-      await messageReceiver.receiveMessage(attachment.data)
-      return attachment.id
-    }))
+    const ids = await Promise.all(
+      attachments.map(async (attachment: Attachment) => {
+        await messageReceiver.receiveMessage(attachment.data)
+        return attachment.id
+      })
+    )
 
     return new MessagesReceivedMessage({
-      messageIdList: ids
+      messageIdList: ids,
     })
-    
   }
-
 
   public async findById(mediatorRecordId: string): Promise<MediationRecord | null> {
     return this.mediationRepository.findById(mediatorRecordId)

@@ -6,18 +6,22 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { MessageSender } from '../../agent/MessageSender'
 import { MessageReceiver } from '../../agent/MessageReceiver'
+import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ConnectionService } from '../connections/services'
 
-import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler } from './handlers'
+import {
+  KeylistUpdateHandler,
+  ForwardHandler,
+  BatchPickupHandler,
+  BatchHandler,
+  StatusHandler,
+  MessageDeliveryHandler,
+} from './handlers'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { MediatorService } from './services/MediatorService'
 import { MessagePickupService } from './services/MessagePickupService'
-import { StatusHandler , MessageDeliveryHandler} from './handlers/'
-import { StatusRequestMessage } from './messages'
-
 
 @scoped(Lifecycle.ContainerScoped)
 export class MediatorModule {

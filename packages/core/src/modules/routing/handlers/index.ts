@@ -4,4 +4,4 @@ export * from './BatchHandler'
 export * from './BatchPickupHandler'
 export * from './KeylistUpdateResponseHandler'
 export * from './StatusHandler'
-export * from "./MessageDeliveryHandler"
+export * from './MessageDeliveryHandler'

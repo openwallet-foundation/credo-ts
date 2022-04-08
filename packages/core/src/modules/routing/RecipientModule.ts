@@ -4,7 +4,7 @@ import type { OutboundWebSocketClosedEvent } from '../../transport'
 import type { OutboundMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
-import { MediationRecord, StatusRequestMessage } from './index'
+import type { MediationRecord } from './index'
 
 import { firstValueFrom, interval, of, ReplaySubject, timer } from 'rxjs'
 import { filter, first, takeUntil, throttleTime, timeout, tap, delayWhen, catchError, map } from 'rxjs/operators'
@@ -28,11 +28,11 @@ import { RoutingEventTypes } from './RoutingEvents'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
+import { StatusRequestMessage } from './messages'
 import { BatchPickupMessage } from './messages/BatchPickupMessage'
 import { MediationState } from './models/MediationState'
 import { MediationRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
-import { stat } from 'fs'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RecipientModule {
@@ -392,15 +392,14 @@ export class RecipientModule {
     return mediationRecord
   }
 
-  public async sendStatusRequest(recipientKey: string|undefined = undefined){
+  public async sendStatusRequest(recipientKey: string | undefined = undefined) {
     const mediator = await this.findDefaultMediatorConnection()
     const statusRequest = new StatusRequestMessage({
-      recipientKey
+      recipientKey,
     })
-    if(!mediator)
-      throw new AriesFrameworkError("Could not find mediator connection")
+    if (!mediator) throw new AriesFrameworkError('Could not find mediator connection')
     return this.messageSender.sendMessage(createOutboundMessage(mediator, statusRequest))
-}
+  }
 
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
