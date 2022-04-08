@@ -7,6 +7,7 @@ import type {
   ServiceAcceptCredentialOptions,
   CredentialProtocolMsgReturnType,
   ServiceAcceptProposalOptions,
+  DeleteCredentialOptions,
 } from '../../CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
@@ -968,6 +969,18 @@ export class V2CredentialService extends CredentialService {
     return credentialRecord
   }
 
+  public async deleteById(credentialId: string, options?: DeleteCredentialOptions): Promise<void> {
+    const credentialRecord = await this.getById(credentialId)
+
+    await this.credentialRepository.delete(credentialRecord)
+
+    if (options?.deleteAssociatedCredential && credentialRecord) {
+      for (const credential of credentialRecord.credentials) {
+        const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
+        await formatService.deleteCredentialById(credentialRecord, options)
+      }
+    }
+  }
   /**
    * Create a {@link V2CredentialAckMessage} as response to a received credential.
    *

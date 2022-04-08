@@ -33,11 +33,14 @@ describe('credentials', () => {
   const credentialPreview = V2CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
+    'x-ray': 'some x-ray',
+    profile_picture: 'profile picture',
   })
   const newCredentialPreview = V2CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
-    lastname: 'Appleseed',
+    'x-ray': 'another x-ray value',
+    profile_picture: 'another profile picture',
   })
 
   describe('Auto accept on `always`', () => {
@@ -106,10 +109,6 @@ describe('credentials', () => {
     test('Faber starts with V2 credential offer to Alice, both with autoAcceptCredential on `always`', async () => {
       testLogger.test('Faber sends V2 credential offer to Alice as start of protocol process')
       const schemaId = schema.id
-      const credentialPreview = V2CredentialPreview.fromRecord({
-        name: 'John',
-        age: '99',
-      })
       const offerOptions: OfferCredentialOptions = {
         comment: 'V2 Offer Credential',
         connectionId: faberConnection.id,

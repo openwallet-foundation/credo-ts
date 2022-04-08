@@ -13,6 +13,7 @@ import type {
   ServiceAcceptOfferOptions,
   ServiceAcceptRequestOptions,
   ServiceRequestCredentialOptions,
+  DeleteCredentialOptions,
 } from '../../CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
@@ -94,6 +95,16 @@ export class V1CredentialService extends CredentialService {
       formatService.shouldAutoRespondToCredential(handlerOptions)
 
     return shouldAutoReturn
+  }
+
+  public async deleteById(credentialId: string, options?: DeleteCredentialOptions): Promise<void> {
+    const credentialRecord = await this.getById(credentialId)
+
+    await this.credentialRepository.delete(credentialRecord)
+
+    if (options?.deleteAssociatedCredential && credentialRecord) {
+      await this.formatService.deleteCredentialById(credentialRecord, options)
+    }
   }
 
   public shouldAutoRespondToRequest(
@@ -493,6 +504,8 @@ export class V1CredentialService extends CredentialService {
       ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
       : preview
 
+    await this.formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
+
     // Construct offer message
     const offerMessage = new V1OfferCredentialMessage({
       comment,
@@ -772,6 +785,8 @@ export class V1CredentialService extends CredentialService {
     credentialRecord.linkedAttachments = attachments?.filter((attachment) => isLinkedAttachment(attachment))
     credentialRecord.autoAcceptCredential =
       credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+
+    await this.formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
 
     await this.updateState(credentialRecord, CredentialState.OfferSent)
 

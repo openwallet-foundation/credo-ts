@@ -13,9 +13,7 @@ import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkE
 import { DidCommMessageRepository } from '../../../../../../src/storage'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../../../utils'
-import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -54,19 +52,13 @@ describe('credentials', () => {
     const credentialPreview = V1CredentialPreview.fromRecord({
       name: 'John',
       age: '99',
+      'x-ray': 'some x-ray',
+      profile_picture: 'profile picture',
     })
+
     const testAttributes = {
       attributes: credentialPreview.attributes,
       credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
-      linkedAttachments: [
-        new LinkedAttachment({
-          name: 'profile_picture',
-          attachment: new Attachment({
-            mimeType: 'image/png',
-            data: new AttachmentData({ base64: 'base64encodedpic' }),
-          }),
-        }),
-      ],
       payload: {
         schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
         schemaName: 'ahoy',
@@ -144,9 +136,14 @@ describe('credentials', () => {
             value: '99',
           },
           {
+            name: 'x-ray',
+            'mime-type': 'text/plain',
+            value: 'some x-ray',
+          },
+          {
             name: 'profile_picture',
-            'mime-type': 'image/png',
-            value: 'hl:zQmcKEWE6eZWpVqGKhbmhd8SxWBa9fgLX7aYW8RJzeHQMZg',
+            'mime-type': 'text/plain',
+            value: 'profile picture',
           },
         ],
       },
@@ -204,6 +201,8 @@ describe('credentials', () => {
     const credentialPreview = V2CredentialPreview.fromRecord({
       name: 'John',
       age: '99',
+      'x-ray': 'some x-ray',
+      profile_picture: 'profile picture',
     })
     const testAttributes = {
       attributes: credentialPreview.attributes,
@@ -213,15 +212,6 @@ describe('credentials', () => {
       schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
       issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
       credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
-      linkedAttachments: [
-        new LinkedAttachment({
-          name: 'profile_picture',
-          attachment: new Attachment({
-            mimeType: 'image/png',
-            data: new AttachmentData({ base64: 'base64encodedpic' }),
-          }),
-        }),
-      ],
       payload: {
         schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
         schemaName: 'ahoy',
@@ -302,9 +292,14 @@ describe('credentials', () => {
             value: '99',
           },
           {
+            name: 'x-ray',
+            'mime-type': 'text/plain',
+            value: 'some x-ray',
+          },
+          {
             name: 'profile_picture',
-            'mime-type': 'image/png',
-            value: 'hl:zQmcKEWE6eZWpVqGKhbmhd8SxWBa9fgLX7aYW8RJzeHQMZg',
+            'mime-type': 'text/plain',
+            value: 'profile picture',
           },
         ],
       },
@@ -378,6 +373,8 @@ describe('credentials', () => {
     const credentialPreview = V2CredentialPreview.fromRecord({
       name: 'John',
       age: '99',
+      'x-ray': 'some x-ray',
+      profile_picture: 'profile picture',
     })
     const offerOptions: OfferCredentialOptions = {
       comment: 'some comment about credential',

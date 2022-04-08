@@ -368,10 +368,6 @@ export class CredentialsModule implements CredentialsModule {
   public async offerCredential(credentialOptions: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
     const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
-    // with version we can get the Service
-    if (!credentialOptions.protocolVersion) {
-      throw new AriesFrameworkError('Missing protocol version in offerCredential')
-    }
     const service = this.getService(credentialOptions.protocolVersion)
 
     this.logger.debug(`Got a CredentialService object for version ${credentialOptions.protocolVersion}`)

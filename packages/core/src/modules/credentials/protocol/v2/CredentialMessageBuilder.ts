@@ -121,8 +121,8 @@ export class CredentialMessageBuilder {
     const offersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
 
-    for (const service of formatServices) {
-      const { attachment: offersAttach, preview, format } = await service.createOffer(proposal)
+    for (const formatService of formatServices) {
+      const { attachment: offersAttach, preview, format } = await formatService.createOffer(proposal)
 
       proposal.offerAttachment = offersAttach
       if (offersAttach === undefined) {
@@ -135,11 +135,12 @@ export class CredentialMessageBuilder {
       }
       if (preview) {
         previewAttachments = preview
+        await formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
       }
       formatsArray.push(format)
 
       if (proposal.offerAttachment) {
-        service.processOffer(proposal.offerAttachment, credentialRecord)
+        formatService.processOffer(proposal.offerAttachment, credentialRecord)
       }
     }
 
@@ -235,9 +236,9 @@ export class CredentialMessageBuilder {
     const offersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
 
-    for (const service of formatServices) {
+    for (const formatService of formatServices) {
       const offerOptions = options as unknown as AcceptProposalOptions
-      const { attachment: offersAttach, preview, format } = await service.createOffer(offerOptions)
+      const { attachment: offersAttach, preview, format } = await formatService.createOffer(offerOptions)
 
       if (offersAttach) {
         offersAttachArray.push(offersAttach)
@@ -247,6 +248,7 @@ export class CredentialMessageBuilder {
       }
       if (preview) {
         previewAttachments = preview
+        await formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
       }
       formatsArray.push(format)
     }

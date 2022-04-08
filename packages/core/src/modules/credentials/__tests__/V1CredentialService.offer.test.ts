@@ -26,7 +26,7 @@ import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '.
 import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 
-import { credDef } from './fixtures'
+import { schema, credDef } from './fixtures'
 
 // Mock classes
 jest.mock('../repository/CredentialRepository')
@@ -54,6 +54,10 @@ const credentialPreview = V1CredentialPreview.fromRecord({
   age: '99',
 })
 
+const badCredentialPreview = V1CredentialPreview.fromRecord({
+  test: 'credential',
+  error: 'yes',
+})
 const offerAttachment = new Attachment({
   id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   mimeType: 'application/json',
@@ -111,6 +115,7 @@ describe('CredentialService', () => {
         indyHolderService
       )
     )
+    mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
   })
 
   describe('createCredentialOffer', () => {
@@ -198,7 +203,42 @@ describe('CredentialService', () => {
         ],
       })
     })
+
+    test('throw error if credential preview attributes do not match with schema attributes', async () => {
+      offerOptions = {
+        ...offerOptions,
+        credentialFormats: {
+          indy: {
+            attributes: badCredentialPreview.attributes,
+            credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+          },
+        },
+      }
+      expect(credentialService.createOffer(offerOptions)).rejects.toThrowError(
+        `The credential preview attributes do not match the schema attributes (difference is: test,error,name,age, needs: name,age)`
+      )
+      const credentialPreviewWithExtra = V1CredentialPreview.fromRecord({
+        test: 'credential',
+        error: 'yes',
+        name: 'John',
+        age: '99',
+      })
+
+      offerOptions = {
+        ...offerOptions,
+        credentialFormats: {
+          indy: {
+            attributes: credentialPreviewWithExtra.attributes,
+            credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+          },
+        },
+      }
+      expect(credentialService.createOffer(offerOptions)).rejects.toThrowError(
+        `The credential preview attributes do not match the schema attributes (difference is: test,error, needs: name,age)`
+      )
+    })
   })
+
   describe('processCredentialOffer', () => {
     let messageContext: InboundMessageContext<V1OfferCredentialMessage>
     let credentialOfferMessage: V1OfferCredentialMessage

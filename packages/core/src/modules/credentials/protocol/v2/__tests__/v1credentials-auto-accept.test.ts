@@ -20,7 +20,6 @@ import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
-import { V2CredentialPreview } from '../V2CredentialPreview'
 
 describe('credentials', () => {
   let faberAgent: Agent
@@ -29,15 +28,17 @@ describe('credentials', () => {
   let schema: Schema
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
-  // let faberCredentialRecord: CredentialRecord
   const credentialPreview = V1CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
+    'x-ray': 'some x-ray',
+    profile_picture: 'profile picture',
   })
   const newCredentialPreview = V1CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
-    lastname: 'Appleseed',
+    'x-ray': 'another x-ray value',
+    profile_picture: 'another profile picture',
   })
 
   describe('Auto accept on `always`', () => {
@@ -104,10 +105,6 @@ describe('credentials', () => {
     test('Faber starts with V1 credential offer to Alice, both with autoAcceptCredential on `always`', async () => {
       testLogger.test('Faber sends credential offer to Alice')
       const schemaId = schema.id
-      const credentialPreview = V2CredentialPreview.fromRecord({
-        name: 'John',
-        age: '99',
-      })
       const offerOptions: OfferCredentialOptions = {
         comment: 'some comment about credential',
         connectionId: faberConnection.id,

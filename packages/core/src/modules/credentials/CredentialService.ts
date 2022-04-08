@@ -9,7 +9,7 @@ import type { DidCommMessageRepository } from '../../storage'
 import type { MediationRecipientService } from '../routing'
 import type { CredentialStateChangedEvent } from './CredentialEvents'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import type { CredentialProtocolMsgReturnType } from './CredentialServiceOptions'
+import type { CredentialProtocolMsgReturnType, DeleteCredentialOptions } from './CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
@@ -251,10 +251,12 @@ export abstract class CredentialService {
    *
    * @param credentialId the credential record id
    */
-  public async deleteById(credentialId: string) {
+  public async deleteByIdOLD(credentialId: string) {
     const credentialRecord = await this.getById(credentialId)
     return this.credentialRepository.delete(credentialRecord)
   }
+
+  abstract deleteById(credentialId: string, options?: DeleteCredentialOptions): Promise<void>
 
   /**
    * Retrieve a credential record by connection id and thread id

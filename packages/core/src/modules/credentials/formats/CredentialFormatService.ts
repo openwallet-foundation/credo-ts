@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type {
+  DeleteCredentialOptions,
   ServiceAcceptCredentialOptions,
   ServiceAcceptOfferOptions,
   ServiceAcceptProposalOptions,
@@ -9,6 +11,8 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../CredentialsModuleOptions'
+import type { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
+import type { V2CredentialPreview } from '../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord, CredentialRepository } from '../repository'
 import type {
   FormatServiceCredentialAttachmentFormats,
@@ -65,6 +69,18 @@ export abstract class CredentialFormatService {
   abstract shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean
 
   abstract getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry>
+
+  public async checkPreviewAttributesMatchSchemaAttributes(
+    offersAttach: Attachment,
+    preview: V1CredentialPreview | V2CredentialPreview
+  ): Promise<void> {
+    // empty implementation
+  }
+
+  abstract deleteCredentialById(
+    credentialRecord: CredentialExchangeRecord,
+    options: DeleteCredentialOptions
+  ): Promise<void>
 
   /**
    *
