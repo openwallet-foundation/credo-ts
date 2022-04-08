@@ -15,6 +15,7 @@ import type {
   CreatePresentationOptions,
   CreateProposalOptions,
   CreateRequestOptions,
+  ProofRequestFromProposalOptions,
 } from './models/ProofServiceOptions'
 import type { AutoSelectCredentialOptions, RequestedCredentialsFormats } from './models/SharedOptions'
 import type { ProofRecord } from './repository/ProofRecord'
@@ -138,20 +139,14 @@ export class ProofsModule {
     // Assert
     connection.assertReady()
 
-    const proofRequest = await service.createProofRequestFromProposal({
-      formats: {
-        indy: {
-          proofRecord,
-        },
-      },
-      config: {
-        indy: {
-          name: 'proof request',
-          version: '1.0',
-          nonce: proofFormats.indy?.nonce ?? (await service.generateProofRequestNonce()),
-        },
-      },
-    })
+    const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
+      name: proofFormats.indy ? proofFormats.indy.name : 'proof-request',
+      version: proofFormats.indy?.version ?? '1.0',
+      nonce: proofFormats.indy?.nonce ?? (await service.generateProofRequestNonce()),
+      proofRecord,
+    }
+
+    const proofRequest = await service.createProofRequestFromProposal(proofRequestFromProposalOptions)
 
     const { message } = await service.createRequestAsResponse({
       proofRecord: proofRecord,

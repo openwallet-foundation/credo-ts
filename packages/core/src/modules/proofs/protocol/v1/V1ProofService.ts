@@ -14,6 +14,7 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
   GetRequestedCredentialforProofRequestoptions,
+  ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
 import type {
   AutoSelectCredentialOptions,
@@ -68,7 +69,7 @@ import {
   V1ProposePresentationMessage,
   V1RequestPresentationMessage,
 } from './messages'
-import { AttributeFilter, ProofPredicateInfo, ProofAttributeInfo } from './models'
+import { ProofAttributeInfo, AttributeFilter, ProofPredicateInfo } from './models'
 import { PresentationPreview } from './models/PresentationPreview'
 
 /**
@@ -618,27 +619,8 @@ export class V1ProofService extends ProofService {
     return this.wallet.generateNonce()
   }
 
-  public async createProofRequestFromProposal(options: {
-    formats: {
-      indy?: {
-        proofRecord: ProofRecord
-      }
-      jsonLd?: never
-    }
-    config?: { indy?: { name: string; version: string; nonce: string }; jsonLd?: never }
-  }): Promise<ProofRequestFormats> {
-    const indyFormat = options.formats.indy
-    const indyConfig = options.config?.indy
-
-    if (!indyFormat) {
-      throw new AriesFrameworkError('Indy format must be provided')
-    }
-
-    if (!indyConfig) {
-      throw new AriesFrameworkError('Indy config must be provided')
-    }
-
-    const proofRecordId = indyFormat?.proofRecord.id
+  public async createProofRequestFromProposal(options: ProofRequestFromProposalOptions): Promise<ProofRequestFormats> {
+    const proofRecordId = options.proofRecord.id
     const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: proofRecordId,
       messageClass: V1ProposePresentationMessage,
@@ -648,12 +630,10 @@ export class V1ProofService extends ProofService {
       throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
     }
 
-    const nonce = indyConfig.nonce ?? (await this.generateProofRequestNonce())
-
     const proofRequest = new ProofRequest({
-      name: indyConfig.name,
-      version: indyConfig.version,
-      nonce: nonce,
+      name: options.name,
+      version: options.version,
+      nonce: options.nonce ?? (await this.generateProofRequestNonce()),
     })
 
     /**

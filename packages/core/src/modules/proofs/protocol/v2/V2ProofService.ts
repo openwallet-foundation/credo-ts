@@ -15,6 +15,7 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
   GetRequestedCredentialforProofRequestoptions,
+  ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
 import type {
   AutoSelectCredentialOptions,
@@ -35,6 +36,7 @@ import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
+import { ProofsUtils } from '../../ProofsUtil'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
@@ -42,7 +44,6 @@ import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
 import { V1PresentationProblemReportError } from '../v1/errors/V1PresentationProblemReportError'
 import { V1PresentationProblemReportReason } from '../v1/errors/V1PresentationProblemReportReason'
-import { PresentationPreview } from '../v1/models/PresentationPreview'
 
 import { V2PresentationProblemReportError, V2PresentationProblemReportReason } from './errors'
 import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
@@ -58,6 +59,34 @@ import { V2RequestPresentationMessage } from './messages/V2RequestPresentationMe
 
 @scoped(Lifecycle.ContainerScoped)
 export class V2ProofService extends ProofService {
+  public async createProofRequestFromProposal(options: ProofRequestFromProposalOptions): Promise<ProofRequestFormats> {
+    const proofRecordId = options.proofRecord.id
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecordId,
+      messageClass: V2ProposalPresentationMessage,
+    })
+
+    if (!proposalMessage) {
+      throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
+    }
+
+    const proofRequest = new ProofRequest({
+      name: options.name,
+      version: options.version,
+      nonce: options.nonce ?? (await this.generateProofRequestNonce()),
+    })
+
+    for (const attachment of proposalMessage.proposalsAttach) {
+      const proofRequestJson = attachment.getDataAsJson<ProofRequest>() ?? null
+      proofRequest.requestedAttributes = proofRequestJson.requestedAttributes
+      proofRequest.requestedPredicates = proofRequestJson.requestedPredicates
+    }
+
+    return {
+      indy: proofRequest,
+    }
+  }
+
   private protocolVersion: ProofProtocolVersion
   private formatServiceMap: { [key: string]: ProofFormatService }
 
@@ -89,8 +118,11 @@ export class V2ProofService extends ProofService {
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
       formats.push(
-        service.createProposal({
-          formats: options.proofFormats,
+        service.createRequest({
+          formats:
+            key === PresentationRecordType.Indy
+              ? await ProofsUtils.createRequestFromPreview(options)
+              : options.proofFormats,
         })
       )
     }
@@ -289,15 +321,12 @@ export class V2ProofService extends ProofService {
     }
 
     // create attachment formats
-    const formats = []
-    for (const key of Object.keys(options.proofFormats)) {
-      const service = this.formatServiceMap[key]
-      formats.push(
-        service.createRequest({
-          formats: options.proofFormats,
-        })
-      )
-    }
+    const formats = [
+      {
+        format: proposal.formats[0],
+        attachment: proposal.proposalsAttach[0],
+      },
+    ]
 
     // create request message
     const requestMessage = new V2RequestPresentationMessage({
@@ -660,56 +689,6 @@ export class V2ProofService extends ProofService {
     return request.willConfirm
   }
 
-  public async createProofRequestFromProposal(options: {
-    formats: {
-      indy?: {
-        proofRecord: ProofRecord
-      }
-      jsonLd?: never
-    }
-    config?: { indy?: { name: string; version: string; nonce?: string }; jsonLd?: never }
-  }): Promise<ProofRequestFormats> {
-    let result = {}
-
-    for (const [format] of Object.entries(options.formats)) {
-      const service = this.formatServiceMap[format]
-
-      const indyFormat = options.formats.indy
-      const indyConfig = options.config?.indy
-
-      if (!indyFormat) {
-        throw new AriesFrameworkError('Indy format must be provided')
-      }
-
-      if (!indyConfig) {
-        throw new AriesFrameworkError('Indy config must be provided')
-      }
-
-      const proofRecordId = indyFormat.proofRecord.id
-      const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
-        associatedRecordId: proofRecordId,
-        messageClass: V2ProposalPresentationMessage,
-      })
-
-      if (!proposalMessage) {
-        throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
-      }
-
-      result = {
-        ...result,
-        ...(await service.createProofRequestFromProposal({
-          formats: {
-            indy: {
-              presentationProposal: proposalMessage?.proposalsAttach[0],
-            },
-          },
-          config: { indy: indyConfig, jsonLd: undefined },
-        })),
-      }
-    }
-    return result
-  }
-
   public async findRequestMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
@@ -743,17 +722,8 @@ export class V2ProofService extends ProofService {
       throw new AriesFrameworkError('No proof request found.')
     }
 
-    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
-      messageClass: V2ProposalPresentationMessage,
-    })
-
-    const proposalJson = proposalMessage?.proposalsAttach[0].getDataAsJson<PresentationPreview>() ?? null
-    const proofPreview = JsonTransformer.fromJSON(proposalJson, PresentationPreview)
-
     const proofRequestJson = requestMessage.requestPresentationsAttach[0].getDataAsJson<ProofRequest>() ?? null
     const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
-
     const requestAttachments = requestMessage.formats
 
     let result = {}
@@ -768,7 +738,7 @@ export class V2ProofService extends ProofService {
         ...result,
         ...(await service.getRequestedCredentialsForProofRequest({
           proofRequest: proofRequest,
-          presentationProposal: proofPreview,
+          presentationProposal: undefined,
           config: options.config,
         })),
       }
