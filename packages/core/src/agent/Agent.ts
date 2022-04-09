@@ -15,6 +15,7 @@ import { container as baseContainer } from 'tsyringe'
 import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
+import { NonSecretModule } from '../modules/non-secret/NonSecretModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidsModule } from '../modules/dids/DidsModule'
@@ -36,6 +37,7 @@ import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 
+
 export class Agent {
   protected agentConfig: AgentConfig
   protected logger: Logger
@@ -51,6 +53,7 @@ export class Agent {
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
   public readonly basicMessages: BasicMessagesModule
+  public readonly nonSecret: NonSecretModule
   public readonly ledger: LedgerModule
   public readonly credentials: CredentialsModule
   public readonly mediationRecipient: RecipientModule
@@ -104,6 +107,7 @@ export class Agent {
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
     this.basicMessages = this.container.resolve(BasicMessagesModule)
+    this.nonSecret = this.container.resolve(NonSecretModule)
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
     this.dids = this.container.resolve(DidsModule)
