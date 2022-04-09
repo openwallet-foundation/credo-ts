@@ -1,8 +1,5 @@
-import { Subject } from 'rxjs'
-import { SubjectInboundTransport, SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
-import { ConnectionRecord } from '../src/modules/connections'
+
 import { getBaseConfig } from './helpers'
 
 const aliceConfig = getBaseConfig('Agents Alice', {
@@ -11,7 +8,6 @@ const aliceConfig = getBaseConfig('Agents Alice', {
 
 describe('nonsecret', () => {
   let aliceAgent: Agent
-  let aliceConnection: ConnectionRecord
 
   afterAll(async () => {
     await aliceAgent.shutdown()
@@ -36,14 +32,12 @@ describe('nonsecret', () => {
   test('get non-secret records', async () => {
     //Create NonSecret message
     const savedRecords = await aliceAgent.nonSecret.getAll()
-    console.log('ALL:', savedRecords)
     expect(savedRecords?.length > 0).toBe(true)
   })
 
   test('get non-secret specific record', async () => {
     //Create NonSecret message
     const savedRecords = await aliceAgent.nonSecret.findAllByQuery({ myTag: 'foobar' })
-    console.log('wohoo:', savedRecords)
     expect(savedRecords?.length == 1).toBe(true)
   })
 })

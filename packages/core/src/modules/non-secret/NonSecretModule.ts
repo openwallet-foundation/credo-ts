@@ -1,8 +1,11 @@
+import type { Logger } from '../../logger'
+import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
+import type { NonSecretRecordTags } from './repository/NonSecretRecord'
+
 import { Lifecycle, scoped } from 'tsyringe'
+
 import { AgentConfig } from '../../agent/AgentConfig'
-import { Logger } from '../../logger'
-import { ConnectionRecord } from '../connections/repository/ConnectionRecord'
-import { NonSecretRecordTags } from './repository/NonSecretRecord'
+
 import { NonSecretRecordService } from './service/NonSecretRecordService'
 
 @scoped(Lifecycle.ContainerScoped)
