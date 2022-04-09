@@ -9,7 +9,7 @@ import { NonSecretRecordService } from './service/NonSecretRecordService'
 export class NonSecretModule {
   private nonSecretService: NonSecretRecordService
   private logger: Logger
-  public constructor(agentConfig: AgentConfig,nonSecretService: NonSecretRecordService) {
+  public constructor(agentConfig: AgentConfig, nonSecretService: NonSecretRecordService) {
     this.nonSecretService = nonSecretService
     this.logger = agentConfig.logger
   }
@@ -18,15 +18,14 @@ export class NonSecretModule {
     try {
       const record = await this.nonSecretService.saveRecord(message, tags, connectionRecord)
       return record
-    }catch (error){
-        this.logger.error('Error while saving non-secret', {
-            error,
-            encryptedMessage: message,
-            errorMessage: error instanceof Error ? error.message : error,
-          })
-          throw error
+    } catch (error) {
+      this.logger.error('Error while saving non-secret', {
+        error,
+        encryptedMessage: message,
+        errorMessage: error instanceof Error ? error.message : error,
+      })
+      throw error
     }
-    
   }
 
   public async findAllByQuery(query: Partial<NonSecretRecordTags>) {

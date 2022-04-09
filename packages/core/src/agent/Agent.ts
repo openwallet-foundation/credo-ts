@@ -37,7 +37,6 @@ import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 
-
 export class Agent {
   protected agentConfig: AgentConfig
   protected logger: Logger
