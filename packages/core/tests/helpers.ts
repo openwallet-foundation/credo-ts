@@ -92,9 +92,9 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
       storageConfig: { url: 'localhost:5432', wallet_scheme: WalletScheme.DatabasePerWallet },
       storageCreds: {
         account: 'postgres',
+        password: 'mysecretpassword',
         admin_account: 'postgres',
         admin_password: 'postgres',
-        password: 'postgres',
       },
       storageType: WalletStorageType.Postgres,
     },
