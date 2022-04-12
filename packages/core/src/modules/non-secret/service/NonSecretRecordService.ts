@@ -26,7 +26,7 @@ export class NonSecretRecordService {
       await this.nonSecretRepository.save(nonsecretRecord)
       return nonsecretRecord
     } catch (error) {
-      throw new AriesFrameworkError(`${error}`)
+      throw new AriesFrameworkError(`Unable to store the nonSecret record with id ${nonSecretRecord.id}. Message: ${error}`)
     }
   }
 
