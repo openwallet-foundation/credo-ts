@@ -15,7 +15,7 @@ export class NonSecretRecordService {
     this.nonSecretRepository = nonSecretRepository
   }
 
-  public async saveRecord(message: string, tags?: NonSecretRecordTags, connectionRecord?: ConnectionRecord) {
+public async saveRecord({message, tags, connectionRecord}: SaveNonSecretRecordOption) {
     const nonsecretRecord = new NonSecretRecord({
       content: message,
       connectionId: connectionRecord?.id,
