@@ -4,6 +4,7 @@ import type { MediatorService } from '../services'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../agent/helpers'
 import { StatusMessage } from '../messages/StatusMessage'
+import { ReturnRouteTypes } from 'packages/core/src/decorators/transport/TransportDecorator'
 
 export class StatusHandler implements Handler {
   public supportedMessages = [StatusMessage]
@@ -15,7 +16,10 @@ export class StatusHandler implements Handler {
 
   public async handle(messageContext: InboundMessageContext<StatusMessage>) {
     const deliveryRequestMessage = this.mediatorService.processStatus(messageContext.message)
+    deliveryRequestMessage?.setReturnRouting(ReturnRouteTypes.all)
     const connection = messageContext.connection
+
+    // TODO - have mediator service or module send the message instead of a return a message here, use messagesender.sendMessage and follow how we're setting default service to WS in recipientModule for trustping
 
     const websocketSchemes = ['ws', 'wss']
     const websocketServices = connection?.theirDidDoc?.didCommServices.filter((s) =>
