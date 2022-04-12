@@ -2,6 +2,7 @@ import type { ConnectionRecord } from '../modules/connections'
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 
+import { IndyAgentService } from '../modules/dids'
 import { DidCommService } from '../modules/dids/domain/service/DidCommService'
 
 export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
@@ -25,5 +26,8 @@ export function createOutboundServiceMessage<T extends AgentMessage = AgentMessa
 export function isOutboundServiceMessage(
   message: OutboundMessage | OutboundServiceMessage
 ): message is OutboundServiceMessage {
-  return (message as OutboundServiceMessage).service instanceof DidCommService
+  return (
+    (message as OutboundServiceMessage).service instanceof DidCommService ||
+    (message as OutboundServiceMessage).service instanceof IndyAgentService
+  )
 }
