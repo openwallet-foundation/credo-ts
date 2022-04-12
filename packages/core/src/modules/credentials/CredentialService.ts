@@ -9,7 +9,11 @@ import type { DidCommMessageRepository } from '../../storage'
 import type { MediationRecipientService } from '../routing'
 import type { CredentialStateChangedEvent } from './CredentialEvents'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import type { CredentialProtocolMsgReturnType, DeleteCredentialOptions } from './CredentialServiceOptions'
+import type {
+  CredentialProtocolMsgReturnType,
+  DeleteCredentialOptions,
+  ServiceRequestCredentialOptions,
+} from './CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
@@ -20,10 +24,7 @@ import type {
   ProposeCredentialOptions,
 } from './CredentialsModuleOptions'
 import type { CredentialFormatService } from './formats/CredentialFormatService'
-import type {
-  CredentialFormats,
-  FormatServiceRequestCredentialOptions,
-} from './formats/models/CredentialFormatServiceOptions'
+import type { CredentialFormats } from './formats/models/CredentialFormatServiceOptions'
 import type {
   V1CredentialProblemReportMessage,
   V1IssueCredentialMessage,
@@ -94,7 +95,7 @@ export abstract class CredentialService {
   // methods for request
   abstract createRequest(
     credentialRecord: CredentialExchangeRecord,
-    options: FormatServiceRequestCredentialOptions,
+    options: ServiceRequestCredentialOptions,
     holderDid: string
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 

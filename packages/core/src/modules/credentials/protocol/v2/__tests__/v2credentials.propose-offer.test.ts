@@ -91,7 +91,6 @@ describe('credentials', () => {
     })
 
     const options: AcceptProposalOptions = {
-      connectionId: faberConnection.id,
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V1 Indy Proposal',
       credentialFormats: {
@@ -250,7 +249,6 @@ describe('credentials', () => {
     })
 
     const options: AcceptProposalOptions = {
-      connectionId: faberConnection.id,
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Offer',
       credentialFormats: {
