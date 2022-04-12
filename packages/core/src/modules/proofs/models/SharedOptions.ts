@@ -3,17 +3,17 @@ import type {
   IndyRequestProofFormat,
   IndyVerifyProofFormat,
 } from '../formats/IndyProofFormatsServiceOptions'
+import type { PresentationExchangeProposalFormat } from '../formats/PresentationExchangeFormatsServiceOptions'
 import type { ProofRequest } from '../formats/indy/models/ProofRequest'
 import type { RequestedCredentials, RequestedCredentialsOptions } from '../formats/indy/models/RequestedCredentials'
 import type { RetrievedCredentials } from '../formats/indy/models/RetrievedCredentials'
-import type { InputDescriptorsSchema } from '../formats/presentation-exchange/models/InputDescriptors'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 
 export interface ProposeProofFormats {
   // If you want to propose an indy proof without attributes or
   // any of the other properties you should pass an empty object
   indy?: IndyProposeProofFormat
-  presentationExchange?: InputDescriptorsSchema // TBD
+  presentationExchange?: PresentationExchangeProposalFormat // TBD
 }
 
 export interface RequestProofFormats {

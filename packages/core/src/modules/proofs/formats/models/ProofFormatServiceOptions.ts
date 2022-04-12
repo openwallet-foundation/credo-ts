@@ -3,7 +3,7 @@ import type { CreatePresentationFormats, ProposeProofFormats } from '../../model
 import type { PresentationPreview } from '../../protocol/v1/models/PresentationPreview'
 import type { ProofRecord } from '../../repository'
 import type { ProofRequestOptions } from '../indy/models/ProofRequest'
-import type { InputDescriptorsSchema } from '../presentation-exchange/models'
+import type { InputDescriptorsSchemaOptions } from '../presentation-exchange/models'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
 
 export interface CreateRequestAttachmentOptions {
@@ -18,7 +18,7 @@ export interface CreateProofAttachmentOptions {
 
 export interface CreatePresentationExchangeProposalAttachmentOptions {
   attachId?: string
-  proofProposalOptions: InputDescriptorsSchema
+  proofProposalOptions: InputDescriptorsSchemaOptions[]
 }
 
 export interface CreateProposalOptions {

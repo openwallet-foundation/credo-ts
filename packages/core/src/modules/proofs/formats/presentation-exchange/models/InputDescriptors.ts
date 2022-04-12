@@ -1,6 +1,8 @@
 import { Expose } from 'class-transformer'
 import { IsArray, IsOptional, IsString } from 'class-validator'
 
+import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+
 export interface FieldOptions {
   path: string[]
   filter: {
@@ -65,4 +67,8 @@ export class InputDescriptorsSchema {
 
   @Expose({ name: 'input_descriptors' })
   public inputDescriptors: InputDescriptors[]
+
+  public toJSON(): Record<string, unknown> {
+    return JsonTransformer.toJSON(this)
+  }
 }

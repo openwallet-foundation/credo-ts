@@ -6,19 +6,19 @@ import type {
 import type { IndyGetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
-  CreatePresentationExchangeProposalAttachmentOptions,
   CreatePresentationOptions,
   CreateProposalOptions,
   CreateRequestOptions,
   ProcessPresentationOptions,
+  ProcessProposalOptions,
 } from '../models/ProofFormatServiceOptions'
+import type { InputDescriptorsSchemaOptions } from './models'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
-import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import { ProofFormatService } from '../ProofFormatService'
@@ -48,26 +48,15 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     this.ledgerService = ledgerService
   }
 
-  private createProofAttachment(options: CreatePresentationExchangeProposalAttachmentOptions): ProofAttachmentFormat {
-    const format = new ProofFormatSpec({
-      attachmentId: options.attachId,
-      format: 'dif/presentation-exchange/definition@v1.0',
-    })
-
-    const proposalInputDescriptor = new InputDescriptorsSchema(options.proofProposalOptions)
-
-    const attachment = new Attachment({
-      id: options.attachId,
-      mimeType: 'application/json',
-      data: new AttachmentData({
-        json: { inputDescriptors: proposalInputDescriptor },
-      }),
-    })
-
-    return { format, attachment }
+  public createProposal(options: CreateProposalOptions): ProofAttachmentFormat {
+    throw new Error('Method not implemented.')
   }
 
-  public createProposal(options: CreateProposalOptions): ProofAttachmentFormat {
+  public processProposal(options: ProcessProposalOptions): void {
+    throw new Error('Method not implemented.')
+  }
+
+  public createRequest(options: CreateRequestOptions): ProofAttachmentFormat {
     if (!options.formats.presentationExchange) {
       throw Error('Presentation Exchange format missing')
     }
@@ -76,14 +65,26 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       throw Error('Input Descriptor missing')
     }
 
-    return this.createProofAttachment({
-      attachId: options.attachId ?? uuid(),
-      proofProposalOptions: options.formats.presentationExchange,
-    })
-  }
+    const inputDescriptorsSchemaOptions: InputDescriptorsSchemaOptions = {
+      inputDescriptors: options.formats.presentationExchange.inputDescriptors,
+    }
 
-  public createRequest(options: CreateRequestOptions): ProofAttachmentFormat {
-    throw new Error('Method not implemented.')
+    const proposalInputDescriptor = new InputDescriptorsSchema(inputDescriptorsSchemaOptions)
+
+    const format = new ProofFormatSpec({
+      attachmentId: options.attachId,
+      format: 'dif/presentation-exchange/definition@v1.0',
+    })
+
+    const attachment = new Attachment({
+      id: options.attachId,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        json: proposalInputDescriptor.toJSON(),
+      }),
+    })
+
+    return { format, attachment }
   }
 
   public createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat> {
@@ -97,8 +98,8 @@ export class PresentationExchangeFormatService extends ProofFormatService {
   public createProofRequestFromProposal(options: {
     formats: { indy?: { presentationProposal: Attachment } | undefined; jsonLd?: undefined }
     config?:
-    | { indy?: { name: string; version: string; nonce?: string | undefined } | undefined; jsonLd?: undefined }
-    | undefined
+      | { indy?: { name: string; version: string; nonce?: string | undefined } | undefined; jsonLd?: undefined }
+      | undefined
   }): Promise<ProofRequestFormats> {
     throw new Error('Method not implemented.')
   }

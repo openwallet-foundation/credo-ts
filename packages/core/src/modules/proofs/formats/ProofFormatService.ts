@@ -13,6 +13,7 @@ import type {
   CreateProposalOptions,
   CreateRequestOptions,
   ProcessPresentationOptions,
+  ProcessProposalOptions,
 } from './models/ProofFormatServiceOptions'
 
 /**
@@ -33,6 +34,8 @@ export abstract class ProofFormatService {
   }
 
   abstract createProposal(options: CreateProposalOptions): ProofAttachmentFormat
+
+  abstract processProposal(options: ProcessProposalOptions): void
 
   abstract createRequest(options: CreateRequestOptions): ProofAttachmentFormat
 

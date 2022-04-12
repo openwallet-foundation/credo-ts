@@ -14,6 +14,7 @@ import type {
   CreateRequestAttachmentOptions,
   CreateRequestOptions,
   ProcessPresentationOptions,
+  ProcessProposalOptions,
   VerifyProofOptions,
 } from '../models/ProofFormatServiceOptions'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
@@ -51,6 +52,10 @@ import { RetrievedCredentials } from './models/RetrievedCredentials'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyProofFormatService extends ProofFormatService {
+  public processProposal(options: ProcessProposalOptions): void {
+    throw new Error('Method not implemented.')
+  }
+
   private indyHolderService: IndyHolderService
   private indyVerifierService: IndyVerifierService
   private indyRevocationService: IndyRevocationService
