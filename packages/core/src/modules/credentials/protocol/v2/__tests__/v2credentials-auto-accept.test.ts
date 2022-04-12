@@ -209,7 +209,6 @@ describe('credentials', () => {
 
       testLogger.test('Faber sends credential offer to Alice')
       const options: AcceptProposalOptions = {
-        connectionId: faberConnection.id,
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Offer',
         credentialFormats: {
@@ -219,7 +218,7 @@ describe('credentials', () => {
           },
         },
       }
-      const faberCredentialExchangeRecord = await faberAgent.credentials.acceptCredentialProposal(options)
+      const faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal(options)
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -305,8 +304,9 @@ describe('credentials', () => {
           // protocolVersion: CredentialProtocolVersion.V2,
         }
         testLogger.test('Alice sends credential request to faber')
-        const faberCredentialExchangeRecord: CredentialExchangeRecord =
-          await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
+        const faberCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
+          acceptOfferOptions
+        )
 
         testLogger.test('Alice waits for credential from Faber')
         aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -383,7 +383,7 @@ describe('credentials', () => {
           },
         },
       }
-      await faberAgent.credentials.negotiateCredentialProposal(negotiateOptions)
+      await faberAgent.credentials.negotiateProposal(negotiateOptions)
 
       testLogger.test('Alice waits for credential offer from Faber')
 
@@ -457,7 +457,7 @@ describe('credentials', () => {
       }
       await sleep(5000)
 
-      const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateCredentialOffer(proposeOptions)
+      const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateOffer(proposeOptions)
 
       testLogger.test('Faber waits for credential proposal from Alice')
       const faberCredentialRecord = await waitForCredentialRecord(faberAgent, {

@@ -32,14 +32,6 @@ export class CredPropose {
   }
 
   /**
-   * Human readable information about this Credential Proposal,
-   * so the proposal can be evaluated by human judgment.
-   */
-  @IsOptional()
-  @IsString()
-  public comment?: string
-
-  /**
    * Filter to request credential based on a particular Schema issuer DID.
    */
   @Expose({ name: 'schema_issuer_did' })

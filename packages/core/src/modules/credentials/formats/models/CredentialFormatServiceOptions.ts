@@ -2,12 +2,10 @@ import type { LinkedAttachment } from '../../../../../src/utils/LinkedAttachment
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ParseRevocationRegistryDefitinionTemplate } from '../../../ledger/services'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
-import type { ServiceRequestCredentialOptions } from '../../CredentialServiceOptions'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { CredPropose } from './CredPropose'
-import type { CredDef } from 'indy-sdk'
 
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
@@ -69,12 +67,6 @@ export interface FormatServiceOfferAttachmentFormats extends FormatServiceCreden
 }
 export const FORMAT_KEYS: FormatKeys = {
   indy: CredentialFormatType.Indy,
-}
-
-export interface FormatServiceRequestCredentialOptions extends ServiceRequestCredentialOptions {
-  credentialDefinition?: {
-    credDef: CredDef
-  }
 }
 
 export interface FormatServiceOfferCredentialFormats {

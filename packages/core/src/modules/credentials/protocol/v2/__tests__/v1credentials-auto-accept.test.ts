@@ -205,7 +205,6 @@ describe('credentials', () => {
       })
 
       const options: AcceptProposalOptions = {
-        connectionId: faberConnection.id,
         credentialRecordId: faberCredentialExchangeRecord.id,
         comment: 'V1 Indy Offer',
         credentialFormats: {
@@ -217,7 +216,7 @@ describe('credentials', () => {
       }
       testLogger.test('Faber sends credential offer to Alice')
       options.credentialRecordId = faberCredentialExchangeRecord.id
-      faberCredentialExchangeRecord = await faberAgent.credentials.acceptCredentialProposal(options)
+      faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal(options)
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialExchangeRecord = await waitForCredentialRecord(aliceAgent, {
@@ -332,7 +331,7 @@ describe('credentials', () => {
           credentialRecordId: aliceCredentialExchangeRecord.id,
         }
         testLogger.test('alice sends credential request to faber')
-        faberCredentialExchangeRecord = await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
+        faberCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
         testLogger.test('Alice waits for credential from Faber')
         aliceCredentialExchangeRecord = await waitForCredentialRecord(aliceAgent, {
@@ -411,7 +410,7 @@ describe('credentials', () => {
           },
         },
       }
-      await faberAgent.credentials.negotiateCredentialProposal(negotiateOptions)
+      await faberAgent.credentials.negotiateProposal(negotiateOptions)
 
       testLogger.test('Alice waits for credential offer from Faber')
 
@@ -484,7 +483,7 @@ describe('credentials', () => {
         },
         comment: 'v1 propose credential test',
       }
-      const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateCredentialOffer(negotiateOfferOptions)
+      const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateOffer(negotiateOfferOptions)
 
       testLogger.test('Faber waits for credential proposal from Alice')
       faberCredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {

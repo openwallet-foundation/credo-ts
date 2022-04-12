@@ -4,7 +4,6 @@ import type { StoreCredentialOptions } from '../../indy/services/IndyHolderServi
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ServiceAcceptRequestOptions } from '../CredentialServiceOptions'
 import type { RequestCredentialOptions } from '../CredentialsModuleOptions'
-import type { FormatServiceRequestCredentialOptions } from '../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
@@ -281,12 +280,9 @@ describe('CredentialService', () => {
     test('returns credential request message base on existing credential offer message', async () => {
       // given
       const comment = 'credential request comment'
-      const options: FormatServiceRequestCredentialOptions = {
+      const options: RequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
         comment: 'credential request comment',
-        credentialDefinition: {
-          credDef: credDef,
-        },
       }
 
       // when

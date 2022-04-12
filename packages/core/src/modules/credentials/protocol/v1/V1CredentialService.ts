@@ -23,11 +23,7 @@ import type {
   ProposeCredentialOptions,
 } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
-import type {
-  CredentialFormats,
-  FormatServiceRequestCredentialOptions,
-  HandlerAutoAcceptOptions,
-} from '../../formats/models/CredentialFormatServiceOptions'
+import type { CredentialFormats, HandlerAutoAcceptOptions } from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredOffer } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -209,7 +205,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: FormatServiceRequestCredentialOptions,
+    options: ServiceRequestCredentialOptions,
     holderDid: string
   ): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
@@ -915,11 +911,6 @@ export class V1CredentialService extends CredentialService {
     proposal: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
-    if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
-        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
-      )
-    }
     const proposalCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V1ProposeCredentialMessage,

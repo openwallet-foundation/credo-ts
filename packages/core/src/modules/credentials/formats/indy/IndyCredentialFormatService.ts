@@ -13,6 +13,7 @@ import type {
   ServiceAcceptOfferOptions,
   ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
+  ServiceRequestCredentialOptions,
 } from '../../protocol'
 import type { V1CredentialPreview } from '../../protocol/v1/V1CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
@@ -23,7 +24,6 @@ import type {
   HandlerAutoAcceptOptions,
   FormatServiceOfferAttachmentFormats,
   FormatServiceProposeAttachmentFormats,
-  FormatServiceRequestCredentialOptions,
   RevocationRegistry,
 } from '../models/CredentialFormatServiceOptions'
 import type { Cred, CredDef, CredOffer, CredReq, CredReqMetadata } from 'indy-sdk'
@@ -164,7 +164,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    *
    */
   public async createRequest(
-    options: FormatServiceRequestCredentialOptions,
+    options: ServiceRequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord,
     holderDid: string
   ): Promise<FormatServiceCredentialAttachmentFormats> {
@@ -174,11 +174,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       )
     }
     const offer = options.offerAttachment.getDataAsJson<CredOffer>()
+    const credDef = await this.getCredentialDefinition(offer)
 
-    options.credentialDefinition = {
-      credDef: await this.getCredentialDefinition(offer),
-    }
-    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer, holderDid)
+    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer, credDef, holderDid)
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
 
     const formats: CredentialFormatSpec = {
@@ -272,17 +270,18 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns The created credential offer
    */
   private async createIndyCredentialRequest(
-    options: FormatServiceRequestCredentialOptions,
+    options: ServiceRequestCredentialOptions,
     offer: CredOffer,
+    credDef: CredDef,
     holderDid: string
   ): Promise<{ credReq: CredReq; credReqMetadata: CredReqMetadata }> {
-    if (!options.credentialDefinition || !options.credentialDefinition.credDef) {
-      throw new AriesFrameworkError('Unable to create Credential Request')
-    }
+    // if (!options.credentialDefinition || !options.credentialDefinition.credDef) {
+    //   throw new AriesFrameworkError('Unable to create Credential Request')
+    // }
     const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
       holderDid: holderDid,
       credentialOffer: offer,
-      credentialDefinition: options.credentialDefinition.credDef,
+      credentialDefinition: credDef,
     })
     return { credReq, credReqMetadata }
   }

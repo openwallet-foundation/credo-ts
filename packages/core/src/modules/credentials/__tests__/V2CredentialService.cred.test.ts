@@ -1,10 +1,9 @@
 import type { AgentConfig } from '../../../../src/agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { AcceptRequestOptions } from '../CredentialsModuleOptions'
+import type { AcceptRequestOptions, RequestCredentialOptions } from '../CredentialsModuleOptions'
 import type {
   CredentialFormatSpec,
-  FormatServiceRequestCredentialOptions,
   FormatServiceRequestCredentialFormats,
 } from '../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
@@ -285,7 +284,7 @@ describe('CredentialService', () => {
         associatedRecordId: credentialRecord.id,
       })
 
-      const requestOptions: FormatServiceRequestCredentialOptions = {
+      const requestOptions: RequestCredentialOptions = {
         credentialFormats: v2CredentialRequest,
       }
 
@@ -305,12 +304,9 @@ describe('CredentialService', () => {
     test('returns credential request message base on existing credential offer message', async () => {
       // given
       const comment = 'credential request comment'
-      const options: FormatServiceRequestCredentialOptions = {
+      const options: RequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
         comment: 'credential request comment',
-        credentialDefinition: {
-          credDef: credDef,
-        },
       }
       // when
       const { message: credentialRequest } = await credentialService.createRequest(

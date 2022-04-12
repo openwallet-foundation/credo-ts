@@ -450,12 +450,6 @@ export class V2CredentialService extends CredentialService {
     proposal: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
-    if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
-        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
-      )
-    }
-
     const message = await this.createOfferAsResponse(credentialRecord, proposal)
 
     return { credentialRecord, message }

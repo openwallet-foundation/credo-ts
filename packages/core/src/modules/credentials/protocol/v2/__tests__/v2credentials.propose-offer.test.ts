@@ -103,7 +103,7 @@ describe('credentials', () => {
     }
 
     testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.credentials.acceptCredentialProposal(options)
+    await faberAgent.credentials.acceptProposal(options)
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -162,8 +162,9 @@ describe('credentials', () => {
       const acceptOfferOptions: AcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
       }
-      const offerCredentialExchangeRecord: CredentialExchangeRecord =
-        await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
+      const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
+        acceptOfferOptions
+      )
 
       expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
       expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V1)
@@ -260,7 +261,7 @@ describe('credentials', () => {
       },
     }
     testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.credentials.acceptCredentialProposal(options)
+    await faberAgent.credentials.acceptProposal(options)
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -320,8 +321,9 @@ describe('credentials', () => {
           indy: undefined,
         },
       }
-      const offerCredentialExchangeRecord: CredentialExchangeRecord =
-        await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
+      const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
+        acceptOfferOptions
+      )
 
       expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
       expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
@@ -405,7 +407,7 @@ describe('credentials', () => {
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
     testLogger.test('Alice declines offer')
     if (aliceCredentialRecord.id) {
-      await aliceAgent.credentials.declineCredentialOffer(aliceCredentialRecord.id)
+      await aliceAgent.credentials.declineOffer(aliceCredentialRecord.id)
     } else {
       throw new AriesFrameworkError('Missing credential record id')
     }
