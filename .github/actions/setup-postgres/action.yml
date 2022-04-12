@@ -1,0 +1,12 @@
+name: Setup Postgres
+description: Setup Postgres
+author: 'timo@animo.id'
+
+runs:
+  using: composite
+  steps:
+    - name: Start Postgres
+      run: |
+        docker pull postgres
+        docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres
+      shell: bash

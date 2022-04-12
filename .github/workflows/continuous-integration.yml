@@ -58,6 +58,9 @@ jobs:
         with:
           node-version: 16
 
+      - name: Setup Postgres
+        uses: ./.github/actions/setup-postgres
+
       - name: Install dependencies
         run: yarn install
 
@@ -94,6 +97,9 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           node-version: ${{ matrix.node-version }}
+
+      - name: Setup Postgres
+        uses: ./.github/actions/setup-postgres
 
       - name: Install dependencies
         run: yarn install
