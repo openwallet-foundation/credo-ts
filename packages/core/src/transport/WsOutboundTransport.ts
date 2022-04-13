@@ -109,7 +109,7 @@ export class WsOutboundTransport implements OutboundTransport {
       )
     }
     this.logger.debug('Payload received from mediator:', payload)
-    this.agent.receiveMessage(payload)
+    void this.agent.receiveMessage(payload)
   }
 
   private listenOnWebSocketMessages(socket: WebSocket) {
