@@ -181,21 +181,19 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
-    // const requestFormat = options.presentation.request.find((x) => x.format.attachmentId === 'hlindy/proof-req@v2.0')
     const requestFormat = options.presentation.request.find((x) => x.format.format === 'hlindy/proof-req@v2.0')
-
-    const proofFormat = options.presentation.proof.find((x) => x.format.format === 'hlindy/proof@v2.0')
-    // const proofFormat = options.presentation.proof.find((x) => x.format.attachmentId === 'hlindy/proof@v2.0')
-
-    if (!proofFormat) {
-      throw new MissingIndyProofMessageError(
-        'Missing Indy Proof Presentation format while trying to process an Indy proof presentation.'
-      )
-    }
 
     if (!requestFormat) {
       throw new MissingIndyProofMessageError(
         'Missing Indy Proof Request format while trying to process an Indy proof presentation.'
+      )
+    }
+
+    const proofFormat = options.presentation.proof.find((x) => x.format.format === 'hlindy/proof@v2.0')
+
+    if (!proofFormat) {
+      throw new MissingIndyProofMessageError(
+        'Missing Indy Proof Presentation format while trying to process an Indy proof presentation.'
       )
     }
 

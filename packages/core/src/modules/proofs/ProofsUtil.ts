@@ -80,7 +80,6 @@ export class ProofsUtils {
       proofRequest.requestedAttributes.set(referent, requestedAttribute)
     }
 
-    // this.logger.debug('proposal predicates', indyFormat.presentationProposal.predicates)
     // Transform proposed predicates to requested predicates
     for (const proposedPredicate of preview.predicates) {
       const requestedPredicate = new ProofPredicateInfo({

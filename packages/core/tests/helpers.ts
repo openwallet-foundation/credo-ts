@@ -13,7 +13,7 @@ import type {
   ProofPredicateInfo,
   ProofAttributeInfo,
 } from '../src'
-import type { AcceptPresentationOptions, RequestProofsOptions } from '../src/modules/proofs/models/ModuleOptions'
+import type { AcceptPresentationOptions, RequestProofOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { Schema, CredDef } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -462,7 +462,7 @@ export async function presentProof({
   verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
   holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
 
-  const requestProofsOptions: RequestProofsOptions = {
+  const requestProofsOptions: RequestProofOptions = {
     protocolVersion: ProofProtocolVersion.V1_0,
     connectionId: verifierConnectionId,
     proofRequestOptions: {

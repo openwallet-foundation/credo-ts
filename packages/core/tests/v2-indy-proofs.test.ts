@@ -3,7 +3,7 @@ import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
   ProposeProofOptions,
-  RequestProofsOptions,
+  RequestProofOptions,
 } from '../src/modules/proofs/models/ModuleOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
@@ -287,7 +287,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions: RequestProofsOptions = {
+    const requestProofsOptions: RequestProofOptions = {
       protocolVersion: ProofProtocolVersion.V2_0,
       connectionId: faberConnection.id,
       proofRequestOptions: {

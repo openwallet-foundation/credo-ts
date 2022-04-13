@@ -7,7 +7,7 @@ import type {
   AcceptProposalOptions,
   OutOfBandRequestOptions,
   ProposeProofOptions,
-  RequestProofsOptions,
+  RequestProofOptions,
 } from './models/ModuleOptions'
 import type { AutoAcceptProof } from './models/ProofAutoAcceptType'
 import type {
@@ -173,10 +173,7 @@ export class ProofsModule {
    * @returns Proof record associated with the sent request message
    *
    */
-  // connectionId: string,
-  // proofRequestOptions: CreateProofRequestOptions,
-  // config?: ProofRequestConfig
-  public async requestProof(options: RequestProofsOptions): Promise<ProofRecord> {
+  public async requestProof(options: RequestProofOptions): Promise<ProofRecord> {
     const version: ProofProtocolVersion = options.protocolVersion
     const service = this.getService(version)
 
@@ -405,7 +402,7 @@ export class ProofsModule {
    *  credentials that match the presentation preview from the presentation proposal (if available).
 
    * @returns RetrievedCredentials object
-  //  */
+  */
   public async getRequestedCredentialsForProofRequest(
     proofRecordId: string,
     version: ProofProtocolVersion,

@@ -680,7 +680,6 @@ export class V1ProofService extends ProofService {
       proofRequest.requestedAttributes.set(referent, requestedAttribute)
     }
 
-    // this.logger.debug('proposal predicates', indyFormat.presentationProposal.predicates)
     // Transform proposed predicates to requested predicates
     for (const proposedPredicate of proposalMessage.presentationProposal.predicates) {
       const requestedPredicate = new ProofPredicateInfo({

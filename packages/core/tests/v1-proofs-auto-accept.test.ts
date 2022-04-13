@@ -2,7 +2,7 @@ import type { Agent, ConnectionRecord } from '../src'
 import type {
   AcceptProposalOptions,
   ProposeProofOptions,
-  RequestProofsOptions,
+  RequestProofOptions,
 } from '../src/modules/proofs/models/ModuleOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 
@@ -100,7 +100,7 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions: RequestProofsOptions = {
+      const requestProofsOptions: RequestProofOptions = {
         protocolVersion: ProofProtocolVersion.V1_0,
         connectionId: faberConnection.id,
         proofRequestOptions: {
@@ -227,7 +227,7 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions: RequestProofsOptions = {
+      const requestProofsOptions: RequestProofOptions = {
         protocolVersion: ProofProtocolVersion.V1_0,
         connectionId: faberConnection.id,
         proofRequestOptions: {
