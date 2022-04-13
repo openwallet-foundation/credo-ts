@@ -119,15 +119,10 @@ export class V1ProofService extends ProofService {
     // Assert
     connectionRecord.assertReady()
 
-    const presentationProposal = proofFormats.indy?.proofPreview
-      ? new PresentationPreview({
-          attributes: proofFormats.indy?.proofPreview.attributes,
-          predicates: proofFormats.indy?.proofPreview.predicates,
-        })
-      : new PresentationPreview({
-          attributes: [],
-          predicates: [],
-        })
+    const presentationProposal = new PresentationPreview({
+      attributes: proofFormats.indy?.attributes,
+      predicates: proofFormats.indy?.predicates,
+    })
 
     // Create message
     const proposalMessage = new V1ProposePresentationMessage({
@@ -168,11 +163,15 @@ export class V1ProofService extends ProofService {
     proofRecord.assertState(ProofState.RequestReceived)
 
     // Create message
+    const presentationPreview = new PresentationPreview({
+      attributes: proofFormats.indy?.attributes,
+      predicates: proofFormats.indy?.predicates,
+    })
     let proposalMessage: V1ProposePresentationMessage
-    if (proofFormats.indy?.proofPreview) {
+    if (presentationPreview) {
       proposalMessage = new V1ProposePresentationMessage({
         comment,
-        presentationProposal: proofFormats.indy?.proofPreview,
+        presentationProposal: presentationPreview,
       })
     } else {
       throw new AriesFrameworkError('Missing presentation preview.')

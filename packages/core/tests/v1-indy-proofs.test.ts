@@ -59,10 +59,11 @@ describe('Present Proof', () => {
       protocolVersion: ProofProtocolVersion.V1_0,
       proofFormats: {
         indy: {
-          nonce: '947121108704767252195126',
-          proofPreview: presentationPreview,
           name: 'abc',
           version: '1.0',
+          nonce: '947121108704767252195126',
+          attributes: presentationPreview.attributes,
+          predicates: presentationPreview.predicates,
         },
       },
     }

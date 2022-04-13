@@ -52,9 +52,10 @@ describe('Auto accept present proof', () => {
         proofFormats: {
           indy: {
             nonce: '1298236324864',
-            proofPreview: presentationPreview,
             name: 'abc',
             version: '1.0',
+            attributes: presentationPreview.attributes,
+            predicates: presentationPreview.predicates,
           },
         },
       }
@@ -154,7 +155,8 @@ describe('Auto accept present proof', () => {
         proofFormats: {
           indy: {
             nonce: '1298236324864',
-            proofPreview: presentationPreview,
+            attributes: presentationPreview.attributes,
+            predicates: presentationPreview.predicates,
             name: 'abc',
             version: '1.0',
           },

@@ -7,27 +7,31 @@ import { uuid } from '../../utils/uuid'
 
 import { ProofRequest } from './formats/indy/models/ProofRequest'
 import { AttributeFilter } from './protocol/v1/models/AttributeFilter'
+import { PresentationPreview } from './protocol/v1/models/PresentationPreview'
 import { ProofAttributeInfo } from './protocol/v1/models/ProofAttributeInfo'
 import { ProofPredicateInfo } from './protocol/v1/models/ProofPredicateInfo'
 
 export class ProofsUtils {
   public static async createRequestFromPreview(options: CreateProposalOptions): Promise<ProofRequestFormats> {
-    const indyConfig = options.proofFormats?.indy
+    const indyFormat = options.proofFormats?.indy
 
-    if (!indyConfig) {
+    if (!indyFormat) {
       throw new AriesFrameworkError('No Indy format found.')
     }
 
-    const preview = options.proofFormats.indy?.proofPreview
+    const preview = new PresentationPreview({
+      attributes: indyFormat.attributes,
+      predicates: indyFormat.predicates,
+    })
 
     if (!preview) {
       throw new AriesFrameworkError(`No preview found`)
     }
 
     const proofRequest = new ProofRequest({
-      name: indyConfig.name,
-      version: indyConfig.version,
-      nonce: indyConfig.nonce,
+      name: indyFormat.name,
+      version: indyFormat.version,
+      nonce: indyFormat.nonce,
     })
 
     /**

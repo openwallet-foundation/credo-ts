@@ -17,7 +17,6 @@ export interface IndyProposeProofFormat {
   nonce: string
   name: string
   version: string
-  proofPreview?: PresentationPreview
 }
 
 export interface IndyRequestProofFormat {

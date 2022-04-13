@@ -4,7 +4,7 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { PresentationPreview, PresentationPreviewAttribute } from '../../protocol/v1/models/PresentationPreview'
+import type { PresentationPreviewAttribute } from '../../protocol/v1/models/PresentationPreview'
 import type { IndyGetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
@@ -40,6 +40,7 @@ import {
   AttributeFilter,
   ProofPredicateInfo,
 } from '../../protocol/v1/models'
+import { PresentationPreview } from '../../protocol/v1/models/PresentationPreview'
 import { ProofFormatService } from '../ProofFormatService'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
@@ -114,14 +115,20 @@ export class IndyProofFormatService extends ProofFormatService {
     if (!options.formats.indy) {
       throw Error('Indy format missing')
     }
+    const indyFormat = options.formats.indy
 
-    if (!options.formats.indy.proofPreview) {
+    const preview = new PresentationPreview({
+      attributes: indyFormat.attributes,
+      predicates: indyFormat.predicates,
+    })
+
+    if (!preview) {
       throw Error('Presentation Preview missing')
     }
 
     return this.createProofAttachment({
       attachId: options.attachId ?? uuid(),
-      proofProposalOptions: options.formats.indy.proofPreview,
+      proofProposalOptions: preview,
     })
   }
 
