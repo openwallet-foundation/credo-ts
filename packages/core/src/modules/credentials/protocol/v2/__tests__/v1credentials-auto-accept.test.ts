@@ -209,7 +209,6 @@ describe('credentials', () => {
         comment: 'V1 Indy Offer',
         credentialFormats: {
           indy: {
-            attributes: credentialPreview.attributes,
             credentialDefinitionId: credDefId,
           },
         },
