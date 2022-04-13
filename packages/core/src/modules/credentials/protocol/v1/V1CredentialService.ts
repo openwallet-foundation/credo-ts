@@ -41,12 +41,12 @@ import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
-import { CredentialService } from '../../CredentialService'
 import { CredentialState } from '../../CredentialState'
 import { CredentialUtils } from '../../CredentialUtils'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord } from '../../repository'
+import { CredentialService } from '../../services/CredentialService'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
 import {
@@ -1039,7 +1039,7 @@ export class V1CredentialService extends CredentialService {
 
     // Update record
     credentialRecord.credentialAttributes = message.credentialProposal?.attributes
-    this.updateState(credentialRecord, CredentialState.ProposalSent)
+    await this.updateState(credentialRecord, CredentialState.ProposalSent)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: message,
       role: DidCommMessageRole.Sender,

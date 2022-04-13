@@ -1,19 +1,19 @@
-import type { AgentConfig } from '../../agent/AgentConfig'
-import type { AgentMessage } from '../../agent/AgentMessage'
-import type { Dispatcher } from '../../agent/Dispatcher'
-import type { EventEmitter } from '../../agent/EventEmitter'
-import type { Handler, HandlerInboundMessage } from '../../agent/Handler'
-import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
-import type { Logger } from '../../logger'
-import type { DidCommMessageRepository } from '../../storage'
-import type { MediationRecipientService } from '../routing'
-import type { CredentialStateChangedEvent } from './CredentialEvents'
-import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
+import type { AgentConfig } from '../../../agent/AgentConfig'
+import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { Dispatcher } from '../../../agent/Dispatcher'
+import type { EventEmitter } from '../../../agent/EventEmitter'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
+import type { DidCommMessageRepository } from '../../../storage'
+import type { MediationRecipientService } from '../../routing'
+import type { CredentialStateChangedEvent } from './../CredentialEvents'
+import type { CredentialProtocolVersion } from './../CredentialProtocolVersion'
 import type {
   CredentialProtocolMsgReturnType,
   DeleteCredentialOptions,
   ServiceRequestCredentialOptions,
-} from './CredentialServiceOptions'
+} from './../CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
@@ -22,25 +22,25 @@ import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
-} from './CredentialsModuleOptions'
-import type { CredentialFormatService } from './formats/CredentialFormatService'
-import type { CredentialFormats } from './formats/models/CredentialFormatServiceOptions'
+} from './../CredentialsModuleOptions'
+import type { CredentialFormatService } from './../formats/CredentialFormatService'
+import type { CredentialFormats } from './../formats/models/CredentialFormatServiceOptions'
 import type {
   V1CredentialProblemReportMessage,
   V1IssueCredentialMessage,
   V1OfferCredentialMessage,
   V1ProposeCredentialMessage,
   V1RequestCredentialMessage,
-} from './protocol/v1/messages'
-import type { V2CredentialProblemReportMessage } from './protocol/v2/messages/V2CredentialProblemReportMessage'
-import type { V2IssueCredentialMessage } from './protocol/v2/messages/V2IssueCredentialMessage'
-import type { V2OfferCredentialMessage } from './protocol/v2/messages/V2OfferCredentialMessage'
-import type { V2ProposeCredentialMessage } from './protocol/v2/messages/V2ProposeCredentialMessage'
-import type { V2RequestCredentialMessage } from './protocol/v2/messages/V2RequestCredentialMessage'
-import type { CredentialExchangeRecord, CredentialRepository } from './repository'
+} from './../protocol/v1/messages'
+import type { V2CredentialProblemReportMessage } from './../protocol/v2/messages/V2CredentialProblemReportMessage'
+import type { V2IssueCredentialMessage } from './../protocol/v2/messages/V2IssueCredentialMessage'
+import type { V2OfferCredentialMessage } from './../protocol/v2/messages/V2OfferCredentialMessage'
+import type { V2ProposeCredentialMessage } from './../protocol/v2/messages/V2ProposeCredentialMessage'
+import type { V2RequestCredentialMessage } from './../protocol/v2/messages/V2RequestCredentialMessage'
+import type { CredentialExchangeRecord, CredentialRepository } from './../repository'
 
-import { CredentialEventTypes } from './CredentialEvents'
-import { CredentialState } from './CredentialState'
+import { CredentialEventTypes } from './../CredentialEvents'
+import { CredentialState } from './../CredentialState'
 
 export abstract class CredentialService {
   protected credentialRepository: CredentialRepository

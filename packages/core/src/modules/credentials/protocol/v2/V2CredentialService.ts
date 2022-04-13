@@ -40,13 +40,13 @@ import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
-import { CredentialService } from '../../CredentialService'
 import { CredentialState } from '../../CredentialState'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { FORMAT_KEYS } from '../../formats/models/CredentialFormatServiceOptions'
 import { CredentialRepository, CredentialExchangeRecord } from '../../repository'
+import { CredentialService } from '../../services/CredentialService'
 
 import { CredentialMessageBuilder } from './CredentialMessageBuilder'
 import { V2CredentialAckHandler } from './handlers/V2CredentialAckHandler'
@@ -544,7 +544,7 @@ export class V2CredentialService extends CredentialService {
           throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
         }
         this.logger.debug('Save metadata for offer')
-        format.processOffer(attachment, credentialRecord)
+        await format.processOffer(attachment, credentialRecord)
       }
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
       await this.didCommMessageRepository.saveOrUpdateAgentMessage({
@@ -575,7 +575,7 @@ export class V2CredentialService extends CredentialService {
           throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
         }
         this.logger.debug('Save metadata for offer')
-        format.processOffer(attachment, credentialRecord)
+        await format.processOffer(attachment, credentialRecord)
       }
 
       // Save in repository
@@ -808,7 +808,7 @@ export class V2CredentialService extends CredentialService {
       if (!attachment) {
         throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
       }
-      format.processOffer(attachment, credentialRecord)
+      await format.processOffer(attachment, credentialRecord)
     }
     await this.credentialRepository.save(credentialRecord)
     await this.emitEvent(credentialRecord)
@@ -1091,7 +1091,7 @@ export class V2CredentialService extends CredentialService {
         throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
       }
       this.logger.debug('Save metadata for offer')
-      format.processOffer(attachment, credentialRecord)
+      await format.processOffer(attachment, credentialRecord)
     }
 
     // Create and set ~service decorator

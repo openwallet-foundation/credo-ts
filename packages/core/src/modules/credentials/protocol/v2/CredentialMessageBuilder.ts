@@ -139,7 +139,7 @@ export class CredentialMessageBuilder {
       formatsArray.push(format)
 
       if (proposal.offerAttachment) {
-        formatService.processOffer(proposal.offerAttachment, credentialRecord)
+        await formatService.processOffer(proposal.offerAttachment, credentialRecord)
       }
     }
 
@@ -278,7 +278,7 @@ export class CredentialMessageBuilder {
 
     for (const service of formatServices) {
       if (options.offerAttachment) {
-        service.processOffer(options.offerAttachment, credentialRecord)
+        await service.processOffer(options.offerAttachment, credentialRecord)
       }
     }
     return { credentialRecord, message: credentialOfferMessage }

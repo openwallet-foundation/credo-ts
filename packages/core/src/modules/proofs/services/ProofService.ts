@@ -166,7 +166,7 @@ export class ProofService {
 
     // Update record
     proofRecord.proposalMessage = proposalMessage
-    this.updateState(proofRecord, ProofState.ProposalSent)
+    await this.updateState(proofRecord, ProofState.ProposalSent)
 
     return { message: proposalMessage, proofRecord }
   }
