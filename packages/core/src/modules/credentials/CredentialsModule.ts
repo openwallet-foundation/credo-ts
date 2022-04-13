@@ -1,6 +1,5 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Logger } from '../../logger'
-import type { CredentialService } from './CredentialService'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -12,6 +11,7 @@ import type {
   RequestCredentialOptions,
 } from './CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from './repository'
+import type { CredentialService } from './services/CredentialService'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
