@@ -290,7 +290,7 @@ export class V2CredentialService extends CredentialService {
       },
     })
 
-    await this.didCommMessageRepository.saveAgentMessage({
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
       agentMessage: proposalMessage,
       role: DidCommMessageRole.Sender,
       associatedRecordId: credentialRecord.id,
@@ -392,7 +392,7 @@ export class V2CredentialService extends CredentialService {
       })
 
       // Update record
-      await this.didCommMessageRepository.saveAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
@@ -409,7 +409,7 @@ export class V2CredentialService extends CredentialService {
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       await this.credentialRepository.save(credentialRecord)
-      await this.didCommMessageRepository.saveAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
@@ -480,8 +480,9 @@ export class V2CredentialService extends CredentialService {
       credentialRecord,
       proposal
     )
+
     await this.updateState(credentialRecord, CredentialState.OfferSent)
-    await this.didCommMessageRepository.saveAgentMessage({
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
       agentMessage: credentialOfferMessage,
       role: DidCommMessageRole.Sender,
       associatedRecordId: credentialRecord.id,
@@ -518,7 +519,6 @@ export class V2CredentialService extends CredentialService {
         associatedRecordId: credentialRecord.id,
         messageClass: V2OfferCredentialMessage,
       })
-
       credentialRecord.assertState(CredentialState.ProposalSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
         previousReceivedMessage: offerCredentialMessage ? offerCredentialMessage : undefined,
@@ -538,16 +538,15 @@ export class V2CredentialService extends CredentialService {
         format.processOffer(attachment, credentialRecord)
       }
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
-      await this.didCommMessageRepository.saveAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
         agentMessage: credentialOfferMessage,
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
       })
-    } catch {
+    } catch (error) {
       // No credential record exists with thread id
 
       this.logger.debug('No credential record found for this offer - create a new one')
-
       credentialRecord = new CredentialExchangeRecord({
         connectionId: connection?.id,
         threadId: credentialOfferMessage.id,
@@ -574,7 +573,7 @@ export class V2CredentialService extends CredentialService {
       this.logger.debug('Saving credential record and emit offer-received event')
       await this.credentialRepository.save(credentialRecord)
 
-      await this.didCommMessageRepository.saveAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
         agentMessage: credentialOfferMessage,
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
@@ -753,19 +752,19 @@ export class V2CredentialService extends CredentialService {
 
     const formats: CredentialFormatService[] = this.getFormats(options.credentialFormats)
 
-    const { message: proposalMessage } = this.credentialMessageBuilder.createProposal(formats, options)
-    proposalMessage.setThread({ threadId: credentialRecord.threadId })
+    const { message: credentialProposalMessage } = this.credentialMessageBuilder.createProposal(formats, options)
+    credentialProposalMessage.setThread({ threadId: credentialRecord.threadId })
 
     // Update record
-    await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: proposalMessage,
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: credentialProposalMessage,
       role: DidCommMessageRole.Sender,
       associatedRecordId: credentialRecord.id,
     })
-    credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
-    this.updateState(credentialRecord, CredentialState.ProposalSent)
+    credentialRecord.credentialAttributes = credentialProposalMessage.credentialProposal?.attributes
+    await this.updateState(credentialRecord, CredentialState.ProposalSent)
 
-    return { message: proposalMessage, credentialRecord }
+    return { message: credentialProposalMessage, credentialRecord }
   }
   /**
    * Create a {@link V2OfferCredentialMessage} as beginning of protocol process.
@@ -788,11 +787,14 @@ export class V2CredentialService extends CredentialService {
     const formats: CredentialFormatService[] = this.getFormats(credentialOptions.credentialFormats)
 
     // Create message
-    const { credentialRecord, message } = await this.credentialMessageBuilder.createOffer(formats, credentialOptions)
+    const { credentialRecord, message: credentialOfferMessage } = await this.credentialMessageBuilder.createOffer(
+      formats,
+      credentialOptions
+    )
     credentialRecord.connectionId = credentialOptions.connectionId
 
     for (const format of formats) {
-      const attachment = format.getAttachment(message.formats, message.messageAttachment)
+      const attachment = format.getAttachment(credentialOfferMessage.formats, credentialOfferMessage.messageAttachment)
 
       if (!attachment) {
         throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
@@ -802,13 +804,13 @@ export class V2CredentialService extends CredentialService {
     await this.credentialRepository.save(credentialRecord)
     await this.emitEvent(credentialRecord)
 
-    await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: message,
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: credentialOfferMessage,
       role: DidCommMessageRole.Sender,
       associatedRecordId: credentialRecord.id,
     })
 
-    return { credentialRecord, message }
+    return { credentialRecord, message: credentialOfferMessage }
   }
 
   /**
@@ -1091,7 +1093,7 @@ export class V2CredentialService extends CredentialService {
       routingKeys: routing.routingKeys,
     })
     await this.credentialRepository.save(credentialRecord)
-    await this.didCommMessageRepository.saveAgentMessage({
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
       agentMessage: offerCredentialMessage,
       role: DidCommMessageRole.Receiver,
       associatedRecordId: credentialRecord.id,
