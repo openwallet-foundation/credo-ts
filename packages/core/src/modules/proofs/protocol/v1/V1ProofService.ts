@@ -186,7 +186,7 @@ export class V1ProofService extends ProofService {
     })
 
     // Update record
-    this.updateState(proofRecord, ProofState.ProposalSent)
+    void this.updateState(proofRecord, ProofState.ProposalSent)
 
     return { proofRecord, message: proposalMessage }
   }

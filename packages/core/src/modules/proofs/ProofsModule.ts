@@ -64,7 +64,7 @@ export class ProofsModule {
       [ProofProtocolVersion.V2_0]: v2ProofService,
     }
 
-    this.registerHandlers(dispatcher, mediationRecipientService)
+    void this.registerHandlers(dispatcher, mediationRecipientService)
   }
 
   public getService(protocolVersion: ProofProtocolVersion) {

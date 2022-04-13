@@ -188,7 +188,7 @@ export class V2ProofService extends ProofService {
       associatedRecordId: options.proofRecord.id,
     })
 
-    this.updateState(options.proofRecord, ProofState.ProposalSent)
+    void this.updateState(options.proofRecord, ProofState.ProposalSent)
 
     return { message: proposalMessage, proofRecord: options.proofRecord }
   }
@@ -343,7 +343,7 @@ export class V2ProofService extends ProofService {
       associatedRecordId: options.proofRecord.id,
     })
 
-    this.updateState(options.proofRecord, ProofState.RequestSent)
+    void this.updateState(options.proofRecord, ProofState.RequestSent)
 
     return { message: requestMessage, proofRecord: options.proofRecord }
   }
