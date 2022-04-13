@@ -270,7 +270,7 @@ describe('credentials', () => {
       }
       const faberCredentialExchangeRecord = await faberAgent.credentials.acceptCredentialProposal(options)
 
-      await sleep(5000)
+      // await sleep(5000)
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
@@ -338,7 +338,7 @@ describe('credentials', () => {
         const faberCredentialExchangeRecord: CredentialExchangeRecord =
           await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
 
-        await sleep(5000)
+        // await sleep(5000)
 
         testLogger.test('Alice waits for credential from Faber')
         aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -396,7 +396,7 @@ describe('credentials', () => {
         },
       }
 
-      await sleep(5000)
+      // await sleep(5000)
 
       await faberAgent.credentials.negotiateCredentialProposal(negotiateOptions)
 
@@ -462,7 +462,7 @@ describe('credentials', () => {
         },
         comment: 'v2 propose credential test',
       }
-      await sleep(5000)
+      // await sleep(5000)
 
       const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateCredentialOffer(proposeOptions)
 
