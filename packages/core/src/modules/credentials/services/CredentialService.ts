@@ -149,7 +149,7 @@ export class CredentialService {
     // Update record
     credentialRecord.proposalMessage = proposalMessage
     credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
-    this.updateState(credentialRecord, CredentialState.ProposalSent)
+    await this.updateState(credentialRecord, CredentialState.ProposalSent)
 
     return { message: proposalMessage, credentialRecord }
   }
