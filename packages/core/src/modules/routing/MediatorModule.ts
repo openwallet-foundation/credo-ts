@@ -11,14 +11,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ConnectionService } from '../connections/services'
 
-import {
-  KeylistUpdateHandler,
-  ForwardHandler,
-  BatchPickupHandler,
-  BatchHandler,
-  StatusHandler,
-  MessageDeliveryHandler,
-} from './handlers'
+import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler } from './handlers'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { MediatorService } from './services/MediatorService'
 import { MessagePickupService } from './services/MessagePickupService'
@@ -75,7 +68,5 @@ export class MediatorModule {
     dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
     dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
     dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig))
-    dispatcher.registerHandler(new StatusHandler(this.mediatorService))
-    dispatcher.registerHandler(new MessageDeliveryHandler(this.mediatorService, this.messageReceiver))
   }
 }

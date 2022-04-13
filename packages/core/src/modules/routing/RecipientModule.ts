@@ -14,6 +14,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
+import { MessageReceiver } from '../../agent/MessageReceiver'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
@@ -25,6 +26,7 @@ import { DiscloseMessage, DiscoverFeaturesModule } from '../discover-features'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RoutingEventTypes } from './RoutingEvents'
+import { MessageDeliveryHandler, StatusHandler } from './handlers'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
@@ -40,6 +42,7 @@ export class RecipientModule {
   private mediationRecipientService: MediationRecipientService
   private connectionService: ConnectionService
   private messageSender: MessageSender
+  private messageReceiver: MessageReceiver
   private eventEmitter: EventEmitter
   private logger: Logger
   private discoverFeaturesModule: DiscoverFeaturesModule
@@ -51,6 +54,7 @@ export class RecipientModule {
     mediationRecipientService: MediationRecipientService,
     connectionService: ConnectionService,
     messageSender: MessageSender,
+    messageReceiver: MessageReceiver,
     eventEmitter: EventEmitter,
     discoverFeaturesModule: DiscoverFeaturesModule,
     mediationRepository: MediationRepository
@@ -59,6 +63,7 @@ export class RecipientModule {
     this.connectionService = connectionService
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
+    this.messageReceiver = messageReceiver
     this.eventEmitter = eventEmitter
     this.logger = agentConfig.logger
     this.discoverFeaturesModule = discoverFeaturesModule
@@ -406,6 +411,8 @@ export class RecipientModule {
     dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new StatusHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new MessageDeliveryHandler(this.mediationRecipientService, this.messageReceiver))
     //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }

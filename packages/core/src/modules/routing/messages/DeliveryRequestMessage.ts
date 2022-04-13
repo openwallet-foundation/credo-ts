@@ -3,6 +3,7 @@ import { Equals, IsInt, IsOptional, IsString } from 'class-validator'
 import { Verkey } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 
 export interface DeliveryRequestMessageOptions {
   id?: string
@@ -19,6 +20,7 @@ export class DeliveryRequestMessage extends AgentMessage {
       this.recipientKey = options.recipientKey
       this.limit = options.limit
     }
+    this.setReturnRouting(ReturnRouteTypes.all)
   }
 
   @Equals(DeliveryRequestMessage.type)

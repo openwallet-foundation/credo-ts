@@ -1,9 +1,17 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { MessageReceiver } from '../../../agent/MessageReceiver'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
-import type { MediationGrantMessage, MediationDenyMessage, KeylistUpdateResponseMessage } from '../messages'
+import type {
+  MediationGrantMessage,
+  MediationDenyMessage,
+  KeylistUpdateResponseMessage,
+  MessageDeliveryMessage,
+  StatusMessage,
+} from '../messages'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
@@ -18,7 +26,12 @@ import { AriesFrameworkError } from '../../../error'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { RoutingEventTypes } from '../RoutingEvents'
-import { KeylistUpdateAction, MediationRequestMessage } from '../messages'
+import {
+  DeliveryRequestMessage,
+  MessagesReceivedMessage,
+  KeylistUpdateAction,
+  MediationRequestMessage,
+} from '../messages'
 import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMessage'
 import { MediationRole, MediationState } from '../models'
 import { MediationRecord } from '../repository/MediationRecord'
@@ -211,6 +224,36 @@ export class MediationRecipientService {
     await this.updateState(mediationRecord, MediationState.Denied)
 
     return mediationRecord
+  }
+
+  public processStatus(statusMessage: StatusMessage) {
+    const { messageCount, recipientKey } = statusMessage
+
+    //No messages to be sent
+    if (messageCount === 0) return null
+
+    const deliveryRequestMessage = new DeliveryRequestMessage({
+      limit: messageCount,
+      recipientKey,
+    })
+
+    return deliveryRequestMessage
+  }
+
+  public async processDelivery(messageDeliveryMessage: MessageDeliveryMessage, messageReceiver: MessageReceiver) {
+    const { attachments } = messageDeliveryMessage
+
+    if (!attachments) throw new AriesFrameworkError('No attachments found')
+
+    const ids: string[] = []
+    for (const attachment of attachments) {
+      await messageReceiver.receiveMessage(attachment.getDataAsJson<EncryptedMessage>())
+      ids.push(attachment.id)
+    }
+
+    return new MessagesReceivedMessage({
+      messageIdList: ids,
+    })
   }
 
   /**

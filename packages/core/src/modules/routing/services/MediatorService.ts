@@ -1,10 +1,7 @@
-import type { MessageReceiver } from '../../../agent/MessageReceiver'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { EncryptedMessage } from '../../../types'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
-import type { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage, MessageDeliveryMessage } from '../messages'
-import type { StatusMessage } from '../messages/StatusMessage'
+import type { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage } from '../messages'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -15,14 +12,12 @@ import { AriesFrameworkError } from '../../../error'
 import { Wallet } from '../../../wallet/Wallet'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
-  MessagesReceivedMessage,
   KeylistUpdateAction,
   KeylistUpdateResult,
   KeylistUpdated,
   MediationGrantMessage,
   KeylistUpdateResponseMessage,
 } from '../messages'
-import { DeliveryRequestMessage } from '../messages/DeliveryRequestMessage'
 import { MediationRole } from '../models/MediationRole'
 import { MediationState } from '../models/MediationState'
 import { MediatorRoutingRecord } from '../repository'
@@ -177,37 +172,6 @@ export class MediatorService {
     })
 
     return mediationRecord
-  }
-
-  public processStatus(statusMessage: StatusMessage) {
-    const { messageCount, recipientKey } = statusMessage
-
-    //No messages to be sent
-    if (messageCount === 0) return null
-
-    const deliveryRequestMessage = new DeliveryRequestMessage({
-      limit: messageCount,
-      recipientKey,
-    })
-
-    return deliveryRequestMessage
-  }
-
-  public async processDelivery(messageDeliveryMessage: MessageDeliveryMessage, messageReceiver: MessageReceiver) {
-    const { attachments } = messageDeliveryMessage
-
-    if (!attachments) throw new AriesFrameworkError('Attachments did not exist')
-
-    const ids = await Promise.all(
-      attachments.map(async (attachment: Attachment) => {
-        await messageReceiver.receiveMessage(attachment.data)
-        return attachment.id
-      })
-    )
-
-    return new MessagesReceivedMessage({
-      messageIdList: ids,
-    })
   }
 
   public async findById(mediatorRecordId: string): Promise<MediationRecord | null> {

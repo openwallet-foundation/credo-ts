@@ -2,6 +2,7 @@ import { Expose } from 'class-transformer'
 import { Equals, IsArray, IsOptional } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 
 export interface MessagesReceivedMessageOptions {
   id?: string
@@ -16,6 +17,7 @@ export class MessagesReceivedMessage extends AgentMessage {
       this.id = options.id || this.generateId()
       this.messageIdList = options.messageIdList
     }
+    this.setReturnRouting(ReturnRouteTypes.all)
   }
 
   @Equals(MessagesReceivedMessage.type)

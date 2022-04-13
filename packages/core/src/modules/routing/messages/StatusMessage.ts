@@ -3,6 +3,7 @@ import { Equals, IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-va
 import { Verkey } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { DateParser } from '../../../utils/transformers'
 
 export interface StatusMessageOptions {
@@ -29,6 +30,7 @@ export class StatusMessage extends AgentMessage {
       this.totalBytes = options.totalBytes
       this.liveDelivery = options.liveDelivery
     }
+    this.setReturnRouting(ReturnRouteTypes.all)
   }
 
   @Equals(StatusMessage.type)
