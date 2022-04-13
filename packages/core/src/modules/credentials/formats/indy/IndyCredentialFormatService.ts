@@ -296,10 +296,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
     await MessageValidator.validate(credPropose)
 
-    if (credentialRecord.credentialAttributes && credPropose.credentialDefinitionId) {
+    if (credPropose.credentialDefinitionId) {
       options.credentialFormats = {
         indy: {
-          attributes: credentialRecord.credentialAttributes,
           credentialDefinitionId: credPropose?.credentialDefinitionId,
         },
       }

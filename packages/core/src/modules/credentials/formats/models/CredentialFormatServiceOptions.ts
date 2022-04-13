@@ -79,6 +79,13 @@ export interface FormatServiceProposeCredentialFormats {
   jsonld?: undefined
 }
 
+export interface FormatServiceAcceptProposeCredentialFormats {
+  indy?: {
+    credentialDefinitionId?: string
+  }
+  jsonld?: undefined
+}
+
 export interface FormatServiceRequestCredentialFormats {
   indy?: IndyRequestCredentialFormat
   jsonld?: undefined

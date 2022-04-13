@@ -466,7 +466,7 @@ export class V2CredentialService extends CredentialService {
    */
   public async createOfferAsResponse(
     credentialRecord: CredentialExchangeRecord,
-    proposal: AcceptProposalOptions | NegotiateProposalOptions
+    proposal: AcceptProposalOptions
   ): Promise<V2OfferCredentialMessage> {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
@@ -475,11 +475,20 @@ export class V2CredentialService extends CredentialService {
 
     // Create the offer message
     this.logger.debug(`Get the Format Service and Create Offer Message for credential record ${credentialRecord.id}`)
+
+    const proposeCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2ProposeCredentialMessage,
+    })
+
     const credentialOfferMessage = await this.credentialMessageBuilder.createOfferAsResponse(
       formats,
       credentialRecord,
       proposal
     )
+
+    credentialOfferMessage.credentialPreview = proposeCredentialMessage?.credentialProposal
+    credentialRecord.credentialAttributes = proposeCredentialMessage?.credentialProposal?.attributes
 
     await this.updateState(credentialRecord, CredentialState.OfferSent)
     await this.didCommMessageRepository.saveOrUpdateAgentMessage({

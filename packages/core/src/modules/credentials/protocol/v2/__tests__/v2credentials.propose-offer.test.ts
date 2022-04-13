@@ -114,7 +114,6 @@ describe('credentials', () => {
       comment: 'V1 Indy Proposal',
       credentialFormats: {
         indy: {
-          attributes: credentialPreview.attributes,
           credentialDefinitionId: credDefId,
         },
       },
@@ -272,7 +271,6 @@ describe('credentials', () => {
       comment: 'V2 Indy Offer',
       credentialFormats: {
         indy: {
-          attributes: credentialPreview.attributes,
           credentialDefinitionId: credDefId,
         },
       },
@@ -614,7 +612,6 @@ describe('credentials', () => {
       comment: 'V2 Indy Proposal',
       credentialFormats: {
         indy: {
-          attributes: credentialPreview.attributes,
           credentialDefinitionId: credDefId,
         },
       },
