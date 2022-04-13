@@ -291,7 +291,7 @@ export function getMockOutOfBand({
         id: `#inline-0`,
         priority: 0,
         serviceEndpoint: serviceEndpoint ?? 'http://example.com',
-        recipientKeys: recipientKeys || [],
+        recipientKeys: recipientKeys || ['ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7'],
         routingKeys: [],
       }),
     ],

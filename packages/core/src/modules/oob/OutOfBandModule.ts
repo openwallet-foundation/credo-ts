@@ -22,6 +22,7 @@ import {
   ConnectionsModule,
 } from '../../modules/connections'
 import { DidCommService, DidsModule } from '../dids'
+import { serviceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { MediationRecipientService } from '../routing'
 
 import { OutOfBandService } from './OutOfBandService'
@@ -459,25 +460,26 @@ export class OutOfBandModule {
   }
 
   private async findExistingConnection(services: Array<DidCommService | string>) {
-    this.logger.debug('Searching for an existing connection for given services.', { services })
-    for (const service of services) {
-      if (typeof service === 'string') {
+    this.logger.debug('Searching for an existing connection for out-of-band invitation services.', { services })
+    for (const didOrService of services) {
+      if (typeof didOrService === 'string') {
         // TODO await this.connectionsModule.findByTheirDid()
         throw new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
       }
 
-      let existingConnection
-      for (const recipientKey of service.recipientKeys) {
-        const theirDidRecords = await this.dids.findMultipleByVerkey(recipientKey)
+      const did = serviceToNumAlgo2Did(didOrService)
+      const connections = await this.connectionsModule.findByInvitationDid(did)
+      this.logger.debug(`Retrieved ${connections.length} connections for invitation did ${did}`)
 
-        for (const theirDidRecord of theirDidRecords) {
-          // TODO Encode the key and endpoint of the service block in a Peer DID numalgo 2 and using that DID instead of a service block
-          existingConnection = await this.connectionsModule.findByDid(theirDidRecord.id)
-          // TODO what if we have more connections?
-          if (existingConnection) return existingConnection
-        }
+      if (connections.length === 1) {
+        const [firstConnection] = connections
+        return firstConnection
+      } else if (connections.length > 1) {
+        this.logger.warn(`There is more than one connection created from invitationDid ${did}. Taking the first one.`)
+        const [firstConnection] = connections
+        return firstConnection
       }
-      return existingConnection
+      return null
     }
   }
 

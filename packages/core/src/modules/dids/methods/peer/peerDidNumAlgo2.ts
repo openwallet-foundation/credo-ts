@@ -1,11 +1,13 @@
 import type { JsonObject } from '../../../../types'
-import type { DidDocument, VerificationMethod } from '../../domain'
+import type { DidCommService, DidDocument, VerificationMethod } from '../../domain'
 
+import { KeyType } from '../../../../crypto'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
 import { DidDocumentService, Key } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { getKeyDidMappingByKeyType, getKeyDidMappingByVerificationMethod } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
+import { DidKey } from '../key'
 
 enum DidPeerPurpose {
   Assertion = 'A',
@@ -141,6 +143,30 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
 
     did += `.${DidPeerPurpose.Service}${encodedServices}`
   }
+
+  return did
+}
+
+export function serviceToNumAlgo2Did(service: DidCommService) {
+  let did = 'did:peer:2'
+  let didKey
+  const [recipientKey] = service.recipientKeys
+  if (recipientKey.startsWith('did:key')) {
+    didKey = DidKey.fromDid(recipientKey)
+  } else {
+    const publicKeyBase58 = recipientKey
+    const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
+    didKey = new DidKey(ed25519Key)
+  }
+
+  const encoded = `.${DidPeerPurpose.Encryption}${didKey.key.fingerprint}`
+  did += encoded
+
+  const serviceOnlyWithEndpoint = {
+    serviceEndpoint: service.serviceEndpoint,
+  }
+  const encodedServices = JsonEncoder.toBase64URL(abbreviateServiceJson(serviceOnlyWithEndpoint))
+  did += `.${DidPeerPurpose.Service}${encodedServices}`
 
   return did
 }
