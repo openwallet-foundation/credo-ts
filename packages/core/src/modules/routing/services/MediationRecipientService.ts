@@ -232,8 +232,11 @@ export class MediationRecipientService {
     //No messages to be sent
     if (messageCount === 0) return null
 
+    const { maximumMessagePickup } = this.config
+    const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
+
     const deliveryRequestMessage = new DeliveryRequestMessage({
-      limit: messageCount,
+      limit,
       recipientKey,
     })
 
