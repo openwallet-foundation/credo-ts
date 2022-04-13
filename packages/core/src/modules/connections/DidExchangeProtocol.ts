@@ -4,7 +4,6 @@ import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
 import type { Routing } from './services/ConnectionService'
 
-import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -14,12 +13,10 @@ import { Attachment, AttachmentData } from '../../decorators/attachment/Attachme
 import { AriesFrameworkError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
-import { uuid } from '../../utils/uuid'
-import { DidCommService, DidDocument, DidDocumentBuilder, Key } from '../dids'
+import { DidCommService, DidDocument, Key } from '../dids'
 import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
+import { createDidDocumentFromServices } from '../dids/domain/createPeerDidFromServices'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
-import { getEd25519VerificationMethod } from '../dids/domain/key-type/ed25519'
-import { getX25519VerificationMethod } from '../dids/domain/key-type/x25519'
 import { DidKey } from '../dids/methods/key/DidKey'
 import { DidPeer, PeerDidNumAlgo } from '../dids/methods/peer/DidPeer'
 import { DidRecord, DidRepository } from '../dids/repository'
@@ -72,6 +69,11 @@ export class DidExchangeProtocol {
     const { alias, goal, goalCode, routing, autoAcceptConnection } = params
 
     const { did, mediatorId } = routing
+
+    // TODO: We should store only one did that we'll use to send the request message with success.
+    // We take just the first one for now.
+    const [invitationDid] = outOfBandMessage.invitationDids
+
     const connectionRecord = await this.connectionService.createConnection({
       protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Requester,
@@ -83,6 +85,7 @@ export class DidExchangeProtocol {
       mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
+      invitationDid,
     })
 
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
@@ -374,54 +377,7 @@ export class DidExchangeProtocol {
   }
 
   private async createPeerDidDoc(services: DidCommService[]) {
-    const didDocumentBuilder = new DidDocumentBuilder('')
-
-    // We need to all reciepient and routing keys from all services but we don't want to duplicated items
-    const recipientKeys = new Set(services.map((s) => s.recipientKeys).reduce((acc, curr) => acc.concat(curr), []))
-    const routingKeys = new Set(
-      services
-        .map((s) => s.routingKeys)
-        .filter((r): r is string[] => r !== undefined)
-        .reduce((acc, curr) => acc.concat(curr), [])
-    )
-
-    for (const recipientKey of recipientKeys) {
-      const publicKeyBase58 = recipientKey
-      const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
-      const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
-
-      const ed25519VerificationMethod = getEd25519VerificationMethod({
-        id: uuid(),
-        key: ed25519Key,
-        controller: '#id',
-      })
-      const x25519VerificationMethod = getX25519VerificationMethod({
-        id: uuid(),
-        key: x25519Key,
-        controller: '#id',
-      })
-
-      // We should not add duplicated keys for services
-      didDocumentBuilder.addAuthentication(ed25519VerificationMethod).addKeyAgreement(x25519VerificationMethod)
-    }
-
-    for (const routingKey of routingKeys) {
-      const publicKeyBase58 = routingKey
-      const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
-      const verificationMethod = getEd25519VerificationMethod({
-        id: uuid(),
-        key: ed25519Key,
-        controller: '#id',
-      })
-      didDocumentBuilder.addVerificationMethod(verificationMethod)
-    }
-
-    services.forEach((service) => {
-      didDocumentBuilder.addService(service)
-    })
-
-    const didDocument = didDocumentBuilder.build()
-
+    const didDocument = createDidDocumentFromServices(services)
     const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
 
     const didRecord = new DidRecord({

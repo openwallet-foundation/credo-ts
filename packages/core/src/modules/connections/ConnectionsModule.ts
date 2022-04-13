@@ -260,6 +260,10 @@ export class ConnectionsModule {
     return this.connectionService.findByTheirDid(did)
   }
 
+  public async findByInvitationDid(invitationDid: string): Promise<ConnectionRecord[]> {
+    return this.connectionService.findByInvitationDid(invitationDid)
+  }
+
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
       new ConnectionRequestHandler(
