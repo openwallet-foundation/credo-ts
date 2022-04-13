@@ -66,7 +66,7 @@ describe('W3cCredentialService', () => {
     await wallet.delete()
   })
 
-  describe('Ed25519Signature2018', () => {
+  xdescribe('Ed25519Signature2018', () => {
     beforeAll(() => {
       const pubDid = wallet.publicDid
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -247,44 +247,17 @@ describe('W3cCredentialService', () => {
     })
   })
 
-  xdescribe('BbsBlsSignature2020', () => {
+  describe('BbsBlsSignature2020', () => {
     beforeAll(async () => {
       const key = await wallet.createKey({ keyType: KeyType.Bls12381g2 })
       issuerDidKey = new DidKey(key)
     })
-    describe('signCredential', () => {
+    xdescribe('signCredential', () => {
       it('should return a successfully signed credential', async () => {
-        const inputDoc = {
-          '@context': [
-            'https://www.w3.org/2018/credentials/v1',
-            'https://w3id.org/citizenship/v1',
-            'https://w3id.org/security/bbs/v1',
-          ],
-          id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
-          type: ['VerifiableCredential', 'PermanentResidentCard'],
-          issuer: issuerDidKey.did,
-          identifier: '83627465',
-          name: 'Permanent Resident Card',
-          description: 'Government of Example Permanent Resident Card.',
-          issuanceDate: '2019-12-03T12:19:52Z',
-          expirationDate: '2029-12-03T12:19:52Z',
-          credentialSubject: {
-            id: 'did:example:b34ca6cd37bbf23',
-            type: ['PermanentResident', 'Person'],
-            givenName: 'JOHN',
-            familyName: 'SMITH',
-            gender: 'Male',
-            image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-            residentSince: '2015-01-01',
-            lprCategory: 'C09',
-            lprNumber: '999-999-999',
-            commuterClassification: 'C1',
-            birthCountry: 'Bahamas',
-            birthDate: '1958-07-17',
-          },
-        }
+        const credentialJson = BbsBlsSignature2020Fixtures.TEST_BBS_INPUT_DOCUMENT
+        credentialJson.issuer = issuerDidKey.did
 
-        const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
+        const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
         const vc = await w3cCredentialService.signCredential({
           credential,
@@ -294,48 +267,21 @@ describe('W3cCredentialService', () => {
         printJson(vc)
       })
     })
-    xdescribe('verifyCredential', () => {
+    describe('verifyCredential', () => {
       it('should verify the credential successfully', async () => {
         const result = await w3cCredentialService.verifyCredential({
-          credential: JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.signedCredential, W3cVerifiableCredential),
+          credential: JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VALID_BBS_VC, W3cVerifiableCredential),
           proofPurpose: new purposes.AssertionProofPurpose(),
         })
-        console.log(result)
+        expect(result.verified).toBeTruthy()
       })
     })
-    xdescribe('deriveProof', () => {
-      it('', async () => {
-        const inputDoc = {
-          '@context': [
-            'https://www.w3.org/2018/credentials/v1',
-            'https://w3id.org/citizenship/v1',
-            'https://w3id.org/security/bbs/v1',
-          ],
-          id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
-          type: ['VerifiableCredential', 'PermanentResidentCard'],
-          issuer: issuerDidKey.did,
-          identifier: '83627465',
-          name: 'Permanent Resident Card',
-          description: 'Government of Example Permanent Resident Card.',
-          issuanceDate: '2019-12-03T12:19:52Z',
-          expirationDate: '2029-12-03T12:19:52Z',
-          credentialSubject: {
-            id: 'did:example:b34ca6cd37bbf23',
-            type: ['PermanentResident', 'Person'],
-            givenName: 'JOHN',
-            familyName: 'SMITH',
-            gender: 'Male',
-            image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-            residentSince: '2015-01-01',
-            lprCategory: 'C09',
-            lprNumber: '999-999-999',
-            commuterClassification: 'C1',
-            birthCountry: 'Bahamas',
-            birthDate: '1958-07-17',
-          },
-        }
+    describe('deriveProof', () => {
+      it('should derive proof successfully', async () => {
+        const credentialJson = BbsBlsSignature2020Fixtures.TEST_BBS_INPUT_DOCUMENT
+        credentialJson.issuer = issuerDidKey.did
 
-        const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
+        const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
         const vc = await w3cCredentialService.signCredential({
           credential,
@@ -366,9 +312,9 @@ describe('W3cCredentialService', () => {
         })
       })
     })
-    describe('createPresentation', () => {})
-    describe('signPresentation', () => {})
-    describe('verifyPresentation', () => {})
-    describe('storeCredential', () => {})
+    xdescribe('createPresentation', () => {})
+    xdescribe('signPresentation', () => {})
+    xdescribe('verifyPresentation', () => {})
+    xdescribe('storeCredential', () => {})
   })
 })

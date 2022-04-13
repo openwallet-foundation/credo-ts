@@ -307,7 +307,7 @@ export class W3cCredentialService {
 
     const suite = new SuiteClass({
       key: keyPair,
-      LDClass: WalletKeyPair,
+      // LDClass: WalletKeyPair,
       useNativeCanonize: false,
     })
 

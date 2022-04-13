@@ -1,6 +1,36 @@
 export const BbsBlsSignature2020Fixtures = {
-  signedCredential: {
-    context: [
+  TEST_BBS_INPUT_DOCUMENT: {
+    '@context': [
+      'https://www.w3.org/2018/credentials/v1',
+      'https://w3id.org/citizenship/v1',
+      'https://w3id.org/security/bbs/v1',
+    ],
+    id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+    type: ['VerifiableCredential', 'PermanentResidentCard'],
+    issuer: '',
+    identifier: '83627465',
+    name: 'Permanent Resident Card',
+    description: 'Government of Example Permanent Resident Card.',
+    issuanceDate: '2019-12-03T12:19:52Z',
+    expirationDate: '2029-12-03T12:19:52Z',
+    credentialSubject: {
+      id: 'did:example:b34ca6cd37bbf23',
+      type: ['PermanentResident', 'Person'],
+      givenName: 'JOHN',
+      familyName: 'SMITH',
+      gender: 'Male',
+      image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+      residentSince: '2015-01-01',
+      lprCategory: 'C09',
+      lprNumber: '999-999-999',
+      commuterClassification: 'C1',
+      birthCountry: 'Bahamas',
+      birthDate: '1958-07-17',
+    },
+  },
+
+  TEST_VALID_BBS_VC: {
+    '@context': [
       'https://www.w3.org/2018/credentials/v1',
       'https://w3id.org/citizenship/v1',
       'https://w3id.org/security/bbs/v1',
@@ -8,7 +38,7 @@ export const BbsBlsSignature2020Fixtures = {
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
     type: ['VerifiableCredential', 'PermanentResidentCard'],
     issuer:
-      'did:key:zUC7Cpr1Tv6P6h9qwnawyMhTFg76izDLgC7Uh4v1oQjGhtbYFKUvdtosW3P9nw1M2ysvV2SNdNcc7qQZGzX6Ajn8yECxeSkgdurSAnnDtV18gu8uvyQ321pNuVHPqea7PxBugMs',
+      'did:key:zUC726sN33uAQAQxApfn3Pw6rHV776Gd9jJh187KWMPiPgz5dzaNa9HEJockqyD6C3hkQ5XuqWwpbmvUPqPhR2L1XHWHh7oV6PtH3fWzynmgkZU28C94PCJ1A7dSzRuFQZnQzhh',
     identifier: '83627465',
     name: 'Permanent Resident Card',
     description: 'Government of Example Permanent Resident Card.',
@@ -29,14 +59,13 @@ export const BbsBlsSignature2020Fixtures = {
       birthDate: '1958-07-17',
     },
     proof: {
-      '@context': 'https://w3id.org/security/v2',
-      type: 'sec:BbsBlsSignature2020',
-      created: '2022-04-04T10:34:35Z',
+      type: 'BbsBlsSignature2020',
+      created: '2022-04-12T14:22:26Z',
       verificationMethod:
-        'did:key:zUC7Cpr1Tv6P6h9qwnawyMhTFg76izDLgC7Uh4v1oQjGhtbYFKUvdtosW3P9nw1M2ysvV2SNdNcc7qQZGzX6Ajn8yECxeSkgdurSAnnDtV18gu8uvyQ321pNuVHPqea7PxBugMs#zUC7Cpr1Tv6P6h9qwnawyMhTFg76izDLgC7Uh4v1oQjGhtbYFKUvdtosW3P9nw1M2ysvV2SNdNcc7qQZGzX6Ajn8yECxeSkgdurSAnnDtV18gu8uvyQ321pNuVHPqea7PxBugMs',
+        'did:key:zUC726sN33uAQAQxApfn3Pw6rHV776Gd9jJh187KWMPiPgz5dzaNa9HEJockqyD6C3hkQ5XuqWwpbmvUPqPhR2L1XHWHh7oV6PtH3fWzynmgkZU28C94PCJ1A7dSzRuFQZnQzhh#zUC726sN33uAQAQxApfn3Pw6rHV776Gd9jJh187KWMPiPgz5dzaNa9HEJockqyD6C3hkQ5XuqWwpbmvUPqPhR2L1XHWHh7oV6PtH3fWzynmgkZU28C94PCJ1A7dSzRuFQZnQzhh',
       proofPurpose: 'assertionMethod',
       proofValue:
-        'qQbo46wfGPENagOa3iqF3ahRJhlRDT/MNgnIHsGY0aPDuIcLorigglNQ04kQR/jSYUHlKfzccE4m7waZyoLEkBLFiK2g54Q2i+CdtYBgDdkUDsoULSBMcH1MwGHwdjfXpldFNFrHFx/IAvLVniyeMQ==',
+        'iHoWWDBhP/qLBNG2gSGWiRBdOzA4jWxxapmgIMnh6Zphtgs3sWcMy30ZmoSFDPn3YUHlKfzccE4m7waZyoLEkBLFiK2g54Q2i+CdtYBgDdkUDsoULSBMcH1MwGHwdjfXpldFNFrHFx/IAvLVniyeMQ==',
     },
   },
 }

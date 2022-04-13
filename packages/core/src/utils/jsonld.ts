@@ -1,5 +1,23 @@
 import type { SingleOrArray } from './type'
-import type { ContextDefinition, NodeObject, ValueObject, IncludedBlock } from 'jsonld'
+import type { NodeObject, ValueObject, IncludedBlock, ExpandedTermDefinition } from '@digitalcredentials/jsonld'
+
+export interface ContextDefinition {
+  '@base'?: Keyword['@base'] | undefined
+  '@direction'?: Keyword['@direction'] | undefined
+  '@import'?: Keyword['@import'] | undefined
+  '@language'?: Keyword['@language'] | undefined
+  '@propagate'?: Keyword['@propagate'] | undefined
+  '@protected'?: Keyword['@protected'] | undefined
+  '@type'?:
+    | {
+        '@container': '@set'
+        '@protected'?: Keyword['@protected'] | undefined
+      }
+    | undefined
+  '@version'?: Keyword['@version'] | undefined
+  '@vocab'?: Keyword['@vocab'] | undefined
+  [key: string]: null | string | ExpandedTermDefinition | ContextDefinition[keyof ContextDefinition]
+}
 
 type ContainerType = '@language' | '@index' | '@id' | '@graph' | '@type'
 type ContainerTypeArray =
