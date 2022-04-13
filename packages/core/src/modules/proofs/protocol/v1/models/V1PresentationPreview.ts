@@ -15,8 +15,8 @@ import {
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { replaceLegacyDidSovPrefix } from '../../../../../utils/messageType'
 import { credDefIdRegex } from '../../../../../utils/regex'
-import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
-import { PredicateType } from '../models/PredicateType'
+
+import { PredicateType } from './PredicateType'
 
 export interface PresentationPreviewAttributeOptions {
   name: string
@@ -112,18 +112,10 @@ export interface PresentationPreviewOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#presentation-preview
  */
 export class PresentationPreview {
-  private static version: string = ProofProtocolVersion.V1_0
-
-  public constructor(options: PresentationPreviewOptions, version?: ProofProtocolVersion) {
+  public constructor(options: PresentationPreviewOptions) {
     if (options) {
       this.attributes = options.attributes ?? []
       this.predicates = options.predicates ?? []
-    }
-
-    if (version) {
-      PresentationPreview.version = version
-      PresentationPreview.type = `https://didcomm.org/present-proof/${PresentationPreview.version}/presentation-preview`
-      this.type = `https://didcomm.org/present-proof/${PresentationPreview.version}/presentation-preview`
     }
   }
 
@@ -133,7 +125,7 @@ export class PresentationPreview {
     toClassOnly: true,
   })
   public type = PresentationPreview.type
-  public static type = `https://didcomm.org/present-proof/${PresentationPreview.version}/presentation-preview`
+  public static readonly type = `https://didcomm.org/present-proof/1.0/presentation-preview`
 
   @Type(() => PresentationPreviewAttribute)
   @ValidateNested({ each: true })
@@ -149,7 +141,7 @@ export class PresentationPreview {
     return JsonTransformer.toJSON(this)
   }
 
-  public static fromRecord(record: Record<string, string>, version?: ProofProtocolVersion) {
+  public static fromRecord(record: Record<string, string>) {
     const attributes = Object.entries(record).map(
       ([name, value]) =>
         new PresentationPreviewAttribute({
@@ -169,12 +161,9 @@ export class PresentationPreview {
         })
     )
 
-    return new PresentationPreview(
-      {
-        attributes,
-        predicates,
-      },
-      version
-    )
+    return new PresentationPreview({
+      attributes,
+      predicates,
+    })
   }
 }

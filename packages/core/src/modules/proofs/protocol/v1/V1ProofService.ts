@@ -21,7 +21,7 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { PresentationPreviewAttribute } from './models/PresentationPreview'
+import type { PresentationPreviewAttribute } from './models/V1PresentationPreview'
 import type { CredDef, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
@@ -70,7 +70,7 @@ import {
   V1RequestPresentationMessage,
 } from './messages'
 import { ProofAttributeInfo, AttributeFilter, ProofPredicateInfo } from './models'
-import { PresentationPreview } from './models/PresentationPreview'
+import { PresentationPreview } from './models/V1PresentationPreview'
 
 /**
  * @todo add method to check if request matches proposal. Useful to see if a request I received is the same as the proposal I sent.

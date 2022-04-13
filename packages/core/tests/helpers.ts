@@ -50,7 +50,7 @@ import {
   PresentationPreview,
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
-} from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+} from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 

@@ -4,7 +4,7 @@ import type {
   ProposeProofOptions,
   RequestProofsOptions,
 } from '../src/modules/proofs/models/ModuleOptions'
-import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 
 import {
   AutoAcceptProof,

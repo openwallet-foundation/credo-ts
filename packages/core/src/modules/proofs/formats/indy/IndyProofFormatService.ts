@@ -4,7 +4,7 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { PresentationPreviewAttribute } from '../../protocol/v1/models/PresentationPreview'
+import type { PresentationPreviewAttribute } from '../../protocol/v1/models/V1PresentationPreview'
 import type { IndyGetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
@@ -40,7 +40,7 @@ import {
   AttributeFilter,
   ProofPredicateInfo,
 } from '../../protocol/v1/models'
-import { PresentationPreview } from '../../protocol/v1/models/PresentationPreview'
+import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import { ProofFormatService } from '../ProofFormatService'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'

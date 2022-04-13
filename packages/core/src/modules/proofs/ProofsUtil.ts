@@ -1,15 +1,15 @@
 import type { CreateProposalOptions } from './models/ProofServiceOptions'
 import type { ProofRequestFormats } from './models/SharedOptions'
-import type { PresentationPreviewAttribute } from './protocol/v1/models/PresentationPreview'
+import type { PresentationPreviewAttribute } from './protocol/v1/models/V1PresentationPreview'
 
 import { AriesFrameworkError } from '../../error/AriesFrameworkError'
 import { uuid } from '../../utils/uuid'
 
 import { ProofRequest } from './formats/indy/models/ProofRequest'
 import { AttributeFilter } from './protocol/v1/models/AttributeFilter'
-import { PresentationPreview } from './protocol/v1/models/PresentationPreview'
 import { ProofAttributeInfo } from './protocol/v1/models/ProofAttributeInfo'
 import { ProofPredicateInfo } from './protocol/v1/models/ProofPredicateInfo'
+import { PresentationPreview } from './protocol/v1/models/V1PresentationPreview'
 
 export class ProofsUtils {
   public static async createRequestFromPreview(options: CreateProposalOptions): Promise<ProofRequestFormats> {
