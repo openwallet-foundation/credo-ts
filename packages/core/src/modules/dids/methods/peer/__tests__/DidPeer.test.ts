@@ -6,7 +6,9 @@ import didKeyEd25519 from '../../../__tests__/__fixtures__/didKeyEd25519.json'
 import didKeyX25519 from '../../../__tests__/__fixtures__/didKeyX25519.json'
 import { DidDocument, Key } from '../../../domain'
 import { DidPeer, PeerDidNumAlgo } from '../DidPeer'
+import { serviceToNumAlgo2Did } from '../peerDidNumAlgo2'
 
+import didPeer1zQmRDidCommServices from './__fixtures__/didPeer1zQmR-did-comm-service.json'
 import didPeer1zQmR from './__fixtures__/didPeer1zQmR.json'
 import didPeer1zQmZ from './__fixtures__/didPeer1zQmZ.json'
 import didPeer2Ez6L from './__fixtures__/didPeer2Ez6L.json'
@@ -51,6 +53,24 @@ describe('DidPeer', () => {
     )
 
     expect(didPeer2.did).toBe(didPeer2Ez6L.id)
+  })
+
+  test('transforms a did comm service into a valid method 2 did', () => {
+    const didDocument = JsonTransformer.fromJSON(didPeer1zQmRDidCommServices, DidDocument)
+    const peerDid = serviceToNumAlgo2Did(didDocument.didCommServices[0])
+    const peerDidInstance = DidPeer.fromDid(peerDid)
+
+    // TODO the following `console.log` statement throws an error "TypeError: Cannot read property 'toLowerCase'
+    // of undefined" because of this:
+    //
+    // `service.id = `${did}#${service.type.toLowerCase()}-${serviceIndex++}``
+
+    // console.log(peerDidInstance.didDocument)
+
+    expect(peerDid).toBe(
+      'did:peer:2.Ez6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCJ9'
+    )
+    expect(peerDid).toBe(peerDidInstance.did)
   })
 
   test('transforms a did document into a valid method 1 did', () => {

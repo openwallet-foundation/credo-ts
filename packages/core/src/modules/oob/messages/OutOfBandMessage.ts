@@ -12,6 +12,7 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
+import { serviceToNumAlgo2Did } from '../../dids/methods/peer/peerDidNumAlgo2'
 
 interface OutOfBandMessageOptions {
   id?: string
@@ -82,6 +83,16 @@ export class OutOfBandMessage extends AgentMessage {
     const invitation = JsonTransformer.fromJSON(json, OutOfBandMessage)
     await MessageValidator.validate(invitation)
     return invitation
+  }
+
+  public get invitationDids() {
+    const dids = this.services.map((didOrService) => {
+      if (typeof didOrService === 'string') {
+        return didOrService
+      }
+      return serviceToNumAlgo2Did(didOrService)
+    })
+    return dids
   }
 
   @Equals(OutOfBandMessage.type)

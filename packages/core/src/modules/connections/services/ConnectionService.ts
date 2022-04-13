@@ -98,6 +98,11 @@ export class ConnectionService {
 
     const { did, mediatorId } = config.routing
     const didDoc = this.createDidDoc(config.routing)
+
+    // TODO: We should store only one did that we'll use to send the request message with success.
+    // We take just the first one for now.
+    const [invitationDid] = outOfBandMessage.invitationDids
+
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
       role: ConnectionRole.Invitee,
@@ -108,8 +113,9 @@ export class ConnectionService {
       mediatorId,
       autoAcceptConnection: config?.autoAcceptConnection,
       multiUseInvitation: false,
+      outOfBandId: outOfBandRecord.id,
+      invitationDid,
     })
-    connectionRecord.outOfBandId = outOfBandRecord.id
 
     const routing = config.routing
     const { did: peerDid } = await this.createDid({
@@ -629,6 +635,10 @@ export class ConnectionService {
     return this.connectionRepository.findSingleByQuery({ outOfBandId })
   }
 
+  public async findByInvitationDid(invitationDid: string) {
+    return this.connectionRepository.findByQuery({ invitationDid })
+  }
+
   public async createConnection(options: {
     role?: ConnectionRole | DidExchangeRole
     state?: ConnectionState | DidExchangeState
@@ -642,6 +652,7 @@ export class ConnectionService {
     imageUrl?: string
     protocol?: HandshakeProtocol
     outOfBandId?: string
+    invitationDid?: string
   }): Promise<ConnectionRecord> {
     const connectionRecord = new ConnectionRecord({
       did: options.did,
@@ -656,6 +667,7 @@ export class ConnectionService {
       mediatorId: options.mediatorId,
       protocol: options.protocol,
       outOfBandId: options.outOfBandId,
+      invitationDid: options.invitationDid,
     })
     await this.connectionRepository.save(connectionRecord)
     return connectionRecord
