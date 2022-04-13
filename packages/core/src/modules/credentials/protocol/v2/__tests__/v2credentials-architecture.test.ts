@@ -1,10 +1,10 @@
-import type { CredentialService } from '../../../CredentialService'
 import type { ProposeCredentialOptions } from '../../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
 import type {
   FormatServiceProposeCredentialFormats,
   IndyProposeCredentialFormat,
 } from '../../../formats/models/CredentialFormatServiceOptions'
+import type { CredentialService } from '../../../services/CredentialService'
 
 import { getBaseConfig } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
