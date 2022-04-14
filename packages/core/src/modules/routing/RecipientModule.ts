@@ -157,7 +157,7 @@ export class RecipientModule {
         this.logger.warn(
           `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
         )
-        this.openMediationWebSocket(mediator)
+        await this.openMediationWebSocket(mediator)
       })
 
     await this.openMediationWebSocket(mediator)

@@ -238,12 +238,9 @@ export class Agent {
     this.agentConfig.stop$.next(true)
 
     // Stop transports
-    for (const transport of this.outboundTransports) {
-      transport.stop()
-    }
-    for (const transport of this.inboundTransports) {
-      transport.stop()
-    }
+    const allTransports = [...this.inboundTransports, ...this.outboundTransports]
+    const transportPromises = allTransports.map((transport) => transport.stop())
+    await Promise.all(transportPromises)
 
     // close wallet if still initialized
     if (this.wallet.isInitialized) {

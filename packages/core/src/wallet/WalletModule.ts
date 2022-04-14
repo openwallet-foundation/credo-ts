@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import type { WalletConfig, WalletExportImportConfig } from '../types'
+import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -87,6 +87,10 @@ export class WalletModule {
 
   public async close(): Promise<void> {
     await this.wallet.close()
+  }
+
+  public async rotateKey(walletConfig: WalletConfigRekey): Promise<void> {
+    await this.wallet.rotateKey(walletConfig)
   }
 
   public async delete(): Promise<void> {
