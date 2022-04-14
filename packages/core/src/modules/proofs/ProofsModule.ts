@@ -67,7 +67,7 @@ export class ProofsModule {
     void this.registerHandlers(dispatcher, mediationRecipientService)
   }
 
-  public getService(protocolVersion: ProofProtocolVersion) {
+  private getService(protocolVersion: ProofProtocolVersion) {
     return this.serviceMap[protocolVersion]
   }
 
@@ -122,11 +122,11 @@ export class ProofsModule {
    *
    */
   public async acceptProposal(options: AcceptProposalOptions): Promise<ProofRecord> {
-    const version: ProofProtocolVersion = options.protocolVersion
+    const { proofRecordId } = options
+    const proofRecord = await this.getById(proofRecordId)
 
+    const version: ProofProtocolVersion = proofRecord.protocolVersion
     const service = this.getService(version)
-    const { proofRecordId, proofFormats } = options
-    const proofRecord = await service.getById(proofRecordId)
 
     if (!proofRecord.connectionId) {
       throw new AriesFrameworkError(
@@ -140,9 +140,9 @@ export class ProofsModule {
     connection.assertReady()
 
     const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
-      name: proofFormats.indy ? proofFormats.indy.name : 'proof-request',
-      version: proofFormats.indy?.version ?? '1.0',
-      nonce: proofFormats.indy?.nonce ?? (await service.generateProofRequestNonce()),
+      name: options.config?.name ? options.config.name : 'proof-request',
+      version: options.config?.version ?? '1.0',
+      nonce: options.config?.nonce ?? (await service.generateProofRequestNonce()),
       proofRecord,
     }
 
@@ -152,7 +152,6 @@ export class ProofsModule {
       proofRecord: proofRecord,
       protocolVersion: version,
       proofFormats: proofRequest,
-      autoAcceptProof: options.autoAcceptProof,
       goalCode: options.goalCode,
       willConfirm: options.willConfirm,
       comment: options.comment,

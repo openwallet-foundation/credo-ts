@@ -175,18 +175,14 @@ describe('Auto accept present proof', () => {
       testLogger.test('Faber accepts presentation proposal from Alice')
 
       const acceptProposalOptions: AcceptProposalOptions = {
-        proofFormats: {
-          indy: {
-            name: 'proof-request',
-            version: '1.0',
-            nonce: '1298236324864',
-            attributes: presentationPreview.attributes,
-            predicates: presentationPreview.predicates,
-          },
+        config: {
+          name: 'proof-request',
+          version: '1.0',
+          nonce: '947121108704767252195126',
         },
         proofRecordId: faberProofRecord.id,
-        protocolVersion: ProofProtocolVersion.V2_0,
       }
+
       await faberAgent.proofs.acceptProposal(acceptProposalOptions)
 
       testLogger.test('Faber waits for presentation from Alice')

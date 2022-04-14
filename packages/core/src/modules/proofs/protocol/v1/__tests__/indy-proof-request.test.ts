@@ -108,17 +108,12 @@ describe('Present Proof', () => {
   test(`Faber accepts the Proposal send by Alice`, async () => {
     // Accept Proposal
     const acceptProposalOptions: AcceptProposalOptions = {
-      proofFormats: {
-        indy: {
-          name: 'proof-request',
-          version: '1.0',
-          nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
-          attributes: presentationPreview.attributes,
-          predicates: presentationPreview.predicates,
-        },
+      config: {
+        name: 'proof-request',
+        version: '1.0',
+        nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
       },
       proofRecordId: faberProofRecord.id,
-      protocolVersion: ProofProtocolVersion.V1_0,
     }
 
     testLogger.test('Faber accepts presentation proposal from Alice')

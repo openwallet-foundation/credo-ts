@@ -118,17 +118,12 @@ describe('Present Proof', () => {
     })
 
     const acceptProposalOptions: AcceptProposalOptions = {
-      proofFormats: {
-        indy: {
-          name: 'proof-request',
-          version: '1.0',
-          nonce: '947121108704767252195125',
-          attributes: presentationPreview.attributes,
-          predicates: presentationPreview.predicates,
-        },
+      config: {
+        name: 'proof-request',
+        version: '1.0',
+        nonce: '947121108704767252195126',
       },
       proofRecordId: faberProofRecord.id,
-      protocolVersion: ProofProtocolVersion.V1_0,
     }
 
     // Faber accepts the presentation proposal from Alice
