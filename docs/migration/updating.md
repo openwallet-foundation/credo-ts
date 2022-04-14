@@ -10,6 +10,8 @@ There are three options on how to leverage the update assistant on agent startup
 
 ### Manually instantiating the update assistant on agent startup
 
+When the version of the storage is stored inside the agent storage, it means we need to check if the agent needs to be updated on every agent startup. We'll initialize the update assistant and check whether the storage is up to date. The advantage of this approach is that you don't have to store anything yourself, and have full control over the workflow.
+
 ```ts
 import { UpdateAssistant, Agent } from '@aries-framework/core'
 
@@ -42,6 +44,10 @@ await agent.initialize()
 ```
 
 ### Storing the agent storage version outside of the agent storage
+
+When the version of the storage is stored outside of the agent storage, you don't have to initialize the `UpdateAssistant` on every agent agent startup. You can just check if the storage version is up to date and instantiate the `UpdateAssistant` if not. The advantage of this approach is that you don't have to instantiate the `UpdateAssistant` on every agent startup, but this does mean that you have to store the storage version yourself.
+
+When a wallet has been exported and later imported you don't always have the latest version available. If this is the case you can always rely on Method 1 or 2 for updating the wallet, and storing the version yourself afterwards. You can also get the current version by calling `await updateAssistant.getCurrentAgentStorageVersion()`. Do note the `UpdateAssistant` needs to be initialized before calling this method.
 
 ```ts
 import { UpdateAssistant, Agent } from '@aries-framework/core'
@@ -83,7 +89,7 @@ await agent.initialize()
 
 ### Automatically update on agent startup
 
-This is by far the easiest way to update the agent, but has the least amount of flexibility and is not configurable. This means you will have to use the default update options to update the agent storage.
+This is by far the easiest way to update the agent, but has the least amount of flexibility and is not configurable. This means you will have to use the default update options to update the agent storage. You can find the default update config in the respective version migration guides (e.g. in [0.1-to-0.2](/docs/migration/0.1-to-0.2.md)).
 
 ```ts
 import { UpdateAssistant, Agent } from '@aries-framework/core'
