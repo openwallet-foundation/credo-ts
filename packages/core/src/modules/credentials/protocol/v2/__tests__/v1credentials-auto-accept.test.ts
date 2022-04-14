@@ -20,7 +20,6 @@ import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
-import { V2CredentialPreview } from '../V2CredentialPreview'
 
 describe('credentials', () => {
   let faberAgent: Agent
@@ -29,15 +28,17 @@ describe('credentials', () => {
   let schema: Schema
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
-  // let faberCredentialRecord: CredentialRecord
   const credentialPreview = V1CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
+    'x-ray': 'some x-ray',
+    profile_picture: 'profile picture',
   })
   const newCredentialPreview = V1CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
-    lastname: 'Appleseed',
+    'x-ray': 'another x-ray value',
+    profile_picture: 'another profile picture',
   })
 
   describe('Auto accept on `always`', () => {
@@ -104,10 +105,6 @@ describe('credentials', () => {
     test('Faber starts with V1 credential offer to Alice, both with autoAcceptCredential on `always`', async () => {
       testLogger.test('Faber sends credential offer to Alice')
       const schemaId = schema.id
-      const credentialPreview = V2CredentialPreview.fromRecord({
-        name: 'John',
-        age: '99',
-      })
       const offerOptions: OfferCredentialOptions = {
         comment: 'some comment about credential',
         connectionId: faberConnection.id,
@@ -208,19 +205,17 @@ describe('credentials', () => {
       })
 
       const options: AcceptProposalOptions = {
-        connectionId: faberConnection.id,
         credentialRecordId: faberCredentialExchangeRecord.id,
         comment: 'V1 Indy Offer',
         credentialFormats: {
           indy: {
-            attributes: credentialPreview.attributes,
             credentialDefinitionId: credDefId,
           },
         },
       }
       testLogger.test('Faber sends credential offer to Alice')
       options.credentialRecordId = faberCredentialExchangeRecord.id
-      faberCredentialExchangeRecord = await faberAgent.credentials.acceptCredentialProposal(options)
+      faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal(options)
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialExchangeRecord = await waitForCredentialRecord(aliceAgent, {
@@ -335,7 +330,7 @@ describe('credentials', () => {
           credentialRecordId: aliceCredentialExchangeRecord.id,
         }
         testLogger.test('alice sends credential request to faber')
-        faberCredentialExchangeRecord = await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
+        faberCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
         testLogger.test('Alice waits for credential from Faber')
         aliceCredentialExchangeRecord = await waitForCredentialRecord(aliceAgent, {
@@ -414,7 +409,7 @@ describe('credentials', () => {
           },
         },
       }
-      await faberAgent.credentials.negotiateCredentialProposal(negotiateOptions)
+      await faberAgent.credentials.negotiateProposal(negotiateOptions)
 
       testLogger.test('Alice waits for credential offer from Faber')
 
@@ -487,7 +482,7 @@ describe('credentials', () => {
         },
         comment: 'v1 propose credential test',
       }
-      const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateCredentialOffer(negotiateOfferOptions)
+      const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateOffer(negotiateOfferOptions)
 
       testLogger.test('Faber waits for credential proposal from Alice')
       faberCredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {

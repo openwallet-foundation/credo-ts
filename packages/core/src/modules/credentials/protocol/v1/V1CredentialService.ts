@@ -6,6 +6,16 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionRecord } from '../../../connections'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
+  ServiceAcceptCredentialOptions,
+  CredentialOfferTemplate,
+  CredentialProposeOptions,
+  CredentialProtocolMsgReturnType,
+  ServiceAcceptOfferOptions,
+  ServiceAcceptRequestOptions,
+  ServiceRequestCredentialOptions,
+  DeleteCredentialOptions,
+} from '../../CredentialServiceOptions'
+import type {
   AcceptProposalOptions,
   CredentialFormatType,
   NegotiateProposalOptions,
@@ -13,19 +23,7 @@ import type {
   ProposeCredentialOptions,
 } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
-import type {
-  CredentialFormats,
-  FormatServiceRequestCredentialOptions,
-  HandlerAutoAcceptOptions,
-} from '../../formats/models/CredentialFormatServiceOptions'
-import type {
-  CredentialProtocolMsgReturnType,
-  ServiceAcceptCredentialOptions,
-  CredentialOfferTemplate,
-  ServiceAcceptOfferOptions,
-  ServiceAcceptRequestOptions,
-  CredentialProposeOptions,
-} from '../v2'
+import type { CredentialFormats, HandlerAutoAcceptOptions } from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredOffer } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -43,12 +41,12 @@ import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
-import { CredentialService } from '../../CredentialService'
 import { CredentialState } from '../../CredentialState'
 import { CredentialUtils } from '../../CredentialUtils'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord } from '../../repository'
+import { CredentialService } from '../../services/CredentialService'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
 import {
@@ -93,6 +91,16 @@ export class V1CredentialService extends CredentialService {
       formatService.shouldAutoRespondToCredential(handlerOptions)
 
     return shouldAutoReturn
+  }
+
+  public async deleteById(credentialId: string, options?: DeleteCredentialOptions): Promise<void> {
+    const credentialRecord = await this.getById(credentialId)
+
+    await this.credentialRepository.delete(credentialRecord)
+
+    if (options?.deleteAssociatedCredential && credentialRecord) {
+      await this.formatService.deleteCredentialById(credentialRecord, options)
+    }
   }
 
   public shouldAutoRespondToRequest(
@@ -197,7 +205,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: FormatServiceRequestCredentialOptions,
+    options: ServiceRequestCredentialOptions,
     holderDid: string
   ): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
@@ -492,6 +500,8 @@ export class V1CredentialService extends CredentialService {
       ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
       : preview
 
+    await this.formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
+
     // Construct offer message
     const offerMessage = new V1OfferCredentialMessage({
       comment,
@@ -772,6 +782,8 @@ export class V1CredentialService extends CredentialService {
     credentialRecord.autoAcceptCredential =
       credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
 
+    await this.formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
+
     await this.updateState(credentialRecord, CredentialState.OfferSent)
 
     await this.didCommMessageRepository.saveAgentMessage({
@@ -899,11 +911,6 @@ export class V1CredentialService extends CredentialService {
     proposal: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
-    if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
-        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
-      )
-    }
     const proposalCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V1ProposeCredentialMessage,
@@ -1032,7 +1039,7 @@ export class V1CredentialService extends CredentialService {
 
     // Update record
     credentialRecord.credentialAttributes = message.credentialProposal?.attributes
-    this.updateState(credentialRecord, CredentialState.ProposalSent)
+    await this.updateState(credentialRecord, CredentialState.ProposalSent)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: message,
       role: DidCommMessageRole.Sender,

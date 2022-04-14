@@ -1,6 +1,10 @@
-import type { ConnectionRecord } from '@aries-framework/core'
+/* eslint-disable import/no-unresolved */
+/* eslint-disable import/no-duplicates */
+/* eslint-disable import/order */
 import type { CredDef, Schema } from 'indy-sdk-react-native'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
+import type { ConnectionRecord } from '@aries-framework/core'
+import { CredentialProtocolVersion } from '@aries-framework/core'
 
 // eslint-disable-next-line import/no-unresolved
 import { V1CredentialPreview, AttributeFilter, ProofAttributeInfo, utils } from '@aries-framework/core'
@@ -97,6 +101,7 @@ export class Faber extends BaseAgent {
 
     await this.agent.credentials.offerCredential({
       connectionId: connectionRecord.id,
+      protocolVersion: CredentialProtocolVersion.V1,
       credentialFormats: {
         indy: {
           attributes: credentialPreview.attributes,

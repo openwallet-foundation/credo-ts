@@ -8,20 +8,22 @@ import type {
 } from '../../CredentialsModuleOptions'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type {
+  DeleteCredentialOptions,
   ServiceAcceptCredentialOptions,
   ServiceAcceptOfferOptions,
   ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
+  ServiceRequestCredentialOptions,
 } from '../../protocol'
+import type { V1CredentialPreview } from '../../protocol/v1/V1CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { CredPropose } from '../models/CredPropose'
 import type {
-  FormatServiceCredentialAttachmentFormats,
   CredentialFormatSpec,
-  HandlerAutoAcceptOptions,
+  FormatServiceCredentialAttachmentFormats,
   FormatServiceOfferAttachmentFormats,
   FormatServiceProposeAttachmentFormats,
-  FormatServiceRequestCredentialOptions,
+  HandlerAutoAcceptOptions,
   RevocationRegistry,
 } from '../models/CredentialFormatServiceOptions'
 import type { Cred, CredDef, CredOffer, CredReq, CredReqMetadata } from 'indy-sdk'
@@ -162,7 +164,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    *
    */
   public async createRequest(
-    options: FormatServiceRequestCredentialOptions,
+    options: ServiceRequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord,
     holderDid: string
   ): Promise<FormatServiceCredentialAttachmentFormats> {
@@ -172,15 +174,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       )
     }
     const offer = options.offerAttachment.getDataAsJson<CredOffer>()
+    const credDef = await this.getCredentialDefinition(offer)
 
-    options.indy = {}
-    if (options.indy) {
-      options.indy.credentialDefinition = {
-        credDef: await this.getCredentialDefinition(offer),
-      }
-    }
-
-    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer, holderDid)
+    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer, credDef, holderDid)
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
 
     const formats: CredentialFormatSpec = {
@@ -275,17 +271,18 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns The created credential offer
    */
   private async createIndyCredentialRequest(
-    options: FormatServiceRequestCredentialOptions,
+    options: ServiceRequestCredentialOptions,
     offer: CredOffer,
+    credDef: CredDef,
     holderDid: string
   ): Promise<{ credReq: CredReq; credReqMetadata: CredReqMetadata }> {
-    if (!options.indy || !options.indy.credentialDefinition || !options.indy.credentialDefinition.credDef) {
-      throw new AriesFrameworkError('Unable to create Credential Request')
-    }
+    // if (!options.credentialDefinition || !options.credentialDefinition.credDef) {
+    //   throw new AriesFrameworkError('Unable to create Credential Request')
+    // }
     const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
       holderDid: holderDid,
       credentialOffer: offer,
-      credentialDefinition: options.indy.credentialDefinition.credDef,
+      credentialDefinition: credDef,
     })
     return { credReq, credReqMetadata }
   }
@@ -300,10 +297,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
     await MessageValidator.validate(credPropose)
 
-    if (credentialRecord.credentialAttributes && credPropose.credentialDefinitionId) {
+    if (credPropose.credentialDefinitionId) {
       options.credentialFormats = {
         indy: {
-          attributes: credentialRecord.credentialAttributes,
           credentialDefinitionId: credPropose?.credentialDefinitionId,
         },
       }
@@ -452,6 +448,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         options.proposalAttachment
       )
     }
+    console.log("OUCH! autoAccept = ", autoAccept)
     return false
   }
   /**
@@ -519,6 +516,31 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       }
     }
     return false
+  }
+  public async deleteCredentialById(
+    credentialRecord: CredentialExchangeRecord,
+    options: DeleteCredentialOptions
+  ): Promise<void> {
+    const indyCredential = credentialRecord.credentials.filter((binding) => {
+      return binding.credentialRecordType == CredentialFormatType.Indy
+    })
+    if (indyCredential.length != 1) {
+      throw new AriesFrameworkError(`Could not find Indy record id for credential record ${credentialRecord.id}`)
+    }
+    if (options?.deleteAssociatedCredential && indyCredential[0].credentialRecordId) {
+      await this.indyHolderService.deleteCredential(indyCredential[0].credentialRecordId)
+    }
+  }
+
+  public async checkPreviewAttributesMatchSchemaAttributes(
+    offerAttachment: Attachment,
+    preview: V1CredentialPreview | V2CredentialPreview
+  ): Promise<void> {
+    const credOffer = offerAttachment?.getDataAsJson<CredOffer>()
+
+    const schema = await this.indyLedgerService.getSchema(credOffer.schema_id)
+
+    CredentialUtils.checkAttributesMatch(schema, preview)
   }
 
   private isRequestDefinitionIdValid(

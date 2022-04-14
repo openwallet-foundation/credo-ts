@@ -134,6 +134,8 @@ describe('credentials', () => {
       const credentialPreview = V2CredentialPreview.fromRecord({
         name: 'John',
         age: '99',
+        'x-ray': 'some x-ray',
+        profile_picture: 'profile picture',
       })
       const offerOptions: OfferCredentialOptions = {
         comment: 'V2 Offer Credential',
@@ -261,14 +263,13 @@ describe('credentials', () => {
 
       testLogger.test('Faber sends credential offer to Alice')
       const options: AcceptProposalOptions = {
-        connectionId: faberConnection.id,
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Offer',
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
       }
-      const faberCredentialExchangeRecord = await faberAgent.credentials.acceptCredentialProposal(options)
+      const faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal(options)
 
       // await sleep(5000)
       testLogger.test('Alice waits for credential from Faber')
@@ -335,8 +336,9 @@ describe('credentials', () => {
           credentialRecordId: aliceCredentialRecord.id,
         }
         testLogger.test('Alice sends credential request to faber')
-        const faberCredentialExchangeRecord: CredentialExchangeRecord =
-          await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
+        const faberCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
+          acceptOfferOptions
+        )
 
         // await sleep(5000)
 
@@ -398,7 +400,7 @@ describe('credentials', () => {
 
       // await sleep(5000)
 
-      await faberAgent.credentials.negotiateCredentialProposal(negotiateOptions)
+      await faberAgent.credentials.negotiateProposal(negotiateOptions)
 
       testLogger.test('Alice waits for credential offer from Faber')
 
@@ -424,7 +426,7 @@ describe('credentials', () => {
       const aliceRecord = await aliceAgent.credentials.getById(record.id)
       aliceRecord.assertState(CredentialState.OfferReceived)
     })
-    xtest('Faber starts with V2 credential offer to Alice, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
+    test('Faber starts with V2 credential offer to Alice, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
       testLogger.test('Faber sends credential offer to Alice')
       const offerOptions: OfferCredentialOptions = {
         comment: 'some comment about credential',
@@ -464,7 +466,7 @@ describe('credentials', () => {
       }
       // await sleep(5000)
 
-      const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateCredentialOffer(proposeOptions)
+      const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateOffer(proposeOptions)
 
       testLogger.test('Faber waits for credential proposal from Alice')
       const faberCredentialRecord = await waitForCredentialRecord(faberAgent, {

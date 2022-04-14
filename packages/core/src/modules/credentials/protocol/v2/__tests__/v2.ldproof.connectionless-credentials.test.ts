@@ -185,7 +185,7 @@ describe('credentials', () => {
     }
     aliceCredentialRecord.protocolVersion = CredentialProtocolVersion.V2
 
-    const { credentialRecord } = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
+    const credentialRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {

@@ -84,3 +84,7 @@ export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id
   linkedAttachments?: LinkedAttachment[]
   autoAcceptCredential?: AutoAcceptCredential
 }
+
+export interface DeleteCredentialOptions {
+  deleteAssociatedCredential: boolean
+}

@@ -1,6 +1,7 @@
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import type {
+  FormatServiceAcceptProposeCredentialFormats,
   FormatServiceOfferCredentialFormats,
   FormatServiceProposeCredentialFormats as FormatServiceProposeCredentialFormats,
   FormatServiceRequestCredentialFormats,
@@ -21,25 +22,23 @@ interface BaseOptions {
 // CREDENTIAL PROPOSAL
 interface ProposeCredentialOptions extends BaseOptions {
   connectionId: string
-  protocolVersion: CredentialProtocolVersion
+  protocolVersion?: CredentialProtocolVersion
   credentialFormats: FormatServiceProposeCredentialFormats
 }
 
 interface AcceptProposalOptions extends BaseOptions {
-  connectionId?: string
   credentialRecordId: string
-  credentialFormats: FormatServiceOfferCredentialFormats
+  credentialFormats: FormatServiceAcceptProposeCredentialFormats
 }
 
 interface NegotiateProposalOptions extends BaseOptions {
-  connectionId?: string
   credentialRecordId: string
   credentialFormats: FormatServiceOfferCredentialFormats
 }
 // CREDENTIAL OFFER
 interface OfferCredentialOptions extends BaseOptions {
   connectionId: string
-  protocolVersion?: CredentialProtocolVersion
+  protocolVersion: CredentialProtocolVersion
   credentialFormats: FormatServiceOfferCredentialFormats
 }
 

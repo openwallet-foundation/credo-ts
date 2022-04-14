@@ -1,6 +1,5 @@
 import type { W3cVerifiableCredential } from '../../../../../../src/modules/vc/models'
 import type { SignCredentialOptions } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
-import type { TestLogger } from '../../../../../../tests/logger'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
 import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
@@ -132,7 +131,6 @@ describe('credentials', () => {
     })
 
     const options: AcceptProposalOptions = {
-      connectionId: faberConnection.id,
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
       credentialFormats: {
@@ -140,7 +138,7 @@ describe('credentials', () => {
       },
     }
     testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.credentials.acceptCredentialProposal(options)
+    await faberAgent.credentials.acceptProposal(options)
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -196,8 +194,9 @@ describe('credentials', () => {
       const acceptOfferOptions: ServiceAcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
       }
-      const offerCredentialExchangeRecord: CredentialExchangeRecord =
-        await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
+      const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
+        acceptOfferOptions
+      )
 
       expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
       expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
@@ -349,19 +348,17 @@ describe('credentials', () => {
     })
 
     const options: AcceptProposalOptions = {
-      connectionId: faberConnection.id,
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Offer',
       credentialFormats: {
         indy: {
-          attributes: credentialPreview.attributes,
           credentialDefinitionId: credDefId,
         },
         jsonld: signCredentialOptions,
       },
     }
     testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.credentials.acceptCredentialProposal(options)
+    await faberAgent.credentials.acceptProposal(options)
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -430,8 +427,9 @@ describe('credentials', () => {
       const acceptOfferOptions: ServiceAcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
       }
-      const offerCredentialExchangeRecord: CredentialExchangeRecord =
-        await aliceAgent.credentials.acceptCredentialOffer(acceptOfferOptions)
+      const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
+        acceptOfferOptions
+      )
 
       expect(offerCredentialExchangeRecord.connectionId).toEqual(multiFormatProposal.connectionId)
       expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)

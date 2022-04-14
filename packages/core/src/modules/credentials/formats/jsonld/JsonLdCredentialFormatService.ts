@@ -2,6 +2,7 @@ import type { Attachment, AttachmentData } from '../../../../decorators/attachme
 import type { SignCredentialOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
 import type {
+  DeleteCredentialOptions,
   ServiceAcceptCredentialOptions,
   ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
@@ -18,6 +19,7 @@ import type {
   RevocationRegistry,
 } from '../models/CredentialFormatServiceOptions'
 
+import { performance } from 'perf_hooks'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../../../../../src/error'
@@ -31,10 +33,15 @@ import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinat
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
-import { performance } from 'perf_hooks'
 
 @scoped(Lifecycle.ContainerScoped)
 export class JsonLdCredentialFormatService extends CredentialFormatService {
+  public deleteCredentialById(
+    credentialRecord: CredentialExchangeRecord,
+    options: DeleteCredentialOptions
+  ): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
   protected credentialRepository: CredentialRepository // protected as in base class
   private w3cCredentialService: W3cCredentialService
 
@@ -84,13 +91,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
       verificationMethod: credentialOptions.verificationMethod,
     }
 
-    console.log("----------- SIGN CREDENIAL START ------------")
-    const startTime = performance.now()
-
     const verifiableCredential = await this.w3cCredentialService.signCredential(signCredentialOptions)
-    const endTime = performance.now()
-
-    console.log(`----------- SIGN CREDENTIAL END ------------ time = ${Math.floor(endTime - startTime)} milliseconds`)
     const issueAttachment: Attachment = this.getFormatData(verifiableCredential, attachmentId)
 
     return { format: formats, attachment: issueAttachment }
@@ -252,14 +253,9 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
 
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
 
-    console.log("----------- STORE CREDENIAL START ------------")
-    const startTime = performance.now()
-
     const verifiableCredential: W3cCredentialRecord = await this.w3cCredentialService.storeCredential({
       record: credential,
     })
-    const endTime = performance.now()
-    console.log(`----------- STORE CREDENTIAL END ------------ time = ${Math.floor(endTime - startTime)} milliseconds`)
 
     // verifiableCredential.id = uu
     if (!verifiableCredential.credential.id) {

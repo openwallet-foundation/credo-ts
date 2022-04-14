@@ -1,6 +1,5 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Logger } from '../../logger'
-import type { CredentialService } from './CredentialService'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -12,6 +11,7 @@ import type {
   RequestCredentialOptions,
 } from './CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from './repository'
+import type { CredentialService } from './services/CredentialService'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -33,14 +33,14 @@ import { CredentialRepository } from './repository'
 export interface CredentialsModule {
   // Proposal methods
   proposeCredential(options: ProposeCredentialOptions): Promise<CredentialExchangeRecord>
-  acceptCredentialProposal(options: AcceptProposalOptions): Promise<CredentialExchangeRecord>
-  negotiateCredentialProposal(options: NegotiateProposalOptions): Promise<CredentialExchangeRecord>
+  acceptProposal(options: AcceptProposalOptions): Promise<CredentialExchangeRecord>
+  negotiateProposal(options: NegotiateProposalOptions): Promise<CredentialExchangeRecord>
 
   // Offer methods
   offerCredential(options: OfferCredentialOptions): Promise<CredentialExchangeRecord>
-  acceptCredentialOffer(options: AcceptOfferOptions): Promise<CredentialExchangeRecord>
-  declineCredentialOffer(credentialRecordId: string): Promise<CredentialExchangeRecord>
-  negotiateCredentialOffer(options: NegotiateOfferOptions): Promise<CredentialExchangeRecord>
+  acceptOffer(options: AcceptOfferOptions): Promise<CredentialExchangeRecord>
+  declineOffer(credentialRecordId: string): Promise<CredentialExchangeRecord>
+  negotiateOffer(options: NegotiateOfferOptions): Promise<CredentialExchangeRecord>
   // out of band
   createOutOfBandOffer(options: OfferCredentialOptions): Promise<{
     message: AgentMessage
@@ -111,7 +111,7 @@ export class CredentialsModule implements CredentialsModule {
     return this.serviceMap[protocolVersion]
   }
 
-  public async declineCredentialOffer(credentialRecordId: string): Promise<CredentialExchangeRecord> {
+  public async declineOffer(credentialRecordId: string): Promise<CredentialExchangeRecord> {
     const credentialRecord = await this.getById(credentialRecordId)
     credentialRecord.assertState(CredentialState.OfferReceived)
 
@@ -122,15 +122,15 @@ export class CredentialsModule implements CredentialsModule {
     return credentialRecord
   }
 
-  public async negotiateCredentialOffer(credentialOptions: NegotiateOfferOptions): Promise<CredentialExchangeRecord> {
-    if (!credentialOptions.credentialRecordId) {
+  public async negotiateOffer(options: NegotiateOfferOptions): Promise<CredentialExchangeRecord> {
+    if (!options.credentialRecordId) {
       throw new AriesFrameworkError(`No credential record id found in negotiateCredentialOffer`)
     }
-    const credentialRecord = await this.getById(credentialOptions.credentialRecordId)
+    const credentialRecord = await this.getById(options.credentialRecordId)
     const version = credentialRecord.protocolVersion
 
     const service = this.getService(version)
-    const { message } = await service.negotiateOffer(credentialOptions, credentialRecord)
+    const { message } = await service.negotiateOffer(options, credentialRecord)
 
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
@@ -152,23 +152,26 @@ export class CredentialsModule implements CredentialsModule {
    * Initiate a new credential exchange as holder by sending a credential proposal message
    * to the connection with the specified credential options
    *
-   * @param credentialOptions configuration to use for the proposal
+   * @param options configuration to use for the proposal
    * @returns Credential exchange record associated with the sent proposal message
    */
 
-  public async proposeCredential(credentialOptions: ProposeCredentialOptions): Promise<CredentialExchangeRecord> {
+  public async proposeCredential(options: ProposeCredentialOptions): Promise<CredentialExchangeRecord> {
     // get the version
-    const version = credentialOptions.protocolVersion
+    const version = options.protocolVersion
 
     // with version we can get the Service
+    if (!version) {
+      throw new AriesFrameworkError('Missing Protocol Version')
+    }
     const service = this.getService(version)
 
     this.logger.debug(`Got a CredentialService object for version ${version}`)
 
-    const connection = await this.connectionService.getById(credentialOptions.connectionId)
+    const connection = await this.connectionService.getById(options.connectionId)
 
     // will get back a credential record -> map to Credential Exchange Record
-    const { credentialRecord, message } = await service.createProposal(credentialOptions)
+    const { credentialRecord, message } = await service.createProposal(options)
 
     this.logger.debug('We have a message (sending outbound): ', message)
 
@@ -185,24 +188,25 @@ export class CredentialsModule implements CredentialsModule {
    * Accept a credential proposal as issuer (by sending a credential offer message) to the connection
    * associated with the credential record.
    *
-   * @param credentialOptions config object for the proposal (and subsequent offer) which replaces previous named parameters
+   * @param options config object for the proposal (and subsequent offer) which replaces previous named parameters
    * @returns Credential exchange record associated with the credential offer
    *
    */
-  public async acceptCredentialProposal(credentialOptions: AcceptProposalOptions): Promise<CredentialExchangeRecord> {
-    if (!credentialOptions.connectionId) {
+  public async acceptProposal(options: AcceptProposalOptions): Promise<CredentialExchangeRecord> {
+    const credentialRecord = await this.getById(options.credentialRecordId)
+
+    if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError('Missing connection id in v2 acceptCredentialProposal')
     }
-    const credentialRecord = await this.getById(credentialOptions.credentialRecordId)
     const version = credentialRecord.protocolVersion
 
     // with version we can get the Service
     const service = this.getService(version)
 
     // will get back a credential record -> map to Credential Exchange Record
-    const { message } = await service.acceptProposal(credentialOptions, credentialRecord)
+    const { message } = await service.acceptProposal(options, credentialRecord)
 
-    const connection = await this.connectionService.getById(credentialOptions.connectionId)
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
     this.logger.debug('We have an offer message (sending outbound): ', message)
 
@@ -220,27 +224,11 @@ export class CredentialsModule implements CredentialsModule {
    * Accept a credential offer as holder (by sending a credential request message) to the connection
    * associated with the credential record.
    *
-   * @param credentialRecordId The id of the credential record for which to accept the offer
-   * @param config Additional configuration to use for the request
-   * @returns Credential record associated with the sent credential request message
-   *
-   */
-  public async acceptCredentialOffer(credentialOptions: AcceptOfferOptions): Promise<CredentialExchangeRecord> {
-    const { credentialRecord } = await this.acceptOffer(credentialOptions)
-
-    return credentialRecord
-  }
-  /**
-   * Accept a credential offer as holder (by sending a credential request message) to the connection
-   * associated with the credential record.
-   *
-   * @param offer The object containing config options of the offer to be accepted
+   * @param options The object containing config options of the offer to be accepted
    * @returns Object containing offer associated credential record
    */
-  public async acceptOffer(
-    offer: AcceptOfferOptions
-  ): Promise<{ credentialRecord: CredentialExchangeRecord; message: AgentMessage }> {
-    const record = await this.getById(offer.credentialRecordId)
+  public async acceptOffer(options: AcceptOfferOptions): Promise<CredentialExchangeRecord> {
+    const record = await this.getById(options.credentialRecordId)
 
     const service = this.getService(record.protocolVersion)
 
@@ -253,8 +241,8 @@ export class CredentialsModule implements CredentialsModule {
       const connection = await this.connectionService.getById(record.connectionId)
 
       const requestOptions: RequestCredentialOptions = {
-        comment: offer.comment,
-        autoAcceptCredential: offer.autoAcceptCredential,
+        comment: options.comment,
+        autoAcceptCredential: options.autoAcceptCredential,
       }
       const { message, credentialRecord } = await service.createRequest(record, requestOptions, connection.did)
 
@@ -272,7 +260,7 @@ export class CredentialsModule implements CredentialsModule {
       await this.messageSender.sendMessage(outboundMessage)
       credentialRecord.protocolVersion = record.protocolVersion
       await this.credentialRepository.update(credentialRecord)
-      return { credentialRecord, message }
+      return credentialRecord
     }
     // Use ~service decorator otherwise
     else if (offerMessage?.service) {
@@ -286,8 +274,8 @@ export class CredentialsModule implements CredentialsModule {
       const recipientService = offerMessage.service
 
       const requestOptions: RequestCredentialOptions = {
-        comment: offer.comment,
-        autoAcceptCredential: offer.autoAcceptCredential,
+        comment: options.comment,
+        autoAcceptCredential: options.autoAcceptCredential,
       }
       const { message, credentialRecord } = await service.createRequest(
         record,
@@ -313,7 +301,7 @@ export class CredentialsModule implements CredentialsModule {
         returnRoute: true,
       })
 
-      return { credentialRecord, message }
+      return credentialRecord
     }
     // Cannot send message without connectionId or ~service decorator
     else {
@@ -327,21 +315,19 @@ export class CredentialsModule implements CredentialsModule {
    * Negotiate a credential proposal as issuer (by sending a credential offer message) to the connection
    * associated with the credential record.
    *
-   * @param credentialOptions configuration for the offer see {@link NegotiateProposalOptions}
+   * @param options configuration for the offer see {@link NegotiateProposalOptions}
    * @returns Credential exchange record associated with the credential offer
    *
    */
-  public async negotiateCredentialProposal(
-    credentialOptions: NegotiateProposalOptions
-  ): Promise<CredentialExchangeRecord> {
-    const credentialRecord = await this.getById(credentialOptions.credentialRecordId)
+  public async negotiateProposal(options: NegotiateProposalOptions): Promise<CredentialExchangeRecord> {
+    const credentialRecord = await this.getById(options.credentialRecordId)
 
     // get the version
     const version = credentialRecord.protocolVersion
 
     // with version we can get the Service
     const service = this.getService(version)
-    const { message } = await service.negotiateProposal(credentialOptions, credentialRecord)
+    const { message } = await service.negotiateProposal(options, credentialRecord)
 
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(
@@ -363,20 +349,19 @@ export class CredentialsModule implements CredentialsModule {
    * Initiate a new credential exchange as issuer by sending a credential offer message
    * to the connection with the specified connection id.
    *
-   * @param credentialOptions config options for the credential offer
+   * @param options config options for the credential offer
    * @returns Credential exchange record associated with the sent credential offer message
    */
-  public async offerCredential(credentialOptions: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
-    const connection = await this.connectionService.getById(credentialOptions.connectionId)
-
-    // with version we can get the Service
-    if (!credentialOptions.protocolVersion) {
-      throw new AriesFrameworkError('Missing protocol version in offerCredential')
+  public async offerCredential(options: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
+    if (!options.connectionId) {
+      throw new AriesFrameworkError('Missing connectionId on offerCredential')
     }
-    const service = this.getService(credentialOptions.protocolVersion)
+    const connection = await this.connectionService.getById(options.connectionId)
 
-    this.logger.debug(`Got a CredentialService object for version ${credentialOptions.protocolVersion}`)
-    const { message, credentialRecord } = await service.createOffer(credentialOptions)
+    const service = this.getService(options.protocolVersion)
+
+    this.logger.debug(`Got a CredentialService object for version ${options.protocolVersion}`)
+    const { message, credentialRecord } = await service.createOffer(options)
 
     this.logger.debug('Offer Message successfully created; message= ', message)
     const outboundMessage = createOutboundMessage(connection, message)
@@ -493,19 +478,6 @@ export class CredentialsModule implements CredentialsModule {
   }
 
   /**
-   * Declines an offer as holder
-   * @param credentialRecordId the id of the credential to be declined
-   * @returns credential record that was declined
-   */
-  public async declineOffer(credentialRecordId: string): Promise<CredentialExchangeRecord> {
-    const credentialRecord = await this.getById(credentialRecordId)
-    const service = this.getService(credentialRecord.protocolVersion)
-
-    await service.declineOffer(credentialRecord)
-
-    return credentialRecord
-  }
-  /**
    * Retrieve a credential record by id
    *
    * @param credentialRecordId The credential record id
@@ -548,21 +520,21 @@ export class CredentialsModule implements CredentialsModule {
   /**
    * Initiate a new credential exchange as issuer by creating a credential offer
    * not bound to any connection. The offer must be delivered out-of-band to the holder
-   * @param credentialOptions The credential options to use for the offer
+   * @param options The credential options to use for the offer
    * @returns The credential record and credential offer message
    */
-  public async createOutOfBandOffer(credentialOptions: OfferCredentialOptions): Promise<{
+  public async createOutOfBandOffer(options: OfferCredentialOptions): Promise<{
     message: AgentMessage
     credentialRecord: CredentialExchangeRecord
   }> {
     // with version we can get the Service
-    if (!credentialOptions.protocolVersion) {
+    if (!options.protocolVersion) {
       throw new AriesFrameworkError('Missing protocol version in createOutOfBandOffer')
     }
-    const service = this.getService(credentialOptions.protocolVersion)
+    const service = this.getService(options.protocolVersion)
 
-    this.logger.debug(`Got a CredentialService object for version ${credentialOptions.protocolVersion}`)
-    const { message, credentialRecord } = await service.createOutOfBandOffer(credentialOptions)
+    this.logger.debug(`Got a CredentialService object for version ${options.protocolVersion}`)
+    const { message, credentialRecord } = await service.createOutOfBandOffer(options)
 
     this.logger.debug('Offer Message successfully created; message= ', message)
 

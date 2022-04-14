@@ -1,11 +1,10 @@
-import type { LdProofDetail, LdProofDetailOptions } from '../../../../../../src/modules/vc'
-import type { CredentialService } from '../../../CredentialService'
 import type { ProposeCredentialOptions } from '../../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'
 import type {
   FormatServiceProposeCredentialFormats,
   IndyProposeCredentialFormat,
 } from '../../../formats/models/CredentialFormatServiceOptions'
+import type { CredentialService } from '../../../services/CredentialService'
 
 import { W3cCredential } from '../../../../../../src/modules/vc/models'
 import { JsonTransformer } from '../../../../../../src/utils'
@@ -47,40 +46,49 @@ const proposal: ProposeCredentialOptions = {
   comment: 'v2 propose credential test',
 }
 
-const options: LdProofDetailOptions = {
-  proofType: 'Ed25519Signature2018',
-  verificationMethod:
-    'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+const inputDoc = {
+  '@context': [
+    'https://www.w3.org/2018/credentials/v1',
+    'https://w3id.org/citizenship/v1',
+    'https://w3id.org/security/bbs/v1',
+  ],
+  id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+  type: ['VerifiableCredential', 'PermanentResidentCard'],
+  issuer: 'weidfhwefhew',
+  identifier: '83627465',
+  name: 'Permanent Resident Card',
+  description: 'Government of Example Permanent Resident Card.',
+  issuanceDate: '2019-12-03T12:19:52Z',
+  expirationDate: '2029-12-03T12:19:52Z',
+  credentialSubject: {
+    id: 'did:example:b34ca6cd37bbf23',
+    type: ['PermanentResident', 'Person'],
+    givenName: 'JOHN',
+    familyName: 'SMITH',
+    gender: 'Male',
+    image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+    residentSince: '2015-01-01',
+    lprCategory: 'C09',
+    lprNumber: '999-999-999',
+    commuterClassification: 'C1',
+    birthCountry: 'Bahamas',
+    birthDate: '1958-07-17',
+  },
 }
 
-const credential: W3cCredential = JsonTransformer.fromJSON(
-  {
-    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
-    id: 'http://example.edu/credentials/temporary/28934792387492384',
-    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-    issuer: TEST_DID_KEY,
-    issuanceDate: '2017-10-22T12:23:48Z',
-    credentialSubject: {
-      id: 'did:example:b34ca6cd37bbf23',
-      degree: {
-        type: 'BachelorDegree',
-        name: 'Bachelor of Science and Arts',
-      },
-    },
-  },
-  W3cCredential
-)
+const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
 
-const ldProof: LdProofDetail = {
-  credential: credential,
-  options: options,
+const signCredentialOptions = {
+  credential,
+  proofType: 'Ed25519Signature2018',
+  verificationMethod: 'weprih2ofueb',
 }
 
 const jsonProposal: ProposeCredentialOptions = {
   connectionId: '',
   protocolVersion: CredentialProtocolVersion.V2,
   credentialFormats: {
-    jsonld: ldProof,
+    jsonld: signCredentialOptions,
   },
   comment: 'v2 propose credential test',
 }
@@ -90,7 +98,7 @@ const multiFormatProposal: ProposeCredentialOptions = {
   protocolVersion: CredentialProtocolVersion.V2,
   credentialFormats: {
     indy: testAttributes,
-    jsonld: ldProof,
+    jsonld: signCredentialOptions,
   },
   comment: 'v2 propose credential test',
 }

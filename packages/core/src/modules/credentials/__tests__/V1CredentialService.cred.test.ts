@@ -4,7 +4,6 @@ import type { StoreCredentialOptions } from '../../indy/services/IndyHolderServi
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ServiceAcceptRequestOptions } from '../CredentialServiceOptions'
 import type { RequestCredentialOptions } from '../CredentialsModuleOptions'
-import type { FormatServiceRequestCredentialOptions } from '../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
@@ -27,6 +26,7 @@ import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
 import { CredentialUtils } from '../CredentialUtils'
+import { CredentialFormatType } from '../CredentialsModuleOptions'
 import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
 import { IndyCredentialFormatService } from '../formats/indy/IndyCredentialFormatService'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
@@ -113,7 +113,6 @@ const mockCredentialRecord = ({
   metadata,
   threadId,
   connectionId,
-  credentialId,
   tags,
   id,
   credentialAttributes,
@@ -140,7 +139,12 @@ const mockCredentialRecord = ({
     state: state || CredentialState.OfferSent,
     threadId: threadId ?? offerMessage.id,
     connectionId: connectionId ?? '123',
-    credentialId: credentialId ?? '123',
+    credentials: [
+      {
+        credentialRecordType: CredentialFormatType.Indy,
+        credentialRecordId: '123456',
+      },
+    ],
     tags,
     protocolVersion: CredentialProtocolVersion.V1,
   })
@@ -276,12 +280,9 @@ describe('CredentialService', () => {
     test('returns credential request message base on existing credential offer message', async () => {
       // given
       const comment = 'credential request comment'
-      const options: FormatServiceRequestCredentialOptions = {
+      const options: RequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
         comment: 'credential request comment',
-        credentialDefinition: {
-          credDef: credDef,
-        },
       }
 
       // when
@@ -771,6 +772,29 @@ describe('CredentialService', () => {
       expect(credentialRepository.getAll).toBeCalledWith()
 
       expect(result).toEqual(expect.arrayContaining(expected))
+    })
+  })
+
+  describe('deleteCredential', () => {
+    it('should call delete from repository', async () => {
+      const credential = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
+
+      const repositoryDeleteSpy = jest.spyOn(credentialRepository, 'delete')
+      await credentialService.deleteById(credential.id)
+      expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, credential)
+    })
+
+    it('deleteAssociatedCredential parameter should call deleteCredential in indyHolderService with credentialId', async () => {
+      const storeCredentialMock = indyHolderService.deleteCredential as jest.Mock<Promise<void>, [string]>
+
+      const credential = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
+
+      await credentialService.deleteById(credential.id, {
+        deleteAssociatedCredential: true,
+      })
+      expect(storeCredentialMock).toHaveBeenNthCalledWith(1, credential.credentials[0].credentialRecordId)
     })
   })
 

@@ -51,18 +51,12 @@ export class V2RequestCredentialHandler implements Handler {
       messageClass: V2ProposeCredentialMessage,
     })
 
-    let shouldAutoRespond
-
-    if (this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Never) {
-      shouldAutoRespond = false
-    } else {
-      shouldAutoRespond = this.credentialService.shouldAutoRespondToRequest(
-        credentialRecord,
-        requestMessage,
-        proposeMessage ? proposeMessage : undefined,
-        offerMessage ? offerMessage : undefined
-      )
-    }
+    const shouldAutoRespond = this.credentialService.shouldAutoRespondToRequest(
+      credentialRecord,
+      requestMessage,
+      proposeMessage ? proposeMessage : undefined,
+      offerMessage ? offerMessage : undefined
+    )
 
     if (shouldAutoRespond) {
       return await this.createCredential(credentialRecord, messageContext, requestMessage, offerMessage)

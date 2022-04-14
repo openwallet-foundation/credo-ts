@@ -9,7 +9,7 @@ import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewA
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { CredPropose } from './CredPropose'
-import type { CredOffer, CredReq, Cred, CredDef } from 'indy-sdk'
+import type { CredDef } from 'indy-sdk'
 
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
@@ -34,17 +34,14 @@ export interface IndyOfferCredentialFormat {
   credentialDefinitionId: string
   attributes: CredentialPreviewAttribute[]
   linkedAttachments?: LinkedAttachment[]
-  payload?: CredOffer
 }
 export interface IndyRequestCredentialFormat {
   credentialDefinitionId?: string
   attributes?: CredentialPreviewAttribute[]
-  payload?: CredReq
 }
 export interface IndyIssueCredentialFormat {
   credentialDefinitionId?: string
   attributes?: CredentialPreviewAttribute[]
-  payload?: Cred
 }
 
 export class CredentialFormatSpec {
@@ -94,6 +91,15 @@ export interface FormatServiceOfferCredentialFormats {
 export interface FormatServiceProposeCredentialFormats {
   indy?: IndyProposeCredentialFormat
   jsonld?: SignCredentialOptions
+}
+
+export interface FormatServiceAcceptProposeCredentialFormats {
+  indy?: {
+    credentialDefinitionId?: string
+  }
+  jsonld?: {
+    // undefined
+  }
 }
 
 export interface FormatServiceRequestCredentialFormats {
