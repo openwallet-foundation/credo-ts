@@ -119,21 +119,17 @@ export class RecipientModule {
       throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
     }
 
-    try {
-      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message), {
-        transportPriority: {
-          schemes: websocketSchemes,
-          restrictive: true,
-          // TODO: add keepAlive: true to enforce through the public api
-          // we need to keep the socket alive. It already works this way, but would
-          // be good to make more explicit from the public facing API.
-          // This would also make it easier to change the internal API later on.
-          // keepAlive: true,
-        },
-      })
-    } catch (error) {
-      this.logger.warn('Unable to open websocket connection to mediator', { error })
-    }
+    await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message), {
+      transportPriority: {
+        schemes: websocketSchemes,
+        restrictive: true,
+        // TODO: add keepAlive: true to enforce through the public api
+        // we need to keep the socket alive. It already works this way, but would
+        // be good to make more explicit from the public facing API.
+        // This would also make it easier to change the internal API later on.
+        // keepAlive: true,
+      },
+    })
   }
 
   private async initiateImplicitPickup(mediator: MediationRecord) {
@@ -160,10 +156,21 @@ export class RecipientModule {
         this.logger.warn(
           `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
         )
-        this.openMediationWebSocket(mediator)
+        try {
+          await this.openMediationWebSocket(mediator)
+          if (mediator.pickupStrategy === MediatorPickupStrategy.PickUpV2) {
+            // Start Pickup v2 protocol to receive messages received while websocket offline
+            await this.sendStatusRequest({ mediator })
+          }
+        } catch (error) {
+          this.logger.warn('Unable to re-open websocket connection to mediator', { error })
+        }
       })
-
-    await this.openMediationWebSocket(mediator)
+    try {
+      await this.openMediationWebSocket(mediator)
+    } catch (error) {
+      this.logger.warn('Unable to open websocket connection to mediator', { error })
+    }
   }
 
   public async initiateMessagePickup(mediator: MediationRecord) {
@@ -176,7 +183,7 @@ export class RecipientModule {
       case MediatorPickupStrategy.PickUpV2:
         this.agentConfig.logger.info(`Starting pickup of messages from mediator '${mediator.id}'`)
         await this.initiateImplicitPickup(mediator)
-        await this.sendStatusRequest()
+        await this.sendStatusRequest({ mediator })
         break
       case MediatorPickupStrategy.Explicit: {
         // Explicit means polling every X seconds with batch message
@@ -375,8 +382,21 @@ export class RecipientModule {
     return mediationRecord
   }
 
-  public async sendStatusRequest(recipientKey: string | undefined = undefined) {
-    const mediator = await this.findDefaultMediatorConnection()
+  public async sendStatusRequest(
+    config: {
+      mediator?: MediationRecord
+      recipientKey?: string
+    } = {}
+  ) {
+    let mediator
+
+    if (config.mediator) {
+      mediator = await this.connectionService.findById(config.mediator.connectionId)
+    } else {
+      mediator = await this.findDefaultMediatorConnection()
+    }
+
+    const { recipientKey } = config
     const statusRequest = new StatusRequestMessage({
       recipientKey,
     })

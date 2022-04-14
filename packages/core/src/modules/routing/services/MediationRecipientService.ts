@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { MessageReceiver } from '../../../agent/MessageReceiver'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
 import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
@@ -45,6 +46,7 @@ export class MediationRecipientService {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private config: AgentConfig
+  private logger: Logger
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
@@ -60,6 +62,7 @@ export class MediationRecipientService {
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
+    this.logger = config.logger
   }
 
   public async createRequest(
@@ -250,7 +253,11 @@ export class MediationRecipientService {
 
     const ids: string[] = []
     for (const attachment of attachments) {
-      await messageReceiver.receiveMessage(attachment.getDataAsJson<EncryptedMessage>())
+      try {
+        await messageReceiver.receiveMessage(attachment.getDataAsJson<EncryptedMessage>())
+      } catch (error) {
+        this.logger.error(`Failed to process message id: ${attachment.id}`, { error, attachment })
+      }
       ids.push(attachment.id)
     }
 
