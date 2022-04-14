@@ -1,4 +1,3 @@
-import type { AgentMessageProcessedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
 import type { OutboundWebSocketClosedEvent } from '../../transport'
 import type { OutboundMessage } from '../../types'
@@ -6,23 +5,21 @@ import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
 
-import { firstValueFrom, interval, of, ReplaySubject, timer } from 'rxjs'
-import { filter, first, takeUntil, throttleTime, timeout, tap, delayWhen, catchError, map } from 'rxjs/operators'
+import { firstValueFrom, interval, ReplaySubject, timer } from 'rxjs'
+import { filter, first, takeUntil, throttleTime, timeout, tap, delayWhen } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { AgentEventTypes } from '../../agent/Events'
 import { MessageReceiver } from '../../agent/MessageReceiver'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
-import { parseMessageType } from '../../utils/messageType'
 import { ConnectionInvitationMessage } from '../connections'
 import { ConnectionService } from '../connections/services'
-import { DiscloseMessage, DiscoverFeaturesModule } from '../discover-features'
+import { DiscoverFeaturesModule } from '../discover-features'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RoutingEventTypes } from './RoutingEvents'
@@ -173,28 +170,34 @@ export class RecipientModule {
     const { mediatorPollingInterval } = this.agentConfig
     const mediatorPickupStrategy = await this.getPickupStrategyForMediator(mediator)
     const mediatorConnection = await this.connectionService.getById(mediator.connectionId)
+    // TODO: turn this into a switch including pickv2
 
-    // Explicit means polling every X seconds with batch message
-    if (mediatorPickupStrategy === MediatorPickupStrategy.Explicit) {
-      this.agentConfig.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediator.id}'`)
-      const subscription = interval(mediatorPollingInterval)
-        .pipe(takeUntil(this.agentConfig.stop$))
-        .subscribe(async () => {
-          await this.pickupMessages(mediatorConnection)
-        })
-
-      return subscription
-    }
-
-    // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
-    // such as WebSockets to work
-    else if (mediatorPickupStrategy === MediatorPickupStrategy.Implicit) {
-      this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
-      await this.initiateImplicitPickup(mediator)
-    } else {
-      this.agentConfig.logger.info(
-        `Skipping pickup of messages from mediator '${mediator.id}' due to pickup strategy none`
-      )
+    switch (mediatorPickupStrategy) {
+      case MediatorPickupStrategy.PickUpV2:
+        this.agentConfig.logger.info(`Starting pickup of messages from mediator '${mediator.id}'`)
+        await this.initiateImplicitPickup(mediator)
+        await this.sendStatusRequest()
+        break
+      case MediatorPickupStrategy.Explicit: {
+        // Explicit means polling every X seconds with batch message
+        this.agentConfig.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediator.id}'`)
+        const subscription = interval(mediatorPollingInterval)
+          .pipe(takeUntil(this.agentConfig.stop$))
+          .subscribe(async () => {
+            await this.pickupMessages(mediatorConnection)
+          })
+        return subscription
+      }
+      case MediatorPickupStrategy.Implicit:
+        // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
+        // such as WebSockets to work
+        this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
+        await this.initiateImplicitPickup(mediator)
+        break
+      default:
+        this.agentConfig.logger.info(
+          `Skipping pickup of messages from mediator '${mediator.id}' due to pickup strategy none`
+        )
     }
   }
 
@@ -204,12 +207,23 @@ export class RecipientModule {
     // If mediator pickup strategy is not configured we try to query if batch pickup
     // is supported through the discover features protocol
     if (!mediatorPickupStrategy) {
-      const isBatchPickupSupported = await this.isBatchPickupSupportedByMediator(mediator)
+      const isPickUpV2Supported = await this.discoverFeaturesModule.isProtocolSupported(
+        mediator.connectionId,
+        StatusRequestMessage
+      )
+      if (isPickUpV2Supported) {
+        mediatorPickupStrategy = MediatorPickupStrategy.PickUpV2
+      } else {
+        const isBatchPickupSupported = await this.discoverFeaturesModule.isProtocolSupported(
+          mediator.connectionId,
+          BatchPickupMessage
+        )
 
-      // Use explicit pickup strategy
-      mediatorPickupStrategy = isBatchPickupSupported
-        ? MediatorPickupStrategy.Explicit
-        : MediatorPickupStrategy.Implicit
+        // Use explicit pickup strategy
+        mediatorPickupStrategy = isBatchPickupSupported
+          ? MediatorPickupStrategy.Explicit
+          : MediatorPickupStrategy.Implicit
+      }
 
       // Store the result so it can be reused next time
       mediator.pickupStrategy = mediatorPickupStrategy
@@ -217,42 +231,6 @@ export class RecipientModule {
     }
 
     return mediatorPickupStrategy
-  }
-
-  private async isBatchPickupSupportedByMediator(mediator: MediationRecord) {
-    const { protocolUri } = parseMessageType(BatchPickupMessage.type)
-
-    // Listen for response to our feature query
-    const replaySubject = new ReplaySubject(1)
-    this.eventEmitter
-      .observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
-      .pipe(
-        // Stop when the agent shuts down
-        takeUntil(this.agentConfig.stop$),
-        // filter by mediator connection id and query disclose message type
-        filter(
-          (e) => e.payload.connection?.id === mediator.connectionId && e.payload.message.type === DiscloseMessage.type
-        ),
-        // Return whether the protocol is supported
-        map((e) => {
-          const message = e.payload.message as DiscloseMessage
-          return message.protocols.map((p) => p.protocolId).includes(protocolUri)
-        }),
-        // TODO: make configurable
-        // If we don't have an answer in 7 seconds (no response, not supported, etc...) error
-        timeout(7000),
-        // We want to return false if an error occurred
-        catchError(() => of(false))
-      )
-      .subscribe(replaySubject)
-
-    await this.discoverFeaturesModule.queryFeatures(mediator.connectionId, {
-      query: protocolUri,
-      comment: 'Detect if batch pickup is supported to determine pickup strategy for messages',
-    })
-
-    const isBatchPickupSupported = await firstValueFrom(replaySubject)
-    return isBatchPickupSupported
   }
 
   public async discoverMediation() {
