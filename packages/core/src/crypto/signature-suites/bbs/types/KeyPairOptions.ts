@@ -18,17 +18,17 @@ export interface KeyPairOptions {
   /**
    * The key id
    */
-  readonly id?: string;
+  readonly id?: string
   /**
    * The key controller
    */
-  readonly controller?: string;
+  readonly controller?: string
   /**
    * Base58 encoding of the private key
    */
-  readonly privateKeyBase58?: string;
+  readonly privateKeyBase58?: string
   /**
    * Base58 encoding of the public key
    */
-  readonly publicKeyBase58: string;
+  readonly publicKeyBase58: string
 }

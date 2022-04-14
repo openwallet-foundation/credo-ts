@@ -19,21 +19,21 @@ export interface SuiteSignOptions {
   /**
    * Input document to sign
    */
-  readonly document: any;
+  readonly document: any
   /**
    * Optional custom document loader
    */
-  documentLoader?: Function;
+  documentLoader?: Function
   /**
    * Optional expansion map
    */
-  expansionMap?: Function;
+  expansionMap?: Function
   /**
    * The array of statements to sign
    */
-  readonly verifyData: readonly Uint8Array[];
+  readonly verifyData: readonly Uint8Array[]
   /**
    * The proof
    */
-  readonly proof: any;
+  readonly proof: any
 }

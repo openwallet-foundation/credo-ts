@@ -19,25 +19,25 @@ export interface VerifySignatureOptions {
   /**
    * Document to verify
    */
-  readonly document: any;
+  readonly document: any
   /**
    * Array of statements to verify
    */
-  readonly verifyData: Uint8Array[];
+  readonly verifyData: Uint8Array[]
   /**
    * Verification method to verify the signature against
    */
-  readonly verificationMethod: string;
+  readonly verificationMethod: string
   /**
    * Proof to verify
    */
-  readonly proof: any;
+  readonly proof: any
   /**
    * Optional custom document loader
    */
-  documentLoader?: Function;
+  documentLoader?: Function
   /**
    * Optional expansion map
    */
-  expansionMap?: Function;
+  expansionMap?: Function
 }

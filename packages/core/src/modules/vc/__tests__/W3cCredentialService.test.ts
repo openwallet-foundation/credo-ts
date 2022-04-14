@@ -58,7 +58,7 @@ describe('W3cCredentialService', () => {
       wallet,
       w3cCredentialRepository,
       didResolverService,
-      agentConfig,
+      agentConfig
       // logger
     )
   })
@@ -67,7 +67,7 @@ describe('W3cCredentialService', () => {
     await wallet.delete()
   })
 
-  xdescribe('Ed25519Signature2018', () => {
+  describe('Ed25519Signature2018', () => {
     beforeAll(() => {
       const pubDid = wallet.publicDid
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -253,7 +253,7 @@ describe('W3cCredentialService', () => {
       const key = await wallet.createKey({ keyType: KeyType.Bls12381g2 })
       issuerDidKey = new DidKey(key)
     })
-    xdescribe('signCredential', () => {
+    describe('signCredential', () => {
       it('should return a successfully signed credential', async () => {
         const credentialJson = BbsBlsSignature2020Fixtures.TEST_BBS_INPUT_DOCUMENT
         credentialJson.issuer = issuerDidKey.did
@@ -277,7 +277,7 @@ describe('W3cCredentialService', () => {
         expect(result.verified).toBeTruthy()
       })
     })
-    describe('deriveProof', () => {
+    xdescribe('deriveProof', () => {
       it('should derive proof successfully', async () => {
         const credentialJson = BbsBlsSignature2020Fixtures.TEST_BBS_INPUT_DOCUMENT
         credentialJson.issuer = issuerDidKey.did
@@ -313,9 +313,9 @@ describe('W3cCredentialService', () => {
         })
       })
     })
-    xdescribe('createPresentation', () => {})
-    xdescribe('signPresentation', () => {})
-    xdescribe('verifyPresentation', () => {})
-    xdescribe('storeCredential', () => {})
+    describe('createPresentation', () => {})
+    describe('signPresentation', () => {})
+    describe('verifyPresentation', () => {})
+    describe('storeCredential', () => {})
   })
 })

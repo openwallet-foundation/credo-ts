@@ -448,7 +448,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         options.proposalAttachment
       )
     }
-    console.log("OUCH! autoAccept = ", autoAccept)
     return false
   }
   /**

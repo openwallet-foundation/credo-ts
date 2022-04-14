@@ -31,7 +31,6 @@ describe('credentials', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
   let credDefId: string
-  let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
   let faberCredentialRecord: CredentialExchangeRecord
@@ -40,9 +39,46 @@ describe('credentials', () => {
   let didCommMessageRepository: DidCommMessageRepository
   let credential: W3cCredential
   let signCredentialOptions: SignCredentialOptions
+  const inputDoc = {
+    '@context': [
+      'https://www.w3.org/2018/credentials/v1',
+      'https://w3id.org/citizenship/v1',
+      'https://w3id.org/security/bbs/v1',
+    ],
+    id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+    type: ['VerifiableCredential', 'PermanentResidentCard'],
+    // issuer: issuerDidKey.did,
+    identifier: '83627465',
+    name: 'Permanent Resident Card',
+    description: 'Government of Example Permanent Resident Card.',
+    issuanceDate: '2019-12-03T12:19:52Z',
+    expirationDate: '2029-12-03T12:19:52Z',
+    credentialSubject: {
+      id: 'did:example:b34ca6cd37bbf23',
+      type: ['PermanentResident', 'Person'],
+      givenName: 'JOHN',
+      familyName: 'SMITH',
+      gender: 'Male',
+      image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+      residentSince: '2015-01-01',
+      lprCategory: 'C09',
+      lprNumber: '999-999-999',
+      commuterClassification: 'C1',
+      birthCountry: 'Bahamas',
+      birthDate: '1958-07-17',
+    },
+  }
+
+  credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
+
+  signCredentialOptions = {
+    credential,
+    proofType: 'Ed25519Signature2018',
+    verificationMethod: '',
+  }
 
   beforeAll(async () => {
-    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
+    ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD',
       'Alice Agent Credentials LD'
     ))
@@ -53,43 +89,8 @@ describe('credentials', () => {
     const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
     issuerDidKey = new DidKey(key)
 
-    const inputDoc = {
-      '@context': [
-        'https://www.w3.org/2018/credentials/v1',
-        'https://w3id.org/citizenship/v1',
-        'https://w3id.org/security/bbs/v1',
-      ],
-      id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
-      type: ['VerifiableCredential', 'PermanentResidentCard'],
-      issuer: issuerDidKey.did,
-      identifier: '83627465',
-      name: 'Permanent Resident Card',
-      description: 'Government of Example Permanent Resident Card.',
-      issuanceDate: '2019-12-03T12:19:52Z',
-      expirationDate: '2029-12-03T12:19:52Z',
-      credentialSubject: {
-        id: 'did:example:b34ca6cd37bbf23',
-        type: ['PermanentResident', 'Person'],
-        givenName: 'JOHN',
-        familyName: 'SMITH',
-        gender: 'Male',
-        image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-        residentSince: '2015-01-01',
-        lprCategory: 'C09',
-        lprNumber: '999-999-999',
-        commuterClassification: 'C1',
-        birthCountry: 'Bahamas',
-        birthDate: '1958-07-17',
-      },
-    }
-
-    credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
-
-    signCredentialOptions = {
-      credential,
-      proofType: 'Ed25519Signature2018',
-      verificationMethod: issuerDidKey.keyId,
-    }
+    credential.issuer = issuerDidKey.did
+    signCredentialOptions.verificationMethod = issuerDidKey.keyId
   })
 
   afterAll(async () => {
@@ -101,7 +102,7 @@ describe('credentials', () => {
 
   // -------------------------- V2 TEST BEGIN --------------------------------------------
 
-  test('Alice starts with V2 (ld format) credential proposal to Faber', async () => {
+  test('Alice starts with V2 (ld format, Ed25519 signature) credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
     // set the propose options
 
@@ -288,7 +289,7 @@ describe('credentials', () => {
     }
   })
 
-  test('Alice starts with V2 (ld and indy formats) credential proposal to Faber', async () => {
+  test('Multiple Formats: Alice starts with V2 (both ld and indy formats) credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
     // set the propose options - using both indy and ld credential formats here
     const credentialPreview = V2CredentialPreview.fromRecord({

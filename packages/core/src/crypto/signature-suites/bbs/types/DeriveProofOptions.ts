@@ -19,29 +19,29 @@ export interface DeriveProofOptions {
   /**
    * Document outlining what statements to reveal
    */
-  readonly revealDocument: any;
+  readonly revealDocument: any
   /**
    * The document featuring the proof to derive from
    */
-  readonly document: any;
+  readonly document: any
   /**
    * The proof for the document
    */
-  readonly proof: any;
+  readonly proof: any
   /**
    * Optional custom document loader
    */
-  documentLoader?: Function;
+  documentLoader?: Function
   /**
    * Optional expansion map
    */
-  expansionMap?: Function;
+  expansionMap?: Function
   /**
    * Nonce to include in the derived proof
    */
-  readonly nonce?: Uint8Array;
+  readonly nonce?: Uint8Array
   /**
    * Indicates whether to compact the resulting proof
    */
-  readonly skipProofCompaction?: boolean;
+  readonly skipProofCompaction?: boolean
 }

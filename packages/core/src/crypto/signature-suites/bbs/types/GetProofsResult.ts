@@ -19,9 +19,9 @@ export interface GetProofsResult {
   /**
    * The JSON-LD document with the linked data proofs removed.
    */
-  document: any;
+  document: any
   /**
    * The list of proofs that matched the requested type.
    */
-  proofs: any;
+  proofs: any
 }

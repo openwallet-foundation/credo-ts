@@ -19,7 +19,6 @@ import type {
   RevocationRegistry,
 } from '../models/CredentialFormatServiceOptions'
 
-import { performance } from 'perf_hooks'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../../../../../src/error'
@@ -37,8 +36,8 @@ import { CredentialFormatService } from '../CredentialFormatService'
 @scoped(Lifecycle.ContainerScoped)
 export class JsonLdCredentialFormatService extends CredentialFormatService {
   public deleteCredentialById(
-    credentialRecord: CredentialExchangeRecord,
-    options: DeleteCredentialOptions
+    _credentialRecord: CredentialExchangeRecord,
+    _options: DeleteCredentialOptions
   ): Promise<void> {
     throw new Error('Method not implemented.')
   }
@@ -55,13 +54,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     this.w3cCredentialService = w3cCredentialService
   }
   public async processProposal(
-    options: ServiceAcceptProposalOptions,
-    credentialRecord: CredentialExchangeRecord
+    _options: ServiceAcceptProposalOptions,
+    _credentialRecord: CredentialExchangeRecord
   ): Promise<void> {
     // no meta data set for ld proofs
   }
 
-  public processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): void {
+  public processOffer(_attachment: Attachment, _credentialRecord: CredentialExchangeRecord): void {
     // not needed in jsonld
   }
 
@@ -97,7 +96,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     return { format: formats, attachment: issueAttachment }
   }
 
-  public async getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry | undefined> {
+  public async getRevocationRegistry(_issueAttachment: Attachment): Promise<RevocationRegistry | undefined> {
     return undefined
   }
 
@@ -134,7 +133,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   public async createRequest(
     options: FormatServiceRequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord,
-    holderDid?: string
+    _holderDid?: string
   ): Promise<FormatServiceCredentialAttachmentFormats> {
     if (!options.offerAttachment) {
       throw new AriesFrameworkError(
@@ -218,7 +217,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     }
     return false
   }
-  private areCredentialValuesValid(credentialRecord: CredentialExchangeRecord, credentialAttachment: Attachment) {
+  private areCredentialValuesValid(_credentialRecord: CredentialExchangeRecord, _credentialAttachment: Attachment) {
     return true // temporary until we have the credential attributes to compare with credential attachment
   }
 
@@ -269,7 +268,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     })
   }
 
-  public processRequest(options: RequestCredentialOptions, credentialRecord: CredentialExchangeRecord): void {
+  public processRequest(_options: RequestCredentialOptions, _credentialRecord: CredentialExchangeRecord): void {
     throw new Error('Method not implemented.')
   }
 

@@ -474,7 +474,7 @@ describe('credentials', () => {
         state: CredentialState.ProposalReceived,
       })
 
-      // Check if the state of fabers credential record did not change
+      // Check if the state of faber credential record did not change
       const faberRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
       faberRecord.assertState(CredentialState.ProposalReceived)
 

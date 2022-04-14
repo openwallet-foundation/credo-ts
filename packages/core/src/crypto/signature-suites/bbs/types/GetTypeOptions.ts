@@ -19,9 +19,9 @@ export interface GetTypeOptions {
   /**
    * Optional custom document loader
    */
-  documentLoader?: Function;
+  documentLoader?: Function
   /**
    * Optional expansion map
    */
-  expansionMap?: Function;
+  expansionMap?: Function
 }

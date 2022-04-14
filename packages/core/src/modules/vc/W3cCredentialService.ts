@@ -21,6 +21,7 @@ import { deriveProof } from '@mattrglobal/jsonld-signatures-bbs'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
+import { InjectionSymbols } from '../../constants'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
@@ -35,7 +36,6 @@ import { W3cCredentialRecord } from './models/credential/W3cCredentialRecord'
 import { W3cCredentialRepository } from './models/credential/W3cCredentialRepository'
 import { W3cPresentation } from './models/presentation/W3Presentation'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
-import { InjectionSymbols } from '../../constants'
 
 @scoped(Lifecycle.ContainerScoped)
 export class W3cCredentialService {
@@ -50,7 +50,7 @@ export class W3cCredentialService {
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     w3cCredentialRepository: W3cCredentialRepository,
     didResolver: DidResolverService,
-    agentConfig: AgentConfig,
+    agentConfig: AgentConfig
     // logger: Logger
   ) {
     this.wallet = wallet

@@ -37,36 +37,6 @@ let issuerDidKey: DidKey
 let credential: W3cCredential
 let signCredentialOptions: SignCredentialOptions
 
-// const TEST_DID_KEY = 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
-
-// const options: LdProofDetailOptions = {
-//   proofType: 'Ed25519Signature2018',
-//   verificationMethod:
-//     'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-// }
-// const credential: W3cCredential = JsonTransformer.fromJSON(
-//   {
-//     '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
-//     id: 'http://example.edu/credentials/temporary/28934792387492384',
-//     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-//     issuer: TEST_DID_KEY,
-//     issuanceDate: '2017-10-22T12:23:48Z',
-//     credentialSubject: {
-//       id: 'did:example:b34ca6cd37bbf23',
-//       degree: {
-//         type: 'BachelorDegree',
-//         name: 'Bachelor of Science and Arts',
-//       },
-//     },
-//   },
-//   W3cCredential
-// )
-
-// const ldProof: LdProofDetail = {
-//   credential: credential,
-//   options: options,
-// }
-
 describe('credentials', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
