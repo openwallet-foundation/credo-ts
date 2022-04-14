@@ -41,7 +41,7 @@ describe('Present Proof', () => {
 
     const proposeOptions: ProposeProofOptions = {
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
           name: 'ProofRequest',
@@ -93,7 +93,7 @@ describe('Present Proof', () => {
     expect(faberPresentationRecord).toMatchObject({
       threadId: faberPresentationRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
   })
 })

@@ -84,7 +84,7 @@ export class V1RequestPresentationHandler implements Handler {
       proofFormats: {
         indy: requestedCredentials.indy,
       },
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
       // Not sure to what to do with goalCode, willConfirm and comment fields here
     })
 

@@ -84,7 +84,7 @@ export class V2ProposePresentationHandler implements Handler {
 
     const { message } = await this.proofService.createRequestAsResponse({
       proofRecord: proofRecord,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       autoAcceptProof: proofRecord.autoAcceptProof,
       proofFormats: {
         indy: {

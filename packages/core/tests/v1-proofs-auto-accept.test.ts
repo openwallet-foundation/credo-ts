@@ -48,7 +48,7 @@ describe('Auto accept present proof', () => {
 
       const proposeProofOptions: ProposeProofOptions = {
         connectionId: aliceConnection.id,
-        protocolVersion: ProofProtocolVersion.V1_0,
+        protocolVersion: ProofProtocolVersion.V1,
         proofFormats: {
           indy: {
             nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
@@ -101,7 +101,7 @@ describe('Auto accept present proof', () => {
       }
 
       const requestProofsOptions: RequestProofOptions = {
-        protocolVersion: ProofProtocolVersion.V1_0,
+        protocolVersion: ProofProtocolVersion.V1,
         connectionId: faberConnection.id,
         proofRequestOptions: {
           indy: {
@@ -151,7 +151,7 @@ describe('Auto accept present proof', () => {
 
       const proposal: ProposeProofOptions = {
         connectionId: aliceConnection.id,
-        protocolVersion: ProofProtocolVersion.V1_0,
+        protocolVersion: ProofProtocolVersion.V1,
         proofFormats: {
           indy: {
             nonce: '1298236324864',
@@ -224,7 +224,7 @@ describe('Auto accept present proof', () => {
       }
 
       const requestProofsOptions: RequestProofOptions = {
-        protocolVersion: ProofProtocolVersion.V1_0,
+        protocolVersion: ProofProtocolVersion.V1,
         connectionId: faberConnection.id,
         proofRequestOptions: {
           indy: {

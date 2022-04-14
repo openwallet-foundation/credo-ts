@@ -108,7 +108,7 @@ export class V1ProofService extends ProofService {
   }
 
   public getVersion(): ProofProtocolVersion {
-    return ProofProtocolVersion.V1_0
+    return ProofProtocolVersion.V1
   }
 
   public async createProposal(
@@ -136,7 +136,7 @@ export class V1ProofService extends ProofService {
       threadId: proposalMessage.threadId,
       state: ProofState.ProposalSent,
       autoAcceptProof: options?.autoAcceptProof,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
     })
 
     await this.didCommMessageRepository.saveOrUpdateAgentMessage({
@@ -239,7 +239,7 @@ export class V1ProofService extends ProofService {
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
         state: ProofState.ProposalReceived,
-        protocolVersion: ProofProtocolVersion.V1_0,
+        protocolVersion: ProofProtocolVersion.V1,
       })
 
       // Assert
@@ -324,7 +324,7 @@ export class V1ProofService extends ProofService {
       threadId: requestPresentationMessage.threadId,
       state: ProofState.RequestSent,
       autoAcceptProof: options?.autoAcceptProof,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
     })
 
     await this.didCommMessageRepository.saveOrUpdateAgentMessage({
@@ -401,7 +401,7 @@ export class V1ProofService extends ProofService {
         connectionId: connection?.id,
         threadId: proofRequestMessage.threadId,
         state: ProofState.RequestReceived,
-        protocolVersion: ProofProtocolVersion.V1_0,
+        protocolVersion: ProofProtocolVersion.V1,
       })
 
       await this.didCommMessageRepository.saveOrUpdateAgentMessage({

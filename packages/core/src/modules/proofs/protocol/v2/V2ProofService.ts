@@ -100,7 +100,7 @@ export class V2ProofService extends ProofService {
     @inject(InjectionSymbols.Wallet) wallet: Wallet
   ) {
     super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
-    this.protocolVersion = ProofProtocolVersion.V2_0
+    this.protocolVersion = ProofProtocolVersion.V2
     this.wallet = wallet
     this.formatServiceMap = {
       [PresentationRecordType.Indy]: indyProofFormatService,
@@ -138,7 +138,7 @@ export class V2ProofService extends ProofService {
       connectionId: options.connectionRecord.id,
       threadId: proposalMessage.threadId,
       state: ProofState.ProposalSent,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     await this.proofRepository.save(proofRecord)
@@ -228,7 +228,7 @@ export class V2ProofService extends ProofService {
         connectionId: connectionRecord?.id,
         threadId: proposalMessage.threadId,
         state: ProofState.ProposalReceived,
-        protocolVersion: ProofProtocolVersion.V2_0,
+        protocolVersion: ProofProtocolVersion.V2,
       })
 
       // Assert
@@ -281,7 +281,7 @@ export class V2ProofService extends ProofService {
       connectionId: options.connectionRecord?.id,
       threadId: requestMessage.threadId,
       state: ProofState.RequestSent,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     await this.proofRepository.save(proofRecord)
@@ -402,7 +402,7 @@ export class V2ProofService extends ProofService {
         connectionId: connectionRecord?.id,
         threadId: proofRequestMessage.threadId,
         state: ProofState.RequestReceived,
-        protocolVersion: ProofProtocolVersion.V2_0,
+        protocolVersion: ProofProtocolVersion.V2,
       })
 
       await this.didCommMessageRepository.saveOrUpdateAgentMessage({

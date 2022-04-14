@@ -89,7 +89,7 @@ export class V1ProposePresentationHandler implements Handler {
         },
       },
       proofRecord: proofRecord,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
       autoAcceptProof: proofRecord.autoAcceptProof,
       // Not sure to what to do with goalCode, willConfirm and comment fields here
     })

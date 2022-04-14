@@ -51,7 +51,7 @@ describe('Present Proof', () => {
 
     const proposeProofOptions: ProposeProofOptions = {
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
           name: 'abc',
@@ -101,7 +101,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     const acceptProposalOptions: AcceptProposalOptions = {
@@ -156,7 +156,7 @@ describe('Present Proof', () => {
     testLogger.test('Alice accepts presentation request from Faber')
     const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
       aliceProofRecord.id,
-      ProofProtocolVersion.V2_0,
+      ProofProtocolVersion.V2,
       {
         filterByPresentationPreview: true,
       }
@@ -166,11 +166,11 @@ describe('Present Proof', () => {
       formats: {
         indy: retrievedCredentials.indy,
       },
-      version: ProofProtocolVersion.V2_0,
+      version: ProofProtocolVersion.V2,
     })
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     }
@@ -214,12 +214,12 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     // Faber accepts the presentation provided by Alice
     testLogger.test('Faber accepts the presentation provided by Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V2_0)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V2)
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
@@ -283,7 +283,7 @@ describe('Present Proof', () => {
     }
 
     const requestProofsOptions: RequestProofOptions = {
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       connectionId: faberConnection.id,
       proofRequestOptions: {
         indy: {
@@ -336,14 +336,14 @@ describe('Present Proof', () => {
     expect(aliceProofRecord).toMatchObject({
       threadId: aliceProofRecord.threadId,
       state: ProofState.RequestReceived,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
     const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
       aliceProofRecord.id,
-      ProofProtocolVersion.V2_0,
+      ProofProtocolVersion.V2,
       {
         filterByPresentationPreview: true,
       }
@@ -352,11 +352,11 @@ describe('Present Proof', () => {
       formats: {
         indy: retrievedCredentials.indy,
       },
-      version: ProofProtocolVersion.V2_0,
+      version: ProofProtocolVersion.V2,
     })
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     }
@@ -401,12 +401,12 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     // Faber accepts the presentation
     testLogger.test('Faber accept the presentation from Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V2_0)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V2)
 
     // Alice waits until she receives a presentation acknowledgement
     testLogger.test('Alice waits for acceptance by Faber')

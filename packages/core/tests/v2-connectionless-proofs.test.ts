@@ -76,7 +76,7 @@ describe('Present Proof', () => {
     }
 
     const outOfBandRequestOptions: OutOfBandRequestOptions = {
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       proofRequestOptions: {
         indy: {
           name: 'test-proof-request',
@@ -104,7 +104,7 @@ describe('Present Proof', () => {
     testLogger.test('Alice accepts presentation request from Faber')
     const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
       aliceProofRecord.id,
-      ProofProtocolVersion.V2_0,
+      ProofProtocolVersion.V2,
       {
         filterByPresentationPreview: true,
       }
@@ -113,11 +113,11 @@ describe('Present Proof', () => {
       formats: {
         indy: retrievedCredentials.indy,
       },
-      version: ProofProtocolVersion.V2_0,
+      version: ProofProtocolVersion.V2,
     })
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     }
@@ -134,7 +134,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord.isVerified).toBe(true)
 
     // Faber accepts presentation
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V2_0)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V2)
 
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
@@ -179,7 +179,7 @@ describe('Present Proof', () => {
     }
 
     const outOfBandRequestOptions: OutOfBandRequestOptions = {
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       proofRequestOptions: {
         indy: {
           name: 'test-proof-request',
@@ -328,7 +328,7 @@ describe('Present Proof', () => {
     }
 
     const outOfBandRequestOptions: OutOfBandRequestOptions = {
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       proofRequestOptions: {
         indy: {
           name: 'test-proof-request',

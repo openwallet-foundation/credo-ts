@@ -82,7 +82,7 @@ export class AliceInquirer extends BaseInquirer {
   public async acceptProofRequest(proofRecord: ProofRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ProofRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      await this.alice.agent.proofs.declineRequest(proofRecord.id, ProofProtocolVersion.V1_0)
+      await this.alice.agent.proofs.declineRequest(proofRecord.id, ProofProtocolVersion.V1)
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.acceptProofRequest(proofRecord)
     }

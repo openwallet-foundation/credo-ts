@@ -63,7 +63,7 @@ export class Alice extends BaseAgent {
   public async acceptProofRequest(proofRecord: ProofRecord) {
     const retrievedCredentials = await this.agent.proofs.getRequestedCredentialsForProofRequest(
       proofRecord.id,
-      ProofProtocolVersion.V1_0,
+      ProofProtocolVersion.V1,
       {
         filterByPresentationPreview: true,
       }
@@ -72,11 +72,11 @@ export class Alice extends BaseAgent {
       formats: {
         indy: retrievedCredentials.indy,
       },
-      version: ProofProtocolVersion.V1_0,
+      version: ProofProtocolVersion.V1,
     })
 
     await this.agent.proofs.acceptRequest({
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
       proofRecordId: proofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     })

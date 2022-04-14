@@ -60,8 +60,8 @@ export class ProofsModule {
     this.mediationRecipientService = mediationRecipientService
 
     this.serviceMap = {
-      [ProofProtocolVersion.V1_0]: v1ProofService,
-      [ProofProtocolVersion.V2_0]: v2ProofService,
+      [ProofProtocolVersion.V1]: v1ProofService,
+      [ProofProtocolVersion.V2]: v2ProofService,
     }
 
     void this.registerHandlers(dispatcher, mediationRecipientService)
