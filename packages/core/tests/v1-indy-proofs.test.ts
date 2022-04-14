@@ -177,7 +177,6 @@ describe('Present Proof', () => {
     })
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
-      protocolVersion: ProofProtocolVersion.V1,
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     }
@@ -230,7 +229,7 @@ describe('Present Proof', () => {
 
     // Faber accepts the presentation provided by Alice
     testLogger.test('Faber accepts the presentation provided by Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V1)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
@@ -363,7 +362,6 @@ describe('Present Proof', () => {
     })
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
-      protocolVersion: ProofProtocolVersion.V1,
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     }
@@ -417,7 +415,7 @@ describe('Present Proof', () => {
 
     // Faber accepts the presentation
     testLogger.test('Faber accept the presentation from Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V1)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits until she receives a presentation acknowledgement
     testLogger.test('Alice waits for acceptance by Faber')

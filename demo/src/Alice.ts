@@ -76,7 +76,6 @@ export class Alice extends BaseAgent {
     })
 
     await this.agent.proofs.acceptRequest({
-      protocolVersion: ProofProtocolVersion.V1,
       proofRecordId: proofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     })

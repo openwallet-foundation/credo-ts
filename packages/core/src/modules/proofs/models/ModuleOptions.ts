@@ -54,7 +54,6 @@ export type CreateProofRequestOptions = Partial<
 >
 
 export interface AcceptPresentationOptions {
-  protocolVersion: ProofProtocolVersion
   proofRecordId: string
   comment?: string
   proofFormats: CreatePresentationFormats

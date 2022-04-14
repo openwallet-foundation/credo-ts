@@ -255,10 +255,11 @@ export class ProofsModule {
   public async acceptRequest(options: AcceptPresentationOptions): Promise<ProofRecord> {
     const { proofRecordId, proofFormats, comment } = options
 
-    const version: ProofProtocolVersion = options.protocolVersion
+    const record = await this.getById(proofRecordId)
+
+    const version: ProofProtocolVersion = record.protocolVersion
     const service = this.getService(version)
 
-    const record = await service.getById(proofRecordId)
     const presentationOptions: CreatePresentationOptions = {
       proofFormats,
       proofRecord: record,
@@ -341,10 +342,10 @@ export class ProofsModule {
    * @returns Proof record associated with the sent presentation acknowledgement message
    *
    */
-  public async acceptPresentation(proofRecordId: string, version: ProofProtocolVersion): Promise<ProofRecord> {
-    const service = this.getService(version)
+  public async acceptPresentation(proofRecordId: string): Promise<ProofRecord> {
+    const record = await this.getById(proofRecordId)
+    const service = this.getService(record.protocolVersion)
 
-    const record = await service.getById(proofRecordId)
     const { message, proofRecord } = await service.createAck({
       proofRecord: record,
     })

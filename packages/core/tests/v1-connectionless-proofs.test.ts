@@ -117,7 +117,6 @@ describe('Present Proof', () => {
     })
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
-      protocolVersion: ProofProtocolVersion.V1,
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     }
@@ -134,7 +133,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord.isVerified).toBe(true)
 
     // Faber accepts presentation
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V1)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {

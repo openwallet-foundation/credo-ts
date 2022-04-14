@@ -496,7 +496,6 @@ export async function presentProof({
   })
 
   const acceptPresentationOptions: AcceptPresentationOptions = {
-    protocolVersion: ProofProtocolVersion.V1,
     proofRecordId: holderRecord.id,
     proofFormats: { indy: requestedCredentials.indy },
   }
@@ -510,7 +509,7 @@ export async function presentProof({
   // assert presentation is valid
   expect(verifierRecord.isVerified).toBe(true)
 
-  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id, ProofProtocolVersion.V1)
+  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
   holderRecord = await waitForProofRecordSubject(holderReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.Done,
