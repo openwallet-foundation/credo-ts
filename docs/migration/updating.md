@@ -1,6 +1,9 @@
 # Updating
 
-## Using the Update Assistant
+- [Update Strategies](#update-strategies)
+- [Backups](#backups)
+
+## Update Strategies
 
 There are three options on how to leverage the update assistant on agent startup:
 
@@ -103,3 +106,16 @@ const agent = new Agent({ ...config, autoUpdateStorageOnStartup: true }, agentDe
 // Then we call initialize, which under the hood will call the update assistant if the storage is not update to date.
 await agent.initialize()
 ```
+
+## Backups
+
+Before starting the update, the update assistant will automatically create a backup of the wallet. If the migration succeeds the backup won't be used. If the backup fails, another backup will be made of the migrated wallet, after which the backup will be restored.
+
+The backups can be found at the following locations. The `backupIdentifier` is generated at the start of the update process and generated based on the current timestamp.
+
+- Backup path: `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+- Migration backup: `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}-error`
+
+> In the future the backup assistant will make a number of improvements to the recovery process. Namely:
+>
+> - Do not throw an error if the update fails, but rather return an object that contains the status, and include the backup paths and backup identifiers.
