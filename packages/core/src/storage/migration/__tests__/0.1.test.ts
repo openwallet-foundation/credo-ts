@@ -74,7 +74,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       expect(storageService.records).toMatchSnapshot(mediationRoleUpdateStrategy)
 
       // Need to remove backupFiles after each run so we don't get IOErrors
-      const backupPath = `${agent.config.fileSystem.basePath}/afj/backup/${backupIdentifier}`
+      const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
       unlinkSync(backupPath)
 
       await agent.shutdown()
@@ -130,7 +130,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${agent.config.fileSystem.basePath}/afj/backup/${backupIdentifier}`
+    const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()
@@ -173,7 +173,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${agent.config.fileSystem.basePath}/afj/backup/${backupIdentifier}`
+    const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()

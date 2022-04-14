@@ -131,9 +131,13 @@ export class UpdateAssistant {
     return updateIdentifier
   }
 
-  private async createBackup(backupIdentifier: string) {
+  private getBackupPath(backupIdentifier: string) {
     const fileSystem = this.agent.config.fileSystem
-    const backupPath = `${fileSystem.basePath}/afj/backup/${backupIdentifier}`
+    return `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+  }
+
+  private async createBackup(backupIdentifier: string) {
+    const backupPath = this.getBackupPath(backupIdentifier)
 
     const walletKey = this.agent.wallet.walletConfig?.key
     if (!walletKey) {
@@ -147,8 +151,7 @@ export class UpdateAssistant {
   }
 
   private async restoreBackup(backupIdentifier: string) {
-    const fileSystem = this.agent.config.fileSystem
-    const backupPath = `${fileSystem.basePath}/afj/backup/${backupIdentifier}`
+    const backupPath = this.getBackupPath(backupIdentifier)
 
     const walletConfig = this.agent.wallet.walletConfig
     if (!walletConfig) {

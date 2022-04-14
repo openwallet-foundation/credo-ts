@@ -39,7 +39,7 @@ describe('UpdateAssistant | Backup', () => {
 
     await updateAssistant.initialize()
 
-    backupPath = `${agent.config.fileSystem.basePath}/afj/backup/${backupIdentifier}`
+    backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
   })
 
   afterEach(async () => {
