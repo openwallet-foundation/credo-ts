@@ -7,6 +7,7 @@ import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
+import { V2PRESENTATIONPROPOSAL, V2PRESENTATIONREQUEST } from '../../../formats/ProofFormatTypes'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V2RequestPresentationMessage } from '../messages'
@@ -75,7 +76,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: V2PRESENTATIONPROPOSAL,
         },
       ],
       proposalsAttach: [
@@ -130,7 +131,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: V2PRESENTATIONREQUEST,
         },
       ],
       requestPresentationsAttach: [

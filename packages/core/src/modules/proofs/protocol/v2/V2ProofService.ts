@@ -37,6 +37,7 @@ import { ConnectionService } from '../../../connections'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { ProofsUtils } from '../../ProofsUtil'
+import { V2PRESENTATIONREQUEST } from '../../formats/ProofFormatTypes'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
@@ -453,7 +454,7 @@ export class V2ProofService extends ProofService {
       const service = this.formatServiceMap[key]
       formats.push(
         await service.createPresentation({
-          attachment: proofRequest.getAttachmentByFormatIdentifier('hlindy/proof-req@v2.0'),
+          attachment: proofRequest.getAttachmentByFormatIdentifier(V2PRESENTATIONREQUEST),
           formats: options.proofFormats,
         })
       )
