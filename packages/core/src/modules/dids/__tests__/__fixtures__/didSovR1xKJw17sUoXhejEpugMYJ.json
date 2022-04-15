@@ -33,14 +33,10 @@
       "serviceEndpoint": "https://ssi.com"
     },
     {
-      "accept": [
-        "didcomm/aip2;env=rfc19"
-      ],
+      "accept": ["didcomm/aip2;env=rfc19"],
       "id": "did:sov:R1xKJw17sUoXhejEpugMYJ#did-communication",
       "priority": 0,
-      "recipientKeys": [
-        "did:sov:R1xKJw17sUoXhejEpugMYJ#key-agreement-1"
-      ],
+      "recipientKeys": ["did:sov:R1xKJw17sUoXhejEpugMYJ#key-agreement-1"],
       "routingKeys": [],
       "serviceEndpoint": "https://ssi.com",
       "type": "did-communication"
