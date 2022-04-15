@@ -19,6 +19,8 @@ import {
 } from '../messages'
 import { CredentialInfo } from '../models/CredentialInfo'
 
+import { CredentialMetadataKeys } from './credentialMetadataTypes'
+
 export interface CredentialRecordProps {
   id?: string
   createdAt?: Date
@@ -45,6 +47,8 @@ export type DefaultCredentialTags = {
   connectionId?: string
   state: CredentialState
   credentialId?: string
+  revocationRegistryId?: string
+  credentialRevocationId?: string
 }
 
 export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags, CredentialMetadata> {
@@ -100,12 +104,15 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   }
 
   public getTags() {
+    const metadata = this.metadata.get(CredentialMetadataKeys.IndyCredential)
     return {
       ...this._tags,
       threadId: this.threadId,
       connectionId: this.connectionId,
       state: this.state,
       credentialId: this.credentialId,
+      revocationRegistryId: metadata?.revocationRegistryId,
+      credentialRevocationId: metadata?.credentialRevocationId
     }
   }
 

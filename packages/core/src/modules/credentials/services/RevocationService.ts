@@ -1,5 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { ConnectionRecord } from '../../connections'
 import type { RevocationNotificationReceivedEvent } from '../CredentialEvents'
 import type { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../messages'
 
@@ -27,11 +28,17 @@ export class RevocationService {
   private async processRevocationNotification(
     revocationRegistryId: string,
     credentialRevocationId: string,
+    connection?: ConnectionRecord,
     comment?: string
   ) {
     const query = { revocationRegistryId, credentialRevocationId }
     this.logger.trace(`Getting record by query for revocation notification:`, query)
-    const credentialRecord = await this.credentialRepository.getSingleByQuery()
+    const credentialRecord = await this.credentialRepository.getSingleByQuery(query)
+   
+    if (!connection) {
+      throw new AriesFrameworkError('No connection record for message')
+    }
+    credentialRecord.assertConnection(connection.id)
 
     credentialRecord.revocationNotification = new RevocationNotification(comment)
     await this.credentialRepository.update(credentialRecord)
@@ -63,7 +70,8 @@ export class RevocationService {
       if (threadIdGroups) {
         const [, , revocationRegistryId, credentialRevocationId] = threadIdGroups
         const comment = messageContext.message.comment
-        await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, comment)
+        const connection = messageContext.connection
+        await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, connection, comment)
       } else {
         throw new AriesFrameworkError(
           `Incorrect revocation notification threadId format: \n${threadId}\ndoes not match\n"indy::<revocation_registry_id>::<credential_revocation_id>"`
@@ -92,7 +100,8 @@ export class RevocationService {
       if (credentialIdGroups) {
         const [, revocationRegistryId, credentialRevocationId] = credentialIdGroups
         const comment = messageContext.message.comment
-        await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, comment)
+        const connection = messageContext.connection
+        await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, connection, comment)
       } else {
         throw new AriesFrameworkError(
           `Incorrect revocation notification credentialId format: \n${credentialId}\ndoes not match\n"<revocation_registry_id>::<credential_revocation_id>"`

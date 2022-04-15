@@ -680,7 +680,10 @@ export class CredentialService {
       const credentialRevocationId = credential.cred_rev_id
       const revocationRegistryId = indyCredential.rev_reg_id
 
-      credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {credentialRevocationId, revocationRegistryId})
+      credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
+        credentialRevocationId,
+        revocationRegistryId,
+      })
     }
 
     credentialRecord.credentialId = credentialId

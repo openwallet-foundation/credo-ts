@@ -14,7 +14,7 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { AriesFrameworkError, RecordNotFoundError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { AckStatus } from '../../common'
-import { ConnectionState } from '../../connections'
+import { ConnectionRecord, ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
@@ -130,9 +130,7 @@ const mockCredentialRecord = ({
     state: state || CredentialState.OfferSent,
     threadId: threadId ?? offerMessage.id,
     connectionId: connectionId ?? '123',
-    tags,
-    revocationRegistryId,
-    credentialRevocationId,
+    tags
   })
 
   if (metadata?.indyRequest) {
@@ -150,6 +148,11 @@ const mockCredentialRecord = ({
       credentialDefinitionId: metadata.credentialDefinitionId,
     })
   }
+
+  credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
+    credentialRevocationId,
+    revocationRegistryId,
+  })
 
   return credentialRecord
 }
@@ -1185,19 +1188,21 @@ describe('CredentialService', () => {
       const date = new Date(2022)
 
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
-
+      mockFunction(credential.assertConnection).mockImplementationOnce((a)=>{console.log(a)})
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const spy = jest.spyOn(global, 'Date').mockImplementation(() => date)
 
-      const { revocationRegistryId, credentialRevocationId } = credential
+      const { revocationRegistryId, credentialRevocationId } = credential.getTags()
       const revocationNotificationThreadId = `indy::${revocationRegistryId}::${credentialRevocationId}`
 
       const revocationNotificationMessage = new V1RevocationNotificationMessage({
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage)
+      const messageContext = new InboundMessageContext(revocationNotificationMessage, {
+        connection: {} as ConnectionRecord
+      })
 
       await revocationService.v1ProcessRevocationNotification(messageContext)
 
@@ -1258,7 +1263,7 @@ describe('CredentialService', () => {
 
       const revocationNotificationMessage = new V1RevocationNotificationMessage({
         issueThread: revocationNotificationThreadId,
-        comment: 'Credenti1al has been revoked',
+        comment: 'Credential has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage)
 
@@ -1279,12 +1284,13 @@ describe('CredentialService', () => {
       const date = new Date(2022)
 
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
+      mockFunction(credential.assertConnection).mockImplementationOnce((a)=>{console.log(a)})
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const spy = jest.spyOn(global, 'Date').mockImplementation(() => date)
 
-      const { revocationRegistryId, credentialRevocationId } = credential
+      const { revocationRegistryId, credentialRevocationId } = credential.getTags()
       const revocationNotificationCredentialId = `${revocationRegistryId}::${credentialRevocationId}`
 
       const revocationNotificationMessage = new V2RevocationNotificationMessage({
@@ -1292,7 +1298,9 @@ describe('CredentialService', () => {
         revocationFormat: 'indy',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage)
+      const messageContext = new InboundMessageContext(revocationNotificationMessage,{
+        connection: {} as ConnectionRecord
+      })
 
       await revocationService.v2ProcessRevocationNotification(messageContext)
 
