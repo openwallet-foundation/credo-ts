@@ -2242,10 +2242,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.12", "@types/indy-sdk@^1.16.12":
-  version "1.16.12"
-  resolved "https://registry.npmjs.org/@types/indy-sdk/-/indy-sdk-1.16.12.tgz#7b6ad4e4ebf11125bd77f0ef98cf727d0262c4b7"
-  integrity sha512-6uyHSSAoM+eKQD4XF+KohAjbkDN6D9DnriYWlGi/pLCWkd74kCcEMlm7/REqfMkAgxL52wh7Cyzir+cnIi342g==
+"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.16", "@types/indy-sdk@^1.16.16":
+  version "1.16.16"
+  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.16.tgz#dc9e51c61c266eff616991fa7df88309975d9f1e"
+  integrity sha512-bSWG56bAFvjTTLHJoGEXylbbN533g9XEtOTPS9G1EvIv5AsVcy/OIZOkXXElbzvYdZ1Q+qCxZDD5T0OqMYNmjg==
   dependencies:
     buffer "^6.0.0"
 
@@ -2420,7 +2420,7 @@
   dependencies:
     "@types/node" "*"
 
-"@types/ws@^7.4.4", "@types/ws@^7.4.6":
+"@types/ws@^7.4.6":
   version "7.4.7"
   resolved "https://registry.npmjs.org/@types/ws/-/ws-7.4.7.tgz#f7c390a36f7a0679aa69de2d501319f4f8d9b702"
   integrity sha512-JQbbmxZTZehdc2iszGKs5oC3NFnjeay7mtAWrdt7qNtAVK0g19muApzAy4bm9byz79xa2ZnO/BOBC2R8RC5Lww==
@@ -8916,7 +8916,7 @@ rxjs@^6.6.0:
   dependencies:
     tslib "^1.9.0"
 
-rxjs@^7.1.0, rxjs@^7.2.0:
+rxjs@^7.2.0:
   version "7.5.2"
   resolved "https://registry.npmjs.org/rxjs/-/rxjs-7.5.2.tgz#11e4a3a1dfad85dbf7fb6e33cbba17668497490b"
   integrity sha512-PwDt186XaL3QN5qXj/H9DGyHhP3/RYYgZZwqBv9Tv8rsAaiwFH1IsJJlcgD37J7UW5a6O67qX0KWKS3/pu0m4w==

@@ -1,0 +1,17 @@
+name: Setup Postgres wallet plugin
+description: Setup Postgres wallet plugin
+author: 'sairanjit.tummalapalli@ayanworks.com'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Postgres wallet plugin
+      run: |
+        sudo apt-get install -y libzmq3-dev libsodium-dev pkg-config libssl-dev
+        curl https://sh.rustup.rs -sSf | bash -s -- -y
+        export PATH="/root/.cargo/bin:${PATH}"
+        cd ../
+        git clone https://github.com/hyperledger/indy-sdk.git
+        cd indy-sdk/experimental/plugins/postgres_storage/
+        cargo build --release
+      shell: bash

@@ -31,6 +31,7 @@ module.exports = {
     'no-console': 'error',
     '@typescript-eslint/ban-ts-comment': 'warn',
     '@typescript-eslint/consistent-type-imports': 'error',
+    '@typescript-eslint/no-floating-promises': 'error',
     'import/no-cycle': 'error',
     'import/newline-after-import': ['error', { count: 1 }],
     'import/order': [
