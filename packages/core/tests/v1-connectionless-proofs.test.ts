@@ -102,18 +102,11 @@ describe('Present Proof', () => {
     })
 
     testLogger.test('Alice accepts presentation request from Faber')
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      aliceProofRecord.id,
-      ProofProtocolVersion.V1,
-      {
-        filterByPresentationPreview: true,
-      }
-    )
     const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-      formats: {
-        indy: retrievedCredentials.indy,
+      proofRecordId: aliceProofRecord.id,
+      config: {
+        filterByPresentationPreview: true,
       },
-      version: ProofProtocolVersion.V1,
     })
 
     const acceptPresentationOptions: AcceptPresentationOptions = {

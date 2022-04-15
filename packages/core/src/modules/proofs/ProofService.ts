@@ -24,7 +24,7 @@ import type {
 } from './models/ProofServiceOptions'
 import type { ProofState } from './models/ProofState'
 import type {
-  AutoSelectCredentialOptions,
+  RetrivedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from './models/SharedOptions'
@@ -187,10 +187,10 @@ export abstract class ProofService {
 
   public abstract getRequestedCredentialsForProofRequest(
     options: GetRequestedCredentialforProofRequestoptions
-  ): Promise<AutoSelectCredentialOptions>
+  ): Promise<RetrivedCredentialOptions>
 
   public abstract autoSelectCredentialsForProofRequest(
-    options: AutoSelectCredentialOptions
+    options: RetrivedCredentialOptions
   ): Promise<RequestedCredentialsFormats>
 
   public abstract createProofRequestFromProposal(options: ProofRequestFromProposalOptions): Promise<ProofRequestFormats>

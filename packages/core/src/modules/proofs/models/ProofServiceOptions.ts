@@ -2,14 +2,10 @@ import type { ConnectionRecord } from '../../connections'
 import type { ProofRequest } from '../formats/indy/models/ProofRequest'
 import type { PresentationPreview } from '../protocol/v1/models/V1PresentationPreview'
 import type { ProofRecord } from '../repository'
+import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
-import type {
-  CreatePresentationFormats,
-  ProposeProofFormats,
-  RequestedCredentialConfigOptions,
-  RequestProofFormats,
-} from './SharedOptions'
+import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
 
 // ----- Create Proposal ----- //
 export interface CreateProposalOptions {
@@ -82,7 +78,7 @@ export interface RequestedCredentialForProofRequestOptions {
 }
 export interface GetRequestedCredentialforProofRequestoptions {
   proofRecord: ProofRecord
-  config: RequestedCredentialConfigOptions
+  config?: GetRequestedCredentialsConfig
 }
 
 export interface ProofRequestFromProposalOptions {

@@ -483,16 +483,11 @@ export async function presentProof({
     state: ProofState.RequestReceived,
   })
 
-  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(
-    holderRecord.id,
-    ProofProtocolVersion.V1
-  )
-
   const requestedCredentials = await holderAgent.proofs.autoSelectCredentialsForProofRequest({
-    formats: {
-      indy: retrievedCredentials.indy,
+    proofRecordId: holderRecord.id,
+    config: {
+      filterByPresentationPreview: true,
     },
-    version: ProofProtocolVersion.V1,
   })
 
   const acceptPresentationOptions: AcceptPresentationOptions = {

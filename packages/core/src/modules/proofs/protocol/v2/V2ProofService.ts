@@ -18,7 +18,7 @@ import type {
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
 import type {
-  AutoSelectCredentialOptions,
+  RetrivedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
@@ -712,7 +712,7 @@ export class V2ProofService extends ProofService {
 
   public async getRequestedCredentialsForProofRequest(
     options: GetRequestedCredentialforProofRequestoptions
-  ): Promise<AutoSelectCredentialOptions> {
+  ): Promise<RetrivedCredentialOptions> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
       messageClass: V2RequestPresentationMessage,
@@ -748,7 +748,7 @@ export class V2ProofService extends ProofService {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: AutoSelectCredentialOptions
+    options: RetrivedCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
     let returnValue = {}
 

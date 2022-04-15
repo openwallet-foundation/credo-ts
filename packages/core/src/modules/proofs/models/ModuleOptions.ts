@@ -1,4 +1,5 @@
 import type { ProofRequestOptions } from '../formats/indy/models/ProofRequest'
+import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
 import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
@@ -57,4 +58,9 @@ export interface AcceptPresentationOptions {
   proofRecordId: string
   comment?: string
   proofFormats: CreatePresentationFormats
+}
+
+export interface AutoSelectCredentialsForProofRequestOptions {
+  proofRecordId: string
+  config?: GetRequestedCredentialsConfig
 }

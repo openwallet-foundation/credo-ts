@@ -1,10 +1,10 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { ProofService } from './ProofService'
 import type { ProofRequestOptions } from './formats/indy/models/ProofRequest'
-import type { GetRequestedCredentialsConfig } from './models/GetRequestedCredentialsConfig'
 import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
+  AutoSelectCredentialsForProofRequestOptions,
   OutOfBandRequestOptions,
   ProposeProofOptions,
   RequestProofOptions,
@@ -17,7 +17,7 @@ import type {
   CreateRequestOptions,
   ProofRequestFromProposalOptions,
 } from './models/ProofServiceOptions'
-import type { AutoSelectCredentialOptions, RequestedCredentialsFormats } from './models/SharedOptions'
+import type { RequestedCredentialsFormats } from './models/SharedOptions'
 import type { ProofRecord } from './repository/ProofRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -400,28 +400,6 @@ export class ProofsModule {
    * @param proofRecordId the id of the proof request to get the matching credentials for
    * @param config optional configuration for credential selection process. Use `filterByPresentationPreview` (default `true`) to only include
    *  credentials that match the presentation preview from the presentation proposal (if available).
-
-   * @returns RetrievedCredentials object
-  */
-  public async getRequestedCredentialsForProofRequest(
-    proofRecordId: string,
-    version: ProofProtocolVersion,
-    config?: GetRequestedCredentialsConfig
-  ): Promise<AutoSelectCredentialOptions> {
-    const service = this.getService(version)
-
-    const proofRecord = await service.getById(proofRecordId)
-
-    return service.getRequestedCredentialsForProofRequest({
-      proofRecord: proofRecord,
-      config: {
-        indy: config,
-      },
-    })
-  }
-
-  /**
-   * Takes a RetrievedCredentials object and auto selects credentials in a RequestedCredentials object
    *
    * Use the return value of this method as input to {@link ProofService.createPresentation} to
    * automatically accept a received presentation request.
@@ -430,12 +408,19 @@ export class ProofsModule {
    *
    * @returns RequestedCredentials
    */
-  public async autoSelectCredentialsForProofRequest(options: {
-    formats: AutoSelectCredentialOptions
-    version: ProofProtocolVersion
-  }): Promise<RequestedCredentialsFormats> {
-    const service = this.getService(options.version)
-    return await service.autoSelectCredentialsForProofRequest(options.formats)
+  public async autoSelectCredentialsForProofRequest(
+    options: AutoSelectCredentialsForProofRequestOptions
+  ): Promise<RequestedCredentialsFormats> {
+    const proofRecord = await this.getById(options.proofRecordId)
+
+    const service = this.getService(proofRecord.protocolVersion)
+
+    const retrivedCredentials = await service.getRequestedCredentialsForProofRequest({
+      proofRecord: proofRecord,
+      config: options.config,
+    })
+
+    return await service.autoSelectCredentialsForProofRequest(retrivedCredentials)
   }
 
   /**

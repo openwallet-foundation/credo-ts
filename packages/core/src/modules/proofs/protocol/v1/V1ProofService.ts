@@ -17,7 +17,7 @@ import type {
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
 import type {
-  AutoSelectCredentialOptions,
+  RetrivedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
@@ -839,7 +839,7 @@ export class V1ProofService extends ProofService {
 
   public async getRequestedCredentialsForProofRequest(
     options: GetRequestedCredentialforProofRequestoptions
-  ): Promise<AutoSelectCredentialOptions> {
+  ): Promise<RetrivedCredentialOptions> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
       messageClass: V1RequestPresentationMessage,
@@ -859,12 +859,12 @@ export class V1ProofService extends ProofService {
     return await this.indyProofFormatService.getRequestedCredentialsForProofRequest({
       proofRequest: indyProofRequest,
       presentationProposal: proposalMessage?.presentationProposal,
-      config: options.config,
+      config: options.config ?? undefined,
     })
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: AutoSelectCredentialOptions
+    options: RetrivedCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
     return await this.indyProofFormatService.autoSelectCredentialsForProofRequest(options)
   }

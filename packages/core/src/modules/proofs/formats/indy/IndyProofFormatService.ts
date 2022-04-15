@@ -1,6 +1,6 @@
 import type { Logger } from '../../../../logger'
 import type {
-  AutoSelectCredentialOptions,
+  RetrivedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
@@ -300,10 +300,10 @@ export class IndyProofFormatService extends ProofFormatService {
 
   public async getRequestedCredentialsForProofRequest(
     options: IndyGetRequestedCredentialsFormat
-  ): Promise<AutoSelectCredentialOptions> {
+  ): Promise<RetrivedCredentialOptions> {
     const retrievedCredentials = new RetrievedCredentials({})
     const { proofRequest, presentationProposal } = options
-    const filterByNonRevocationRequirements = options.config.indy?.filterByNonRevocationRequirements
+    const filterByNonRevocationRequirements = options.config?.filterByNonRevocationRequirements
 
     for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
       let credentialMatch: Credential[] = []
@@ -408,7 +408,7 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: AutoSelectCredentialOptions
+    options: RetrivedCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
     const indy = options.indy
 

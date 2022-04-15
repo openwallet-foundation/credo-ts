@@ -65,9 +65,7 @@ export class V1RequestPresentationHandler implements Handler {
     const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest({
       proofRecord: record,
       config: {
-        indy: {
-          filterByPresentationPreview: false,
-        },
+        filterByPresentationPreview: false,
       },
     })
 
