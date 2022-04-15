@@ -174,13 +174,10 @@ export class Agent {
       })
     }
 
-    for (const transport of this.inboundTransports) {
-      await transport.start(this)
-    }
-
-    for (const transport of this.outboundTransports) {
-      await transport.start(this)
-    }
+    // Start transports
+    const allTransports = [...this.inboundTransports, ...this.outboundTransports]
+    const transportPromises = allTransports.map((transport) => transport.start(this))
+    await Promise.all(transportPromises)
 
     // Connect to mediator through provided invitation if provided in config
     // Also requests mediation ans sets as default mediator
@@ -200,12 +197,9 @@ export class Agent {
     this.agentConfig.stop$.next(true)
 
     // Stop transports
-    for (const transport of this.outboundTransports) {
-      await transport.stop()
-    }
-    for (const transport of this.inboundTransports) {
-      await transport.stop()
-    }
+    const allTransports = [...this.inboundTransports, ...this.outboundTransports]
+    const transportPromises = allTransports.map((transport) => transport.stop())
+    await Promise.all(transportPromises)
 
     // close wallet if still initialized
     if (this.wallet.isInitialized) {
