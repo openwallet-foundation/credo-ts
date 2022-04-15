@@ -458,7 +458,10 @@ export class ConnectionService {
       )
     }
 
-    const theirDidRecord = await this.didRepository.findSingleByQuery({ did: connectionRecord.theirDid })
+    const theirDidRecord = connectionRecord.theirDid && (await this.didRepository.findById(connectionRecord.theirDid))
+    if (!theirDidRecord) {
+      throw new AriesFrameworkError(`Did record with id ${connectionRecord.theirDid} not found.`)
+    }
 
     if (senderVerkey) {
       if (!theirDidRecord?.getTags().recipientKeys?.includes(senderVerkey)) {
