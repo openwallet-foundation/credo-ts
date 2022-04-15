@@ -100,7 +100,6 @@ export class ProofsModule {
       proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
       goalCode: options.goalCode,
-      willConfirm: options.willConfirm,
       comment: options.comment,
     }
 

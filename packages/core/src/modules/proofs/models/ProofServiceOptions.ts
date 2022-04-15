@@ -76,7 +76,7 @@ export interface RequestedCredentialForProofRequestOptions {
   proofRequest: ProofRequest
   presentationProposal?: PresentationPreview
 }
-export interface GetRequestedCredentialforProofRequestoptions {
+export interface GetRequestedCredentialsForProofRequestOptions {
   proofRecord: ProofRecord
   config?: GetRequestedCredentialsConfig
 }

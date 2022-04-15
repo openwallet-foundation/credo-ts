@@ -15,7 +15,6 @@ export interface ProposeProofOptions {
   protocolVersion: ProofProtocolVersion
   proofFormats: ProposeProofFormats
   comment?: string
-  willConfirm?: boolean
   goalCode?: string
   autoAcceptProof?: AutoAcceptProof
 }

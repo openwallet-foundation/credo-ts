@@ -13,7 +13,7 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
-  GetRequestedCredentialforProofRequestoptions,
+  GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
 import type {
@@ -274,7 +274,7 @@ export class V1ProofService extends ProofService {
     proofRecord.assertState(ProofState.ProposalReceived)
 
     // Create message
-    const { attachment } = this.indyProofFormatService.createRequest({
+    const { attachment } = await this.indyProofFormatService.createRequest({
       attachId: INDY_PROOF_REQUEST_ATTACHMENT_ID,
       formats: options.proofFormats,
     })
@@ -838,7 +838,7 @@ export class V1ProofService extends ProofService {
   }
 
   public async getRequestedCredentialsForProofRequest(
-    options: GetRequestedCredentialforProofRequestoptions
+    options: GetRequestedCredentialsForProofRequestOptions
   ): Promise<RetrivedCredentialOptions> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,

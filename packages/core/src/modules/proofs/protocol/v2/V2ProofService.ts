@@ -14,7 +14,7 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
-  GetRequestedCredentialforProofRequestoptions,
+  GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
 import type {
@@ -118,7 +118,7 @@ export class V2ProofService extends ProofService {
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
       formats.push(
-        service.createRequest({
+        await service.createRequest({
           formats:
             key === PresentationRecordType.Indy
               ? await ProofsUtils.createRequestFromPreview(options)
@@ -169,7 +169,7 @@ export class V2ProofService extends ProofService {
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
       formats.push(
-        service.createProposal({
+        await service.createProposal({
           formats: options.proofFormats,
         })
       )
@@ -262,7 +262,7 @@ export class V2ProofService extends ProofService {
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
       formats.push(
-        service.createRequest({
+        await service.createRequest({
           formats: options.proofFormats,
         })
       )
@@ -711,7 +711,7 @@ export class V2ProofService extends ProofService {
   }
 
   public async getRequestedCredentialsForProofRequest(
-    options: GetRequestedCredentialforProofRequestoptions
+    options: GetRequestedCredentialsForProofRequestOptions
   ): Promise<RetrivedCredentialOptions> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,

@@ -32,9 +32,9 @@ export abstract class ProofFormatService {
     this.agentConfig = agentConfig
   }
 
-  abstract createProposal(options: CreateProposalOptions): ProofAttachmentFormat
+  abstract createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat>
 
-  abstract createRequest(options: CreateRequestOptions): ProofAttachmentFormat
+  abstract createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat>
 
   abstract createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat>
 

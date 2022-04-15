@@ -111,7 +111,7 @@ export class IndyProofFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public createProposal(options: CreateProposalOptions): ProofAttachmentFormat {
+  public async createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.indy) {
       throw Error('Indy format missing')
     }
@@ -132,7 +132,7 @@ export class IndyProofFormatService extends ProofFormatService {
     })
   }
 
-  public createRequest(options: CreateRequestOptions): ProofAttachmentFormat {
+  public async createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.indy) {
       throw new AriesFrameworkError(
         'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
