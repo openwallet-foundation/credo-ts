@@ -32,6 +32,6 @@ export class DidsModule {
   }
 
   public findByDid(did: string) {
-    return this.didRepository.findSingleByQuery({ did })
+    return this.didRepository.findById(did)
   }
 }
