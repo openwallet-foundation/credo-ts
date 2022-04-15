@@ -84,7 +84,7 @@ export class HttpOutboundTransport implements OutboundTransport {
             )
             return
           }
-          this.agent.receiveMessage(encryptedMessage)
+          await this.agent.receiveMessage(encryptedMessage)
         } catch (error) {
           this.logger.debug('Unable to parse response message')
         }
