@@ -20,7 +20,7 @@ export class TransportService {
   }
 
   public findSessionByConnectionId(connectionId: string) {
-    return Object.values(this.transportSessionTable).find((session) => session.connection?.id === connectionId)
+    return Object.values(this.transportSessionTable).find((session) => session?.connection?.id === connectionId)
   }
 
   public hasInboundEndpoint(didDoc: DidDoc): boolean {
@@ -57,7 +57,7 @@ export class TransportService {
 }
 
 interface TransportSessionTable {
-  [sessionId: string]: TransportSession
+  [sessionId: string]: TransportSession | undefined
 }
 
 export interface TransportSession {
