@@ -465,7 +465,7 @@ export async function presentProof({
   const requestProofsOptions: RequestProofOptions = {
     protocolVersion: ProofProtocolVersion.V1,
     connectionId: verifierConnectionId,
-    proofRequestOptions: {
+    proofFormats: {
       indy: {
         name: 'test-proof-request',
         requestedAttributes: attributes,

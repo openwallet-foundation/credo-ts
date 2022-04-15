@@ -288,7 +288,7 @@ describe('Present Proof', () => {
     const requestProofsOptions: RequestProofOptions = {
       protocolVersion: ProofProtocolVersion.V1,
       connectionId: faberConnection.id,
-      proofRequestOptions: {
+      proofFormats: {
         indy: {
           name: 'proof-request',
           version: '1.0',
@@ -461,7 +461,7 @@ describe('Present Proof', () => {
     const requestProofsOptions: RequestProofOptions = {
       protocolVersion: ProofProtocolVersion.V1,
       connectionId: faberConnection.id,
-      proofRequestOptions: {
+      proofFormats: {
         indy: {
           name: 'proof-request',
           version: '1.0',

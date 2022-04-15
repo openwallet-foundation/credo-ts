@@ -36,6 +36,7 @@ import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import { V1ProofService } from './protocol/v1/V1ProofService'
 import { V2ProofService } from './protocol/v2/V2ProofService'
+import { ProofRepository } from './repository/ProofRepository'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ProofsModule {
@@ -44,6 +45,7 @@ export class ProofsModule {
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
   private serviceMap: { [key in ProofProtocolVersion]: ProofService }
+  private proofRepository: ProofRepository
 
   public constructor(
     dispatcher: Dispatcher,
@@ -52,12 +54,14 @@ export class ProofsModule {
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
     v1ProofService: V1ProofService,
-    v2ProofService: V2ProofService
+    v2ProofService: V2ProofService,
+    proofRepository: ProofRepository
   ) {
     this.connectionService = connectionService
     this.messageSender = messageSender
     this.agentConfig = agentConfig
     this.mediationRecipientService = mediationRecipientService
+    this.proofRepository = proofRepository
 
     this.serviceMap = {
       [ProofProtocolVersion.V1]: v1ProofService,
@@ -182,7 +186,7 @@ export class ProofsModule {
 
     const createProofRequest: CreateRequestOptions = {
       connectionRecord: connection,
-      proofFormats: options.proofRequestOptions,
+      proofFormats: options.proofFormats,
       protocolVersion: version,
       autoAcceptProof: options.autoAcceptProof,
       comment: options.comment,
@@ -212,7 +216,7 @@ export class ProofsModule {
     const service = this.getService(version)
 
     const createProofRequest: CreateOutOfBandRequestOptions = {
-      proofFormats: options.proofRequestOptions,
+      proofFormats: options.proofFormats,
       protocolVersion: version,
       autoAcceptProof: options.autoAcceptProof,
       comment: options.comment,
@@ -456,7 +460,7 @@ export class ProofsModule {
    * @returns List containing all proof records
    */
   public getAll(): Promise<ProofRecord[]> {
-    return this.serviceMap['1.0'].getAll()
+    return this.proofRepository.getAll()
   }
 
   /**
@@ -469,7 +473,7 @@ export class ProofsModule {
    *
    */
   public async getById(proofRecordId: string): Promise<ProofRecord> {
-    return this.serviceMap['1.0'].getById(proofRecordId)
+    return this.proofRepository.getById(proofRecordId)
   }
 
   /**
@@ -480,7 +484,7 @@ export class ProofsModule {
    *
    */
   public async findById(proofRecordId: string): Promise<ProofRecord | null> {
-    return this.serviceMap['1.0'].findById(proofRecordId)
+    return this.proofRepository.findById(proofRecordId)
   }
 
   /**
@@ -489,7 +493,8 @@ export class ProofsModule {
    * @param proofId the proof record id
    */
   public async deleteById(proofId: string) {
-    return this.serviceMap['1.0'].deleteById(proofId)
+    const proofRecord = await this.getById(proofId)
+    return this.proofRepository.delete(proofRecord)
   }
 
   private async registerHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {

@@ -77,7 +77,7 @@ describe('Present Proof', () => {
 
     const outOfBandRequestOptions: OutOfBandRequestOptions = {
       protocolVersion: ProofProtocolVersion.V2,
-      proofRequestOptions: {
+      proofFormats: {
         indy: {
           name: 'test-proof-request',
           version: '1.0',
@@ -173,7 +173,7 @@ describe('Present Proof', () => {
 
     const outOfBandRequestOptions: OutOfBandRequestOptions = {
       protocolVersion: ProofProtocolVersion.V2,
-      proofRequestOptions: {
+      proofFormats: {
         indy: {
           name: 'test-proof-request',
           version: '1.0',
@@ -322,7 +322,7 @@ describe('Present Proof', () => {
 
     const outOfBandRequestOptions: OutOfBandRequestOptions = {
       protocolVersion: ProofProtocolVersion.V2,
-      proofRequestOptions: {
+      proofFormats: {
         indy: {
           name: 'test-proof-request',
           version: '1.0',

@@ -37,14 +37,14 @@ export interface AcceptProposalOptions {
 export interface RequestProofOptions {
   protocolVersion: ProofProtocolVersion
   connectionId: string
-  proofRequestOptions: ProposeProofFormats | RequestProofFormats
+  proofFormats: ProposeProofFormats | RequestProofFormats
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
 
 export interface OutOfBandRequestOptions {
   protocolVersion: ProofProtocolVersion
-  proofRequestOptions: RequestProofFormats
+  proofFormats: RequestProofFormats
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }

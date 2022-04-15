@@ -136,7 +136,7 @@ export class Faber extends BaseAgent {
     await this.agent.proofs.requestProof({
       protocolVersion: ProofProtocolVersion.V1,
       connectionId: connectionRecord.id,
-      proofRequestOptions: {
+      proofFormats: {
         indy: {
           name: 'proof-request',
           version: '1.0',
