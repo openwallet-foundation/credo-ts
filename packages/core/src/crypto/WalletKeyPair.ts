@@ -114,5 +114,10 @@ export function createWalletKeyPairClass(wallet: Wallet) {
         verify: wrappedVerify.bind(this),
       }
     }
+
+    // EXPERIMENTAL
+    public get publicKeyBuffer(): Uint8Array {
+      return new Uint8Array(this.key.publicKey)
+    }
   }
 }

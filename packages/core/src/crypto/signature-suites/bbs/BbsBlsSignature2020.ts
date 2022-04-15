@@ -188,8 +188,6 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
   public async verifyProof(options: VerifyProofOptions): Promise<Record<string, unknown>> {
     const { proof, document, documentLoader, expansionMap, purpose } = options
 
-    proof['@context'] = SECURITY_CONTEXT_URL // TODO verify this is the correct way to handle proof context
-
     try {
       // create data to verify
       const verifyData = (
@@ -272,7 +270,9 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
   public async createVerifyData(options: CreateVerifyDataOptions): Promise<string[]> {
     const { proof, document, documentLoader, expansionMap } = options
 
-    const proofStatements = await this.createVerifyProofData(proof, {
+    const proof2 = { ...proof, '@context': document['@context'] }
+
+    const proofStatements = await this.createVerifyProofData(proof2, {
       documentLoader,
       expansionMap,
     })
