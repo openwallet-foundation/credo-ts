@@ -27,6 +27,7 @@ export class SubjectOutboundTransport implements OutboundTransport {
 
   public async stop(): Promise<void> {
     this.subscription?.unsubscribe()
+    this.ourSubject.complete()
   }
 
   private subscribe(agent: Agent) {
