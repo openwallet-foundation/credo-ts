@@ -9,11 +9,11 @@ import { uuid } from '../../packages/core/src/utils/uuid'
 export type SubjectMessage = { message: EncryptedMessage; replySubject?: Subject<SubjectMessage> }
 
 export class SubjectInboundTransport implements InboundTransport {
-  private subject: Subject<SubjectMessage>
+  private ourSubject: Subject<SubjectMessage>
   private subscription?: Subscription
 
-  public constructor(subject: Subject<SubjectMessage>) {
-    this.subject = subject
+  public constructor(ourSubject: Subject<SubjectMessage>) {
+    this.ourSubject = ourSubject
   }
 
   public async start(agent: Agent) {
@@ -27,7 +27,7 @@ export class SubjectInboundTransport implements InboundTransport {
   private subscribe(agent: Agent) {
     const logger = agent.injectionContainer.resolve(AgentConfig).logger
 
-    this.subscription = this.subject.subscribe({
+    this.subscription = this.ourSubject.subscribe({
       next: async ({ message, replySubject }: SubjectMessage) => {
         logger.test('Received message')
 
