@@ -1,4 +1,5 @@
 import type { Logger } from '../../../logger'
+import type { ConnectionRecord } from '../../connections'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { RevocationNotificationReceivedEvent, CredentialStateChangedEvent } from '../CredentialEvents'
@@ -14,7 +15,7 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { AriesFrameworkError, RecordNotFoundError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { AckStatus } from '../../common'
-import { ConnectionRecord, ConnectionState } from '../../connections'
+import { ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
@@ -130,7 +131,7 @@ const mockCredentialRecord = ({
     state: state || CredentialState.OfferSent,
     threadId: threadId ?? offerMessage.id,
     connectionId: connectionId ?? '123',
-    tags
+    tags,
   })
 
   if (metadata?.indyRequest) {
@@ -1188,7 +1189,7 @@ describe('CredentialService', () => {
       const date = new Date(2022)
 
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
-      mockFunction(credential.assertConnection).mockImplementationOnce((a)=>{console.log(a)})
+      mockFunction(credential.assertConnection).mockImplementationOnce((a) => a)
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const spy = jest.spyOn(global, 'Date').mockImplementation(() => date)
@@ -1201,7 +1202,7 @@ describe('CredentialService', () => {
         comment: 'Credential has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage, {
-        connection: {} as ConnectionRecord
+        connection: {} as ConnectionRecord,
       })
 
       await revocationService.v1ProcessRevocationNotification(messageContext)
@@ -1284,7 +1285,7 @@ describe('CredentialService', () => {
       const date = new Date(2022)
 
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
-      mockFunction(credential.assertConnection).mockImplementationOnce((a)=>{console.log(a)})
+      mockFunction(credential.assertConnection).mockImplementationOnce((a) => a)
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -1298,8 +1299,8 @@ describe('CredentialService', () => {
         revocationFormat: 'indy',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage,{
-        connection: {} as ConnectionRecord
+      const messageContext = new InboundMessageContext(revocationNotificationMessage, {
+        connection: {} as ConnectionRecord,
       })
 
       await revocationService.v2ProcessRevocationNotification(messageContext)

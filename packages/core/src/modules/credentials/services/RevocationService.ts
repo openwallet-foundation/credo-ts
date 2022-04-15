@@ -34,7 +34,7 @@ export class RevocationService {
     const query = { revocationRegistryId, credentialRevocationId }
     this.logger.trace(`Getting record by query for revocation notification:`, query)
     const credentialRecord = await this.credentialRepository.getSingleByQuery(query)
-   
+
     if (!connection) {
       throw new AriesFrameworkError('No connection record for message')
     }

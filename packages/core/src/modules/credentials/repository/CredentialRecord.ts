@@ -112,7 +112,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       state: this.state,
       credentialId: this.credentialId,
       revocationRegistryId: metadata?.revocationRegistryId,
-      credentialRevocationId: metadata?.credentialRevocationId
+      credentialRevocationId: metadata?.credentialRevocationId,
     }
   }
 
