@@ -73,7 +73,7 @@ export class MessageReceiver {
     if (this.isEncryptedMessage(inboundMessage)) {
       await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
     } else if (this.isPlaintextMessage(inboundMessage)) {
-      await this.receivePlaintextMessage(inboundMessage)
+      await this.receivePlaintextMessage(inboundMessage, connection)
     } else {
       throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
     }
