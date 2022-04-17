@@ -6,7 +6,7 @@ const aliceConfig = getBaseConfig('Agents Alice', {
   endpoints: ['rxjs:alice'],
 })
 
-describe('nonsecret', () => {
+describe('genericRecords', () => {
   let aliceAgent: Agent
 
   afterAll(async () => {
@@ -14,30 +14,30 @@ describe('nonsecret', () => {
     await aliceAgent.wallet.delete()
   })
 
-  test('store non-secret record', async () => {
+  test('store generic-record record', async () => {
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
     await aliceAgent.initialize()
 
-    //Save NonSecret message (Minimal)
-    const savedRecord1 = await aliceAgent.nonSecret.saveRecord('Some data saved')
+    //Save genericRecord message (Minimal)
+    const savedRecord1 = await aliceAgent.genericRecords.saveRecord('Some data saved')
 
-    //Save NonSecret message with tag
+    //Save genericRecord message with tag
     const tags = { myTag: 'foobar' }
-    const savedRecord2 = await aliceAgent.nonSecret.saveRecord('Some data saved', tags)
+    const savedRecord2 = await aliceAgent.genericRecords.saveRecord('Some data saved', tags)
 
     expect(savedRecord1).toBeDefined()
     expect(savedRecord2).toBeDefined()
   })
 
-  test('get non-secret records', async () => {
-    //Create NonSecret message
-    const savedRecords = await aliceAgent.nonSecret.getAll()
+  test('get generic-record records', async () => {
+    //Create genericRecord message
+    const savedRecords = await aliceAgent.genericRecords.getAll()
     expect(savedRecords?.length > 0).toBe(true)
   })
 
-  test('get non-secret specific record', async () => {
-    //Create NonSecret message
-    const savedRecords = await aliceAgent.nonSecret.findAllByQuery({ myTag: 'foobar' })
+  test('get generic-record specific record', async () => {
+    //Create genericRecord message
+    const savedRecords = await aliceAgent.genericRecords.findAllByQuery({ myTag: 'foobar' })
     expect(savedRecords?.length == 1).toBe(true)
   })
 })

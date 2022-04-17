@@ -3,30 +3,30 @@ import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 
-export type NonSecretRecordTags = TagsBase
-export type DefaultNonSecretRecordTags = {
+export type GenericRecordTags = TagsBase
+export type DefaultGenericRecordTags = {
   connectionId: string
 }
 
-export type BasicMessageTags = RecordTags<NonSecretRecord>
+export type BasicMessageTags = RecordTags<GenericRecord>
 
-export interface NonSecretRecordStorageProps {
+export interface GenericRecordStorageProps {
   id?: string
   createdAt?: Date
   connectionId?: string
-  tags?: NonSecretRecordTags
+  tags?: GenericRecordTags
 
   content: string
 }
 
-export class NonSecretRecord extends BaseRecord<DefaultNonSecretRecordTags, NonSecretRecordTags> {
+export class GenericRecord extends BaseRecord<DefaultGenericRecordTags, GenericRecordTags> {
   public content!: string
   public connectionId?: string
 
   public static readonly type = 'NonSecretRecord'
-  public readonly type = NonSecretRecord.type
+  public readonly type = GenericRecord.type
 
-  public constructor(props: NonSecretRecordStorageProps) {
+  public constructor(props: GenericRecordStorageProps) {
     super()
 
     if (props) {
