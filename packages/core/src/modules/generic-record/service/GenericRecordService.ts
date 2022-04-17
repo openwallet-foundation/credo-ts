@@ -1,5 +1,5 @@
 import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
-import type { GenericRecordTags } from '../repository/GenericRecord'
+import type { GenericRecordTags, SaveGenericRecordOption } from '../repository/GenericRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -15,7 +15,7 @@ export class GenericRecordService {
     this.genericRecordsRepository = genericRecordsRepository
   }
 
-  public async saveRecord(message: string, tags?: GenericRecordTags, connectionRecord?: ConnectionRecord) {
+  public async saveRecord({ message, tags, connectionRecord }: SaveGenericRecordOption) {
     const genericRecord = new GenericRecord({
       content: message,
       connectionId: connectionRecord?.id,

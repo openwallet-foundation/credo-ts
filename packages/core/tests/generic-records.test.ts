@@ -19,11 +19,11 @@ describe('genericRecords', () => {
     await aliceAgent.initialize()
 
     //Save genericRecord message (Minimal)
-    const savedRecord1 = await aliceAgent.genericRecords.saveRecord('Some data saved')
+    const savedRecord1 = await aliceAgent.genericRecords.saveRecord({ message: 'Some data saved' })
 
     //Save genericRecord message with tag
     const tags = { myTag: 'foobar' }
-    const savedRecord2 = await aliceAgent.genericRecords.saveRecord('Some data saved', tags)
+    const savedRecord2 = await aliceAgent.genericRecords.saveRecord({ message: 'Some data saved', tags: tags })
 
     expect(savedRecord1).toBeDefined()
     expect(savedRecord2).toBeDefined()

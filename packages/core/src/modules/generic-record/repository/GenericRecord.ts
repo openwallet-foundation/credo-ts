@@ -1,4 +1,5 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
+import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
@@ -17,6 +18,12 @@ export interface GenericRecordStorageProps {
   tags?: GenericRecordTags
 
   content: string
+}
+
+export interface SaveGenericRecordOption {
+  message: string
+  connectionRecord?: ConnectionRecord
+  tags?: GenericRecordTags
 }
 
 export class GenericRecord extends BaseRecord<DefaultGenericRecordTags, GenericRecordTags> {

@@ -1,6 +1,6 @@
 import type { Logger } from '../../logger'
 import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
-import type { GenericRecordTags } from './repository/GenericRecord'
+import type { GenericRecordTags, SaveGenericRecordOption } from './repository/GenericRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -17,9 +17,13 @@ export class GenericRecordModule {
     this.logger = agentConfig.logger
   }
 
-  public async saveRecord(message: string, tags?: GenericRecordTags, connectionRecord?: ConnectionRecord) {
+  public async saveRecord({ message, tags, connectionRecord }: SaveGenericRecordOption) {
     try {
-      const record = await this.genericRecordsService.saveRecord(message, tags, connectionRecord)
+      const record = await this.genericRecordsService.saveRecord({
+        message: message,
+        tags: tags,
+        connectionRecord: connectionRecord,
+      })
       return record
     } catch (error) {
       this.logger.error('Error while saving generic-record', {
