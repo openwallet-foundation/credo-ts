@@ -15,7 +15,7 @@ export class GenericRecordService {
     this.genericRecordsRepository = genericRecordsRepository
   }
 
-  public async saveRecord(message, tags, connectionRecord) {
+  public async saveRecord(message: string, tags?: GenericRecordTags, connectionRecord?: ConnectionRecord) {
     const genericRecord = new GenericRecord({
       content: message,
       connectionId: connectionRecord?.id,
