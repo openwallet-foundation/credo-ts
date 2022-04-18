@@ -146,7 +146,7 @@ export class ProofsModule {
     const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
       name: options.config?.name ? options.config.name : 'proof-request',
       version: options.config?.version ?? '1.0',
-      nonce: options.config?.nonce ?? (await service.generateProofRequestNonce()),
+      nonce: await service.generateProofRequestNonce(),
       proofRecord,
     }
 

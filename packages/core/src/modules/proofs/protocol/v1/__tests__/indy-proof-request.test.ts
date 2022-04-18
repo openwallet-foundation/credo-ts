@@ -111,7 +111,6 @@ describe('Present Proof', () => {
       config: {
         name: 'proof-request',
         version: '1.0',
-        nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
       },
       proofRecordId: faberProofRecord.id,
     }

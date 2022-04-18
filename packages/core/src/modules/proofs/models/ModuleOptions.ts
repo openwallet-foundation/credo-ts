@@ -7,7 +7,6 @@ import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormat
 export interface ProofConfig {
   name: string
   version: string
-  nonce?: string | undefined
 }
 
 export interface ProposeProofOptions {
