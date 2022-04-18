@@ -1,6 +1,5 @@
 import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
 
-import { ProofProtocolVersion } from '@aries-framework/core'
 import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
