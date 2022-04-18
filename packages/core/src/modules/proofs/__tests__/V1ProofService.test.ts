@@ -14,15 +14,12 @@ import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyRevocationService } from '../../indy/services/IndyRevocationService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
+import { PresentationProblemReportReason } from '../errors'
+import { PresentationProblemReportMessage } from '../messages/PresentationProblemReportMessage'
 import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import { ProofState } from '../models/ProofState'
 import { V1ProofService } from '../protocol/v1'
-import { V1PresentationProblemReportReason } from '../protocol/v1/errors'
-import {
-  INDY_PROOF_REQUEST_ATTACHMENT_ID,
-  V1PresentationProblemReportMessage,
-  V1RequestPresentationMessage,
-} from '../protocol/v1/messages'
+import { INDY_PROOF_REQUEST_ATTACHMENT_ID, V1RequestPresentationMessage } from '../protocol/v1/messages'
 import { ProofRecord } from '../repository/ProofRecord'
 import { ProofRepository } from '../repository/ProofRepository'
 
@@ -205,10 +202,10 @@ describe('ProofService', () => {
       mockFunction(proofRepository.getById).mockReturnValue(Promise.resolve(proof))
 
       // when
-      const presentationProblemReportMessage = await new V1PresentationProblemReportMessage({
+      const presentationProblemReportMessage = await new PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: V1PresentationProblemReportReason.Abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
 
@@ -226,17 +223,17 @@ describe('ProofService', () => {
 
   describe('processProblemReport', () => {
     let proof: ProofRecord
-    let messageContext: InboundMessageContext<V1PresentationProblemReportMessage>
+    let messageContext: InboundMessageContext<PresentationProblemReportMessage>
 
     beforeEach(() => {
       proof = mockProofRecord({
         state: ProofState.RequestReceived,
       })
 
-      const presentationProblemReportMessage = new V1PresentationProblemReportMessage({
+      const presentationProblemReportMessage = new PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: V1PresentationProblemReportReason.Abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })

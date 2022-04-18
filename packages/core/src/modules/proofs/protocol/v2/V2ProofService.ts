@@ -37,14 +37,13 @@ import { ConnectionService } from '../../../connections'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { ProofsUtils } from '../../ProofsUtil'
+import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
 import { V2PRESENTATIONREQUEST } from '../../formats/ProofFormatTypes'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
-import { V1PresentationProblemReportError } from '../v1/errors/V1PresentationProblemReportError'
-import { V1PresentationProblemReportReason } from '../v1/errors/V1PresentationProblemReportReason'
 
 import { V2PresentationProblemReportError, V2PresentationProblemReportReason } from './errors'
 import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
@@ -356,9 +355,9 @@ export class V2ProofService extends ProofService {
 
     // assert
     if (proofRequestMessage.requestPresentationsAttach.length === 0) {
-      throw new V1PresentationProblemReportError(
+      throw new PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`,
-        { problemCode: V1PresentationProblemReportReason.Abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
 
