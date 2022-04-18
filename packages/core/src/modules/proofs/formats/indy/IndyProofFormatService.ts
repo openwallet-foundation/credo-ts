@@ -1,6 +1,6 @@
 import type { Logger } from '../../../../logger'
 import type {
-  RetrivedCredentialOptions,
+  RetrievedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
@@ -114,7 +114,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
   public async createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.indy) {
-      throw Error('Indy format missing')
+      throw Error('Missing indy format to create proposal attachment format')
     }
     const indyFormat = options.formats.indy
 
@@ -124,7 +124,7 @@ export class IndyProofFormatService extends ProofFormatService {
     })
 
     if (!preview) {
-      throw Error('Presentation Preview missing')
+      throw Error('Missing presentation preview to create proposal attachment format')
     }
 
     return this.createProofAttachment({
@@ -135,9 +135,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
   public async createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.indy) {
-      throw new AriesFrameworkError(
-        'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
-      )
+      throw new AriesFrameworkError('Missing indy format to create proof request attachment format.')
     }
 
     return this.createRequestAttachment({
@@ -153,7 +151,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
     // verify everything is there
     if (!options.formats.indy) {
-      throw new AriesFrameworkError('No attributes received for requested credentials.')
+      throw new AriesFrameworkError('Missing indy format to create proof presentation attachment format.')
     }
 
     const requestedCredentials = new RequestedCredentials({
@@ -301,7 +299,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
   public async getRequestedCredentialsForProofRequest(
     options: IndyGetRequestedCredentialsFormat
-  ): Promise<RetrivedCredentialOptions> {
+  ): Promise<RetrievedCredentialOptions> {
     const retrievedCredentials = new RetrievedCredentials({})
     const { proofRequest, presentationProposal } = options
     const filterByNonRevocationRequirements = options.config?.filterByNonRevocationRequirements
@@ -409,7 +407,7 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: RetrivedCredentialOptions
+    options: RetrievedCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
     const indy = options.indy
 

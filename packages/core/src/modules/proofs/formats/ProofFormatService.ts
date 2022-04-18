@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { DidCommMessageRepository } from '../../../storage'
 import type {
-  RetrivedCredentialOptions,
+  RetrievedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../models/SharedOptions'
@@ -52,10 +52,10 @@ export abstract class ProofFormatService {
 
   public abstract getRequestedCredentialsForProofRequest(
     options: IndyGetRequestedCredentialsFormat
-  ): Promise<RetrivedCredentialOptions>
+  ): Promise<RetrievedCredentialOptions>
 
   public abstract autoSelectCredentialsForProofRequest(
-    options: RetrivedCredentialOptions
+    options: RetrievedCredentialOptions
   ): Promise<RequestedCredentialsFormats>
 
   abstract proposalAndRequestAreEqual(

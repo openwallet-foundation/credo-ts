@@ -18,7 +18,7 @@ import type {
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
 import type {
-  RetrivedCredentialOptions,
+  RetrievedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
@@ -426,18 +426,6 @@ export class V2ProofService extends ProofService {
     return proofRecord
   }
 
-  /**
-   * Decline a proof request
-   * @param proofRecord The proof request to be declined
-   */
-  public async declineRequest(proofRecord: ProofRecord): Promise<ProofRecord> {
-    proofRecord.assertState(ProofState.RequestReceived)
-
-    await this.updateState(proofRecord, ProofState.Declined)
-
-    return proofRecord
-  }
-
   public async createPresentation(
     options: CreatePresentationOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
@@ -713,7 +701,7 @@ export class V2ProofService extends ProofService {
 
   public async getRequestedCredentialsForProofRequest(
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<RetrivedCredentialOptions> {
+  ): Promise<RetrievedCredentialOptions> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
       messageClass: V2RequestPresentationMessage,
@@ -749,7 +737,7 @@ export class V2ProofService extends ProofService {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: RetrivedCredentialOptions
+    options: RetrievedCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
     let returnValue = {}
 

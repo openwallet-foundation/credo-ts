@@ -46,7 +46,7 @@ export interface RequestedCredentialConfigOptions {
   jsonLd?: never
 }
 
-export interface RetrivedCredentialOptions {
+export interface RetrievedCredentialOptions {
   indy?: RetrievedCredentials | undefined
   presentationExchange?: undefined
 }

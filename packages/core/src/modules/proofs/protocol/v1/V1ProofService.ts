@@ -17,7 +17,7 @@ import type {
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
 import type {
-  RetrivedCredentialOptions,
+  RetrievedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
@@ -190,18 +190,6 @@ export class V1ProofService extends ProofService {
     void this.updateState(proofRecord, ProofState.ProposalSent)
 
     return { proofRecord, message: proposalMessage }
-  }
-
-  /**
-   * Decline a proof request
-   * @param proofRecord The proof request to be declined
-   */
-  public async declineRequest(proofRecord: ProofRecord): Promise<ProofRecord> {
-    proofRecord.assertState(ProofState.RequestReceived)
-
-    await this.updateState(proofRecord, ProofState.Declined)
-
-    return proofRecord
   }
 
   public async processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
@@ -840,7 +828,7 @@ export class V1ProofService extends ProofService {
 
   public async getRequestedCredentialsForProofRequest(
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<RetrivedCredentialOptions> {
+  ): Promise<RetrievedCredentialOptions> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
       messageClass: V1RequestPresentationMessage,
@@ -865,7 +853,7 @@ export class V1ProofService extends ProofService {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: RetrivedCredentialOptions
+    options: RetrievedCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
     return await this.indyProofFormatService.autoSelectCredentialsForProofRequest(options)
   }

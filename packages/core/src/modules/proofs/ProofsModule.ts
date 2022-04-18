@@ -34,6 +34,7 @@ import { MediationRecipientService } from '../routing/services/MediationRecipien
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import { ProofProtocolVersion } from './models/ProofProtocolVersion'
+import { ProofState } from './models/ProofState'
 import { V1ProofService } from './protocol/v1/V1ProofService'
 import { V2ProofService } from './protocol/v2/V2ProofService'
 import { ProofRepository } from './repository/ProofRepository'
@@ -329,11 +330,14 @@ export class ProofsModule {
    * @param proofRecordId the id of the proof request to be declined
    * @returns proof record that was declined
    */
-  public async declineRequest(proofRecordId: string, version: ProofProtocolVersion) {
-    const service = this.getService(version)
+  public async declineRequest(proofRecordId: string) {
+    const proofRecord = await this.getById(proofRecordId)
+    const service = this.getService(proofRecord.protocolVersion)
 
-    const proofRecord = await service.getById(proofRecordId)
-    await service.declineRequest(proofRecord)
+    proofRecord.assertState(ProofState.RequestReceived)
+
+    await service.updateState(proofRecord, ProofState.Declined)
+
     return proofRecord
   }
 
@@ -418,12 +422,12 @@ export class ProofsModule {
 
     const service = this.getService(proofRecord.protocolVersion)
 
-    const retrivedCredentials = await service.getRequestedCredentialsForProofRequest({
+    const retrievedCredentials = await service.getRequestedCredentialsForProofRequest({
       proofRecord: proofRecord,
       config: options.config,
     })
 
-    return await service.autoSelectCredentialsForProofRequest(retrivedCredentials)
+    return await service.autoSelectCredentialsForProofRequest(retrievedCredentials)
   }
 
   /**
@@ -432,9 +436,9 @@ export class ProofsModule {
    * @param message message to send
    * @returns proof record associated with the proof problem report message
    */
-  public async sendProblemReport(proofRecordId: string, message: string, version: ProofProtocolVersion) {
-    const service = this.getService(version)
-    const record = await service.getById(proofRecordId)
+  public async sendProblemReport(proofRecordId: string, message: string) {
+    const record = await this.getById(proofRecordId)
+    const service = this.getService(record.protocolVersion)
     if (!record.connectionId) {
       throw new AriesFrameworkError(`No connectionId found for proof record '${record.id}'.`)
     }
