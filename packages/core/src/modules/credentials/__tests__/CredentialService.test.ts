@@ -1189,7 +1189,6 @@ describe('CredentialService', () => {
       const date = new Date(2022)
 
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
-      mockFunction(credential.assertConnection).mockImplementationOnce((a) => a)
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const spy = jest.spyOn(global, 'Date').mockImplementation(() => date)
@@ -1202,7 +1201,9 @@ describe('CredentialService', () => {
         comment: 'Credential has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage, {
-        connection: {} as ConnectionRecord,
+        connection: {
+          id: credential.connectionId,
+        } as ConnectionRecord,
       })
 
       await revocationService.v1ProcessRevocationNotification(messageContext)
@@ -1285,7 +1286,6 @@ describe('CredentialService', () => {
       const date = new Date(2022)
 
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
-      mockFunction(credential.assertConnection).mockImplementationOnce((a) => a)
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
@@ -1300,7 +1300,9 @@ describe('CredentialService', () => {
         comment: 'Credential has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage, {
-        connection: {} as ConnectionRecord,
+        connection: {
+          id: credential.connectionId,
+        } as ConnectionRecord,
       })
 
       await revocationService.v2ProcessRevocationNotification(messageContext)
@@ -1374,6 +1376,42 @@ describe('CredentialService', () => {
         error: invalidFormatError,
         credentialId: invalidCredentialId,
       })
+    })
+
+    test('Test error being thrown when connection does not match issuer', async () => {
+      const loggerSpy = jest.spyOn(logger, 'warn')
+      const date = new Date(2022)
+
+      const error = new AriesFrameworkError(
+        "Credential record is associated with connection '123'. Current connection is 'fd9c5ddb-ec11-4acd-bc32-540736249746'"
+      )
+
+      mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const spy = jest.spyOn(global, 'Date').mockImplementation(() => date)
+
+      const { revocationRegistryId, credentialRevocationId } = credential.getTags()
+      const revocationNotificationThreadId = `indy::${revocationRegistryId}::${credentialRevocationId}`
+
+      const revocationNotificationMessage = new V1RevocationNotificationMessage({
+        issueThread: revocationNotificationThreadId,
+        comment: 'Credential has been revoked',
+      })
+      const messageContext = new InboundMessageContext(revocationNotificationMessage, {
+        connection: {
+          id: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
+        } as ConnectionRecord,
+      })
+
+      await revocationService.v1ProcessRevocationNotification(messageContext)
+
+      expect(loggerSpy).toBeCalledWith('Failed to process revocation notification message', {
+        error,
+        threadId: revocationNotificationThreadId,
+      })
+
+      spy.mockRestore()
     })
   })
 })
