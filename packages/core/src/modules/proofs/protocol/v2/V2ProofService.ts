@@ -38,7 +38,7 @@ import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { ProofsUtils } from '../../ProofsUtil'
 import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
-import { V2PRESENTATIONREQUEST } from '../../formats/ProofFormatTypes'
+import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormatTypes'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
@@ -441,7 +441,7 @@ export class V2ProofService extends ProofService {
       const service = this.formatServiceMap[key]
       formats.push(
         await service.createPresentation({
-          attachment: proofRequest.getAttachmentByFormatIdentifier(V2PRESENTATIONREQUEST),
+          attachment: proofRequest.getAttachmentByFormatIdentifier(V2_INDY_PRESENTATION_REQUEST),
           formats: options.proofFormats,
         })
       )

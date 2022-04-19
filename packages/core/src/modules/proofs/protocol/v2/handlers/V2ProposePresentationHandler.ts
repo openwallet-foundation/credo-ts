@@ -8,7 +8,7 @@ import type { V2ProofService } from '../V2ProofService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
-import { V2PRESENTATIONPROPOSAL } from '../../../formats/ProofFormatTypes'
+import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormatTypes'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
@@ -64,7 +64,7 @@ export class V2ProposePresentationHandler implements Handler {
 
     const proposalAttachment = proposalMessage
       .getAttachmentFormats()
-      .find((x) => x.format.format === V2PRESENTATIONPROPOSAL)
+      .find((x) => x.format.format === V2_INDY_PRESENTATION_PROPOSAL)
 
     if (!proposalAttachment) {
       throw new AriesFrameworkError('No proposal message could be found')

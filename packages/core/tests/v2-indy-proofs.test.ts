@@ -10,9 +10,9 @@ import type { CredDefId } from 'indy-sdk'
 
 import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
 import {
-  V2PRESENTATION,
-  V2PRESENTATIONPROPOSAL,
-  V2PRESENTATIONREQUEST,
+  V2_INDY_PRESENTATION,
+  V2_INDY_PRESENTATION_PROPOSAL,
+  V2_INDY_PRESENTATION_REQUEST,
 } from '../src/modules/proofs/formats/ProofFormatTypes'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import {
@@ -88,7 +88,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2PRESENTATIONPROPOSAL,
+          format: V2_INDY_PRESENTATION_PROPOSAL,
         },
       ],
       proposalsAttach: [
@@ -138,7 +138,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2PRESENTATIONREQUEST,
+          format: V2_INDY_PRESENTATION_REQUEST,
         },
       ],
       requestPresentationsAttach: [
@@ -189,7 +189,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2PRESENTATION,
+          format: V2_INDY_PRESENTATION,
         },
       ],
       presentationsAttach: [
@@ -313,7 +313,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2PRESENTATIONREQUEST,
+          format: V2_INDY_PRESENTATION_REQUEST,
         },
       ],
       requestPresentationsAttach: [
@@ -369,7 +369,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2PRESENTATION,
+          format: V2_INDY_PRESENTATION,
         },
       ],
       presentationsAttach: [

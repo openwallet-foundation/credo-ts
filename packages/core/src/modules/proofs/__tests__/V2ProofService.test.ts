@@ -11,7 +11,7 @@ import { DidCommMessageRepository } from '../../../storage'
 import { ConnectionService, ConnectionState } from '../../connections'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
-import { V2PRESENTATION } from '../formats/ProofFormatTypes'
+import { V2_INDY_PRESENTATION } from '../formats/ProofFormatTypes'
 import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import { ProofState } from '../models/ProofState'
 import { V2ProofService } from '../protocol/v2/V2ProofService'
@@ -72,7 +72,7 @@ const mockProofRecord = ({
       {
         format: {
           attachmentId: '123',
-          format: V2PRESENTATION,
+          format: V2_INDY_PRESENTATION,
         },
         attachment: requestAttachment,
       },
@@ -133,7 +133,7 @@ describe('ProofService', () => {
           {
             format: {
               attachmentId: '123',
-              format: V2PRESENTATION,
+              format: V2_INDY_PRESENTATION,
             },
             attachment: requestAttachment,
           },
