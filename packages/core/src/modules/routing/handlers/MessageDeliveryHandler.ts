@@ -17,13 +17,13 @@ export class MessageDeliveryHandler implements Handler {
   }
 
   public async handle(messageContext: InboundMessageContext<MessageDeliveryMessage>) {
+    const connection = messageContext.assertReadyConnection()
     const deliveryReceivedMessage = await this.mediationRecipientService.processDelivery(
       messageContext.message,
       this.messageReceiver
     )
-    const connection = messageContext.connection
 
-    if (connection && deliveryReceivedMessage) {
+    if (deliveryReceivedMessage) {
       return createOutboundMessage(connection, deliveryReceivedMessage)
     }
   }

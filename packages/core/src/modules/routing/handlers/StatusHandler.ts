@@ -14,10 +14,10 @@ export class StatusHandler implements Handler {
   }
 
   public async handle(messageContext: InboundMessageContext<StatusMessage>) {
+    const connection = messageContext.assertReadyConnection()
     const deliveryRequestMessage = this.mediatorRecipientService.processStatus(messageContext.message)
-    const connection = messageContext.connection
 
-    if (connection && deliveryRequestMessage) {
+    if (deliveryRequestMessage) {
       return createOutboundMessage(connection, deliveryRequestMessage)
     }
   }

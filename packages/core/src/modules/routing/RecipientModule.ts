@@ -160,7 +160,7 @@ export class RecipientModule {
           await this.openMediationWebSocket(mediator)
           if (mediator.pickupStrategy === MediatorPickupStrategy.PickUpV2) {
             // Start Pickup v2 protocol to receive messages received while websocket offline
-            await this.sendStatusRequest({ mediator })
+            await this.sendStatusRequest({ mediatorId: mediator.id })
           }
         } catch (error) {
           this.logger.warn('Unable to re-open websocket connection to mediator', { error })
@@ -177,15 +177,14 @@ export class RecipientModule {
     const { mediatorPollingInterval } = this.agentConfig
     const mediatorPickupStrategy = await this.getPickupStrategyForMediator(mediator)
     const mediatorConnection = await this.connectionService.getById(mediator.connectionId)
-    // TODO: turn this into a switch including pickv2
 
     switch (mediatorPickupStrategy) {
       case MediatorPickupStrategy.PickUpV2:
         this.agentConfig.logger.info(`Starting pickup of messages from mediator '${mediator.id}'`)
         await this.initiateImplicitPickup(mediator)
-        await this.sendStatusRequest({ mediator })
+        await this.sendStatusRequest({ mediatorId: mediator.id })
         break
-      case MediatorPickupStrategy.Explicit: {
+      case MediatorPickupStrategy.PickUpV1: {
         // Explicit means polling every X seconds with batch message
         this.agentConfig.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediator.id}'`)
         const subscription = interval(mediatorPollingInterval)
@@ -228,7 +227,7 @@ export class RecipientModule {
 
         // Use explicit pickup strategy
         mediatorPickupStrategy = isBatchPickupSupported
-          ? MediatorPickupStrategy.Explicit
+          ? MediatorPickupStrategy.PickUpV1
           : MediatorPickupStrategy.Implicit
       }
 
@@ -384,14 +383,15 @@ export class RecipientModule {
 
   public async sendStatusRequest(
     config: {
-      mediator?: MediationRecord
+      mediatorId?: string
       recipientKey?: string
     } = {}
   ) {
     let mediator
 
-    if (config.mediator) {
-      mediator = await this.connectionService.findById(config.mediator.connectionId)
+    if (config.mediatorId) {
+      const record = await this.mediationRecipientService.getById(config.mediatorId)
+      mediator = await this.connectionService.findById(record.id)
     } else {
       mediator = await this.findDefaultMediatorConnection()
     }

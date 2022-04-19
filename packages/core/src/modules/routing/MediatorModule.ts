@@ -21,7 +21,6 @@ export class MediatorModule {
   private mediatorService: MediatorService
   private messagePickupService: MessagePickupService
   private messageSender: MessageSender
-  private messageReceiver: MessageReceiver
   public eventEmitter: EventEmitter
   public agentConfig: AgentConfig
   public connectionService: ConnectionService
@@ -39,7 +38,6 @@ export class MediatorModule {
     this.mediatorService = mediationService
     this.messagePickupService = messagePickupService
     this.messageSender = messageSender
-    this.messageReceiver = messageReceiver
     this.eventEmitter = eventEmitter
     this.agentConfig = agentConfig
     this.connectionService = connectionService

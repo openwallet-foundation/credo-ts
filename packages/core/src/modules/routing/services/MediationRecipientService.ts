@@ -26,7 +26,9 @@ import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../../connections/services/ConnectionService'
+import { ProblemReportError } from '../../problem-reports'
 import { RoutingEventTypes } from '../RoutingEvents'
+import { RoutingProblemReportReason } from '../error'
 import {
   DeliveryRequestMessage,
   MessagesReceivedMessage,
@@ -249,16 +251,19 @@ export class MediationRecipientService {
   public async processDelivery(messageDeliveryMessage: MessageDeliveryMessage, messageReceiver: MessageReceiver) {
     const { attachments } = messageDeliveryMessage
 
-    if (!attachments) throw new AriesFrameworkError('No attachments found')
+    if (!attachments)
+      throw new ProblemReportError('Error processing attachments', {
+        problemCode: RoutingProblemReportReason.ErrorProcessingAttachments,
+      })
 
     const ids: string[] = []
     for (const attachment of attachments) {
+      ids.push(attachment.id)
       try {
         await messageReceiver.receiveMessage(attachment.getDataAsJson<EncryptedMessage>())
       } catch (error) {
         this.logger.error(`Failed to process message id: ${attachment.id}`, { error, attachment })
       }
-      ids.push(attachment.id)
     }
 
     return new MessagesReceivedMessage({

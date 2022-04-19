@@ -1,6 +1,5 @@
 import { Expose } from 'class-transformer'
 import { Equals, IsOptional, IsString } from 'class-validator'
-import { Verkey } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 
@@ -26,5 +25,5 @@ export class StatusRequestMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   @Expose({ name: 'recipient_key' })
-  public recipientKey?: Verkey
+  public recipientKey?: string
 }

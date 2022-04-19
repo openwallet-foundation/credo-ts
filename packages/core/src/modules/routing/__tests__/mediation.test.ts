@@ -94,7 +94,7 @@ describe('mediator establishment', () => {
     expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
-    expect(recipientMediator?.pickupStrategy).toBe(MediatorPickupStrategy.Explicit)
+    expect(recipientMediator?.pickupStrategy).toBe(MediatorPickupStrategy.PickUpV1)
 
     // Initialize sender agent
     senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)

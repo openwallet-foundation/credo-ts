@@ -26,8 +26,6 @@ export function createOutboundServiceMessage<T extends AgentMessage = AgentMessa
 export function isOutboundServiceMessage(
   message: OutboundMessage | OutboundServiceMessage
 ): message is OutboundServiceMessage {
-  return (
-    (message as OutboundServiceMessage).service instanceof DidCommService ||
-    (message as OutboundServiceMessage).service instanceof IndyAgentService
-  )
+  const service = (message as OutboundServiceMessage).service
+  return service instanceof IndyAgentService || service instanceof DidCommService
 }

@@ -1,6 +1,5 @@
 import { Expose } from 'class-transformer'
 import { Equals, IsInt, IsOptional, IsString } from 'class-validator'
-import { Verkey } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
@@ -30,7 +29,7 @@ export class DeliveryRequestMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   @Expose({ name: 'recipient_key' })
-  public recipientKey?: Verkey
+  public recipientKey?: string
 
   @IsInt()
   public limit!: number

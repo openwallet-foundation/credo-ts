@@ -1,6 +1,5 @@
 import { Expose, Transform } from 'class-transformer'
 import { Equals, IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
-import { Verkey } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
@@ -40,7 +39,7 @@ export class StatusMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   @Expose({ name: 'recipient_key' })
-  public recipientKey?: Verkey
+  public recipientKey?: string
 
   @IsInt()
   @Expose({ name: 'message_count' })
