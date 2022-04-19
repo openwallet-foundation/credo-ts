@@ -7,6 +7,7 @@ import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+import { V2PRESENTATIONREQUEST } from '../../../formats/ProofFormatTypes'
 import { ProofRequest } from '../../../formats/indy/models/ProofRequest'
 import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
 
@@ -77,7 +78,7 @@ export class V1RequestPresentationMessage extends AgentMessage {
 
     return [
       {
-        format: new ProofFormatSpec({ format: 'hlindy/proof-req@v2.0' }),
+        format: new ProofFormatSpec({ format: V2PRESENTATIONREQUEST }),
         attachment: attachment,
       },
     ]

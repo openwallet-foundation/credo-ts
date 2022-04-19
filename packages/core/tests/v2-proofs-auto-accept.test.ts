@@ -2,9 +2,9 @@ import type { Agent, ConnectionRecord } from '../src'
 import type {
   AcceptProposalOptions,
   ProposeProofOptions,
-  RequestProofsOptions,
+  RequestProofOptions,
 } from '../src/modules/proofs/models/ModuleOptions'
-import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 
 import {
   AutoAcceptProof,
@@ -48,13 +48,14 @@ describe('Auto accept present proof', () => {
 
       const proposeProofOptions: ProposeProofOptions = {
         connectionId: aliceConnection.id,
-        protocolVersion: ProofProtocolVersion.V2_0,
+        protocolVersion: ProofProtocolVersion.V2,
         proofFormats: {
           indy: {
             nonce: '1298236324864',
-            proofPreview: presentationPreview,
             name: 'abc',
             version: '1.0',
+            attributes: presentationPreview.attributes,
+            predicates: presentationPreview.predicates,
           },
         },
       }
@@ -99,10 +100,10 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions: RequestProofsOptions = {
-        protocolVersion: ProofProtocolVersion.V2_0,
+      const requestProofsOptions: RequestProofOptions = {
+        protocolVersion: ProofProtocolVersion.V2,
         connectionId: faberConnection.id,
-        proofRequestOptions: {
+        proofFormats: {
           indy: {
             name: 'proof-request',
             version: '1.0',
@@ -150,11 +151,12 @@ describe('Auto accept present proof', () => {
 
       const proposal: ProposeProofOptions = {
         connectionId: aliceConnection.id,
-        protocolVersion: ProofProtocolVersion.V2_0,
+        protocolVersion: ProofProtocolVersion.V2,
         proofFormats: {
           indy: {
             nonce: '1298236324864',
-            proofPreview: presentationPreview,
+            attributes: presentationPreview.attributes,
+            predicates: presentationPreview.predicates,
             name: 'abc',
             version: '1.0',
           },
@@ -173,18 +175,13 @@ describe('Auto accept present proof', () => {
       testLogger.test('Faber accepts presentation proposal from Alice')
 
       const acceptProposalOptions: AcceptProposalOptions = {
-        proofFormats: {
-          indy: {
-            name: 'proof-request',
-            version: '1.0',
-            nonce: '1298236324864',
-            attributes: presentationPreview.attributes,
-            predicates: presentationPreview.predicates,
-          },
+        config: {
+          name: 'proof-request',
+          version: '1.0',
         },
         proofRecordId: faberProofRecord.id,
-        protocolVersion: ProofProtocolVersion.V2_0,
       }
+
       await faberAgent.proofs.acceptProposal(acceptProposalOptions)
 
       testLogger.test('Faber waits for presentation from Alice')
@@ -225,10 +222,10 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions: RequestProofsOptions = {
-        protocolVersion: ProofProtocolVersion.V2_0,
+      const requestProofsOptions: RequestProofOptions = {
+        protocolVersion: ProofProtocolVersion.V2,
         connectionId: faberConnection.id,
-        proofRequestOptions: {
+        proofFormats: {
           indy: {
             name: 'proof-request',
             version: '1.0',

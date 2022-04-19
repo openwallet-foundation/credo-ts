@@ -2,7 +2,7 @@ import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { AcceptProposalOptions, ProposeProofOptions } from '../../../models/ModuleOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
-import type { PresentationPreview } from '../models/PresentationPreview'
+import type { PresentationPreview } from '../models/V1PresentationPreview'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -41,13 +41,14 @@ describe('Present Proof', () => {
 
     const proposeOptions: ProposeProofOptions = {
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
       proofFormats: {
         indy: {
           name: 'ProofRequest',
           nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
           version: '1.0',
-          proofPreview: presentationPreview,
+          attributes: presentationPreview.attributes,
+          predicates: presentationPreview.predicates,
         },
       },
       comment: 'V1 propose proof test',
@@ -100,24 +101,18 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
     })
   })
 
   test(`Faber accepts the Proposal send by Alice`, async () => {
     // Accept Proposal
     const acceptProposalOptions: AcceptProposalOptions = {
-      proofFormats: {
-        indy: {
-          name: 'proof-request',
-          version: '1.0',
-          nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
-          attributes: presentationPreview.attributes,
-          predicates: presentationPreview.predicates,
-        },
+      config: {
+        name: 'proof-request',
+        version: '1.0',
       },
       proofRecordId: faberProofRecord.id,
-      protocolVersion: ProofProtocolVersion.V1_0,
     }
 
     testLogger.test('Faber accepts presentation proposal from Alice')
@@ -156,7 +151,7 @@ describe('Present Proof', () => {
     expect(aliceProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.RequestReceived,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
     })
   })
 })

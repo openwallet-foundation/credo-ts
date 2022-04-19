@@ -14,11 +14,11 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
-  GetRequestedCredentialforProofRequestoptions,
+  GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
 import type {
-  AutoSelectCredentialOptions,
+  RetrievedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
@@ -37,14 +37,14 @@ import { ConnectionService } from '../../../connections'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { ProofsUtils } from '../../ProofsUtil'
+import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
+import { V2PRESENTATIONREQUEST } from '../../formats/ProofFormatTypes'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { PresentationExchangeFormatService } from '../../formats/presentation-exchange/PresentationExchangeFormatService'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
-import { V1PresentationProblemReportError } from '../v1/errors/V1PresentationProblemReportError'
-import { V1PresentationProblemReportReason } from '../v1/errors/V1PresentationProblemReportReason'
 
 import { V2PresentationProblemReportError, V2PresentationProblemReportReason } from './errors'
 import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
@@ -102,7 +102,7 @@ export class V2ProofService extends ProofService {
     @inject(InjectionSymbols.Wallet) wallet: Wallet
   ) {
     super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
-    this.protocolVersion = ProofProtocolVersion.V2_0
+    this.protocolVersion = ProofProtocolVersion.V2
     this.wallet = wallet
     this.formatServiceMap = {
       [PresentationRecordType.Indy]: indyProofFormatService,
@@ -121,7 +121,7 @@ export class V2ProofService extends ProofService {
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
       formats.push(
-        service.createRequest({
+        await service.createRequest({
           formats:
             key === PresentationRecordType.Indy
               ? await ProofsUtils.createRequestFromPreview(options)
@@ -141,7 +141,7 @@ export class V2ProofService extends ProofService {
       connectionId: options.connectionRecord.id,
       threadId: proposalMessage.threadId,
       state: ProofState.ProposalSent,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     await this.proofRepository.save(proofRecord)
@@ -172,7 +172,7 @@ export class V2ProofService extends ProofService {
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
       formats.push(
-        service.createProposal({
+        await service.createProposal({
           formats: options.proofFormats,
         })
       )
@@ -191,7 +191,7 @@ export class V2ProofService extends ProofService {
       associatedRecordId: options.proofRecord.id,
     })
 
-    this.updateState(options.proofRecord, ProofState.ProposalSent)
+    void this.updateState(options.proofRecord, ProofState.ProposalSent)
 
     return { message: proposalMessage, proofRecord: options.proofRecord }
   }
@@ -231,7 +231,7 @@ export class V2ProofService extends ProofService {
         connectionId: connectionRecord?.id,
         threadId: proposalMessage.threadId,
         state: ProofState.ProposalReceived,
-        protocolVersion: ProofProtocolVersion.V2_0,
+        protocolVersion: ProofProtocolVersion.V2,
       })
 
       // Assert
@@ -265,7 +265,7 @@ export class V2ProofService extends ProofService {
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
       formats.push(
-        service.createRequest({
+        await service.createRequest({
           formats: options.proofFormats,
         })
       )
@@ -284,7 +284,7 @@ export class V2ProofService extends ProofService {
       connectionId: options.connectionRecord?.id,
       threadId: requestMessage.threadId,
       state: ProofState.RequestSent,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     await this.proofRepository.save(proofRecord)
@@ -346,7 +346,7 @@ export class V2ProofService extends ProofService {
       associatedRecordId: options.proofRecord.id,
     })
 
-    this.updateState(options.proofRecord, ProofState.RequestSent)
+    void this.updateState(options.proofRecord, ProofState.RequestSent)
 
     return { message: requestMessage, proofRecord: options.proofRecord }
   }
@@ -358,9 +358,9 @@ export class V2ProofService extends ProofService {
 
     // assert
     if (proofRequestMessage.requestPresentationsAttach.length === 0) {
-      throw new V1PresentationProblemReportError(
+      throw new PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`,
-        { problemCode: V1PresentationProblemReportReason.Abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
 
@@ -405,7 +405,7 @@ export class V2ProofService extends ProofService {
         connectionId: connectionRecord?.id,
         threadId: proofRequestMessage.threadId,
         state: ProofState.RequestReceived,
-        protocolVersion: ProofProtocolVersion.V2_0,
+        protocolVersion: ProofProtocolVersion.V2,
       })
 
       await this.didCommMessageRepository.saveOrUpdateAgentMessage({
@@ -428,18 +428,6 @@ export class V2ProofService extends ProofService {
     return proofRecord
   }
 
-  /**
-   * Decline a proof request
-   * @param proofRecord The proof request to be declined
-   */
-  public async declineRequest(proofRecord: ProofRecord): Promise<ProofRecord> {
-    proofRecord.assertState(ProofState.RequestReceived)
-
-    await this.updateState(proofRecord, ProofState.Declined)
-
-    return proofRecord
-  }
-
   public async createPresentation(
     options: CreatePresentationOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
@@ -456,7 +444,7 @@ export class V2ProofService extends ProofService {
       const service = this.formatServiceMap[key]
       formats.push(
         await service.createPresentation({
-          attachment: proofRequest.getAttachmentByFormatIdentifier('hlindy/proof-req@v2.0'),
+          attachment: proofRequest.getAttachmentByFormatIdentifier(V2PRESENTATIONREQUEST),
           formats: options.proofFormats,
         })
       )
@@ -714,8 +702,8 @@ export class V2ProofService extends ProofService {
   }
 
   public async getRequestedCredentialsForProofRequest(
-    options: GetRequestedCredentialforProofRequestoptions
-  ): Promise<AutoSelectCredentialOptions> {
+    options: GetRequestedCredentialsForProofRequestOptions
+  ): Promise<RetrievedCredentialOptions> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
       messageClass: V2RequestPresentationMessage,
@@ -751,7 +739,7 @@ export class V2ProofService extends ProofService {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: AutoSelectCredentialOptions
+    options: RetrievedCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
     let returnValue = {}
 

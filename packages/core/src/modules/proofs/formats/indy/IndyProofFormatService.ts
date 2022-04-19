@@ -1,10 +1,10 @@
 import type { Logger } from '../../../../logger'
 import type {
-  AutoSelectCredentialOptions,
+  RetrievedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { PresentationPreview, PresentationPreviewAttribute } from '../../protocol/v1/models/PresentationPreview'
+import type { PresentationPreviewAttribute } from '../../protocol/v1/models/V1PresentationPreview'
 import type { IndyGetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
@@ -41,7 +41,9 @@ import {
   AttributeFilter,
   ProofPredicateInfo,
 } from '../../protocol/v1/models'
+import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import { ProofFormatService } from '../ProofFormatService'
+import { V2PRESENTATION, V2PRESENTATIONPROPOSAL, V2PRESENTATIONREQUEST } from '../ProofFormatTypes'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
@@ -81,7 +83,7 @@ export class IndyProofFormatService extends ProofFormatService {
   private createRequestAttachment(options: CreateRequestAttachmentOptions): ProofAttachmentFormat {
     const format = new ProofFormatSpec({
       attachmentId: options.attachId,
-      format: 'hlindy/proof-req@v2.0',
+      format: V2PRESENTATIONREQUEST,
     })
 
     const request = new ProofRequest(options.proofRequestOptions)
@@ -102,7 +104,7 @@ export class IndyProofFormatService extends ProofFormatService {
   private createProofAttachment(options: CreateProofAttachmentOptions): ProofAttachmentFormat {
     const format = new ProofFormatSpec({
       attachmentId: options.attachId,
-      format: 'hlindy/proof-req@v2.0',
+      format: V2PRESENTATIONPROPOSAL,
     })
 
     const attachment = new Attachment({
@@ -115,26 +117,30 @@ export class IndyProofFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public createProposal(options: CreateProposalOptions): ProofAttachmentFormat {
+  public async createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.indy) {
-      throw Error('Indy format missing')
+      throw Error('Missing indy format to create proposal attachment format')
     }
+    const indyFormat = options.formats.indy
 
-    if (!options.formats.indy.proofPreview) {
-      throw Error('Presentation Preview missing')
+    const preview = new PresentationPreview({
+      attributes: indyFormat.attributes,
+      predicates: indyFormat.predicates,
+    })
+
+    if (!preview) {
+      throw Error('Missing presentation preview to create proposal attachment format')
     }
 
     return this.createProofAttachment({
       attachId: options.attachId ?? uuid(),
-      proofProposalOptions: options.formats.indy.proofPreview,
+      proofProposalOptions: preview,
     })
   }
 
-  public createRequest(options: CreateRequestOptions): ProofAttachmentFormat {
+  public async createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.indy) {
-      throw new AriesFrameworkError(
-        'Unable to get requested credentials for proof request. No proof request message was found or the proof request message does not contain an indy proof request.'
-      )
+      throw new AriesFrameworkError('Missing indy format to create proof request attachment format.')
     }
 
     return this.createRequestAttachment({
@@ -150,7 +156,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
     // verify everything is there
     if (!options.formats.indy) {
-      throw new AriesFrameworkError('No attributes received for requested credentials.')
+      throw new AriesFrameworkError('Missing indy format to create proof presentation attachment format.')
     }
 
     const requestedCredentials = new RequestedCredentials({
@@ -165,7 +171,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
     const format = new ProofFormatSpec({
       attachmentId,
-      format: 'hlindy/proof@v2.0',
+      format: V2PRESENTATION,
     })
 
     const attachment = new Attachment({
@@ -179,21 +185,19 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
-    // const requestFormat = options.presentation.request.find((x) => x.format.attachmentId === 'hlindy/proof-req@v2.0')
-    const requestFormat = options.presentation.request.find((x) => x.format.format === 'hlindy/proof-req@v2.0')
-
-    const proofFormat = options.presentation.proof.find((x) => x.format.format === 'hlindy/proof@v2.0')
-    // const proofFormat = options.presentation.proof.find((x) => x.format.attachmentId === 'hlindy/proof@v2.0')
-
-    if (!proofFormat) {
-      throw new MissingIndyProofMessageError(
-        'Missing Indy Proof Presentation format while trying to process an Indy proof presentation.'
-      )
-    }
+    const requestFormat = options.presentation.request.find((x) => x.format.format === V2PRESENTATIONREQUEST)
 
     if (!requestFormat) {
       throw new MissingIndyProofMessageError(
         'Missing Indy Proof Request format while trying to process an Indy proof presentation.'
+      )
+    }
+
+    const proofFormat = options.presentation.proof.find((x) => x.format.format === V2PRESENTATION)
+
+    if (!proofFormat) {
+      throw new MissingIndyProofMessageError(
+        'Missing Indy Proof Presentation format while trying to process an Indy proof presentation.'
       )
     }
 
@@ -239,7 +243,7 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public supportsFormat(formatIdentifier: string): boolean {
-    const supportedFormats = ['hlindy/proof-req@v2.0', 'hlindy/proof@v2.0']
+    const supportedFormats = [V2PRESENTATIONPROPOSAL, V2PRESENTATIONREQUEST, V2PRESENTATION]
     return supportedFormats.includes(formatIdentifier)
   }
 
@@ -254,8 +258,8 @@ export class IndyProofFormatService extends ProofFormatService {
     proposalAttachments: ProofAttachmentFormat[],
     requestAttachments: ProofAttachmentFormat[]
   ) {
-    const proposalAttachment = proposalAttachments.find((x) => x.format.format === 'hlindy/proof-req@v2.0')?.attachment
-    const requestAttachment = requestAttachments.find((x) => x.format.format === 'hlindy/proof-req@v2.0')?.attachment
+    const proposalAttachment = proposalAttachments.find((x) => x.format.format === V2PRESENTATIONPROPOSAL)?.attachment
+    const requestAttachment = requestAttachments.find((x) => x.format.format === V2PRESENTATIONREQUEST)?.attachment
 
     if (!proposalAttachment) {
       throw new AriesFrameworkError('Proposal message has no attachment linked to it')
@@ -300,10 +304,10 @@ export class IndyProofFormatService extends ProofFormatService {
 
   public async getRequestedCredentialsForProofRequest(
     options: IndyGetRequestedCredentialsFormat
-  ): Promise<AutoSelectCredentialOptions> {
+  ): Promise<RetrievedCredentialOptions> {
     const retrievedCredentials = new RetrievedCredentials({})
     const { proofRequest, presentationProposal } = options
-    const filterByNonRevocationRequirements = options.config.indy?.filterByNonRevocationRequirements
+    const filterByNonRevocationRequirements = options.config?.filterByNonRevocationRequirements
 
     for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
       let credentialMatch: Credential[] = []
@@ -408,7 +412,7 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: AutoSelectCredentialOptions
+    options: RetrievedCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
     const indy = options.indy
 

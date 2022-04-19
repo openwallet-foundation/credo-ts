@@ -134,9 +134,9 @@ export class Faber extends BaseAgent {
     await this.printProofFlow(greenText('\nRequesting proof...\n', false))
 
     await this.agent.proofs.requestProof({
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
       connectionId: connectionRecord.id,
-      proofRequestOptions: {
+      proofFormats: {
         indy: {
           name: 'proof-request',
           version: '1.0',

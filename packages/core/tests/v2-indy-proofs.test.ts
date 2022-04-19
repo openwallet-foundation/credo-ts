@@ -3,12 +3,17 @@ import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
   ProposeProofOptions,
-  RequestProofsOptions,
+  RequestProofOptions,
 } from '../src/modules/proofs/models/ModuleOptions'
-import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
 import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
+import {
+  V2PRESENTATION,
+  V2PRESENTATIONPROPOSAL,
+  V2PRESENTATIONREQUEST,
+} from '../src/modules/proofs/formats/ProofFormatTypes'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import {
   V2PresentationMessage,
@@ -51,13 +56,14 @@ describe('Present Proof', () => {
 
     const proposeProofOptions: ProposeProofOptions = {
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
-          nonce: '947121108704767252195126',
-          proofPreview: presentationPreview,
           name: 'abc',
           version: '1.0',
+          nonce: '947121108704767252195126',
+          attributes: presentationPreview.attributes,
+          predicates: presentationPreview.predicates,
         },
       },
     }
@@ -82,7 +88,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: V2PRESENTATIONPROPOSAL,
         },
       ],
       proposalsAttach: [
@@ -100,21 +106,15 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     const acceptProposalOptions: AcceptProposalOptions = {
-      proofFormats: {
-        indy: {
-          name: 'proof-request',
-          version: '1.0',
-          nonce: '947121108704767252195126',
-          attributes: presentationPreview.attributes,
-          predicates: presentationPreview.predicates,
-        },
+      config: {
+        name: 'proof-request',
+        version: '1.0',
       },
       proofRecordId: faberProofRecord.id,
-      protocolVersion: ProofProtocolVersion.V2_0,
     }
 
     // Faber accepts the presentation proposal from Alice
@@ -138,7 +138,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: V2PRESENTATIONREQUEST,
         },
       ],
       requestPresentationsAttach: [
@@ -158,23 +158,15 @@ describe('Present Proof', () => {
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      aliceProofRecord.id,
-      ProofProtocolVersion.V2_0,
-      {
-        filterByPresentationPreview: true,
-      }
-    )
 
     const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-      formats: {
-        indy: retrievedCredentials.indy,
+      proofRecordId: aliceProofRecord.id,
+      config: {
+        filterByPresentationPreview: true,
       },
-      version: ProofProtocolVersion.V2_0,
     })
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
-      protocolVersion: ProofProtocolVersion.V2_0,
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     }
@@ -197,7 +189,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof@v2.0',
+          format: V2PRESENTATION,
         },
       ],
       presentationsAttach: [
@@ -218,12 +210,12 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     // Faber accepts the presentation provided by Alice
     testLogger.test('Faber accepts the presentation provided by Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V2_0)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
@@ -286,10 +278,10 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions: RequestProofsOptions = {
-      protocolVersion: ProofProtocolVersion.V2_0,
+    const requestProofsOptions: RequestProofOptions = {
+      protocolVersion: ProofProtocolVersion.V2,
       connectionId: faberConnection.id,
-      proofRequestOptions: {
+      proofFormats: {
         indy: {
           name: 'proof-request',
           version: '1.0',
@@ -321,7 +313,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: V2PRESENTATIONREQUEST,
         },
       ],
       requestPresentationsAttach: [
@@ -340,27 +332,20 @@ describe('Present Proof', () => {
     expect(aliceProofRecord).toMatchObject({
       threadId: aliceProofRecord.threadId,
       state: ProofState.RequestReceived,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      aliceProofRecord.id,
-      ProofProtocolVersion.V2_0,
-      {
-        filterByPresentationPreview: true,
-      }
-    )
+
     const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-      formats: {
-        indy: retrievedCredentials.indy,
+      proofRecordId: aliceProofRecord.id,
+      config: {
+        filterByPresentationPreview: true,
       },
-      version: ProofProtocolVersion.V2_0,
     })
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
-      protocolVersion: ProofProtocolVersion.V2_0,
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     }
@@ -384,7 +369,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof@v2.0',
+          format: V2PRESENTATION,
         },
       ],
       presentationsAttach: [
@@ -405,12 +390,12 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
 
     // Faber accepts the presentation
     testLogger.test('Faber accept the presentation from Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V2_0)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits until she receives a presentation acknowledgement
     testLogger.test('Alice waits for acceptance by Faber')

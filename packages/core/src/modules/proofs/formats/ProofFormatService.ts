@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { DidCommMessageRepository } from '../../../storage'
 import type {
-  AutoSelectCredentialOptions,
+  RetrievedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../models/SharedOptions'
@@ -13,7 +13,6 @@ import type {
   CreateProposalOptions,
   CreateRequestOptions,
   ProcessPresentationOptions,
-  ProcessProposalOptions,
 } from './models/ProofFormatServiceOptions'
 
 /**
@@ -33,11 +32,9 @@ export abstract class ProofFormatService {
     this.agentConfig = agentConfig
   }
 
-  abstract createProposal(options: CreateProposalOptions): ProofAttachmentFormat
+  abstract createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat>
 
-  abstract processProposal(options: ProcessProposalOptions): void
-
-  abstract createRequest(options: CreateRequestOptions): ProofAttachmentFormat
+  abstract createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat>
 
   abstract createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat>
 
@@ -55,10 +52,10 @@ export abstract class ProofFormatService {
 
   public abstract getRequestedCredentialsForProofRequest(
     options: IndyGetRequestedCredentialsFormat
-  ): Promise<AutoSelectCredentialOptions>
+  ): Promise<RetrievedCredentialOptions>
 
   public abstract autoSelectCredentialsForProofRequest(
-    options: AutoSelectCredentialOptions
+    options: RetrievedCredentialOptions
   ): Promise<RequestedCredentialsFormats>
 
   abstract proposalAndRequestAreEqual(

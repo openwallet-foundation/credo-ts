@@ -13,15 +13,15 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
-  GetRequestedCredentialforProofRequestoptions,
+  GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
 import type {
-  AutoSelectCredentialOptions,
+  RetrievedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { PresentationPreviewAttribute } from './models/PresentationPreview'
+import type { PresentationPreviewAttribute } from './models/V1PresentationPreview'
 import type { CredDef, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
@@ -44,19 +44,21 @@ import { IndyHolderService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
+import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
+import { V2PRESENTATIONREQUEST } from '../../formats/ProofFormatTypes'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
+import { PresentationProblemReportHandler } from '../../handlers/'
+import { PresentationProblemReportMessage } from '../../messages/PresentationProblemReportMessage'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { ProofRecord } from '../../repository/ProofRecord'
 import { ProofRepository } from '../../repository/ProofRepository'
 
-import { V1PresentationProblemReportError, V1PresentationProblemReportReason } from './errors'
 import {
   V1PresentationAckHandler,
   V1PresentationHandler,
-  V1PresentationProblemReportHandler,
   V1ProposePresentationHandler,
   V1RequestPresentationHandler,
 } from './handlers'
@@ -65,12 +67,11 @@ import {
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
   V1PresentationAckMessage,
   V1PresentationMessage,
-  V1PresentationProblemReportMessage,
   V1ProposePresentationMessage,
   V1RequestPresentationMessage,
 } from './messages'
 import { ProofAttributeInfo, AttributeFilter, ProofPredicateInfo } from './models'
-import { PresentationPreview } from './models/PresentationPreview'
+import { PresentationPreview } from './models/V1PresentationPreview'
 
 /**
  * @todo add method to check if request matches proposal. Useful to see if a request I received is the same as the proposal I sent.
@@ -108,7 +109,7 @@ export class V1ProofService extends ProofService {
   }
 
   public getVersion(): ProofProtocolVersion {
-    return ProofProtocolVersion.V1_0
+    return ProofProtocolVersion.V1
   }
 
   public async createProposal(
@@ -119,15 +120,10 @@ export class V1ProofService extends ProofService {
     // Assert
     connectionRecord.assertReady()
 
-    const presentationProposal = proofFormats.indy?.proofPreview
-      ? new PresentationPreview({
-          attributes: proofFormats.indy?.proofPreview.attributes,
-          predicates: proofFormats.indy?.proofPreview.predicates,
-        })
-      : new PresentationPreview({
-          attributes: [],
-          predicates: [],
-        })
+    const presentationProposal = new PresentationPreview({
+      attributes: proofFormats.indy?.attributes,
+      predicates: proofFormats.indy?.predicates,
+    })
 
     // Create message
     const proposalMessage = new V1ProposePresentationMessage({
@@ -141,7 +137,7 @@ export class V1ProofService extends ProofService {
       threadId: proposalMessage.threadId,
       state: ProofState.ProposalSent,
       autoAcceptProof: options?.autoAcceptProof,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
     })
 
     await this.didCommMessageRepository.saveOrUpdateAgentMessage({
@@ -168,11 +164,15 @@ export class V1ProofService extends ProofService {
     proofRecord.assertState(ProofState.RequestReceived)
 
     // Create message
+    const presentationPreview = new PresentationPreview({
+      attributes: proofFormats.indy?.attributes,
+      predicates: proofFormats.indy?.predicates,
+    })
     let proposalMessage: V1ProposePresentationMessage
-    if (proofFormats.indy?.proofPreview) {
+    if (presentationPreview) {
       proposalMessage = new V1ProposePresentationMessage({
         comment,
-        presentationProposal: proofFormats.indy?.proofPreview,
+        presentationProposal: presentationPreview,
       })
     } else {
       throw new AriesFrameworkError('Missing presentation preview.')
@@ -187,21 +187,9 @@ export class V1ProofService extends ProofService {
     })
 
     // Update record
-    this.updateState(proofRecord, ProofState.ProposalSent)
+    void this.updateState(proofRecord, ProofState.ProposalSent)
 
     return { proofRecord, message: proposalMessage }
-  }
-
-  /**
-   * Decline a proof request
-   * @param proofRecord The proof request to be declined
-   */
-  public async declineRequest(proofRecord: ProofRecord): Promise<ProofRecord> {
-    proofRecord.assertState(ProofState.RequestReceived)
-
-    await this.updateState(proofRecord, ProofState.Declined)
-
-    return proofRecord
   }
 
   public async processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
@@ -240,7 +228,7 @@ export class V1ProofService extends ProofService {
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
         state: ProofState.ProposalReceived,
-        protocolVersion: ProofProtocolVersion.V1_0,
+        protocolVersion: ProofProtocolVersion.V1,
       })
 
       // Assert
@@ -275,7 +263,7 @@ export class V1ProofService extends ProofService {
     proofRecord.assertState(ProofState.ProposalReceived)
 
     // Create message
-    const { attachment } = this.indyProofFormatService.createRequest({
+    const { attachment } = await this.indyProofFormatService.createRequest({
       attachId: INDY_PROOF_REQUEST_ATTACHMENT_ID,
       formats: options.proofFormats,
     })
@@ -325,7 +313,7 @@ export class V1ProofService extends ProofService {
       threadId: requestPresentationMessage.threadId,
       state: ProofState.RequestSent,
       autoAcceptProof: options?.autoAcceptProof,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
     })
 
     await this.didCommMessageRepository.saveOrUpdateAgentMessage({
@@ -355,9 +343,9 @@ export class V1ProofService extends ProofService {
 
     // Assert attachment
     if (!proofRequest) {
-      throw new V1PresentationProblemReportError(
+      throw new PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`,
-        { problemCode: V1PresentationProblemReportReason.Abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
     await validateOrReject(proofRequest)
@@ -402,7 +390,7 @@ export class V1ProofService extends ProofService {
         connectionId: connection?.id,
         threadId: proofRequestMessage.threadId,
         state: ProofState.RequestReceived,
-        protocolVersion: ProofProtocolVersion.V1_0,
+        protocolVersion: ProofProtocolVersion.V1,
       })
 
       await this.didCommMessageRepository.saveOrUpdateAgentMessage({
@@ -443,9 +431,9 @@ export class V1ProofService extends ProofService {
     const requestAttachment = requestMessage?.indyAttachment
 
     if (!requestAttachment) {
-      throw new V1PresentationProblemReportError(
+      throw new PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation with thread id ${proofRecord.threadId}`,
-        { problemCode: V1PresentationProblemReportReason.Abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
 
@@ -540,8 +528,8 @@ export class V1ProofService extends ProofService {
       await this.updateState(proofRecord, ProofState.PresentationReceived)
     } catch (e) {
       if (e instanceof AriesFrameworkError) {
-        throw new V1PresentationProblemReportError(e.message, {
-          problemCode: V1PresentationProblemReportReason.Abandoned,
+        throw new PresentationProblemReportError(e.message, {
+          problemCode: PresentationProblemReportReason.Abandoned,
         })
       }
       throw e
@@ -583,9 +571,9 @@ export class V1ProofService extends ProofService {
   public async createProblemReport(
     options: CreateProblemReportOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
-    const msg = new V1PresentationProblemReportMessage({
+    const msg = new PresentationProblemReportMessage({
       description: {
-        code: V1PresentationProblemReportReason.Abandoned,
+        code: PresentationProblemReportReason.Abandoned,
         en: options.description,
       },
     })
@@ -603,7 +591,7 @@ export class V1ProofService extends ProofService {
   public async processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
     const { message: presentationProblemReportMsg } = messageContext
 
-    const presentationProblemReportMessage = presentationProblemReportMsg as V1PresentationProblemReportMessage
+    const presentationProblemReportMessage = presentationProblemReportMsg as PresentationProblemReportMessage
     const connection = messageContext.assertReadyConnection()
 
     this.logger.debug(`Processing problem report with id ${presentationProblemReportMessage.id}`)
@@ -681,7 +669,6 @@ export class V1ProofService extends ProofService {
       proofRequest.requestedAttributes.set(referent, requestedAttribute)
     }
 
-    // this.logger.debug('proposal predicates', indyFormat.presentationProposal.predicates)
     // Transform proposed predicates to requested predicates
     for (const proposedPredicate of proposalMessage.presentationProposal.predicates) {
       const requestedPredicate = new ProofPredicateInfo({
@@ -787,7 +774,7 @@ export class V1ProofService extends ProofService {
 
     const requestAttachment = request
       .getAttachmentFormats()
-      .find((x) => x.format.format === 'hlindy/proof-req@v2.0')?.attachment
+      .find((x) => x.format.format === V2PRESENTATIONREQUEST)?.attachment
 
     if (!requestAttachment) {
       throw new AriesFrameworkError('Request message has no attachment linked to it')
@@ -840,8 +827,8 @@ export class V1ProofService extends ProofService {
   }
 
   public async getRequestedCredentialsForProofRequest(
-    options: GetRequestedCredentialforProofRequestoptions
-  ): Promise<AutoSelectCredentialOptions> {
+    options: GetRequestedCredentialsForProofRequestOptions
+  ): Promise<RetrievedCredentialOptions> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: options.proofRecord.id,
       messageClass: V1RequestPresentationMessage,
@@ -861,12 +848,12 @@ export class V1ProofService extends ProofService {
     return await this.indyProofFormatService.getRequestedCredentialsForProofRequest({
       proofRequest: indyProofRequest,
       presentationProposal: proposalMessage?.presentationProposal,
-      config: options.config,
+      config: options.config ?? undefined,
     })
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: AutoSelectCredentialOptions
+    options: RetrievedCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
     return await this.indyProofFormatService.autoSelectCredentialsForProofRequest(options)
   }
@@ -895,7 +882,7 @@ export class V1ProofService extends ProofService {
       new V1PresentationHandler(this, agentConfig, proofResponseCoordinator, this.didCommMessageRepository)
     )
     dispatcher.registerHandler(new V1PresentationAckHandler(this))
-    dispatcher.registerHandler(new V1PresentationProblemReportHandler(this))
+    dispatcher.registerHandler(new PresentationProblemReportHandler(this))
   }
 
   public async findRequestMessage(options: { proofRecord: ProofRecord }): Promise<V1RequestPresentationMessage | null> {

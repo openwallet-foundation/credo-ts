@@ -57,9 +57,7 @@ export class V2RequestPresentationHandler implements Handler {
     const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest({
       proofRecord: record,
       config: {
-        indy: {
-          filterByPresentationPreview: false,
-        },
+        filterByPresentationPreview: false,
       },
     })
 
@@ -70,7 +68,7 @@ export class V2RequestPresentationHandler implements Handler {
       proofFormats: {
         indy: requestedCredentials.indy,
       },
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       // Not sure to what to do with goalCode, willConfirm and comment fields here
     })
 

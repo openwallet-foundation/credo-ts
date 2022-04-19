@@ -2,11 +2,12 @@ import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { ProposeProofOptions } from '../../../models/ModuleOptions'
 import type { ProofRecord } from '../../../repository'
-import type { PresentationPreview } from '../../v1/models/PresentationPreview'
+import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
+import { V2PRESENTATIONPROPOSAL } from '../../../formats/ProofFormatTypes'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
@@ -41,13 +42,14 @@ describe('Present Proof', () => {
 
     const proposeOptions: ProposeProofOptions = {
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
           name: 'ProofRequest',
           nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
           version: '1.0',
-          proofPreview: presentationPreview,
+          attributes: presentationPreview.attributes,
+          predicates: presentationPreview.predicates,
         },
       },
       comment: 'V2 propose proof test',
@@ -73,7 +75,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: V2PRESENTATIONPROPOSAL,
         },
       ],
       proposalsAttach: [
@@ -92,7 +94,7 @@ describe('Present Proof', () => {
     expect(faberPresentationRecord).toMatchObject({
       threadId: faberPresentationRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
     })
   })
 })

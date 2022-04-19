@@ -1,6 +1,6 @@
 import type { CreateProposalOptions } from './models/ProofServiceOptions'
 import type { ProofRequestFormats } from './models/SharedOptions'
-import type { PresentationPreviewAttribute } from './protocol/v1/models/PresentationPreview'
+import type { PresentationPreviewAttribute } from './protocol/v1/models/V1PresentationPreview'
 
 import { AriesFrameworkError } from '../../error/AriesFrameworkError'
 import { uuid } from '../../utils/uuid'
@@ -9,25 +9,29 @@ import { ProofRequest } from './formats/indy/models/ProofRequest'
 import { AttributeFilter } from './protocol/v1/models/AttributeFilter'
 import { ProofAttributeInfo } from './protocol/v1/models/ProofAttributeInfo'
 import { ProofPredicateInfo } from './protocol/v1/models/ProofPredicateInfo'
+import { PresentationPreview } from './protocol/v1/models/V1PresentationPreview'
 
 export class ProofsUtils {
   public static async createRequestFromPreview(options: CreateProposalOptions): Promise<ProofRequestFormats> {
-    const indyConfig = options.proofFormats?.indy
+    const indyFormat = options.proofFormats?.indy
 
-    if (!indyConfig) {
+    if (!indyFormat) {
       throw new AriesFrameworkError('No Indy format found.')
     }
 
-    const preview = options.proofFormats.indy?.proofPreview
+    const preview = new PresentationPreview({
+      attributes: indyFormat.attributes,
+      predicates: indyFormat.predicates,
+    })
 
     if (!preview) {
       throw new AriesFrameworkError(`No preview found`)
     }
 
     const proofRequest = new ProofRequest({
-      name: indyConfig.name,
-      version: indyConfig.version,
-      nonce: indyConfig.nonce,
+      name: indyFormat.name,
+      version: indyFormat.version,
+      nonce: indyFormat.nonce,
     })
 
     /**
@@ -76,7 +80,6 @@ export class ProofsUtils {
       proofRequest.requestedAttributes.set(referent, requestedAttribute)
     }
 
-    // this.logger.debug('proposal predicates', indyFormat.presentationProposal.predicates)
     // Transform proposed predicates to requested predicates
     for (const proposedPredicate of preview.predicates) {
       const requestedPredicate = new ProofPredicateInfo({

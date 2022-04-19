@@ -19,12 +19,12 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
-  GetRequestedCredentialforProofRequestoptions,
+  GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from './models/ProofServiceOptions'
 import type { ProofState } from './models/ProofState'
 import type {
-  AutoSelectCredentialOptions,
+  RetrievedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from './models/SharedOptions'
@@ -74,7 +74,7 @@ export abstract class ProofService {
    * @param newState The state to update to
    *
    */
-  protected async updateState(proofRecord: ProofRecord, newState: ProofState) {
+  public async updateState(proofRecord: ProofRecord, newState: ProofState) {
     const previousState = proofRecord.state
     proofRecord.state = newState
     await this.proofRepository.update(proofRecord)
@@ -133,8 +133,6 @@ export abstract class ProofService {
 
   abstract createRequest(options: CreateRequestOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
-  abstract declineRequest(proofRecord: ProofRecord): Promise<ProofRecord>
-
   abstract createRequestAsResponse(
     options: CreateRequestAsResponseOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
@@ -186,11 +184,11 @@ export abstract class ProofService {
   }
 
   public abstract getRequestedCredentialsForProofRequest(
-    options: GetRequestedCredentialforProofRequestoptions
-  ): Promise<AutoSelectCredentialOptions>
+    options: GetRequestedCredentialsForProofRequestOptions
+  ): Promise<RetrievedCredentialOptions>
 
   public abstract autoSelectCredentialsForProofRequest(
-    options: AutoSelectCredentialOptions
+    options: RetrievedCredentialOptions
   ): Promise<RequestedCredentialsFormats>
 
   public abstract createProofRequestFromProposal(options: ProofRequestFromProposalOptions): Promise<ProofRequestFormats>

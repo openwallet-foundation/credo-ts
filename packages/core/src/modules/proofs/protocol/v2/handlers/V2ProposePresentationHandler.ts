@@ -8,6 +8,7 @@ import type { V2ProofService } from '../V2ProofService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
+import { V2PRESENTATIONPROPOSAL } from '../../../formats/ProofFormatTypes'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
@@ -63,7 +64,7 @@ export class V2ProposePresentationHandler implements Handler {
 
     const proposalAttachment = proposalMessage
       .getAttachmentFormats()
-      .find((x) => x.format.format === 'hlindy/proof-req@v2.0')
+      .find((x) => x.format.format === V2PRESENTATIONPROPOSAL)
 
     if (!proposalAttachment) {
       throw new AriesFrameworkError('No proposal message could be found')
@@ -84,7 +85,7 @@ export class V2ProposePresentationHandler implements Handler {
 
     const { message } = await this.proofService.createRequestAsResponse({
       proofRecord: proofRecord,
-      protocolVersion: ProofProtocolVersion.V2_0,
+      protocolVersion: ProofProtocolVersion.V2,
       autoAcceptProof: proofRecord.autoAcceptProof,
       proofFormats: {
         indy: {

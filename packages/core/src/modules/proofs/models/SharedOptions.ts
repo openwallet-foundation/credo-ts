@@ -47,9 +47,9 @@ export interface RequestedCredentialConfigOptions {
   jsonLd?: never
 }
 
-export interface AutoSelectCredentialOptions {
+export interface RetrievedCredentialOptions {
   indy?: RetrievedCredentials | undefined
-  jsonLd?: undefined
+  presentationExchange?: undefined
 }
 
 export interface ProofRequestFormats {
@@ -59,7 +59,7 @@ export interface ProofRequestFormats {
 
 export interface RequestedCredentialsFormats {
   indy?: RequestedCredentials | undefined
-  jsonLd?: undefined
+  presentationExchange?: undefined
 }
 
 interface AcceptProposal {

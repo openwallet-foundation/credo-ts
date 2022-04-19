@@ -3,9 +3,9 @@ import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
   ProposeProofOptions,
-  RequestProofsOptions,
+  RequestProofOptions,
 } from '../src/modules/proofs/models/ModuleOptions'
-import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/PresentationPreview'
+import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
 import {
@@ -56,13 +56,14 @@ describe('Present Proof', () => {
 
     const proposeProofOptions: ProposeProofOptions = {
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
       proofFormats: {
         indy: {
-          nonce: '947121108704767252195126',
-          proofPreview: presentationPreview,
           name: 'abc',
           version: '1.0',
+          nonce: '947121108704767252195126',
+          attributes: presentationPreview.attributes,
+          predicates: presentationPreview.predicates,
         },
       },
     }
@@ -113,21 +114,15 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
     })
 
     const acceptProposalOptions: AcceptProposalOptions = {
-      proofFormats: {
-        indy: {
-          name: 'proof-request',
-          version: '1.0',
-          nonce: '947121108704767252195125',
-          attributes: presentationPreview.attributes,
-          predicates: presentationPreview.predicates,
-        },
+      config: {
+        name: 'proof-request',
+        version: '1.0',
       },
       proofRecordId: faberProofRecord.id,
-      protocolVersion: ProofProtocolVersion.V1_0,
     }
 
     // Faber accepts the presentation proposal from Alice
@@ -165,23 +160,15 @@ describe('Present Proof', () => {
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      aliceProofRecord.id,
-      ProofProtocolVersion.V1_0,
-      {
-        filterByPresentationPreview: true,
-      }
-    )
 
     const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-      formats: {
-        indy: retrievedCredentials.indy,
+      proofRecordId: aliceProofRecord.id,
+      config: {
+        filterByPresentationPreview: true,
       },
-      version: ProofProtocolVersion.V1_0,
     })
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
-      protocolVersion: ProofProtocolVersion.V1_0,
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     }
@@ -229,12 +216,12 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
     })
 
     // Faber accepts the presentation provided by Alice
     testLogger.test('Faber accepts the presentation provided by Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V1_0)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
@@ -297,10 +284,10 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions: RequestProofsOptions = {
-      protocolVersion: ProofProtocolVersion.V1_0,
+    const requestProofsOptions: RequestProofOptions = {
+      protocolVersion: ProofProtocolVersion.V1,
       connectionId: faberConnection.id,
-      proofRequestOptions: {
+      proofFormats: {
         indy: {
           name: 'proof-request',
           version: '1.0',
@@ -347,27 +334,20 @@ describe('Present Proof', () => {
     expect(aliceProofRecord).toMatchObject({
       threadId: aliceProofRecord.threadId,
       state: ProofState.RequestReceived,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(
-      aliceProofRecord.id,
-      ProofProtocolVersion.V1_0,
-      {
-        filterByPresentationPreview: true,
-      }
-    )
+
     const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-      formats: {
-        indy: retrievedCredentials.indy,
+      proofRecordId: aliceProofRecord.id,
+      config: {
+        filterByPresentationPreview: true,
       },
-      version: ProofProtocolVersion.V1_0,
     })
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
-      protocolVersion: ProofProtocolVersion.V1_0,
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.indy },
     }
@@ -416,12 +396,12 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      protocolVersion: ProofProtocolVersion.V1_0,
+      protocolVersion: ProofProtocolVersion.V1,
     })
 
     // Faber accepts the presentation
     testLogger.test('Faber accept the presentation from Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id, ProofProtocolVersion.V1_0)
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits until she receives a presentation acknowledgement
     testLogger.test('Alice waits for acceptance by Faber')
@@ -477,10 +457,10 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions: RequestProofsOptions = {
-      protocolVersion: ProofProtocolVersion.V1_0,
+    const requestProofsOptions: RequestProofOptions = {
+      protocolVersion: ProofProtocolVersion.V1,
       connectionId: faberConnection.id,
-      proofRequestOptions: {
+      proofFormats: {
         indy: {
           name: 'proof-request',
           version: '1.0',
