@@ -14,7 +14,7 @@ import {
 
 import { credDefIdRegex } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
+import { parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 import { PredicateType } from '../models/PredicateType'
 
 export interface PresentationPreviewAttributeOptions {
@@ -124,7 +124,7 @@ export class PresentationPreview {
     toClassOnly: true,
   })
   public readonly type = PresentationPreview.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/presentation-preview'
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/presentation-preview')
 
   @Type(() => PresentationPreviewAttribute)
   @ValidateNested({ each: true })

@@ -93,7 +93,7 @@ class Dispatcher {
   private getHandlerForType(messageType: string): Handler | undefined {
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type === messageType) return handler
+        if (MessageClass.type.messageTypeUri === messageType) return handler
       }
     }
   }
@@ -101,7 +101,7 @@ class Dispatcher {
   public getMessageClassForType(messageType: string): typeof AgentMessage | undefined {
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type === messageType) return MessageClass
+        if (MessageClass.type.messageTypeUri === messageType) return MessageClass
       }
     }
   }
@@ -121,7 +121,7 @@ class Dispatcher {
    * Protocol ID format is PIURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#piuri.
    */
   public get supportedProtocols() {
-    return Array.from(new Set(this.supportedMessageTypes.map((m) => m.substring(0, m.lastIndexOf('/')))))
+    return Array.from(new Set(this.supportedMessageTypes.map((m) => m.protocolUri)))
   }
 
   public filterSupportedProtocolsByMessageFamilies(messageFamilies: string[]) {

@@ -7,6 +7,7 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { credDefIdRegex, indyDidRegex, schemaIdRegex, schemaVersionRegex } from '../../../utils'
 
 import { CredentialPreview } from './CredentialPreview'
+import { parseMessageType } from '../../../utils/messageType'
 
 export interface ProposeCredentialMessageOptions {
   id?: string
@@ -45,8 +46,8 @@ export class ProposeCredentialMessage extends AgentMessage {
   }
 
   @Equals(ProposeCredentialMessage.type)
-  public readonly type = ProposeCredentialMessage.type
-  public static readonly type = 'https://didcomm.org/issue-credential/1.0/propose-credential'
+  public readonly type = ProposeCredentialMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/propose-credential')
 
   /**
    * Human readable information about this Credential Proposal,

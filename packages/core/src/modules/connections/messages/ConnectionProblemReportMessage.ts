@@ -2,6 +2,7 @@ import type { ProblemReportMessageOptions } from '../../problem-reports/messages
 
 import { Equals } from 'class-validator'
 
+import { parseMessageType } from '../../../utils/messageType'
 import { ProblemReportMessage } from '../../problem-reports/messages/ProblemReportMessage'
 
 export type ConnectionProblemReportMessageOptions = ProblemReportMessageOptions
@@ -19,6 +20,6 @@ export class ConnectionProblemReportMessage extends ProblemReportMessage {
   }
 
   @Equals(ConnectionProblemReportMessage.type)
-  public readonly type = ConnectionProblemReportMessage.type
-  public static readonly type = 'https://didcomm.org/connection/1.0/problem-report'
+  public readonly type = ConnectionProblemReportMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/connection/1.0/problem-report')
 }

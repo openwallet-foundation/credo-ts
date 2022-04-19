@@ -1,6 +1,7 @@
 import { Equals, IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { parseMessageType } from '../../../utils/messageType'
 
 export interface DiscoverFeaturesQueryMessageOptions {
   id?: string
@@ -20,8 +21,8 @@ export class QueryMessage extends AgentMessage {
   }
 
   @Equals(QueryMessage.type)
-  public readonly type = QueryMessage.type
-  public static readonly type = 'https://didcomm.org/discover-features/1.0/query'
+  public readonly type = QueryMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/discover-features/1.0/query')
 
   @IsString()
   public query!: string

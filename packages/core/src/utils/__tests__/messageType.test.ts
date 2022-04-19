@@ -4,6 +4,7 @@ import {
   replaceLegacyDidSovPrefixOnMessage,
   replaceNewDidCommPrefixWithLegacyDidSov,
   replaceNewDidCommPrefixWithLegacyDidSovOnMessage,
+  supportsIncomingMessageType,
 } from '../messageType'
 
 describe('messageType', () => {
@@ -89,17 +90,72 @@ describe('messageType', () => {
         documentUri: 'https://didcomm.org',
         protocolName: 'connections',
         protocolVersion: '1.0',
+        protocolMajorVersion: 1,
+        protocolMinorVersion: 0,
         messageName: 'request',
         protocolUri: `https://didcomm.org/connections/1.0`,
+        messageTypeUri: 'https://didcomm.org/connections/1.0/request',
       })
 
-      expect(parseMessageType('https://didcomm.org/issue-credential/1.0/propose-credential')).toEqual({
+      expect(parseMessageType('https://didcomm.org/issue-credential/4.5/propose-credential')).toEqual({
         documentUri: 'https://didcomm.org',
         protocolName: 'issue-credential',
-        protocolVersion: '1.0',
+        protocolVersion: '4.5',
+        protocolMajorVersion: 4,
+        protocolMinorVersion: 5,
         messageName: 'propose-credential',
-        protocolUri: `https://didcomm.org/issue-credential/1.0`,
+        protocolUri: `https://didcomm.org/issue-credential/4.5`,
+        messageTypeUri: 'https://didcomm.org/issue-credential/4.5/propose-credential',
       })
+    })
+  })
+
+  describe('supportsIncomingMessageType()', () => {
+    test('returns true when the document uri, protocol name, major version all match and the minor version is lower than the expected minor version', () => {
+      const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.0/request')
+      const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
+
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(true)
+    })
+
+    test('returns true when the document uri, protocol name, major version and minor version all match', () => {
+      const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
+      const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
+
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(true)
+    })
+
+    test('returns false when the major version does not match', () => {
+      const incomingMessageType = parseMessageType('https://didcomm.org/connections/2.4/request')
+      const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
+
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(false)
+
+      const incomingMessageType2 = parseMessageType('https://didcomm.org/connections/2.0/request')
+      const expectedMessageType2 = parseMessageType('https://didcomm.org/connections/1.4/request')
+
+      expect(supportsIncomingMessageType(incomingMessageType2, expectedMessageType2)).toBe(false)
+    })
+
+    test('returns false when the message name does not match', () => {
+      const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.4/proposal')
+      const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
+
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(false)
+    })
+
+    test('returns false when the protocol name does not match', () => {
+      const incomingMessageType = parseMessageType('https://didcomm.org/issue-credential/1.4/request')
+      const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
+
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(false)
+    })
+
+    test('returns false when the document uri does not match', () => {
+      const incomingMessageType = parseMessageType('https://my-protocol.org/connections/1.4/request')
+      const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
+
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(false)
     })
   })
 })

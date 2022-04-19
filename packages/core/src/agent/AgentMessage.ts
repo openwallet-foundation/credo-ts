@@ -7,21 +7,14 @@ import { TimingDecorated } from '../decorators/timing/TimingDecoratorExtension'
 import { TransportDecorated } from '../decorators/transport/TransportDecoratorExtension'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from '../utils/messageType'
-import { Compose } from '../utils/mixins'
 
 import { BaseMessage } from './BaseMessage'
 
-const DefaultDecorators = [
-  ThreadDecorated,
-  L10nDecorated,
-  TransportDecorated,
-  TimingDecorated,
-  AckDecorated,
-  AttachmentDecorated,
-  ServiceDecorated,
-]
+const Decorated = ThreadDecorated(
+  L10nDecorated(TransportDecorated(TimingDecorated(AckDecorated(AttachmentDecorated(ServiceDecorated(BaseMessage))))))
+)
 
-export class AgentMessage extends Compose(BaseMessage, DefaultDecorators) {
+export class AgentMessage extends Decorated {
   public toJSON({ useLegacyDidSovPrefix = false }: { useLegacyDidSovPrefix?: boolean } = {}): Record<string, unknown> {
     const json = JsonTransformer.toJSON(this)
 
@@ -33,6 +26,6 @@ export class AgentMessage extends Compose(BaseMessage, DefaultDecorators) {
   }
 
   public is<C extends typeof AgentMessage>(Class: C): this is InstanceType<C> {
-    return this.type === Class.type
+    return this.type === Class.type.messageTypeUri
   }
 }

@@ -5,6 +5,7 @@ import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } fro
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
+import { parseMessageType } from '../../../utils/messageType'
 
 export const INDY_CREDENTIAL_ATTACHMENT_ID = 'libindy-cred-0'
 
@@ -28,8 +29,8 @@ export class IssueCredentialMessage extends AgentMessage {
   }
 
   @Equals(IssueCredentialMessage.type)
-  public readonly type = IssueCredentialMessage.type
-  public static readonly type = 'https://didcomm.org/issue-credential/1.0/issue-credential'
+  public readonly type = IssueCredentialMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/issue-credential')
 
   @IsString()
   @IsOptional()

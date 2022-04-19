@@ -4,7 +4,7 @@ import type { DidCommMessageRole } from './DidCommMessageRole'
 
 import { AriesFrameworkError } from '../../error'
 import { JsonTransformer } from '../../utils/JsonTransformer'
-import { parseMessageType } from '../../utils/messageType'
+import { canHandleMessageType, parseMessageType } from '../../utils/messageType'
 import { isJsonObject } from '../../utils/type'
 import { uuid } from '../../utils/uuid'
 import { BaseRecord } from '../BaseRecord'
@@ -91,7 +91,7 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
   public getMessageInstance<MessageClass extends typeof AgentMessage = typeof AgentMessage>(
     messageClass: MessageClass
   ): InstanceType<MessageClass> {
-    if (messageClass.type !== this.message['@type']) {
+    if (!canHandleMessageType(messageClass, this.message['@type'] as string)) {
       throw new AriesFrameworkError('Provided message class type does not match type of stored message')
     }
 

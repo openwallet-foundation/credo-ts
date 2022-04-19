@@ -4,6 +4,7 @@ import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } fro
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { parseMessageType } from '../../../utils/messageType'
 import { ProofRequest } from '../models'
 
 export interface RequestPresentationOptions {
@@ -31,8 +32,8 @@ export class RequestPresentationMessage extends AgentMessage {
   }
 
   @Equals(RequestPresentationMessage.type)
-  public readonly type = RequestPresentationMessage.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/request-presentation'
+  public readonly type = RequestPresentationMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/request-presentation')
 
   /**
    *  Provides some human readable information about this request for a presentation.

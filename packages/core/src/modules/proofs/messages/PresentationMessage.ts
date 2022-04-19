@@ -5,6 +5,7 @@ import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } fro
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
+import { parseMessageType } from '../../../utils/messageType'
 
 export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 
@@ -34,8 +35,8 @@ export class PresentationMessage extends AgentMessage {
   }
 
   @Equals(PresentationMessage.type)
-  public readonly type = PresentationMessage.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/presentation'
+  public readonly type = PresentationMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/presentation')
 
   /**
    *  Provides some human readable information about this request for a presentation.

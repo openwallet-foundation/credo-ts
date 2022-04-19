@@ -1,6 +1,7 @@
 import { Equals } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { parseMessageType } from '../../../utils/messageType'
 
 export interface MediationDenyMessageOptions {
   id: string
@@ -21,6 +22,6 @@ export class MediationDenyMessage extends AgentMessage {
   }
 
   @Equals(MediationDenyMessage.type)
-  public readonly type = MediationDenyMessage.type
-  public static readonly type = 'https://didcomm.org/coordinate-mediation/1.0/mediate-deny'
+  public readonly type = MediationDenyMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/1.0/mediate-deny')
 }

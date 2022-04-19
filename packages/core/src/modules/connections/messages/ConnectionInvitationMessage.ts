@@ -7,7 +7,7 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
-import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
+import { parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
 export interface BaseInvitationOptions {
   id?: string
@@ -65,8 +65,8 @@ export class ConnectionInvitationMessage extends AgentMessage {
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
     toClassOnly: true,
   })
-  public readonly type = ConnectionInvitationMessage.type
-  public static readonly type = 'https://didcomm.org/connections/1.0/invitation'
+  public readonly type = ConnectionInvitationMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/invitation')
 
   @IsString()
   public label!: string

@@ -3,6 +3,7 @@ import type { ProblemReportMessageOptions } from '../../problem-reports/messages
 import { Equals } from 'class-validator'
 
 import { ProblemReportMessage } from '../../problem-reports/messages/ProblemReportMessage'
+import { parseMessageType } from '../../../utils/messageType'
 
 export type CredentialProblemReportMessageOptions = ProblemReportMessageOptions
 
@@ -19,6 +20,6 @@ export class CredentialProblemReportMessage extends ProblemReportMessage {
   }
 
   @Equals(CredentialProblemReportMessage.type)
-  public readonly type = CredentialProblemReportMessage.type
-  public static readonly type = 'https://didcomm.org/issue-credential/1.0/problem-report'
+  public readonly type = CredentialProblemReportMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/problem-report')
 }

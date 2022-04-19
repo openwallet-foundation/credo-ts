@@ -3,6 +3,7 @@ import { Equals, IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'c
 import { Verkey } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { parseMessageType } from '../../../utils/messageType'
 
 import { KeylistUpdateAction } from './KeylistUpdateMessage'
 
@@ -58,8 +59,8 @@ export class KeylistUpdateResponseMessage extends AgentMessage {
   }
 
   @Equals(KeylistUpdateResponseMessage.type)
-  public readonly type = KeylistUpdateResponseMessage.type
-  public static readonly type = 'https://didcomm.org/coordinate-mediation/1.0/keylist-update-response'
+  public readonly type = KeylistUpdateResponseMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/1.0/keylist-update-response')
 
   @Type(() => KeylistUpdated)
   @IsArray()

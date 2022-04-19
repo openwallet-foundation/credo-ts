@@ -5,6 +5,7 @@ import { Equals, IsInstance, IsOptional, IsString, IsUrl, ValidateNested } from 
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Connection } from '../models'
+import { parseMessageType } from '../../../utils/messageType'
 
 export interface ConnectionRequestMessageOptions {
   id?: string
@@ -40,8 +41,8 @@ export class ConnectionRequestMessage extends AgentMessage {
   }
 
   @Equals(ConnectionRequestMessage.type)
-  public readonly type = ConnectionRequestMessage.type
-  public static readonly type = 'https://didcomm.org/connections/1.0/request'
+  public readonly type = ConnectionRequestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/request')
 
   @IsString()
   public label!: string

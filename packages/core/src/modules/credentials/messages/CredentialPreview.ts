@@ -2,7 +2,7 @@ import { Expose, Transform, Type } from 'class-transformer'
 import { Equals, IsInstance, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
+import { parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
 interface CredentialPreviewAttributeOptions {
   name: string
@@ -59,7 +59,7 @@ export class CredentialPreview {
     toClassOnly: true,
   })
   public readonly type = CredentialPreview.type
-  public static readonly type = 'https://didcomm.org/issue-credential/1.0/credential-preview'
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/credential-preview')
 
   @Type(() => CredentialPreviewAttribute)
   @ValidateNested({ each: true })

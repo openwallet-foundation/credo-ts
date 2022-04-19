@@ -1,27 +1,28 @@
 import type { Handler } from '../Handler'
 
 import { getAgentConfig } from '../../../tests/helpers'
+import { parseMessageType } from '../../utils/messageType'
 import { AgentMessage } from '../AgentMessage'
 import { Dispatcher } from '../Dispatcher'
 import { EventEmitter } from '../EventEmitter'
 import { MessageSender } from '../MessageSender'
 
 class ConnectionInvitationTestMessage extends AgentMessage {
-  public static readonly type = 'https://didcomm.org/connections/1.0/invitation'
+  public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/invitation')
 }
 class ConnectionRequestTestMessage extends AgentMessage {
-  public static readonly type = 'https://didcomm.org/connections/1.0/request'
+  public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/request')
 }
 
 class ConnectionResponseTestMessage extends AgentMessage {
-  public static readonly type = 'https://didcomm.org/connections/1.0/response'
+  public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/response')
 }
 
 class NotificationAckTestMessage extends AgentMessage {
-  public static readonly type = 'https://didcomm.org/notification/1.0/ack'
+  public static readonly type = parseMessageType('https://didcomm.org/notification/1.0/ack')
 }
 class CredentialProposalTestMessage extends AgentMessage {
-  public static readonly type = 'https://didcomm.org/issue-credential/1.0/credential-proposal'
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/credential-proposal')
 }
 
 class TestHandler implements Handler {
@@ -56,11 +57,11 @@ describe('Dispatcher', () => {
       const messageTypes = dispatcher.supportedMessageTypes
 
       expect(messageTypes).toEqual([
-        'https://didcomm.org/connections/1.0/invitation',
-        'https://didcomm.org/connections/1.0/request',
-        'https://didcomm.org/connections/1.0/response',
-        'https://didcomm.org/notification/1.0/ack',
-        'https://didcomm.org/issue-credential/1.0/credential-proposal',
+        { messageTypeUri: 'https://didcomm.org/connections/1.0/invitation' },
+        { messageTypeUri: 'https://didcomm.org/connections/1.0/request' },
+        { messageTypeUri: 'https://didcomm.org/connections/1.0/response' },
+        { messageTypeUri: 'https://didcomm.org/notification/1.0/ack' },
+        { messageTypeUri: 'https://didcomm.org/issue-credential/1.0/credential-proposal' },
       ])
     })
   })
