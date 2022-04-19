@@ -48,7 +48,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     this.ledgerService = ledgerService
   }
 
-  public createProposal(options: CreateProposalOptions): ProofAttachmentFormat {
+  public createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat> {
     throw new Error('Method not implemented.')
   }
 
@@ -56,7 +56,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     throw new Error('Method not implemented.')
   }
 
-  public createRequest(options: CreateRequestOptions): ProofAttachmentFormat {
+  public async createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.presentationExchange) {
       throw Error('Presentation Exchange format missing')
     }

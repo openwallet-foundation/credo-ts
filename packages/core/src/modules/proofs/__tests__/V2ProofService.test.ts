@@ -1,6 +1,7 @@
 import type { Wallet } from '../../../wallet/Wallet'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
+import type { PresentationExchangeFormatService } from '../formats/presentation-exchange/PresentationExchangeFormatService'
 import type { CustomProofTags } from '../repository/ProofRecord'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -101,6 +102,7 @@ describe('ProofService', () => {
   let connectionService: ConnectionService
   let didCommMessageRepository: DidCommMessageRepository
   let indyProofFormatService: IndyProofFormatService
+  let presentationExchangeFormatService: PresentationExchangeFormatService
 
   beforeEach(() => {
     const agentConfig = getAgentConfig('V2ProofServiceTest')
@@ -117,6 +119,7 @@ describe('ProofService', () => {
       didCommMessageRepository,
       eventEmitter,
       indyProofFormatService,
+      presentationExchangeFormatService,
       wallet
     )
 
