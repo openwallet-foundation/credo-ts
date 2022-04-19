@@ -9,6 +9,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { canHandleMessageType } from '../utils/messageType'
 
 import { ProblemReportMessage } from './../modules/problem-reports/messages/ProblemReportMessage'
 import { EventEmitter } from './EventEmitter'
@@ -93,7 +94,7 @@ class Dispatcher {
   private getHandlerForType(messageType: string): Handler | undefined {
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type.messageTypeUri === messageType) return handler
+        if (canHandleMessageType(MessageClass, messageType)) return handler
       }
     }
   }
@@ -101,7 +102,7 @@ class Dispatcher {
   public getMessageClassForType(messageType: string): typeof AgentMessage | undefined {
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type.messageTypeUri === messageType) return MessageClass
+        if (canHandleMessageType(MessageClass, messageType)) return MessageClass
       }
     }
   }

@@ -1,3 +1,6 @@
+import type { ParsedMessageType } from '../utils/messageType'
+import type { Constructor } from '../utils/mixins'
+
 import { AckDecorated } from '../decorators/ack/AckDecoratorExtension'
 import { AttachmentDecorated } from '../decorators/attachment/AttachmentExtension'
 import { L10nDecorated } from '../decorators/l10n/L10nDecoratorExtension'
@@ -9,6 +12,8 @@ import { JsonTransformer } from '../utils/JsonTransformer'
 import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from '../utils/messageType'
 
 import { BaseMessage } from './BaseMessage'
+
+export type ConstructableAgentMessage = Constructor<AgentMessage> & { type: ParsedMessageType }
 
 const Decorated = ThreadDecorated(
   L10nDecorated(TransportDecorated(TimingDecorated(AckDecorated(AttachmentDecorated(ServiceDecorated(BaseMessage))))))

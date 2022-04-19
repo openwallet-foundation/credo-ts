@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
+import type { AgentMessage, ConstructableAgentMessage } from '../../agent/AgentMessage'
 import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
@@ -42,24 +42,24 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
     await this.saveAgentMessage(options)
   }
 
-  public async getAgentMessage<MessageClass extends typeof AgentMessage = typeof AgentMessage>({
+  public async getAgentMessage<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>({
     associatedRecordId,
     messageClass,
   }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass>> {
     const record = await this.getSingleByQuery({
       associatedRecordId,
-      messageType: messageClass.type,
+      messageType: messageClass.type.messageTypeUri,
     })
 
     return record.getMessageInstance(messageClass)
   }
-  public async findAgentMessage<MessageClass extends typeof AgentMessage = typeof AgentMessage>({
+  public async findAgentMessage<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>({
     associatedRecordId,
     messageClass,
   }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass> | null> {
     const record = await this.findSingleByQuery({
       associatedRecordId,
-      messageType: messageClass.type,
+      messageType: messageClass.type.messageTypeUri,
     })
 
     return record?.getMessageInstance(messageClass) ?? null

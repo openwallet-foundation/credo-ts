@@ -18,7 +18,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
-import { parseMessageType } from '../../utils/messageType'
+import { canHandleMessageType } from '../../utils/messageType'
 import { ConnectionInvitationMessage } from '../connections'
 import { ConnectionService } from '../connections/services'
 import { DiscloseMessage, DiscoverFeaturesModule } from '../discover-features'
@@ -214,7 +214,7 @@ export class RecipientModule {
   }
 
   private async isBatchPickupSupportedByMediator(mediator: MediationRecord) {
-    const { protocolUri } = parseMessageType(BatchPickupMessage.type)
+    const { protocolUri } = BatchPickupMessage.type
 
     // Listen for response to our feature query
     const replaySubject = new ReplaySubject(1)
@@ -225,7 +225,9 @@ export class RecipientModule {
         takeUntil(this.agentConfig.stop$),
         // filter by mediator connection id and query disclose message type
         filter(
-          (e) => e.payload.connection?.id === mediator.connectionId && e.payload.message.type === DiscloseMessage.type
+          (e) =>
+            e.payload.connection?.id === mediator.connectionId &&
+            canHandleMessageType(DiscloseMessage, e.payload.message.type)
         ),
         // Return whether the protocol is supported
         map((e) => {
