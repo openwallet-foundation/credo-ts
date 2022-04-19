@@ -80,13 +80,10 @@ export class ProofsModule {
    * Initiate a new presentation exchange as prover by sending a presentation proposal message
    * to the connection with the specified connection id.
    *
-   * @param connectionId The connection to send the proof proposal to
-   * @param presentationProposal The presentation proposal to include in the message
-   * @param config Additional configuration to use for the proposal
+   * @param options multiple properties like protocol version, connection id, proof format (indy/ presentation exchange)
+   * to include in the message
    * @returns Proof record associated with the sent proposal message
-   *
    */
-
   public async proposeProof(options: ProposeProofOptions): Promise<ProofRecord> {
     const version: ProofProtocolVersion = options.protocolVersion
 
@@ -120,10 +117,8 @@ export class ProofsModule {
    * Accept a presentation proposal as verifier (by sending a presentation request message) to the connection
    * associated with the proof record.
    *
-   * @param proofRecordId The id of the proof record for which to accept the proposal
-   * @param config Additional configuration to use for the request
+   * @param options multiple properties like proof record id, additional configuration for creating the request
    * @returns Proof record associated with the presentation request
-   *
    */
   public async acceptProposal(options: AcceptProposalOptions): Promise<ProofRecord> {
     const { proofRecordId } = options
@@ -171,10 +166,8 @@ export class ProofsModule {
    * Initiate a new presentation exchange as verifier by sending a presentation request message
    * to the connection with the specified connection id
    *
-   * @param connectionId The connection to send the proof request to
-   * @param proofRequestOptions Options to build the proof request
+   * @param options multiple properties like connection id, protocol version, proof Formats to build the proof request
    * @returns Proof record associated with the sent request message
-   *
    */
   public async requestProof(options: RequestProofOptions): Promise<ProofRecord> {
     const version: ProofProtocolVersion = options.protocolVersion
@@ -204,9 +197,8 @@ export class ProofsModule {
    * Initiate a new presentation exchange as verifier by creating a presentation request
    * not bound to any connection. The request must be delivered out-of-band to the holder
    *
-   * @param proofRequestOptions Options to build the proof request
+   * @param options multiple properties like protocol version and proof formats to build the proof request
    * @returns The proof record and proof request message
-   *
    */
   public async createOutOfBandRequest(options: OutOfBandRequestOptions): Promise<{
     message: AgentMessage
@@ -250,11 +242,9 @@ export class ProofsModule {
    * Accept a presentation request as prover (by sending a presentation message) to the connection
    * associated with the proof record.
    *
-   * @param proofRecordId The id of the proof record for which to accept the request
-   * @param requestedCredentials The requested credentials object specifying which credentials to use for the proof
-   * @param config Additional configuration to use for the presentation
+   * @param options multiple properties like proof record id, proof formats to accept requested credentials object
+   * specifying which credentials to use for the proof
    * @returns Proof record associated with the sent presentation message
-   *
    */
   public async acceptRequest(options: AcceptPresentationOptions): Promise<ProofRecord> {
     const { proofRecordId, proofFormats, comment } = options
@@ -330,7 +320,7 @@ export class ProofsModule {
    * @param proofRecordId the id of the proof request to be declined
    * @returns proof record that was declined
    */
-  public async declineRequest(proofRecordId: string) {
+  public async declineRequest(proofRecordId: string): Promise<ProofRecord> {
     const proofRecord = await this.getById(proofRecordId)
     const service = this.getService(proofRecord.protocolVersion)
 
@@ -403,16 +393,7 @@ export class ProofsModule {
    * use credentials in the wallet to build indy requested credentials object for input to proof creation.
    * If restrictions allow, self attested attributes will be used.
    *
-   *
-   * @param proofRecordId the id of the proof request to get the matching credentials for
-   * @param config optional configuration for credential selection process. Use `filterByPresentationPreview` (default `true`) to only include
-   *  credentials that match the presentation preview from the presentation proposal (if available).
-   *
-   * Use the return value of this method as input to {@link ProofService.createPresentation} to
-   * automatically accept a received presentation request.
-   *
-   * @param retrievedCredentials The retrieved credentials object to get credentials from
-   *
+   * @param options multiple properties like proof record id and optional configuration
    * @returns RequestedCredentials
    */
   public async autoSelectCredentialsForProofRequest(
@@ -432,6 +413,7 @@ export class ProofsModule {
 
   /**
    * Send problem report message for a proof record
+   *
    * @param proofRecordId  The id of the proof record for which to send problem report
    * @param message message to send
    * @returns proof record associated with the proof problem report message
