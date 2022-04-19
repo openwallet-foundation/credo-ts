@@ -22,6 +22,7 @@ import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMes
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import { ProofFormatService } from '../ProofFormatService'
+import { V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST } from '../ProofFormatTypes'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
 import { InputDescriptorsSchema } from './models'
@@ -73,7 +74,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const format = new ProofFormatSpec({
       attachmentId: options.attachId,
-      format: 'dif/presentation-exchange/definition@v1.0',
+      format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
     })
 
     const attachment = new Attachment({
