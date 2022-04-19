@@ -36,7 +36,7 @@ export interface AcceptProposalOptions {
 export interface RequestProofOptions {
   protocolVersion: ProofProtocolVersion
   connectionId: string
-  proofFormats: ProposeProofFormats | RequestProofFormats
+  proofFormats: RequestProofFormats
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
