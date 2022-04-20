@@ -5,13 +5,14 @@ import { getAgentConfig, getMockConnection, getMockOutOfBand, mockFunction } fro
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import { KeyType } from '../../../crypto'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { ConsoleLogger, LogLevel } from '../../../logger'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
-import { DidPeer, IndyAgentService } from '../../dids'
+import { DidPeer, IndyAgentService, Key } from '../../dids'
 import { DidCommService } from '../../dids/domain/service/DidCommService'
 import { PeerDidNumAlgo } from '../../dids/methods/peer/DidPeer'
 import { DidRepository } from '../../dids/repository'
@@ -188,8 +189,8 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {
-        senderVerkey: theirVerkey,
-        recipientVerkey: '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K',
+        senderKey: Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519),
+        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
       })
 
       const outOfBand = getMockOutOfBand({
@@ -240,8 +241,8 @@ describe('ConnectionService', () => {
 
       const messageContext = new InboundMessageContext(connectionRequest, {
         connection: connectionRecord,
-        senderVerkey: theirVerkey,
-        recipientVerkey: '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K',
+        senderKey: Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519),
+        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
       })
 
       const outOfBand = getMockOutOfBand({
@@ -272,8 +273,8 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {
-        recipientVerkey: 'recipientVerkey',
-        senderVerkey: 'senderVerkey',
+        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
+        senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
       })
 
       const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
@@ -287,8 +288,8 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const inboundMessage = new InboundMessageContext(jest.fn()(), {
-        recipientVerkey: 'recipientVerkey',
-        senderVerkey: 'senderVerkey',
+        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
+        senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
       })
 
       const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Receiver, state: OutOfBandState.AwaitResponse })
@@ -304,10 +305,7 @@ describe('ConnectionService', () => {
       (state) => {
         expect.assertions(1)
 
-        const inboundMessage = new InboundMessageContext(jest.fn()(), {
-          recipientVerkey: 'recipientVerkey',
-          senderVerkey: 'senderVerkey',
-        })
+        const inboundMessage = new InboundMessageContext(jest.fn()(), {})
         const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state })
 
         return expect(connectionService.processRequest(inboundMessage, outOfBand)).rejects.toThrowError(
@@ -444,8 +442,8 @@ describe('ConnectionService', () => {
       const outOfBandRecord = getMockOutOfBand({ recipientKeys: [theirVerkey] })
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
-        senderVerkey: theirVerkey,
-        recipientVerkey: verkey,
+        senderKey: Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519),
+        recipientKey: Key.fromPublicKeyBase58(verkey, KeyType.Ed25519),
       })
 
       const processedConnection = await connectionService.processResponse(messageContext, outOfBandRecord)
@@ -469,8 +467,8 @@ describe('ConnectionService', () => {
       })
       const messageContext = new InboundMessageContext(jest.fn()(), {
         connection: connectionRecord,
-        senderVerkey: 'senderVerkey',
-        recipientVerkey: 'recipientVerkey',
+        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
+        senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
@@ -517,8 +515,8 @@ describe('ConnectionService', () => {
       const outOfBandRecord = getMockOutOfBand({ recipientKeys: [verkey] })
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
-        senderVerkey: theirVerkey,
-        recipientVerkey: verkey,
+        senderKey: Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519),
+        recipientKey: Key.fromPublicKeyBase58(verkey, KeyType.Ed25519),
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
@@ -548,8 +546,8 @@ describe('ConnectionService', () => {
       const outOfBandRecord = getMockOutOfBand({ recipientKeys: [theirVerkey] })
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
-        senderVerkey: 'senderVerkey',
-        recipientVerkey: 'recipientVerkey',
+        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
+        senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
@@ -593,12 +591,10 @@ describe('ConnectionService', () => {
         threadId: 'thread-id',
       })
 
-      const messageContext = new InboundMessageContext(ack, {
-        recipientVerkey: 'test-verkey',
-      })
+      const messageContext = new InboundMessageContext(ack, {})
 
       return expect(connectionService.processAck(messageContext)).rejects.toThrowError(
-        'Unable to process connection ack: connection for verkey test-verkey not found'
+        'Unable to process connection ack: connection for recipient key undefined not found'
       )
     })
 
@@ -615,10 +611,7 @@ describe('ConnectionService', () => {
         threadId: 'thread-id',
       })
 
-      const messageContext = new InboundMessageContext(ack, {
-        recipientVerkey: 'test-verkey',
-        connection,
-      })
+      const messageContext = new InboundMessageContext(ack, { connection })
 
       const updatedConnection = await connectionService.processAck(messageContext)
 
@@ -638,10 +631,7 @@ describe('ConnectionService', () => {
         threadId: 'thread-id',
       })
 
-      const messageContext = new InboundMessageContext(ack, {
-        recipientVerkey: 'test-verkey',
-        connection,
-      })
+      const messageContext = new InboundMessageContext(ack, { connection })
 
       const updatedConnection = await connectionService.processAck(messageContext)
 
@@ -689,19 +679,19 @@ describe('ConnectionService', () => {
     it('should not throw when a fully valid connection-less input is passed', () => {
       expect.assertions(1)
 
-      const senderKey = 'senderKey'
-      const recipientKey = 'recipientKey'
+      const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
+      const senderKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
 
       const previousSentMessage = new AgentMessage()
       previousSentMessage.setService({
-        recipientKeys: [recipientKey],
+        recipientKeys: [recipientKey.publicKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
       const previousReceivedMessage = new AgentMessage()
       previousReceivedMessage.setService({
-        recipientKeys: [senderKey],
+        recipientKeys: [senderKey.publicKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
@@ -712,10 +702,7 @@ describe('ConnectionService', () => {
         serviceEndpoint: '',
         routingKeys: [],
       })
-      const messageContext = new InboundMessageContext(message, {
-        recipientVerkey: recipientKey,
-        senderVerkey: senderKey,
-      })
+      const messageContext = new InboundMessageContext(message, { recipientKey, senderKey })
 
       expect(() =>
         connectionService.assertConnectionOrServiceDecorator(messageContext, {
@@ -748,7 +735,7 @@ describe('ConnectionService', () => {
     it('should throw an error when previousSentMessage and recipientKey are present, but recipient key is not present in recipientKeys of previously sent message ~service decorator', () => {
       expect.assertions(1)
 
-      const recipientKey = 'recipientKey'
+      const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
 
       const previousSentMessage = new AgentMessage()
       previousSentMessage.setService({
@@ -758,9 +745,7 @@ describe('ConnectionService', () => {
       })
 
       const message = new AgentMessage()
-      const messageContext = new InboundMessageContext(message, {
-        recipientVerkey: recipientKey,
-      })
+      const messageContext = new InboundMessageContext(message, { recipientKey })
 
       expect(() =>
         connectionService.assertConnectionOrServiceDecorator(messageContext, {
@@ -805,7 +790,7 @@ describe('ConnectionService', () => {
 
       const message = new AgentMessage()
       const messageContext = new InboundMessageContext(message, {
-        senderVerkey: senderKey,
+        senderKey: Key.fromPublicKeyBase58(senderKey, KeyType.Ed25519),
       })
 
       expect(() =>

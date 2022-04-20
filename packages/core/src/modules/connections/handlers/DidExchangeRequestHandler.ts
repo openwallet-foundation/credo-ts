@@ -33,10 +33,10 @@ export class DidExchangeRequestHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeRequestHandler>) {
-    const { recipientVerkey, senderVerkey, message, connection } = messageContext
+    const { recipientKey, senderKey, message, connection } = messageContext
 
-    if (!recipientVerkey || !senderVerkey) {
-      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
+    if (!recipientKey || !senderKey) {
+      throw new AriesFrameworkError('Unable to process connection request without senderKey or recipientKey')
     }
 
     if (!message.thread?.parentThreadId) {
@@ -54,9 +54,9 @@ export class DidExchangeRequestHandler implements Handler {
       )
     }
 
-    const didRecord = await this.didRepository.findByVerkey(senderVerkey)
+    const didRecord = await this.didRepository.findByRecipientKey(senderKey.publicKeyBase58)
     if (didRecord) {
-      throw new AriesFrameworkError(`Did record for sender key ${senderVerkey} already exists.`)
+      throw new AriesFrameworkError(`Did record for sender key ${senderKey} already exists.`)
     }
 
     // TODO Shouln't we check also if the keys match the keys from oob invitation services?

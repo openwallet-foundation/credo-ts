@@ -6,7 +6,6 @@ import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
-import { verkeyToDidKey } from '../../dids/helpers'
 import { ConnectionResponseMessage } from '../messages'
 
 export class ConnectionResponseHandler implements Handler {
@@ -30,10 +29,10 @@ export class ConnectionResponseHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionResponseHandler>) {
-    const { recipientVerkey, senderVerkey, message } = messageContext
+    const { recipientKey, senderKey, message } = messageContext
 
-    if (!recipientVerkey || !senderVerkey) {
-      throw new AriesFrameworkError('Unable to process connection response without senderVerkey or recipientVerkey')
+    if (!recipientKey || !senderKey) {
+      throw new AriesFrameworkError('Unable to process connection response without senderKey or recipientKey')
     }
 
     const connectionRecord = await this.connectionService.getByThreadId(message.threadId)
@@ -48,8 +47,10 @@ export class ConnectionResponseHandler implements Handler {
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
     // connection record did
-    if (!ourDidDocument.recipientKeys.map(verkeyToDidKey).includes(recipientVerkey)) {
-      throw new AriesFrameworkError(`Recipient key ${recipientVerkey} not found in did document recipient keys.`)
+    if (!ourDidDocument.recipientKeys.includes(recipientKey.publicKeyBase58)) {
+      throw new AriesFrameworkError(
+        `Recipient key ${recipientKey.publicKeyBase58} not found in did document recipient keys.`
+      )
     }
 
     const outOfBandRecord =

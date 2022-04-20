@@ -7,18 +7,21 @@ import { SubjectInboundTransport } from '../../../../../../tests/transport/Subje
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getBaseConfig, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
+import { ConsoleLogger, LogLevel } from '../../../logger'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
-const recipientConfig = getBaseConfig('Mediation: Recipient')
+const recipientConfig = getBaseConfig('Mediation: Recipient', { logger: new ConsoleLogger(LogLevel.debug) })
 const mediatorConfig = getBaseConfig('Mediation: Mediator', {
   autoAcceptMediationRequests: true,
   endpoints: ['rxjs:mediator'],
+  logger: new ConsoleLogger(LogLevel.debug),
 })
 
 const senderConfig = getBaseConfig('Mediation: Sender', {
   endpoints: ['rxjs:sender'],
+  logger: new ConsoleLogger(LogLevel.debug),
 })
 
 describe('mediator establishment', () => {

@@ -20,3 +20,13 @@ export function verkeyToDidKey(key: string) {
   const didKey = new DidKey(ed25519Key)
   return didKey.did
 }
+
+export function stringToInstanceOfKey(key: string) {
+  if (key.startsWith('did:key')) {
+    const didKey = DidKey.fromDid(key)
+    return didKey.key
+  }
+  const publicKeyBase58 = key
+  const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
+  return ed25519Key
+}

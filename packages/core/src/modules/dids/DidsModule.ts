@@ -23,12 +23,12 @@ export class DidsModule {
     return this.resolverService.resolveDidDocument(didUrl)
   }
 
-  public findByVerkey(recipientKey: string) {
-    return this.didRepository.findByVerkey(recipientKey)
+  public findByRecipientKey(recipientKey: string) {
+    return this.didRepository.findByRecipientKey(recipientKey)
   }
 
-  public findMultipleByVerkey(verkey: string) {
-    return this.didRepository.findMultipleByVerkey(verkey)
+  public findAllByRecipientKey(verkey: string) {
+    return this.didRepository.findAllByRecipientKey(verkey)
   }
 
   public findByDid(did: string) {
