@@ -26,6 +26,8 @@ describe('DidCommMessageRecord', () => {
       threadId: 'ea24e14a-4fc4-40f4-85a0-f6fcf02bfc1c',
       protocolName: 'test-protocol',
       messageName: 'send-test',
+      versionMajor: '1',
+      versionMinor: '0',
       messageType: 'https://didcomm.org/test-protocol/1.0/send-test',
       messageId: '7eb74118-7f91-4ba9-9960-c709b036aa86',
     })
