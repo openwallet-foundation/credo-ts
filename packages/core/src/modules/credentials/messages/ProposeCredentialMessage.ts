@@ -1,13 +1,13 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { credDefIdRegex, indyDidRegex, schemaIdRegex, schemaVersionRegex } from '../../../utils'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 import { CredentialPreview } from './CredentialPreview'
-import { parseMessageType } from '../../../utils/messageType'
 
 export interface ProposeCredentialMessageOptions {
   id?: string
@@ -45,7 +45,7 @@ export class ProposeCredentialMessage extends AgentMessage {
     }
   }
 
-  @Equals(ProposeCredentialMessage.type)
+  @IsValidMessageType(ProposeCredentialMessage.type)
   public readonly type = ProposeCredentialMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/propose-credential')
 

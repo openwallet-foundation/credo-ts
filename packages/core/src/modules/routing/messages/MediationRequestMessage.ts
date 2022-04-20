@@ -1,7 +1,5 @@
-import { Equals } from 'class-validator'
-
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { parseMessageType } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface MediationRequestMessageOptions {
   sentTime?: Date
@@ -30,7 +28,7 @@ export class MediationRequestMessage extends AgentMessage {
     }
   }
 
-  @Equals(MediationRequestMessage.type)
+  @IsValidMessageType(MediationRequestMessage.type)
   public readonly type = MediationRequestMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/1.0/mediate-request')
 }

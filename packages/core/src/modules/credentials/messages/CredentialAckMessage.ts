@@ -1,8 +1,6 @@
 import type { AckMessageOptions } from '../../common'
 
-import { Equals } from 'class-validator'
-
-import { parseMessageType } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { AckMessage } from '../../common'
 
 export type CredentialAckMessageOptions = AckMessageOptions
@@ -19,7 +17,7 @@ export class CredentialAckMessage extends AckMessage {
     super(options)
   }
 
-  @Equals(CredentialAckMessage.type)
+  @IsValidMessageType(CredentialAckMessage.type)
   public readonly type = CredentialAckMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/ack')
 }

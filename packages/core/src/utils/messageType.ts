@@ -1,5 +1,8 @@
 import type { PlaintextMessage } from '../types'
 import type { VersionString } from './version'
+import type { ValidationOptions, ValidationArguments } from 'class-validator'
+
+import { ValidateBy, buildMessage } from 'class-validator'
 
 import { rightSplit } from './string'
 import { parseVersionString } from './version'
@@ -125,6 +128,37 @@ export function canHandleMessageType(messageClass: { type: ParsedMessageType }, 
   const incomingMessageType = parseMessageType(messageType)
 
   return supportsIncomingMessageType(incomingMessageType, messageClass.type)
+}
+
+/**
+ * class-validator decorator to check if the string message type value matches with the
+ * expected message type. This uses {@link supportsIncomingMessageType}.
+ */
+export function IsValidMessageType(
+  messageType: ParsedMessageType,
+  validationOptions?: ValidationOptions
+): PropertyDecorator {
+  return ValidateBy(
+    {
+      name: 'isValidMessageType',
+      constraints: [messageType],
+      validator: {
+        validate: (value, args: ValidationArguments): boolean => {
+          const [expectedMessageType] = args.constraints as [ParsedMessageType]
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const incomingMessageType = parseMessageType((args.object as any).type)
+
+          return supportsIncomingMessageType(incomingMessageType, expectedMessageType)
+        },
+        defaultMessage: buildMessage(
+          (eachPrefix) =>
+            eachPrefix + '$property does not match the expected message type (only minor version may be lower)',
+          validationOptions
+        ),
+      },
+    },
+    validationOptions
+  )
 }
 
 export function replaceLegacyDidSovPrefixOnMessage(message: PlaintextMessage | Record<string, unknown>) {

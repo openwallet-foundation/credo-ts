@@ -1,8 +1,8 @@
 import { Type } from 'class-transformer'
-import { Equals, IsArray, ValidateNested } from 'class-validator'
+import { IsArray, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { parseMessageType } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface KeylistMessageOptions {
   id?: string
@@ -22,7 +22,7 @@ export class KeylistMessage extends AgentMessage {
     }
   }
 
-  @Equals(KeylistMessage.type)
+  @IsValidMessageType(KeylistMessage.type)
   public readonly type = KeylistMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/1.0/keylist')
 

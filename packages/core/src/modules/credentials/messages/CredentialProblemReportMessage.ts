@@ -1,9 +1,7 @@
 import type { ProblemReportMessageOptions } from '../../problem-reports/messages/ProblemReportMessage'
 
-import { Equals } from 'class-validator'
-
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { ProblemReportMessage } from '../../problem-reports/messages/ProblemReportMessage'
-import { parseMessageType } from '../../../utils/messageType'
 
 export type CredentialProblemReportMessageOptions = ProblemReportMessageOptions
 
@@ -19,7 +17,7 @@ export class CredentialProblemReportMessage extends ProblemReportMessage {
     super(options)
   }
 
-  @Equals(CredentialProblemReportMessage.type)
+  @IsValidMessageType(CredentialProblemReportMessage.type)
   public readonly type = CredentialProblemReportMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/problem-report')
 }

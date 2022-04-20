@@ -1,9 +1,9 @@
 // Create a base ProblemReportMessage message class and add it to the messages directory
 import { Expose } from 'class-transformer'
-import { Equals, IsEnum, IsOptional, IsString } from 'class-validator'
+import { IsEnum, IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { parseMessageType } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export enum WhoRetriesStatus {
   You = 'YOU',
@@ -78,7 +78,7 @@ export class ProblemReportMessage extends AgentMessage {
     }
   }
 
-  @Equals(ProblemReportMessage.type)
+  @IsValidMessageType(ProblemReportMessage.type)
   public readonly type: string = ProblemReportMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/notification/1.0/problem-report')
 

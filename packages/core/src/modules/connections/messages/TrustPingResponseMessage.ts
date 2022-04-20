@@ -1,9 +1,9 @@
 import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
 
-import { Equals, IsOptional, IsString } from 'class-validator'
+import { IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { parseMessageType } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface TrustPingResponseMessageOptions {
   comment?: string
@@ -43,7 +43,7 @@ export class TrustPingResponseMessage extends AgentMessage {
     }
   }
 
-  @Equals(TrustPingResponseMessage.type)
+  @IsValidMessageType(TrustPingResponseMessage.type)
   public readonly type = TrustPingResponseMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/trust_ping/1.0/ping_response')
 

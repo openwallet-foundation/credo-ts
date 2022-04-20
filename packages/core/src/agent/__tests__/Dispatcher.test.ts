@@ -56,7 +56,7 @@ describe('Dispatcher', () => {
     test('return all supported message types URIs', async () => {
       const messageTypes = dispatcher.supportedMessageTypes
 
-      expect(messageTypes).toEqual([
+      expect(messageTypes).toMatchObject([
         { messageTypeUri: 'https://didcomm.org/connections/1.0/invitation' },
         { messageTypeUri: 'https://didcomm.org/connections/1.0/request' },
         { messageTypeUri: 'https://didcomm.org/connections/1.0/response' },

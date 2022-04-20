@@ -1,9 +1,7 @@
 import type { ProblemReportMessageOptions } from '../../problem-reports/messages/ProblemReportMessage'
 
-import { Equals } from 'class-validator'
-
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { ProblemReportMessage } from '../../problem-reports/messages/ProblemReportMessage'
-import { parseMessageType } from '../../../utils/messageType'
 
 export type PresentationProblemReportMessageOptions = ProblemReportMessageOptions
 
@@ -19,7 +17,7 @@ export class PresentationProblemReportMessage extends ProblemReportMessage {
     super(options)
   }
 
-  @Equals(PresentationProblemReportMessage.type)
+  @IsValidMessageType(PresentationProblemReportMessage.type)
   public readonly type = PresentationProblemReportMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/problem-report')
 }

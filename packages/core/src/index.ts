@@ -37,7 +37,7 @@ export * from './utils/JsonTransformer'
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
-export { parseMessageType } from './utils/messageType'
+export { parseMessageType, IsValidMessageType } from './utils/messageType'
 
 const utils = {
   uuid,

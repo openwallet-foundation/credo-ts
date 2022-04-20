@@ -1,8 +1,8 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { parseMessageType } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 import { PresentationPreview } from './PresentationPreview'
 
@@ -28,7 +28,7 @@ export class ProposePresentationMessage extends AgentMessage {
     }
   }
 
-  @Equals(ProposePresentationMessage.type)
+  @IsValidMessageType(ProposePresentationMessage.type)
   public readonly type = ProposePresentationMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/propose-presentation')
 

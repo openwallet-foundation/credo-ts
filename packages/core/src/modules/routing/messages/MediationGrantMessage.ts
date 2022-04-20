@@ -1,8 +1,8 @@
 import { Expose } from 'class-transformer'
-import { Equals, IsArray, IsNotEmpty, IsString } from 'class-validator'
+import { IsArray, IsNotEmpty, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
-import { parseMessageType } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface MediationGrantMessageOptions {
   id?: string
@@ -31,7 +31,7 @@ export class MediationGrantMessage extends AgentMessage {
     }
   }
 
-  @Equals(MediationGrantMessage.type)
+  @IsValidMessageType(MediationGrantMessage.type)
   public readonly type = MediationGrantMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/1.0/mediate-grant')
 
