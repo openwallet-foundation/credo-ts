@@ -48,7 +48,9 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
   }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass>> {
     const record = await this.getSingleByQuery({
       associatedRecordId,
-      messageType: messageClass.type.messageTypeUri,
+      messageName: messageClass.type.messageName,
+      protocolName: messageClass.type.protocolName,
+      protocolMajorVersion: String(messageClass.type.protocolMajorVersion),
     })
 
     return record.getMessageInstance(messageClass)
@@ -59,7 +61,9 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
   }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass> | null> {
     const record = await this.findSingleByQuery({
       associatedRecordId,
-      messageType: messageClass.type.messageTypeUri,
+      messageName: messageClass.type.messageName,
+      protocolName: messageClass.type.protocolName,
+      protocolMajorVersion: String(messageClass.type.protocolMajorVersion),
     })
 
     return record?.getMessageInstance(messageClass) ?? null
