@@ -28,16 +28,13 @@ export class RevocationService {
   private async processRevocationNotification(
     revocationRegistryId: string,
     credentialRevocationId: string,
-    connection?: ConnectionRecord,
+    connection: ConnectionRecord,
     comment?: string
   ) {
     const query = { revocationRegistryId, credentialRevocationId }
     this.logger.trace(`Getting record by query for revocation notification:`, query)
     const credentialRecord = await this.credentialRepository.getSingleByQuery(query)
 
-    if (!connection) {
-      throw new AriesFrameworkError('No connection record for message')
-    }
     credentialRecord.assertConnection(connection.id)
 
     credentialRecord.revocationNotification = new RevocationNotification(comment)
@@ -53,8 +50,8 @@ export class RevocationService {
   }
 
   /**
-   * Process a recieved {@link RevocationNotificationMessagev1}. This will create a
-   * {@link RevocationNotification} and store it in the corresponding {@link ConnectionRecord}
+   * Process a recieved {@link V1RevocationNotificationMessage}. This will create a
+   * {@link RevocationNotification} and store it in the corresponding {@link CredentialRecord}
    *
    * @param messageContext message context of RevocationNotificationMessageV1
    */
@@ -65,12 +62,12 @@ export class RevocationService {
     // ThreadID = indy::<revocation_registry_id>::<credential_revocation_id>
     const threadRegex = /(indy)::(.+)::(\d+)$/
     const threadId = messageContext.message.issueThread
+    const comment = messageContext.message.comment
+    const connection = messageContext.assertReadyConnection()
     try {
       const threadIdGroups = threadId.match(threadRegex)
       if (threadIdGroups) {
         const [, , revocationRegistryId, credentialRevocationId] = threadIdGroups
-        const comment = messageContext.message.comment
-        const connection = messageContext.connection
         await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, connection, comment)
       } else {
         throw new AriesFrameworkError(
@@ -83,8 +80,8 @@ export class RevocationService {
   }
 
   /**
-   * Process a recieved {@link RevocationNotificationMessagev2}. This will create a
-   * {@link RevocationNotification} and store it in the corresponding {@link ConnectionRecord}
+   * Process a recieved {@link V2RevocationNotificationMessage}. This will create a
+   * {@link RevocationNotification} and store it in the corresponding {@link CredentialRecord}
    *
    * @param messageContext message context of RevocationNotificationMessageV2
    */
@@ -95,12 +92,12 @@ export class RevocationService {
     // CredentialId = <revocation_registry_id>::<credential_revocation_id>
     const credentialIdRegex = /(.*)::(\d+)$/
     const credentialId = messageContext.message.credentialId
+    const comment = messageContext.message.comment
+    const connection = messageContext.assertReadyConnection()
     try {
       const credentialIdGroups = credentialId.match(credentialIdRegex)
       if (credentialIdGroups) {
         const [, revocationRegistryId, credentialRevocationId] = credentialIdGroups
-        const comment = messageContext.message.comment
-        const connection = messageContext.connection
         await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, connection, comment)
       } else {
         throw new AriesFrameworkError(

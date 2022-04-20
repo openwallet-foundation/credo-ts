@@ -673,7 +673,7 @@ export class CredentialService {
       revocationRegistryDefinition,
     })
 
-    // If we have the rev_reg_id, then we also want to set the cred_rev_id, which only can be fetched by retrieving credential from indy
+    // If we have the rev_reg_id then we also want to set the cred_rev_id
     if (indyCredential.rev_reg_id) {
       const credential = await this.indyHolderService.getCredential(credentialId)
 
