@@ -410,7 +410,7 @@ export class RecipientModule {
     dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new StatusHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MessageDeliveryHandler(this.mediationRecipientService, this.messageReceiver))
+    dispatcher.registerHandler(new MessageDeliveryHandler(this.mediationRecipientService))
     //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }

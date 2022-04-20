@@ -65,7 +65,8 @@ describe('MediationRecipientService', () => {
       messageSender,
       config,
       mediationRepository,
-      eventEmitter
+      eventEmitter,
+      messageReceiver
     )
   })
 
@@ -90,9 +91,9 @@ describe('MediationRecipientService', () => {
 
   describe('processDelivery', () => {
     it('if the delivery has no attachments expect an error', async () => {
-      expect(
-        mediationRecipientService.processDelivery({} as MessageDeliveryMessage, messageReceiver)
-      ).rejects.toThrowError(new AriesFrameworkError('No attachments found'))
+      expect(mediationRecipientService.processDelivery({} as MessageDeliveryMessage)).rejects.toThrowError(
+        new AriesFrameworkError('No attachments found')
+      )
     })
     it('other we should expect a message recieved with an message id list in it', async () => {
       const messageDeliveryMessage = new MessageDeliveryMessage({
@@ -103,10 +104,7 @@ describe('MediationRecipientService', () => {
           }),
         ],
       })
-      const messagesReceivedMessage = await mediationRecipientService.processDelivery(
-        messageDeliveryMessage,
-        messageReceiver
-      )
+      const messagesReceivedMessage = await mediationRecipientService.processDelivery(messageDeliveryMessage)
       expect(messagesReceivedMessage).toEqual(
         new MessagesReceivedMessage({
           id: messagesReceivedMessage.id,

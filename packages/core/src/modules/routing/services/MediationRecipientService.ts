@@ -1,5 +1,4 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { MessageReceiver } from '../../../agent/MessageReceiver'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { EncryptedMessage } from '../../../types'
@@ -20,6 +19,7 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { MessageReceiver } from '../../../agent/MessageReceiver'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
@@ -49,6 +49,7 @@ export class MediationRecipientService {
   private messageSender: MessageSender
   private config: AgentConfig
   private logger: Logger
+  private messageReceiver: MessageReceiver
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
@@ -56,7 +57,8 @@ export class MediationRecipientService {
     messageSender: MessageSender,
     config: AgentConfig,
     mediatorRepository: MediationRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    messageReveiver: MessageReceiver
   ) {
     this.config = config
     this.wallet = wallet
@@ -65,6 +67,7 @@ export class MediationRecipientService {
     this.connectionService = connectionService
     this.messageSender = messageSender
     this.logger = config.logger
+    this.messageReceiver = messageReveiver
   }
 
   public async createRequest(
@@ -248,7 +251,7 @@ export class MediationRecipientService {
     return deliveryRequestMessage
   }
 
-  public async processDelivery(messageDeliveryMessage: MessageDeliveryMessage, messageReceiver: MessageReceiver) {
+  public async processDelivery(messageDeliveryMessage: MessageDeliveryMessage) {
     const { attachments } = messageDeliveryMessage
 
     if (!attachments)
@@ -260,7 +263,7 @@ export class MediationRecipientService {
     for (const attachment of attachments) {
       ids.push(attachment.id)
       try {
-        await messageReceiver.receiveMessage(attachment.getDataAsJson<EncryptedMessage>())
+        await this.messageReceiver.receiveMessage(attachment.getDataAsJson<EncryptedMessage>())
       } catch (error) {
         this.logger.error(`Failed to process message id: ${attachment.id}`, { error, attachment })
       }
