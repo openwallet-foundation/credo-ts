@@ -86,7 +86,7 @@ describe('IndyStorageService', () => {
         someBoolean: true,
         someOtherBoolean: false,
         someStringValue: 'string',
-        anArrayValue: ['bar', 'foo'],
+        anArrayValue: expect.arrayContaining(['bar', 'foo']),
         someStringNumberValue: '1',
         anotherStringNumberValue: '0',
       })
