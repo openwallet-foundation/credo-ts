@@ -47,8 +47,8 @@ export type DefaultCredentialTags = {
   connectionId?: string
   state: CredentialState
   credentialId?: string
-  revocationRegistryId?: string
-  credentialRevocationId?: string
+  indyRevocationRegistryId?: string
+  indyCredentialRevocationId?: string
 }
 
 export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags, CredentialMetadata> {
@@ -111,8 +111,8 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       connectionId: this.connectionId,
       state: this.state,
       credentialId: this.credentialId,
-      revocationRegistryId: metadata?.revocationRegistryId,
-      credentialRevocationId: metadata?.credentialRevocationId,
+      indyRevocationRegistryId: metadata?.indyRevocationRegistryId,
+      indyCredentialRevocationId: metadata?.indyCredentialRevocationId,
     }
   }
 

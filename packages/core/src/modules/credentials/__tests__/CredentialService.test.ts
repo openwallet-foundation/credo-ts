@@ -103,8 +103,8 @@ const mockCredentialRecord = ({
   tags,
   id,
   credentialAttributes,
-  revocationRegistryId,
-  credentialRevocationId,
+  indyRevocationRegistryId,
+  indyCredentialRevocationId,
 }: {
   state?: CredentialState
   requestMessage?: RequestCredentialMessage
@@ -114,8 +114,8 @@ const mockCredentialRecord = ({
   connectionId?: string
   id?: string
   credentialAttributes?: CredentialPreviewAttribute[]
-  revocationRegistryId?: string
-  credentialRevocationId?: string
+  indyRevocationRegistryId?: string
+  indyCredentialRevocationId?: string
 } = {}) => {
   const offerMessage = new OfferCredentialMessage({
     comment: 'some comment',
@@ -151,8 +151,8 @@ const mockCredentialRecord = ({
   }
 
   credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
-    credentialRevocationId,
-    revocationRegistryId,
+    indyCredentialRevocationId,
+    indyRevocationRegistryId,
   })
 
   return credentialRecord
@@ -1174,9 +1174,9 @@ describe('CredentialService', () => {
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: CredentialState.Done,
-        revocationRegistryId:
+        indyRevocationRegistryId:
           'AsB27X6KRrJFsqZ3unNAH6:4:AsB27X6KRrJFsqZ3unNAH6:3:cl:48187:default:CL_ACCUM:3b24a9b0-a979-41e0-9964-2292f2b1b7e9',
-        credentialRevocationId: '1',
+        indyCredentialRevocationId: '1',
         connectionId: connection.id,
       })
     })
@@ -1194,8 +1194,8 @@ describe('CredentialService', () => {
       // @ts-ignore
       const spy = jest.spyOn(global, 'Date').mockImplementation(() => date)
 
-      const { revocationRegistryId, credentialRevocationId } = credential.getTags()
-      const revocationNotificationThreadId = `indy::${revocationRegistryId}::${credentialRevocationId}`
+      const { indyRevocationRegistryId, indyCredentialRevocationId } = credential.getTags()
+      const revocationNotificationThreadId = `indy::${indyRevocationRegistryId}::${indyCredentialRevocationId}`
 
       const revocationNotificationMessage = new V1RevocationNotificationMessage({
         issueThread: revocationNotificationThreadId,
@@ -1289,8 +1289,8 @@ describe('CredentialService', () => {
       // @ts-ignore
       const spy = jest.spyOn(global, 'Date').mockImplementation(() => date)
 
-      const { revocationRegistryId, credentialRevocationId } = credential.getTags()
-      const revocationNotificationCredentialId = `${revocationRegistryId}::${credentialRevocationId}`
+      const { indyRevocationRegistryId, indyCredentialRevocationId } = credential.getTags()
+      const revocationNotificationCredentialId = `${indyRevocationRegistryId}::${indyCredentialRevocationId}`
 
       const revocationNotificationMessage = new V2RevocationNotificationMessage({
         credentialId: revocationNotificationCredentialId,
@@ -1387,8 +1387,8 @@ describe('CredentialService', () => {
       // @ts-ignore
       const spy = jest.spyOn(global, 'Date').mockImplementation(() => date)
 
-      const { revocationRegistryId, credentialRevocationId } = credential.getTags()
-      const revocationNotificationThreadId = `indy::${revocationRegistryId}::${credentialRevocationId}`
+      const { indyRevocationRegistryId, indyCredentialRevocationId } = credential.getTags()
+      const revocationNotificationThreadId = `indy::${indyRevocationRegistryId}::${indyCredentialRevocationId}`
 
       const revocationNotificationMessage = new V1RevocationNotificationMessage({
         issueThread: revocationNotificationThreadId,

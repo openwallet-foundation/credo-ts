@@ -677,12 +677,12 @@ export class CredentialService {
     if (indyCredential.rev_reg_id) {
       const credential = await this.indyHolderService.getCredential(credentialId)
 
-      const credentialRevocationId = credential.cred_rev_id
-      const revocationRegistryId = indyCredential.rev_reg_id
+      const indyCredentialRevocationId = credential.cred_rev_id
+      const indyRevocationRegistryId = indyCredential.rev_reg_id
 
       credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
-        credentialRevocationId,
-        revocationRegistryId,
+        indyCredentialRevocationId,
+        indyRevocationRegistryId,
       })
     }
 

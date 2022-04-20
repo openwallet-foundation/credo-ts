@@ -26,12 +26,12 @@ export class RevocationService {
   }
 
   private async processRevocationNotification(
-    revocationRegistryId: string,
-    credentialRevocationId: string,
+    indyRevocationRegistryId: string,
+    indyCredentialRevocationId: string,
     connection: ConnectionRecord,
     comment?: string
   ) {
-    const query = { revocationRegistryId, credentialRevocationId }
+    const query = { indyRevocationRegistryId, indyCredentialRevocationId }
     this.logger.trace(`Getting record by query for revocation notification:`, query)
     const credentialRecord = await this.credentialRepository.getSingleByQuery(query)
 
@@ -65,10 +65,15 @@ export class RevocationService {
     try {
       const threadIdGroups = threadId.match(threadRegex)
       if (threadIdGroups) {
-        const [, , revocationRegistryId, credentialRevocationId] = threadIdGroups
+        const [, , indyRevocationRegistryId, indyCredentialRevocationId] = threadIdGroups
         const comment = messageContext.message.comment
         const connection = messageContext.assertReadyConnection()
-        await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, connection, comment)
+        await this.processRevocationNotification(
+          indyRevocationRegistryId,
+          indyCredentialRevocationId,
+          connection,
+          comment
+        )
       } else {
         throw new AriesFrameworkError(
           `Incorrect revocation notification threadId format: \n${threadId}\ndoes not match\n"indy::<revocation_registry_id>::<credential_revocation_id>"`
@@ -95,10 +100,15 @@ export class RevocationService {
     try {
       const credentialIdGroups = credentialId.match(credentialIdRegex)
       if (credentialIdGroups) {
-        const [, revocationRegistryId, credentialRevocationId] = credentialIdGroups
+        const [, indyRevocationRegistryId, indyCredentialRevocationId] = credentialIdGroups
         const comment = messageContext.message.comment
         const connection = messageContext.assertReadyConnection()
-        await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, connection, comment)
+        await this.processRevocationNotification(
+          indyRevocationRegistryId,
+          indyCredentialRevocationId,
+          connection,
+          comment
+        )
       } else {
         throw new AriesFrameworkError(
           `Incorrect revocation notification credentialId format: \n${credentialId}\ndoes not match\n"<revocation_registry_id>::<credential_revocation_id>"`
