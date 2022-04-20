@@ -13,10 +13,10 @@ import { createOutboundMessage } from '../src/agent/helpers'
 
 import { getBaseConfig } from './helpers'
 
-const aliceConfig = getBaseConfig('Agent Alice', {
+const aliceConfig = getBaseConfig('Multi Protocol Versions', {
   endpoints: ['rxjs:alice'],
 })
-const bobConfig = getBaseConfig('Agents Bob', {
+const bobConfig = getBaseConfig('Multi Protocol Versions', {
   endpoints: ['rxjs:bob'],
 })
 
