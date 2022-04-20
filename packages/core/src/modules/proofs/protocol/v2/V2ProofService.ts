@@ -38,7 +38,7 @@ import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { ProofsUtils } from '../../ProofsUtil'
 import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
-import { V2PRESENTATIONREQUEST } from '../../formats/ProofFormatTypes'
+import { ATTACHMENT_FORMAT } from '../../formats/ProofFormats'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { PresentationExchangeFormatService } from '../../formats/presentation-exchange/PresentationExchangeFormatService'
@@ -71,21 +71,29 @@ export class V2ProofService extends ProofService {
       throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
     }
 
-    const proofRequest = new ProofRequest({
-      name: options.name,
-      version: options.version,
-      nonce: options.nonce ?? (await this.generateProofRequestNonce()),
-    })
+    let result = {}
+    for (const key of proposalMessage.formats) {
+      if (key.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format) {
+        const proofRequest = new ProofRequest({
+          name: options.name,
+          version: options.version,
+          nonce: options.nonce ?? (await this.generateProofRequestNonce()),
+        })
 
-    for (const attachment of proposalMessage.proposalsAttach) {
-      const proofRequestJson = attachment.getDataAsJson<ProofRequest>() ?? null
-      proofRequest.requestedAttributes = proofRequestJson.requestedAttributes
-      proofRequest.requestedPredicates = proofRequestJson.requestedPredicates
+        for (const attachment of proposalMessage.proposalsAttach) {
+          const proofRequestJson = attachment.getDataAsJson<ProofRequest>() ?? null
+          proofRequest.requestedAttributes = proofRequestJson.requestedAttributes
+          proofRequest.requestedPredicates = proofRequestJson.requestedPredicates
+        }
+        result = {
+          indy: proofRequest,
+        }
+      } else {
+        // PK-TODO create Presentation Exchange request format
+      }
     }
 
-    return {
-      indy: proofRequest,
-    }
+    return result
   }
 
   private protocolVersion: ProofProtocolVersion
@@ -444,7 +452,9 @@ export class V2ProofService extends ProofService {
       const service = this.formatServiceMap[key]
       formats.push(
         await service.createPresentation({
-          attachment: proofRequest.getAttachmentByFormatIdentifier(V2PRESENTATIONREQUEST),
+          attachment: proofRequest.getAttachmentByFormatIdentifier(
+            ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format
+          ),
           formats: options.proofFormats,
         })
       )

@@ -7,7 +7,7 @@ import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
-import { V2PRESENTATIONPROPOSAL } from '../../../formats/ProofFormatTypes'
+import { ATTACHMENT_FORMAT } from '../../../formats/ProofFormats'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
@@ -75,7 +75,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2PRESENTATIONPROPOSAL,
+          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format,
         },
       ],
       proposalsAttach: [

@@ -9,11 +9,7 @@ import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/mode
 import type { CredDefId } from 'indy-sdk'
 
 import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
-import {
-  V2PRESENTATION,
-  V2PRESENTATIONPROPOSAL,
-  V2PRESENTATIONREQUEST,
-} from '../src/modules/proofs/formats/ProofFormatTypes'
+import { ATTACHMENT_FORMAT } from '../src/modules/proofs/formats/ProofFormats'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import {
   V2PresentationMessage,
@@ -88,7 +84,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2PRESENTATIONPROPOSAL,
+          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format,
         },
       ],
       proposalsAttach: [
@@ -138,7 +134,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2PRESENTATIONREQUEST,
+          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format,
         },
       ],
       requestPresentationsAttach: [
@@ -189,7 +185,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2PRESENTATION,
+          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
         },
       ],
       presentationsAttach: [
@@ -313,7 +309,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2PRESENTATIONREQUEST,
+          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format,
         },
       ],
       requestPresentationsAttach: [
@@ -369,7 +365,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2PRESENTATION,
+          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
         },
       ],
       presentationsAttach: [
