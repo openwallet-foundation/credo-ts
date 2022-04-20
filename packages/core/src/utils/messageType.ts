@@ -145,9 +145,13 @@ export function IsValidMessageType(
       validator: {
         validate: (value, args: ValidationArguments): boolean => {
           const [expectedMessageType] = args.constraints as [ParsedMessageType]
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const incomingMessageType = parseMessageType((args.object as any).type)
 
+          // Type must be string
+          if (typeof value !== 'string') {
+            return false
+          }
+
+          const incomingMessageType = parseMessageType(value)
           return supportsIncomingMessageType(incomingMessageType, expectedMessageType)
         },
         defaultMessage: buildMessage(

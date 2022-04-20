@@ -19,5 +19,5 @@ export class DummyResponseMessage extends AgentMessage {
 
   @IsValidMessageType(DummyResponseMessage.type)
   public readonly type = DummyResponseMessage.type.messageTypeUri
-  public static readonly type = parseMessageType('https://2060.io/didcomm/dummy/response')
+  public static readonly type = parseMessageType('https://2060.io/didcomm/dummy/1.0/response')
 }

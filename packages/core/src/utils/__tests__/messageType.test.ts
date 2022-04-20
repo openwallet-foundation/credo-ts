@@ -1,4 +1,6 @@
+import { AgentMessage } from '../../agent/AgentMessage'
 import {
+  canHandleMessageType,
   parseMessageType,
   replaceLegacyDidSovPrefix,
   replaceLegacyDidSovPrefixOnMessage,
@@ -6,6 +8,17 @@ import {
   replaceNewDidCommPrefixWithLegacyDidSovOnMessage,
   supportsIncomingMessageType,
 } from '../messageType'
+
+export class TestMessage extends AgentMessage {
+  public constructor() {
+    super()
+
+    this.id = this.generateId()
+  }
+
+  public readonly type = TestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/invitation')
+}
 
 describe('messageType', () => {
   describe('replaceLegacyDidSovPrefixOnMessage()', () => {
@@ -156,6 +169,36 @@ describe('messageType', () => {
       const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
 
       expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(false)
+    })
+  })
+
+  describe('canHandleMessageType()', () => {
+    test('returns true when the document uri, protocol name, major version all match and the minor version is lower than the expected minor version', () => {
+      expect(canHandleMessageType(TestMessage, 'https://didcomm.org/fake-protocol/1.0/invitation')).toBe(true)
+    })
+
+    test('returns true when the document uri, protocol name, major version and minor version all match', () => {
+      expect(canHandleMessageType(TestMessage, 'https://didcomm.org/fake-protocol/1.5/invitation')).toBe(true)
+    })
+
+    test('returns false when the major version does not match', () => {
+      expect(canHandleMessageType(TestMessage, 'https://didcomm.org/fake-protocol/2.5/invitation')).toBe(false)
+
+      expect(canHandleMessageType(TestMessage, 'https://didcomm.org/fake-protocol/2.0/invitation')).toBe(false)
+    })
+
+    test('returns false when the message name does not match', () => {
+      expect(canHandleMessageType(TestMessage, 'https://didcomm.org/fake-protocol/1.5/request')).toBe(false)
+    })
+
+    test('returns false when the protocol name does not match', () => {
+      expect(canHandleMessageType(TestMessage, 'https://didcomm.org/another-fake-protocol/1.5/invitation')).toBe(false)
+    })
+
+    test('returns false when the document uri does not match', () => {
+      expect(canHandleMessageType(TestMessage, 'https://another-didcomm-site.org/fake-protocol/1.5/invitation')).toBe(
+        false
+      )
     })
   })
 })
