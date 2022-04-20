@@ -2,12 +2,12 @@ import type { Agent } from '../../agent/Agent'
 import type { UpdateConfig } from './updates'
 
 import { AriesFrameworkError } from '../../error'
+import { isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
 import { WalletError } from '../../wallet/error/WalletError'
 
 import { StorageUpdateService } from './StorageUpdateService'
 import { StorageUpdateError } from './error/StorageUpdateError'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION, supportedUpdates } from './updates'
-import { isFirstVersionHigherThanSecond, parseVersionString } from './version'
 
 export class UpdateAssistant {
   private agent: Agent

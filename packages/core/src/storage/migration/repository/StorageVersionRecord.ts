@@ -1,4 +1,4 @@
-import type { VersionString } from '../version'
+import type { VersionString } from '../../../utils/version'
 
 import { uuid } from '../../../utils/uuid'
 import { BaseRecord } from '../../BaseRecord'

@@ -1,5 +1,5 @@
 import type { Logger } from '../../logger'
-import type { VersionString } from './version'
+import type { VersionString } from '../../utils/version'
 
 import { scoped, Lifecycle } from 'tsyringe'
 

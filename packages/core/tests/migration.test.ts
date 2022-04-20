@@ -1,4 +1,4 @@
-import type { VersionString } from '../src/storage/migration/version'
+import type { VersionString } from '../src/utils/version'
 
 import { Agent } from '../src/agent/Agent'
 import { UpdateAssistant } from '../src/storage/migration/UpdateAssistant'
