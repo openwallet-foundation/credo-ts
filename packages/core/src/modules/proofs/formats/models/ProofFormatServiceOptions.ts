@@ -59,3 +59,14 @@ export interface CreateProblemReportOptions {
   proofRecord: ProofRecord
   description: string
 } // TBD
+
+export interface CreatePresentationFormatsOptions {
+  presentationAttachment: Attachment
+  config: IndyProofConfig
+}
+
+interface IndyProofConfig {
+  name: string
+  version: string
+  nonce?: string
+}

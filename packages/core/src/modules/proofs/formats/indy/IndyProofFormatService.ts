@@ -8,6 +8,7 @@ import type { PresentationPreviewAttribute } from '../../protocol/v1/models/V1Pr
 import type { IndyGetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
+  CreatePresentationFormatsOptions,
   CreatePresentationOptions,
   CreateProofAttachmentOptions,
   CreateProposalOptions,
@@ -42,7 +43,8 @@ import {
 } from '../../protocol/v1/models'
 import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import { ProofFormatService } from '../ProofFormatService'
-import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../ProofFormatTypes'
+// import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../ProofFormats'
+import { ATTACHMENT_FORMAT } from '../ProofFormats'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
@@ -78,7 +80,7 @@ export class IndyProofFormatService extends ProofFormatService {
   private createRequestAttachment(options: CreateRequestAttachmentOptions): ProofAttachmentFormat {
     const format = new ProofFormatSpec({
       attachmentId: options.attachId,
-      format: V2_INDY_PRESENTATION_REQUEST,
+      format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format,
     })
 
     const request = new ProofRequest(options.proofRequestOptions)
@@ -99,7 +101,7 @@ export class IndyProofFormatService extends ProofFormatService {
   private createProofAttachment(options: CreateProofAttachmentOptions): ProofAttachmentFormat {
     const format = new ProofFormatSpec({
       attachmentId: options.attachId,
-      format: V2_INDY_PRESENTATION_PROPOSAL,
+      format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format,
     })
 
     const attachment = new Attachment({
@@ -166,7 +168,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
     const format = new ProofFormatSpec({
       attachmentId,
-      format: V2_INDY_PRESENTATION,
+      format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
     })
 
     const attachment = new Attachment({
@@ -180,7 +182,9 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
-    const requestFormat = options.presentation.request.find((x) => x.format.format === V2_INDY_PRESENTATION_REQUEST)
+    const requestFormat = options.presentation.request.find(
+      (x) => x.format.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format
+    )
 
     if (!requestFormat) {
       throw new MissingIndyProofMessageError(
@@ -188,7 +192,9 @@ export class IndyProofFormatService extends ProofFormatService {
       )
     }
 
-    const proofFormat = options.presentation.proof.find((x) => x.format.format === V2_INDY_PRESENTATION)
+    const proofFormat = options.presentation.proof.find(
+      (x) => x.format.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format
+    )
 
     if (!proofFormat) {
       throw new MissingIndyProofMessageError(
@@ -238,7 +244,11 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public supportsFormat(formatIdentifier: string): boolean {
-    const supportedFormats = [V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST, V2_INDY_PRESENTATION]
+    const supportedFormats = [
+      ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format,
+      ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format,
+      ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
+    ]
     return supportedFormats.includes(formatIdentifier)
   }
 
@@ -254,10 +264,10 @@ export class IndyProofFormatService extends ProofFormatService {
     requestAttachments: ProofAttachmentFormat[]
   ) {
     const proposalAttachment = proposalAttachments.find(
-      (x) => x.format.format === V2_INDY_PRESENTATION_PROPOSAL
+      (x) => x.format.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format
     )?.attachment
     const requestAttachment = requestAttachments.find(
-      (x) => x.format.format === V2_INDY_PRESENTATION_REQUEST
+      (x) => x.format.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format
     )?.attachment
 
     if (!proposalAttachment) {
@@ -501,31 +511,19 @@ export class IndyProofFormatService extends ProofFormatService {
     })
   }
 
-  public async createProofRequestFromProposal(options: {
-    formats: {
-      indy?:
-        | {
-            presentationProposal: Attachment
-          }
-        | undefined
-      jsonLd?: undefined
-    }
-    config?:
-      | { indy?: { name: string; version: string; nonce?: string | undefined } | undefined; jsonLd?: undefined }
-      | undefined
-  }): Promise<ProofRequestFormats> {
-    const indyFormat = options.formats.indy
-    const indyConfig = options.config?.indy
+  public async createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats> {
+    const indyAttachment = options.presentationAttachment
+    const indyConfig = options?.config
 
-    if (!indyFormat) {
-      throw new AriesFrameworkError('Indy format must be provided')
+    if (!indyAttachment) {
+      throw new AriesFrameworkError('Indy attachment is missing to create proof request from proposal.')
     }
 
     if (!indyConfig) {
-      throw new AriesFrameworkError('Indy config must be provided')
+      throw new AriesFrameworkError('Indy config is missing to  create proof request from proposal.')
     }
 
-    const proposalJson = indyFormat.presentationProposal.getDataAsJson<PresentationPreview>() ?? null
+    const proposalJson = indyAttachment.getDataAsJson<PresentationPreview>() ?? null
 
     if (!proposalJson) {
       throw new AriesFrameworkError(`Presentation Preview is missing`)

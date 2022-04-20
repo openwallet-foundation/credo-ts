@@ -45,7 +45,7 @@ import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
-import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormatTypes'
+import { ATTACHMENT_FORMAT } from '../../formats/ProofFormats'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
@@ -774,7 +774,7 @@ export class V1ProofService extends ProofService {
 
     const requestAttachment = request
       .getAttachmentFormats()
-      .find((x) => x.format.format === V2_INDY_PRESENTATION_REQUEST)?.attachment
+      .find((x) => x.format.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format)?.attachment
 
     if (!requestAttachment) {
       throw new AriesFrameworkError('Request message has no attachment linked to it')
