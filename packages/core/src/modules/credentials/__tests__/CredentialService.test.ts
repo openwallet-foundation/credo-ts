@@ -1177,6 +1177,7 @@ describe('CredentialService', () => {
         revocationRegistryId:
           'AsB27X6KRrJFsqZ3unNAH6:4:AsB27X6KRrJFsqZ3unNAH6:3:cl:48187:default:CL_ACCUM:3b24a9b0-a979-41e0-9964-2292f2b1b7e9',
         credentialRevocationId: '1',
+        connectionId: connection.id
       })
     })
 
@@ -1201,9 +1202,7 @@ describe('CredentialService', () => {
         comment: 'Credential has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage, {
-        connection: {
-          id: credential.connectionId,
-        } as ConnectionRecord,
+        connection,
       })
 
       await revocationService.v1ProcessRevocationNotification(messageContext)
@@ -1235,7 +1234,6 @@ describe('CredentialService', () => {
         `No record found for given query '${JSON.stringify({ revocationRegistryId, credentialRevocationId })}'`,
         {
           recordType: CredentialRecord.type,
-          cause: undefined,
         }
       )
 
@@ -1300,9 +1298,7 @@ describe('CredentialService', () => {
         comment: 'Credential has been revoked',
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage, {
-        connection: {
-          id: credential.connectionId,
-        } as ConnectionRecord,
+        connection,
       })
 
       await revocationService.v2ProcessRevocationNotification(messageContext)

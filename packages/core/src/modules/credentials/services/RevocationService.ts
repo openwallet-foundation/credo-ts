@@ -62,12 +62,12 @@ export class RevocationService {
     // ThreadID = indy::<revocation_registry_id>::<credential_revocation_id>
     const threadRegex = /(indy)::(.+)::(\d+)$/
     const threadId = messageContext.message.issueThread
-    const comment = messageContext.message.comment
-    const connection = messageContext.assertReadyConnection()
     try {
       const threadIdGroups = threadId.match(threadRegex)
       if (threadIdGroups) {
         const [, , revocationRegistryId, credentialRevocationId] = threadIdGroups
+        const comment = messageContext.message.comment
+        const connection = messageContext.assertReadyConnection()
         await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, connection, comment)
       } else {
         throw new AriesFrameworkError(
@@ -92,12 +92,12 @@ export class RevocationService {
     // CredentialId = <revocation_registry_id>::<credential_revocation_id>
     const credentialIdRegex = /(.*)::(\d+)$/
     const credentialId = messageContext.message.credentialId
-    const comment = messageContext.message.comment
-    const connection = messageContext.assertReadyConnection()
     try {
       const credentialIdGroups = credentialId.match(credentialIdRegex)
       if (credentialIdGroups) {
         const [, revocationRegistryId, credentialRevocationId] = credentialIdGroups
+        const comment = messageContext.message.comment
+        const connection = messageContext.assertReadyConnection()
         await this.processRevocationNotification(revocationRegistryId, credentialRevocationId, connection, comment)
       } else {
         throw new AriesFrameworkError(
