@@ -31,6 +31,7 @@ module.exports = {
     'no-console': 'error',
     '@typescript-eslint/ban-ts-comment': 'warn',
     '@typescript-eslint/consistent-type-imports': 'error',
+    '@typescript-eslint/no-floating-promises': 'error',
     'import/no-cycle': 'error',
     'import/newline-after-import': ['error', { count: 1 }],
     'import/order': [
@@ -82,7 +83,13 @@ module.exports = {
       },
     },
     {
-      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts', 'samples/**'],
+      files: ['demo/**'],
+      rules: {
+        'no-console': 'off',
+      },
+    },
+    {
+      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts', 'samples/**', 'demo/**'],
       env: {
         jest: true,
         node: false,

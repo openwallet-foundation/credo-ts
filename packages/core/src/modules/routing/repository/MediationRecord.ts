@@ -1,3 +1,4 @@
+import type { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import type { MediationRole } from '../models/MediationRole'
 
 import { AriesFrameworkError } from '../../../error'
@@ -15,6 +16,7 @@ export interface MediationRecordProps {
   endpoint?: string
   recipientKeys?: string[]
   routingKeys?: string[]
+  pickupStrategy?: MediatorPickupStrategy
   tags?: CustomMediationTags
 }
 
@@ -40,6 +42,7 @@ export class MediationRecord
   public endpoint?: string
   public recipientKeys!: string[]
   public routingKeys!: string[]
+  public pickupStrategy?: MediatorPickupStrategy
 
   public static readonly type = 'MediationRecord'
   public readonly type = MediationRecord.type
@@ -57,6 +60,8 @@ export class MediationRecord
       this.state = props.state
       this.role = props.role
       this.endpoint = props.endpoint ?? undefined
+      this.pickupStrategy = props.pickupStrategy
+      this._tags = props.tags ?? {}
     }
   }
 
@@ -69,6 +74,20 @@ export class MediationRecord
       threadId: this.threadId,
       recipientKeys: this.recipientKeys,
     }
+  }
+
+  public addRecipientKey(recipientKey: string) {
+    this.recipientKeys.push(recipientKey)
+  }
+
+  public removeRecipientKey(recipientKey: string): boolean {
+    const index = this.recipientKeys.indexOf(recipientKey, 0)
+    if (index > -1) {
+      this.recipientKeys.splice(index, 1)
+      return true
+    }
+
+    return false
   }
 
   public get isReady() {

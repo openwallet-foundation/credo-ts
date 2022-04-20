@@ -55,7 +55,7 @@ describe('IndyLedgerService', () => {
   beforeAll(async () => {
     wallet = new IndyWallet(config)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(config.walletConfig!)
+    await wallet.createAndOpen(config.walletConfig!)
   })
 
   afterAll(async () => {
@@ -132,7 +132,7 @@ describe('IndyLedgerService', () => {
     })
 
     it('should return the first pool with a self certifying DID if at least one did is self certifying ', async () => {
-      const did = 'V6ty6ttM3EjuCtosH6sGtW'
+      const did = 'did:sov:q7ATwTYbQDgiigVijUAej'
       // Found on one production and one non production ledger
       const responses = getDidResponsesForDid(did, pools, {
         indicioMain: '~43X4NhAFqREffK7eWdKgFH',

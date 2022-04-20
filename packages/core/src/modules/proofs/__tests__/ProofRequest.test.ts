@@ -14,7 +14,7 @@ describe('ProofRequest', () => {
             name: 'Timo',
             restrictions: [
               {
-                schema_id: 'string',
+                schema_id: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
               },
             ],
           },
@@ -26,7 +26,7 @@ describe('ProofRequest', () => {
             p_value: 10,
             restrictions: [
               {
-                schema_id: 'string',
+                schema_id: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
               },
             ],
           },
@@ -49,7 +49,7 @@ describe('ProofRequest', () => {
             names: [],
             restrictions: [
               {
-                schema_id: 'string',
+                schema_id: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
               },
             ],
           },
@@ -61,7 +61,7 @@ describe('ProofRequest', () => {
             p_value: 10,
             restrictions: [
               {
-                schema_id: 'string',
+                schema_id: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
               },
             ],
           },

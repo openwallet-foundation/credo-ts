@@ -512,8 +512,8 @@ export class CredentialsModule {
    *
    * @param credentialId the credential record id
    */
-  public async deleteById(credentialId: string) {
-    return this.credentialService.deleteById(credentialId)
+  public async deleteById(credentialId: string, options?: { deleteAssociatedCredential: boolean }) {
+    return this.credentialService.deleteById(credentialId, options)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

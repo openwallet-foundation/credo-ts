@@ -11,11 +11,11 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import {
-  CredentialPreviewAttribute,
-  IssueCredentialMessage,
   OfferCredentialMessage,
+  IssueCredentialMessage,
   ProposeCredentialMessage,
   RequestCredentialMessage,
+  CredentialPreviewAttribute,
 } from '../messages'
 import { CredentialInfo } from '../models/CredentialInfo'
 

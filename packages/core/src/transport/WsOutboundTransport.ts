@@ -8,6 +8,7 @@ import type WebSocket from 'ws'
 import { AgentConfig } from '../agent/AgentConfig'
 import { EventEmitter } from '../agent/EventEmitter'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { isValidJweStructure, JsonEncoder } from '../utils'
 import { Buffer } from '../utils/buffer'
 
 import { TransportEventTypes } from './TransportEventTypes'
@@ -101,9 +102,14 @@ export class WsOutboundTransport implements OutboundTransport {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleMessageEvent = (event: any) => {
     this.logger.trace('WebSocket message event received.', { url: event.target.url, data: event.data })
-    const payload = JSON.parse(Buffer.from(event.data).toString('utf-8'))
+    const payload = JsonEncoder.fromBuffer(event.data)
+    if (!isValidJweStructure(payload)) {
+      throw new Error(
+        `Received a response from the other agent but the structure of the incoming message is not a DIDComm message: ${payload}`
+      )
+    }
     this.logger.debug('Payload received from mediator:', payload)
-    this.agent.receiveMessage(payload)
+    void this.agent.receiveMessage(payload)
   }
 
   private listenOnWebSocketMessages(socket: WebSocket) {

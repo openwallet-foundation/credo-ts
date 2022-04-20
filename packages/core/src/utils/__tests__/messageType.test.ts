@@ -1,4 +1,5 @@
 import {
+  parseMessageType,
   replaceLegacyDidSovPrefix,
   replaceLegacyDidSovPrefixOnMessage,
   replaceNewDidCommPrefixWithLegacyDidSov,
@@ -79,6 +80,26 @@ describe('messageType', () => {
       expect(replaceNewDidCommPrefixWithLegacyDidSov(messageTypeOtherDidSov)).toBe(
         'did:sov:another_did;spec/basicmessage/1.0/message'
       )
+    })
+  })
+
+  describe('parseMessageType()', () => {
+    test('correctly parses the message type', () => {
+      expect(parseMessageType('https://didcomm.org/connections/1.0/request')).toEqual({
+        documentUri: 'https://didcomm.org',
+        protocolName: 'connections',
+        protocolVersion: '1.0',
+        messageName: 'request',
+        protocolUri: `https://didcomm.org/connections/1.0`,
+      })
+
+      expect(parseMessageType('https://didcomm.org/issue-credential/1.0/propose-credential')).toEqual({
+        documentUri: 'https://didcomm.org',
+        protocolName: 'issue-credential',
+        protocolVersion: '1.0',
+        messageName: 'propose-credential',
+        protocolUri: `https://didcomm.org/issue-credential/1.0`,
+      })
     })
   })
 })
