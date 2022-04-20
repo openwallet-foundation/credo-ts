@@ -76,7 +76,7 @@ describe('credentials', () => {
     })
 
     expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-      createdAt: expect.any(Date),
+      createdAt: expect.any(String),
       offerMessage: {
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
@@ -186,7 +186,7 @@ describe('credentials', () => {
     })
 
     expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-      createdAt: expect.any(Date),
+      createdAt: expect.any(String),
       offerMessage: {
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
@@ -316,7 +316,7 @@ describe('credentials', () => {
     })
 
     expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-      createdAt: expect.any(Date),
+      createdAt: expect.any(String),
       offerMessage: {
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
@@ -435,7 +435,7 @@ describe('credentials', () => {
     })
 
     expect(JsonTransformer.toJSON(aliceCredentialRecord)).toMatchObject({
-      createdAt: expect.any(Date),
+      createdAt: expect.any(String),
       offerMessage: {
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
