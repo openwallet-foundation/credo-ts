@@ -1243,7 +1243,7 @@ describe('CredentialService', () => {
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage)
+      const messageContext = new InboundMessageContext(revocationNotificationMessage, { connection })
 
       await revocationService.v1ProcessRevocationNotification(messageContext)
 
@@ -1341,7 +1341,7 @@ describe('CredentialService', () => {
         revocationFormat: 'indy',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage)
+      const messageContext = new InboundMessageContext(revocationNotificationMessage, { connection })
 
       await revocationService.v2ProcessRevocationNotification(messageContext)
 
@@ -1397,6 +1397,8 @@ describe('CredentialService', () => {
       const messageContext = new InboundMessageContext(revocationNotificationMessage, {
         connection: {
           id: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
+          // eslint-disable-next-line @typescript-eslint/no-empty-function
+          assertReady: () => {},
         } as ConnectionRecord,
       })
 
