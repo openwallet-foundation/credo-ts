@@ -61,6 +61,7 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
+export { agentDependencies }
 
 export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
