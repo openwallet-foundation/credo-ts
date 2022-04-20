@@ -53,7 +53,7 @@ describe('Present Proof', () => {
     })
 
     expect(JsonTransformer.toJSON(aliceProofRecord)).toMatchObject({
-      createdAt: expect.any(Date),
+      createdAt: expect.any(String),
       id: expect.any(String),
       proposalMessage: {
         '@type': 'https://didcomm.org/present-proof/1.0/propose-presentation',
@@ -108,7 +108,7 @@ describe('Present Proof', () => {
     })
 
     expect(JsonTransformer.toJSON(faberProofRecord)).toMatchObject({
-      createdAt: expect.any(Date),
+      createdAt: expect.any(String),
       state: ProofState.PresentationReceived,
       isVerified: true,
       presentationMessage: {
@@ -236,7 +236,7 @@ describe('Present Proof', () => {
 
     expect(JsonTransformer.toJSON(aliceProofRecord)).toMatchObject({
       id: expect.any(String),
-      createdAt: expect.any(Date),
+      createdAt: expect.any(String),
       requestMessage: {
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/present-proof/1.0/request-presentation',
