@@ -31,8 +31,8 @@ describe('version', () => {
     })
 
     it('returns false if the major and minor version digit of both versions are equal', () => {
-      expect(isFirstVersionHigherThanSecond([1, 0], [1, 10])).toBe(false)
-      expect(isFirstVersionHigherThanSecond([2, 10], [2, 11])).toBe(false)
+      expect(isFirstVersionHigherThanSecond([1, 0], [1, 0])).toBe(false)
+      expect(isFirstVersionHigherThanSecond([2, 10], [2, 10])).toBe(false)
     })
   })
 })
