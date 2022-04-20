@@ -13,9 +13,10 @@ const V2_INDY_PRESENTATION_REQUEST = 'hlindy/proof-req@v2.0'
 const V2_INDY_PRESENTATION = 'hlindy/proof@v2.0'
 const V1_PROOF = 'v1_proof'
 
-const LD_ATTACH_ID = '...'
-const LD_PROPOSE_FORMAT = '...'
-const LD_REQUEST_FORMAT = '...'
+const PRESENTATION_EXCHANGE_ATTACH_ID = 'presentationExchange'
+const V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL = 'dif/presentation-exchange/definitions@v1.0'
+const V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST = 'dif/presentation-exchange/definitions@v1.0'
+const V2_PRESENTATION_EXCHANGE_PRESENTATION = 'dif/presentation-exchange/submission@v1.0'
 
 const V2IndyProposeProofFormat: ProofFormatSpec = {
   attachmentId: INDY_ATTACH_ID,
@@ -23,8 +24,8 @@ const V2IndyProposeProofFormat: ProofFormatSpec = {
 }
 
 const V2JsonLdProposeProofFormat: ProofFormatSpec = {
-  attachmentId: LD_ATTACH_ID,
-  format: LD_PROPOSE_FORMAT,
+  attachmentId: PRESENTATION_EXCHANGE_ATTACH_ID,
+  format: V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
 }
 
 const V2IndyRequestProofFormat: ProofFormatSpec = {
@@ -33,8 +34,8 @@ const V2IndyRequestProofFormat: ProofFormatSpec = {
 }
 
 const V2JsonLdRequestProofFormat: ProofFormatSpec = {
-  attachmentId: LD_ATTACH_ID,
-  format: LD_REQUEST_FORMAT,
+  attachmentId: PRESENTATION_EXCHANGE_ATTACH_ID,
+  format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
 }
 
 const V2IndyProofFormat: ProofFormatSpec = {
@@ -43,8 +44,8 @@ const V2IndyProofFormat: ProofFormatSpec = {
 }
 
 const V2JsonLdProofFormat: ProofFormatSpec = {
-  attachmentId: LD_ATTACH_ID,
-  format: LD_REQUEST_FORMAT,
+  attachmentId: PRESENTATION_EXCHANGE_ATTACH_ID,
+  format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
 }
 
 const V1IndyProofFormat: ProofFormatSpec = {
