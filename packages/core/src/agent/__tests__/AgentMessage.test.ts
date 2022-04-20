@@ -46,6 +46,17 @@ describe('AgentMessage', () => {
       await expect(MessageValidator.validate(message)).resolves.toBeUndefined()
     })
 
+    it('successfully validates if the message type minor version is higher than the supported message type', async () => {
+      const json = {
+        '@id': 'd61c7e3d-d4af-469b-8d42-33fd14262e17',
+        '@type': 'https://didcomm.org/fake-protocol/1.8/message',
+      }
+
+      const message = JsonTransformer.fromJSON(json, CustomProtocolMessage)
+
+      await expect(MessageValidator.validate(message)).resolves.toBeUndefined()
+    })
+
     it('throws a validation error if the message type major version differs from the supported message type', async () => {
       expect.assertions(1)
 

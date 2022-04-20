@@ -95,9 +95,6 @@ export function parseMessageType(messageType: string): ParsedMessageType {
  *  - majorVersion
  *  - messageName
  *
- * In addition it will make sure whether the incoming message minor version is equal to or less than the minor version of the
- * expected message type. Only if all of the above conditions are met, the method will return true.
- *
  * @example
  * const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.0/request')
  * const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
@@ -115,13 +112,8 @@ export function supportsIncomingMessageType(
   const majorVersionMatches = expectedMessageType.protocolMajorVersion === incomingMessageType.protocolMajorVersion
   const messageNameMatches = expectedMessageType.messageName === incomingMessageType.messageName
 
-  // Check if everything except for the minor version matches
-  if (!documentUriMatches || !protocolNameMatches || !majorVersionMatches || !messageNameMatches) {
-    return false
-  }
-
-  // Check if the minor version of the incoming message type is lower or equal to the expected message type
-  return incomingMessageType.protocolMinorVersion <= expectedMessageType.protocolMinorVersion
+  // Everything besides the minor version must match
+  return documentUriMatches && protocolNameMatches && majorVersionMatches && messageNameMatches
 }
 
 export function canHandleMessageType(messageClass: { type: ParsedMessageType }, messageType: string): boolean {

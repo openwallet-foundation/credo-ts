@@ -131,6 +131,13 @@ describe('messageType', () => {
       expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(true)
     })
 
+    test('returns true when the document uri, protocol name, major version all match and the minor version is higher than the expected minor version', () => {
+      const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.8/request')
+      const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
+
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(true)
+    })
+
     test('returns true when the document uri, protocol name, major version and minor version all match', () => {
       const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
       const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
@@ -175,6 +182,10 @@ describe('messageType', () => {
   describe('canHandleMessageType()', () => {
     test('returns true when the document uri, protocol name, major version all match and the minor version is lower than the expected minor version', () => {
       expect(canHandleMessageType(TestMessage, 'https://didcomm.org/fake-protocol/1.0/invitation')).toBe(true)
+    })
+
+    test('returns true when the document uri, protocol name, major version all match and the minor version is higher than the expected minor version', () => {
+      expect(canHandleMessageType(TestMessage, 'https://didcomm.org/fake-protocol/1.8/invitation')).toBe(true)
     })
 
     test('returns true when the document uri, protocol name, major version and minor version all match', () => {
