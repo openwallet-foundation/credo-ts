@@ -112,4 +112,8 @@ export class AgentConfig {
   public get connectionImageUrl() {
     return this.initConfig.connectionImageUrl
   }
+
+  public get autoUpdateStorageOnStartup() {
+    return this.initConfig.autoUpdateStorageOnStartup ?? false
+  }
 }

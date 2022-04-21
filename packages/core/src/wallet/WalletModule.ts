@@ -5,6 +5,8 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { InjectionSymbols } from '../constants'
+import { StorageUpdateService } from '../storage'
+import { CURRENT_FRAMEWORK_STORAGE_VERSION } from '../storage/migration/updates'
 
 import { Wallet } from './Wallet'
 import { WalletError } from './error/WalletError'
@@ -13,10 +15,17 @@ import { WalletNotFoundError } from './error/WalletNotFoundError'
 @scoped(Lifecycle.ContainerScoped)
 export class WalletModule {
   private wallet: Wallet
+  private storageUpdateService: StorageUpdateService
   private logger: Logger
+  private _walletConfig?: WalletConfig
 
-  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, agentConfig: AgentConfig) {
+  public constructor(
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
+    storageUpdateService: StorageUpdateService,
+    agentConfig: AgentConfig
+  ) {
     this.wallet = wallet
+    this.storageUpdateService = storageUpdateService
     this.logger = agentConfig.logger
   }
 
@@ -26,6 +35,10 @@ export class WalletModule {
 
   public get isProvisioned() {
     return this.wallet.isProvisioned
+  }
+
+  public get walletConfig() {
+    return this._walletConfig
   }
 
   public async initialize(walletConfig: WalletConfig): Promise<void> {
@@ -53,15 +66,23 @@ export class WalletModule {
   }
 
   public async createAndOpen(walletConfig: WalletConfig): Promise<void> {
+    // Always keep the wallet open, as we still need to store the storage version in the wallet.
     await this.wallet.createAndOpen(walletConfig)
+
+    this._walletConfig = walletConfig
+
+    // Store the storage version in the wallet
+    await this.storageUpdateService.setCurrentStorageVersion(CURRENT_FRAMEWORK_STORAGE_VERSION)
   }
 
   public async create(walletConfig: WalletConfig): Promise<void> {
-    await this.wallet.create(walletConfig)
+    await this.createAndOpen(walletConfig)
+    await this.close()
   }
 
   public async open(walletConfig: WalletConfig): Promise<void> {
     await this.wallet.open(walletConfig)
+    this._walletConfig = walletConfig
   }
 
   public async close(): Promise<void> {
