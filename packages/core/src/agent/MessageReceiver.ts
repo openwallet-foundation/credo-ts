@@ -112,6 +112,9 @@ export class MessageReceiver {
       // with mediators when you don't have a public endpoint yet.
       session.connection = connection ?? undefined
       this.transportService.saveSession(session)
+    } else if (session) {
+      // No need to wait for session to stay open if we're not actually going to respond to the message.
+      await session.close()
     }
 
     const messageContext = new InboundMessageContext(message, {
