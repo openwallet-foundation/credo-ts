@@ -116,10 +116,11 @@ export function supportsIncomingMessageType(
   return documentUriMatches && protocolNameMatches && majorVersionMatches && messageNameMatches
 }
 
-export function canHandleMessageType(messageClass: { type: ParsedMessageType }, messageType: string): boolean {
-  const incomingMessageType = parseMessageType(messageType)
-
-  return supportsIncomingMessageType(incomingMessageType, messageClass.type)
+export function canHandleMessageType(
+  messageClass: { type: ParsedMessageType },
+  messageType: ParsedMessageType
+): boolean {
+  return supportsIncomingMessageType(messageClass.type, messageType)
 }
 
 /**

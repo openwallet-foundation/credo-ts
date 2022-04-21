@@ -90,7 +90,9 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
   public getMessageInstance<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>(
     messageClass: MessageClass
   ): InstanceType<MessageClass> {
-    if (!canHandleMessageType(messageClass, this.message['@type'] as string)) {
+    const messageType = parseMessageType(this.message['@type'] as string)
+
+    if (!canHandleMessageType(messageClass, messageType)) {
       throw new AriesFrameworkError('Provided message class type does not match type of stored message')
     }
 

@@ -18,7 +18,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
-import { canHandleMessageType } from '../../utils/messageType'
+import { canHandleMessageType, parseMessageType } from '../../utils/messageType'
 import { ConnectionInvitationMessage } from '../connections'
 import { ConnectionService } from '../connections/services'
 import { DiscloseMessage, DiscoverFeaturesModule } from '../discover-features'
@@ -227,7 +227,7 @@ export class RecipientModule {
         filter(
           (e) =>
             e.payload.connection?.id === mediator.connectionId &&
-            canHandleMessageType(DiscloseMessage, e.payload.message.type)
+            canHandleMessageType(DiscloseMessage, parseMessageType(e.payload.message.type))
         ),
         // Return whether the protocol is supported
         map((e) => {
