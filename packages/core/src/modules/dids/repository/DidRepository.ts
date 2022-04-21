@@ -12,11 +12,11 @@ export class DidRepository extends Repository<DidRecord> {
     super(DidRecord, storageService)
   }
 
-  public findByVerkey(verkey: string) {
-    return this.findSingleByQuery({ recipientKeys: [verkey] })
+  public findByRecipientKey(recipientKey: string) {
+    return this.findSingleByQuery({ recipientKeys: [recipientKey] })
   }
 
-  public findMultipleByVerkey(verkey: string) {
-    return this.findByQuery({ recipientKeys: [verkey] })
+  public findAllByRecipientKey(recipientKey: string) {
+    return this.findByQuery({ recipientKeys: [recipientKey] })
   }
 }

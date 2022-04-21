@@ -15,6 +15,7 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
+import { stringToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
@@ -236,10 +237,11 @@ export class MessageSender {
     if (queueService) {
       this.logger.debug(`Queue message for connection ${connection.id} (${connection.theirLabel})`)
 
+      // TODO We should add a method to return instances of Key rather than keys as a string
       const keys = {
-        recipientKeys: queueService.recipientKeys,
-        routingKeys: queueService.routingKeys || [],
-        senderKey: firstOurAuthenticationKey,
+        recipientKeys: queueService.recipientKeys.map(stringToInstanceOfKey),
+        routingKeys: queueService.routingKeys?.map(stringToInstanceOfKey) || [],
+        senderKey: stringToInstanceOfKey(firstOurAuthenticationKey),
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(payload, keys)
@@ -275,10 +277,11 @@ export class MessageSender {
 
     this.logger.debug(`Sending outbound message to service:`, { messageId: message.id, service })
 
+    // TODO We should add a method to return instances of Key rather than keys as a string
     const keys = {
-      recipientKeys: service.recipientKeys,
-      routingKeys: service.routingKeys || [],
-      senderKey,
+      recipientKeys: service.recipientKeys.map(stringToInstanceOfKey),
+      routingKeys: service.routingKeys?.map(stringToInstanceOfKey) || [],
+      senderKey: stringToInstanceOfKey(senderKey),
     }
 
     // Set return routing for message if requested

@@ -60,8 +60,8 @@ class Dispatcher {
         this.logger.error(`Error handling message with type ${message.type}`, {
           message: message.toJSON(),
           error,
-          senderVerkey: messageContext.senderVerkey,
-          recipientVerkey: messageContext.recipientVerkey,
+          senderKey: messageContext.senderKey,
+          recipientKey: messageContext.recipientKey,
           connectionId: messageContext.connection?.id,
         })
 

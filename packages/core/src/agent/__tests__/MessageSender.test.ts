@@ -7,8 +7,9 @@ import type { OutboundMessage, EncryptedMessage } from '../../types'
 import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
 import testLogger from '../../../tests/logger'
+import { KeyType } from '../../crypto'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { DidDocument, VerificationMethod } from '../../modules/dids'
+import { Key, DidDocument, VerificationMethod } from '../../modules/dids'
 import { DidCommService } from '../../modules/dids/domain/service/DidCommService'
 import { DidResolverService } from '../../modules/dids/services/DidResolverService'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
@@ -63,11 +64,13 @@ describe('MessageSender', () => {
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
 
+  const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
+  const senderKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
   const session = new DummyTransportSession('session-123')
   session.keys = {
-    recipientKeys: ['verkey'],
+    recipientKeys: [recipientKey],
     routingKeys: [],
-    senderKey: 'senderKey',
+    senderKey: senderKey,
   }
   session.inboundMessage = inboundMessage
   session.send = jest.fn()
@@ -84,12 +87,12 @@ describe('MessageSender', () => {
   const firstDidCommService = new DidCommService({
     id: `<did>;indy`,
     serviceEndpoint: 'https://www.first-endpoint.com',
-    recipientKeys: ['verkey'],
+    recipientKeys: [recipientKey.publicKeyBase58],
   })
   const secondDidCommService = new DidCommService({
     id: `<did>;indy`,
     serviceEndpoint: 'https://www.second-endpoint.com',
-    recipientKeys: ['verkey'],
+    recipientKeys: [recipientKey.publicKeyBase58],
   })
 
   let messageSender: MessageSender
@@ -378,9 +381,9 @@ describe('MessageSender', () => {
       const endpoint = 'https://example.com'
 
       const keys = {
-        recipientKeys: ['service.recipientKeys'],
+        recipientKeys: [recipientKey],
         routingKeys: [],
-        senderKey: 'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
+        senderKey: senderKey,
       }
       const result = await messageSender.packMessage({ message, keys, endpoint })
 

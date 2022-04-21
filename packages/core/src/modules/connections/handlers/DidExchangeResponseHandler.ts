@@ -7,6 +7,7 @@ import type { ConnectionService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
+import { DidKey } from '../../dids'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeResponseMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
@@ -34,9 +35,9 @@ export class DidExchangeResponseHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeResponseHandler>) {
-    const { recipientVerkey, senderVerkey, message } = messageContext
+    const { recipientKey, senderKey, message } = messageContext
 
-    if (!recipientVerkey || !senderVerkey) {
+    if (!recipientKey || !senderKey) {
       throw new AriesFrameworkError('Unable to process connection response without sender key or recipient key')
     }
 
@@ -52,8 +53,9 @@ export class DidExchangeResponseHandler implements Handler {
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
     // connection record did
-    if (!ourDidDocument.recipientKeys.includes(recipientVerkey)) {
-      throw new AriesFrameworkError(`Recipient key ${recipientVerkey} not found in did document recipient keys.`)
+    const didKey = new DidKey(recipientKey)
+    if (!ourDidDocument.recipientKeys.includes(didKey.did)) {
+      throw new AriesFrameworkError(`Recipient key ${didKey.did} not found in did document recipient keys.`)
     }
 
     const { protocol } = connectionRecord

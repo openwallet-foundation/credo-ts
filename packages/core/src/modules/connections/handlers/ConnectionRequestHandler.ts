@@ -7,6 +7,7 @@ import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { DidKey } from '../../dids'
 import { ConnectionRequestMessage } from '../messages'
 
 export class ConnectionRequestHandler implements Handler {
@@ -32,26 +33,29 @@ export class ConnectionRequestHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionRequestHandler>) {
-    if (!messageContext.recipientVerkey || !messageContext.senderVerkey) {
-      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
+    const { connection, recipientKey, senderKey } = messageContext
+
+    if (!recipientKey || !senderKey) {
+      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientKey')
     }
 
-    const { recipientVerkey } = messageContext
-    const outOfBandRecord = await this.outOfBandService.findByRecipientKey(recipientVerkey)
+    const recipientDidKey = new DidKey(recipientKey)
+    const outOfBandRecord = await this.outOfBandService.findByRecipientKey(recipientDidKey.did)
 
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError(`Out-of-band record for recipientKey ${recipientVerkey} was not found.`)
+      throw new AriesFrameworkError(`Out-of-band record for recipient key ${recipientDidKey.did} was not found.`)
     }
 
-    if (messageContext.connection && !outOfBandRecord.reusable) {
+    if (connection && !outOfBandRecord.reusable) {
       throw new AriesFrameworkError(
         `Connection record for non-reusable out-of-band ${outOfBandRecord.id} already exists.`
       )
     }
 
-    const didRecord = await this.didRepository.findByVerkey(messageContext.senderVerkey)
+    const senderDidKey = new DidKey(senderKey)
+    const didRecord = await this.didRepository.findByRecipientKey(senderDidKey.did)
     if (didRecord) {
-      throw new AriesFrameworkError(`Did record for sender key ${messageContext.senderVerkey} already exists.`)
+      throw new AriesFrameworkError(`Did record for sender key ${senderDidKey.did} already exists.`)
     }
 
     // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable

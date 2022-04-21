@@ -1,14 +1,16 @@
 import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
-import type { DecryptedMessageContext, PlaintextMessage, EncryptedMessage } from '../types'
+import type { PlaintextMessage, EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
+import type { DecryptedMessageContext } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionsModule } from '../modules/connections'
+import { DidKey } from '../modules/dids'
 import { OutOfBandService } from '../modules/oob/OutOfBandService'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { isValidJweStructure } from '../utils/JWE'
@@ -90,12 +92,13 @@ export class MessageReceiver {
     const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
 
     this.logger.info(
-      `Received message with type '${plaintextMessage['@type']}', recipient key ${recipientKey} and sender key ${senderKey}`,
+      `Received message with type '${plaintextMessage['@type']}', recipient key ${recipientKey?.fingerprint} and sender key ${senderKey?.fingerprint}`,
       plaintextMessage
     )
 
     const connection = await this.findConnectionByMessageKeys(decryptedMessage)
-    const outOfBand = (recipientKey && (await this.outOfBandService.findByRecipientKey(recipientKey))) || undefined
+    const outOfBand =
+      (recipientKey && (await this.outOfBandService.findByRecipientKey(new DidKey(recipientKey).did))) || undefined
 
     const message = await this.transformAndValidate(plaintextMessage, connection)
 
@@ -104,8 +107,8 @@ export class MessageReceiver {
       // To prevent unwanted usage of unready connections. Connections can still be retrieved from
       // Storage if the specific protocol allows an unready connection to be used.
       connection: connection?.isReady ? connection : undefined,
-      senderVerkey: senderKey,
-      recipientVerkey: recipientKey,
+      senderKey,
+      recipientKey,
     })
 
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
@@ -188,8 +191,13 @@ export class MessageReceiver {
     // We only fetch connections that are sent in AuthCrypt mode
     if (!recipientKey || !senderKey) return null
 
+    const senderDidKey = new DidKey(senderKey)
+    const recipientDidKey = new DidKey(recipientKey)
     // Try to find the did records that holds the sender and recipient keys
-    return this.connectionsModule.findByKeys({ senderKey, recipientKey })
+    return this.connectionsModule.findByKeys({
+      senderKey: senderDidKey.did,
+      recipientKey: recipientDidKey.did,
+    })
   }
 
   /**

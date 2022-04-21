@@ -23,6 +23,7 @@ import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
 import { DidPeer, IndyAgentService } from '../../dids'
 import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
+import { didKeyToVerkey, verkeyToDidKey } from '../../dids/helpers'
 import { PeerDidNumAlgo } from '../../dids/methods/peer/DidPeer'
 import { DidRepository, DidRecord } from '../../dids/repository'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
@@ -119,9 +120,9 @@ export class ConnectionService {
 
     const routing = config.routing
     const { did: peerDid } = await this.createDid({
-      recipientKeys: [routing.verkey],
       role: DidDocumentRole.Created,
       didDocument: convertToNewDidDocument(didDoc),
+      recipientKeys: [routing.verkey].map(verkeyToDidKey),
     })
 
     const { label, imageUrl, autoAcceptConnection } = config
@@ -190,8 +191,8 @@ export class ConnectionService {
 
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Received,
-      recipientKeys: theirVerkeys,
       didDocument: convertToNewDidDocument(message.connection.didDoc),
+      recipientKeys: theirVerkeys.map(verkeyToDidKey),
     })
 
     connectionRecord.theirDid = peerDid
@@ -236,7 +237,7 @@ export class ConnectionService {
               .map((s) => s.serviceEndpoint)
           )
         ),
-        verkey: outOfBandRecord.getTags().recipientKey,
+        verkey: didKeyToVerkey(outOfBandRecord.getTags().recipientKey),
         routingKeys: Array.from(
           new Set(
             outOfBandRecord.outOfBandMessage.services
@@ -244,6 +245,7 @@ export class ConnectionService {
               .map((s) => s.routingKeys)
               .filter((r): r is string[] => r !== undefined)
               .reduce((acc, curr) => acc.concat(curr), [])
+              .map(didKeyToVerkey)
           )
         ),
       }
@@ -251,9 +253,9 @@ export class ConnectionService {
 
     const didDoc = this.createDidDoc(didDocRouting)
     const { did: peerDid } = await this.createDid({
-      recipientKeys: [didDocRouting.verkey],
       role: DidDocumentRole.Created,
       didDocument: convertToNewDidDocument(didDoc),
+      recipientKeys: [didDocRouting.verkey].map(verkeyToDidKey),
     })
 
     const connection = new Connection({
@@ -267,9 +269,7 @@ export class ConnectionService {
       throw new AriesFrameworkError(`Connection record with id ${connectionRecord.id} does not have a thread id`)
     }
 
-    const invitationKey = outOfBandRecord.getTags().recipientKey
-
-    const signingKey = invitationKey
+    const signingKey = didKeyToVerkey(outOfBandRecord.getTags().recipientKey)
 
     const connectionResponse = new ConnectionResponseMessage({
       threadId: connectionRecord.threadId,
@@ -303,10 +303,10 @@ export class ConnectionService {
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionResponseMessage.type} start`, messageContext)
-    const { connection: connectionRecord, message, recipientVerkey, senderVerkey } = messageContext
+    const { connection: connectionRecord, message, recipientKey, senderKey } = messageContext
 
-    if (!recipientVerkey || !senderVerkey) {
-      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
+    if (!recipientKey || !senderKey) {
+      throw new AriesFrameworkError('Unable to process connection request without senderKey or recipientKey')
     }
 
     if (!connectionRecord) {
@@ -339,7 +339,7 @@ export class ConnectionService {
     // as the recipient key(s) in the connection invitation message
     const signerVerkey = message.connectionSig.signer
 
-    const invitationKey = outOfBandRecord.getTags().recipientKey
+    const invitationKey = didKeyToVerkey(outOfBandRecord.getTags().recipientKey)
 
     if (signerVerkey !== invitationKey) {
       throw new ConnectionProblemReportError(
@@ -360,8 +360,8 @@ export class ConnectionService {
 
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Received,
-      recipientKeys: theirVerkeys,
       didDocument: convertToNewDidDocument(connection.didDoc),
+      recipientKeys: theirVerkeys.map(verkeyToDidKey),
     })
 
     connectionRecord.theirDid = peerDid
@@ -411,11 +411,11 @@ export class ConnectionService {
    * @returns updated connection record
    */
   public async processAck(messageContext: InboundMessageContext<AckMessage>): Promise<ConnectionRecord> {
-    const { connection, recipientVerkey } = messageContext
+    const { connection, recipientKey } = messageContext
 
     if (!connection) {
       throw new AriesFrameworkError(
-        `Unable to process connection ack: connection for verkey ${recipientVerkey} not found`
+        `Unable to process connection ack: connection for recipient key ${recipientKey?.fingerprint} not found`
       )
     }
 
@@ -438,23 +438,23 @@ export class ConnectionService {
   public async processProblemReport(
     messageContext: InboundMessageContext<ConnectionProblemReportMessage>
   ): Promise<ConnectionRecord> {
-    const { message: connectionProblemReportMessage, recipientVerkey, senderVerkey } = messageContext
+    const { message: connectionProblemReportMessage, recipientKey, senderKey } = messageContext
 
-    this.logger.debug(`Processing connection problem report for verkey ${recipientVerkey}`)
+    this.logger.debug(`Processing connection problem report for verkey ${recipientKey?.fingerprint}`)
 
-    if (!recipientVerkey) {
-      throw new AriesFrameworkError('Unable to process connection problem report without recipientVerkey')
+    if (!recipientKey) {
+      throw new AriesFrameworkError('Unable to process connection problem report without recipientKey')
     }
 
     let connectionRecord
-    const ourDidRecords = await this.didRepository.findMultipleByVerkey(recipientVerkey)
+    const ourDidRecords = await this.didRepository.findAllByRecipientKey(recipientKey.publicKeyBase58)
     for (const ourDidRecord of ourDidRecords) {
       connectionRecord = await this.findByOurDid(ourDidRecord.id)
     }
 
     if (!connectionRecord) {
       throw new AriesFrameworkError(
-        `Unable to process connection problem report: connection for verkey ${recipientVerkey} not found`
+        `Unable to process connection problem report: connection for recipient key ${recipientKey.publicKeyBase58} not found`
       )
     }
 
@@ -463,9 +463,9 @@ export class ConnectionService {
       throw new AriesFrameworkError(`Did record with id ${connectionRecord.theirDid} not found.`)
     }
 
-    if (senderVerkey) {
-      if (!theirDidRecord?.getTags().recipientKeys?.includes(senderVerkey)) {
-        throw new AriesFrameworkError("Sender verkey doesn't match verkey of connection record")
+    if (senderKey) {
+      if (!theirDidRecord?.getTags().recipientKeys?.includes(senderKey.publicKeyBase58)) {
+        throw new AriesFrameworkError("Sender key doesn't match key of connection record")
       }
     }
 
@@ -504,21 +504,20 @@ export class ConnectionService {
         type: message.type,
       })
 
+      const recipientKey = messageContext.recipientKey && messageContext.recipientKey.publicKeyBase58
+      const senderKey = messageContext.senderKey && messageContext.senderKey.publicKeyBase58
+
       if (previousSentMessage) {
         // If we have previously sent a message, it is not allowed to receive an OOB/unpacked message
-        if (!messageContext.recipientVerkey) {
+        if (!recipientKey) {
           throw new AriesFrameworkError(
             'Cannot verify service without recipientKey on incoming message (received unpacked message)'
           )
         }
 
         // Check if the inbound message recipient key is present
-        // in the recipientKeys of previously sent message ~service decorator()
-
-        if (
-          !previousSentMessage?.service ||
-          !previousSentMessage.service.recipientKeys.includes(messageContext.recipientVerkey)
-        ) {
+        // in the recipientKeys of previously sent message ~service decorator
+        if (!previousSentMessage?.service || !previousSentMessage.service.recipientKeys.includes(recipientKey)) {
           throw new AriesFrameworkError(
             'Previously sent message ~service recipientKeys does not include current received message recipient key'
           )
@@ -527,7 +526,7 @@ export class ConnectionService {
 
       if (previousReceivedMessage) {
         // If we have previously received a message, it is not allowed to receive an OOB/unpacked/AnonCrypt message
-        if (!messageContext.senderVerkey) {
+        if (!senderKey) {
           throw new AriesFrameworkError(
             'Cannot verify service without senderKey on incoming message (received AnonCrypt or unpacked message)'
           )
@@ -535,11 +534,7 @@ export class ConnectionService {
 
         // Check if the inbound message sender key is present
         // in the recipientKeys of previously received message ~service decorator
-
-        if (
-          !previousReceivedMessage.service ||
-          !previousReceivedMessage.service.recipientKeys.includes(messageContext.senderVerkey)
-        ) {
+        if (!previousReceivedMessage.service || !previousReceivedMessage.service.recipientKeys.includes(senderKey)) {
           throw new AriesFrameworkError(
             'Previously received message ~service recipientKeys does not include current received message sender key'
           )
@@ -547,7 +542,7 @@ export class ConnectionService {
       }
 
       // If message is received unpacked/, we need to make sure it included a ~service decorator
-      if (!message.service && !messageContext.recipientVerkey) {
+      if (!message.service && !recipientKey) {
         throw new AriesFrameworkError('Message recipientKey must have ~service decorator')
       }
     }
@@ -695,7 +690,7 @@ export class ConnectionService {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys,
+        recipientKeys: recipientKeys.map(verkeyToDidKey),
       },
     })
 

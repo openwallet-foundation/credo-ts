@@ -22,6 +22,7 @@ import {
   ConnectionsModule,
 } from '../../modules/connections'
 import { DidCommService, DidsModule } from '../dids'
+import { verkeyToDidKey } from '../dids/helpers'
 import { serviceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { MediationRecipientService } from '../routing'
 
@@ -146,8 +147,8 @@ export class OutOfBandModule {
         id: `#inline-${index}`,
         priority: index,
         serviceEndpoint: endpoint,
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.verkey].map(verkeyToDidKey),
+        routingKeys: routing.routingKeys.map(verkeyToDidKey),
       })
     })
 
