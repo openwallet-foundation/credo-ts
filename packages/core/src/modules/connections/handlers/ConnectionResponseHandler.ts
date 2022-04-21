@@ -29,10 +29,10 @@ export class ConnectionResponseHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionResponseHandler>) {
-    const { recipientVerkey, senderVerkey, message } = messageContext
+    const { recipientKey, senderKey, message } = messageContext
 
-    if (!recipientVerkey || !senderVerkey) {
-      throw new AriesFrameworkError('Unable to process connection response without senderVerkey or recipientVerkey')
+    if (!recipientKey || !senderKey) {
+      throw new AriesFrameworkError('Unable to process connection response without senderKey or recipientKey')
     }
 
     const connectionRecord = await this.connectionService.getByThreadId(message.threadId)
@@ -40,15 +40,17 @@ export class ConnectionResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }
 
-    // Validate if recipient key is included in recipient keys of the did document resolved by
-    // connection record did
     const ourDidDocument = await this.resolveDidDocument(connectionRecord.did)
     if (!ourDidDocument) {
       throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved!`)
     }
 
-    if (!ourDidDocument.recipientKeys.includes(recipientVerkey)) {
-      throw new AriesFrameworkError(`Recipient key ${recipientVerkey} not found in did document recipient keys.`)
+    // Validate if recipient key is included in recipient keys of the did document resolved by
+    // connection record did
+    if (!ourDidDocument.recipientKeys.includes(recipientKey.publicKeyBase58)) {
+      throw new AriesFrameworkError(
+        `Recipient key ${recipientKey.publicKeyBase58} not found in did document recipient keys.`
+      )
     }
 
     const outOfBandRecord =

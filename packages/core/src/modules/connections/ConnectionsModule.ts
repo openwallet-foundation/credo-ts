@@ -221,9 +221,9 @@ export class ConnectionsModule {
   }
 
   public async findByKeys({ senderKey, recipientKey }: { senderKey: string; recipientKey: string }) {
-    const theirDidRecord = await this.didRepository.findByVerkey(senderKey)
+    const theirDidRecord = await this.didRepository.findByRecipientKey(senderKey)
     if (theirDidRecord) {
-      const ourDidRecord = await this.didRepository.findByVerkey(recipientKey)
+      const ourDidRecord = await this.didRepository.findByRecipientKey(recipientKey)
       if (ourDidRecord) {
         const connectionRecord = await this.connectionService.findSingleByQuery({
           did: ourDidRecord.id,

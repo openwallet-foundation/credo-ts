@@ -56,10 +56,7 @@ describe('BasicMessageService', () => {
         content: 'message',
       })
 
-      const messageContext = new InboundMessageContext(basicMessage, {
-        senderVerkey: 'senderKey',
-        recipientVerkey: 'recipientKey',
-      })
+      const messageContext = new InboundMessageContext(basicMessage)
 
       await basicMessageService.save(messageContext, mockConnectionRecord)
 

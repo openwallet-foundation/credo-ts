@@ -82,12 +82,6 @@ export interface PlaintextMessage {
   [key: string]: unknown
 }
 
-export interface DecryptedMessageContext {
-  plaintextMessage: PlaintextMessage
-  senderKey?: string
-  recipientKey?: string
-}
-
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   payload: T
   connection: ConnectionRecord

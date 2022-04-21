@@ -1,24 +1,25 @@
 import type { ConnectionRecord } from '../../modules/connections'
+import type { Key } from '../../modules/dids'
 import type { AgentMessage } from '../AgentMessage'
 
 import { AriesFrameworkError } from '../../error'
 
 export interface MessageContextParams {
   connection?: ConnectionRecord
-  senderVerkey?: string
-  recipientVerkey?: string
+  senderKey?: Key
+  recipientKey?: Key
 }
 
 export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
   public message: T
   public connection?: ConnectionRecord
-  public senderVerkey?: string
-  public recipientVerkey?: string
+  public senderKey?: Key
+  public recipientKey?: Key
 
   public constructor(message: T, context: MessageContextParams = {}) {
     this.message = message
-    this.recipientVerkey = context.recipientVerkey
-    this.senderVerkey = context.senderVerkey
+    this.recipientKey = context.recipientKey
+    this.senderKey = context.senderKey
     this.connection = context.connection
   }
 

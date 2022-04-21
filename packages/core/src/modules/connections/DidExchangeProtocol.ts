@@ -17,6 +17,7 @@ import { DidCommService, DidDocument, Key } from '../dids'
 import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
 import { createDidDocumentFromServices } from '../dids/domain/createPeerDidFromServices'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
+import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 import { DidKey } from '../dids/methods/key/DidKey'
 import { DidPeer, PeerDidNumAlgo } from '../dids/methods/peer/DidPeer'
 import { DidRecord, DidRepository } from '../dids/repository'
@@ -100,7 +101,7 @@ export class DidExchangeProtocol {
 
     // Create sign attachment containing didDoc
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(didDocument, [verkey])
+      const didDocAttach = await this.createSignedAttachment(didDocument, [verkey].map(didKeyToVerkey))
       message.didDoc = didDocAttach
     }
 
@@ -175,7 +176,7 @@ export class DidExchangeProtocol {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys: didDocument.recipientKeys,
+        recipientKeys: didDocument.recipientKeys.map(verkeyToDidKey),
       },
     })
 
@@ -236,7 +237,14 @@ export class DidExchangeProtocol {
     if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
       const didDocAttach = await this.createSignedAttachment(
         didDocument,
-        Array.from(new Set(services.map((s) => s.recipientKeys).reduce((acc, curr) => acc.concat(curr), [])))
+        Array.from(
+          new Set(
+            services
+              .map((s) => s.recipientKeys)
+              .reduce((acc, curr) => acc.concat(curr), [])
+              .map(didKeyToVerkey)
+          )
+        )
       )
       message.didDoc = didDocAttach
     }
@@ -293,7 +301,7 @@ export class DidExchangeProtocol {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys: didDocument.recipientKeys,
+        recipientKeys: didDocument.recipientKeys.map(verkeyToDidKey),
       },
     })
 
@@ -389,7 +397,7 @@ export class DidExchangeProtocol {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys: peerDid.didDocument.recipientKeys,
+        recipientKeys: peerDid.didDocument.recipientKeys.map(verkeyToDidKey),
       },
     })
 
