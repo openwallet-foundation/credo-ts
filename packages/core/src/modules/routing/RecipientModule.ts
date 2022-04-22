@@ -160,7 +160,7 @@ export class RecipientModule {
           await this.openMediationWebSocket(mediator)
           if (mediator.pickupStrategy === MediatorPickupStrategy.PickUpV2) {
             // Start Pickup v2 protocol to receive messages received while websocket offline
-            await this.sendStatusRequest({ mediatorId: mediator.id })
+            await this.mediationRecipientService.requestStatus({ mediatorId: mediator.id })
           }
         } catch (error) {
           this.logger.warn('Unable to re-open websocket connection to mediator', { error })
@@ -182,7 +182,7 @@ export class RecipientModule {
       case MediatorPickupStrategy.PickUpV2:
         this.agentConfig.logger.info(`Starting pickup of messages from mediator '${mediator.id}'`)
         await this.initiateImplicitPickup(mediator)
-        await this.sendStatusRequest({ mediatorId: mediator.id })
+        await this.mediationRecipientService.requestStatus({ mediatorId: mediator.id })
         break
       case MediatorPickupStrategy.PickUpV1: {
         // Explicit means polling every X seconds with batch message
@@ -379,29 +379,6 @@ export class RecipientModule {
     }
 
     return mediationRecord
-  }
-
-  public async sendStatusRequest(
-    config: {
-      mediatorId?: string
-      recipientKey?: string
-    } = {}
-  ) {
-    let mediator
-
-    if (config.mediatorId) {
-      const record = await this.mediationRecipientService.getById(config.mediatorId)
-      mediator = await this.connectionService.findById(record.id)
-    } else {
-      mediator = await this.findDefaultMediatorConnection()
-    }
-
-    const { recipientKey } = config
-    const statusRequest = new StatusRequestMessage({
-      recipientKey,
-    })
-    if (!mediator) throw new AriesFrameworkError('Could not find mediator connection')
-    return this.messageSender.sendMessage(createOutboundMessage(mediator, statusRequest))
   }
 
   // Register handlers for the several messages for the mediator.

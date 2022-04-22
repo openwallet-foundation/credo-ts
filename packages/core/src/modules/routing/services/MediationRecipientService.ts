@@ -6,9 +6,9 @@ import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
 import type {
-  MediationGrantMessage,
-  MediationDenyMessage,
   KeylistUpdateResponseMessage,
+  MediationDenyMessage,
+  MediationGrantMessage,
   MessageDeliveryMessage,
   StatusMessage,
 } from '../messages'
@@ -30,6 +30,7 @@ import { ProblemReportError } from '../../problem-reports'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { RoutingProblemReportReason } from '../error'
 import {
+  StatusRequestMessage,
   DeliveryRequestMessage,
   MessagesReceivedMessage,
   KeylistUpdateAction,
@@ -68,6 +69,31 @@ export class MediationRecipientService {
     this.messageSender = messageSender
     this.logger = config.logger
     this.messageReceiver = messageReveiver
+  }
+
+  public async requestStatus(
+    config: {
+      mediatorId?: string
+      recipientKey?: string
+    } = {}
+  ) {
+    let mediator
+    let mediatorRecord
+
+    if (config.mediatorId) {
+      const record = await this.getById(config.mediatorId)
+      mediator = await this.connectionService.findById(record.id)
+    } else {
+      mediatorRecord = await this.findDefaultMediator()
+      if (mediatorRecord) mediator = await this.connectionService.getById(mediatorRecord.connectionId)
+    }
+
+    const { recipientKey } = config
+    const statusRequest = new StatusRequestMessage({
+      recipientKey,
+    })
+    if (!mediator) throw new AriesFrameworkError('Could not find mediator connection')
+    return this.messageSender.sendMessage(createOutboundMessage(mediator, statusRequest))
   }
 
   public async createRequest(
