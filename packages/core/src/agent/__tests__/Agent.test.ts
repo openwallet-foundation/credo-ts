@@ -27,9 +27,9 @@ import { IndyWallet } from '../../wallet/IndyWallet'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
-import { EnvelopeService } from '../EnvelopeService'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
+import { EnvelopeService } from '../didcomm/v1/EnvelopeService'
 
 const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test')
 

@@ -16,7 +16,7 @@ export class BasicMessageHandler implements Handler {
     const connection = messageContext.connection
 
     if (!connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientKid} not found!`)
     }
 
     if (!connection.theirKey) {

@@ -1,8 +1,8 @@
 import type { Logger } from '../logger'
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
 import type { AgentMessageProcessedEvent } from './Events'
 import type { Handler } from './Handler'
+import type { DIDCommV1Message } from './didcomm/v1/DIDCommV1Message'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -41,7 +41,7 @@ class Dispatcher {
       throw new AriesFrameworkError(`No handler for message type "${message.type}" found`)
     }
 
-    let outboundMessage: OutboundMessage<AgentMessage> | OutboundServiceMessage<AgentMessage> | void
+    let outboundMessage: OutboundMessage<DIDCommV1Message> | OutboundServiceMessage<DIDCommV1Message> | void
 
     try {
       outboundMessage = await handler.handle(messageContext)
@@ -60,8 +60,8 @@ class Dispatcher {
         this.logger.error(`Error handling message with type ${message.type}`, {
           message: message.toJSON(),
           error,
-          senderVerkey: messageContext.senderVerkey,
-          recipientVerkey: messageContext.recipientVerkey,
+          senderVerkey: messageContext.senderKid,
+          recipientVerkey: messageContext.recipientKid,
           connectionId: messageContext.connection?.id,
         })
 
@@ -98,7 +98,7 @@ class Dispatcher {
     }
   }
 
-  public getMessageClassForType(messageType: string): typeof AgentMessage | undefined {
+  public getMessageClassForType(messageType: string): typeof DIDCommV1Message | undefined {
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
         if (MessageClass.type === messageType) return MessageClass
@@ -112,7 +112,7 @@ class Dispatcher {
    */
   public get supportedMessageTypes() {
     return this.handlers
-      .reduce<typeof AgentMessage[]>((all, cur) => [...all, ...cur.supportedMessages], [])
+      .reduce<typeof DIDCommV1Message[]>((all, cur) => [...all, ...cur.supportedMessages], [])
       .map((m) => m.type)
   }
 

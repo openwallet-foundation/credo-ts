@@ -2,8 +2,8 @@ import type { Wallet } from '../../../wallet/Wallet'
 import type { Routing } from '../services/ConnectionService'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
-import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
@@ -367,8 +367,8 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {
-        senderVerkey: theirVerkey,
-        recipientVerkey: 'my-key',
+        senderKid: theirVerkey,
+        recipientKid: 'my-key',
       })
 
       const processedConnection = await connectionService.processRequest(messageContext)
@@ -391,8 +391,8 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {
-        recipientVerkey: 'test-verkey',
-        senderVerkey: 'sender-verkey',
+        recipientKid: 'test-verkey',
+        senderKid: 'sender-verkey',
       })
 
       mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(null))
@@ -436,8 +436,8 @@ describe('ConnectionService', () => {
 
       const messageContext = new InboundMessageContext(connectionRequest, {
         connection: connectionRecord,
-        senderVerkey: theirVerkey,
-        recipientVerkey: 'my-key',
+        senderKid: theirVerkey,
+        recipientKid: 'my-key',
       })
 
       const processedConnection = await connectionService.processRequest(messageContext, myRouting)
@@ -463,8 +463,8 @@ describe('ConnectionService', () => {
       )
 
       const inboundMessage = new InboundMessageContext(jest.fn()(), {
-        senderVerkey: 'senderVerkey',
-        recipientVerkey: 'recipientVerkey',
+        senderKid: 'senderVerkey',
+        recipientKid: 'recipientVerkey',
       })
 
       return expect(connectionService.processRequest(inboundMessage)).rejects.toThrowError(
@@ -496,8 +496,8 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {
-        recipientVerkey,
-        senderVerkey: 'sender-verkey',
+        recipientKid: recipientVerkey,
+        senderKid: 'sender-verkey',
       })
 
       return expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
@@ -529,8 +529,8 @@ describe('ConnectionService', () => {
 
       const messageContext = new InboundMessageContext(connectionRequest, {
         connection: connectionRecord,
-        senderVerkey: 'their-verkey',
-        recipientVerkey: 'my-key',
+        senderKid: 'their-verkey',
+        recipientKid: 'my-key',
       })
 
       expect(connectionService.processRequest(messageContext)).rejects.toThrowError(
@@ -647,9 +647,9 @@ describe('ConnectionService', () => {
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        senderVerkey: connectionRecord.theirKey!,
+        senderKid: connectionRecord.theirKey!,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        recipientVerkey: connectionRecord.myKey!,
+        recipientKid: connectionRecord.myKey!,
       })
 
       const processedConnection = await connectionService.processResponse(messageContext)
@@ -663,8 +663,8 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const inboundMessage = new InboundMessageContext(jest.fn()(), {
-        senderVerkey: 'senderVerkey',
-        recipientVerkey: 'recipientVerkey',
+        senderKid: 'senderVerkey',
+        recipientKid: 'recipientVerkey',
       })
 
       mockFunction(connectionRepository.findByVerkey).mockReturnValue(
@@ -720,9 +720,9 @@ describe('ConnectionService', () => {
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        senderVerkey: connectionRecord.theirKey!,
+        senderKid: connectionRecord.theirKey!,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        recipientVerkey: connectionRecord.myKey!,
+        recipientKid: connectionRecord.myKey!,
       })
 
       return expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
@@ -746,8 +746,8 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionResponse, {
-        recipientVerkey: 'test-verkey',
-        senderVerkey: 'sender-verkey',
+        recipientKid: 'test-verkey',
+        senderKid: 'sender-verkey',
       })
       mockFunction(connectionRepository.findByVerkey).mockReturnValue(Promise.resolve(null))
 
@@ -788,8 +788,8 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionResponse, {
-        senderVerkey: 'senderVerkey',
-        recipientVerkey: 'recipientVerkey',
+        senderKid: 'senderVerkey',
+        recipientKid: 'recipientVerkey',
       })
 
       return expect(connectionService.processResponse(messageContext)).rejects.toThrowError(
@@ -837,7 +837,7 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(ack, {
-        recipientVerkey: 'test-verkey',
+        recipientKid: 'test-verkey',
       })
 
       return expect(connectionService.processAck(messageContext)).rejects.toThrowError(
@@ -859,7 +859,7 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(ack, {
-        recipientVerkey: 'test-verkey',
+        recipientKid: 'test-verkey',
         connection,
       })
 
@@ -882,7 +882,7 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(ack, {
-        recipientVerkey: 'test-verkey',
+        recipientKid: 'test-verkey',
         connection,
       })
 
@@ -896,7 +896,7 @@ describe('ConnectionService', () => {
     it('should not throw an error when a connection record with state complete is present in the messageContext', () => {
       expect.assertions(1)
 
-      const messageContext = new InboundMessageContext(new AgentMessage(), {
+      const messageContext = new InboundMessageContext(new DIDCommV1Message(), {
         connection: getMockConnection({ state: ConnectionState.Complete }),
       })
 
@@ -906,7 +906,7 @@ describe('ConnectionService', () => {
     it('should throw an error when a connection record is present and state not complete in the messageContext', () => {
       expect.assertions(1)
 
-      const messageContext = new InboundMessageContext(new AgentMessage(), {
+      const messageContext = new InboundMessageContext(new DIDCommV1Message(), {
         connection: getMockConnection({ state: ConnectionState.Invited }),
       })
 
@@ -918,7 +918,7 @@ describe('ConnectionService', () => {
     it('should not throw an error when no connection record is present in the messageContext and no additional data, but the message has a ~service decorator', () => {
       expect.assertions(1)
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       message.setService({
         recipientKeys: [],
         serviceEndpoint: '',
@@ -935,29 +935,29 @@ describe('ConnectionService', () => {
       const senderKey = 'senderKey'
       const recipientKey = 'recipientKey'
 
-      const previousSentMessage = new AgentMessage()
+      const previousSentMessage = new DIDCommV1Message()
       previousSentMessage.setService({
         recipientKeys: [recipientKey],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const previousReceivedMessage = new AgentMessage()
+      const previousReceivedMessage = new DIDCommV1Message()
       previousReceivedMessage.setService({
         recipientKeys: [senderKey],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       message.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
       })
       const messageContext = new InboundMessageContext(message, {
-        recipientVerkey: recipientKey,
-        senderVerkey: senderKey,
+        recipientKid: recipientKey,
+        senderKid: senderKey,
       })
 
       expect(() =>
@@ -968,17 +968,17 @@ describe('ConnectionService', () => {
       ).not.toThrow()
     })
 
-    it('should throw an error when previousSentMessage is present, but recipientVerkey is not ', () => {
+    it('should throw an error when previousSentMessage is present, but recipientKid is not ', () => {
       expect.assertions(1)
 
-      const previousSentMessage = new AgentMessage()
+      const previousSentMessage = new DIDCommV1Message()
       previousSentMessage.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       const messageContext = new InboundMessageContext(message)
 
       expect(() =>
@@ -993,16 +993,16 @@ describe('ConnectionService', () => {
 
       const recipientKey = 'recipientKey'
 
-      const previousSentMessage = new AgentMessage()
+      const previousSentMessage = new DIDCommV1Message()
       previousSentMessage.setService({
         recipientKeys: ['anotherKey'],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       const messageContext = new InboundMessageContext(message, {
-        recipientVerkey: recipientKey,
+        recipientKid: recipientKey,
       })
 
       expect(() =>
@@ -1014,17 +1014,17 @@ describe('ConnectionService', () => {
       )
     })
 
-    it('should throw an error when previousReceivedMessage is present, but senderVerkey is not ', () => {
+    it('should throw an error when previousReceivedMessage is present, but senderKid is not ', () => {
       expect.assertions(1)
 
-      const previousReceivedMessage = new AgentMessage()
+      const previousReceivedMessage = new DIDCommV1Message()
       previousReceivedMessage.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       const messageContext = new InboundMessageContext(message)
 
       expect(() =>
@@ -1039,16 +1039,16 @@ describe('ConnectionService', () => {
 
       const senderKey = 'senderKey'
 
-      const previousReceivedMessage = new AgentMessage()
+      const previousReceivedMessage = new DIDCommV1Message()
       previousReceivedMessage.setService({
         recipientKeys: ['anotherKey'],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       const messageContext = new InboundMessageContext(message, {
-        senderVerkey: senderKey,
+        senderKid: senderKey,
       })
 
       expect(() =>

@@ -3,7 +3,7 @@ import type { CredReq } from 'indy-sdk'
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 
 export const INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID = 'libindy-cred-request-0'
@@ -15,7 +15,7 @@ interface RequestCredentialMessageOptions {
   attachments?: Attachment[]
 }
 
-export class RequestCredentialMessage extends AgentMessage {
+export class RequestCredentialMessage extends DIDCommV1Message {
   public constructor(options: RequestCredentialMessageOptions) {
     super()
 

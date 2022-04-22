@@ -14,6 +14,7 @@ import { container as baseContainer } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
+import { NobleKeyManager } from '../key-manager'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
@@ -74,6 +75,7 @@ export class Agent {
     this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
     this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
     this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
+    this.container.registerSingleton(InjectionSymbols.KeyManager, NobleKeyManager)
 
     this.logger.info('Creating agent with config', {
       ...initialConfig,

@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { Equals, IsObject, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import { EncryptedMessage } from '../../../types'
 
 export interface ForwardMessageOptions {
@@ -13,7 +13,7 @@ export interface ForwardMessageOptions {
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0094-cross-domain-messaging/README.md#corerouting10forward
  */
-export class ForwardMessage extends AgentMessage {
+export class ForwardMessage extends DIDCommV1Message {
   /**
    * Create new ForwardMessage instance.
    *

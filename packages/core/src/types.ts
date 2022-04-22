@@ -1,4 +1,5 @@
-import type { AgentMessage } from './agent/AgentMessage'
+import type { DIDCommVersion } from './agent/didcomm/index'
+import type { DIDCommV1Message } from './agent/didcomm/v1/DIDCommV1Message'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
@@ -35,6 +36,12 @@ export interface WalletExportImportConfig {
   path: string
 }
 
+export interface ValueTransferConfig {
+  getter?: string
+  giver?: string
+  witness?: string
+}
+
 export type EncryptedMessage = {
   protected: unknown
   iv: unknown
@@ -57,6 +64,7 @@ export interface InitConfig {
   autoAcceptProofs?: AutoAcceptProof
   autoAcceptCredentials?: AutoAcceptCredential
   logger?: Logger
+  didCommVersion: DIDCommVersion
   didCommMimeType?: DidCommMimeType
 
   indyLedgers?: IndyPoolConfig[]
@@ -71,6 +79,7 @@ export interface InitConfig {
 
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string
+  valueTransferConfig?: ValueTransferConfig
 }
 
 export interface PlaintextMessage {
@@ -85,12 +94,12 @@ export interface DecryptedMessageContext {
   recipientKey?: string
 }
 
-export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
+export interface OutboundMessage<T extends DIDCommV1Message = DIDCommV1Message> {
   payload: T
   connection: ConnectionRecord
 }
 
-export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {
+export interface OutboundServiceMessage<T extends DIDCommV1Message = DIDCommV1Message> {
   payload: T
   service: DidCommService
   senderKey: string

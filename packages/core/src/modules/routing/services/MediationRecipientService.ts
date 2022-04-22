@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
@@ -293,7 +293,7 @@ export class MediationRecipientService {
   }
 }
 
-export interface MediationProtocolMsgReturnType<MessageType extends AgentMessage> {
+export interface MediationProtocolMsgReturnType<MessageType extends DIDCommV1Message> {
   message: MessageType
   mediationRecord: MediationRecord
 }

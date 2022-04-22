@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../agent/didcomm/v1/AgentMessage'
 import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
@@ -88,7 +88,7 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
     }
   }
 
-  public getMessageInstance<MessageClass extends typeof AgentMessage = typeof AgentMessage>(
+  public getMessageInstance<MessageClass extends typeof DIDCommV1Message = typeof DIDCommV1Message>(
     messageClass: MessageClass
   ): InstanceType<MessageClass> {
     if (messageClass.type !== this.message['@type']) {

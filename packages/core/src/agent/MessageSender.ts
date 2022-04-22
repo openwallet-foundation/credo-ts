@@ -2,9 +2,9 @@ import type { ConnectionRecord } from '../modules/connections'
 import type { DidCommService, IndyAgentService } from '../modules/dids/domain/service'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
-import type { EnvelopeKeys } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
+import type { DIDCommV1Message } from './didcomm'
+import type { EnvelopeKeys } from './didcomm/v1/EnvelopeService'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -16,8 +16,8 @@ import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 
-import { EnvelopeService } from './EnvelopeService'
 import { TransportService } from './TransportService'
+import { EnvelopeService } from './didcomm/v1/EnvelopeService'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -58,7 +58,7 @@ export class MessageSender {
     endpoint,
   }: {
     keys: EnvelopeKeys
-    message: AgentMessage
+    message: DIDCommV1Message
     endpoint: string
   }): Promise<OutboundPackage> {
     const encryptedMessage = await this.envelopeService.packMessage(message, keys)
@@ -70,7 +70,7 @@ export class MessageSender {
     }
   }
 
-  private async sendMessageToSession(session: TransportSession, message: AgentMessage) {
+  private async sendMessageToSession(session: TransportSession, message: DIDCommV1Message) {
     this.logger.debug(`Existing ${session.type} transport session has been found.`, {
       keys: session.keys,
     })
@@ -242,7 +242,7 @@ export class MessageSender {
     returnRoute,
     connectionId,
   }: {
-    message: AgentMessage
+    message: DIDCommV1Message
     service: DidCommService
     senderKey: string
     returnRoute?: boolean

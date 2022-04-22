@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { LinkedAttachment } from '../../../utils/LinkedAttachment'
@@ -861,7 +861,7 @@ export interface DeleteCredentialOptions {
   deleteAssociatedCredential: boolean
 }
 
-export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
+export interface CredentialProtocolMsgReturnType<MessageType extends DIDCommV1Message> {
   message: MessageType
   credentialRecord: CredentialRecord
 }

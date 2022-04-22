@@ -1,11 +1,11 @@
-import type { BaseMessageConstructor } from '../../agent/BaseMessage'
+import type { DIDComV1BaseMessageConstructor } from '../../agent/didcomm/v1/DIDCommV1BaseMessage'
 
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
 
 import { L10nDecorator } from './L10nDecorator'
 
-export function L10nDecorated<T extends BaseMessageConstructor>(Base: T) {
+export function L10nDecorated<T extends DIDComV1BaseMessageConstructor>(Base: T) {
   class L10nDecoratorExtension extends Base {
     @Expose({ name: '~l10n' })
     @Type(() => L10nDecorator)

@@ -1,14 +1,14 @@
-import type { Logger } from '../logger'
-import type { DecryptedMessageContext, EncryptedMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
+import type { Logger } from '../../../logger'
+import type { DecryptedMessageContext, EncryptedMessage } from '../../../types'
+import type { DIDCommV1Message } from './AgentMessage'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { InjectionSymbols } from '../constants'
-import { ForwardMessage } from '../modules/routing/messages'
-import { Wallet } from '../wallet/Wallet'
-
-import { AgentConfig } from './AgentConfig'
+import { InjectionSymbols } from '../../../constants'
+import { ForwardMessage } from '../../../modules/routing/messages'
+import { JsonEncoder } from '../../../utils'
+import { Wallet } from '../../../wallet/Wallet'
+import { AgentConfig } from '../../AgentConfig'
 
 export interface EnvelopeKeys {
   recipientKeys: string[]
@@ -28,16 +28,17 @@ class EnvelopeService {
     this.config = agentConfig
   }
 
-  public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<EncryptedMessage> {
+  public async packMessage(payload: DIDCommV1Message, keys: EnvelopeKeys): Promise<EncryptedMessage> {
     const { routingKeys, senderKey } = keys
     let recipientKeys = keys.recipientKeys
 
     // pass whether we want to use legacy did sov prefix
     const message = payload.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
+    const messageBuffer = JsonEncoder.toBuffer(payload)
 
     this.logger.debug(`Pack outbound message ${message['@type']}`)
 
-    let encryptedMessage = await this.wallet.pack(message, recipientKeys, senderKey ?? undefined)
+    let encryptedMessage = await this.wallet.pack(messageBuffer, recipientKeys, senderKey ?? undefined)
 
     // If the message has routing keys (mediator) pack for each mediator
     for (const routingKey of routingKeys) {
@@ -50,9 +51,10 @@ class EnvelopeService {
       this.logger.debug('Forward message created', forwardMessage)
 
       const forwardJson = forwardMessage.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
+      const forwardBuffer = JsonEncoder.toBuffer(forwardJson)
 
       // Forward messages are anon packed
-      encryptedMessage = await this.wallet.pack(forwardJson, [routingKey], undefined)
+      encryptedMessage = await this.wallet.pack(forwardBuffer, [routingKey], undefined)
     }
 
     return encryptedMessage

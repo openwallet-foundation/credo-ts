@@ -1,11 +1,11 @@
-import type { BaseMessageConstructor } from '../../agent/BaseMessage'
+import type { DIDComV1BaseMessageConstructor } from '../../agent/didcomm/v1/DIDCommV1BaseMessage'
 
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
 
 import { Attachment } from './Attachment'
 
-export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {
+export function AttachmentDecorated<T extends DIDComV1BaseMessageConstructor>(Base: T) {
   class AttachmentDecoratorExtension extends Base {
     /**
      * The ~attach decorator is required for appending attachments to a preview

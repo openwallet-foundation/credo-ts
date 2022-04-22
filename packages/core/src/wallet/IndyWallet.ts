@@ -7,7 +7,7 @@ import type {
   WalletConfigRekey,
   KeyDerivationMethod,
 } from '../types'
-import type { Buffer } from '../utils/buffer'
+import { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo, DidConfig } from './Wallet'
 import type { default as Indy } from 'indy-sdk'
 
@@ -368,12 +368,12 @@ export class IndyWallet implements Wallet {
   }
 
   public async pack(
-    payload: Record<string, unknown>,
+    payload: Buffer,
     recipientKeys: string[],
     senderVerkey?: string
   ): Promise<EncryptedMessage> {
     try {
-      const messageRaw = JsonEncoder.toBuffer(payload)
+      const messageRaw = Buffer.isBuffer(payload) ? payload: JsonEncoder.toBuffer(payload)
       const packedMessage = await this.indy.packMessage(this.handle, messageRaw, recipientKeys, senderVerkey ?? null)
       return JsonEncoder.fromBuffer(packedMessage)
     } catch (error) {

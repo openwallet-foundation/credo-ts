@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsInt, IsOptional, Matches } from 'class-validator'
 
-import { MessageIdRegExp } from '../../agent/BaseMessage'
+import { MessageIdRegExp } from '../../agent/didcomm/validation'
 
 /**
  * Represents `~thread` decorator

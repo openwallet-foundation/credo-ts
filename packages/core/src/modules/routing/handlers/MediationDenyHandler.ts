@@ -13,7 +13,7 @@ export class MediationDenyHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<MediationDenyHandler>) {
     if (!messageContext.connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new Error(`Connection for verkey ${messageContext.recipientKid} not found!`)
     }
     await this.mediationRecipientService.processMediationDeny(messageContext)
   }

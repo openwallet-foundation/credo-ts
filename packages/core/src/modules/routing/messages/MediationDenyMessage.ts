@@ -1,6 +1,6 @@
 import { Equals } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 
 export interface MediationDenyMessageOptions {
   id: string
@@ -11,7 +11,7 @@ export interface MediationDenyMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#mediation-deny
  */
-export class MediationDenyMessage extends AgentMessage {
+export class MediationDenyMessage extends DIDCommV1Message {
   public constructor(options: MediationDenyMessageOptions) {
     super()
 

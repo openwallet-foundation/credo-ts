@@ -2,7 +2,7 @@ import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, ValidateNested, IsString, IsEnum, IsInstance } from 'class-validator'
 import { Verkey } from 'indy-sdk'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 
 export enum KeylistUpdateAction {
   add = 'add',
@@ -35,7 +35,7 @@ export interface KeylistUpdateMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist-update
  */
-export class KeylistUpdateMessage extends AgentMessage {
+export class KeylistUpdateMessage extends DIDCommV1Message {
   public constructor(options: KeylistUpdateMessageOptions) {
     super()
 

@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer'
 import { Equals, IsArray, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 
 export interface KeylistMessageOptions {
   id?: string
@@ -12,7 +12,7 @@ export interface KeylistMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist
  */
-export class KeylistMessage extends AgentMessage {
+export class KeylistMessage extends DIDCommV1Message {
   public constructor(options: KeylistMessageOptions) {
     super()
 

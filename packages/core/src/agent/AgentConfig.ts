@@ -112,4 +112,8 @@ export class AgentConfig {
   public get connectionImageUrl() {
     return this.initConfig.connectionImageUrl
   }
+
+  public get valueTransferConfig() {
+    return this.initConfig.valueTransferConfig
+  }
 }

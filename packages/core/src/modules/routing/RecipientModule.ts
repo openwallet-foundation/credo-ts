@@ -1,4 +1,4 @@
-import type { AgentMessageProcessedEvent } from '../../agent/Events'
+import type { AgentMessageV1ProcessedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
 import type { OutboundWebSocketClosedEvent } from '../../transport'
 import type { OutboundMessage } from '../../types'
@@ -219,7 +219,7 @@ export class RecipientModule {
     // Listen for response to our feature query
     const replaySubject = new ReplaySubject(1)
     this.eventEmitter
-      .observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
+      .observable<AgentMessageV1ProcessedEvent>(AgentEventTypes.AgentMessageV1Processed)
       .pipe(
         // Stop when the agent shuts down
         takeUntil(this.agentConfig.stop$),

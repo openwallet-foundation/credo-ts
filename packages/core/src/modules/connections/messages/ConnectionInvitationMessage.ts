@@ -2,7 +2,7 @@ import { Transform } from 'class-transformer'
 import { ArrayNotEmpty, Equals, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
 import { parseUrl } from 'query-string'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -30,7 +30,7 @@ export interface DIDInvitationOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#0-invitation-to-connect
  */
-export class ConnectionInvitationMessage extends AgentMessage {
+export class ConnectionInvitationMessage extends DIDCommV1Message {
   /**
    * Create new ConnectionInvitationMessage instance.
    * @param options

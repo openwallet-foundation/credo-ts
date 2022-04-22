@@ -2,8 +2,8 @@ import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
 import type { DecryptedMessageContext, PlaintextMessage, EncryptedMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
+import type { DIDCommV1Message } from './didcomm'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -18,9 +18,9 @@ import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
-import { EnvelopeService } from './EnvelopeService'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
+import { EnvelopeService } from './didcomm/v1/EnvelopeService'
 import { createOutboundMessage } from './helpers'
 import { InboundMessageContext } from './models/InboundMessageContext'
 
@@ -119,8 +119,8 @@ export class MessageReceiver {
       // To prevent unwanted usage of unready connections. Connections can still be retrieved from
       // Storage if the specific protocol allows an unready connection to be used.
       connection: connection?.isReady ? connection : undefined,
-      senderVerkey: senderKey,
-      recipientVerkey: recipientKey,
+      senderKid: senderKey,
+      recipientKid: recipientKey,
     })
     await this.dispatcher.dispatch(messageContext)
   }
@@ -159,8 +159,8 @@ export class MessageReceiver {
   private async transformAndValidate(
     plaintextMessage: PlaintextMessage,
     connection?: ConnectionRecord | null
-  ): Promise<AgentMessage> {
-    let message: AgentMessage
+  ): Promise<DIDCommV1Message> {
+    let message: DIDCommV1Message
     try {
       message = await this.transformMessage(plaintextMessage)
       await this.validateMessage(message)
@@ -225,7 +225,7 @@ export class MessageReceiver {
    *
    * @param message the plaintext message for which to transform the message in to a class instance
    */
-  private async transformMessage(message: PlaintextMessage): Promise<AgentMessage> {
+  private async transformMessage(message: PlaintextMessage): Promise<DIDCommV1Message> {
     // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
     replaceLegacyDidSovPrefixOnMessage(message)
 
@@ -246,7 +246,7 @@ export class MessageReceiver {
    * Validate an AgentMessage instance.
    * @param message agent message to validate
    */
-  private async validateMessage(message: AgentMessage) {
+  private async validateMessage(message: DIDCommV1Message) {
     try {
       await MessageValidator.validate(message)
     } catch (error) {

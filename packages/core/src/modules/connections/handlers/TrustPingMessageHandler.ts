@@ -17,9 +17,9 @@ export class TrustPingMessageHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<TrustPingMessageHandler>) {
-    const { connection, recipientVerkey } = messageContext
+    const { connection, recipientKid } = messageContext
     if (!connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${recipientKid} not found!`)
     }
 
     // TODO: This is better addressed in a middleware of some kind because

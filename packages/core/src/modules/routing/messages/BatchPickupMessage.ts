@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { Equals, IsInt } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 
 export interface BatchPickupMessageOptions {
   id?: string
@@ -13,7 +13,7 @@ export interface BatchPickupMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0212-pickup/README.md#batch-pickup
  */
-export class BatchPickupMessage extends AgentMessage {
+export class BatchPickupMessage extends DIDCommV1Message {
   /**
    * Create new BatchPickupMessage instance.
    *

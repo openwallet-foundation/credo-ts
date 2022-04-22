@@ -2,8 +2,8 @@ import type { DidDoc } from '../modules/connections/models'
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { IndyAgentService } from '../modules/dids/domain/service'
 import type { EncryptedMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
-import type { EnvelopeKeys } from './EnvelopeService'
+import type { DIDCommV1Message } from './didcomm'
+import type { EnvelopeKeys } from './didcomm/v1/EnvelopeService'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -64,7 +64,7 @@ export interface TransportSession {
   id: string
   type: string
   keys?: EnvelopeKeys
-  inboundMessage?: AgentMessage
+  inboundMessage?: DIDCommV1Message
   connection?: ConnectionRecord
   send(encryptedMessage: EncryptedMessage): Promise<void>
 }

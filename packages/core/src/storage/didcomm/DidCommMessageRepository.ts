@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../agent/didcomm/v1/AgentMessage'
 import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
@@ -42,7 +42,7 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
     await this.saveAgentMessage(options)
   }
 
-  public async getAgentMessage<MessageClass extends typeof AgentMessage = typeof AgentMessage>({
+  public async getAgentMessage<MessageClass extends typeof DIDCommV1Message = typeof DIDCommV1Message>({
     associatedRecordId,
     messageClass,
   }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass>> {
@@ -53,7 +53,7 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
 
     return record.getMessageInstance(messageClass)
   }
-  public async findAgentMessage<MessageClass extends typeof AgentMessage = typeof AgentMessage>({
+  public async findAgentMessage<MessageClass extends typeof DIDCommV1Message = typeof DIDCommV1Message>({
     associatedRecordId,
     messageClass,
   }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass> | null> {
@@ -68,11 +68,11 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
 
 export interface SaveAgentMessageOptions {
   role: DidCommMessageRole
-  agentMessage: AgentMessage
+  agentMessage: DIDCommV1Message
   associatedRecordId: string
 }
 
-export interface GetAgentMessageOptions<MessageClass extends typeof AgentMessage> {
+export interface GetAgentMessageOptions<MessageClass extends typeof DIDCommV1Message> {
   associatedRecordId: string
   messageClass: MessageClass
 }
