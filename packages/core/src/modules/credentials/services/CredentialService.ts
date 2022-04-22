@@ -4,7 +4,7 @@ import type { Logger } from '../../../logger'
 import type { LinkedAttachment } from '../../../utils/LinkedAttachment'
 import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
-import type { CredentialStateChangedEvent } from '../CredentialEvents'
+import type { CredentialStateChangedEvent, CredentialDeletedEvent } from '../CredentialEvents'
 import type { CredentialProblemReportMessage, ProposeCredentialMessageOptions } from '../messages'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -826,6 +826,13 @@ export class CredentialService {
     if (options?.deleteAssociatedCredential && credentialRecord.credentialId) {
       await this.indyHolderService.deleteCredential(credentialRecord.credentialId)
     }
+
+    this.eventEmitter.emit<CredentialDeletedEvent>({
+      type: CredentialEventTypes.CredentialDeleted,
+      payload: {
+        credentialRecord,
+      },
+    })
   }
 
   /**

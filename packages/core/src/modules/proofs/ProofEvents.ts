@@ -4,6 +4,7 @@ import type { ProofRecord } from './repository'
 
 export enum ProofEventTypes {
   ProofStateChanged = 'ProofStateChanged',
+  ProofDeleted = 'ProofDeleted',
 }
 
 export interface ProofStateChangedEvent extends BaseEvent {
@@ -11,5 +12,11 @@ export interface ProofStateChangedEvent extends BaseEvent {
   payload: {
     proofRecord: ProofRecord
     previousState: ProofState | null
+  }
+}
+export interface ProofDeletedEvent extends BaseEvent {
+  type: typeof ProofEventTypes.ProofDeleted
+  payload: {
+    proofRecord: ProofRecord
   }
 }

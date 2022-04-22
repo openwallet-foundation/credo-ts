@@ -3,7 +3,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
-import type { ProofStateChangedEvent } from '../ProofEvents'
+import type { ProofStateChangedEvent, ProofDeletedEvent } from '../ProofEvents'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
 import type { PresentationProblemReportMessage } from './../messages/PresentationProblemReportMessage'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
@@ -974,7 +974,14 @@ export class ProofService {
    */
   public async deleteById(proofId: string) {
     const proofRecord = await this.getById(proofId)
-    return this.proofRepository.delete(proofRecord)
+    await this.proofRepository.delete(proofRecord)
+
+    this.eventEmitter.emit<ProofDeletedEvent>({
+      type: ProofEventTypes.ProofDeleted,
+      payload: {
+        proofRecord,
+      },
+    })
   }
 
   /**

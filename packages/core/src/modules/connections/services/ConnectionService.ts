@@ -2,7 +2,7 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
-import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
+import type { ConnectionStateChangedEvent, ConnectionDeletedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
@@ -595,7 +595,14 @@ export class ConnectionService {
    */
   public async deleteById(connectionId: string) {
     const connectionRecord = await this.getById(connectionId)
-    return this.connectionRepository.delete(connectionRecord)
+    await this.connectionRepository.delete(connectionRecord)
+
+    this.eventEmitter.emit<ConnectionDeletedEvent>({
+      type: ConnectionEventTypes.ConnectionDeleted,
+      payload: {
+        connectionRecord,
+      },
+    })
   }
 
   /**
