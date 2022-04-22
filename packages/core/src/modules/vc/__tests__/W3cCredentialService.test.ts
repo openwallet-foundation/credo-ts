@@ -414,23 +414,5 @@ describe('W3cCredentialService', () => {
         expect(verifiablePresentation).toBeInstanceOf(W3cVerifiablePresentation)
       })
     })
-    describe('verifyPresentation', () => {
-      it('should verify the presentation successfully', async () => {
-        const vp = JsonTransformer.fromJSON(
-          BbsBlsSignature2020Fixtures.TEST_VP_DOCUMENT_SIGNED,
-          W3cVerifiablePresentation
-        )
-
-        const result = await w3cCredentialService.verifyPresentation({
-          presentation: vp,
-          proofType: 'Ed25519Signature2018',
-          challenge: 'c449df71-0eb5-4e2d-84cb-d6cd680579bd',
-          verificationMethod:
-            'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-        })
-        expect(result.verified).toBe(true)
-      })
-    })
-    xdescribe('storeCredential', () => {})
   })
 })
