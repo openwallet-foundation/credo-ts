@@ -73,7 +73,7 @@ const mockProofRecord = ({
       {
         format: {
           attachmentId: '123',
-          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
+          format: ATTACHMENT_FORMAT.V2_PRESENTATION.indy.format,
         },
         attachment: requestAttachment,
       },
@@ -136,7 +136,7 @@ describe('ProofService', () => {
           {
             format: {
               attachmentId: '123',
-              format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
+              format: ATTACHMENT_FORMAT.V2_PRESENTATION.indy.format,
             },
             attachment: requestAttachment,
           },

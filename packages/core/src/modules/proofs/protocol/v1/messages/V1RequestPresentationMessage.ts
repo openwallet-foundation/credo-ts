@@ -78,7 +78,7 @@ export class V1RequestPresentationMessage extends AgentMessage {
 
     return [
       {
-        format: new ProofFormatSpec({ format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format }),
+        format: new ProofFormatSpec({ format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format }),
         attachment: attachment,
       },
     ]

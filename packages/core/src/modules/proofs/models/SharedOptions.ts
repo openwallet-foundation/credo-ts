@@ -7,6 +7,10 @@ import type { PresentationExchangeProposalFormat } from '../formats/Presentation
 import type { ProofRequest } from '../formats/indy/models/ProofRequest'
 import type { RequestedCredentials, RequestedCredentialsOptions } from '../formats/indy/models/RequestedCredentials'
 import type { RetrievedCredentials } from '../formats/indy/models/RetrievedCredentials'
+import type {
+  RequestPresentation,
+  RequestPresentationOptions,
+} from '../formats/presentation-exchange/models/RequestPresentation'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 
 export interface ProposeProofFormats {
@@ -20,7 +24,7 @@ export interface RequestProofFormats {
   // If you want to propose an indy proof without attributes or
   // any of the other properties you should pass an empty object
   indy?: IndyRequestProofFormat
-  presentationExchange?: never // TBD
+  presentationExchange?: RequestPresentationOptions
 }
 
 export interface CreatePresentationFormats {
@@ -54,7 +58,7 @@ export interface RetrievedCredentialOptions {
 
 export interface ProofRequestFormats {
   indy?: ProofRequest | undefined
-  jsonLd?: undefined
+  presentationExchange?: RequestPresentation | undefined
 }
 
 export interface RequestedCredentialsFormats {

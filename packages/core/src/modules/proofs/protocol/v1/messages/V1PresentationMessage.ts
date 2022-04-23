@@ -69,7 +69,7 @@ export class V1PresentationMessage extends AgentMessage {
 
     return [
       {
-        format: new ProofFormatSpec({ format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format }),
+        format: new ProofFormatSpec({ format: ATTACHMENT_FORMAT.V2_PRESENTATION.indy.format }),
         attachment: attachment,
       },
     ]

@@ -7,7 +7,7 @@ import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
-import { V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST } from '../../../formats/ProofFormatTypes'
+import { ATTACHMENT_FORMAT } from '../../../formats/ProofFormats'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V2RequestPresentationMessage } from '../messages'
@@ -94,7 +94,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
+          format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.ldproof.format,
         },
       ],
       proposalsAttach: [
@@ -145,28 +145,60 @@ describe('Present Proof', () => {
       messageClass: V2RequestPresentationMessage,
     })
 
-    // expect(request).toMatchObject({
-    //   type: 'https://didcomm.org/present-proof/2.0/request-presentation',
-    //   formats: [
-    //     {
-    //       attachmentId: expect.any(String),
-    //       format: 'hlindy/proof-req@v2.0',
-    //     },
-    //   ],
-    //   requestPresentationsAttach: [
-    //     {
-    //       id: expect.any(String),
-    //       mimeType: 'application/json',
-    //       data: {
-    //         base64: expect.any(String),
-    //       },
-    //     },
-    //   ],
-    //   id: expect.any(String),
-    //   thread: {
-    //     threadId: faberProofRecord.threadId,
-    //   },
-    // })
+    expect(request).toMatchObject({
+      type: 'https://didcomm.org/present-proof/2.0/request-presentation',
+      id: expect.any(String),
+      formats: [
+        {
+          attachmentId: expect.any(String),
+          format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.ldproof.format,
+        },
+      ],
+      requestPresentationsAttach: [
+        {
+          id: expect.any(String),
+          mimeType: 'application/json',
+          data: {
+            json: {
+              options: {
+                challenge: expect.any(String),
+                domain: expect.any(String),
+              },
+              presentation_definition: {
+                input_descriptors: [
+                  {
+                    id: 'citizenship_input',
+                    name: 'US Passport',
+                    group: ['A'],
+                    schema: [
+                      {
+                        uri: expect.any(String),
+                      },
+                    ],
+                    constraints: {
+                      fields: [
+                        {
+                          path: expect.any(Array),
+                          filter: {
+                            type: expect.any(String),
+                            minimum: expect.any(String),
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+                format: {
+                  ldpVc: {
+                    proofType: ['Ed25519Signature2018'],
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    })
     expect(aliceProofRecord.id).not.toBeNull()
     expect(aliceProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,

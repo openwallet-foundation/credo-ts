@@ -84,7 +84,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format,
+          format: ATTACHMENT_FORMAT.V2_PRESENTATION_PROPOSAL.indy.format,
         },
       ],
       proposalsAttach: [
@@ -134,7 +134,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format,
+          format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format,
         },
       ],
       requestPresentationsAttach: [
@@ -185,7 +185,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
+          format: ATTACHMENT_FORMAT.V2_PRESENTATION.indy.format,
         },
       ],
       presentationsAttach: [
@@ -309,7 +309,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format,
+          format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format,
         },
       ],
       requestPresentationsAttach: [
@@ -365,7 +365,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
+          format: ATTACHMENT_FORMAT.V2_PRESENTATION.indy.format,
         },
       ],
       presentationsAttach: [

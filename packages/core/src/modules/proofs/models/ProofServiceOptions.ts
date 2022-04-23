@@ -30,7 +30,7 @@ export interface CreateProposalAsResponseOptions {
 // ----- Out Of Band Proof ----- //
 export interface CreateOutOfBandRequestOptions {
   protocolVersion: ProofProtocolVersion
-  proofFormats: ProposeProofFormats
+  proofFormats: ProposeProofFormats | RequestProofFormats
   willConfirm?: boolean
   goalCode?: string
   comment?: string
@@ -41,7 +41,7 @@ export interface CreateOutOfBandRequestOptions {
 export interface CreateRequestOptions {
   connectionRecord?: ConnectionRecord
   protocolVersion: ProofProtocolVersion
-  proofFormats: ProposeProofFormats
+  proofFormats: ProposeProofFormats | RequestProofFormats
   willConfirm?: boolean
   goalCode?: string
   comment?: string

@@ -11,6 +11,7 @@ import type {
   CreatePresentationFormatsOptions,
   CreatePresentationOptions,
   CreateProposalOptions,
+  CreateRequestAsResponseOptions,
   CreateRequestOptions,
   ProcessPresentationOptions,
 } from './models/ProofFormatServiceOptions'
@@ -56,4 +57,6 @@ export abstract class ProofFormatService {
   ): boolean
 
   abstract supportsFormat(formatIdentifier: string): boolean
+
+  abstract createRequestAsResponse(options: CreateRequestAsResponseOptions): Promise<ProofAttachmentFormat>
 }

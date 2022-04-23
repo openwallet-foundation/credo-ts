@@ -54,15 +54,15 @@ const V1IndyProofFormat: ProofFormatSpec = {
 }
 
 export const ATTACHMENT_FORMAT: V2ProofAttachmentFormat = {
-  V2_INDY_PRESENTATION_PROPOSAL: {
+  V2_PRESENTATION_PROPOSAL: {
     indy: V2IndyProposeProofFormat,
     ldproof: V2JsonLdProposeProofFormat,
   },
-  V2_INDY_PRESENTATION_REQUEST: {
+  V2_PRESENTATION_REQUEST: {
     indy: V2IndyRequestProofFormat,
     ldproof: V2JsonLdRequestProofFormat,
   },
-  V2_INDY_PRESENTATION: {
+  V2_PRESENTATION: {
     indy: V2IndyProofFormat,
     ldproof: V2JsonLdProofFormat,
   },

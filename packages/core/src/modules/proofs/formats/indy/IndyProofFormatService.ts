@@ -12,6 +12,7 @@ import type {
   CreatePresentationOptions,
   CreateProofAttachmentOptions,
   CreateProposalOptions,
+  CreateRequestAsResponseOptions,
   CreateRequestAttachmentOptions,
   CreateRequestOptions,
   ProcessPresentationOptions,
@@ -34,6 +35,7 @@ import { uuid } from '../../../../utils/uuid'
 import { Credential, CredentialUtils, IndyCredentialInfo } from '../../../credentials'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
+import { INDY_PROOF_REQUEST_ATTACHMENT_ID } from '../../protocol/v1/messages'
 import {
   PartialProof,
   RequestedPredicate,
@@ -44,7 +46,6 @@ import {
 } from '../../protocol/v1/models'
 import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import { ProofFormatService } from '../ProofFormatService'
-// import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../ProofFormats'
 import { ATTACHMENT_FORMAT } from '../ProofFormats'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
@@ -85,7 +86,7 @@ export class IndyProofFormatService extends ProofFormatService {
   private createRequestAttachment(options: CreateRequestAttachmentOptions): ProofAttachmentFormat {
     const format = new ProofFormatSpec({
       attachmentId: options.attachId,
-      format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format,
+      format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format,
     })
 
     const request = new ProofRequest(options.proofRequestOptions)
@@ -106,7 +107,7 @@ export class IndyProofFormatService extends ProofFormatService {
   private createProofAttachment(options: CreateProofAttachmentOptions): ProofAttachmentFormat {
     const format = new ProofFormatSpec({
       attachmentId: options.attachId,
-      format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format,
+      format: ATTACHMENT_FORMAT.V2_PRESENTATION_PROPOSAL.indy.format,
     })
 
     const attachment = new Attachment({
@@ -138,6 +139,28 @@ export class IndyProofFormatService extends ProofFormatService {
       attachId: options.attachId ?? uuid(),
       proofProposalOptions: preview,
     })
+  }
+
+  public async createRequestAsResponse(options: CreateRequestAsResponseOptions): Promise<ProofAttachmentFormat> {
+    if (!options.formats.indy) {
+      throw Error('Missing indy format to create proposal attachment format')
+    }
+
+    const attachId = options.attachId ?? uuid()
+
+    const format = new ProofFormatSpec({
+      attachmentId: attachId,
+      format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format,
+    })
+
+    const attachment = new Attachment({
+      id: attachId,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        base64: JsonEncoder.toBase64(options.formats.indy),
+      }),
+    })
+    return { format, attachment }
   }
 
   public async createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat> {
@@ -173,7 +196,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
     const format = new ProofFormatSpec({
       attachmentId,
-      format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
+      format: ATTACHMENT_FORMAT.V2_PRESENTATION.indy.format,
     })
 
     const attachment = new Attachment({
@@ -188,7 +211,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
     const requestFormat = options.presentation.request.find(
-      (x) => x.format.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format
+      (x) => x.format.format === ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format
     )
 
     if (!requestFormat) {
@@ -198,7 +221,7 @@ export class IndyProofFormatService extends ProofFormatService {
     }
 
     const proofFormat = options.presentation.proof.find(
-      (x) => x.format.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format
+      (x) => x.format.format === ATTACHMENT_FORMAT.V2_PRESENTATION.indy.format
     )
 
     if (!proofFormat) {
@@ -250,9 +273,9 @@ export class IndyProofFormatService extends ProofFormatService {
 
   public supportsFormat(formatIdentifier: string): boolean {
     const supportedFormats = [
-      ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format,
-      ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format,
-      ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
+      ATTACHMENT_FORMAT.V2_PRESENTATION_PROPOSAL.indy.format,
+      ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format,
+      ATTACHMENT_FORMAT.V2_PRESENTATION.indy.format,
     ]
     return supportedFormats.includes(formatIdentifier)
   }
@@ -269,10 +292,10 @@ export class IndyProofFormatService extends ProofFormatService {
     requestAttachments: ProofAttachmentFormat[]
   ) {
     const proposalAttachment = proposalAttachments.find(
-      (x) => x.format.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format
+      (x) => x.format.format === ATTACHMENT_FORMAT.V2_PRESENTATION_PROPOSAL.indy.format
     )?.attachment
     const requestAttachment = requestAttachments.find(
-      (x) => x.format.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format
+      (x) => x.format.format === ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format
     )?.attachment
 
     if (!proposalAttachment) {
@@ -524,21 +547,17 @@ export class IndyProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError('Indy attachment is missing to create proof request from proposal.')
     }
 
-    if (!indyConfig) {
-      throw new AriesFrameworkError('Indy config is missing to  create proof request from proposal.')
-    }
-
     const proposalJson = indyAttachment.getDataAsJson<PresentationPreview>() ?? null
 
     if (!proposalJson) {
       throw new AriesFrameworkError(`Presentation Preview is missing`)
     }
 
-    const nonce = indyConfig.nonce ?? (await uuid())
+    const nonce = indyConfig?.nonce ?? (await uuid())
 
     const proofRequest = new ProofRequest({
-      name: indyConfig.name,
-      version: indyConfig.version,
+      name: indyConfig?.name ?? 'Proof Request',
+      version: indyConfig?.version ?? '1.0',
       nonce: nonce,
     })
 

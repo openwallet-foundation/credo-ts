@@ -44,6 +44,7 @@ export class V2RequestPresentationMessage extends AgentMessage {
 
   public getAttachmentByFormatIdentifier(formatIdentifier: string) {
     const format = this.formats.find((x) => x.format === formatIdentifier)
+
     if (!format) {
       throw new AriesFrameworkError(
         `Expected to find a format entry of type: ${formatIdentifier}, but none could be found.`

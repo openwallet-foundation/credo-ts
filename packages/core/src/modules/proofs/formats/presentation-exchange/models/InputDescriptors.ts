@@ -1,4 +1,4 @@
-import { Expose } from 'class-transformer'
+import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString } from 'class-validator'
 
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
@@ -65,6 +65,7 @@ export class InputDescriptorsSchema {
     this.inputDescriptors = options.inputDescriptors
   }
 
+  @Type(() => InputDescriptors)
   @Expose({ name: 'input_descriptors' })
   public inputDescriptors: InputDescriptors[]
 
