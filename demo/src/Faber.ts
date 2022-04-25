@@ -1,7 +1,7 @@
 /* eslint-disable import/no-unresolved */
 /* eslint-disable import/no-duplicates */
 /* eslint-disable import/order */
-import type { CredDef, Schema } from 'indy-sdk-react-native'
+import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import type { ConnectionRecord } from '@aries-framework/core'
 import { CredentialProtocolVersion } from '@aries-framework/core'
@@ -67,18 +67,18 @@ export class Faber extends BaseAgent {
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attributes)
     this.ui.updateBottomBar(greenText('\nRegistering schema...\n', false))
     const schema = await this.agent.ledger.registerSchema(schemaTemplate)
-    this.ui.updateBottomBar('\nSchema registerd!\n')
+    this.ui.updateBottomBar('\nSchema registered!\n')
     return schema
   }
 
-  private async registerCredentialDefiniton(schema: Schema) {
+  private async registerCredentialDefinition(schema: Schema) {
     this.ui.updateBottomBar('\nRegistering credential definition...\n')
     this.credentialDefinition = await this.agent.ledger.registerCredentialDefinition({
       schema,
       tag: 'latest',
       supportRevocation: false,
     })
-    this.ui.updateBottomBar('\nCredential definition registerd!!\n')
+    this.ui.updateBottomBar('\nCredential definition registered!!\n')
     return this.credentialDefinition
   }
 
@@ -93,7 +93,7 @@ export class Faber extends BaseAgent {
 
   public async issueCredential() {
     const schema = await this.registerSchema()
-    const credDef = await this.registerCredentialDefiniton(schema)
+    const credDef = await this.registerCredentialDefinition(schema)
     const credentialPreview = this.getCredentialPreview()
     const connectionRecord = await this.getConnectionRecord()
 

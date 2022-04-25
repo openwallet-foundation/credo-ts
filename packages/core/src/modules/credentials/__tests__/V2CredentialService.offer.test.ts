@@ -28,6 +28,7 @@ import { V2CredentialService } from '../protocol/v2/V2CredentialService'
 import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
+import { RevocationService } from '../services'
 
 import { credDef, schema } from './fixtures'
 
@@ -82,6 +83,8 @@ describe('CredentialService', () => {
 
   let dispatcher: Dispatcher
   let credentialService: V2CredentialService
+  let revocationService: RevocationService
+
   beforeEach(async () => {
     credentialRepository = new CredentialRepositoryMock()
     indyIssuerService = new IndyIssuerServiceMock()
@@ -95,6 +98,7 @@ describe('CredentialService', () => {
     eventEmitter = new EventEmitter(agentConfig)
 
     dispatcher = new Dispatcher(messageSender, eventEmitter, agentConfig)
+    revocationService = new RevocationService(credentialRepository, eventEmitter, agentConfig)
 
     credentialService = new V2CredentialService(
       {
@@ -113,7 +117,8 @@ describe('CredentialService', () => {
         indyIssuerService,
         indyLedgerService,
         indyHolderService
-      )
+      ),
+      revocationService
     )
     mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
   })
@@ -283,6 +288,7 @@ describe('CredentialService', () => {
 
       const dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
       const mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
+      revocationService = new RevocationService(credentialRepository, eventEmitter, agentConfig)
 
       credentialService = new V2CredentialService(
         {
@@ -301,7 +307,8 @@ describe('CredentialService', () => {
           indyIssuerService,
           indyLedgerService,
           indyHolderService
-        )
+        ),
+        revocationService
       )
       // when
       const returnedCredentialRecord = await credentialService.processOffer(messageContext)

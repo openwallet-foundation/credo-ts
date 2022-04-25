@@ -293,25 +293,6 @@ describe('credentials', () => {
       })
 
       expect(JsonTransformer.toJSON(aliceCredentialExchangeRecord)).toMatchObject({
-        createdAt: expect.any(Date),
-        // offerMessage: {
-        //   '@id': expect.any(String),
-        //   '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
-        //   credential_preview: {
-        //     '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
-        //     attributes: [
-        //       {
-        //         name: 'name',
-        //         value: 'John',
-        //       },
-        //       {
-        //         name: 'age',
-        //         value: '99',
-        //       },
-        //     ],
-        //   },
-        //   'offers~attach': expect.any(Array),
-        // },
         state: CredentialState.OfferReceived,
       })
 

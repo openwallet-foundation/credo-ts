@@ -11,7 +11,7 @@ import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { DidCommService } from '../../domain/service/DidCommService'
 import { DidCommV2Service } from '../../domain/service/DidCommV2Service'
 
-export class IndyDidResolver implements DidResolver {
+export class SovDidResolver implements DidResolver {
   private indyLedgerService: IndyLedgerService
 
   public constructor(indyLedgerService: IndyLedgerService) {
@@ -73,6 +73,27 @@ export class IndyDidResolver implements DidResolver {
     }
   }
 
+  // Process Indy Attrib Endpoint Types according to: https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html > Read (Resolve) > DID Service Endpoint
+  private processEndpointTypes(types?: string[]) {
+    const expectedTypes = ['endpoint', 'did-communication', 'DIDComm']
+    const defaultTypes = ['endpoint', 'did-communication']
+
+    // Return default types if types "is NOT present [or] empty"
+    if (!types || types?.length <= 0) {
+      return defaultTypes
+    }
+
+    // Return default types if types "contain any other values"
+    for (const type of types) {
+      if (!expectedTypes.includes(type)) {
+        return defaultTypes
+      }
+    }
+
+    // Return provided types
+    return types
+  }
+
   private addServices(
     builder: DidDocumentBuilder,
     parsed: ParsedDid,
@@ -81,18 +102,22 @@ export class IndyDidResolver implements DidResolver {
   ) {
     const { endpoint, routingKeys, types, ...otherEndpoints } = endpoints
 
-    // If 'endpoint' type add id to the services array
     if (endpoint) {
-      builder.addService(
-        new DidDocumentService({
-          id: `${parsed.did}#endpoint`,
-          serviceEndpoint: endpoint,
-          type: 'endpoint',
-        })
-      )
+      const processedTypes = this.processEndpointTypes(types)
+
+      // If 'endpoint' included in types, add id to the services array
+      if (processedTypes.includes('endpoint')) {
+        builder.addService(
+          new DidDocumentService({
+            id: `${parsed.did}#endpoint`,
+            serviceEndpoint: endpoint,
+            type: 'endpoint',
+          })
+        )
+      }
 
       // If 'did-communication' included in types, add DIDComm v1 entry
-      if (types?.includes('did-communication')) {
+      if (processedTypes.includes('did-communication')) {
         builder.addService(
           new DidCommService({
             id: `${parsed.did}#did-communication`,
@@ -105,7 +130,7 @@ export class IndyDidResolver implements DidResolver {
         )
 
         // If 'DIDComm' included in types, add DIDComm v2 entry
-        if (types?.includes('DIDComm')) {
+        if (processedTypes.includes('DIDComm')) {
           builder
             .addService(
               new DidCommV2Service({

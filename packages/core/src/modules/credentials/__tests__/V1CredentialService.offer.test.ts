@@ -25,6 +25,7 @@ import { V1CredentialService } from '../protocol/v1/V1CredentialService'
 import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../protocol/v1/messages'
 import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
+import { RevocationService } from '../services'
 
 import { schema, credDef } from './fixtures'
 
@@ -83,6 +84,8 @@ describe('CredentialService', () => {
 
   let dispatcher: Dispatcher
   let credentialService: V1CredentialService
+  let revocationService: RevocationService
+
   beforeEach(async () => {
     credentialRepository = new CredentialRepositoryMock()
     indyIssuerService = new IndyIssuerServiceMock()
@@ -96,6 +99,8 @@ describe('CredentialService', () => {
     eventEmitter = new EventEmitter(agentConfig)
 
     dispatcher = new Dispatcher(messageSender, eventEmitter, agentConfig)
+    revocationService = new RevocationService(credentialRepository, eventEmitter, agentConfig)
+
     credentialService = new V1CredentialService(
       {
         getById: () => Promise.resolve(connection),
@@ -113,7 +118,8 @@ describe('CredentialService', () => {
         indyIssuerService,
         indyLedgerService,
         indyHolderService
-      )
+      ),
+      revocationService
     )
     mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
   })
@@ -283,7 +289,8 @@ describe('CredentialService', () => {
           indyIssuerService,
           indyLedgerService,
           indyHolderService
-        )
+        ),
+        revocationService
       )
       // when
       const returnedCredentialRecord = await credentialService.processOffer(messageContext)
