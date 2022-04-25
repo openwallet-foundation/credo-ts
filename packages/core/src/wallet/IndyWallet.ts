@@ -354,20 +354,25 @@ export class IndyWallet implements Wallet {
   }
 
   public async initPublicDid(didConfig: DidConfig) {
+    let bool = false;
     (await this.indy.listMyDidsWithMeta(this.handle)).forEach(element => {
       if (element.metadata == "Public") {
+        const did = element.did
+        const verkey = element.verkey
         this.publicDidInfo = {
-          element.did,
-          element.verkey,
+          did,
+          verkey,
         }
-        return
+        bool = true
       }
     });
-    const { did, verkey } = await this.createDid(didConfig)
-    this.indy.setDidMetadata(this.handle, did, "Public")
-    this.publicDidInfo = {
-      did,
-      verkey,
+    if (!bool) {
+      const { did, verkey } = await this.createDid(didConfig)
+      this.indy.setDidMetadata(this.handle, did, "Public")
+      this.publicDidInfo = {
+        did,
+        verkey,
+      };
     }
   }
 
