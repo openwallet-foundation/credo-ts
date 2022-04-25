@@ -21,18 +21,36 @@ export interface Wallet {
   export(exportConfig: WalletExportImportConfig): Promise<void>
   import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
 
+  createKey(options: CreateKeyOptions): Promise<Key>
+  sign(options: SignOptions): Promise<Buffer>
+  verify(options: VerifyOptions): Promise<boolean>
+
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>
   pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
   unpack(encryptedMessage: EncryptedMessage): Promise<DecryptedMessageContext>
-  sign(data: Buffer, verkey: string): Promise<Buffer>
-  verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean>
   generateNonce(): Promise<string>
 }
 
 export interface DidInfo {
   did: string
   verkey: string
+}
+
+export interface CreateKeyOptions {
+  keyType: KeyType
+  seed?: string
+}
+
+export interface SignOptions {
+  data: Buffer | Buffer[]
+  key: Key
+}
+
+export interface VerifyOptions {
+  data: Buffer | Buffer[]
+  key: Key
+  signature: Buffer
 }
 
 export interface DidConfig {
