@@ -46,6 +46,7 @@ import { CredentialProblemReportError, CredentialProblemReportReason } from '../
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { FORMAT_KEYS } from '../../formats/models/CredentialFormatServiceOptions'
 import { CredentialRepository, CredentialExchangeRecord } from '../../repository'
+import { RevocationService } from '../../services'
 import { CredentialService } from '../../services/CredentialService'
 
 import { CredentialMessageBuilder } from './CredentialMessageBuilder'
@@ -76,7 +77,8 @@ export class V2CredentialService extends CredentialService {
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
-    indyCredentialFormatService: IndyCredentialFormatService
+    indyCredentialFormatService: IndyCredentialFormatService,
+    revocationService: RevocationService
   ) {
     super(
       credentialRepository,
@@ -84,7 +86,8 @@ export class V2CredentialService extends CredentialService {
       dispatcher,
       agentConfig,
       mediationRecipientService,
-      didCommMessageRepository
+      didCommMessageRepository,
+      revocationService
     )
     this.connectionService = connectionService
     this.indyCredentialFormatService = indyCredentialFormatService

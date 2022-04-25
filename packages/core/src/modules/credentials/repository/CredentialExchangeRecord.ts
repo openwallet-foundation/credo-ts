@@ -3,6 +3,7 @@ import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import type { CredentialState } from '../CredentialState'
 import type { CredentialFormatType } from '../CredentialsModuleOptions'
+import type { RevocationNotification } from '../models/RevocationNotification'
 import type { CredentialMetadata } from './CredentialMetadataTypes'
 
 import { Type } from 'class-transformer'
@@ -13,6 +14,8 @@ import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
 import { CredentialInfo } from '../protocol/v1/models/CredentialInfo'
+
+import { CredentialMetadataKeys } from './CredentialMetadataTypes'
 
 export interface CredentialExchangeRecordProps {
   id?: string
@@ -26,6 +29,7 @@ export interface CredentialExchangeRecordProps {
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential
   linkedAttachments?: Attachment[]
+  revocationNotification?: RevocationNotification
   errorMessage?: string
   credentials?: CredentialRecordBinding[]
 }
@@ -41,6 +45,9 @@ export type DefaultCredentialTags = {
 export interface CredentialRecordBinding {
   credentialRecordType: CredentialFormatType
   credentialRecordId: string
+  credentialId?: string
+  indyRevocationRegistryId?: string
+  indyCredentialRevocationId?: string
 }
 
 export class CredentialExchangeRecord extends BaseRecord<
@@ -52,6 +59,7 @@ export class CredentialExchangeRecord extends BaseRecord<
   public threadId!: string
   public state!: CredentialState
   public autoAcceptCredential?: AutoAcceptCredential
+  public revocationNotification?: RevocationNotification
   public errorMessage?: string
   public protocolVersion!: CredentialProtocolVersion
   public credentials!: CredentialRecordBinding[]
@@ -80,18 +88,26 @@ export class CredentialExchangeRecord extends BaseRecord<
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments
+      this.revocationNotification = props.revocationNotification
       this.errorMessage = props.errorMessage
       this.credentials = props.credentials ?? []
     }
   }
 
   public getTags() {
+    const metadata = this.metadata.get(CredentialMetadataKeys.IndyCredential)
+    let Ids: string[] = []
+    if (this.credentials) {
+      Ids = this.credentials.map((c) => c.credentialRecordId)
+    }
     return {
       ...this._tags,
       threadId: this.threadId,
       connectionId: this.connectionId,
       state: this.state,
-      credentialIds: this.credentials.map((c) => c.credentialRecordId),
+      credentialIds: Ids,
+      indyRevocationRegistryId: metadata?.indyRevocationRegistryId,
+      indyCredentialRevocationId: metadata?.indyCredentialRevocationId,
     }
   }
 

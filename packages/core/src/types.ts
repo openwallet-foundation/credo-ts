@@ -71,6 +71,8 @@ export interface InitConfig {
 
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string
+
+  autoUpdateStorageOnStartup?: boolean
 }
 
 export interface PlaintextMessage {

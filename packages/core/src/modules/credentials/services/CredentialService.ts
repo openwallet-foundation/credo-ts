@@ -38,6 +38,7 @@ import type { V2OfferCredentialMessage } from './../protocol/v2/messages/V2Offer
 import type { V2ProposeCredentialMessage } from './../protocol/v2/messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from './../protocol/v2/messages/V2RequestCredentialMessage'
 import type { CredentialExchangeRecord, CredentialRepository } from './../repository'
+import type { RevocationService } from './RevocationService'
 
 import { CredentialEventTypes } from './../CredentialEvents'
 import { CredentialState } from './../CredentialState'
@@ -50,6 +51,7 @@ export abstract class CredentialService {
   protected mediationRecipientService: MediationRecipientService
   protected didCommMessageRepository: DidCommMessageRepository
   protected logger: Logger
+  protected revocationService: RevocationService
 
   public constructor(
     credentialRepository: CredentialRepository,
@@ -57,7 +59,8 @@ export abstract class CredentialService {
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
-    didCommMessageRepository: DidCommMessageRepository
+    didCommMessageRepository: DidCommMessageRepository,
+    revocationService: RevocationService
   ) {
     this.credentialRepository = credentialRepository
     this.eventEmitter = eventEmitter
@@ -66,6 +69,7 @@ export abstract class CredentialService {
     this.mediationRecipientService = mediationRecipientService
     this.didCommMessageRepository = didCommMessageRepository
     this.logger = this.agentConfig.logger
+    this.revocationService = revocationService
 
     this.registerHandlers()
   }

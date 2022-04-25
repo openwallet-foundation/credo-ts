@@ -36,7 +36,7 @@ import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 import { isLinkedAttachment } from '../../../../utils/attachment'
 import { AckStatus } from '../../../common'
-import { ConnectionService } from '../../../connections/services/ConnectionService'
+import { ConnectionService } from '../../../connections/services'
 import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../CredentialEvents'
@@ -46,17 +46,18 @@ import { CredentialUtils } from '../../CredentialUtils'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord } from '../../repository'
-import { CredentialService } from '../../services/CredentialService'
+import { CredentialService, RevocationService } from '../../services'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
 import {
   V1CredentialAckHandler,
   V1CredentialProblemReportHandler,
   V1IssueCredentialHandler,
-  V1OfferCredentialHandler as V1OfferCredentialHandler,
+  V1OfferCredentialHandler,
+  V1ProposeCredentialHandler,
   V1RequestCredentialHandler,
+  V1RevocationNotificationHandler,
 } from './handlers'
-import { V1ProposeCredentialHandler } from './handlers/V1ProposeCredentialHandler'
 import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
@@ -181,7 +182,8 @@ export class V1CredentialService extends CredentialService {
     dispatcher: Dispatcher,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
-    formatService: IndyCredentialFormatService
+    formatService: IndyCredentialFormatService,
+    revocationService: RevocationService
   ) {
     super(
       credentialRepository,
@@ -189,7 +191,8 @@ export class V1CredentialService extends CredentialService {
       dispatcher,
       agentConfig,
       mediationRecipientService,
-      didCommMessageRepository
+      didCommMessageRepository,
+      revocationService
     )
     this.connectionService = connectionService
     this.formatService = formatService
@@ -812,6 +815,8 @@ export class V1CredentialService extends CredentialService {
     this.dispatcher.registerHandler(new V1IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
     this.dispatcher.registerHandler(new V1CredentialAckHandler(this))
     this.dispatcher.registerHandler(new V1CredentialProblemReportHandler(this))
+
+    this.dispatcher.registerHandler(new V1RevocationNotificationHandler(this.revocationService))
   }
 
   /**

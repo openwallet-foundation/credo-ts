@@ -192,7 +192,7 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
-        const errorMessage = `Error opening wallet '${walletConfig.id}'`
+        const errorMessage = `Error opening wallet '${walletConfig.id}': ${error.message}`
         this.logger.error(errorMessage, {
           error,
           errorMessage: error.message,
@@ -253,7 +253,7 @@ export class IndyWallet implements Wallet {
       this.logger.debug(`Exporting wallet ${this.walletConfig?.id} to path ${exportConfig.path}`)
       await this.indy.exportWallet(this.handle, exportConfig)
     } catch (error) {
-      const errorMessage = `Error exporting wallet': ${error.message}`
+      const errorMessage = `Error exporting wallet: ${error.message}`
       this.logger.error(errorMessage, {
         error,
       })
@@ -265,7 +265,11 @@ export class IndyWallet implements Wallet {
   public async import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig) {
     try {
       this.logger.debug(`Importing wallet ${walletConfig.id} from path ${importConfig.path}`)
-      await this.indy.importWallet({ id: walletConfig.id }, { key: walletConfig.key }, importConfig)
+      await this.indy.importWallet(
+        { id: walletConfig.id },
+        { key: walletConfig.key, key_derivation_method: walletConfig.keyDerivationMethod },
+        importConfig
+      )
     } catch (error) {
       const errorMessage = `Error importing wallet': ${error.message}`
       this.logger.error(errorMessage, {
