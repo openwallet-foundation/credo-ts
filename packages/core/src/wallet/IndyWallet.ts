@@ -400,7 +400,7 @@ export class IndyWallet implements Wallet {
 
       if (keyType === KeyType.Bls12381g1 || keyType === KeyType.Bls12381g2) {
         const blsKeyPair = await BbsService.createKey({ keyType, seed })
-        this.storeKeyPair(blsKeyPair)
+        await this.storeKeyPair(blsKeyPair)
         return Key.fromPublicKeyBase58(blsKeyPair.publicKeyBase58, keyType)
       }
     } catch (error) {
