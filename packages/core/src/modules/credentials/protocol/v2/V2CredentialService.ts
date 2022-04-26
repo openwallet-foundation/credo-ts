@@ -8,6 +8,7 @@ import type {
   CredentialProtocolMsgReturnType,
   ServiceAcceptProposalOptions,
   DeleteCredentialOptions,
+  ServiceOfferCredentialOptions,
 } from '../../CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
@@ -450,7 +451,7 @@ export class V2CredentialService extends CredentialService {
   }
 
   public async acceptProposal(
-    proposal: AcceptProposalOptions,
+    proposal: ServiceOfferCredentialOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     const message = await this.createOfferAsResponse(credentialRecord, proposal)
@@ -469,7 +470,7 @@ export class V2CredentialService extends CredentialService {
    */
   public async createOfferAsResponse(
     credentialRecord: CredentialExchangeRecord,
-    proposal: AcceptProposalOptions
+    proposal: ServiceOfferCredentialOptions
   ): Promise<V2OfferCredentialMessage> {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)

@@ -14,6 +14,7 @@ import type {
   ServiceAcceptRequestOptions,
   ServiceRequestCredentialOptions,
   DeleteCredentialOptions,
+  ServiceOfferCredentialOptions,
 } from '../../CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
@@ -483,12 +484,12 @@ export class V1CredentialService extends CredentialService {
 
     // Create message
     const { credentialDefinitionId, comment, preview, linkedAttachments } = credentialTemplate
-    const options: ServiceAcceptOfferOptions = {
+    const options: ServiceOfferCredentialOptions = {
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-      credentialRecordId: '',
       credentialFormats: {
         indy: {
           credentialDefinitionId,
+          attributes: preview.attributes,
         },
       },
     }
@@ -743,12 +744,12 @@ export class V1CredentialService extends CredentialService {
     // Create message
     const { credentialDefinitionId, comment, preview, attachments } = credentialTemplate
 
-    const options: ServiceAcceptOfferOptions = {
+    const options: ServiceOfferCredentialOptions = {
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-      credentialRecordId: credentialRecord.id,
       credentialFormats: {
         indy: {
           credentialDefinitionId,
+          attributes: preview.attributes,
         },
       },
     }
@@ -913,7 +914,7 @@ export class V1CredentialService extends CredentialService {
    * @returns Object containing proposal message and associated credential record
    */
   public async acceptProposal(
-    proposal: AcceptProposalOptions,
+    options: ServiceOfferCredentialOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     const proposalCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
@@ -923,16 +924,16 @@ export class V1CredentialService extends CredentialService {
 
     if (!proposalCredentialMessage?.credentialProposal) {
       throw new AriesFrameworkError(
-        `Credential record with id ${proposal.credentialRecordId} is missing required credential proposal`
+        `Credential record with id ${options.credentialRecordId} is missing required credential proposal`
       )
     }
 
-    if (!proposal.credentialFormats) {
+    if (!options.credentialFormats) {
       throw new AriesFrameworkError('Missing credential formats in V1 acceptProposal')
     }
 
     const credentialDefinitionId =
-      proposal.credentialFormats.indy?.credentialDefinitionId ?? proposalCredentialMessage.credentialDefinitionId
+      options.credentialFormats.indy?.credentialDefinitionId ?? proposalCredentialMessage.credentialDefinitionId
 
     if (!credentialDefinitionId) {
       throw new AriesFrameworkError(
@@ -942,8 +943,8 @@ export class V1CredentialService extends CredentialService {
     const { message } = await this.createOfferAsResponse(credentialRecord, {
       preview: proposalCredentialMessage.credentialProposal,
       credentialDefinitionId,
-      comment: proposal.comment,
-      autoAcceptCredential: proposal.autoAcceptCredential,
+      comment: options.comment,
+      autoAcceptCredential: options.autoAcceptCredential,
       attachments: credentialRecord.linkedAttachments,
     })
 

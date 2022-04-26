@@ -55,7 +55,7 @@ export type FormatKeys = {
 
 export interface FormatServiceCredentialAttachmentFormats {
   format: CredentialFormatSpec
-  attachment?: Attachment
+  attachment: Attachment
 }
 
 export interface FormatServiceProposeAttachmentFormats extends FormatServiceCredentialAttachmentFormats {

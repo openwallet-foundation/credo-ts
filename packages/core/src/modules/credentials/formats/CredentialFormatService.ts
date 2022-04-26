@@ -5,6 +5,7 @@ import type {
   ServiceAcceptCredentialOptions,
   ServiceAcceptOfferOptions,
   ServiceAcceptProposalOptions,
+  ServiceOfferCredentialOptions,
 } from '../CredentialServiceOptions'
 import type {
   AcceptRequestOptions,
@@ -42,7 +43,7 @@ export abstract class CredentialFormatService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<void>
 
-  abstract createOffer(proposal: ServiceAcceptOfferOptions): Promise<FormatServiceOfferAttachmentFormats>
+  abstract createOffer(options: ServiceOfferCredentialOptions): Promise<FormatServiceOfferAttachmentFormats>
 
   abstract processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void>
 

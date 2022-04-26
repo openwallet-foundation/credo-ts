@@ -47,6 +47,7 @@ export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
 }
 
 export interface ServiceOfferCredentialOptions extends OfferCredentialOptions {
+  attachId?: string
   offerAttachment?: Attachment
 }
 

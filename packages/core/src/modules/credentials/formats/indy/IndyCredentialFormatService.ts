@@ -10,9 +10,10 @@ import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewA
 import type {
   DeleteCredentialOptions,
   ServiceAcceptCredentialOptions,
-  ServiceAcceptOfferOptions,
+  ServiceAcceptOfferOptions as ServiceOfferOptions,
   ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
+  ServiceOfferCredentialOptions,
   ServiceRequestCredentialOptions,
 } from '../../protocol'
 import type { V1CredentialPreview } from '../../protocol/v1/V1CredentialPreview'
@@ -127,28 +128,28 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
    *
-   * @param proposal The object containing all the options for the credential offer
+   * @param options The object containing all the options for the credential offer
    * @param messageType the type of message which can be Indy, JsonLd etc eg "CRED_20_OFFER"
    * @returns object containing associated attachment, formats and offersAttach elements
    *
    */
-  public async createOffer(proposal: ServiceAcceptOfferOptions): Promise<FormatServiceOfferAttachmentFormats> {
+  public async createOffer(options: ServiceOfferCredentialOptions): Promise<FormatServiceOfferAttachmentFormats> {
     const formats: CredentialFormatSpec = {
       attachId: this.generateId(),
       format: 'hlindy/cred-abstract@v2.0',
     }
-    const offer = await this.createCredentialOffer(proposal)
+    const offer = await this.createCredentialOffer(options)
 
     let preview: V2CredentialPreview | undefined
 
-    if (proposal?.credentialFormats.indy?.attributes) {
+    if (options?.credentialFormats.indy?.attributes) {
       preview = new V2CredentialPreview({
-        attributes: proposal?.credentialFormats.indy?.attributes,
+        attributes: options?.credentialFormats.indy?.attributes,
       })
     }
 
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
-    const attachmentId = proposal.attachId ? proposal.attachId : formats.attachId
+    const attachmentId = options.attachId ? options.attachId : formats.attachId
 
     const offersAttach: Attachment = this.getFormatData(offer, attachmentId)
 
@@ -251,7 +252,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns The created credential offer
    */
   private async createCredentialOffer(
-    proposal: ServiceAcceptOfferOptions | NegotiateProposalOptions | OfferCredentialOptions
+    proposal: ServiceOfferOptions | NegotiateProposalOptions | OfferCredentialOptions
   ): Promise<CredOffer> {
     if (!proposal.credentialFormats?.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing Credential Definition id')

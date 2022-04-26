@@ -111,7 +111,7 @@ export class CredentialMessageBuilder {
   public async createOfferAsResponse(
     formatServices: CredentialFormatService[],
     credentialRecord: CredentialExchangeRecord,
-    proposal: ServiceAcceptProposalOptions | ServiceNegotiateProposalOptions
+    options: ServiceOfferCredentialOptions
   ): Promise<V2OfferCredentialMessage> {
     assert(formatServices.length > 0)
 
@@ -122,8 +122,8 @@ export class CredentialMessageBuilder {
     let previewAttachments: V2CredentialPreview | undefined
 
     for (const formatService of formatServices) {
-      const { attachment: offersAttach, preview, format } = await formatService.createOffer(proposal)
-      proposal.offerAttachment = offersAttach
+      const { attachment: offersAttach, preview, format } = await formatService.createOffer(options)
+      options.offerAttachment = offersAttach
       if (offersAttach === undefined) {
         throw new AriesFrameworkError('offersAttach not initialized for credential offer')
       }
@@ -138,15 +138,15 @@ export class CredentialMessageBuilder {
       }
       formatsArray.push(format)
 
-      if (proposal.offerAttachment) {
-        await formatService.processOffer(proposal.offerAttachment, credentialRecord)
+      if (options.offerAttachment) {
+        await formatService.processOffer(options.offerAttachment, credentialRecord)
       }
     }
 
     const messageProps: V2OfferCredentialMessageOptions = {
       id: this.generateId(),
       formats: formatsArray,
-      comment: proposal.comment,
+      comment: options.comment,
       offerAttachments: offersAttachArray,
       credentialPreview: previewAttachments,
     }
@@ -236,8 +236,7 @@ export class CredentialMessageBuilder {
     let previewAttachments: V2CredentialPreview | undefined
 
     for (const formatService of formatServices) {
-      const offerOptions = options as unknown as AcceptProposalOptions
-      const { attachment: offersAttach, preview, format } = await formatService.createOffer(offerOptions)
+      const { attachment: offersAttach, preview, format } = await formatService.createOffer(options)
 
       if (offersAttach) {
         offersAttachArray.push(offersAttach)
