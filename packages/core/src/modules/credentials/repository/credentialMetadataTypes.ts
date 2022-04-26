@@ -9,6 +9,8 @@ export type CredentialMetadata = {
   [CredentialMetadataKeys.IndyCredential]: {
     schemaId?: string
     credentialDefinitionId?: string
+    indyRevocationRegistryId?: string
+    indyCredentialRevocationId?: string
   }
   [CredentialMetadataKeys.IndyRequest]: CredReqMetadata
 }
