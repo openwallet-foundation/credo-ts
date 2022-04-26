@@ -23,8 +23,6 @@ const credentialPreview = V1CredentialPreview.fromRecord({
   age: '99',
 })
 
-const TEST_DID_KEY = 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
-
 const testAttributes: IndyProposeCredentialFormat = {
   attributes: credentialPreview.attributes,
   payload: {
