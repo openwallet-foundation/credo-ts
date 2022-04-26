@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@animo-id/react-native-bbs-signatures": "^0.1.0",
-    "@types/indy-sdk-react-native": "npm:@types/indy-sdk@^1.16.12",
+    "@types/indy-sdk-react-native": "npm:@types/indy-sdk@^1.16.16",
     "@types/react-native": "^0.64.10",
     "indy-sdk-react-native": "^0.1.21",
     "react": "17.0.1",
