@@ -10,7 +10,7 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from './CredentialsModuleOptions'
-import type { CredentialExchangeRecord } from './repository'
+import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 import type { CredentialService } from './services/CredentialService'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -20,15 +20,16 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
-import { ConnectionService } from '../connections/services/ConnectionService'
+import { DidCommMessageRole } from '../../storage'
+import { DidCommMessageRepository } from '../../storage/didcomm/DidCommMessageRepository'
+import { ConnectionService } from '../connections/services'
 import { MediationRecipientService } from '../routing'
 
 import { CredentialProtocolVersion } from './CredentialProtocolVersion'
 import { CredentialState } from './CredentialState'
 import { V1CredentialService } from './protocol/v1/V1CredentialService'
 import { V2CredentialService } from './protocol/v2/V2CredentialService'
-import { CredentialRepository } from './repository'
+import { CredentialRepository } from './repository/CredentialRepository'
 
 export interface CredentialsModule {
   // Proposal methods

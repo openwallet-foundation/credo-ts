@@ -50,6 +50,7 @@ import { V2RequestCredentialMessage } from '../protocol/v2/messages/V2RequestCre
 import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../repository/CredentialRepository'
+import { RevocationService } from '../services'
 
 import { credDef, credReq, credOffer } from './fixtures'
 
@@ -213,6 +214,7 @@ describe('CredentialService', () => {
 
   let dispatcher: Dispatcher
   let credentialService: V2CredentialService
+  let revocationService: RevocationService
 
   const initMessages = () => {
     credentialRequestMessage = new V2RequestCredentialMessage(requestOptions)
@@ -239,6 +241,8 @@ describe('CredentialService', () => {
     eventEmitter = new EventEmitter(agentConfig)
     dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
     didCommMessageRepository = new DidCommMessageRepositoryMock()
+    revocationService = new RevocationService(credentialRepository, eventEmitter, agentConfig)
+
     credentialService = new V2CredentialService(
       {
         getById: () => Promise.resolve(connection),
@@ -250,6 +254,7 @@ describe('CredentialService', () => {
       agentConfig,
       mediationRecipientService,
       didCommMessageRepository,
+      revocationService,
       new IndyCredentialFormatService(
         credentialRepository,
         eventEmitter,
