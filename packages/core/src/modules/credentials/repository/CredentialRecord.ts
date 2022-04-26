@@ -1,6 +1,7 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../CredentialAutoAcceptType'
 import type { CredentialState } from '../CredentialState'
+import type { RevocationNotification } from '../models/'
 import type { CredentialMetadata } from './credentialMetadataTypes'
 
 import { Type } from 'class-transformer'
@@ -18,6 +19,8 @@ import {
 } from '../messages'
 import { CredentialInfo } from '../models/CredentialInfo'
 
+import { CredentialMetadataKeys } from './credentialMetadataTypes'
+
 export interface CredentialRecordProps {
   id?: string
   createdAt?: Date
@@ -34,6 +37,7 @@ export interface CredentialRecordProps {
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential
   linkedAttachments?: Attachment[]
+  revocationNotification?: RevocationNotification
   errorMessage?: string
 }
 
@@ -43,6 +47,8 @@ export type DefaultCredentialTags = {
   connectionId?: string
   state: CredentialState
   credentialId?: string
+  indyRevocationRegistryId?: string
+  indyCredentialRevocationId?: string
 }
 
 export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags, CredentialMetadata> {
@@ -51,6 +57,7 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
   public credentialId?: string
   public state!: CredentialState
   public autoAcceptCredential?: AutoAcceptCredential
+  public revocationNotification?: RevocationNotification
   public errorMessage?: string
 
   // message data
@@ -91,17 +98,21 @@ export class CredentialRecord extends BaseRecord<DefaultCredentialTags, CustomCr
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments
+      this.revocationNotification = props.revocationNotification
       this.errorMessage = props.errorMessage
     }
   }
 
   public getTags() {
+    const metadata = this.metadata.get(CredentialMetadataKeys.IndyCredential)
     return {
       ...this._tags,
       threadId: this.threadId,
       connectionId: this.connectionId,
       state: this.state,
       credentialId: this.credentialId,
+      indyRevocationRegistryId: metadata?.indyRevocationRegistryId,
+      indyCredentialRevocationId: metadata?.indyCredentialRevocationId,
     }
   }
 
