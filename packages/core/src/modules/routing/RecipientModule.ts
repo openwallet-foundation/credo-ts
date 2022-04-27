@@ -132,7 +132,7 @@ export class RecipientModule {
     })
   }
 
-  private async initiateImplicitPickup(mediator: MediationRecord) {
+  private async openWebSocketAndPickUp(mediator: MediationRecord) {
     let interval = 50
 
     // Listens to Outbound websocket closed events and will reopen the websocket connection
@@ -181,7 +181,7 @@ export class RecipientModule {
     switch (mediatorPickupStrategy) {
       case MediatorPickupStrategy.PickUpV2:
         this.agentConfig.logger.info(`Starting pickup of messages from mediator '${mediator.id}'`)
-        await this.initiateImplicitPickup(mediator)
+        await this.openWebSocketAndPickUp(mediator)
         await this.mediationRecipientService.requestStatus({ mediatorId: mediator.id })
         break
       case MediatorPickupStrategy.PickUpV1: {
@@ -198,7 +198,7 @@ export class RecipientModule {
         // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
         // such as WebSockets to work
         this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
-        await this.initiateImplicitPickup(mediator)
+        await this.openWebSocketAndPickUp(mediator)
         break
       default:
         this.agentConfig.logger.info(
