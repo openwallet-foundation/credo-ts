@@ -59,8 +59,6 @@ export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {
 
 export interface ServiceAcceptRequestOptions extends AcceptRequestOptions {
   attachId?: string
-  // offerAttachment?: Attachment
-  // requestAttachment?: Attachment
 }
 export interface ServiceNegotiateProposalOptions extends NegotiateProposalOptions {
   offerAttachment?: Attachment

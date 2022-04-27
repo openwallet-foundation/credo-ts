@@ -566,12 +566,18 @@ export class V1CredentialService extends CredentialService {
     if (!requestMessage) {
       throw new AriesFrameworkError(`Missing request message in credential Record ${record.id}`)
     }
+    let offerAttachment: Attachment | undefined
+
     if (offerMessage) {
-      options.offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+      offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
     } else {
       throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
     }
-    options.requestAttachment = requestMessage.getAttachmentIncludingFormatId(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
+    const requestAttachment = requestMessage.getAttachmentIncludingFormatId(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
+
+    if (!requestAttachment) {
+      throw new AriesFrameworkError('Missing requestAttachment in v1 createCredential')
+    }
     options.attachId = INDY_CREDENTIAL_ATTACHMENT_ID
 
     // Assert credential attributes
@@ -583,7 +589,12 @@ export class V1CredentialService extends CredentialService {
       )
     }
 
-    const { attachment: credentialsAttach } = await this.formatService.createCredential(options, record)
+    const { attachment: credentialsAttach } = await this.formatService.createCredential(
+      options,
+      record,
+      requestAttachment,
+      offerAttachment
+    )
     if (!credentialsAttach) {
       throw new AriesFrameworkError(`Failed to create attachment for request; credential record = ${record.id}`)
     }

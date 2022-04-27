@@ -305,15 +305,15 @@ export class CredentialMessageBuilder {
       const offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
       const requestAttachment = formatService.getAttachment(requestMessage.formats, requestMessage.messageAttachment)
 
-      const formatServiceOptions = {
-        ...serviceOptions,
-        offerAttachment,
-        requestAttachment,
+      if (!requestAttachment) {
+        throw new Error(`Missing request attachment in createCredential`)
       }
 
       const { format: formats, attachment: credentialsAttach } = await formatService.createCredential(
-        formatServiceOptions,
-        record
+        serviceOptions,
+        record,
+        requestAttachment,
+        offerAttachment
       )
 
       if (!formats) {
