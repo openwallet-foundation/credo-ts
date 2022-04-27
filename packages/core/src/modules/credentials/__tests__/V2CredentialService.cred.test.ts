@@ -124,7 +124,7 @@ const offerOptions: V2OfferCredentialMessageOptions = {
   comment: 'some comment',
   credentialPreview: credentialPreview,
   offerAttachments: [offerAttachment],
-  replacementId: '',
+  replacementId: undefined,
 }
 const requestFormat: CredentialFormatSpec = {
   attachId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,

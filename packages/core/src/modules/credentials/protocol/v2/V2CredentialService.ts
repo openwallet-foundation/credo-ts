@@ -896,13 +896,16 @@ export class V2CredentialService extends CredentialService {
       associatedRecordId: record.id,
       messageClass: V2OfferCredentialMessage,
     })
+    if (!offerMessage) {
+      throw new AriesFrameworkError('Missing Offer Message in create credential')
+    }
     const credentialFormats: CredentialFormatService[] = this.getFormatsFromMessage(requestMessage.formats)
     const { message: issueCredentialMessage, credentialRecord } = await this.credentialMessageBuilder.createCredential(
       credentialFormats,
       record,
       options,
       requestMessage,
-      offerMessage ? offerMessage : undefined
+      offerMessage
     )
 
     issueCredentialMessage.setThread({

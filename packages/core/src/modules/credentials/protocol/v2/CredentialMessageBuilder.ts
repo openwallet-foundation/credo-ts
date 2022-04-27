@@ -9,7 +9,6 @@ import type { ProposeCredentialOptions } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { CredentialFormatSpec } from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialExchangeRecordProps } from '../../repository/CredentialExchangeRecord'
-import type { V2CredentialPreview } from './V2CredentialPreview'
 import type { V2IssueCredentialMessageProps } from './messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from './messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessageProps } from './messages/V2ProposeCredentialMessage'
@@ -23,6 +22,7 @@ import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialState } from '../../CredentialState'
 import { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 
+import { V2CredentialPreview } from './V2CredentialPreview'
 import { V2IssueCredentialMessage } from './messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from './messages/V2ProposeCredentialMessage'
@@ -117,7 +117,9 @@ export class CredentialMessageBuilder {
     // there are two arrays in each message, one for formats the other for attachments
     const formatsArray: CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
-    let previewAttachments: V2CredentialPreview | undefined
+    let previewAttachments: V2CredentialPreview = new V2CredentialPreview({
+      attributes: [],
+    })
 
     for (const formatService of formatServices) {
       const { attachment: offersAttach, preview, format } = await formatService.createOffer(options)
@@ -131,7 +133,6 @@ export class CredentialMessageBuilder {
       }
       if (preview && preview.attributes.length > 0) {
         previewAttachments = preview
-        await formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
       }
       formatsArray.push(format)
 
@@ -228,7 +229,9 @@ export class CredentialMessageBuilder {
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: V2OfferCredentialMessage }> {
     const formatsArray: CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
-    let previewAttachments: V2CredentialPreview | undefined
+    let previewAttachments: V2CredentialPreview = new V2CredentialPreview({
+      attributes: [],
+    })
 
     const offerMap = new Map<Attachment, CredentialFormatService>()
     for (const formatService of formatServices) {
@@ -242,7 +245,6 @@ export class CredentialMessageBuilder {
       }
       if (preview) {
         previewAttachments = preview
-        await formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
       }
       formatsArray.push(format)
     }
@@ -252,7 +254,7 @@ export class CredentialMessageBuilder {
       formats: formatsArray,
       comment: options.comment,
       offerAttachments: offersAttachArray,
-      replacementId: '', // replacementId
+      replacementId: undefined,
       credentialPreview: previewAttachments,
     }
 
@@ -294,17 +296,13 @@ export class CredentialMessageBuilder {
     record: CredentialExchangeRecord,
     options: ServiceAcceptRequestOptions,
     requestMessage: V2RequestCredentialMessage,
-    offerMessage?: V2OfferCredentialMessage
+    offerMessage: V2OfferCredentialMessage
   ): Promise<CredentialProtocolMsgReturnType<V2IssueCredentialMessage>> {
     const formatsArray: CredentialFormatSpec[] = []
     const credAttachArray: Attachment[] | undefined = []
 
     for (const formatService of credentialFormats) {
-      if (offerMessage) {
-        options.offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
-      } else {
-        throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
-      }
+      options.offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
       options.requestAttachment = formatService.getAttachment(requestMessage.formats, requestMessage.messageAttachment)
 
       const { format: formats, attachment: credentialsAttach } = await formatService.createCredential(options, record)

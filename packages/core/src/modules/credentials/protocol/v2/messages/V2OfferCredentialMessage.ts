@@ -7,10 +7,10 @@ import { CredentialFormatSpec } from '../../../formats/models/CredentialFormatSe
 import { V2CredentialPreview } from '../V2CredentialPreview'
 
 export interface V2OfferCredentialMessageOptions {
-  id: string
+  id?: string
   formats: CredentialFormatSpec[]
   offerAttachments: Attachment[]
-  credentialPreview?: V2CredentialPreview
+  credentialPreview: V2CredentialPreview
   replacementId?: string
   comment?: string
 }

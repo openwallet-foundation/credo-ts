@@ -71,13 +71,6 @@ export abstract class CredentialFormatService {
 
   abstract getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry>
 
-  public async checkPreviewAttributesMatchSchemaAttributes(
-    offersAttach: Attachment,
-    preview: V1CredentialPreview | V2CredentialPreview
-  ): Promise<void> {
-    // empty implementation
-  }
-
   abstract deleteCredentialById(
     credentialRecord: CredentialExchangeRecord,
     options: DeleteCredentialOptions

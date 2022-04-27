@@ -269,7 +269,7 @@ describe('CredentialService', () => {
         comment: 'some comment',
         credentialPreview: credentialPreview,
         offerAttachments: [offerAttachment],
-        replacementId: '',
+        replacementId: undefined,
       }
       credentialOfferMessage = new V2OfferCredentialMessage(offerOptions)
       messageContext = new InboundMessageContext(credentialOfferMessage, {

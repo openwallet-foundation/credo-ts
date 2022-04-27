@@ -12,7 +12,6 @@ import type { CredentialProtocolVersion } from './../CredentialProtocolVersion'
 import type {
   CredentialProtocolMsgReturnType,
   DeleteCredentialOptions,
-  ServiceOfferCredentialOptions,
   ServiceRequestCredentialOptions,
 } from './../CredentialServiceOptions'
 import type {

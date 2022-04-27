@@ -6,7 +6,7 @@ import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
 
 export interface V2RequestCredentialMessageOptions {
-  id: string
+  id?: string
   formats: CredentialFormatSpec[]
   requestsAttach: Attachment[]
   comment?: string

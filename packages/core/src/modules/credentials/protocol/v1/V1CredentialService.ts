@@ -505,8 +505,6 @@ export class V1CredentialService extends CredentialService {
       ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
       : preview
 
-    await this.formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
-
     // Construct offer message
     const offerMessage = new V1OfferCredentialMessage({
       comment,
@@ -787,8 +785,6 @@ export class V1CredentialService extends CredentialService {
     credentialRecord.linkedAttachments = attachments?.filter((attachment) => isLinkedAttachment(attachment))
     credentialRecord.autoAcceptCredential =
       credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
-
-    await this.formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
 
     await this.updateState(credentialRecord, CredentialState.OfferSent)
 

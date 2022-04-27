@@ -210,8 +210,10 @@ describe('credentials', () => {
         credentialFormats: {
           indy: {
             credentialDefinitionId: credDefId,
+            attributes: credentialPreview.attributes,
           },
         },
+        protocolVersion: CredentialProtocolVersion.V1,
       }
       testLogger.test('Faber sends credential offer to Alice')
       options.credentialRecordId = faberCredentialExchangeRecord.id
@@ -389,6 +391,7 @@ describe('credentials', () => {
             attributes: newCredentialPreview.attributes,
           },
         },
+        protocolVersion: CredentialProtocolVersion.V1,
       }
       await faberAgent.credentials.negotiateProposal(negotiateOptions)
 

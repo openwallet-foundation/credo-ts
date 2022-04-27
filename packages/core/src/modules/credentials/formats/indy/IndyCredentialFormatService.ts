@@ -149,6 +149,12 @@ export class IndyCredentialFormatService extends CredentialFormatService {
 
     const offersAttach: Attachment = this.getFormatData(offer, attachmentId)
 
+    // with credential preview now being a required field (as per spec)
+    // attributes could be empty
+    if (preview && preview.attributes.length > 0) {
+      await this.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
+    }
+
     return { format: formats, attachment: offersAttach, preview }
   }
   /**
