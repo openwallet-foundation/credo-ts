@@ -22,7 +22,7 @@ export interface IndyCredentialPreview {
 }
 
 export interface IndyProposeCredentialFormat {
-  attributes: CredentialPreviewAttribute[]
+  attributes?: CredentialPreviewAttribute[]
   linkedAttachments?: LinkedAttachment[]
   payload?: CredPropose
 }
@@ -82,6 +82,8 @@ export interface FormatServiceProposeCredentialFormats {
 export interface FormatServiceAcceptProposeCredentialFormats {
   indy?: {
     credentialDefinitionId?: string
+    attributes: CredentialPreviewAttribute[]
+    linkedAttachments?: LinkedAttachment[]
   }
   jsonld?: undefined
 }

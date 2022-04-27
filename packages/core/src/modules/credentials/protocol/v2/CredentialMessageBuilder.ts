@@ -1,13 +1,11 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
   CredentialProtocolMsgReturnType,
-  ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
-  ServiceNegotiateProposalOptions,
   ServiceOfferCredentialOptions,
   ServiceRequestCredentialOptions,
 } from '../../CredentialServiceOptions'
-import type { AcceptProposalOptions, ProposeCredentialOptions } from '../../CredentialsModuleOptions'
+import type { ProposeCredentialOptions } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { CredentialFormatSpec } from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialExchangeRecordProps } from '../../repository/CredentialExchangeRecord'
@@ -123,7 +121,6 @@ export class CredentialMessageBuilder {
 
     for (const formatService of formatServices) {
       const { attachment: offersAttach, preview, format } = await formatService.createOffer(options)
-      options.offerAttachment = offersAttach
       if (offersAttach === undefined) {
         throw new AriesFrameworkError('offersAttach not initialized for credential offer')
       }
@@ -132,15 +129,13 @@ export class CredentialMessageBuilder {
       } else {
         throw new AriesFrameworkError('offersAttach not initialized for credential proposal')
       }
-      if (preview) {
+      if (preview && preview.attributes.length > 0) {
         previewAttachments = preview
         await formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
       }
       formatsArray.push(format)
 
-      if (options.offerAttachment) {
-        await formatService.processOffer(options.offerAttachment, credentialRecord)
-      }
+      await formatService.setMetaData(offersAttach, credentialRecord)
     }
 
     const messageProps: V2OfferCredentialMessageOptions = {
@@ -235,12 +230,13 @@ export class CredentialMessageBuilder {
     const offersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
 
+    const offerMap = new Map<Attachment, CredentialFormatService>()
     for (const formatService of formatServices) {
       const { attachment: offersAttach, preview, format } = await formatService.createOffer(options)
 
       if (offersAttach) {
         offersAttachArray.push(offersAttach)
-        options.offerAttachment = offersAttach
+        offerMap.set(offersAttach, formatService)
       } else {
         throw new AriesFrameworkError('offersAttach not initialized for credential proposal')
       }
@@ -275,10 +271,12 @@ export class CredentialMessageBuilder {
 
     const credentialRecord = new CredentialExchangeRecord(recordProps)
 
-    for (const service of formatServices) {
-      if (options.offerAttachment) {
-        await service.processOffer(options.offerAttachment, credentialRecord)
+    for (const offersAttach of offerMap.keys()) {
+      const service = offerMap.get(offersAttach)
+      if (!service) {
+        throw new AriesFrameworkError(`No service found for attachment: ${offersAttach.id}`)
       }
+      await service.setMetaData(offersAttach, credentialRecord)
     }
     return { credentialRecord, message: credentialOfferMessage }
   }

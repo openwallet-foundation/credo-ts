@@ -492,6 +492,7 @@ export class V1CredentialService extends CredentialService {
           attributes: preview.attributes,
         },
       },
+      protocolVersion: CredentialProtocolVersion.V1,
     }
     const { attachment: offersAttach } = await this.formatService.createOffer(options)
 
@@ -752,6 +753,7 @@ export class V1CredentialService extends CredentialService {
           attributes: preview.attributes,
         },
       },
+      protocolVersion: CredentialProtocolVersion.V1,
     }
 
     const { attachment: offersAttach } = await this.formatService.createOffer(options)
@@ -914,7 +916,7 @@ export class V1CredentialService extends CredentialService {
    * @returns Object containing proposal message and associated credential record
    */
   public async acceptProposal(
-    options: ServiceOfferCredentialOptions,
+    options: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     const proposalCredentialMessage = await this.didCommMessageRepository.findAgentMessage({

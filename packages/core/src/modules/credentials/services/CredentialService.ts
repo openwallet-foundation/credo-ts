@@ -83,7 +83,7 @@ export abstract class CredentialService {
   abstract createProposal(proposal: ProposeCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract processProposal(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
   abstract acceptProposal(
-    proposal: ServiceOfferCredentialOptions,
+    proposal: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract negotiateProposal(

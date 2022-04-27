@@ -211,8 +211,10 @@ describe('credentials', () => {
       const options: AcceptProposalOptions = {
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Offer',
+        protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
+            attributes: [],
             credentialDefinitionId: credDefId,
           },
         },
@@ -375,6 +377,7 @@ describe('credentials', () => {
 
       const negotiateOptions: NegotiateProposalOptions = {
         credentialRecordId: faberCredentialRecord.id,
+        protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
             credentialDefinitionId: credDefId,

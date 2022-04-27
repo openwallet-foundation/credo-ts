@@ -27,20 +27,23 @@ interface ProposeCredentialOptions extends BaseOptions {
 }
 
 interface AcceptProposalOptions extends BaseOptions {
+  connectionId?: string
+  protocolVersion: CredentialProtocolVersion
   credentialRecordId: string
   credentialFormats: FormatServiceAcceptProposeCredentialFormats
 }
 
 interface NegotiateProposalOptions extends BaseOptions {
   credentialRecordId: string
+  protocolVersion: CredentialProtocolVersion
   credentialFormats: FormatServiceOfferCredentialFormats
 }
 // CREDENTIAL OFFER
 interface OfferCredentialOptions extends BaseOptions {
   credentialRecordId?: string
   connectionId?: string
-  protocolVersion?: CredentialProtocolVersion
-  credentialFormats: FormatServiceOfferCredentialFormats
+  protocolVersion: CredentialProtocolVersion
+  credentialFormats: FormatServiceAcceptProposeCredentialFormats
 }
 
 interface AcceptOfferOptions extends BaseOptions {

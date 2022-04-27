@@ -86,12 +86,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     // not needed for Indy
   }
 
-  /**
-   * Process offer - just sets the metadata for now
-   * @param options object containing the offer attachment for use here to retrieve the actual cred offer
-   * @param credentialRecord the credential exchange record for this offer
-   */
-  public async processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void> {
+  public async setMetaData(attachment: Attachment, credentialRecord: CredentialExchangeRecord) {
     if (!attachment) {
       throw new AriesFrameworkError('Missing offer attachment in processOffer')
     }
@@ -102,6 +97,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       credentialDefinitionId: credOffer.cred_def_id,
     })
   }
+
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
    *
@@ -212,22 +208,30 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
 
     let attachments: Attachment[] | undefined
-    let previewWithAttachments: V2CredentialPreview = new V2CredentialPreview({
-      attributes: options.credentialFormats.indy.attributes,
-    })
+    let previewWithAttachments: V2CredentialPreview | undefined
+    if (options.credentialFormats.indy.attributes) {
+      previewWithAttachments = new V2CredentialPreview({
+        attributes: options.credentialFormats.indy.attributes,
+      })
+    }
 
     if (options.credentialFormats.indy && options.credentialFormats.indy.linkedAttachments) {
       // there are linked attachments so transform into the attribute field of the CredentialPreview object for
       // this proposal
-      previewWithAttachments = CredentialUtils.createAndLinkAttachmentsToPreview(
-        options.credentialFormats.indy.linkedAttachments,
-        new V2CredentialPreview({
-          attributes: options.credentialFormats.indy.attributes,
-        })
-      )
+      if (options.credentialFormats.indy.attributes) {
+        previewWithAttachments = CredentialUtils.createAndLinkAttachmentsToPreview(
+          options.credentialFormats.indy.linkedAttachments,
+          new V2CredentialPreview({
+            attributes: options.credentialFormats.indy.attributes,
+          })
+        )
+      }
       attachments = options.credentialFormats.indy.linkedAttachments.map(
         (linkedAttachment) => linkedAttachment.attachment
       )
+    }
+    if (!previewWithAttachments) {
+      throw new AriesFrameworkError('No previewWithAttachments')
     }
     return { attachments, previewWithAttachments }
   }
@@ -301,6 +305,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       options.credentialFormats = {
         indy: {
           credentialDefinitionId: credPropose?.credentialDefinitionId,
+          attributes: [],
         },
       }
     }
