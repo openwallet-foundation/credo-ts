@@ -1,4 +1,5 @@
 import type { Wallet } from '../../../wallet/Wallet'
+import type { ConnectionDeletedEvent } from '../ConnectionEvents'
 import type { Routing } from '../services/ConnectionService'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -12,6 +13,7 @@ import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
 import { DidCommService } from '../../dids/domain/service/DidCommService'
+import { ConnectionEventTypes } from '../ConnectionEvents'
 import {
   ConnectionInvitationMessage,
   ConnectionRequestMessage,
@@ -1058,6 +1060,39 @@ describe('ConnectionService', () => {
       ).toThrowError(
         'Previously received message ~service recipientKeys does not include current received message sender key'
       )
+    })
+  })
+
+  describe('deleteById', () => {
+    it('should call delete from repository', async () => {
+      const connection = getMockConnection()
+      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connection))
+
+      const repositoryDeleteSpy = jest.spyOn(connectionRepository, 'delete')
+      await connectionService.deleteById(connection.id)
+      expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, connection)
+    })
+
+    test(`emits deleted event`, async () => {
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<ConnectionDeletedEvent>(ConnectionEventTypes.ConnectionDeleted, eventListenerMock)
+
+      // given
+      const connection = getMockConnection({ id: 'test' })
+      mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(connection))
+
+      // when
+      await connectionService.deleteById(connection.id)
+
+      // then
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'ConnectionDeleted',
+        payload: {
+          connectionRecord: expect.objectContaining({
+            id: connection.id,
+          }),
+        },
+      })
     })
   })
 

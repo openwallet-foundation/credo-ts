@@ -1,6 +1,6 @@
 import type { Wallet } from '../../../wallet/Wallet'
 import type { CredentialRepository } from '../../credentials/repository'
-import type { ProofStateChangedEvent } from '../ProofEvents'
+import type { ProofStateChangedEvent, ProofDeletedEvent } from '../ProofEvents'
 import type { CustomProofTags } from './../repository/ProofRecord'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -260,6 +260,39 @@ describe('ProofService', () => {
       const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)
+    })
+  })
+
+  describe('deleteById', () => {
+    it('should call delete from repository', async () => {
+      const proof = mockProofRecord()
+      mockFunction(proofRepository.getById).mockReturnValue(Promise.resolve(proof))
+
+      const repositoryDeleteSpy = jest.spyOn(proofRepository, 'delete')
+      await proofService.deleteById(proof.id)
+      expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, proof)
+    })
+
+    test(`emits deleted event`, async () => {
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<ProofDeletedEvent>(ProofEventTypes.ProofDeleted, eventListenerMock)
+
+      // given
+      const proof = mockProofRecord({ id: 'test' })
+      mockFunction(proofRepository.getById).mockReturnValue(Promise.resolve(proof))
+
+      // when
+      await proofService.deleteById(proof.id)
+
+      // then
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'ProofDeleted',
+        payload: {
+          proofRecord: expect.objectContaining({
+            id: proof.id,
+          }),
+        },
+      })
     })
   })
 })

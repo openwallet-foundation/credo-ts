@@ -2,7 +2,11 @@ import type { Logger } from '../../../logger'
 import type { ConnectionRecord } from '../../connections'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
-import type { RevocationNotificationReceivedEvent, CredentialStateChangedEvent } from '../CredentialEvents'
+import type {
+  RevocationNotificationReceivedEvent,
+  CredentialStateChangedEvent,
+  CredentialDeletedEvent,
+} from '../CredentialEvents'
 import type { CredentialPreviewAttribute } from '../messages'
 import type { IndyCredentialMetadata } from '../models/CredentialInfo'
 import type { CustomCredentialTags } from '../repository/CredentialRecord'
@@ -1128,6 +1132,28 @@ describe('CredentialService', () => {
         deleteAssociatedCredential: true,
       })
       expect(storeCredentialMock).toHaveBeenNthCalledWith(1, credential.credentialId)
+    })
+
+    test(`emits deleted event`, async () => {
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<CredentialDeletedEvent>(CredentialEventTypes.CredentialDeleted, eventListenerMock)
+
+      // given
+      const credential = mockCredentialRecord({ id: 'test' })
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
+
+      // when
+      await credentialService.deleteById(credential.id)
+
+      // then
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialDeleted',
+        payload: {
+          credentialRecord: expect.objectContaining({
+            id: credential.id,
+          }),
+        },
+      })
     })
   })
 
