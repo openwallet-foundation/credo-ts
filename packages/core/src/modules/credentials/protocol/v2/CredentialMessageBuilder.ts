@@ -294,7 +294,7 @@ export class CredentialMessageBuilder {
   public async createCredential(
     credentialFormats: CredentialFormatService[],
     record: CredentialExchangeRecord,
-    options: ServiceAcceptRequestOptions,
+    serviceOptions: ServiceAcceptRequestOptions,
     requestMessage: V2RequestCredentialMessage,
     offerMessage: V2OfferCredentialMessage
   ): Promise<CredentialProtocolMsgReturnType<V2IssueCredentialMessage>> {
@@ -302,10 +302,19 @@ export class CredentialMessageBuilder {
     const credAttachArray: Attachment[] | undefined = []
 
     for (const formatService of credentialFormats) {
-      options.offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
-      options.requestAttachment = formatService.getAttachment(requestMessage.formats, requestMessage.messageAttachment)
+      const offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
+      const requestAttachment = formatService.getAttachment(requestMessage.formats, requestMessage.messageAttachment)
 
-      const { format: formats, attachment: credentialsAttach } = await formatService.createCredential(options, record)
+      const formatServiceOptions = {
+        ...serviceOptions,
+        offerAttachment,
+        requestAttachment,
+      }
+
+      const { format: formats, attachment: credentialsAttach } = await formatService.createCredential(
+        formatServiceOptions,
+        record
+      )
 
       if (!formats) {
         throw new AriesFrameworkError('formats not initialized for credential')
@@ -320,7 +329,7 @@ export class CredentialMessageBuilder {
       id: this.generateId(),
       formats: formatsArray,
       credentialsAttach: credAttachArray,
-      comment: options.comment,
+      comment: serviceOptions.comment,
     }
 
     const message: V2IssueCredentialMessage = new V2IssueCredentialMessage(messageOptions)
