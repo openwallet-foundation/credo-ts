@@ -300,26 +300,16 @@ export class V2CredentialService extends CredentialService {
       associatedRecordId: credentialRecord.id,
     })
 
-    await this.setMetaDataFor(proposalMessage, credentialRecord, formats)
-
-    return { credentialRecord, message: proposalMessage }
-  }
-
-  private async setMetaDataFor(
-    proposalMessage: V2ProposeCredentialMessage,
-    record: CredentialExchangeRecord,
-    formats: CredentialFormatService[]
-  ) {
     for (const format of formats) {
       const options: ServiceAcceptProposalOptions = {
-        credentialRecordId: record.id,
+        credentialRecordId: credentialRecord.id,
         credentialFormats: {},
         protocolVersion: CredentialProtocolVersion.V2,
       }
       options.proposalAttachment = format.getAttachment(proposalMessage.formats, proposalMessage.messageAttachment)
-      // used to set the meta data
-      await format.processProposal(options, record)
+      await format.processProposal(options, credentialRecord)
     }
+    return { credentialRecord, message: proposalMessage }
   }
 
   /**
@@ -406,7 +396,6 @@ export class V2CredentialService extends CredentialService {
     } catch {
       // No credential record exists with thread id
       // get the format service objects for the formats found in the message
-      const formats: CredentialFormatService[] = this.getFormatsFromMessage(proposalMessage.formats)
 
       credentialRecord = this.credentialMessageBuilder.processProposal(proposalMessage, connection?.id)
 
@@ -419,8 +408,6 @@ export class V2CredentialService extends CredentialService {
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
       })
-      await this.setMetaDataFor(proposalMessage, credentialRecord, formats)
-
       await this.emitEvent(credentialRecord)
     }
     return credentialRecord
