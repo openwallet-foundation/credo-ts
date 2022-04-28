@@ -10,7 +10,7 @@ import { IndyAgentService, ServiceTransformer, DidCommService } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
 
 interface DidDocumentOptions {
-  context?: string[]
+  context?: string | string[]
   id: string
   alsoKnownAs?: string[]
   controller?: string[]
@@ -25,7 +25,6 @@ interface DidDocumentOptions {
 
 export class DidDocument {
   @Expose({ name: '@context' })
-  @IsArray()
   @IsStringOrStringArray()
   public context: string | string[] = ['https://w3id.org/did/v1']
 
