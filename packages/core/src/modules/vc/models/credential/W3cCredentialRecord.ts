@@ -19,7 +19,14 @@ export type CustomW3cCredentialTags = TagsBase & {
   expandedTypes?: Array<string>
 }
 
-export class W3cCredentialRecord extends BaseRecord<TagsBase, CustomW3cCredentialTags> {
+export type DefaultCredentialTags = {
+  issuerId: string
+  subjectIds: Array<string>
+  schemaIds: Array<string>
+  contexts: Array<string>
+}
+
+export class W3cCredentialRecord extends BaseRecord<DefaultCredentialTags, CustomW3cCredentialTags> {
   public static readonly type = 'W3cCredentialRecord'
   public readonly type = W3cCredentialRecord.type
 
@@ -37,6 +44,12 @@ export class W3cCredentialRecord extends BaseRecord<TagsBase, CustomW3cCredentia
   }
 
   public getTags() {
-    return this._tags
+    return {
+      ...this._tags,
+      issuerId: this.credential.issuerId,
+      subjectIds: this.credential.credentialSubjectIds,
+      schemaIds: this.credential.credentialSchemaIds,
+      contexts: this.credential.contexts,
+    }
   }
 }

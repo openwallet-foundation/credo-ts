@@ -1,7 +1,9 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
+import type { DidInfo } from '../../../wallet'
 
 import { purposes } from '@digitalcredentials/jsonld-signatures'
 import { validateSync } from 'class-validator'
+import { inspect } from 'util'
 
 import { getAgentConfig } from '../../../../tests/helpers'
 import { TestLogger } from '../../../../tests/logger'
@@ -21,6 +23,7 @@ import { W3cPresentation } from '../models/presentation/W3Presentation'
 import { W3cVerifiablePresentation } from '../models/presentation/W3cVerifiablePresentation'
 import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuancePurpose'
 
+import { customDocumentLoader } from './documentLoader'
 import { BbsBlsSignature2020Fixtures, Ed25519Signature2018Fixtures } from './fixtures'
 
 jest.mock('../../ledger/services/IndyLedgerService')
@@ -31,6 +34,8 @@ const DidRepositoryMock = DidRepository as unknown as jest.Mock<DidRepository>
 jest.mock('../models/credential/W3cCredentialRepository')
 const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
 
+// Just a convenience function for testing
+// TODO remove this when done
 const printJson = (json: any) => {
   // eslint-disable-next-line no-console
   console.log(JSON.stringify(JsonTransformer.toJSON(json), null, 2))
@@ -43,7 +48,7 @@ describe('W3cCredentialService', () => {
   let logger: TestLogger
   let w3cCredentialService: W3cCredentialService
   let w3cCredentialRepository: W3cCredentialRepository
-  let issuerDidKey: DidKey
+  const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
     agentConfig = getAgentConfig('W3cCredentialServiceTest')
@@ -51,7 +56,6 @@ describe('W3cCredentialService', () => {
     logger = new TestLogger(LogLevel.error)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
-    await wallet.initPublicDid({})
     didResolverService = new DidResolverService(agentConfig, new IndyLedgerServiceMock(), new DidRepositoryMock())
     w3cCredentialRepository = new W3cCredentialRepositoryMock()
     w3cCredentialService = new W3cCredentialService(
@@ -61,6 +65,7 @@ describe('W3cCredentialService', () => {
       agentConfig
       // logger
     )
+    // w3cCredentialService.documentLoader = customDocumentLoader
   })
 
   afterAll(async () => {
@@ -68,16 +73,16 @@ describe('W3cCredentialService', () => {
   })
 
   describe('Ed25519Signature2018', () => {
-    beforeAll(() => {
-      const pubDid = wallet.publicDid
+    let issuerDidKey: DidKey
+    beforeAll(async () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-      issuerDidKey = new DidKey(key)
+      const issuerDidInfo = await wallet.createDid({ seed })
+      const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+      issuerDidKey = new DidKey(issuerKey)
     })
     describe('signCredential', () => {
       it('should return a successfully signed credential', async () => {
         const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT
-        credentialJson.issuer = issuerDidKey.did
 
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
@@ -96,7 +101,7 @@ describe('W3cCredentialService', () => {
         expect(vc.proof.verificationMethod).toEqual(issuerDidKey.keyId)
       })
 
-      it('should throw because of did:key does not belong to this wallet', async () => {
+      it('should throw because of verificationMethod does not belong to this wallet', async () => {
         const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT
         credentialJson.issuer = issuerDidKey.did
 
@@ -107,15 +112,15 @@ describe('W3cCredentialService', () => {
             credential,
             proofType: 'Ed25519Signature2018',
             verificationMethod:
-              'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH#z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+              'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV#z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
           })
         }).rejects.toThrowError(WalletError)
       })
     })
     describe('verifyCredential', () => {
-      it('credential should verify successfully', async () => {
+      it('should credential verify successfully', async () => {
         const vc = JsonTransformer.fromJSON(
-          Ed25519Signature2018Fixtures.TEST_VALID_VERIFIABLE_CREDENTIAL,
+          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
           W3cVerifiableCredential
         )
         const result = await w3cCredentialService.verifyCredential({ credential: vc })
@@ -128,9 +133,9 @@ describe('W3cCredentialService', () => {
         expect(result.results[0].verified).toBe(true)
         expect(result.results[0].error).toBeUndefined()
       })
-      it('credential fail to verify because of invalid signature', async () => {
+      it('should fail because of invalid signature', async () => {
         const vc = JsonTransformer.fromJSON(
-          Ed25519Signature2018Fixtures.TEST_INVALID_VERIFIABLE_CREDENTIAL,
+          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_BAD_SIGNED,
           W3cVerifiableCredential
         )
         const result = await w3cCredentialService.verifyCredential({ credential: vc })
@@ -143,11 +148,52 @@ describe('W3cCredentialService', () => {
         // @ts-ignore
         expect(result.error.errors[0].message).toBe('Invalid signature.')
       })
+      it('should fail because of an unsigned statement', async () => {
+        const vcJson = {
+          ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+          credentialSubject: {
+            ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED.credentialSubject,
+            alumniOf: 'oops',
+          },
+        }
+
+        const vc = JsonTransformer.fromJSON(vcJson, W3cVerifiableCredential)
+        const result = await w3cCredentialService.verifyCredential({ credential: vc })
+
+        expect(result.verified).toBe(false)
+
+        // @ts-ignore
+        expect(result.error.errors[0]).toBeInstanceOf(Error)
+        // @ts-ignore
+        expect(result.error.errors[0].message).toBe('Invalid signature.')
+      })
+      it('should fail because of a changed statement', async () => {
+        const vcJson = {
+          ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+          credentialSubject: {
+            ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED.credentialSubject,
+            degree: {
+              ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED.credentialSubject.degree,
+              name: 'oops',
+            },
+          },
+        }
+
+        const vc = JsonTransformer.fromJSON(vcJson, W3cVerifiableCredential)
+        const result = await w3cCredentialService.verifyCredential({ credential: vc })
+
+        expect(result.verified).toBe(false)
+
+        // @ts-ignore
+        expect(result.error.errors[0]).toBeInstanceOf(Error)
+        // @ts-ignore
+        expect(result.error.errors[0].message).toBe('Invalid signature.')
+      })
     })
     describe('createPresentation', () => {
       it('should successfully create a presentation from single verifiable credential', async () => {
         const vc = JsonTransformer.fromJSON(
-          Ed25519Signature2018Fixtures.TEST_VALID_VERIFIABLE_CREDENTIAL,
+          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
           W3cVerifiableCredential
         )
         const result = await w3cCredentialService.createPresentation({ credentials: vc })
@@ -161,11 +207,11 @@ describe('W3cCredentialService', () => {
       })
       it('should successfully create a presentation from two verifiable credential', async () => {
         const vc1 = JsonTransformer.fromJSON(
-          Ed25519Signature2018Fixtures.TEST_VALID_VERIFIABLE_CREDENTIAL,
+          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
           W3cVerifiableCredential
         )
         const vc2 = JsonTransformer.fromJSON(
-          Ed25519Signature2018Fixtures.TEST_VALID_VERIFIABLE_CREDENTIAL,
+          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
           W3cVerifiableCredential
         )
 
@@ -182,13 +228,12 @@ describe('W3cCredentialService', () => {
     })
     describe('signPresentation', () => {
       it('should successfully create a presentation from single verifiable credential', async () => {
-        const presentation = JsonTransformer.fromJSON(
-          Ed25519Signature2018Fixtures.TEST_VALID_PRESENTATION,
-          W3cPresentation
-        )
+        const presentation = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT, W3cPresentation)
 
         const purpose = new CredentialIssuancePurpose({
-          controller: {},
+          controller: {
+            id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+          },
           date: new Date().toISOString(),
         })
 
@@ -205,27 +250,25 @@ describe('W3cCredentialService', () => {
     describe('verifyPresentation', () => {
       it('should successfully verify a presentation containing a single verifiable credential', async () => {
         const vp = JsonTransformer.fromJSON(
-          Ed25519Signature2018Fixtures.TEST_VALID_VERIFIABLE_PRESENTATION,
+          Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT_SIGNED,
           W3cVerifiablePresentation
         )
-
-        const purpose = new CredentialIssuancePurpose({
-          controller: {},
-          date: new Date().toISOString(),
-        })
 
         const result = await w3cCredentialService.verifyPresentation({
           presentation: vp,
           proofType: 'Ed25519Signature2018',
-          purpose: purpose,
-          verificationMethod: issuerDidKey.keyId,
+          challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
+          verificationMethod:
+            'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
         })
+
+        expect(result.verified).toBe(true)
       })
     })
     describe('storeCredential', () => {
       it('should store a credential', async () => {
         const credential = JsonTransformer.fromJSON(
-          Ed25519Signature2018Fixtures.TEST_VALID_VERIFIABLE_CREDENTIAL,
+          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
           W3cVerifiableCredential
         )
 
@@ -249,13 +292,14 @@ describe('W3cCredentialService', () => {
   })
 
   describe('BbsBlsSignature2020', () => {
+    let issuerDidKey: DidKey
     beforeAll(async () => {
-      const key = await wallet.createKey({ keyType: KeyType.Bls12381g2 })
+      const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
       issuerDidKey = new DidKey(key)
     })
-    describe('signCredential', () => {
+    describe('signCredential bbs', () => {
       it('should return a successfully signed credential', async () => {
-        const credentialJson = BbsBlsSignature2020Fixtures.TEST_BBS_INPUT_DOCUMENT
+        const credentialJson = BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT
         credentialJson.issuer = issuerDidKey.did
 
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
@@ -265,30 +309,34 @@ describe('W3cCredentialService', () => {
           proofType: 'BbsBlsSignature2020',
           verificationMethod: issuerDidKey.keyId,
         })
-        printJson(vc)
+
+        expect(vc).toBeInstanceOf(W3cVerifiableCredential)
+        expect(vc.issuer).toEqual(issuerDidKey.did)
+        expect(Array.isArray(vc.proof)).toBe(false)
+        expect(vc.proof).toBeInstanceOf(LinkedDataProof)
+
+        vc.proof = vc.proof as LinkedDataProof
+        expect(vc.proof.verificationMethod).toEqual(issuerDidKey.keyId)
       })
     })
     describe('verifyCredential', () => {
       it('should verify the credential successfully', async () => {
         const result = await w3cCredentialService.verifyCredential({
-          credential: JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VALID_BBS_VC, W3cVerifiableCredential),
+          credential: JsonTransformer.fromJSON(
+            BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT_SIGNED,
+            W3cVerifiableCredential
+          ),
           proofPurpose: new purposes.AssertionProofPurpose(),
         })
-        expect(result.verified).toBeTruthy()
+
+        expect(result.verified).toEqual(true)
       })
     })
     xdescribe('deriveProof', () => {
       it('should derive proof successfully', async () => {
-        const credentialJson = BbsBlsSignature2020Fixtures.TEST_BBS_INPUT_DOCUMENT
-        credentialJson.issuer = issuerDidKey.did
+        const credentialJson = BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT_SIGNED
 
-        const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
-
-        const vc = await w3cCredentialService.signCredential({
-          credential,
-          proofType: 'BbsBlsSignature2020',
-          verificationMethod: issuerDidKey.keyId,
-        })
+        const vc = JsonTransformer.fromJSON(credentialJson, W3cVerifiableCredential)
 
         const revealDocument = {
           '@context': [
@@ -311,11 +359,60 @@ describe('W3cCredentialService', () => {
           revealDocument: revealDocument,
           verificationMethod: issuerDidKey.keyId,
         })
+
+        result.proof = result.proof as LinkedDataProof
+        expect(result.proof['verificationMethod']).toBe(
+          'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN#zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN'
+        )
       })
     })
-    describe('createPresentation', () => {})
-    describe('signPresentation', () => {})
-    describe('verifyPresentation', () => {})
-    describe('storeCredential', () => {})
+    describe('verifyDerived', () => {
+      it('should verify the derived proof successfully', async () => {
+        const result = await w3cCredentialService.verifyCredential({
+          credential: JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VALID_DERIVED, W3cVerifiableCredential),
+          proofPurpose: new purposes.AssertionProofPurpose(),
+        })
+        expect(result.verified).toEqual(true)
+      })
+    })
+    describe('createPresentation', () => {
+      it('should create a presentation successfully', async () => {
+        const vc = JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VALID_DERIVED, W3cVerifiableCredential)
+        const result = await w3cCredentialService.createPresentation({ credentials: vc })
+        printJson(result)
+        expect(result).toBeInstanceOf(W3cPresentation)
+
+        expect(result.type).toEqual(expect.arrayContaining(['VerifiablePresentation']))
+
+        expect(result.verifiableCredential).toHaveLength(1)
+        expect(result.verifiableCredential).toEqual(expect.arrayContaining([vc]))
+      })
+    })
+    describe('signPresentation', () => {
+      it('should sign the presentation successfully', async () => {
+        const signingKey = Key.fromPublicKeyBase58((await wallet.createDid({ seed })).verkey, KeyType.Ed25519)
+        const signingDidKey = new DidKey(signingKey)
+
+        const presentation = JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VP_DOCUMENT, W3cPresentation)
+
+        const purpose = new CredentialIssuancePurpose({
+          controller: {
+            id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+          },
+          date: new Date().toISOString(),
+        })
+
+        const verifiablePresentation = await w3cCredentialService.signPresentation({
+          presentation: presentation,
+          purpose: purpose,
+          signatureType: 'Ed25519Signature2018',
+          verificationMethod: signingDidKey.keyId,
+        })
+
+        printJson(verifiablePresentation)
+
+        expect(verifiablePresentation).toBeInstanceOf(W3cVerifiablePresentation)
+      })
+    })
   })
 })

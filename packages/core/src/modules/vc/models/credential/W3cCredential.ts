@@ -72,6 +72,32 @@ export class W3cCredential {
   public get issuerId(): string {
     return this.issuer instanceof Issuer ? this.issuer.id : this.issuer
   }
+
+  public get credentialSchemaIds(): string[] {
+    if (!this.credentialSchema) return []
+
+    if (Array.isArray(this.credentialSchema)) {
+      return this.credentialSchema.map((credentialSchema) => credentialSchema.id)
+    }
+
+    return [this.credentialSchema.id]
+  }
+
+  public get credentialSubjectIds(): string[] {
+    if (Array.isArray(this.credentialSubject)) {
+      return this.credentialSubject.map((credentialSubject) => credentialSubject.id)
+    }
+
+    return [this.credentialSubject.id]
+  }
+
+  public get contexts(): Array<string> {
+    if (Array.isArray(this.context)) {
+      return this.context
+    }
+
+    return [this.context]
+  }
 }
 
 // Custom validator

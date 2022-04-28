@@ -45,7 +45,8 @@ export interface VerifyPresentationOptions {
   presentation: W3cVerifiablePresentation
   proofType: string
   verificationMethod: string
-  purpose: ProofPurpose
+  purpose?: ProofPurpose
+  challenge?: string
 }
 
 export interface DeriveProofOptions {
