@@ -408,7 +408,7 @@ export class V2CredentialService extends CredentialService {
       // get the format service objects for the formats found in the message
       const formats: CredentialFormatService[] = this.getFormatsFromMessage(proposalMessage.formats)
 
-      credentialRecord = this.credentialMessageBuilder.acceptProposal(proposalMessage, connection?.id)
+      credentialRecord = this.credentialMessageBuilder.processProposal(proposalMessage, connection?.id)
 
       // Save record and emit event
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)

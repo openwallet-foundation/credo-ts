@@ -14,8 +14,6 @@ import type { V2OfferCredentialMessageOptions } from './messages/V2OfferCredenti
 import type { V2ProposeCredentialMessageProps } from './messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessageOptions } from './messages/V2RequestCredentialMessage'
 
-import { assert } from 'console'
-
 import { AriesFrameworkError } from '../../../../../src/error/AriesFrameworkError'
 import { uuid } from '../../../../utils/uuid'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
@@ -42,7 +40,9 @@ export class CredentialMessageBuilder {
     formatServices: CredentialFormatService[],
     proposal: ProposeCredentialOptions
   ): CredentialProtocolMsgReturnType<V2ProposeCredentialMessage> {
-    assert(formatServices.length > 0)
+    if (formatServices.length === 0) {
+      throw new AriesFrameworkError('no format services provided to createProposal')
+    }
 
     // create message
     // there are two arrays in each message, one for formats the other for attachments
@@ -94,7 +94,7 @@ export class CredentialMessageBuilder {
    * @param connectionId optional connection id for the agent to agent connection
    * @return a version 2.0 credential record object see {@link CredentialRecord}
    */
-  public acceptProposal(message: V2ProposeCredentialMessage, connectionId?: string): CredentialExchangeRecord {
+  public processProposal(message: V2ProposeCredentialMessage, connectionId?: string): CredentialExchangeRecord {
     const props: CredentialExchangeRecordProps = {
       connectionId: connectionId,
       threadId: message.threadId,
@@ -111,8 +111,9 @@ export class CredentialMessageBuilder {
     credentialRecord: CredentialExchangeRecord,
     options: ServiceOfferCredentialOptions
   ): Promise<V2OfferCredentialMessage> {
-    assert(formatServices.length > 0)
-
+    if (formatServices.length === 0) {
+      throw new AriesFrameworkError('no format services provided to createProposal')
+    }
     // create message
     // there are two arrays in each message, one for formats the other for attachments
     const formatsArray: CredentialFormatSpec[] = []
@@ -173,11 +174,12 @@ export class CredentialMessageBuilder {
     offerMessage: V2OfferCredentialMessage,
     holderDid?: string
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
+    if (formatServices.length === 0) {
+      throw new AriesFrameworkError('no format services provided to createProposal')
+    }
     // Assert credential
     record.assertState(CredentialState.OfferReceived)
-    if (!offerMessage) {
-      throw new AriesFrameworkError(`Missing message for credential Record ${record.id}`)
-    }
+
     const formatsArray: CredentialFormatSpec[] = []
     const requestAttachArray: Attachment[] | undefined = []
     for (const format of formatServices) {
@@ -227,6 +229,9 @@ export class CredentialMessageBuilder {
     formatServices: CredentialFormatService[],
     options: ServiceOfferCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: V2OfferCredentialMessage }> {
+    if (formatServices.length === 0) {
+      throw new AriesFrameworkError('no format services provided to createProposal')
+    }
     const formatsArray: CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview = new V2CredentialPreview({
