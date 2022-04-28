@@ -57,6 +57,8 @@ export class DidPeer {
     didDocument: DidDocument,
     numAlgo?: PeerDidNumAlgo.GenesisDoc | PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
   ): DidPeer {
+    // TODO: did:peer documents may only include inline keys in the verificationMethods array. All other keys
+    // should be references to this array. We should take this into account when generating and processing peer dids.
     if (!numAlgo && didDocument.id.startsWith('did:peer:')) {
       numAlgo = getNumAlgoFromPeerDid(didDocument.id)
     }
@@ -68,9 +70,8 @@ export class DidPeer {
     }
 
     if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      // FIXME: We should do this on the JSON value of the did document, as the DidDocument class
-      // adds a lot of properties and default values that will mess with the hash value
-      // Remove id from did document as the id should be generated without an id.
+      // FIXME: we should replace all values of the did with a local reference. So controller values must
+      // be #id and key ids must only include the #<key-id> part
       const didDocumentBuffer = JsonEncoder.toBuffer({ ...didDocument.toJSON(), id: undefined })
 
       // TODO: we should improve the buffer/multibase/multihash API.
