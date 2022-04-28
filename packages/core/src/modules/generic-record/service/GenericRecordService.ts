@@ -1,4 +1,3 @@
-import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import type { GenericRecordTags, SaveGenericRecordOption } from '../repository/GenericRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -15,7 +14,7 @@ export class GenericRecordService {
     this.genericRecordsRepository = genericRecordsRepository
   }
 
-  public async saveRecord({ message, tags, connectionRecord }: SaveGenericRecordOption) {
+  public async save({ message, tags, connectionRecord }: SaveGenericRecordOption) {
     const genericRecord = new GenericRecord({
       content: message,
       connectionId: connectionRecord?.id,
@@ -32,8 +31,28 @@ export class GenericRecordService {
     }
   }
 
+  public async delete(record: GenericRecord): Promise<void> {
+    try {
+      await this.genericRecordsRepository.delete(record)
+    } catch (error) {
+      throw new AriesFrameworkError(`Unable to delete the genericRecord record with id ${record.id}. Message: ${error}`)
+    }
+  }
+
+  public async update(record: GenericRecord): Promise<void> {
+    try {
+      await this.genericRecordsRepository.update(record)
+    } catch (error) {
+      throw new AriesFrameworkError(`Unable to update the genericRecord record with id ${record.id}. Message: ${error}`)
+    }
+  }
+
   public async findAllByQuery(query: Partial<GenericRecordTags>) {
     return this.genericRecordsRepository.findByQuery(query)
+  }
+
+  public async findById(id: string): Promise<GenericRecord | null> {
+    return this.genericRecordsRepository.findById(id)
   }
 
   public async getAll() {

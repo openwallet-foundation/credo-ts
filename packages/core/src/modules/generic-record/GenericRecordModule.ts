@@ -1,12 +1,15 @@
 import type { Logger } from '../../logger'
-import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
-import type { GenericRecordTags, SaveGenericRecordOption } from './repository/GenericRecord'
+import type { GenericRecord, GenericRecordTags, SaveGenericRecordOption } from './repository/GenericRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 
 import { GenericRecordService } from './service/GenericRecordService'
+
+export type ContentType = {
+  content: string
+}
 
 @scoped(Lifecycle.ContainerScoped)
 export class GenericRecordModule {
@@ -17,9 +20,9 @@ export class GenericRecordModule {
     this.logger = agentConfig.logger
   }
 
-  public async saveRecord({ message, tags, connectionRecord }: SaveGenericRecordOption) {
+  public async save({ message, tags, connectionRecord }: SaveGenericRecordOption) {
     try {
-      const record = await this.genericRecordsService.saveRecord({
+      const record = await this.genericRecordsService.save({
         message: message,
         tags: tags,
         connectionRecord: connectionRecord,
@@ -35,11 +38,41 @@ export class GenericRecordModule {
     }
   }
 
-  public async findAllByQuery(query: Partial<GenericRecordTags>) {
+  public async delete(record: GenericRecord): Promise<void> {
+    try {
+      await this.genericRecordsService.delete(record)
+    } catch (error) {
+      this.logger.error('Error while saving generic-record', {
+        error,
+        encryptedMessage: record.content,
+        errorMessage: error instanceof Error ? error.message : error,
+      })
+      throw error
+    }
+  }
+
+  public async update(record: GenericRecord): Promise<void> {
+    try {
+      await this.genericRecordsService.update(record)
+    } catch (error) {
+      this.logger.error('Error while update generic-record', {
+        error,
+        encryptedMessage: record.content,
+        errorMessage: error instanceof Error ? error.message : error,
+      })
+      throw error
+    }
+  }
+
+  public async findById(id: string) {
+    return this.genericRecordsService.findById(id)
+  }
+
+  public async findAllByQuery(query: Partial<GenericRecordTags>): Promise<GenericRecord[]> {
     return this.genericRecordsService.findAllByQuery(query)
   }
 
-  public async getAll() {
+  public async getAll(): Promise<GenericRecord[]> {
     return this.genericRecordsService.getAll()
   }
 }

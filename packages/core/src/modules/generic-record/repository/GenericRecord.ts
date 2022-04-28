@@ -6,7 +6,7 @@ import { uuid } from '../../../utils/uuid'
 
 export type GenericRecordTags = TagsBase
 export type DefaultGenericRecordTags = {
-  connectionId: string
+  connectionId?: string
 }
 
 export type BasicMessageTags = RecordTags<GenericRecord>
@@ -17,17 +17,18 @@ export interface GenericRecordStorageProps {
   connectionId?: string
   tags?: GenericRecordTags
 
-  content: string
+  content: Record<string, unknown>
 }
 
 export interface SaveGenericRecordOption {
-  message: string
+  message: Record<string, unknown>
   connectionRecord?: ConnectionRecord
+  id?: string
   tags?: GenericRecordTags
 }
 
 export class GenericRecord extends BaseRecord<DefaultGenericRecordTags, GenericRecordTags> {
-  public content!: string
+  public content!: Record<string, unknown>
   public connectionId?: string
 
   public static readonly type = 'NonSecretRecord'
@@ -48,7 +49,7 @@ export class GenericRecord extends BaseRecord<DefaultGenericRecordTags, GenericR
   public getTags() {
     return {
       ...this._tags,
-      connectionId: this.connectionId ?? 'NONE',
+      connectionId: this.connectionId ?? undefined,
     }
   }
 }
