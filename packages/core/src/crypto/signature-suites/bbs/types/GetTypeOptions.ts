@@ -19,9 +19,11 @@ export interface GetTypeOptions {
   /**
    * Optional custom document loader
    */
-  documentLoader?: Function;
+  // eslint-disable-next-line
+  documentLoader?: Function
   /**
    * Optional expansion map
    */
-  expansionMap?: Function;
+  // eslint-disable-next-line
+  expansionMap?: Function
 }

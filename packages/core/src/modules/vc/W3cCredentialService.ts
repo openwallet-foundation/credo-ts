@@ -1,4 +1,4 @@
-import type { Key, KeyType } from '../../crypto'
+import type { Key } from '../../crypto/Key'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
   CreatePresentationOptions,
@@ -11,10 +11,17 @@ import type {
 } from './models/W3cCredentialServiceOptions'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+// eslint-disable-next-line import/no-extraneous-dependencies
 import jsonld, { expand, frame } from '@digitalcredentials/jsonld'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
+// eslint-disable-next-line import/no-extraneous-dependencies
 import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+// eslint-disable-next-line import/no-extraneous-dependencies
 import documentLoaderXhr from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
 import vc from '@digitalcredentials/vc'
 import { deriveProof } from '@mattrglobal/jsonld-signatures-bbs'

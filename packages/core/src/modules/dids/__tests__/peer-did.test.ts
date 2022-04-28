@@ -1,7 +1,8 @@
 import type { IndyLedgerService } from '../../ledger'
 
 import { getAgentConfig } from '../../../../tests/helpers'
-import { Key, KeyType } from '../../../crypto'
+import { KeyType } from '../../../crypto'
+import { Key } from '../../../crypto/Key'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'

@@ -1,7 +1,6 @@
 import type { TagsBase } from '../../../../storage/BaseRecord'
 
 import { Type } from 'class-transformer'
-import jsonld from 'jsonld'
 
 import { BaseRecord } from '../../../../storage/BaseRecord'
 import { uuid } from '../../../../utils/uuid'

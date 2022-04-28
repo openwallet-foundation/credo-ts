@@ -16,7 +16,7 @@ import { CredentialSubjectTransformer, CredentialSubject } from './CredentialSub
 import { Issuer, IsIssuer, IssuerTransformer } from './Issuer'
 
 export interface W3cCredentialOptions {
-  context: Array<string> | ContextDefinition
+  context: Array<string> | Record<string, any>
   id?: string
   type: Array<string>
   issuer: string | IssuerOptions
@@ -40,7 +40,7 @@ export class W3cCredential {
 
   @Expose({ name: '@context' })
   @IsJsonLdContext()
-  public context!: Array<string> | ContextDefinition
+  public context!: Array<string> | Record<string, any>
 
   @IsOptional()
   @IsUri()
@@ -93,10 +93,14 @@ export class W3cCredential {
 
   public get contexts(): Array<string> {
     if (Array.isArray(this.context)) {
-      return this.context
+      return this.context.filter((x) => typeof x === 'string')
     }
 
-    return [this.context]
+    if (typeof this.context === 'string') {
+      return [this.context]
+    }
+
+    return [this.context.id]
   }
 }
 

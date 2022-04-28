@@ -19,21 +19,21 @@ export interface GetProofsOptions {
   /**
    * The JSON-LD document to extract the proofs from.
    */
-  readonly document: any;
+  readonly document: any
   /**
    * Optional the proof type(s) to filter the returned proofs by
    */
-  readonly proofType?: string | readonly string[];
+  readonly proofType?: string | readonly string[]
   /**
    * Optional custom document loader
    */
-  documentLoader?(): any;
+  documentLoader?(): any
   /**
    * Optional expansion map
    */
-  expansionMap?(): any;
+  expansionMap?(): any
   /**
    * Optional property to indicate whether to skip compacting the resulting proof
    */
-  readonly skipProofCompaction?: boolean;
+  readonly skipProofCompaction?: boolean
 }

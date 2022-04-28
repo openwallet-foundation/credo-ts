@@ -12,8 +12,8 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import jsonld from 'jsonld'
 import { constants } from '@digitalcredentials/jsonld-signatures'
+import jsonld from 'jsonld'
 
 import { getProofs, getTypeInfo } from './utilities'
 

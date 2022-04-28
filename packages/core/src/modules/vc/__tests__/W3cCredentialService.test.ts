@@ -1,13 +1,11 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { DidInfo } from '../../../wallet'
 
 import { purposes } from '@digitalcredentials/jsonld-signatures'
-import { validateSync } from 'class-validator'
-import { inspect } from 'util'
 
 import { getAgentConfig } from '../../../../tests/helpers'
 import { TestLogger } from '../../../../tests/logger'
-import { Key, KeyType } from '../../../crypto'
+import { KeyType } from '../../../crypto'
+import { Key } from '../../../crypto/Key'
 import { LogLevel } from '../../../logger'
 import { JsonTransformer } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
