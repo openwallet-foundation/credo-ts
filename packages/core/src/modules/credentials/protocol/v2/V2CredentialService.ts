@@ -377,19 +377,19 @@ export class V2CredentialService extends CredentialService {
       credentialRecord.connectionId = connection?.id
 
       // this may not be the first proposal message...
-      let proposalCredentialMessage, offerCredentialMessage
-      try {
-        proposalCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
-          associatedRecordId: credentialRecord.id,
-          messageClass: V2ProposeCredentialMessage,
-        })
-        offerCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
-          associatedRecordId: credentialRecord.id,
-          messageClass: V2OfferCredentialMessage,
-        })
-      } catch (RecordNotFoundError) {
-        // record not found - expected (sometimes)
-      }
+      // let proposalCredentialMessage, offerCredentialMessage
+      // try {
+      const proposalCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
+        associatedRecordId: credentialRecord.id,
+        messageClass: V2ProposeCredentialMessage,
+      })
+      const offerCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
+        associatedRecordId: credentialRecord.id,
+        messageClass: V2OfferCredentialMessage,
+      })
+      // } catch (RecordNotFoundError) {
+      //   // record not found - expected (sometimes)
+      // }
       credentialRecord.assertState(CredentialState.OfferSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
         previousReceivedMessage: proposalCredentialMessage ? proposalCredentialMessage : undefined,
