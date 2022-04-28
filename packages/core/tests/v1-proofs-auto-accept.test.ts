@@ -1,4 +1,4 @@
-import type { Agent, ConnectionRecord } from '../src'
+import { Agent, ConnectionRecord, ProofProtocolVersion } from '../src'
 import type {
   AcceptProposalOptions,
   ProposeProofOptions,
@@ -14,7 +14,6 @@ import {
   ProofPredicateInfo,
   PredicateType,
 } from '../src'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'

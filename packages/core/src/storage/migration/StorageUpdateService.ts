@@ -7,7 +7,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 
 import { StorageVersionRecord } from './repository/StorageVersionRecord'
 import { StorageVersionRepository } from './repository/StorageVersionRepository'
-import { INITIAL_STORAGE_VERSION, CURRENT_FRAMEWORK_STORAGE_VERSION } from './updates'
+import { CURRENT_FRAMEWORK_STORAGE_VERSION, INITIAL_STORAGE_VERSION } from './updates'
 
 @scoped(Lifecycle.ContainerScoped)
 export class StorageUpdateService {

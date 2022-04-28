@@ -1,6 +1,5 @@
 import type { Logger } from '../../../logger'
 import type { FileSystem } from '../../../storage/FileSystem'
-import type { RevocationInterval } from '../../credentials/models/RevocationInterval'
 import type { RequestedCredentials } from '../../proofs/formats/indy/models/RequestedCredentials'
 import type { default as Indy } from 'indy-sdk'
 
@@ -14,6 +13,7 @@ import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyLedgerService } from '../../ledger'
 
 import { IndyUtilitiesService } from './IndyUtilitiesService'
+import { RevocationInterval } from '../../credentials/protocol/v1/models/RevocationInterval'
 
 enum RequestReferentType {
   Attribute = 'attribute',
