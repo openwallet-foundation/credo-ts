@@ -1,4 +1,4 @@
-import { Agent, ConnectionRecord, ProofProtocolVersion } from '../src'
+import type { Agent, ConnectionRecord } from '../src'
 import type {
   AcceptProposalOptions,
   ProposeProofOptions,
@@ -7,6 +7,7 @@ import type {
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 
 import {
+  ProofProtocolVersion,
   AutoAcceptProof,
   ProofState,
   ProofAttributeInfo,

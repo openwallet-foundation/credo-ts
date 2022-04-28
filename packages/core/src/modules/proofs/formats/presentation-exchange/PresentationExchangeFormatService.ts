@@ -24,6 +24,7 @@ import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMes
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
+import { W3cCredentialService } from '../../../vc'
 import { ProofFormatService } from '../ProofFormatService'
 import { ATTACHMENT_FORMAT } from '../ProofFormats'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
@@ -37,6 +38,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
   private indyVerifierService: IndyVerifierService
   private indyRevocationService: IndyRevocationService
   private ledgerService: IndyLedgerService
+  private w3cCredentialService: W3cCredentialService
 
   public constructor(
     agentConfig: AgentConfig,
@@ -44,13 +46,15 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     indyVerifierService: IndyVerifierService,
     indyRevocationService: IndyRevocationService,
     ledgerService: IndyLedgerService,
-    didCommMessageRepository: DidCommMessageRepository
+    didCommMessageRepository: DidCommMessageRepository,
+    w3cCredentialService: W3cCredentialService
   ) {
     super(didCommMessageRepository, agentConfig)
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
     this.indyRevocationService = indyRevocationService
     this.ledgerService = ledgerService
+    this.w3cCredentialService = w3cCredentialService
   }
 
   public async createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats> {
