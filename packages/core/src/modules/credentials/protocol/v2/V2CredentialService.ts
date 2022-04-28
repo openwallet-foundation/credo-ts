@@ -364,7 +364,6 @@ export class V2CredentialService extends CredentialService {
     try {
       // Credential record already exists
       credentialRecord = await this.getByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
-      credentialRecord.connectionId = connection?.id
 
       // this may not be the first proposal message...
       // let proposalCredentialMessage, offerCredentialMessage
@@ -516,7 +515,6 @@ export class V2CredentialService extends CredentialService {
     try {
       // Credential record already exists
       credentialRecord = await this.getByThreadAndConnectionId(credentialOfferMessage.threadId, connection?.id)
-      credentialRecord.connectionId = connection?.id
 
       const proposeCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
         associatedRecordId: credentialRecord.id,
