@@ -19,7 +19,6 @@ import { W3cCredentialService } from '../W3cCredentialService'
 import { W3cCredential, W3cVerifiableCredential } from '../models'
 import { LinkedDataProof } from '../models/LinkedDataProof'
 import { W3cCredentialRepository } from '../models/credential/W3cCredentialRepository'
-import { VerifyPresentationResult } from '../models/presentation/VerifyPresentationResult'
 import { W3cPresentation } from '../models/presentation/W3Presentation'
 import { W3cVerifiablePresentation } from '../models/presentation/W3cVerifiablePresentation'
 import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuancePurpose'
@@ -294,10 +293,10 @@ describe('W3cCredentialService', () => {
   describe('BbsBlsSignature2020', () => {
     let issuerDidKey: DidKey
     beforeAll(async () => {
-      const key = await wallet.createKey({ keyType: KeyType.Bls12381g2 })
+      const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
       issuerDidKey = new DidKey(key)
     })
-    describe('signCredential', () => {
+    describe('signCredential bbs', () => {
       it('should return a successfully signed credential', async () => {
         const credentialJson = BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT
         credentialJson.issuer = issuerDidKey.did

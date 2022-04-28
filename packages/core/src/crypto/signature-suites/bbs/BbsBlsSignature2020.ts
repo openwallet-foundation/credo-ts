@@ -82,6 +82,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
     }
     if (date) {
       this.date = new Date(date)
+
       if (isNaN(this.date)) {
         throw TypeError(`"date" "${date}" is not a valid date.`)
       }

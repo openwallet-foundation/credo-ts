@@ -425,13 +425,6 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
       throw new Error('No "verificationMethod" found in proof.')
     }
 
-    // const verificationMethod = await super.getVerificationMethod({
-    //   proof: options.proof,
-    //   documentLoader: options.documentLoader,
-    // })
-
-    // console.log(vMethod)
-
     const { document } = await options.documentLoader(verificationMethod)
 
     verificationMethod = typeof document === 'string' ? JSON.parse(document) : document
