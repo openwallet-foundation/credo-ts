@@ -152,30 +152,6 @@ export class W3cCredentialService {
   }
 
   /**
-   * Writes a credential to storage
-   *
-   * @param record the credential to be stored
-   * @returns the credential record that was written to storage
-   */
-  public async storeCredential(options: StoreCredentialOptions): Promise<W3cCredentialRecord> {
-    // Get the expanded types
-    const expandedTypes = (
-      await expand(JsonTransformer.toJSON(options.record), { documentLoader: this.documentLoader })
-    )[0]['@type']
-
-    // Create an instance of the w3cCredentialRecord
-    const w3cCredentialRecord = new W3cCredentialRecord({
-      tags: { expandedTypes: orArrayToArray(expandedTypes) },
-      credential: options.record,
-    })
-
-    // Store the w3c credential record
-    await this.w3cCredentialRepository.save(w3cCredentialRecord)
-
-    return w3cCredentialRecord
-  }
-
-  /**
    * Utility method that creates a {@link W3cPresentation} from one or more {@link W3cVerifiableCredential}s.
    *
    * **NOTE: the presentation that is returned is unsigned.**
@@ -349,5 +325,49 @@ export class W3cCredentialService {
     const key = getKeyDidMappingByVerificationMethod(verificationMethodClass)
 
     return key.getKeyFromVerificationMethod(verificationMethodClass)
+  }
+
+  /**
+   * Writes a credential to storage
+   *
+   * @param record the credential to be stored
+   * @returns the credential record that was written to storage
+   */
+  public async storeCredential(options: StoreCredentialOptions): Promise<W3cCredentialRecord> {
+    // Get the expanded types
+    const expandedTypes = (
+      await expand(JsonTransformer.toJSON(options.record), { documentLoader: this.documentLoader })
+    )[0]['@type']
+
+    // Create an instance of the w3cCredentialRecord
+    const w3cCredentialRecord = new W3cCredentialRecord({
+      tags: { expandedTypes: orArrayToArray(expandedTypes) },
+      credential: options.record,
+    })
+
+    // Store the w3c credential record
+    await this.w3cCredentialRepository.save(w3cCredentialRecord)
+
+    return w3cCredentialRecord
+  }
+
+  public async getAllCredentials(): Promise<W3cVerifiableCredential[]> {
+    return (await this.w3cCredentialRepository.getAll()).map((x) => x.credential)
+  }
+
+  public async getCredentialById(id: string): Promise<W3cVerifiableCredential> {
+    return (await this.w3cCredentialRepository.getById(id)).credential
+  }
+
+  public async findCredentialByQuery(
+    query: Parameters<typeof W3cCredentialRepository.prototype.findByQuery>[0]
+  ): Promise<W3cVerifiableCredential[]> {
+    return (await this.w3cCredentialRepository.findByQuery(query)).map((x) => x.credential)
+  }
+
+  public async findSingleCredentialByQuery(
+    query: Parameters<typeof W3cCredentialRepository.prototype.findSingleByQuery>[0]
+  ): Promise<W3cVerifiableCredential | undefined> {
+    return (await this.w3cCredentialRepository.findSingleByQuery(query))?.credential
   }
 }
