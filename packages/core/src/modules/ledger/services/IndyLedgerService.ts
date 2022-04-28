@@ -94,6 +94,31 @@ export class IndyLedgerService {
     return didResponse
   }
 
+  public async setEndpointsForDid(did: string, endpoints: IndyEndpointAttrib): Promise<void> {
+    const pool = this.indyPoolService.ledgerWritePool
+
+    try {
+      this.logger.debug(`Set endpoints for did '${did}' on ledger '${pool.id}'`, endpoints)
+
+      // @ts-ignore
+      const request = await this.indy.buildAttribRequest(did, did, null, { endpoint: endpoints }, null)
+
+      const response = await this.submitWriteRequest(pool, request, did)
+      this.logger.debug(`Successfully set endpoints for did '${did}' on ledger '${pool.id}'`, {
+        response,
+        endpoints,
+      })
+    } catch (error) {
+      this.logger.error(`Error setting endpoints for did '${did}' on ledger '${pool.id}'`, {
+        error,
+        did,
+        endpoints,
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
+    }
+  }
+
   public async getEndpointsForDid(did: string) {
     const { pool } = await this.indyPoolService.getPoolForDid(did)
 

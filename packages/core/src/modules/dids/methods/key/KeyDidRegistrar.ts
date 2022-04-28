@@ -57,9 +57,6 @@ export class KeyDidRegistrar implements DidRegistrar {
       const didRecord = new DidRecord({
         id: didKey.did,
         role: DidDocumentRole.Created,
-        tags: {
-          recipientKeys: didKey.didDocument.recipientKeys,
-        },
       })
       await this.didRepository.save(didRecord)
 
@@ -117,9 +114,9 @@ export class KeyDidRegistrar implements DidRegistrar {
 
 export interface KeyDidCreateOptions extends DidCreateOptions {
   method: 'key'
-  // For now we don't support creating a did:key with a did
-  did?: undefined
-  didDocument?: undefined
+  // For now we don't support creating a did:key with a did or did document
+  did?: never
+  didDocument?: never
   options: {
     keyType: KeyType.Ed25519
   }

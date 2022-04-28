@@ -73,6 +73,9 @@ export class SovDidRegistrar implements DidRegistrar {
       }
 
       await this.indyLedgerService.registerPublicDid(submitterDid.replace('did:sov:', ''), indyDid, verkey, alias, role)
+      await this.indyLedgerService.setEndpointsForDid(submitterDid.replace('did:sov:', ''), {
+        endpoint: 'http://localhost:8080',
+      })
 
       const didDocument = sovDidDocumentFromDid(fullDid, verkey).build()
 

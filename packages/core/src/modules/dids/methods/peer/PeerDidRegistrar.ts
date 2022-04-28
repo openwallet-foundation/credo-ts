@@ -59,7 +59,7 @@ export class PeerDidRegistrar implements DidRegistrar {
 
         didPeer = DidPeer.fromKey(key)
       } else if (isPeerDidNumAlgo1CreateOptions(options)) {
-        // FIXME: update all id references to the did
+        // FIXME: update all id references to the did (allow to retrieve both stored and resolved variant)
         didPeer = DidPeer.fromDidDocument(options.didDocument, PeerDidNumAlgo.GenesisDoc)
       } else if (isPeerDidNumAlgo2CreateOptions(options)) {
         didPeer = DidPeer.fromDidDocument(options.didDocument, PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
@@ -158,8 +158,8 @@ export type PeerDidCreateOptions =
 
 export interface PeerDidNumAlgo0CreateOptions extends DidCreateOptions {
   method: 'peer'
-  did?: undefined
-  didDocument?: undefined
+  did?: never
+  didDocument?: never
   options: {
     keyType: KeyType.Ed25519
     numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc
@@ -171,7 +171,7 @@ export interface PeerDidNumAlgo0CreateOptions extends DidCreateOptions {
 
 export interface PeerDidNumAlgo1CreateOptions extends DidCreateOptions {
   method: 'peer'
-  did?: undefined
+  did?: never
   didDocument: DidDocument
   options: {
     numAlgo: PeerDidNumAlgo.GenesisDoc

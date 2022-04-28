@@ -55,8 +55,8 @@ describe('dids', () => {
             'https://w3id.org/security/suites/ed25519-2018/v1',
             'https://w3id.org/security/suites/x25519-2019/v1',
           ],
-          alsoKnownAs: [],
-          controller: [],
+          alsoKnownAs: undefined,
+          controller: undefined,
           verificationMethod: [
             {
               id: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -65,7 +65,7 @@ describe('dids', () => {
               publicKeyBase58: 'ApA26cozGW5Maa62TNTwtgcxrb7bYjAmf9aQ5cYruCDE',
             },
           ],
-          service: [],
+          service: undefined,
           authentication: [
             'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
           ],
@@ -93,7 +93,7 @@ describe('dids', () => {
     })
   })
 
-  it('should create a did:peer did with numAlgo 0', async () => {
+  it('should create a did:peer did', async () => {
     const did = await agent.dids.create<PeerDidNumAlgo0CreateOptions>({
       method: 'peer',
       options: {
@@ -105,7 +105,7 @@ describe('dids', () => {
       },
     })
 
-    // Same seed should resolve to same did:key
+    // Same seed should resolve to same did:peer
     expect(JsonTransformer.toJSON(did)).toMatchObject({
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
@@ -118,8 +118,8 @@ describe('dids', () => {
             'https://w3id.org/security/suites/ed25519-2018/v1',
             'https://w3id.org/security/suites/x25519-2019/v1',
           ],
-          alsoKnownAs: [],
-          controller: [],
+          alsoKnownAs: undefined,
+          controller: undefined,
           verificationMethod: [
             {
               id: 'did:peer:0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh#z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
@@ -128,7 +128,7 @@ describe('dids', () => {
               publicKeyBase58: 'GLsyPBT2AgMne8XUvmZKkqLUuFkSjLp3ibkcjc6gjhyK',
             },
           ],
-          service: [],
+          service: undefined,
           authentication: [
             'did:peer:0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh#z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
           ],
@@ -152,139 +152,6 @@ describe('dids', () => {
           id: 'did:peer:0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
         },
         secret: { seed: 'e008ef10b7c163114b3857542b3736eb' },
-      },
-    })
-  })
-
-  it('should create a did:peer did with numAlgo 1', async () => {
-    const keyId = '5e93a426-09da-4af9-a943-fb6cdd3c843d'
-    const didDocument = new DidDocumentBuilder('')
-      .addVerificationMethod({
-        type: 'Ed25519VerificationKey2018',
-        id: `#${keyId}`,
-        controller: '#id',
-        publicKeyBase58: '0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
-      })
-      .addService(
-        new DidCommService({
-          id: '#9785929b-0a8f-455e-9c86-152de6d61227',
-          recipientKeys: [`#${keyId}`],
-          serviceEndpoint: 'https://agent.com/ssi',
-        })
-      )
-      .build()
-
-    const did = await agent.dids.create<PeerDidNumAlgo1CreateOptions>({
-      method: 'peer',
-      didDocument,
-      options: {
-        numAlgo: PeerDidNumAlgo.GenesisDoc,
-      },
-    })
-
-    // Same seed should resolve to same did:key
-    expect(JsonTransformer.toJSON(did)).toMatchObject({
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'finished',
-        did: 'did:peer:1zQmdAPRC8YipXmWitRLTRkzaXpwmDS9i1xEamTD7QNkpwoT',
-        didDocument: {
-          '@context': ['https://w3id.org/did/v1'],
-          alsoKnownAs: [],
-          controller: [],
-          verificationMethod: [
-            {
-              id: '#5e93a426-09da-4af9-a943-fb6cdd3c843d',
-              type: 'Ed25519VerificationKey2018',
-              controller: '#id',
-              publicKeyBase58: '0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
-            },
-          ],
-          service: [
-            {
-              id: '#9785929b-0a8f-455e-9c86-152de6d61227',
-              serviceEndpoint: 'https://agent.com/ssi',
-              type: 'did-communication',
-              priority: 0,
-              recipientKeys: ['#5e93a426-09da-4af9-a943-fb6cdd3c843d'],
-            },
-          ],
-          authentication: [],
-          assertionMethod: [],
-          keyAgreement: [],
-          capabilityInvocation: [],
-          capabilityDelegation: [],
-          id: 'did:peer:1zQmdAPRC8YipXmWitRLTRkzaXpwmDS9i1xEamTD7QNkpwoT',
-        },
-        secret: {},
-      },
-    })
-  })
-
-  it('should create a did:peer did with numAlgo 2', async () => {
-    const keyId = '5e93a426-09da-4af9-a943-fb6cdd3c843d'
-    const didDocument = new DidDocumentBuilder('')
-      .addVerificationMethod({
-        type: 'Ed25519VerificationKey2018',
-        id: `#${keyId}`,
-        controller: '#id',
-        publicKeyBase58: '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K',
-      })
-      .addAuthentication(`#${keyId}`)
-      .addService(
-        new DidCommService({
-          id: '#9785929b-0a8f-455e-9c86-152de6d61227',
-          recipientKeys: [`#${keyId}`],
-          serviceEndpoint: 'https://agent.com/ssi',
-        })
-      )
-      .build()
-
-    const did = await agent.dids.create<PeerDidNumAlgo2CreateOptions>({
-      method: 'peer',
-      didDocument,
-      options: {
-        numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc,
-      },
-    })
-
-    expect(JsonTransformer.toJSON(did)).toMatchObject({
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'finished',
-        did: 'did:peer:2.Vz6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th.SeyJzIjoiaHR0cHM6Ly9hZ2VudC5jb20vc3NpIiwidCI6ImRpZC1jb21tdW5pY2F0aW9uIiwicHJpb3JpdHkiOjAsInJlY2lwaWVudEtleXMiOlsiIzVlOTNhNDI2LTA5ZGEtNGFmOS1hOTQzLWZiNmNkZDNjODQzZCJdfQ',
-        didDocument: {
-          '@context': ['https://w3id.org/did/v1'],
-          alsoKnownAs: [],
-          controller: [],
-          verificationMethod: [],
-          service: [
-            {
-              serviceEndpoint: 'https://agent.com/ssi',
-              type: 'did-communication',
-              priority: 0,
-              recipientKeys: ['#5e93a426-09da-4af9-a943-fb6cdd3c843d'],
-              id: 'did:peer:2.Vz6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th.SeyJzIjoiaHR0cHM6Ly9hZ2VudC5jb20vc3NpIiwidCI6ImRpZC1jb21tdW5pY2F0aW9uIiwicHJpb3JpdHkiOjAsInJlY2lwaWVudEtleXMiOlsiIzVlOTNhNDI2LTA5ZGEtNGFmOS1hOTQzLWZiNmNkZDNjODQzZCJdfQ#did-communication-0',
-            },
-          ],
-          authentication: [
-            {
-              id: 'did:peer:2.Vz6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th.SeyJzIjoiaHR0cHM6Ly9hZ2VudC5jb20vc3NpIiwidCI6ImRpZC1jb21tdW5pY2F0aW9uIiwicHJpb3JpdHkiOjAsInJlY2lwaWVudEtleXMiOlsiIzVlOTNhNDI2LTA5ZGEtNGFmOS1hOTQzLWZiNmNkZDNjODQzZCJdfQ#6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th',
-              type: 'Ed25519VerificationKey2018',
-              controller:
-                'did:peer:2.Vz6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th.SeyJzIjoiaHR0cHM6Ly9hZ2VudC5jb20vc3NpIiwidCI6ImRpZC1jb21tdW5pY2F0aW9uIiwicHJpb3JpdHkiOjAsInJlY2lwaWVudEtleXMiOlsiIzVlOTNhNDI2LTA5ZGEtNGFmOS1hOTQzLWZiNmNkZDNjODQzZCJdfQ',
-              publicKeyBase58: '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K',
-            },
-          ],
-          assertionMethod: [],
-          keyAgreement: [],
-          capabilityInvocation: [],
-          capabilityDelegation: [],
-          id: 'did:peer:2.Vz6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th.SeyJzIjoiaHR0cHM6Ly9hZ2VudC5jb20vc3NpIiwidCI6ImRpZC1jb21tdW5pY2F0aW9uIiwicHJpb3JpdHkiOjAsInJlY2lwaWVudEtleXMiOlsiIzVlOTNhNDI2LTA5ZGEtNGFmOS1hOTQzLWZiNmNkZDNjODQzZCJdfQ',
-        },
-        secret: {},
       },
     })
   })
@@ -315,8 +182,8 @@ describe('dids', () => {
             'https://w3id.org/security/suites/ed25519-2018/v1',
             'https://w3id.org/security/suites/x25519-2019/v1',
           ],
-          alsoKnownAs: [],
-          controller: [],
+          alsoKnownAs: undefined,
+          controller: undefined,
           verificationMethod: [
             {
               id: 'did:sov:EC6fzUPMjJ8cAA7XiUSrXn#key-1',
@@ -331,12 +198,12 @@ describe('dids', () => {
               publicKeyBase58: '7c81W1wgTAGJWPkd44DSax8ZSxcLxwYhJDPixnSuzo64',
             },
           ],
-          service: [],
+          service: undefined,
           authentication: ['did:sov:EC6fzUPMjJ8cAA7XiUSrXn#key-1'],
           assertionMethod: ['did:sov:EC6fzUPMjJ8cAA7XiUSrXn#key-1'],
           keyAgreement: ['did:sov:EC6fzUPMjJ8cAA7XiUSrXn#key-agreement-1'],
-          capabilityInvocation: [],
-          capabilityDelegation: [],
+          capabilityInvocation: undefined,
+          capabilityDelegation: undefined,
           id: 'did:sov:EC6fzUPMjJ8cAA7XiUSrXn',
         },
         secret: {
