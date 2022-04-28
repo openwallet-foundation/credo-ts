@@ -17,6 +17,7 @@ import { DID_zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqA
 import { DID_zUC72to2eJiFMrt8a89LoaEPHC76QcfAxQdFys3nFGCmDKAmLbdE4ByyQ54kh42XgECCyZfVKe3m41Kk35nzrBKYbk6s9K7EjyLJcGGPkA7N15tDNBQJaY7cHD4RRaTwF6qXpmD } from './dids/did_zUC72to2eJiFMrt8a89LoaEPHC76QcfAxQdFys3nFGCmDKAmLbdE4ByyQ54kh42XgECCyZfVKe3m41Kk35nzrBKYbk6s9K7EjyLJcGGPkA7N15tDNBQJaY7cHD4RRaTwF6qXpmD'
 import { DID_zUC73JKGpX1WG4CWbFM15ni3faANPet6m8WJ6vaF5xyFsM3MeoBVNgQ6jjVPCcUnTAnJy6RVKqsUXa4AvdRKwV5hhQhwhMWFT9so9jrPekKmqpikTjYBXa3RYWqRpCWHY4u4hxh } from './dids/did_zUC73JKGpX1WG4CWbFM15ni3faANPet6m8WJ6vaF5xyFsM3MeoBVNgQ6jjVPCcUnTAnJy6RVKqsUXa4AvdRKwV5hhQhwhMWFT9so9jrPekKmqpikTjYBXa3RYWqRpCWHY4u4hxh'
 import { DID_zUC73YqdRJ3t8bZsFUoxYFPNVruHzn4o7u78GSrMXVSkcb3xAYtUxRD2kSt2bDcmQpRjKfygwLJ1HEGfkosSN7gr4acjGkXLbLRXREueknFN4AU19m8BxEgWnLM84CAvsw6bhYn } from './dids/did_zUC73YqdRJ3t8bZsFUoxYFPNVruHzn4o7u78GSrMXVSkcb3xAYtUxRD2kSt2bDcmQpRjKfygwLJ1HEGfkosSN7gr4acjGkXLbLRXREueknFN4AU19m8BxEgWnLM84CAvsw6bhYn'
+import { DID_zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN } from './dids/did_zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN'
 import { DID_zUC76qMTDAaupy19pEk8JKH5LJwPwmscNQn24SYpqrgqEoYWPFgCSm4CnTfupADRfbB6CxdwYhVaTFjT4fmPvMh7gWY87LauhaLmNpPamCv4LAepcRfBDndSdtCpZKSTELMjzGJ } from './dids/did_zUC76qMTDAaupy19pEk8JKH5LJwPwmscNQn24SYpqrgqEoYWPFgCSm4CnTfupADRfbB6CxdwYhVaTFjT4fmPvMh7gWY87LauhaLmNpPamCv4LAepcRfBDndSdtCpZKSTELMjzGJ'
 import { DID_zUC7DMETzdZM6woUjvs2fieEyFTbHABXwBvLYPBs4NDWKut4H41h8V3KTqGNRUziXLYqa1sFYYw9Zjpt6pFUf7hra4Q1zXMA9JjXcXxDpxuDNpUKEpiDPSYYUztVchUJHQJJhox } from './dids/did_zUC7DMETzdZM6woUjvs2fieEyFTbHABXwBvLYPBs4NDWKut4H41h8V3KTqGNRUziXLYqa1sFYYw9Zjpt6pFUf7hra4Q1zXMA9JjXcXxDpxuDNpUKEpiDPSYYUztVchUJHQJJhox'
 import { DID_zUC7F9Jt6YzVW9fGhwYjVrjdS8Xzg7oQc2CeDcVNgEcEAaJXAtPz3eXu2sewq4xtwRK3DAhQRYwwoYiT3nNzLCPsrKoP72UGZKhh4cNuZD7RkmwzAa1Bye4C5a9DcyYBGKZrE5F } from './dids/did_zUC7F9Jt6YzVW9fGhwYjVrjdS8Xzg7oQc2CeDcVNgEcEAaJXAtPz3eXu2sewq4xtwRK3DAhQRYwwoYiT3nNzLCPsrKoP72UGZKhh4cNuZD7RkmwzAa1Bye4C5a9DcyYBGKZrE5F'
@@ -53,6 +54,9 @@ export const DOCUMENTS = {
   [DID_zUC72to2eJiFMrt8a89LoaEPHC76QcfAxQdFys3nFGCmDKAmLbdE4ByyQ54kh42XgECCyZfVKe3m41Kk35nzrBKYbk6s9K7EjyLJcGGPkA7N15tDNBQJaY7cHD4RRaTwF6qXpmD[
     'id'
   ]]: DID_zUC72to2eJiFMrt8a89LoaEPHC76QcfAxQdFys3nFGCmDKAmLbdE4ByyQ54kh42XgECCyZfVKe3m41Kk35nzrBKYbk6s9K7EjyLJcGGPkA7N15tDNBQJaY7cHD4RRaTwF6qXpmD,
+  [DID_zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN[
+    'id'
+  ]]: DID_zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN,
   [DID_SOV_QqEfJxe752NCmWqR5TssZ5['id']]: DID_SOV_QqEfJxe752NCmWqR5TssZ5,
   SECURITY_CONTEXT_V1_URL: SECURITY_V1,
   SECURITY_CONTEXT_V2_URL: SECURITY_V2,
@@ -60,6 +64,7 @@ export const DOCUMENTS = {
   DID_V1_CONTEXT_URL: DID_V1,
   CREDENTIALS_CONTEXT_V1_URL: CREDENTIALS_V1,
   SECURITY_CONTEXT_BBS_URL: BBS_V1,
+  'https://w3id.org/security/bbs/v1': BBS_V1,
   'https://w3id.org/security/v1': SECURITY_V1,
   'https://w3id.org/security/v2': SECURITY_V2,
   'https://w3id.org/security/suites/x25519-2019/v1': X25519_V1,
@@ -74,32 +79,6 @@ export const DOCUMENTS = {
 }
 
 export const customDocumentLoader = async (url: string): Promise<Record<string, any>> => {
-  // if (url.startsWith('did:')) {
-  //   let didDoc = DOCUMENTS[url]
-
-  //   if (!didDoc) {
-  //     const withoutFragment = url.split('#')[0]
-  //     didDoc = DOCUMENTS[withoutFragment]
-  //   }
-
-  //   if (!didDoc) {
-  //     throw new Error(`Document not found: ${url}`)
-  //   }
-
-  //   const framed = await frame(didDoc, {
-  //     '@context': didDoc['@context'],
-  //     '@embed': '@never',
-  //     id: url,
-  //   })
-
-  //   return {
-  //     // contextUrl: result.didDocument.context[0],
-  //     contextUrl: null,
-  //     documentUrl: url,
-  //     document: framed,
-  //   }
-  // }
-
   let result = DOCUMENTS[url]
 
   if (!result) {

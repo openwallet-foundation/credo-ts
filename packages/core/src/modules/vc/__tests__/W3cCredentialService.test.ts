@@ -34,12 +34,6 @@ const DidRepositoryMock = DidRepository as unknown as jest.Mock<DidRepository>
 jest.mock('../models/credential/W3cCredentialRepository')
 const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
 
-// Just a convenience function for testing
-// TODO remove this when done
-const printJson = (json: any) => {
-  console.log(JSON.stringify(JsonTransformer.toJSON(json), null, 2))
-}
-
 describe('W3cCredentialService', () => {
   let wallet: IndyWallet
   let agentConfig: AgentConfig
@@ -64,7 +58,7 @@ describe('W3cCredentialService', () => {
       agentConfig,
       logger
     )
-    // w3cCredentialService.documentLoader = customDocumentLoader
+    w3cCredentialService.documentLoader = customDocumentLoader
   })
 
   afterAll(async () => {
@@ -296,7 +290,7 @@ describe('W3cCredentialService', () => {
       const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
       issuerDidKey = new DidKey(key)
     })
-    describe('signCredential bbs', () => {
+    describe('signCredential', () => {
       it('should return a successfully signed credential', async () => {
         const credentialJson = BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT
         credentialJson.issuer = issuerDidKey.did
@@ -378,7 +372,7 @@ describe('W3cCredentialService', () => {
       it('should create a presentation successfully', async () => {
         const vc = JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VALID_DERIVED, W3cVerifiableCredential)
         const result = await w3cCredentialService.createPresentation({ credentials: vc })
-        printJson(result)
+
         expect(result).toBeInstanceOf(W3cPresentation)
 
         expect(result.type).toEqual(expect.arrayContaining(['VerifiablePresentation']))
@@ -407,8 +401,6 @@ describe('W3cCredentialService', () => {
           signatureType: 'Ed25519Signature2018',
           verificationMethod: signingDidKey.keyId,
         })
-
-        printJson(verifiablePresentation)
 
         expect(verifiablePresentation).toBeInstanceOf(W3cVerifiablePresentation)
       })

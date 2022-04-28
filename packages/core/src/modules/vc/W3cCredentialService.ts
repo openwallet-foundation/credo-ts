@@ -15,6 +15,7 @@ import jsonld, { expand, frame } from '@digitalcredentials/jsonld'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
+import documentLoaderXhr from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
 import vc from '@digitalcredentials/vc'
 import { deriveProof } from '@mattrglobal/jsonld-signatures-bbs'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -24,6 +25,7 @@ import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { JsonTransformer, orArrayToArray } from '../../utils'
+import { isNodeJS, isReactNative } from '../../utils/environment'
 import { uuid } from '../../utils/uuid'
 import { Wallet } from '../../wallet'
 import { DidResolverService, VerificationMethod } from '../dids'
@@ -313,7 +315,15 @@ export class W3cCredentialService {
       }
     }
 
-    const loader = documentLoaderNode.apply(jsonld, [])
+    let loader
+
+    if (isNodeJS()) {
+      loader = documentLoaderNode.apply(jsonld, [])
+    } else if (isReactNative()) {
+      loader = documentLoaderXhr.apply(jsonld, [])
+    } else {
+      throw new AriesFrameworkError('Unsupported environment')
+    }
 
     return await loader(url)
   }
