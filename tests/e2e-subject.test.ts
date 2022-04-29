@@ -8,10 +8,11 @@ import { e2eTest } from './e2e-test'
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
-import { Agent, AutoAcceptCredential } from '@aries-framework/core'
+import { Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 
 const recipientConfig = getBaseConfig('E2E Subject Recipient', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
 const mediatorConfig = getBaseConfig('E2E Subject Mediator', {
   endpoints: ['rxjs:mediator'],
@@ -21,6 +22,7 @@ const senderConfig = getBaseConfig('E2E Subject Sender', {
   endpoints: ['rxjs:sender'],
   mediatorPollingInterval: 1000,
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
 
 describe('E2E Subject tests', () => {
