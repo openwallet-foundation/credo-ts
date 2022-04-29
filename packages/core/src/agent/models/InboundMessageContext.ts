@@ -1,29 +1,29 @@
 import type { ConnectionRecord } from '../../modules/connections'
-import type { DIDCommV1Message } from '../didcomm/v1/DIDCommV1Message'
+import type { DIDCommMessage } from '../didcomm'
 
 import { AriesFrameworkError } from '../../error'
 
 export interface MessageContextParams {
   connection?: ConnectionRecord
-  senderKid?: string
-  recipientKid?: string
+  sender?: string
+  recipient?: string
 }
 
-export class InboundMessageContext<T extends DIDCommV1Message = DIDCommV1Message> {
+export class InboundMessageContext<T extends DIDCommMessage = DIDCommMessage> {
   public message: T
   public connection?: ConnectionRecord
-  public senderKid?: string
-  public recipientKid?: string
+  public sender?: string
+  public recipient?: string
 
   public constructor(message: T, context: MessageContextParams = {}) {
     this.message = message
-    this.recipientKid = context.recipientKid
-    this.senderKid = context.senderKid
+    this.recipient = context.recipient
+    this.sender = context.sender
     this.connection = context.connection
   }
 
   /**
-   * Assert the inbound message has a ready connection associated with it.
+   * Assert the inbound record has a ready connection associated with it.
    *
    * @throws {AriesFrameworkError} if there is no connection or the connection is not ready
    */

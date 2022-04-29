@@ -7,6 +7,7 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage'
+import { OutOfBandInvitationMessage } from '../messages/OutOfBandInvitationMessage'
 import { ConnectionState } from '../models/ConnectionState'
 import { DidDoc } from '../models/did/DidDoc'
 
@@ -20,6 +21,7 @@ export interface ConnectionRecordProps {
   theirDidDoc?: DidDoc
   theirLabel?: string
   invitation?: ConnectionInvitationMessage
+  outOfBandInvitation?: OutOfBandInvitationMessage
   state: ConnectionState
   role: ConnectionRole
   alias?: string
@@ -64,6 +66,10 @@ export class ConnectionRecord
 
   @Type(() => ConnectionInvitationMessage)
   public invitation?: ConnectionInvitationMessage
+
+  @Type(() => OutOfBandInvitationMessage)
+  public outOfBandInvitation?: OutOfBandInvitationMessage
+
   public alias?: string
   public autoAcceptConnection?: boolean
   public imageUrl?: string
@@ -94,6 +100,7 @@ export class ConnectionRecord
       this.autoAcceptConnection = props.autoAcceptConnection
       this._tags = props.tags ?? {}
       this.invitation = props.invitation
+      this.outOfBandInvitation = props.outOfBandInvitation
       this.threadId = props.threadId
       this.imageUrl = props.imageUrl
       this.multiUseInvitation = props.multiUseInvitation

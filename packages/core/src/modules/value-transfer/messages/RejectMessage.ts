@@ -1,20 +1,28 @@
-import { Expose } from "class-transformer"
+import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-import { BaseMessage, BaseCommonMessageParams, ValueTransferBody } from "./BaseMessage"
-import { Error } from "../error"
+import { ValueTransferMessage } from '@value-transfer/value-transfer-lib'
+import { Expose } from 'class-transformer'
+import { Equals, ValidateNested } from 'class-validator'
 
-export type RejectMessageParams = BaseCommonMessageParams & {
-    request: ValueTransferBody
-    rejectionReason: Error
-    thid: string
+import { DIDCommV2Message } from '../../../agent/didcomm'
+
+type RejectMessageParams = DIDCommV2MessageParams & {
+  body: ValueTransferMessage & {
+    rejectionReason: string
+  }
 }
 
-export class RejectMessage extends BaseMessage {
-    @Expose({ name: "rejectionReason" })
-    public rejectionReason: Error
+export class RejectMessage extends DIDCommV2Message {
+  public constructor(options: RejectMessageParams) {
+    super(options)
+    this.body = options.body
+  }
 
-    public constructor({ from, to, request, rejectionReason, thid }: RejectMessageParams) {
-        super({ from, to, body: request, thid })
-        this.rejectionReason = rejectionReason
-    }
+  @Equals(RejectMessage.type)
+  public readonly type = RejectMessage.type
+  public static readonly type = 'https://didcomm.org/vtp/1.0/reject'
+
+  @Expose({ name: 'body' })
+  @ValidateNested()
+  public body!: ValueTransferMessage
 }

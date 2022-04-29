@@ -1,8 +1,8 @@
 import type { Logger } from '../../../logger'
-import type { EncryptedMessage } from '../../../types'
+import type { EncryptedMessage } from '../types'
 import type { DIDCommV2Message } from '../v2/DIDCommV2Message'
 
-import { Message } from 'didcomm'
+import { Message } from 'didcomm-node'
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { JsonEncoder } from '../../../utils'
@@ -11,7 +11,7 @@ import { AgentConfig } from '../../AgentConfig'
 import { DIDResolverService } from './DIDResolverService'
 import { SecretResolverService } from './SecretResolverService'
 
-export interface EnvelopeDIDs {
+export interface PackMessageParams {
   toDID: string
   fromDID: string
   signByDID: string | null
@@ -26,11 +26,11 @@ export interface PlaintextMessage {
 export interface DecryptedMessageContext {
   plaintextMessage: PlaintextMessage
   senderKid?: string
-  recipientKids?: string[]
+  recipientKid?: string
 }
 
 @scoped(Lifecycle.ContainerScoped)
-class EnvelopeService {
+export class DIDCommV2EnvelopeService {
   private logger: Logger
   private didResolverService: DIDResolverService
   private secretResolverService: SecretResolverService
@@ -45,12 +45,13 @@ class EnvelopeService {
     this.secretResolverService = secretResolverService
   }
 
-  public async packMessage(payload: DIDCommV2Message, dids: EnvelopeDIDs): Promise<EncryptedMessage> {
+  public async packMessage(payload: DIDCommV2Message, params: PackMessageParams): Promise<EncryptedMessage> {
+    // @ts-ignore
     const message = new Message(payload)
     const [encryptedMsg] = await message.pack_encrypted(
-      dids.toDID,
-      dids.fromDID,
-      dids.signByDID,
+      params.toDID,
+      params.fromDID,
+      params.signByDID,
       this.didResolverService,
       this.secretResolverService,
       {}
@@ -65,12 +66,22 @@ class EnvelopeService {
       this.secretResolverService,
       {}
     )
+
+    // find actual key decrypted message
+    // TODO: it will be great of `didcomm` package return this data
+    let recipient: string | undefined
+    for (const recipientKid in unpackMetadata.encrypted_to_kids) {
+      const secret = await this.secretResolverService.get_secret(recipientKid)
+      if (secret) {
+        recipient = recipientKid
+        break
+      }
+    }
+
     return {
       senderKid: unpackMetadata.encrypted_from_kid,
-      recipientKids: unpackMetadata.encrypted_to_kids,
+      recipientKid: recipient,
       plaintextMessage: unpackedMsg.as_value(),
     }
   }
 }
-
-export { EnvelopeService }

@@ -4,7 +4,7 @@ import { getAgentConfig } from '../../../tests/helpers'
 import { Dispatcher } from '../Dispatcher'
 import { EventEmitter } from '../EventEmitter'
 import { MessageSender } from '../MessageSender'
-import { DIDCommV1Message } from '../didcomm/v1/AgentMessage'
+import { DIDCommV1Message } from '../didcomm/v1/DIDCommV1Message'
 
 class ConnectionInvitationTestMessage extends DIDCommV1Message {
   public static readonly type = 'https://didcomm.org/connections/1.0/invitation'
@@ -45,11 +45,11 @@ describe('Dispatcher', () => {
 
   const dispatcher = new Dispatcher(new MessageSenderMock(), eventEmitter, agentConfig)
 
-  dispatcher.registerHandler(
+  dispatcher.registerDIDCommV1Handler(
     new TestHandler([ConnectionInvitationTestMessage, ConnectionRequestTestMessage, ConnectionResponseTestMessage])
   )
-  dispatcher.registerHandler(new TestHandler([NotificationAckTestMessage]))
-  dispatcher.registerHandler(new TestHandler([CredentialProposalTestMessage]))
+  dispatcher.registerDIDCommV1Handler(new TestHandler([NotificationAckTestMessage]))
+  dispatcher.registerDIDCommV1Handler(new TestHandler([CredentialProposalTestMessage]))
 
   describe('supportedMessageTypes', () => {
     test('return all supported message types URIs', async () => {

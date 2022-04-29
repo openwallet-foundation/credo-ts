@@ -1,4 +1,4 @@
-import type { AgentMessageV1ProcessedEvent } from '../../agent/Events'
+import type { AgentMessageProcessedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
 import type { OutboundWebSocketClosedEvent } from '../../transport'
 import type { OutboundMessage } from '../../types'
@@ -219,7 +219,7 @@ export class RecipientModule {
     // Listen for response to our feature query
     const replaySubject = new ReplaySubject(1)
     this.eventEmitter
-      .observable<AgentMessageV1ProcessedEvent>(AgentEventTypes.AgentMessageV1Processed)
+      .observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
       .pipe(
         // Stop when the agent shuts down
         takeUntil(this.agentConfig.stop$),
@@ -393,9 +393,9 @@ export class RecipientModule {
 
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
+    dispatcher.registerDIDCommV1Handler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
+    dispatcher.registerDIDCommV1Handler(new MediationGrantHandler(this.mediationRecipientService))
+    dispatcher.registerDIDCommV1Handler(new MediationDenyHandler(this.mediationRecipientService))
     //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }

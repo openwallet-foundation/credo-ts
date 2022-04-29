@@ -1,4 +1,4 @@
-import type { KeyType } from '../../key-manager/KeyManager'
+import type { KeyType } from '../../crypto'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -13,6 +13,6 @@ export class KeysModule {
   }
 
   public createKey(controller: string, kid?: string, keyType?: KeyType) {
-    return this.keyService.createKey(controller, kid, keyType)
+    return this.keyService.createKey({ controller, kid, keyType })
   }
 }

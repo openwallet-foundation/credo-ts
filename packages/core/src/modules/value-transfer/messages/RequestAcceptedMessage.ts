@@ -1,25 +1,26 @@
-import { Equals } from "class-validator"
+import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-import { BaseMessage, BaseCommonMessageParams, ValueTransferBody } from "./BaseMessage"
-import { MessageType } from "./MessageType"
-import { PartyProof, Proof } from "../types"
+import { ValueTransferMessage } from '@value-transfer/value-transfer-lib'
+import { Expose } from 'class-transformer'
+import { Equals, ValidateNested } from 'class-validator'
 
-export type RequestAcceptedMessageParams = BaseCommonMessageParams & {
-    request: ValueTransferBody
-    proof: Proof
-    thid: string
+import { DIDCommV2Message } from '../../../agent/didcomm'
+
+type RequestAcceptedMessageParams = DIDCommV2MessageParams & {
+  body: ValueTransferMessage
 }
 
-export class RequestAcceptedMessage extends BaseMessage {
-    public constructor({ from, to, request, proof, thid }: RequestAcceptedMessageParams) {
-        const body = new ValueTransferBody({
-            payment: request.payment,
-            proofs: [new PartyProof({ party: from, proof })]
-        })
-        super({ from, to, body, thid })
-    }
+export class RequestAcceptedMessage extends DIDCommV2Message {
+  public constructor(options: RequestAcceptedMessageParams) {
+    super(options)
+    this.body = options.body
+  }
 
-    @Equals(RequestAcceptedMessage.type)
-    public readonly type = RequestAcceptedMessage.type
-    public static readonly type = MessageType.ACCEPTED
+  @Equals(RequestAcceptedMessage.type)
+  public readonly type = RequestAcceptedMessage.type
+  public static readonly type = 'https://didcomm.org/vtp/1.0/accept-payment'
+
+  @Expose({ name: 'body' })
+  @ValidateNested()
+  public body!: ValueTransferMessage
 }

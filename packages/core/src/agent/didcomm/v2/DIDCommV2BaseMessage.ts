@@ -1,13 +1,23 @@
-import type { Constructor } from '../../../utils/mixins'
-import type { Attachment } from 'didcomm'
+import type { Attachment } from 'didcomm-node'
 
 import { Expose } from 'class-transformer'
-import { IsArray, IsNumber, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
+import { IsArray, IsNumber, IsOptional, IsString, Matches } from 'class-validator'
 
 import { uuid } from '../../../utils/uuid'
 import { MessageIdRegExp, MessageTypeRegExp } from '../validation'
 
-export type DIDComV2BaseMessageConstructor = Constructor<DIDCommV2BaseMessage>
+export type DIDCommV2MessageParams = {
+  id?: string
+  from?: string
+  to?: string
+  thid?: string
+  pthid?: string
+  created_time?: number
+  expires_time?: number
+  from_prior?: string
+  attachments?: Array<Attachment>
+  body?: any
+}
 
 export class DIDCommV2BaseMessage {
   @Expose({ name: 'id' })
@@ -22,10 +32,6 @@ export class DIDCommV2BaseMessage {
   @Expose({ name: 'typ' })
   public readonly typ = DIDCommV2BaseMessage.type
   public static readonly typ = 'application/didcomm-plain+json'
-
-  @Expose({ name: 'body' })
-  @ValidateNested()
-  public body!: any
 
   @Expose({ name: 'from' })
   @IsString()
@@ -57,9 +63,26 @@ export class DIDCommV2BaseMessage {
   @IsOptional()
   public from_prior?: string
 
-  @IsString()
+  @IsOptional()
+  public body?: any
+
   @IsOptional()
   public attachments?: Array<Attachment>
+
+  public constructor(options?: DIDCommV2MessageParams) {
+    if (options) {
+      this.id = options.id || this.generateId()
+      this.from = options.from
+      this.to = options.to ? [options.to] : undefined
+      this.thid = options.thid
+      this.pthid = options.pthid
+      this.created_time = options.created_time
+      this.expires_time = options.expires_time
+      this.from_prior = options.from_prior
+      this.attachments = options.attachments
+      this.body = options.body
+    }
+  }
 
   public generateId() {
     return uuid()

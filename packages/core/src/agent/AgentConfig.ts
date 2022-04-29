@@ -10,6 +10,7 @@ import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
 import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
 import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
+import { AutoAcceptValueTransfer } from '../modules/value-transfer/ValueTransferAutoAcceptType'
 import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
@@ -65,6 +66,10 @@ export class AgentConfig {
 
   public get autoAcceptCredentials() {
     return this.initConfig.autoAcceptCredentials ?? AutoAcceptCredential.Never
+  }
+
+  public get autoAcceptValueTransfer() {
+    return this.initConfig.valueTransferConfig?.autoAcceptValueTransfer ?? AutoAcceptValueTransfer.Never
   }
 
   public get didCommMimeType() {

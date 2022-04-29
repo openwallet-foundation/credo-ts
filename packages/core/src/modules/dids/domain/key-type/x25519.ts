@@ -1,19 +1,19 @@
-import type { VerificationMethod } from '../verificationMethod'
 import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto'
 import { DidDocumentBuilder } from '../DidDocumentBuilder'
 import { Key } from '../Key'
+import { VerificationMethod } from '../verificationMethod'
 
 const VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019 = 'X25519KeyAgreementKey2019'
 
 export function getX25519VerificationMethod({ key, id, controller }: { id: string; key: Key; controller: string }) {
-  return {
+  return new VerificationMethod({
     id,
     type: VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019,
     controller,
     publicKeyBase58: key.publicKeyBase58,
-  }
+  })
 }
 
 export function getX25519DidDoc(did: string, key: Key) {

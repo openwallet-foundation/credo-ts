@@ -1,5 +1,5 @@
 import type { EventEmitter } from '../../../agent/EventEmitter'
-import type { AgentMessageV1ReceivedEvent } from '../../../agent/Events'
+import type { AgentMessageReceivedEvent } from '../../../agent/Events'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 
 import { AgentEventTypes } from '../../../agent/Events'
@@ -23,8 +23,8 @@ export class BatchHandler implements Handler {
 
     const forwardedMessages = message.messages
     forwardedMessages.forEach((message) => {
-      this.eventEmitter.emit<AgentMessageV1ReceivedEvent>({
-        type: AgentEventTypes.AgentMessageV1Received,
+      this.eventEmitter.emit<AgentMessageReceivedEvent>({
+        type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: message.message,
         },

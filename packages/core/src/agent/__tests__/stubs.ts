@@ -1,12 +1,12 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { TransportSession } from '../TransportService'
-import type { DIDCommV1Message } from '../didcomm/v1/AgentMessage'
-import type { EnvelopeKeys } from '../didcomm/v1/EnvelopeService'
+import type { PackMessageParams } from '../didcomm/EnvelopeService'
+import type { DIDCommV1Message } from '../didcomm/v1/DIDCommV1Message'
 
 export class DummyTransportSession implements TransportSession {
   public id: string
   public readonly type = 'http'
-  public keys?: EnvelopeKeys
+  public keys?: PackMessageParams
   public inboundMessage?: DIDCommV1Message
   public connection?: ConnectionRecord
 

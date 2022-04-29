@@ -1,6 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { EncryptedMessage } from '../../../types'
 import type { BatchPickupMessage } from '../messages'
+import type { EncryptedMessage } from '@aries-framework/core'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 

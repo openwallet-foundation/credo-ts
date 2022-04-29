@@ -1,43 +1,26 @@
-import { Equals } from "class-validator"
+import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-import { BaseMessage, BaseCommonMessageParams, ValueTransferBody, SigningMessage } from "./BaseMessage"
-import { MessageType } from "./MessageType"
-import { PartyProof, Payment, Signature } from "../types"
-import { ErrorCodes, ValueTransferError } from "../error"
+import { ValueTransferMessage } from '@value-transfer/value-transfer-lib'
+import { Expose } from 'class-transformer'
+import { Equals, ValidateNested } from 'class-validator'
 
-export type ReceiptMessageParams = BaseCommonMessageParams & {
-    payment: Payment
-    proofs: PartyProof[]
-    signatures: Signature[]
-    thid: string
+import { DIDCommV2Message } from '../../../agent/didcomm'
+
+type ReceiptMessageParams = DIDCommV2MessageParams & {
+  body: ValueTransferMessage
 }
 
-export class ReceiptMessage extends BaseMessage implements SigningMessage {
-    public constructor({ from, to, payment, proofs, signatures, thid }: ReceiptMessageParams) {
-        const body = new ValueTransferBody({
-            payment,
-            proofs,
-            signatures
-        })
-        super({ from, to, body, thid })
-    }
+export class ReceiptMessage extends DIDCommV2Message {
+  public constructor(options: ReceiptMessageParams) {
+    super(options)
+    this.body = options.body
+  }
 
-    @Equals(ReceiptMessage.type)
-    public readonly type = ReceiptMessage.type
-    public static readonly type = MessageType.WITNESSED
+  @Equals(ReceiptMessage.type)
+  public readonly type = ReceiptMessage.type
+  public static readonly type = 'https://didcomm.org/vtp/1.0/receipt'
 
-    public signingPayload(): ValueTransferBody | Payment {
-        return {
-            ...this.body,
-            signatures: this.body.signatures.filter((it) => it.party !== this.body.payment.witness)
-        }
-    }
-
-    public signature(): Signature {
-        const signature = this.body.signatures.find((it) => it.party === this.body.payment.witness)
-        if (!signature) {
-            throw new ValueTransferError(ErrorCodes.MissingSignature)
-        }
-        return signature
-    }
+  @Expose({ name: 'body' })
+  @ValidateNested()
+  public body!: ValueTransferMessage
 }

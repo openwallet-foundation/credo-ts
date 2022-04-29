@@ -13,17 +13,19 @@ import { concatMap, takeUntil } from 'rxjs/operators'
 import { container as baseContainer } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
+import { StablelibCrypto } from '../crypto'
 import { AriesFrameworkError } from '../error'
-import { NobleKeyManager } from '../key-manager'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
+import { KeysModule } from '../modules/keys'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
+import { ValueTransferModule } from '../modules/value-transfer'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -57,8 +59,10 @@ export class Agent {
   public readonly mediationRecipient: RecipientModule
   public readonly mediator: MediatorModule
   public readonly discovery: DiscoverFeaturesModule
+  public readonly keys: KeysModule
   public readonly dids: DidsModule
   public readonly wallet: WalletModule
+  public readonly valueTransfer: ValueTransferModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
     // Create child container so we don't interfere with anything outside of this agent
@@ -75,7 +79,7 @@ export class Agent {
     this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
     this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
     this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
-    this.container.registerSingleton(InjectionSymbols.KeyManager, NobleKeyManager)
+    this.container.registerSingleton(InjectionSymbols.Crypto, StablelibCrypto)
 
     this.logger.info('Creating agent with config', {
       ...initialConfig,
@@ -108,8 +112,10 @@ export class Agent {
     this.basicMessages = this.container.resolve(BasicMessagesModule)
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
+    this.keys = this.container.resolve(KeysModule)
     this.dids = this.container.resolve(DidsModule)
     this.wallet = this.container.resolve(WalletModule)
+    this.valueTransfer = this.container.resolve(ValueTransferModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
@@ -146,7 +152,13 @@ export class Agent {
   }
 
   public async initialize() {
-    const { connectToIndyLedgersOnStartup, publicDidSeed, walletConfig, mediatorConnectionsInvite } = this.agentConfig
+    const {
+      connectToIndyLedgersOnStartup,
+      publicDidSeed,
+      walletConfig,
+      mediatorConnectionsInvite,
+      valueTransferConfig,
+    } = this.agentConfig
 
     if (this._isInitialized) {
       throw new AriesFrameworkError(
@@ -192,6 +204,10 @@ export class Agent {
     }
 
     await this.mediationRecipient.initialize()
+
+    if (valueTransferConfig) {
+      await this.valueTransfer.initState(valueTransferConfig)
+    }
 
     this._isInitialized = true
   }

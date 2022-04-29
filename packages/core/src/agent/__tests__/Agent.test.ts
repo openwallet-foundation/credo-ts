@@ -29,7 +29,7 @@ import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
-import { EnvelopeService } from '../didcomm/v1/EnvelopeService'
+import { DIDCommV1EnvelopeService } from '../didcomm/v1/DIDCommV1EnvelopeService'
 
 const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test')
 
@@ -149,7 +149,7 @@ describe('Agent', () => {
       expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
       expect(container.resolve(MessageReceiver)).toBeInstanceOf(MessageReceiver)
       expect(container.resolve(Dispatcher)).toBeInstanceOf(Dispatcher)
-      expect(container.resolve(EnvelopeService)).toBeInstanceOf(EnvelopeService)
+      expect(container.resolve(DIDCommV1EnvelopeService)).toBeInstanceOf(DIDCommV1EnvelopeService)
     })
 
     it('should return the same instance for consequent resolves', () => {
@@ -197,7 +197,7 @@ describe('Agent', () => {
       expect(container.resolve(MessageSender)).toBe(container.resolve(MessageSender))
       expect(container.resolve(MessageReceiver)).toBe(container.resolve(MessageReceiver))
       expect(container.resolve(Dispatcher)).toBe(container.resolve(Dispatcher))
-      expect(container.resolve(EnvelopeService)).toBe(container.resolve(EnvelopeService))
+      expect(container.resolve(DIDCommV1EnvelopeService)).toBe(container.resolve(DIDCommV1EnvelopeService))
     })
   })
 })

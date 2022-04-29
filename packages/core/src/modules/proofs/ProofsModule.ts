@@ -444,10 +444,10 @@ export class ProofsModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(
+    dispatcher.registerDIDCommV1Handler(
       new ProposePresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
     )
-    dispatcher.registerHandler(
+    dispatcher.registerDIDCommV1Handler(
       new RequestPresentationHandler(
         this.proofService,
         this.agentConfig,
@@ -455,11 +455,11 @@ export class ProofsModule {
         this.mediationRecipientService
       )
     )
-    dispatcher.registerHandler(
+    dispatcher.registerDIDCommV1Handler(
       new PresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
     )
-    dispatcher.registerHandler(new PresentationAckHandler(this.proofService))
-    dispatcher.registerHandler(new PresentationProblemReportHandler(this.proofService))
+    dispatcher.registerDIDCommV1Handler(new PresentationAckHandler(this.proofService))
+    dispatcher.registerDIDCommV1Handler(new PresentationProblemReportHandler(this.proofService))
   }
 }
 

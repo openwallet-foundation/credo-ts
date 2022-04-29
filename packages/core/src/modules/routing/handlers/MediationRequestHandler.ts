@@ -18,7 +18,7 @@ export class MediationRequestHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<MediationRequestHandler>) {
     if (!messageContext.connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientKid} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipient} not found!`)
     }
 
     const mediationRecord = await this.mediatorService.processMediationRequest(messageContext)

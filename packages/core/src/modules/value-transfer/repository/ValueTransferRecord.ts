@@ -1,20 +1,23 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
+import type { AutoAcceptValueTransfer } from '../ValueTransferAutoAcceptType'
 import type { ValueTransferRole } from '../ValueTransferRole'
 import type { ValueTransferState } from '../ValueTransferState'
+import type { Payment } from '@value-transfer/value-transfer-lib'
 
+import { ValueTransferMessage } from '@value-transfer/value-transfer-lib'
 import { Type } from 'class-transformer'
 
+import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { RequestMessage } from '../messages'
-
-import { AriesFrameworkError } from '@aries-framework/core'
 import {
+  ReceiptMessage,
   CashAcceptedMessage,
   CashRemovedMessage,
-  ReceiptMessage,
   RequestAcceptedMessage,
-} from '@value-transfer/value-transfer-lib'
+  RequestMessage,
+} from '../messages'
+import { RejectMessage } from '../messages/RejectMessage'
 
 export type CustomValueTransferTags = TagsBase
 export type DefaultValueTransferTags = {
@@ -26,11 +29,16 @@ export type ValueTransferTags = RecordTags<ValueTransferRecord>
 
 export interface ValueTransferStorageProps {
   id?: string
-  createdAt?: Date
-  state: ValueTransferState
-  connectionId?: string
+  payment: Payment
   role: ValueTransferRole
+  state: ValueTransferState
   threadId: string
+  createdAt?: Date
+  autoAcceptValueTransfer?: AutoAcceptValueTransfer
+  receipt?: ValueTransferMessage
+  witnessConnectionId?: string
+  getterConnectionId?: string
+  giverConnectionId?: string
 
   tags?: CustomValueTransferTags
   requestMessage?: RequestMessage
@@ -38,12 +46,20 @@ export interface ValueTransferStorageProps {
   cashAcceptedMessage?: CashAcceptedMessage
   cashRemovedMessage?: CashRemovedMessage
   receiptMessage?: ReceiptMessage
+  rejectMessage?: RejectMessage
 }
 
 export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, CustomValueTransferTags> {
-  public connectionId?: string
+  public witnessConnectionId?: string
+  public getterConnectionId?: string
+  public giverConnectionId?: string
+
   public threadId!: string
+
+  public payment!: Payment
+
   public role!: ValueTransferRole
+
   public state!: ValueTransferState
 
   @Type(() => RequestMessage)
@@ -61,6 +77,14 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   @Type(() => ReceiptMessage)
   public receiptMessage?: ReceiptMessage
 
+  @Type(() => RejectMessage)
+  public rejectMessage?: RejectMessage
+
+  @Type(() => ValueTransferMessage)
+  public receipt?: ValueTransferMessage
+
+  public autoAcceptValueTransfer?: AutoAcceptValueTransfer
+
   public static readonly type = 'ValueTransferRecord'
   public readonly type = ValueTransferRecord.type
 
@@ -70,24 +94,44 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this.connectionId = props.connectionId
+      this.witnessConnectionId = props.witnessConnectionId
+      this.getterConnectionId = props.getterConnectionId
+      this.giverConnectionId = props.giverConnectionId
       this.threadId = props.threadId
-      this._tags = props.tags ?? {}
       this.role = props.role
+      this.payment = props.payment
       this.state = props.state
       this.requestMessage = props.requestMessage
       this.requestAcceptedMessage = props.requestAcceptedMessage
       this.cashAcceptedMessage = props.cashAcceptedMessage
       this.cashRemovedMessage = props.cashRemovedMessage
       this.receiptMessage = props.receiptMessage
+      this.rejectMessage = props.rejectMessage
+      this.autoAcceptValueTransfer = props.autoAcceptValueTransfer
+      this._tags = props.tags ?? {}
     }
   }
 
   public getTags() {
     return {
       ...this._tags,
+      witnessConnectionId: this.witnessConnectionId,
+      getterConnectionId: this.getterConnectionId,
+      giverConnectionId: this.giverConnectionId,
       threadId: this.threadId,
       role: this.role,
+    }
+  }
+
+  public assertRole(expectedRoles: ValueTransferRole | ValueTransferRole[]) {
+    if (!Array.isArray(expectedRoles)) {
+      expectedRoles = [expectedRoles]
+    }
+
+    if (!expectedRoles.includes(this.role)) {
+      throw new AriesFrameworkError(
+        `Value Transfer record has an unexpected role ${this.role}. Valid roles are: ${expectedRoles.join(', ')}.`
+      )
     }
   }
 
@@ -98,19 +142,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
 
     if (!expectedStates.includes(this.state)) {
       throw new AriesFrameworkError(
-        `Credential record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
-      )
-    }
-  }
-
-  public assertConnection(currentConnectionId: string) {
-    if (!this.connectionId) {
-      throw new AriesFrameworkError(
-        `Credential record is not associated with any connection. This is often the case with connection-less credential exchange`
-      )
-    } else if (this.connectionId !== currentConnectionId) {
-      throw new AriesFrameworkError(
-        `Credential record is associated with connection '${this.connectionId}'. Current connection is '${currentConnectionId}'`
+        `Value Transfer record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
       )
     }
   }

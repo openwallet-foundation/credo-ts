@@ -1,5 +1,5 @@
 import type { VerificationMethod } from '../../../modules/dids'
-import type { DIDDoc, DIDResolver } from 'didcomm'
+import type { DIDDoc, DIDResolver } from 'didcomm-node'
 
 import { Lifecycle, scoped } from 'tsyringe'
 

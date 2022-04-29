@@ -1,10 +1,10 @@
 import type { ConnectionRecord } from '../modules/connections'
 import type { DidCommService, IndyAgentService } from '../modules/dids/domain/service'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
+import type { OutboundMessage, OutboundPackage, SendMessageOptions } from '../types'
 import type { TransportSession } from './TransportService'
-import type { DIDCommV1Message } from './didcomm'
-import type { EnvelopeKeys } from './didcomm/v1/EnvelopeService'
+import type { DIDCommMessage, EncryptedMessage } from './didcomm'
+import type { PackMessageParams } from './didcomm/EnvelopeService'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -17,7 +17,8 @@ import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 
 import { TransportService } from './TransportService'
-import { EnvelopeService } from './didcomm/v1/EnvelopeService'
+import { DIDCommVersion } from './didcomm/DIDCommMessage'
+import { EnvelopeService } from './didcomm/EnvelopeService'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -53,15 +54,15 @@ export class MessageSender {
   }
 
   public async packMessage({
-    keys,
+    params,
     message,
     endpoint,
   }: {
-    keys: EnvelopeKeys
-    message: DIDCommV1Message
+    params: PackMessageParams
+    message: DIDCommMessage
     endpoint: string
   }): Promise<OutboundPackage> {
-    const encryptedMessage = await this.envelopeService.packMessage(message, keys)
+    const encryptedMessage = await this.envelopeService.packMessage(message, params)
 
     return {
       payload: encryptedMessage,
@@ -70,7 +71,7 @@ export class MessageSender {
     }
   }
 
-  private async sendMessageToSession(session: TransportSession, message: DIDCommV1Message) {
+  private async sendMessageToSession(session: TransportSession, message: DIDCommMessage) {
     this.logger.debug(`Existing ${session.type} transport session has been found.`, {
       keys: session.keys,
     })
@@ -154,12 +155,7 @@ export class MessageSender {
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
 
-  public async sendMessage(
-    outboundMessage: OutboundMessage,
-    options?: {
-      transportPriority?: TransportPriorityOptions
-    }
-  ) {
+  public async sendMessage(outboundMessage: OutboundMessage, options?: SendMessageOptions) {
     const { connection, payload } = outboundMessage
     const errors: Error[] = []
 
@@ -242,7 +238,7 @@ export class MessageSender {
     returnRoute,
     connectionId,
   }: {
-    message: DIDCommV1Message
+    message: DIDCommMessage
     service: DidCommService
     senderKey: string
     returnRoute?: boolean
@@ -251,14 +247,24 @@ export class MessageSender {
     if (this.outboundTransports.length === 0) {
       throw new AriesFrameworkError('Agent has no outbound transport!')
     }
+    if (!service.recipientKeys.length) {
+      throw new AriesFrameworkError('Service does not contain any recipient!')
+    }
 
     this.logger.debug(`Sending outbound message to service:`, { messageId: message.id, service })
 
-    const keys = {
-      recipientKeys: service.recipientKeys,
-      routingKeys: service.routingKeys || [],
-      senderKey,
-    }
+    const params: PackMessageParams =
+      message.version === DIDCommVersion.V1
+        ? {
+            recipientKeys: service.recipientKeys,
+            routingKeys: service.routingKeys || [],
+            senderKey,
+          }
+        : {
+            toDID: service.recipientKeys[0],
+            fromDID: senderKey,
+            signByDID: null,
+          }
 
     // Set return routing for message if requested
     if (returnRoute) {
@@ -279,7 +285,7 @@ export class MessageSender {
       throw error
     }
 
-    const outboundPackage = await this.packMessage({ message, keys, endpoint: service.serviceEndpoint })
+    const outboundPackage = await this.packMessage({ message, params, endpoint: service.serviceEndpoint })
     outboundPackage.endpoint = service.serviceEndpoint
     outboundPackage.connectionId = connectionId
     for (const transport of this.outboundTransports) {

@@ -1,25 +1,26 @@
-import { Equals } from "class-validator"
+import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-import { BaseMessage, BaseCommonMessageParams, ValueTransferBody } from "./BaseMessage"
-import { MessageType } from "./MessageType"
-import { PartyProof, Proof } from "../types"
+import { ValueTransferMessage } from '@value-transfer/value-transfer-lib'
+import { Expose } from 'class-transformer'
+import { Equals, ValidateNested } from 'class-validator'
 
-export type CashRemovedMessageParams = BaseCommonMessageParams & {
-    request: ValueTransferBody
-    proof: Proof
-    thid: string
+import { DIDCommV2Message } from '../../../agent/didcomm'
+
+type CashRemovedMessageParams = DIDCommV2MessageParams & {
+  body: ValueTransferMessage
 }
 
-export class CashRemovedMessage extends BaseMessage {
-    public constructor({ from, to, request, proof, thid }: CashRemovedMessageParams) {
-        const body = new ValueTransferBody({
-            payment: request.payment,
-            proofs: [new PartyProof({ party: from, proof })]
-        })
-        super({ from, to, body, thid })
-    }
+export class CashRemovedMessage extends DIDCommV2Message {
+  public constructor(options: CashRemovedMessageParams) {
+    super(options)
+    this.body = options.body
+  }
 
-    @Equals(CashRemovedMessage.type)
-    public readonly type = CashRemovedMessage.type
-    public static readonly type = MessageType.GIVER_ROOF
+  @Equals(CashRemovedMessage.type)
+  public readonly type = CashRemovedMessage.type
+  public static readonly type = 'https://didcomm.org/vtp/1.0/remove-cash'
+
+  @Expose({ name: 'body' })
+  @ValidateNested()
+  public body!: ValueTransferMessage
 }

@@ -1,3 +1,6 @@
+import type { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
+import type { DIDCommMessage } from '../DIDCommMessage'
+
 import { AckDecorated } from '../../../decorators/ack/AckDecoratorExtension'
 import { AttachmentDecorated } from '../../../decorators/attachment/AttachmentExtension'
 import { L10nDecorated } from '../../../decorators/l10n/L10nDecoratorExtension'
@@ -8,6 +11,7 @@ import { TransportDecorated } from '../../../decorators/transport/TransportDecor
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from '../../../utils/messageType'
 import { Compose } from '../../../utils/mixins'
+import { DIDCommVersion } from '../DIDCommMessage'
 
 import { DIDCommV1BaseMessage } from './DIDCommV1BaseMessage'
 
@@ -21,7 +25,11 @@ const DefaultDecorators = [
   ServiceDecorated,
 ]
 
-export class DIDCommV1Message extends Compose(DIDCommV1BaseMessage, DefaultDecorators) {
+export class DIDCommV1Message extends Compose(DIDCommV1BaseMessage, DefaultDecorators) implements DIDCommMessage {
+  public get version(): DIDCommVersion {
+    return DIDCommVersion.V1
+  }
+
   public toJSON({ useLegacyDidSovPrefix = false }: { useLegacyDidSovPrefix?: boolean } = {}): Record<string, unknown> {
     const json = JsonTransformer.toJSON(this)
 
@@ -30,6 +38,10 @@ export class DIDCommV1Message extends Compose(DIDCommV1BaseMessage, DefaultDecor
     }
 
     return json
+  }
+
+  public serviceDecorator(): ServiceDecorator | undefined {
+    return this.service
   }
 
   public is<C extends typeof DIDCommV1Message>(Class: C): this is InstanceType<C> {

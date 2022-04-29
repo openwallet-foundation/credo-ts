@@ -1,12 +1,17 @@
-import type { DIDCommVersion } from './agent/didcomm/index'
-import type { DIDCommV1Message } from './agent/didcomm/v1/DIDCommV1Message'
+import type { TransportPriorityOptions } from './agent/MessageSender'
+import type { DIDCommMessage, EncryptedMessage } from './agent/didcomm/index'
+import type { KeyType } from './crypto'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
+import type { DidType } from './modules/dids'
 import type { DidCommService } from './modules/dids/domain/service/DidCommService'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
+import type { ValueTransferRole } from './modules/value-transfer'
+import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
+import type { VerifiableNote } from '@value-transfer/value-transfer-lib'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -37,16 +42,12 @@ export interface WalletExportImportConfig {
 }
 
 export interface ValueTransferConfig {
-  getter?: string
-  giver?: string
-  witness?: string
-}
-
-export type EncryptedMessage = {
-  protected: unknown
-  iv: unknown
-  ciphertext: unknown
-  tag: unknown
+  role: ValueTransferRole
+  didType?: DidType
+  keyType?: KeyType
+  seed?: string
+  verifiableNotes?: VerifiableNote[]
+  autoAcceptValueTransfer?: AutoAcceptValueTransfer
 }
 
 export enum DidCommMimeType {
@@ -64,7 +65,6 @@ export interface InitConfig {
   autoAcceptProofs?: AutoAcceptProof
   autoAcceptCredentials?: AutoAcceptCredential
   logger?: Logger
-  didCommVersion: DIDCommVersion
   didCommMimeType?: DidCommMimeType
 
   indyLedgers?: IndyPoolConfig[]
@@ -94,12 +94,12 @@ export interface DecryptedMessageContext {
   recipientKey?: string
 }
 
-export interface OutboundMessage<T extends DIDCommV1Message = DIDCommV1Message> {
+export interface OutboundMessage<T extends DIDCommMessage = DIDCommMessage> {
   payload: T
   connection: ConnectionRecord
 }
 
-export interface OutboundServiceMessage<T extends DIDCommV1Message = DIDCommV1Message> {
+export interface OutboundServiceMessage<T extends DIDCommMessage = DIDCommMessage> {
   payload: T
   service: DidCommService
   senderKey: string
@@ -116,4 +116,8 @@ export type JsonValue = string | number | boolean | null | JsonObject | JsonArra
 export type JsonArray = Array<JsonValue>
 export interface JsonObject {
   [property: string]: JsonValue
+}
+
+export type SendMessageOptions = {
+  transportPriority?: TransportPriorityOptions
 }

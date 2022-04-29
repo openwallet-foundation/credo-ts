@@ -9,6 +9,9 @@
   },
   "license": "Apache-2.0",
   "scripts": {
+    "getter": "ts-node src/GetterInquirer.ts",
+    "giver": "ts-node src/GiverInquirer.ts",
+    "witness": "ts-node src/WitnessInquirer.ts",
     "alice": "ts-node src/AliceInquirer.ts",
     "faber": "ts-node src/FaberInquirer.ts",
     "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"

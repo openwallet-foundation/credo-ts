@@ -1,6 +1,6 @@
 import type { Logger } from '../../../logger'
-import type { DecryptedMessageContext, EncryptedMessage } from '../../../types'
-import type { DIDCommV1Message } from './AgentMessage'
+import type { EncryptedMessage } from '../types'
+import type { DIDCommV1Message } from './DIDCommV1Message'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
@@ -10,14 +10,26 @@ import { JsonEncoder } from '../../../utils'
 import { Wallet } from '../../../wallet/Wallet'
 import { AgentConfig } from '../../AgentConfig'
 
-export interface EnvelopeKeys {
+export interface PackMessageParams {
   recipientKeys: string[]
   routingKeys: string[]
   senderKey: string | null
 }
 
+export interface PlaintextMessage {
+  '@type': string
+  '@id': string
+  [key: string]: unknown
+}
+
+export interface DecryptedMessageContext {
+  plaintextMessage: PlaintextMessage
+  senderKey?: string
+  recipientKey?: string
+}
+
 @scoped(Lifecycle.ContainerScoped)
-class EnvelopeService {
+class DIDCommV1EnvelopeService {
   private wallet: Wallet
   private logger: Logger
   private config: AgentConfig
@@ -28,7 +40,7 @@ class EnvelopeService {
     this.config = agentConfig
   }
 
-  public async packMessage(payload: DIDCommV1Message, keys: EnvelopeKeys): Promise<EncryptedMessage> {
+  public async packMessage(payload: DIDCommV1Message, keys: PackMessageParams): Promise<EncryptedMessage> {
     const { routingKeys, senderKey } = keys
     let recipientKeys = keys.recipientKeys
 
@@ -40,7 +52,7 @@ class EnvelopeService {
 
     let encryptedMessage = await this.wallet.pack(messageBuffer, recipientKeys, senderKey ?? undefined)
 
-    // If the message has routing keys (mediator) pack for each mediator
+    // If the record has routing keys (mediator) pack for each mediator
     for (const routingKey of routingKeys) {
       const forwardMessage = new ForwardMessage({
         // Forward to first recipient key
@@ -48,7 +60,7 @@ class EnvelopeService {
         message: encryptedMessage,
       })
       recipientKeys = [routingKey]
-      this.logger.debug('Forward message created', forwardMessage)
+      this.logger.debug('Forward record created', forwardMessage)
 
       const forwardJson = forwardMessage.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
       const forwardBuffer = JsonEncoder.toBuffer(forwardJson)
@@ -65,4 +77,4 @@ class EnvelopeService {
   }
 }
 
-export { EnvelopeService }
+export { DIDCommV1EnvelopeService }

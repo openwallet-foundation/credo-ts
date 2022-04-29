@@ -1,4 +1,4 @@
-import type { DIDCommV1Message } from '../../agent/didcomm/v1/AgentMessage'
+import type { DIDCommV1Message } from '../../agent/didcomm/v1/DIDCommV1Message'
 import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 

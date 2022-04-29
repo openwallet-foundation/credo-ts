@@ -40,14 +40,14 @@ describe('Present Proof', () => {
     }
   })
 
-  test('Faber starts with connection-less proof requests to Alice', async () => {
+  test('Faber starts with connection-less proof requests to Getter', async () => {
     const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
       'Faber connection-less Proofs',
-      'Alice connection-less Proofs',
+      'Getter connection-less Proofs',
       AutoAcceptProof.Never
     )
     agents = [aliceAgent, faberAgent]
-    testLogger.test('Faber sends presentation request to Alice')
+    testLogger.test('Faber sends presentation request to Getter')
 
     const attributes = {
       name: new ProofAttributeInfo({
@@ -82,20 +82,20 @@ describe('Present Proof', () => {
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
-    testLogger.test('Alice waits for presentation request from Faber')
+    testLogger.test('Getter waits for presentation request from Faber')
     let aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
       threadId: faberProofRecord.threadId,
       state: ProofState.RequestReceived,
     })
 
-    testLogger.test('Alice accepts presentation request from Faber')
+    testLogger.test('Getter accepts presentation request from Faber')
     const retrievedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest(aliceProofRecord.id, {
       filterByPresentationPreview: true,
     })
     const requestedCredentials = aliceAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
     await aliceAgent.proofs.acceptRequest(aliceProofRecord.id, requestedCredentials)
 
-    testLogger.test('Faber waits for presentation from Alice')
+    testLogger.test('Faber waits for presentation from Getter')
     faberProofRecord = await waitForProofRecordSubject(faberReplay, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
@@ -107,19 +107,19 @@ describe('Present Proof', () => {
     // Faber accepts presentation
     await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
-    // Alice waits till it receives presentation ack
+    // Getter waits till it receives presentation ack
     aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.Done,
     })
   })
 
-  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
-    testLogger.test('Faber sends presentation request to Alice')
+  test('Faber starts with connection-less proof requests to Getter with auto-accept enabled', async () => {
+    testLogger.test('Faber sends presentation request to Getter')
 
     const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
       'Faber connection-less Proofs - Auto Accept',
-      'Alice connection-less Proofs - Auto Accept',
+      'Getter connection-less Proofs - Auto Accept',
       AutoAcceptProof.Always
     )
 
@@ -174,8 +174,8 @@ describe('Present Proof', () => {
     })
   })
 
-  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
-    testLogger.test('Faber sends presentation request to Alice')
+  test('Faber starts with connection-less proof requests to Getter with auto-accept enabled and both agents having a mediator', async () => {
+    testLogger.test('Faber sends presentation request to Getter')
 
     const credentialPreview = CredentialPreview.fromRecord({
       name: 'John',

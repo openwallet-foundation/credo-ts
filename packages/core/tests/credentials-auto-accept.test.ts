@@ -48,20 +48,20 @@ describe('auto accept credentials', () => {
       await aliceAgent.wallet.delete()
     })
 
-    test('Alice starts with credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
-      testLogger.test('Alice sends credential proposal to Faber')
+    test('Getter starts with credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
+      testLogger.test('Getter sends credential proposal to Faber')
       let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
         credentialProposal: credentialPreview,
         credentialDefinitionId: credDefId,
       })
 
-      testLogger.test('Alice waits for credential from Faber')
+      testLogger.test('Getter waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: aliceCredentialRecord.threadId,
         state: CredentialState.CredentialReceived,
       })
 
-      testLogger.test('Faber waits for credential ack from Alice')
+      testLogger.test('Faber waits for credential ack from Getter')
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: aliceCredentialRecord.threadId,
         state: CredentialState.Done,
@@ -104,21 +104,21 @@ describe('auto accept credentials', () => {
       })
     })
 
-    test('Faber starts with credential offer to Alice, both with autoAcceptCredential on `always`', async () => {
-      testLogger.test('Faber sends credential offer to Alice')
+    test('Faber starts with credential offer to Getter, both with autoAcceptCredential on `always`', async () => {
+      testLogger.test('Faber sends credential offer to Getter')
       faberCredentialRecord = await faberAgent.credentials.offerCredential(faberConnection.id, {
         preview: credentialPreview,
         credentialDefinitionId: credDefId,
         comment: 'some comment about credential',
       })
 
-      testLogger.test('Alice waits for credential from Faber')
+      testLogger.test('Getter waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.CredentialReceived,
       })
 
-      testLogger.test('Faber waits for credential ack from Alice')
+      testLogger.test('Faber waits for credential ack from Getter')
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.Done,
@@ -170,29 +170,29 @@ describe('auto accept credentials', () => {
       await aliceAgent.wallet.delete()
     })
 
-    test('Alice starts with credential proposal to Faber, both with autoAcceptCredential on `contentApproved`', async () => {
-      testLogger.test('Alice sends credential proposal to Faber')
+    test('Getter starts with credential proposal to Faber, both with autoAcceptCredential on `contentApproved`', async () => {
+      testLogger.test('Getter sends credential proposal to Faber')
       let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
         credentialProposal: credentialPreview,
         credentialDefinitionId: credDefId,
       })
 
-      testLogger.test('Faber waits for credential proposal from Alice')
+      testLogger.test('Faber waits for credential proposal from Getter')
       let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: aliceCredentialRecord.threadId,
         state: CredentialState.ProposalReceived,
       })
 
-      testLogger.test('Faber sends credential offer to Alice')
+      testLogger.test('Faber sends credential offer to Getter')
       faberCredentialRecord = await faberAgent.credentials.acceptProposal(faberCredentialRecord.id)
 
-      testLogger.test('Alice waits for credential from Faber')
+      testLogger.test('Getter waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.CredentialReceived,
       })
 
-      testLogger.test('Faber waits for credential ack from Alice')
+      testLogger.test('Faber waits for credential ack from Getter')
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.Done,
@@ -235,14 +235,14 @@ describe('auto accept credentials', () => {
       })
     })
 
-    test('Faber starts with credential offer to Alice, both with autoAcceptCredential on `contentApproved`', async () => {
-      testLogger.test('Faber sends credential offer to Alice')
+    test('Faber starts with credential offer to Getter, both with autoAcceptCredential on `contentApproved`', async () => {
+      testLogger.test('Faber sends credential offer to Getter')
       faberCredentialRecord = await faberAgent.credentials.offerCredential(faberConnection.id, {
         preview: credentialPreview,
         credentialDefinitionId: credDefId,
       })
 
-      testLogger.test('Alice waits for credential offer from Faber')
+      testLogger.test('Getter waits for credential offer from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.OfferReceived,
@@ -293,13 +293,13 @@ describe('auto accept credentials', () => {
       testLogger.test('alice sends credential request to faber')
       aliceCredentialRecord = await aliceAgent.credentials.acceptOffer(aliceCredentialRecord.id)
 
-      testLogger.test('Alice waits for credential from Faber')
+      testLogger.test('Getter waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.CredentialReceived,
       })
 
-      testLogger.test('Faber waits for credential ack from Alice')
+      testLogger.test('Faber waits for credential ack from Getter')
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.Done,
@@ -334,14 +334,14 @@ describe('auto accept credentials', () => {
       })
     })
 
-    test('Alice starts with credential proposal to Faber, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
-      testLogger.test('Alice sends credential proposal to Faber')
+    test('Getter starts with credential proposal to Faber, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
+      testLogger.test('Getter sends credential proposal to Faber')
       let aliceCredentialRecord = await aliceAgent.credentials.proposeCredential(aliceConnection.id, {
         credentialProposal: credentialPreview,
         credentialDefinitionId: credDefId,
       })
 
-      testLogger.test('Faber waits for credential proposal from Alice')
+      testLogger.test('Faber waits for credential proposal from Getter')
       let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: aliceCredentialRecord.threadId,
         state: CredentialState.ProposalReceived,
@@ -352,7 +352,7 @@ describe('auto accept credentials', () => {
         newCredentialPreview
       )
 
-      testLogger.test('Alice waits for credential offer from Faber')
+      testLogger.test('Getter waits for credential offer from Faber')
 
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialRecord.threadId,
@@ -412,14 +412,14 @@ describe('auto accept credentials', () => {
       aliceCredentialRecord.assertState(CredentialState.OfferReceived)
     })
 
-    test('Faber starts with credential offer to Alice, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
-      testLogger.test('Faber sends credential offer to Alice')
+    test('Faber starts with credential offer to Getter, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
+      testLogger.test('Faber sends credential offer to Getter')
       faberCredentialRecord = await faberAgent.credentials.offerCredential(faberConnection.id, {
         preview: credentialPreview,
         credentialDefinitionId: credDefId,
       })
 
-      testLogger.test('Alice waits for credential offer from Faber')
+      testLogger.test('Getter waits for credential offer from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.OfferReceived,
@@ -467,7 +467,7 @@ describe('auto accept credentials', () => {
       })
       expect(aliceCredentialRecord.type).toBe(CredentialRecord.name)
 
-      testLogger.test('Alice sends credential request to Faber')
+      testLogger.test('Getter sends credential request to Faber')
       aliceCredentialRecord = await aliceAgent.credentials.negotiateOffer(
         aliceCredentialRecord.id,
         newCredentialPreview

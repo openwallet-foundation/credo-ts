@@ -1,4 +1,5 @@
 import type { InitConfig } from '@aries-framework/core'
+import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
 import { Agent, AutoAcceptCredential, AutoAcceptProof, HttpOutboundTransport } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
@@ -16,7 +17,7 @@ export class BaseAgent {
   public config: InitConfig
   public agent: Agent
 
-  public constructor(port: number, name: string) {
+  public constructor(port: number, name: string, valueTransferConfig?: ValueTransferConfig) {
     this.name = name
     this.port = port
 
@@ -26,18 +27,19 @@ export class BaseAgent {
         id: name,
         key: name,
       },
-      publicDidSeed: '6b8b882e2618fa5d45ee7229ca880083',
-      indyLedgers: [
-        {
-          genesisTransactions: bcovrin,
-          id: 'greenlights' + name,
-          isProduction: false,
-        },
-      ],
+      // publicDidSeed: '6b8b882e2618fa5d45ee7229ca880083',
+      // indyLedgers: [
+      //   {
+      //     genesisTransactions: bcovrin,
+      //     id: 'greenlights' + name,
+      //     isProduction: false,
+      //   },
+      // ],
       endpoints: [`http://localhost:${this.port}`],
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
+      valueTransferConfig,
     }
 
     this.config = config

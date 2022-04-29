@@ -7,11 +7,10 @@ export { EventEmitter } from './agent/EventEmitter'
 export { Handler, HandlerInboundMessage } from './agent/Handler'
 export { InboundMessageContext } from './agent/models/InboundMessageContext'
 export { AgentConfig } from './agent/AgentConfig'
-export { DIDCommV1Message } from './agent/didcomm/v1/AgentMessage'
 export { Dispatcher } from './agent/Dispatcher'
 export { MessageSender } from './agent/MessageSender'
 export type { AgentDependencies } from './agent/AgentDependencies'
-export type { InitConfig, OutboundPackage, EncryptedMessage } from './types'
+export type { InitConfig, OutboundPackage } from './types'
 export { DidCommMimeType } from './types'
 export type { FileSystem } from './storage/FileSystem'
 export { BaseRecord } from './storage/BaseRecord'
@@ -43,3 +42,4 @@ const utils = {
 }
 
 export { utils }
+export { EncryptedMessage } from './agent/didcomm'

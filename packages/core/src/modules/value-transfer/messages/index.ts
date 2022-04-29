@@ -1,27 +1,21 @@
-import { CashAcceptedMessage } from "./CashAcceptedMessage"
-import { CashRemovedMessage } from "./CashRemovedMessage"
-import { RequestMessage } from "./RequestMessage"
-import { RequestAcceptedMessage } from "./RequestAcceptedMessage"
-import { GiverRejectMessage } from "./GiverRejectMessage"
-import { GetterRejectMessage } from "./GetterRejectMessage"
-import { ReceiptMessage } from "./ReceiptMessage"
-import { WitnessRejectMessage } from "./WitnessRejectMessage"
+import type { CashAcceptedMessage } from './CashAcceptedMessage'
+import type { CashRemovedMessage } from './CashRemovedMessage'
+import type { ReceiptMessage } from './ReceiptMessage'
+import type { RejectMessage } from './RejectMessage'
+import type { RequestAcceptedMessage } from './RequestAcceptedMessage'
+import type { RequestMessage } from './RequestMessage'
 
-export * from "./CashAcceptedMessage"
-export * from "./CashRemovedMessage"
-export * from "./GiverRejectMessage"
-export * from "./GetterRejectMessage"
-export * from "./RequestMessage"
-export * from "./RequestAcceptedMessage"
-export * from "./ReceiptMessage"
-export * from "./WitnessRejectMessage"
+export * from './CashAcceptedMessage'
+export * from './CashRemovedMessage'
+export * from './RequestMessage'
+export * from './RequestAcceptedMessage'
+export * from './ReceiptMessage'
+export * from './RejectMessage'
 
 export type ValueTransferMessage =
-    | CashAcceptedMessage
-    | CashRemovedMessage
-    | RequestMessage
-    | RequestAcceptedMessage
-    | GetterRejectMessage
-    | GiverRejectMessage
-    | ReceiptMessage
-    | WitnessRejectMessage
+  | CashAcceptedMessage
+  | CashRemovedMessage
+  | RequestMessage
+  | RequestAcceptedMessage
+  | RejectMessage
+  | ReceiptMessage

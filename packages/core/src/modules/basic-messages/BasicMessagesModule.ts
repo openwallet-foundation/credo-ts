@@ -41,6 +41,6 @@ export class BasicMessagesModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new BasicMessageHandler(this.basicMessageService))
+    dispatcher.registerDIDCommV1Handler(new BasicMessageHandler(this.basicMessageService))
   }
 }

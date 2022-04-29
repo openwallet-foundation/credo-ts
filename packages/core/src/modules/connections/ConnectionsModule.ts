@@ -1,3 +1,4 @@
+import type { OutOfBandInvitationMessage } from './messages/OutOfBandInvitationMessage'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -181,6 +182,32 @@ export class ConnectionsModule {
     return connectionRecord
   }
 
+  public async createOutOfBandConnection(config?: {
+    goalCode?: string
+    alias?: string
+    myLabel?: string
+    myImageUrl?: string
+    accept?: string[]
+  }): Promise<{
+    invitation: OutOfBandInvitationMessage
+    connectionRecord: ConnectionRecord
+  }> {
+    const { connectionRecord, message: invitation } = await this.connectionService.createOutOfBandConnection(config)
+    return { connectionRecord, invitation }
+  }
+
+  public async acceptOutOfBandInvitation(
+    invitation: OutOfBandInvitationMessage,
+    config?: {
+      alias?: string
+    }
+  ): Promise<{
+    connectionRecord: ConnectionRecord
+  }> {
+    const { connectionRecord } = await this.connectionService.acceptOutOfBandInvitation(invitation, config)
+    return { connectionRecord }
+  }
+
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
     return this.connectionService.returnWhenIsConnected(connectionId, options?.timeoutMs)
   }
@@ -271,12 +298,12 @@ export class ConnectionsModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(
+    dispatcher.registerDIDCommV1Handler(
       new ConnectionRequestHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
     )
-    dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig))
-    dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
-    dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
-    dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
+    dispatcher.registerDIDCommV1Handler(new ConnectionResponseHandler(this.connectionService, this.agentConfig))
+    dispatcher.registerDIDCommV1Handler(new AckMessageHandler(this.connectionService))
+    dispatcher.registerDIDCommV1Handler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
+    dispatcher.registerDIDCommV1Handler(new TrustPingResponseMessageHandler(this.trustPingService))
   }
 }

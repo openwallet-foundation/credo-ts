@@ -24,13 +24,13 @@ export class ConnectionRequestHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionRequestHandler>) {
-    if (!messageContext.recipientKid || !messageContext.senderKid) {
+    if (!messageContext.recipient || !messageContext.sender) {
       throw new AriesFrameworkError('Unable to process connection request without senderKid or recipientKid')
     }
 
-    let connectionRecord = await this.connectionService.findByVerkey(messageContext.recipientKid)
+    let connectionRecord = await this.connectionService.findByVerkey(messageContext.recipient)
     if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientKid} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipient} not found!`)
     }
 
     let routing: Routing | undefined

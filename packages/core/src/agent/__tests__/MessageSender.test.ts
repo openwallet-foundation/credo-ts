@@ -1,7 +1,9 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
-import type { OutboundMessage, EncryptedMessage } from '../../types'
+import type { OutboundMessage } from '../../types'
+import type { PackMessageParams } from '../didcomm/EnvelopeService'
+import type { EncryptedMessage } from '@aries-framework/core'
 
 import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
@@ -13,13 +15,13 @@ import { DidResolverService } from '../../modules/dids/services/DidResolverServi
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { MessageSender } from '../MessageSender'
 import { TransportService } from '../TransportService'
-import { EnvelopeService as EnvelopeServiceImpl } from '../didcomm/v1/EnvelopeService'
+import { EnvelopeService as EnvelopeServiceImpl } from '../didcomm/EnvelopeService'
 import { createOutboundMessage } from '../helpers'
 
 import { DummyTransportSession } from './stubs'
 
 jest.mock('../TransportService')
-jest.mock('../EnvelopeService')
+jest.mock('../didcomm/EnvelopeService')
 jest.mock('../../modules/dids/services/DidResolverService')
 
 const TransportServiceMock = TransportService as jest.MockedClass<typeof TransportService>
@@ -358,12 +360,12 @@ describe('MessageSender', () => {
       const message = new TestMessage()
       const endpoint = 'https://example.com'
 
-      const keys = {
+      const params: PackMessageParams = {
         recipientKeys: ['service.recipientKeys'],
         routingKeys: [],
         senderKey: connection.verkey,
       }
-      const result = await messageSender.packMessage({ message, keys, endpoint })
+      const result = await messageSender.packMessage({ message, params, endpoint })
 
       expect(result).toEqual({
         payload: encryptedMessage,

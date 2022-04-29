@@ -1,25 +1,26 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 import type { ValueTransferState } from '../ValueTransferState'
+import type { VerifiableNote } from '@value-transfer/value-transfer-lib'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
-import { VerifiableNote } from "@value-transfer/value-transfer-lib";
+import { uuid } from '../../../utils/uuid'
 
 export type CustomValueTransferStateTags = TagsBase
 export type DefaultValueTransferStateTags = TagsBase
 
-
 export type ValueTransferStateTags = RecordTags<ValueTransferStateRecord>
 
 export interface ValueTransferStateProps {
-  previousHash: string,
-  verifiableNotes: Array<VerifiableNote>,
-  stateAccumulator?: string
+  id?: string
+  publicDid: string
+  previousHash: string
+  verifiableNotes: Array<VerifiableNote>
 }
 
 export class ValueTransferStateRecord extends BaseRecord<DefaultValueTransferStateTags, CustomValueTransferStateTags> {
   public previousHash!: string
   public verifiableNotes!: Array<VerifiableNote>
-  public stateAccumulator?: string
+  public publicDid!: string
 
   public static readonly type = 'ValueTransferState'
   public readonly type = ValueTransferStateRecord.type
@@ -28,13 +29,17 @@ export class ValueTransferStateRecord extends BaseRecord<DefaultValueTransferSta
     super()
 
     if (props) {
+      this.id = props.id ?? uuid()
+      this.publicDid = props.publicDid
       this.previousHash = props.previousHash
       this.verifiableNotes = props.verifiableNotes
-      this.stateAccumulator = props.stateAccumulator
     }
   }
 
   public getTags() {
-    return this._tags
+    return {
+      ...this._tags,
+      publicDid: this.publicDid,
+    }
   }
 }

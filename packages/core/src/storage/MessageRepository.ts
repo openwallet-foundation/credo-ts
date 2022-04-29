@@ -1,4 +1,4 @@
-import type { EncryptedMessage } from '../types'
+import type { EncryptedMessage } from '@aries-framework/core'
 
 export interface MessageRepository {
   takeFromQueue(connectionId: string, limit?: number): EncryptedMessage[]

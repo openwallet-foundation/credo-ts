@@ -1,4 +1,25 @@
-import type { DIDCommV1Message } from './v1/DIDCommV1Message'
-import type { DIDCommV2Message } from './v2/DIDCommV2Message'
+import type { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
+import type { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 
-export type DIDCommMessage = DIDCommV1Message | DIDCommV2Message
+export enum DIDCommVersion {
+  V1 = 'DIDCommV1',
+  V2 = 'DIDCommV2',
+}
+
+export interface DIDCommMessage {
+  readonly type: string
+
+  get version(): DIDCommVersion
+  get id(): string
+  get threadId(): string | undefined
+
+  serviceDecorator(): ServiceDecorator | undefined
+
+  toJSON(params?: { useLegacyDidSovPrefix?: boolean }): Record<string, unknown>
+
+  hasAnyReturnRoute(): boolean
+
+  hasReturnRouting(threadId?: string): boolean
+
+  setReturnRouting(type: ReturnRouteTypes, thread?: string): void
+}

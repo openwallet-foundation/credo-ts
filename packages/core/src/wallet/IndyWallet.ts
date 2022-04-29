@@ -1,14 +1,13 @@
 import type { Logger } from '../logger'
 import type {
-  EncryptedMessage,
   DecryptedMessageContext,
   WalletConfig,
   WalletExportImportConfig,
   WalletConfigRekey,
   KeyDerivationMethod,
 } from '../types'
-import { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo, DidConfig } from './Wallet'
+import type { EncryptedMessage } from '@aries-framework/core'
 import type { default as Indy } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -16,6 +15,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error'
 import { JsonEncoder } from '../utils/JsonEncoder'
+import { Buffer } from '../utils/buffer'
 import { isIndyError } from '../utils/indyError'
 
 import { WalletDuplicateError, WalletNotFoundError, WalletError } from './error'
@@ -367,13 +367,9 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  public async pack(
-    payload: Buffer,
-    recipientKeys: string[],
-    senderVerkey?: string
-  ): Promise<EncryptedMessage> {
+  public async pack(payload: Buffer, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage> {
     try {
-      const messageRaw = Buffer.isBuffer(payload) ? payload: JsonEncoder.toBuffer(payload)
+      const messageRaw = Buffer.isBuffer(payload) ? payload : JsonEncoder.toBuffer(payload)
       const packedMessage = await this.indy.packMessage(this.handle, messageRaw, recipientKeys, senderVerkey ?? null)
       return JsonEncoder.fromBuffer(packedMessage)
     } catch (error) {

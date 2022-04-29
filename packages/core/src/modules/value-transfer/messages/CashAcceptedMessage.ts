@@ -1,25 +1,26 @@
-import { Equals } from "class-validator"
+import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-import { BaseCommonMessageParams, BaseMessage, ValueTransferBody } from "./BaseMessage"
-import { MessageType } from "./MessageType"
-import { PartyProof, Proof } from "../types"
+import { ValueTransferMessage } from '@value-transfer/value-transfer-lib'
+import { Expose } from 'class-transformer'
+import { Equals, ValidateNested } from 'class-validator'
 
-export type CashAcceptedMessageParams = BaseCommonMessageParams & {
-    request: ValueTransferBody
-    proof: Proof
-    thid: string
+import { DIDCommV2Message } from '../../../agent/didcomm'
+
+type CashAcceptedMessageParams = DIDCommV2MessageParams & {
+  body: ValueTransferMessage
 }
 
-export class CashAcceptedMessage extends BaseMessage {
-    public constructor({ from, to, request, proof, thid }: CashAcceptedMessageParams) {
-        const body = new ValueTransferBody({
-            payment: request.payment,
-            proofs: [new PartyProof({ party: from, proof })]
-        })
-        super({ from, to, body, thid })
-    }
+export class CashAcceptedMessage extends DIDCommV2Message {
+  public constructor(options: CashAcceptedMessageParams) {
+    super(options)
+    this.body = options.body
+  }
 
-    @Equals(CashAcceptedMessage.type)
-    public readonly type = CashAcceptedMessage.type
-    public static readonly type = MessageType.GETTER_PROOF
+  @Equals(CashAcceptedMessage.type)
+  public readonly type = CashAcceptedMessage.type
+  public static readonly type = 'https://didcomm.org/vtp/1.0/accept-cash'
+
+  @Expose({ name: 'body' })
+  @ValidateNested()
+  public body!: ValueTransferMessage
 }

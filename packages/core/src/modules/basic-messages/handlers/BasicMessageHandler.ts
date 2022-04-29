@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { Handler, HandlerInboundMessage, HandlerV2 } from '../../../agent/Handler'
 import type { BasicMessageService } from '../services/BasicMessageService'
 
 import { AriesFrameworkError } from '../../../error'
@@ -16,7 +16,7 @@ export class BasicMessageHandler implements Handler {
     const connection = messageContext.connection
 
     if (!connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientKid} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipient} not found!`)
     }
 
     if (!connection.theirKey) {

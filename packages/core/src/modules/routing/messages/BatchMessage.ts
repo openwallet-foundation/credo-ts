@@ -1,9 +1,9 @@
 import { Type, Expose } from 'class-transformer'
 import { Equals, Matches, IsArray, ValidateNested, IsObject, IsInstance } from 'class-validator'
 
+import { EncryptedMessage } from '../../../agent/didcomm/types'
 import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import { MessageIdRegExp } from '../../../agent/didcomm/validation'
-import { EncryptedMessage } from '../../../types'
 import { uuid } from '../../../utils/uuid'
 
 export class BatchMessageMessage {

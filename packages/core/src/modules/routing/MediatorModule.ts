@@ -1,5 +1,5 @@
-import type { EncryptedMessage } from '../../types'
 import type { MediationRecord } from './repository'
+import type { EncryptedMessage } from '@aries-framework/core'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -59,10 +59,12 @@ export class MediatorModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateHandler(this.mediatorService))
-    dispatcher.registerHandler(new ForwardHandler(this.mediatorService, this.connectionService, this.messageSender))
-    dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
-    dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
-    dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig))
+    dispatcher.registerDIDCommV1Handler(new KeylistUpdateHandler(this.mediatorService))
+    dispatcher.registerDIDCommV1Handler(
+      new ForwardHandler(this.mediatorService, this.connectionService, this.messageSender)
+    )
+    dispatcher.registerDIDCommV1Handler(new BatchPickupHandler(this.messagePickupService))
+    dispatcher.registerDIDCommV1Handler(new BatchHandler(this.eventEmitter))
+    dispatcher.registerDIDCommV1Handler(new MediationRequestHandler(this.mediatorService, this.agentConfig))
   }
 }

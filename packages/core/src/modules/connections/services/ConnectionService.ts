@@ -8,7 +8,7 @@ import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
-import { inject, scoped, Lifecycle } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -18,7 +18,9 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
+import { DidResolverService, DidType } from '../../dids'
 import { IndyAgentService } from '../../dids/domain/service'
+import { DidService } from '../../dids/services/DidService'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import {
@@ -27,13 +29,14 @@ import {
   ConnectionResponseMessage,
   TrustPingMessage,
 } from '../messages'
+import { OutOfBandInvitationMessage } from '../messages/OutOfBandInvitationMessage'
 import {
+  authenticationTypes,
   Connection,
-  ConnectionState,
   ConnectionRole,
+  ConnectionState,
   DidDoc,
   Ed25119Sig2018,
-  authenticationTypes,
   ReferencedAuthentication,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
@@ -46,18 +49,24 @@ export class ConnectionService {
   private connectionRepository: ConnectionRepository
   private eventEmitter: EventEmitter
   private logger: Logger
+  private didService: DidService
+  private didResolverService: DidResolverService
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     config: AgentConfig,
     connectionRepository: ConnectionRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    didService: DidService,
+    didResolverService: DidResolverService
   ) {
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
     this.eventEmitter = eventEmitter
     this.logger = config.logger
+    this.didService = didService
+    this.didResolverService = didResolverService
   }
 
   /**
@@ -206,16 +215,16 @@ export class ConnectionService {
     messageContext: InboundMessageContext<ConnectionRequestMessage>,
     routing?: Routing
   ): Promise<ConnectionRecord> {
-    const { message, recipientKid, senderKid } = messageContext
+    const { message, recipient, sender } = messageContext
 
-    if (!recipientKid || !senderKid) {
+    if (!recipient || !sender) {
       throw new AriesFrameworkError('Unable to process connection request without senderKid or recipientKid')
     }
 
-    let connectionRecord = await this.findByVerkey(recipientKid)
+    let connectionRecord = await this.findByVerkey(recipient)
     if (!connectionRecord) {
       throw new AriesFrameworkError(
-        `Unable to process connection request: connection for verkey ${recipientKid} not found`
+        `Unable to process connection request: connection for verkey ${recipient} not found`
       )
     }
     connectionRecord.assertState(ConnectionState.Invited)
@@ -314,17 +323,17 @@ export class ConnectionService {
   public async processResponse(
     messageContext: InboundMessageContext<ConnectionResponseMessage>
   ): Promise<ConnectionRecord> {
-    const { message, recipientKid, senderKid } = messageContext
+    const { message, recipient, sender } = messageContext
 
-    if (!recipientKid || !senderKid) {
+    if (!recipient || !sender) {
       throw new AriesFrameworkError('Unable to process connection request without senderKid or recipientKid')
     }
 
-    const connectionRecord = await this.findByVerkey(recipientKid)
+    const connectionRecord = await this.findByVerkey(recipient)
 
     if (!connectionRecord) {
       throw new AriesFrameworkError(
-        `Unable to process connection response: connection for verkey ${recipientKid} not found`
+        `Unable to process connection response: connection for verkey ${recipient} not found`
       )
     }
 
@@ -410,10 +419,13 @@ export class ConnectionService {
    * @returns updated connection record
    */
   public async processAck(messageContext: InboundMessageContext<AckMessage>): Promise<ConnectionRecord> {
-    const { connection, recipientKid } = messageContext
+    const { connection, recipient } = messageContext
 
+    if (!recipient) {
+      throw new AriesFrameworkError('Unable to process connection request without senderKid or recipientKid')
+    }
     if (!connection) {
-      throw new AriesFrameworkError(`Unable to process connection ack: connection for verkey ${recipientKid} not found`)
+      throw new AriesFrameworkError(`Unable to process connection ack: connection for verkey ${recipient} not found`)
     }
 
     // TODO: This is better addressed in a middleware of some kind because
@@ -435,29 +447,149 @@ export class ConnectionService {
   public async processProblemReport(
     messageContext: InboundMessageContext<ConnectionProblemReportMessage>
   ): Promise<ConnectionRecord> {
-    const { message: connectionProblemReportMessage, recipientKid, senderKid } = messageContext
+    const { message: connectionProblemReportMessage, recipient, sender } = messageContext
+    if (!recipient || !sender) {
+      throw new AriesFrameworkError('Unable to process connection request without senderKid or recipientKid')
+    }
+    this.logger.debug(`Processing connection problem report for verkey ${recipient}`)
 
-    this.logger.debug(`Processing connection problem report for verkey ${recipientKid}`)
-
-    if (!recipientKid) {
+    if (!recipient) {
       throw new AriesFrameworkError('Unable to process connection problem report without recipientKid')
     }
 
-    const connectionRecord = await this.findByVerkey(recipientKid)
+    const connectionRecord = await this.findByVerkey(recipient)
 
     if (!connectionRecord) {
       throw new AriesFrameworkError(
-        `Unable to process connection problem report: connection for verkey ${recipientKid} not found`
+        `Unable to process connection problem report: connection for verkey ${recipient} not found`
       )
     }
 
-    if (connectionRecord.theirKey && connectionRecord.theirKey !== senderKid) {
+    if (connectionRecord.theirKey && connectionRecord.theirKey !== sender) {
       throw new AriesFrameworkError("Sender verkey doesn't match verkey of connection record")
     }
 
     connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
     await this.update(connectionRecord)
     return connectionRecord
+  }
+
+  /**
+   * Create a new Out-Of-Band connection
+   *
+   * @param config config for creation of connection and invitation
+   * @returns new connection record
+   */
+  public async createOutOfBandConnection(config?: {
+    goalCode?: string
+    alias?: string
+    myLabel?: string
+    myImageUrl?: string
+    accept?: string[]
+  }): Promise<{ connectionRecord: ConnectionRecord; message: OutOfBandInvitationMessage }> {
+    const { id: did, didDocument } = await this.didService.createDID(DidType.KeyDid)
+    if (!didDocument) {
+      throw new AriesFrameworkError(`Unable to create DIDDoc`)
+    }
+
+    const invitation = new OutOfBandInvitationMessage({
+      from: did,
+      body: {
+        label: config?.myLabel ?? this.config.label,
+        goalCode: config?.goalCode,
+        accept: config?.accept,
+        imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
+      },
+    })
+
+    const didDoc = DidDoc.convertDIDDocToConnectionDIDDoc(didDocument)
+    const verkey = didDoc.getPublicKey()?.value
+    if (!verkey) {
+      throw new AriesFrameworkError(`Unable to convert DIDDoc`)
+    }
+
+    const connectionRecord = new ConnectionRecord({
+      did,
+      didDoc,
+      verkey,
+      state: ConnectionState.Complete,
+      role: ConnectionRole.Inviter,
+      alias: config?.alias,
+      imageUrl: config?.myImageUrl,
+      multiUseInvitation: false,
+      outOfBandInvitation: invitation,
+    })
+
+    await this.connectionRepository.save(connectionRecord)
+
+    this.eventEmitter.emit<ConnectionStateChangedEvent>({
+      type: ConnectionEventTypes.ConnectionStateChanged,
+      payload: {
+        connectionRecord: connectionRecord,
+        previousState: null,
+      },
+    })
+
+    return { connectionRecord, message: invitation }
+  }
+
+  /**
+   * Create a new connection record from received Out-Of-Band invitation
+   *
+   * @param invitation The record context containing a connection problem report record
+   * @param config config for creation of connection and invitation
+   * @returns new connection record
+   */
+  public async acceptOutOfBandInvitation(
+    invitation: OutOfBandInvitationMessage,
+    config?: {
+      alias?: string
+    }
+  ): Promise<{ connectionRecord: ConnectionRecord; message: OutOfBandInvitationMessage }> {
+    if (!invitation.from) {
+      throw new AriesFrameworkError(`Invalid Out-Of-Band invitation: 'from' field is missing`)
+    }
+
+    const { didDocument: theirDidDocument } = await this.didResolverService.resolve(invitation.from)
+    const { id: did, didDocument } = await this.didService.createDID(DidType.KeyDid)
+
+    if (!didDocument || !theirDidDocument) {
+      throw new AriesFrameworkError(`Invalid Out-Of-Band invitation: 'from' field is missing`)
+    }
+
+    const didDoc = DidDoc.convertDIDDocToConnectionDIDDoc(didDocument)
+    const theirDidDoc = DidDoc.convertDIDDocToConnectionDIDDoc(theirDidDocument)
+    const verkey = didDoc.getPublicKey()?.value
+    if (!verkey) {
+      throw new AriesFrameworkError(`Unable to convert DIDDoc`)
+    }
+
+    const connectionRecord = new ConnectionRecord({
+      did,
+      didDoc,
+      verkey,
+      theirDid: invitation.from,
+      theirDidDoc,
+      state: ConnectionState.Complete,
+      role: ConnectionRole.Invitee,
+      theirLabel: invitation.body?.label,
+      imageUrl: invitation.body?.imageUrl,
+      alias: config?.alias,
+      multiUseInvitation: false,
+      outOfBandInvitation: invitation,
+    })
+
+    await this.connectionRepository.save(connectionRecord)
+
+    this.eventEmitter.emit<ConnectionStateChangedEvent>({
+      type: ConnectionEventTypes.ConnectionStateChanged,
+      payload: {
+        connectionRecord: connectionRecord,
+        previousState: null,
+      },
+    })
+
+    return { connectionRecord, message: invitation }
   }
 
   /**
@@ -477,7 +609,7 @@ export class ConnectionService {
       previousReceivedMessage?: DIDCommV1Message
     } = {}
   ) {
-    const { connection, message } = messageContext
+    const { connection, message, recipient, sender } = messageContext
 
     // Check if we have a ready connection. Verification is already done somewhere else. Return
     if (connection) {
@@ -491,8 +623,8 @@ export class ConnectionService {
       })
 
       if (previousSentMessage) {
-        // If we have previously sent a message, it is not allowed to receive an OOB/unpacked message
-        if (!messageContext.recipientKid) {
+        // If we have previously sent a message, it is not allowed to receive an OOB/unpacked record
+        if (!recipient) {
           throw new AriesFrameworkError(
             'Cannot verify service without recipientKey on incoming message (received unpacked message)'
           )
@@ -500,10 +632,7 @@ export class ConnectionService {
 
         // Check if the inbound message recipient key is present
         // in the recipientKeys of previously sent message ~service decorator
-        if (
-          !previousSentMessage?.service ||
-          !previousSentMessage.service.recipientKeys.includes(messageContext.recipientKid)
-        ) {
+        if (!previousSentMessage?.service || !previousSentMessage.service.recipientKeys.includes(recipient)) {
           throw new AriesFrameworkError(
             'Previously sent message ~service recipientKeys does not include current received message recipient key'
           )
@@ -512,7 +641,7 @@ export class ConnectionService {
 
       if (previousReceivedMessage) {
         // If we have previously received a message, it is not allowed to receive an OOB/unpacked/AnonCrypt message
-        if (!messageContext.senderKid) {
+        if (!sender) {
           throw new AriesFrameworkError(
             'Cannot verify service without senderKey on incoming message (received AnonCrypt or unpacked message)'
           )
@@ -520,10 +649,7 @@ export class ConnectionService {
 
         // Check if the inbound message sender key is present
         // in the recipientKeys of previously received message ~service decorator
-        if (
-          !previousReceivedMessage.service ||
-          !previousReceivedMessage.service.recipientKeys.includes(messageContext.senderKid)
-        ) {
+        if (!previousReceivedMessage.service || !previousReceivedMessage.service.recipientKeys.includes(sender)) {
           throw new AriesFrameworkError(
             'Previously received message ~service recipientKeys does not include current received message sender key'
           )
@@ -531,7 +657,7 @@ export class ConnectionService {
       }
 
       // If message is received unpacked/, we need to make sure it included a ~service decorator
-      if (!message.service && !messageContext.recipientKid) {
+      if (!message.serviceDecorator() && !recipient) {
         throw new AriesFrameworkError('Message recipientKey must have ~service decorator')
       }
     }
@@ -594,6 +720,28 @@ export class ConnectionService {
   public async deleteById(connectionId: string) {
     const connectionRecord = await this.getById(connectionId)
     return this.connectionRepository.delete(connectionRecord)
+  }
+
+  /**
+   * Find connection by my DID.
+   *
+   * @param did the did to search for
+   * @returns the connection record, or null if not found
+   * @throws {RecordDuplicateError} if multiple connections are found for the given did
+   */
+  public findByMyDid(did: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findByMyDid(did)
+  }
+
+  /**
+   * Find connection by their DID.
+   *
+   * @param did the did to search for
+   * @returns the connection record, or null if not found
+   * @throws {RecordDuplicateError} if multiple connections are found for the given did
+   */
+  public findByTheirDid(did: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findByTheirDid(did)
   }
 
   /**

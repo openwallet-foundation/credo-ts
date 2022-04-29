@@ -2,6 +2,8 @@ import type { Alice } from './Alice'
 import type { AliceInquirer } from './AliceInquirer'
 import type { Faber } from './Faber'
 import type { FaberInquirer } from './FaberInquirer'
+import type { Giver } from './Giver'
+import type { GiverInquirer } from './GiverInquirer'
 import type {
   Agent,
   BasicMessageStateChangedEvent,
@@ -10,6 +12,10 @@ import type {
   ProofRecord,
   ProofStateChangedEvent,
 } from '@aries-framework/core'
+import type {
+  ValueTransferStateChangedEvent,
+  ValueTransferRecord,
+} from '@aries-framework/core/src/modules/value-transfer'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import {
@@ -20,6 +26,9 @@ import {
   ProofEventTypes,
   ProofState,
 } from '@aries-framework/core'
+import { ValueTransferEventTypes } from '@aries-framework/core/src/modules/value-transfer'
+import { ValueTransferState } from '@aries-framework/core/src/modules/value-transfer/ValueTransferState'
+import { JsonEncoder } from '@aries-framework/core/src/utils'
 import { ui } from 'inquirer'
 
 import { Color, purpleText } from './OutputClass'
@@ -65,6 +74,32 @@ export class Listener {
       async ({ payload }: CredentialStateChangedEvent) => {
         if (payload.credentialRecord.state === CredentialState.OfferReceived) {
           await this.newCredentialPrompt(payload.credentialRecord, aliceInquirer)
+        }
+      }
+    )
+  }
+
+  private printRequest(valueTransferRecord: ValueTransferRecord) {
+    if (valueTransferRecord.requestMessage) {
+      console.log('\n\nPayment Request:')
+      console.log(purpleText(JsonEncoder.toString(valueTransferRecord.requestMessage)))
+    }
+  }
+
+  private async newPaymentRequestPrompt(valueTransferRecord: ValueTransferRecord, giverInquirer: GiverInquirer) {
+    this.printRequest(valueTransferRecord)
+    this.turnListenerOn()
+    await giverInquirer.acceptPaymentRequest(valueTransferRecord)
+    this.turnListenerOff()
+    await giverInquirer.processAnswer()
+  }
+
+  public paymentRequesyListener(giver: Giver, giverInquirer: GiverInquirer) {
+    giver.agent.events.on(
+      ValueTransferEventTypes.ValueTransferStateChanged,
+      async ({ payload }: ValueTransferStateChangedEvent) => {
+        if (payload.record.state === ValueTransferState.RequestReceived) {
+          await this.newPaymentRequestPrompt(payload.record, giverInquirer)
         }
       }
     )

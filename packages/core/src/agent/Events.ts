@@ -1,5 +1,5 @@
 import type { ConnectionRecord } from '../modules/connections'
-import type { DIDCommV1Message } from './didcomm'
+import type { DIDCommMessage } from './didcomm'
 
 export enum AgentEventTypes {
   AgentMessageReceived = 'AgentMessageReceived',
@@ -21,7 +21,7 @@ export interface AgentMessageReceivedEvent extends BaseEvent {
 export interface AgentMessageProcessedEvent extends BaseEvent {
   type: typeof AgentEventTypes.AgentMessageProcessed
   payload: {
-    message: DIDCommV1Message
+    message: DIDCommMessage
     connection?: ConnectionRecord
   }
 }

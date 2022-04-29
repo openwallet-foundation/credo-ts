@@ -113,7 +113,7 @@ In order to use Aries Framework JavaScript some platform specific dependencies a
 
 ### Demo
 
-To get to know the AFJ flow, we built a demo to walk through it yourself together with agents Alice and Faber.
+To get to know the AFJ flow, we built a demo to walk through it yourself together with agents Getter and Faber.
 
 - [Demo](/demo)
 

@@ -1,6 +1,6 @@
 import type { BaseEvent } from '../../agent/Events'
+import type { ValueTransferState } from './ValueTransferState'
 import type { ValueTransferRecord } from './repository'
-import { ValueTransferState } from './ValueTransferState'
 
 export enum ValueTransferEventTypes {
   ValueTransferStateChanged = 'ValueTransferStateChanged',
@@ -8,7 +8,7 @@ export enum ValueTransferEventTypes {
 export interface ValueTransferStateChangedEvent extends BaseEvent {
   type: typeof ValueTransferEventTypes.ValueTransferStateChanged
   payload: {
-    message: ValueTransferRecord
-    previousState: ValueTransferState | null
+    record: ValueTransferRecord
+    previousState?: ValueTransferState | null
   }
 }

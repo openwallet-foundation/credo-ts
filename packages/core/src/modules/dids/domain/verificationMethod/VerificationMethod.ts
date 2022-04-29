@@ -1,4 +1,28 @@
+import type { Buffer } from '../../../../utils'
+
 import { IsString, IsOptional } from 'class-validator'
+
+import { KeyType } from '../../../../crypto'
+import { AriesFrameworkError } from '../../../../error'
+import { TypedArrayEncoder } from '../../../../utils'
+
+export enum VerificationKeyType {
+  Ed25519VerificationKey2020 = 'Ed25519VerificationKey2020',
+  X25519KeyAgreementKey2019 = 'X25519KeyAgreementKey2019',
+  EcdsaSecp256k1VerificationKey2019 = 'EcdsaSecp256k1VerificationKey2019',
+}
+
+export const verificationKeyTypeToKeyTypeMapping: Record<string, KeyType> = {
+  [VerificationKeyType.Ed25519VerificationKey2020]: KeyType.Ed25519,
+  [VerificationKeyType.X25519KeyAgreementKey2019]: KeyType.X25519,
+  [VerificationKeyType.EcdsaSecp256k1VerificationKey2019]: KeyType.Secp256k1,
+}
+
+export const keyTypeToVerificationKeyTypeMapping: Record<string, VerificationKeyType> = {
+  [KeyType.Ed25519]: VerificationKeyType.Ed25519VerificationKey2020,
+  [KeyType.X25519]: VerificationKeyType.X25519KeyAgreementKey2019,
+  [KeyType.Secp256k1]: VerificationKeyType.EcdsaSecp256k1VerificationKey2019,
+}
 
 export interface VerificationMethodOptions {
   id: string
@@ -70,4 +94,14 @@ export class VerificationMethod {
   @IsOptional()
   @IsString()
   public ethereumAddress?: string
+
+  public get keyBytes(): Buffer {
+    if (this.publicKeyBase58) {
+      return TypedArrayEncoder.fromBase58(this.publicKeyBase58)
+    }
+    if (this.publicKeyBase64) {
+      return TypedArrayEncoder.fromBase64(this.publicKeyBase64)
+    }
+    throw new AriesFrameworkError(`IMPLEMENT ALL CASES`)
+  }
 }

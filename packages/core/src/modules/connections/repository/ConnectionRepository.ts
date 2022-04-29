@@ -12,6 +12,18 @@ export class ConnectionRepository extends Repository<ConnectionRecord> {
     super(ConnectionRecord, storageService)
   }
 
+  public async findByMyDid(did: string) {
+    return this.findSingleByQuery({
+      did,
+    })
+  }
+
+  public async findByTheirDid(theirDid: string) {
+    return this.findSingleByQuery({
+      theirDid,
+    })
+  }
+
   public async findByDids({ ourDid, theirDid }: { ourDid: string; theirDid: string }) {
     return this.findSingleByQuery({
       did: ourDid,
