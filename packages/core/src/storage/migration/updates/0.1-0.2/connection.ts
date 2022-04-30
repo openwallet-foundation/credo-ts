@@ -3,11 +3,13 @@ import type { ConnectionRecord } from '../../../../modules/connections'
 import type { JsonObject } from '../../../../types'
 
 import {
+  DidExchangeState,
   ConnectionState,
   ConnectionInvitationMessage,
   ConnectionRole,
   DidDoc,
   ConnectionRepository,
+  DidExchangeRole,
 } from '../../../../modules/connections'
 import { convertToNewDidDocument } from '../../../../modules/connections/services/helpers'
 import { DidDocumentRole } from '../../../../modules/dids/domain/DidDocumentRole'
@@ -25,6 +27,7 @@ import { JsonEncoder, JsonTransformer } from '../../../../utils'
  * in storage and the next record will be transformed.
  *
  * The following transformations are applied:
+ *  - {@link updateConnectionRoleAndState}
  *  - {@link extractDidDocument}
  *  - {@link migrateToOobRecord}
  */
@@ -39,14 +42,73 @@ export async function migrateConnectionRecordToV0_2(agent: Agent) {
   for (const connectionRecord of allConnections) {
     agent.config.logger.debug(`Migrating connection record with id ${connectionRecord.id} to storage version 0.2`)
 
+    await updateConnectionRoleAndState(agent, connectionRecord)
     await extractDidDocument(agent, connectionRecord)
+
     // migration of oob record MUST run after extracting the did document as it relies on the updated did
+    // it also MUST run after update the connection role and state as it assumes the values are
+    // did exchange roles and states
     await migrateToOobRecord(agent, connectionRecord)
 
     await connectionRepository.update(connectionRecord)
 
     agent.config.logger.debug(
       `Successfully migrated connection record with id ${connectionRecord.id} to storage version 0.2`
+    )
+  }
+}
+
+/**
+ * With the addition of the did exchange protocol there are now two states and roles related to the connection record; for the did exchange protocol and for the connection protocol.
+ * To keep it easy to work with the connection record, all state and role values are updated to those of the {@link DidExchangeRole} and {@link DidExchangeState}.
+ *
+ * This migration method transforms all connection record state and role values to their respective values of the {@link DidExchangeRole} and {@link DidExchangeState}. For convenience a getter
+ * property `rfc0160ConnectionState` is added to the connection record which returns the {@link ConnectionState} value.
+ *
+ * The following 0.1.0 connection record structure (unrelated keys omitted):
+ *
+ * ```json
+ * {
+ *   "state": "invited",
+ *   "role": "inviter"
+ * }
+ * ```
+ *
+ * Will be transformed into the following 0.2.0 structure (unrelated keys omitted):
+ *
+ * ```json
+ * {
+ *   "state": "invitation-sent",
+ *   "role": "responder",
+ * }
+ * ```
+ */
+export async function updateConnectionRoleAndState(agent: Agent, connectionRecord: ConnectionRecord) {
+  agent.config.logger.debug(
+    `Extracting 'didDoc' and 'theirDidDoc' from connection record into separate DidRecord and updating unqualified dids to did:peer dids`
+  )
+
+  const oldState = connectionRecord.state
+  connectionRecord.state = didExchangeStateFromConnectionRoleAndState(
+    connectionRecord.role as ConnectionRole,
+    connectionRecord.state as ConnectionState
+  )
+
+  agent.config.logger.debug(`Updated connection record state from ${oldState} to ${connectionRecord.state}`)
+
+  if (connectionRecord.role === ConnectionRole.Inviter) {
+    connectionRecord.role = DidExchangeRole.Responder
+    agent.config.logger.debug(
+      `Updated connection record role from ${ConnectionRole.Inviter} to ${DidExchangeRole.Responder}`
+    )
+  } else if (connectionRecord.role === ConnectionRole.Invitee) {
+    connectionRecord.role = DidExchangeRole.Requester
+    agent.config.logger.debug(
+      `Updated connection record role from ${ConnectionRole.Invitee} to ${DidExchangeRole.Requester}`
+    )
+  } else {
+    agent.config.logger.debug(
+      `Connection record role is not ${ConnectionRole.Invitee} or ${ConnectionRole.Inviter}, not updating role.`
     )
   }
 }
@@ -258,11 +320,12 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
       agent.config.logger.debug(`Create out of band record.`)
       const outOfBandInvitation = convertToNewInvitation(oldInvitation)
 
-      const oobRole = connectionRecord.role === ConnectionRole.Inviter ? OutOfBandRole.Sender : OutOfBandRole.Receiver
+      const oobRole =
+        connectionRecord.role === DidExchangeRole.Responder ? OutOfBandRole.Sender : OutOfBandRole.Receiver
 
-      const connectionRole = connectionRecord.role as ConnectionRole
-      const connectionState = connectionRecord.state as ConnectionState
-      const oobState = oobStateFromConnectionRoleAndState(connectionRole, connectionState)
+      const connectionRole = connectionRecord.role as DidExchangeRole
+      const connectionState = connectionRecord.state as DidExchangeState
+      const oobState = oobStateFromDidExchangeRoleAndState(connectionRole, connectionState)
 
       oobRecord = new OutOfBandRecord({
         role: oobRole,
@@ -296,23 +359,59 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
 }
 
 /**
- * Determine the out of band state based on the connection role and state.
+ * Determine the out of band state based on the did exchange role and state.
  */
-export function oobStateFromConnectionRoleAndState(role: ConnectionRole, state: ConnectionState) {
+export function oobStateFromDidExchangeRoleAndState(role: DidExchangeRole, state: DidExchangeState) {
   const stateMapping = {
+    [DidExchangeState.InvitationReceived]: OutOfBandState.PrepareResponse,
+    [DidExchangeState.InvitationSent]: OutOfBandState.AwaitResponse,
+
+    [DidExchangeState.RequestReceived]: OutOfBandState.Done,
+    [DidExchangeState.RequestSent]: OutOfBandState.Done,
+
+    [DidExchangeState.ResponseReceived]: OutOfBandState.Done,
+    [DidExchangeState.ResponseSent]: OutOfBandState.Done,
+
+    [DidExchangeState.Completed]: OutOfBandState.Done,
+    [DidExchangeState.Abandoned]: OutOfBandState.Done,
+  }
+
+  if (state === DidExchangeState.Start) {
+    return role === DidExchangeRole.Requester ? OutOfBandState.PrepareResponse : OutOfBandState.AwaitResponse
+  }
+
+  return stateMapping[state]
+}
+
+/**
+ * Determine the did exchange state based on the connection role and state.
+ */
+export function didExchangeStateFromConnectionRoleAndState(role: ConnectionRole, state: ConnectionState) {
+  const roleStateMapping = {
     [ConnectionRole.Invitee]: {
-      [ConnectionState.Invited]: OutOfBandState.PrepareResponse,
-      [ConnectionState.Requested]: OutOfBandState.Done,
-      [ConnectionState.Responded]: OutOfBandState.Done,
-      [ConnectionState.Complete]: OutOfBandState.Done,
+      // DidExchangeRole.Requester
+      [ConnectionState.Invited]: DidExchangeState.InvitationReceived,
+      [ConnectionState.Requested]: DidExchangeState.RequestSent,
+      [ConnectionState.Responded]: DidExchangeState.ResponseReceived,
+      [ConnectionState.Complete]: DidExchangeState.Completed,
     },
     [ConnectionRole.Inviter]: {
-      [ConnectionState.Invited]: OutOfBandState.AwaitResponse,
-      [ConnectionState.Requested]: OutOfBandState.Done,
-      [ConnectionState.Responded]: OutOfBandState.Done,
-      [ConnectionState.Complete]: OutOfBandState.Done,
+      // DidExchangeRole.Responder
+      [ConnectionState.Invited]: DidExchangeState.InvitationSent,
+      [ConnectionState.Requested]: DidExchangeState.RequestReceived,
+      [ConnectionState.Responded]: DidExchangeState.ResponseSent,
+      [ConnectionState.Complete]: DidExchangeState.Completed,
     },
   }
 
-  return stateMapping[role][state]
+  // Take into account possibility that the record state was already updated to
+  // didExchange state and roles. This makes the script re-runnable and
+  // adds some resiliency to the script.
+  const stateMapping = roleStateMapping[role]
+  if (!stateMapping) return state
+
+  const newState = stateMapping[state]
+  if (!newState) return state
+
+  return newState
 }
