@@ -87,30 +87,26 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
     `Extracting 'didDoc' and 'theirDidDoc' from connection record into separate DidRecord and updating unqualified dids to did:peer dids`
   )
 
-  // TODO: add logs
-
   const didRepository = agent.injectionContainer.resolve(DidRepository)
 
   const untypedConnectionRecord = connectionRecord as unknown as JsonObject
   const oldDidDocJson = untypedConnectionRecord.didDoc as JsonObject | undefined
   const oldTheirDidDocJson = untypedConnectionRecord.theirDidDoc as JsonObject | undefined
 
-  // FIXME: what to do if the did is not a fully qualified did, but there is no did document? I think we should just ignore it, it will cause issues
-  // when the did is used in the future, but it doesn't break the whole storage. In theory this should never happen
-
   if (oldDidDocJson) {
     const oldDidDoc = JsonTransformer.fromJSON(oldDidDocJson, DidDoc)
 
-    // FIXME: revamp the implementation of convertToNewDidDocument. However this already gives us a did:peer:1
-    // that can be used to create a new did record.
-    // FIXME: How do we decide on the peer did numAlgo to use? Should we store the old record until we know
-    // what the community coordinated update is going to look like?
+    agent.config.logger.debug(
+      `Found a legacy did document for did ${oldDidDoc.id} in connection record didDoc. Converting it to a peer did document.`
+    )
+
     const newDidDocument = convertToNewDidDocument(oldDidDoc)
 
     // Maybe we already have a record for this did because the migration failed previously
     let didRecord = await didRepository.findById(newDidDocument.id)
 
     if (!didRecord) {
+      agent.config.logger.debug(`Creating did record for did ${newDidDocument.id}`)
       didRecord = new DidRecord({
         id: newDidDocument.id,
         role: DidDocumentRole.Created,
@@ -127,26 +123,37 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
       })
 
       await didRepository.save(didRecord)
+
+      agent.config.logger.debug(`Successfully saved did record for did ${newDidDocument.id}`)
+    } else {
+      agent.config.logger.debug(`Found existing did record for did ${newDidDocument.id}, not creating did record.`)
     }
 
+    agent.config.logger.debug(`Deleting old did document from connection record and storing new did:peer did`)
     // Remove didDoc and assign the new did:peer did to did
     delete untypedConnectionRecord.didDoc
     connectionRecord.did = newDidDocument.id
+  } else {
+    agent.config.logger.debug(
+      `Did not find a did document in connection record didDoc. Not converting it to a peer did document.`
+    )
   }
 
   if (oldTheirDidDocJson) {
     const oldTheirDidDoc = JsonTransformer.fromJSON(oldTheirDidDocJson, DidDoc)
 
-    // FIXME: revamp the implementation of convertToNewDidDocument. However this already gives us a did:peer:1
-    // that can be used to create a new did record.
-    // FIXME: How do we decide on the peer did numAlgo to use? Should we store the old record until we know
-    // what the community coordinated update is going to look like?
+    agent.config.logger.debug(
+      `Found a legacy did document for theirDid ${oldTheirDidDoc.id} in connection record theirDidDoc. Converting it to a peer did document.`
+    )
+
     const newTheirDidDocument = convertToNewDidDocument(oldTheirDidDoc)
 
     // Maybe we already have a record for this did because the migration failed previously
     let didRecord = await didRepository.findById(newTheirDidDocument.id)
 
     if (!didRecord) {
+      agent.config.logger.debug(`Creating did record for theirDid ${newTheirDidDocument.id}`)
+
       didRecord = new DidRecord({
         id: newTheirDidDocument.id,
         role: DidDocumentRole.Received,
@@ -163,11 +170,22 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
       })
 
       await didRepository.save(didRecord)
+
+      agent.config.logger.debug(`Successfully saved did record for theirDid ${newTheirDidDocument.id}`)
+    } else {
+      agent.config.logger.debug(
+        `Found existing did record for theirDid ${newTheirDidDocument.id}, not creating did record.`
+      )
     }
 
+    agent.config.logger.debug(`Deleting old theirDidDoc from connection record and storing new did:peer theirDid`)
     // Remove theirDidDoc and assign the new did:peer did to theirDid
     delete untypedConnectionRecord.theirDidDoc
     connectionRecord.theirDid = newTheirDidDocument.id
+  } else {
+    agent.config.logger.debug(
+      `Did not find a did document in connection record theirDidDoc. Not converting it to a peer did document.`
+    )
   }
 }
 
@@ -202,9 +220,9 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
  * ```
  */
 export async function migrateToOobRecord(agent: Agent, connectionRecord: ConnectionRecord) {
-  agent.config.logger.debug(`Migrating properties from connection record with id ${connectionRecord.id} to OOB record`)
-
-  // TODO: add logs
+  agent.config.logger.debug(
+    `Migrating properties from connection record with id ${connectionRecord.id} to out of band record`
+  )
 
   const oobRepository = agent.injectionContainer.resolve(OutOfBandRepository)
 
@@ -215,13 +233,29 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
   if (oldInvitationJson) {
     const oldInvitation = JsonTransformer.fromJSON(oldInvitationJson, ConnectionInvitationMessage)
 
-    // FIXME: it could potentially happen that multiple invitations exist with the same id
-    // This would mean we don't migrate the invitation. Are there other ways to detect whether
-    // the connection record is already migrated?
-    let [oobRecord] = await oobRepository.findByQuery({ messageId: oldInvitation.id })
+    agent.config.logger.debug(`Found a legacy invitation in connection record. Migrating it to an out of band record.`)
+
+    const oobRecords = await oobRepository.findByQuery({ messageId: oldInvitation.id })
+    let oobRecord: OutOfBandRecord | undefined = oobRecords[0]
+
+    // If there already exists an oob record with the same invitation @id, we check whether the did
+    // is the same. As the @id is something generated outside of the framework, we can't assume it's globally
+    // unique. In addition, with multiUseInvitations all connections will use the same invitation. However,
+    // we always create a new did for each connection, so this allows us to determine whether the oob record was
+    // already created beforehand.
+    // FIXME: As I understand now, with reusable oob records we only create a single oob record for all connections,
+    // which means the assumption made above is not correct. We should only reuse the oob record if the invitation
+    // 100% matches, but the did can be different
+    if (oobRecord && oobRecord.did !== connectionRecord.did) {
+      agent.config.logger.debug(
+        `Found an out of band record with the same invitation @id but a different did value. Not using the existing out of band record.`
+      )
+
+      oobRecord = undefined
+    }
 
     if (!oobRecord) {
-      // FIXME: not sure if the accept profiles in the converted invitation are correct
+      agent.config.logger.debug(`Create out of band record.`)
       const outOfBandInvitation = convertToNewInvitation(oldInvitation)
 
       const oobRole = connectionRecord.role === ConnectionRole.Inviter ? OutOfBandRole.Sender : OutOfBandRole.Receiver
@@ -242,8 +276,14 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
       })
 
       await oobRepository.save(oobRecord)
+      agent.config.logger.debug(`Successfully saved out of band record for invitation @id ${oldInvitation.id}`)
+    } else {
+      agent.config.logger.debug(
+        `Found existing out of band record for invitation @id ${oldInvitation.id} and did ${connectionRecord.did}, not creating a new out of band record.`
+      )
     }
 
+    agent.config.logger.debug(`Setting invitationDid and outOfBand Id, and removing invitation from connection record`)
     // All connections have been made using the connection protocol, which means we can be certain
     // that there was only one service, thus we can use the first oob message service
     const [invitationDid] = oobRecord.outOfBandMessage.invitationDids
@@ -259,8 +299,6 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
  * Determine the out of band state based on the connection role and state.
  */
 export function oobStateFromConnectionRoleAndState(role: ConnectionRole, state: ConnectionState) {
-  // FIXME: other places in the framework are not transitioning at the correct moment
-  // This does follow the correct mapping but can cause issues if we don't update the other parts
   const stateMapping = {
     [ConnectionRole.Invitee]: {
       [ConnectionState.Invited]: OutOfBandState.PrepareResponse,
