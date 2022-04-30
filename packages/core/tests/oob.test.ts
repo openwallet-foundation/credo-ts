@@ -16,7 +16,6 @@ import { OutOfBandMessage } from '../src/modules/oob/messages'
 
 import { TestMessage } from './TestMessage'
 import { getBaseConfig, prepareForIssuance } from './helpers'
-import { TestLogger } from './logger'
 
 import {
   AgentEventTypes,
@@ -25,16 +24,13 @@ import {
   ConnectionState,
   CredentialPreview,
   CredentialState,
-  LogLevel,
 } from '@aries-framework/core' // Maybe it's not bad to import from package?
 
 const faberConfig = getBaseConfig('Faber Agent OOB', {
   endpoints: ['rxjs:faber'],
-  logger: new TestLogger(LogLevel.debug, 'rxjs:faber'),
 })
 const aliceConfig = getBaseConfig('Alice Agent OOB', {
   endpoints: ['rxjs:alice'],
-  logger: new TestLogger(LogLevel.debug, 'rxjs:alice'),
 })
 
 describe('out of band', () => {
