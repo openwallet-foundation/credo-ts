@@ -26,13 +26,13 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { agentDependencies } from '../../node/src'
 import {
   HandshakeProtocol,
+  DidExchangeState,
+  DidExchangeRole,
   LogLevel,
   AgentConfig,
   AriesFrameworkError,
   BasicMessageEventTypes,
   ConnectionRecord,
-  ConnectionRole,
-  ConnectionState,
   CredentialEventTypes,
   CredentialPreview,
   CredentialState,
@@ -204,8 +204,8 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
 }
 
 export function getMockConnection({
-  state = ConnectionState.Invited,
-  role = ConnectionRole.Invitee,
+  state = DidExchangeState.InvitationReceived,
+  role = DidExchangeRole.Requester,
   id = 'test',
   did = 'test-did',
   threadId = 'threadId',

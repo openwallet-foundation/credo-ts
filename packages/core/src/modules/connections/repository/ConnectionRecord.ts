@@ -4,7 +4,7 @@ import type { HandshakeProtocol } from '../models'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { ConnectionRole, DidExchangeRole, ConnectionState, DidExchangeState } from '../models'
+import { rfc0160StateFromDidExchangeState, DidExchangeRole, DidExchangeState } from '../models'
 
 export interface ConnectionRecordProps {
   id?: string
@@ -12,8 +12,8 @@ export interface ConnectionRecordProps {
   did: string
   theirDid?: string
   theirLabel?: string
-  state?: ConnectionState | DidExchangeState
-  role?: ConnectionRole | DidExchangeRole
+  state: DidExchangeState
+  role: DidExchangeRole
   alias?: string
   autoAcceptConnection?: boolean
   threadId?: string
@@ -29,8 +29,8 @@ export interface ConnectionRecordProps {
 
 export type CustomConnectionTags = TagsBase
 export type DefaultConnectionTags = {
-  state?: ConnectionState | DidExchangeState
-  role?: ConnectionRole | DidExchangeRole
+  state?: DidExchangeState
+  role?: DidExchangeRole
   threadId?: string
   mediatorId?: string
   did: string
@@ -42,8 +42,8 @@ export class ConnectionRecord
   extends BaseRecord<DefaultConnectionTags, CustomConnectionTags>
   implements ConnectionRecordProps
 {
-  public state?: ConnectionState | DidExchangeState
-  public role?: ConnectionRole | DidExchangeRole
+  public state!: DidExchangeState
+  public role!: DidExchangeRole
 
   public did!: string
 
@@ -105,30 +105,26 @@ export class ConnectionRecord
   }
 
   public get isRequester() {
-    return this.role === ConnectionRole.Invitee || this.role === DidExchangeRole.Requester
+    return this.role === DidExchangeRole.Requester
+  }
+
+  public get rfc0160State() {
+    return rfc0160StateFromDidExchangeState(this.state)
   }
 
   public get isReady() {
-    return (
-      this.state &&
-      [
-        ConnectionState.Responded,
-        ConnectionState.Complete,
-        DidExchangeState.Completed,
-        DidExchangeState.ResponseSent,
-      ].includes(this.state)
-    )
+    return this.state && [DidExchangeState.Completed, DidExchangeState.ResponseSent].includes(this.state)
   }
 
   public assertReady() {
     if (!this.isReady) {
       throw new AriesFrameworkError(
-        `Connection record is not ready to be used. Expected ${ConnectionState.Responded} or ${ConnectionState.Complete}, found invalid state ${this.state}`
+        `Connection record is not ready to be used. Expected ${DidExchangeState.ResponseSent}, ${DidExchangeState.ResponseReceived} or ${DidExchangeState.Completed}, found invalid state ${this.state}`
       )
     }
   }
 
-  public assertState(expectedStates: ConnectionState | DidExchangeState | (ConnectionState | DidExchangeState)[]) {
+  public assertState(expectedStates: DidExchangeState | DidExchangeState[]) {
     if (!Array.isArray(expectedStates)) {
       expectedStates = [expectedStates]
     }
@@ -140,7 +136,7 @@ export class ConnectionRecord
     }
   }
 
-  public assertRole(expectedRole: ConnectionRole) {
+  public assertRole(expectedRole: DidExchangeRole) {
     if (this.role !== expectedRole) {
       throw new AriesFrameworkError(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }

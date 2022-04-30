@@ -1,5 +1,5 @@
 import { getMockConnection } from '../../../tests/helpers'
-import { ConnectionRole } from '../../modules/connections'
+import { DidExchangeRole } from '../../modules/connections'
 import { TransportService } from '../TransportService'
 
 import { DummyTransportSession } from './stubs'
@@ -13,7 +13,7 @@ describe('TransportService', () => {
     })
 
     test(`remove session saved for a given connection`, () => {
-      const connection = getMockConnection({ id: 'test-123', role: ConnectionRole.Inviter })
+      const connection = getMockConnection({ id: 'test-123', role: DidExchangeRole.Responder })
       const session = new DummyTransportSession('dummy-session-123')
       session.connection = connection
 

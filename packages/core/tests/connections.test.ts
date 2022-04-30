@@ -5,7 +5,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { ConnectionState, HandshakeProtocol } from '../src'
+import { DidExchangeState, HandshakeProtocol } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 
@@ -60,14 +60,14 @@ describe('connections', () => {
     // Create first connection
     let { connectionRecord: aliceFaberConnection1 } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
     aliceFaberConnection1 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection1!.id)
-    expect(aliceFaberConnection1.state).toBe(ConnectionState.Complete)
+    expect(aliceFaberConnection1.state).toBe(DidExchangeState.Completed)
 
     // Create second connection
     let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl, {
       reuseConnection: false,
     })
     aliceFaberConnection2 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection2!.id)
-    expect(aliceFaberConnection2.state).toBe(ConnectionState.Complete)
+    expect(aliceFaberConnection2.state).toBe(DidExchangeState.Completed)
 
     let faberAliceConnection1 = await faberAgent.connections.getByThreadId(aliceFaberConnection1.threadId!)
     let faberAliceConnection2 = await faberAgent.connections.getByThreadId(aliceFaberConnection2.threadId!)

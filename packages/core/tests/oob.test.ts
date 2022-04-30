@@ -21,7 +21,6 @@ import {
   AgentEventTypes,
   AriesFrameworkError,
   AutoAcceptCredential,
-  ConnectionState,
   CredentialPreview,
   CredentialState,
 } from '@aries-framework/core' // Maybe it's not bad to import from package?
@@ -252,11 +251,11 @@ describe('out of band', () => {
       let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
 
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
-      expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
+      expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
       let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord!.id)
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
-      expect(faberAliceConnection.state).toBe(ConnectionState.Complete)
+      expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
@@ -275,8 +274,8 @@ describe('out of band', () => {
       let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord.id)
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
 
-      expect(aliceFaberConnection.state).toBe(ConnectionState.Complete)
-      expect(faberAliceConnection.state).toBe(ConnectionState.Complete)
+      expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+      expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)

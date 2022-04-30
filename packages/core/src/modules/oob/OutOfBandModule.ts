@@ -16,9 +16,9 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import {
+  DidExchangeState,
   HandshakeProtocol,
   ConnectionInvitationMessage,
-  ConnectionState,
   ConnectionsModule,
 } from '../../modules/connections'
 import { DidCommService, DidsModule } from '../dids'
@@ -389,7 +389,7 @@ export class OutOfBandModule {
             .catch((error) => {
               if (error instanceof EmptyError) {
                 this.logger.warn(
-                  `Agent unsubscribed before connection got into ${ConnectionState.Complete} state`,
+                  `Agent unsubscribed before connection got into ${DidExchangeState.Completed} state`,
                   error
                 )
               } else {

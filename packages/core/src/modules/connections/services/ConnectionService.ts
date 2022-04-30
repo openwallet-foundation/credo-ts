@@ -6,7 +6,7 @@ import type { DidCommService, DidDocument } from '../../dids'
 import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
-import type { DidExchangeRole, PublicKey } from '../models'
+import type { PublicKey } from '../models'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -34,12 +34,11 @@ import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage }
 import {
   DidExchangeState,
   Connection,
-  ConnectionState,
-  ConnectionRole,
   DidDoc,
   Ed25119Sig2018,
   EmbeddedAuthentication,
   HandshakeProtocol,
+  DidExchangeRole,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
@@ -106,8 +105,8 @@ export class ConnectionService {
 
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
-      role: ConnectionRole.Invitee,
-      state: ConnectionState.Invited,
+      role: DidExchangeRole.Requester,
+      state: DidExchangeState.InvitationReceived,
       theirLabel: outOfBandMessage.label,
       alias: config?.alias,
       did,
@@ -140,7 +139,7 @@ export class ConnectionService {
 
     connectionRecord.did = peerDid
     connectionRecord.threadId = connectionRequest.id
-    await this.updateState(connectionRecord, ConnectionState.Requested)
+    await this.updateState(connectionRecord, DidExchangeState.RequestSent)
 
     return {
       connectionRecord,
@@ -173,7 +172,8 @@ export class ConnectionService {
 
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
-      role: ConnectionRole.Inviter,
+      role: DidExchangeRole.Responder,
+      state: DidExchangeState.RequestReceived,
       multiUseInvitation: false,
       did,
       mediatorId,
@@ -201,7 +201,15 @@ export class ConnectionService {
     connectionRecord.imageUrl = message.imageUrl
     connectionRecord.outOfBandId = outOfBandRecord.id
 
-    await this.updateState(connectionRecord, ConnectionState.Requested)
+    await this.connectionRepository.update(connectionRecord)
+    this.eventEmitter.emit<ConnectionStateChangedEvent>({
+      type: ConnectionEventTypes.ConnectionStateChanged,
+      payload: {
+        connectionRecord,
+        previousState: null,
+      },
+    })
+
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} end`, connectionRecord)
     return connectionRecord
   }
@@ -218,8 +226,8 @@ export class ConnectionService {
     routing?: Routing
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
     this.logger.debug(`Create message ${ConnectionResponseMessage.type} start`, connectionRecord)
-    connectionRecord.assertState(ConnectionState.Requested)
-    connectionRecord.assertRole(ConnectionRole.Inviter)
+    connectionRecord.assertState(DidExchangeState.RequestReceived)
+    connectionRecord.assertRole(DidExchangeRole.Responder)
 
     const { did } = routing ? routing : outOfBandRecord
     if (!did) {
@@ -277,7 +285,7 @@ export class ConnectionService {
     })
 
     connectionRecord.did = peerDid
-    await this.updateState(connectionRecord, ConnectionState.Responded)
+    await this.updateState(connectionRecord, DidExchangeState.ResponseSent)
 
     this.logger.debug(`Create message ${ConnectionResponseMessage.type} end`, {
       connectionRecord,
@@ -313,8 +321,8 @@ export class ConnectionService {
       throw new AriesFrameworkError('No connection record in message context.')
     }
 
-    connectionRecord.assertState(ConnectionState.Requested)
-    connectionRecord.assertRole(ConnectionRole.Invitee)
+    connectionRecord.assertState(DidExchangeState.RequestSent)
+    connectionRecord.assertRole(DidExchangeRole.Requester)
 
     let connectionJson = null
     try {
@@ -367,7 +375,7 @@ export class ConnectionService {
     connectionRecord.theirDid = peerDid
     connectionRecord.threadId = message.threadId
 
-    await this.updateState(connectionRecord, ConnectionState.Responded)
+    await this.updateState(connectionRecord, DidExchangeState.ResponseReceived)
     return connectionRecord
   }
 
@@ -385,7 +393,7 @@ export class ConnectionService {
     connectionRecord: ConnectionRecord,
     config: { responseRequested?: boolean; comment?: string } = {}
   ): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
-    connectionRecord.assertState([ConnectionState.Responded, ConnectionState.Complete])
+    connectionRecord.assertState([DidExchangeState.ResponseReceived, DidExchangeState.Completed])
 
     // TODO:
     //  - create ack message
@@ -393,8 +401,8 @@ export class ConnectionService {
     const trustPing = new TrustPingMessage(config)
 
     // Only update connection record and emit an event if the state is not already 'Complete'
-    if (connectionRecord.state !== ConnectionState.Complete) {
-      await this.updateState(connectionRecord, ConnectionState.Complete)
+    if (connectionRecord.state !== DidExchangeState.Completed) {
+      await this.updateState(connectionRecord, DidExchangeState.Completed)
     }
 
     return {
@@ -421,8 +429,8 @@ export class ConnectionService {
 
     // TODO: This is better addressed in a middleware of some kind because
     // any message can transition the state to complete, not just an ack or trust ping
-    if (connection.state === ConnectionState.Responded && connection.role === ConnectionRole.Inviter) {
-      await this.updateState(connection, ConnectionState.Complete)
+    if (connection.state === DidExchangeState.ResponseSent && connection.role === DidExchangeRole.Responder) {
+      await this.updateState(connection, DidExchangeState.Completed)
     }
 
     return connection
@@ -548,7 +556,7 @@ export class ConnectionService {
     }
   }
 
-  public async updateState(connectionRecord: ConnectionRecord, newState: ConnectionState | DidExchangeState) {
+  public async updateState(connectionRecord: ConnectionRecord, newState: DidExchangeState) {
     const previousState = connectionRecord.state
     connectionRecord.state = newState
     await this.connectionRepository.update(connectionRecord)
@@ -556,8 +564,8 @@ export class ConnectionService {
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
       type: ConnectionEventTypes.ConnectionStateChanged,
       payload: {
-        connectionRecord: connectionRecord,
-        previousState: previousState || null,
+        connectionRecord,
+        previousState,
       },
     })
   }
@@ -640,8 +648,8 @@ export class ConnectionService {
   }
 
   public async createConnection(options: {
-    role?: ConnectionRole | DidExchangeRole
-    state?: ConnectionState | DidExchangeState
+    role: DidExchangeRole
+    state: DidExchangeState
     alias?: string
     did: string
     mediatorId?: string
@@ -744,10 +752,7 @@ export class ConnectionService {
 
   public async returnWhenIsConnected(connectionId: string, timeoutMs = 20000): Promise<ConnectionRecord> {
     const isConnected = (connection: ConnectionRecord) => {
-      return (
-        connection.id === connectionId &&
-        (connection.state === ConnectionState.Complete || connection.state === DidExchangeState.Completed)
-      )
+      return connection.id === connectionId && connection.state === DidExchangeState.Completed
     }
 
     const observable = this.eventEmitter.observable<ConnectionStateChangedEvent>(
