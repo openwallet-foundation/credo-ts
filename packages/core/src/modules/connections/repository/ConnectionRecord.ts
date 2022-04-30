@@ -36,6 +36,7 @@ export type DefaultConnectionTags = {
   did: string
   theirDid?: string
   outOfBandId?: string
+  invitationDid?: string
 }
 
 export class ConnectionRecord

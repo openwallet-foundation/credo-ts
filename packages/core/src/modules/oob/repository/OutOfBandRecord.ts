@@ -24,7 +24,14 @@ export interface OutOfBandRecordProps {
   mediatorId?: string
 }
 
-export class OutOfBandRecord extends BaseRecord<TagsBase> {
+type DefaultOutOfBandRecordTags = {
+  role: OutOfBandRole
+  state: OutOfBandState
+  messageId: string
+  recipientKey: string
+}
+
+export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, TagsBase> {
   @Type(() => OutOfBandMessage)
   public outOfBandMessage!: OutOfBandMessage
   public role!: OutOfBandRole
