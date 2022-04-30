@@ -373,7 +373,58 @@ describe('0.1-0.2 | Connection', () => {
       })
     })
 
-    it('should not create an OutObRecord if an OutOfBand record with the invitation id already exists', async () => {
+    it('should create an OutOfBandRecord if an OutOfBandRecord with the invitation id already exists, but the connection did is different', async () => {
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDid, ConnectionRecord)
+
+      const outOfBandRecord = JsonTransformer.fromJSON(
+        {
+          id: '3c52cc26-577d-4200-8753-05f1f425c342',
+          _tags: {},
+          metadata: {},
+          // Checked below
+          outOfBandMessage: {
+            '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
+            services: [
+              {
+                id: '#inline',
+                serviceEndpoint: 'https://example.com',
+                type: 'did-communication',
+                priority: 0,
+                recipientKeys: ['E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'],
+                routingKeys: [],
+              },
+            ],
+            '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+            label: 'test',
+            accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
+            handshake_protocols: ['https://didcomm.org/connections/1.0'],
+          },
+          role: OutOfBandRole.Sender,
+          state: OutOfBandState.AwaitResponse,
+          autoAcceptConnection: true,
+          did: 'some-random-did',
+          reusable: false,
+          mediatorId: 'a-mediator-id',
+          createdAt: connectionRecord.createdAt.toISOString(),
+        },
+        OutOfBandRecord
+      )
+
+      // Out of band record already exists, but not the correct one
+      mockFunction(outOfBandRepository.findByQuery).mockResolvedValueOnce([outOfBandRecord])
+
+      await testModule.migrateToOobRecord(agent, connectionRecord)
+
+      expect(outOfBandRepository.findByQuery).toHaveBeenCalledTimes(1)
+      expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, {
+        messageId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+      })
+
+      // Expect the out of band record to be created
+      expect(outOfBandRepository.save).toHaveBeenCalled()
+    })
+
+    it('should not create an OutOfBandRecord if an OutOfBandRecord with the invitation id and connection did already exists', async () => {
       const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDid, ConnectionRecord)
 
       const outOfBandRecord = JsonTransformer.fromJSON(
