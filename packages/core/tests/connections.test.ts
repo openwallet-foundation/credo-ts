@@ -5,7 +5,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { ConnectionState, ConsoleLogger, HandshakeProtocol, LogLevel } from '../src'
+import { ConnectionState, HandshakeProtocol } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 

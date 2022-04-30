@@ -7,7 +7,6 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { KeyType } from '../../../crypto'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
-import { ConsoleLogger, LogLevel } from '../../../logger'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
@@ -35,7 +34,6 @@ describe('ConnectionService', () => {
   const agentConfig = getAgentConfig('ConnectionServiceTest', {
     endpoints: ['http://agent.com:8080'],
     connectionImageUrl,
-    logger: new ConsoleLogger(LogLevel.debug),
   })
 
   let wallet: Wallet

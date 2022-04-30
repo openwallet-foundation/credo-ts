@@ -11,21 +11,15 @@ import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import { MediationState } from '../src/modules/routing'
 
 import { getBaseConfig, waitForBasicMessage } from './helpers'
-import { TestLogger } from './logger'
-
-import { LogLevel } from '@aries-framework/core' // Maybe it's not bad to import from package?
 
 const faberConfig = getBaseConfig('OOB mediation provision - Faber Agent', {
   endpoints: ['rxjs:faber'],
-  logger: new TestLogger(LogLevel.debug, 'rxjs:faber'),
 })
 const aliceConfig = getBaseConfig('OOB mediation provision - Alice Recipient Agent', {
   endpoints: ['rxjs:alice'],
-  logger: new TestLogger(LogLevel.debug, 'rxjs:alice'),
 })
 const mediatorConfig = getBaseConfig('OOB mediation provision - Mediator Agent', {
   endpoints: ['rxjs:mediator'],
-  logger: new TestLogger(LogLevel.debug, 'rxjs:mediator'),
   autoAcceptMediationRequests: true,
 })
 
