@@ -1,6 +1,12 @@
 import { getAgentConfig, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
-import { ConnectionRecord, ConnectionRole, ConnectionState } from '../../../../../modules/connections'
+import {
+  ConnectionRecord,
+  ConnectionRole,
+  ConnectionState,
+  DidExchangeRole,
+  DidExchangeState,
+} from '../../../../../modules/connections'
 import { ConnectionRepository } from '../../../../../modules/connections/repository/ConnectionRepository'
 import { DidDocumentRole } from '../../../../../modules/dids/domain/DidDocumentRole'
 import { DidRecord } from '../../../../../modules/dids/repository'
@@ -69,9 +75,9 @@ const connectionJson = {
   createdAt: '2020-04-08T15:51:43.819Z',
 }
 
-const connectionJsonNewDid = {
-  role: 'inviter',
-  state: 'invited',
+const connectionJsonNewDidStateRole = {
+  role: 'responder',
+  state: 'invitation-sent',
   did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
   theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
   invitation: {
@@ -126,13 +132,43 @@ describe('0.1-0.2 | Connection', () => {
         _tags: {},
         metadata: {},
         createdAt: '2020-04-08T15:51:43.819Z',
-        role: 'inviter',
-        state: 'invited',
+        role: 'responder',
+        state: 'invitation-sent',
         did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
         invitationDid:
           'did:peer:2.Ez6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSJ9',
         theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
         outOfBandId: expect.any(String),
+      })
+    })
+  })
+
+  describe('updateConnectionRoleAndState', () => {
+    it('should update the connection role and state to did exchange values', async () => {
+      const connectionRecord = JsonTransformer.fromJSON(
+        { ...connectionJson, state: 'requested', role: 'invitee' },
+        ConnectionRecord
+      )
+
+      await testModule.updateConnectionRoleAndState(agent, connectionRecord)
+
+      expect(connectionRecord.toJSON()).toEqual({
+        _tags: {},
+        metadata: {},
+        createdAt: '2020-04-08T15:51:43.819Z',
+        role: 'requester',
+        state: 'request-sent',
+        did: legacyDidPeerR1xKJw17sUoXhejEpugMYJ.id,
+        didDoc: legacyDidPeerR1xKJw17sUoXhejEpugMYJ,
+        theirDid: legacyDidPeer4kgVt6CidfKgo1MoWMqsQX.id,
+        theirDidDoc: legacyDidPeer4kgVt6CidfKgo1MoWMqsQX,
+        invitation: {
+          '@type': 'https://didcomm.org/connections/1.0/invitation',
+          '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+          recipientKeys: ['E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'],
+          serviceEndpoint: 'https://example.com',
+          label: 'test',
+        },
       })
     })
   })
@@ -304,7 +340,7 @@ describe('0.1-0.2 | Connection', () => {
 
   describe('migrateToOobRecord', () => {
     it('should extract the invitation from the connection record and generate an invitation did', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDid, ConnectionRecord)
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
 
       // No did record exists yet
       mockFunction(outOfBandRepository.findByQuery).mockResolvedValue([])
@@ -315,8 +351,8 @@ describe('0.1-0.2 | Connection', () => {
         _tags: {},
         metadata: {},
         createdAt: '2020-04-08T15:51:43.819Z',
-        role: 'inviter',
-        state: 'invited',
+        role: 'responder',
+        state: 'invitation-sent',
         did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
         theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
         invitationDid:
@@ -329,7 +365,7 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should create an OutOfBandRecord from the invitation and store the outOfBandId in the connection record', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDid, ConnectionRecord)
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
 
       // No did record exists yet
       mockFunction(outOfBandRepository.findByQuery).mockResolvedValue([])
@@ -374,7 +410,7 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should create an OutOfBandRecord if an OutOfBandRecord with the invitation id already exists, but the connection did is different', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDid, ConnectionRecord)
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
 
       const outOfBandRecord = JsonTransformer.fromJSON(
         {
@@ -425,7 +461,7 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should not create an OutOfBandRecord if an OutOfBandRecord with the invitation id and connection did already exists', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDid, ConnectionRecord)
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
 
       const outOfBandRecord = JsonTransformer.fromJSON(
         {
@@ -476,8 +512,8 @@ describe('0.1-0.2 | Connection', () => {
         _tags: {},
         metadata: {},
         createdAt: '2020-04-08T15:51:43.819Z',
-        role: 'inviter',
-        state: 'invited',
+        role: 'responder',
+        state: 'invitation-sent',
         did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
         theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
         invitationDid:
@@ -490,33 +526,85 @@ describe('0.1-0.2 | Connection', () => {
     })
   })
 
-  describe('oobStateFromConnectionRoleAndState', () => {
+  describe('oobStateFromDidExchangeRoleAndState', () => {
     it('should return the correct state for all connection role and state combinations', () => {
-      expect(testModule.oobStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Invited)).toEqual(
-        OutOfBandState.AwaitResponse
-      )
-      expect(testModule.oobStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Requested)).toEqual(
-        OutOfBandState.Done
-      )
-      expect(testModule.oobStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Responded)).toEqual(
-        OutOfBandState.Done
-      )
-      expect(testModule.oobStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Complete)).toEqual(
-        OutOfBandState.Done
-      )
-
-      expect(testModule.oobStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Invited)).toEqual(
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.InvitationSent)
+      ).toEqual(OutOfBandState.AwaitResponse)
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.RequestReceived)
+      ).toEqual(OutOfBandState.Done)
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.ResponseSent)
+      ).toEqual(OutOfBandState.Done)
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.Completed)
+      ).toEqual(OutOfBandState.Done)
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.Abandoned)
+      ).toEqual(OutOfBandState.Done)
+      expect(testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.Start)).toEqual(
         OutOfBandState.PrepareResponse
       )
-      expect(testModule.oobStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Requested)).toEqual(
-        OutOfBandState.Done
+
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.InvitationReceived)
+      ).toEqual(OutOfBandState.PrepareResponse)
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.RequestSent)
+      ).toEqual(OutOfBandState.Done)
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.ResponseReceived)
+      ).toEqual(OutOfBandState.Done)
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.Completed)
+      ).toEqual(OutOfBandState.Done)
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.Abandoned)
+      ).toEqual(OutOfBandState.Done)
+      expect(testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.Start)).toEqual(
+        OutOfBandState.AwaitResponse
       )
-      expect(testModule.oobStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Responded)).toEqual(
-        OutOfBandState.Done
-      )
-      expect(testModule.oobStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Complete)).toEqual(
-        OutOfBandState.Done
-      )
+    })
+  })
+
+  describe('didExchangeStateFromConnectionRoleAndState', () => {
+    it('should return the correct state for all connection role and state combinations', () => {
+      expect(
+        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Invited)
+      ).toEqual(DidExchangeState.InvitationSent)
+      expect(
+        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Requested)
+      ).toEqual(DidExchangeState.RequestReceived)
+      expect(
+        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Responded)
+      ).toEqual(DidExchangeState.ResponseSent)
+      expect(
+        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Complete)
+      ).toEqual(DidExchangeState.Completed)
+
+      expect(
+        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Invited)
+      ).toEqual(DidExchangeState.InvitationReceived)
+      expect(
+        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Requested)
+      ).toEqual(DidExchangeState.RequestSent)
+      expect(
+        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Responded)
+      ).toEqual(DidExchangeState.ResponseReceived)
+      expect(
+        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Complete)
+      ).toEqual(DidExchangeState.Completed)
+    })
+
+    it('should return the passed state value if the state or role is not a valid connection role or state', () => {
+      expect(
+        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Inviter, 'request-sent' as ConnectionState)
+      ).toEqual('request-sent')
+
+      expect(
+        testModule.didExchangeStateFromConnectionRoleAndState('responder' as ConnectionRole, ConnectionState.Requested)
+      ).toEqual('requested')
     })
   })
 })
