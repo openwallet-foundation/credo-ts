@@ -2,7 +2,7 @@ import type { OutOfBandMessageOptions } from './messages'
 
 import { AriesFrameworkError } from '../../error'
 import { ConnectionInvitationMessage, HandshakeProtocol } from '../connections'
-import { DidCommService } from '../dids'
+import { DidCommV1Service } from '../dids'
 import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 
 import { OutOfBandMessage } from './messages'
@@ -13,7 +13,7 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
   if (oldInvitation.did) {
     service = oldInvitation.did
   } else if (oldInvitation.serviceEndpoint && oldInvitation.recipientKeys && oldInvitation.recipientKeys.length > 0) {
-    service = new DidCommService({
+    service = new DidCommV1Service({
       id: '#inline',
       recipientKeys: oldInvitation.recipientKeys?.map(verkeyToDidKey),
       routingKeys: oldInvitation.routingKeys?.map(verkeyToDidKey),

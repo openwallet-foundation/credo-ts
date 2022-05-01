@@ -1,12 +1,21 @@
+import type { Key } from './Key'
 import type { DidDocumentService } from './service'
 
 import { Expose, Transform, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { keyReferenceToKey, verkeyToInstanceOfKey } from '../helpers'
 
-import { IndyAgentService, ServiceTransformer, DidCommService } from './service'
+import { IndyAgentService, ServiceTransformer, DidCommV1Service } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
+
+type DidPurpose =
+  | 'authentication'
+  | 'keyAgreement'
+  | 'assertionMethod'
+  | 'capabilityInvocation'
+  | 'capabilityDelegation'
 
 interface DidDocumentOptions {
   context?: string[]
@@ -90,17 +99,41 @@ export class DidDocument {
     }
   }
 
-  public dereferenceKey(keyId: string) {
+  public dereferenceVerificationMethod(keyId: string) {
     // TODO: once we use JSON-LD we should use that to resolve references in did documents.
     // for now we check whether the key id ends with the keyId.
     // so if looking for #123 and key.id is did:key:123#123, it is valid. But #123 as key.id is also valid
     const verificationMethod = this.verificationMethod.find((key) => key.id.endsWith(keyId))
 
     if (!verificationMethod) {
-      throw new Error(`Unable to locate verification with id '${keyId}'`)
+      throw new Error(`Unable to locate verification method with id '${keyId}'`)
     }
 
     return verificationMethod
+  }
+
+  public dereferenceKey(keyId: string, allowedPurposes?: DidPurpose[]) {
+    const allPurposes: DidPurpose[] = [
+      'authentication',
+      'keyAgreement',
+      'assertionMethod',
+      'capabilityInvocation',
+      'capabilityDelegation',
+    ]
+
+    const purposes = allowedPurposes ?? allPurposes
+
+    for (const purpose of purposes) {
+      for (const key of this[purpose]) {
+        if (typeof key === 'string' && key.endsWith(keyId)) {
+          return this.dereferenceVerificationMethod(key)
+        } else if (typeof key !== 'string' && key.id.endsWith(keyId)) {
+          return key
+        }
+      }
+    }
+
+    throw new Error(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
   }
 
   /**
@@ -127,22 +160,32 @@ export class DidDocument {
    * Get all DIDComm services ordered by priority descending. This means the highest
    * priority will be the first entry.
    */
-  public get didCommServices(): Array<IndyAgentService | DidCommService> {
-    const didCommServiceTypes = [IndyAgentService.type, DidCommService.type]
+  public get didCommServices(): Array<IndyAgentService | DidCommV1Service> {
+    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type]
     const services = this.service.filter((service) => didCommServiceTypes.includes(service.type)) as Array<
-      IndyAgentService | DidCommService
+      IndyAgentService | DidCommV1Service
     >
 
     // Sort services based on indicated priority
     return services.sort((a, b) => b.priority - a.priority)
   }
 
-  public get recipientKeys(): string[] {
-    // Get a `recipientKeys` entries from the did document
-    return this.didCommServices.reduce<string[]>(
-      (recipientKeys, service) => recipientKeys.concat(service.recipientKeys),
-      []
-    )
+  // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
+  public get recipientKeys(): Key[] {
+    let recipientKeys: Key[] = []
+
+    for (const service of this.didCommServices) {
+      if (service instanceof IndyAgentService) {
+        recipientKeys = [...recipientKeys, ...service.recipientKeys.map(verkeyToInstanceOfKey)]
+      } else if (service instanceof DidCommV1Service) {
+        recipientKeys = [
+          ...recipientKeys,
+          ...service.recipientKeys.map((recipientKey) => keyReferenceToKey(this, recipientKey)),
+        ]
+      }
+    }
+
+    return recipientKeys
   }
 
   public toJSON() {

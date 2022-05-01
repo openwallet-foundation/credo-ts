@@ -44,9 +44,10 @@ import {
   ProofState,
   Agent,
 } from '../src'
+import { KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
-import { DidCommService } from '../src/modules/dids'
+import { DidCommV1Service, DidKey, Key } from '../src/modules/dids'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
@@ -249,11 +250,13 @@ export function getMockOutOfBand({
     accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
     handshakeProtocols: [HandshakeProtocol.DidExchange],
     services: [
-      new DidCommService({
+      new DidCommV1Service({
         id: `#inline-0`,
         priority: 0,
         serviceEndpoint: serviceEndpoint ?? 'http://example.com',
-        recipientKeys: recipientKeys || ['ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7'],
+        recipientKeys: recipientKeys || [
+          new DidKey(Key.fromPublicKeyBase58('ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7', KeyType.Ed25519)).did,
+        ],
         routingKeys: [],
       }),
     ],

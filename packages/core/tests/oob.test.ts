@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { CredentialRecord, CredentialOfferTemplate } from '../src/modules/credentials'
+import type { DidCommV1Service } from '../src/modules/dids'
 import type { AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
@@ -8,11 +9,14 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { KeyType } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { DidCommService } from '../src/modules/dids'
+import { DidKey, Key } from '../src/modules/dids'
+import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
+import { sleep } from '../src/utils/sleep'
 
 import { TestMessage } from './TestMessage'
 import { getBaseConfig, prepareForIssuance } from './helpers'
@@ -138,13 +142,12 @@ describe('out of band', () => {
       expect(outOfBandMessage.getRequests()).toBeUndefined()
 
       // expect contains services
-      const [service] = outOfBandMessage.services as DidCommService[]
+      const [service] = outOfBandMessage.services as OutOfBandDidCommService[]
       expect(service).toMatchObject(
-        new DidCommService({
+        new OutOfBandDidCommService({
           id: expect.any(String),
           serviceEndpoint: 'rxjs:faber',
-          priority: 0,
-          recipientKeys: [expect.any(String)],
+          recipientKeys: [expect.stringContaining('did:key:')],
           routingKeys: [],
         })
       )
@@ -165,11 +168,10 @@ describe('out of band', () => {
       // expect contains services
       const [service] = outOfBandMessage.services
       expect(service).toMatchObject(
-        new DidCommService({
+        new OutOfBandDidCommService({
           id: expect.any(String),
           serviceEndpoint: 'rxjs:faber',
-          priority: 0,
-          recipientKeys: [expect.any(String)],
+          recipientKeys: [expect.stringContaining('did:key:')],
           routingKeys: [],
         })
       )
@@ -188,13 +190,12 @@ describe('out of band', () => {
       expect(outOfBandMessage.getRequests()).toHaveLength(1)
 
       // expect contains services
-      const [service] = outOfBandMessage.services as DidCommService[]
+      const [service] = outOfBandMessage.services as OutOfBandDidCommService[]
       expect(service).toMatchObject(
-        new DidCommService({
+        new OutOfBandDidCommService({
           id: expect.any(String),
           serviceEndpoint: 'rxjs:faber',
-          priority: 0,
-          recipientKeys: [expect.any(String)],
+          recipientKeys: [expect.stringMatching('did:key:')],
           routingKeys: [],
         })
       )
@@ -369,13 +370,28 @@ describe('out of band', () => {
     test('do not create a new connection when connection exists', async () => {
       const outOfBandRecord = await faberAgent.oob.createInvitation(makeConnectionConfig)
       const { outOfBandMessage } = outOfBandRecord
+
       let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.oob.receiveInvitation(outOfBandMessage)
       firstAliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(firstAliceFaberConnection!.id)
 
       // To simulate the usage of the same connection we set up the same service as it is in
       // the existing faber connection to the out-of-band message services attribute.
-      const theirDidDoc = await aliceAgent.dids.resolve(firstAliceFaberConnection.theirDid!)
-      outOfBandMessage.services = [theirDidDoc.didDocument?.service[0] as DidCommService]
+      const theirDidDocument = await aliceAgent.dids.resolveDidDocument(firstAliceFaberConnection.theirDid!)
+      const didDocumentService = theirDidDocument.service[0] as DidCommV1Service
+
+      // Convert did-communication service into an out of band service
+      // Maybe extract this into a util in the future
+      const oobService = new OutOfBandDidCommService({
+        id: didDocumentService.id,
+        serviceEndpoint: didDocumentService.serviceEndpoint,
+        recipientKeys: didDocumentService.recipientKeys.map(
+          (keyId) =>
+            new DidKey(
+              Key.fromPublicKeyBase58(theirDidDocument.dereferenceKey(keyId).publicKeyBase58!, KeyType.Ed25519)
+            ).did
+        ),
+      })
+      outOfBandMessage.services = [oobService]
 
       const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.oob.receiveInvitation(
         outOfBandMessage,

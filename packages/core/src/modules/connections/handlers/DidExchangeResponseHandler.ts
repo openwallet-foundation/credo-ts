@@ -7,7 +7,6 @@ import type { ConnectionService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
-import { DidKey } from '../../dids'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeResponseMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
@@ -53,9 +52,10 @@ export class DidExchangeResponseHandler implements Handler {
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
     // connection record did
-    const didKey = new DidKey(recipientKey)
-    if (!ourDidDocument.recipientKeys.includes(didKey.did)) {
-      throw new AriesFrameworkError(`Recipient key ${didKey.did} not found in did document recipient keys.`)
+    if (!ourDidDocument.recipientKeys.find((key) => key.fingerprint === recipientKey.fingerprint)) {
+      throw new AriesFrameworkError(
+        `Recipient key ${recipientKey.fingerprint} not found in did document recipient keys.`
+      )
     }
 
     const { protocol } = connectionRecord

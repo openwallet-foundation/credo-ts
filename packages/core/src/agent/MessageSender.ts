@@ -1,6 +1,5 @@
 import type { ConnectionRecord } from '../modules/connections'
-import type { DidDocument } from '../modules/dids'
-import type { IndyAgentService, DidCommService } from '../modules/dids/domain/service'
+import type { DidDocument, Key } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
@@ -15,13 +14,22 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
-import { stringToInstanceOfKey } from '../modules/dids/helpers'
+import { DidCommV1Service, IndyAgentService } from '../modules/dids/domain/service'
+import { didKeyToInstanceOfKey, keyReferenceToKey, verkeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
+import { getProtocolScheme } from '../utils/uri'
 
 import { EnvelopeService } from './EnvelopeService'
 import { TransportService } from './TransportService'
+
+export interface ResolvedDidCommService {
+  id: string
+  serviceEndpoint: string
+  recipientKeys: Key[]
+  routingKeys: Key[]
+}
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -119,8 +127,9 @@ export class MessageSender {
     for await (const service of services) {
       this.logger.debug(`Sending outbound message to service:`, { service })
       try {
+        const protocolScheme = getProtocolScheme(service.serviceEndpoint)
         for (const transport of this.outboundTransports) {
-          if (transport.supportedSchemes.includes(service.protocolScheme)) {
+          if (transport.supportedSchemes.includes(protocolScheme)) {
             await transport.sendMessage({
               payload: encryptedMessage,
               endpoint: service.serviceEndpoint,
@@ -197,7 +206,16 @@ export class MessageSender {
 
     const ourDidDocument = await this.resolveDidDocument(connection.did)
     const ourAuthenticationKeys = getAuthenticationKeys(ourDidDocument)
+
     // TODO We're selecting just the first authentication key. Is it ok?
+    // We can probably learn something from the didcomm-rust implementation, which looks at crypto compatibility to make sure the
+    // other party can decrypt the message. https://github.com/sicpa-dlab/didcomm-rust/blob/9a24b3b60f07a11822666dda46e5616a138af056/src/message/pack_encrypted/mod.rs#L33-L44
+    // This will become more relevant when we support different encrypt envelopes. One thing to take into account though is that currently we only store the recipientKeys
+    // as defined in the didcomm services, while it could be for example that the first authentication key is not defined in the recipientKeys, in which case we wouldn't
+    // even be interoperable between two AFJ agents. So we should either pick the first key that is defined in the recipientKeys, or we should make sure to store all
+    // keys defined in the did document as tags so we can retrieve it, even if it's not defined in the recipientKeys. This, again, will become simpler once we use didcomm v2
+    // as the `from` field in a received message will identity the did used so we don't have to store all keys in tags to be able to find the connections associated with
+    // an incoming message.
     const [firstOurAuthenticationKey] = ourAuthenticationKeys
     const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(ourDidDocument)
 
@@ -230,11 +248,10 @@ export class MessageSender {
     if (queueService) {
       this.logger.debug(`Queue message for connection ${connection.id} (${connection.theirLabel})`)
 
-      // TODO We should add a method to return instances of Key rather than keys as a string
       const keys = {
-        recipientKeys: queueService.recipientKeys.map(stringToInstanceOfKey),
-        routingKeys: queueService.routingKeys?.map(stringToInstanceOfKey) || [],
-        senderKey: stringToInstanceOfKey(firstOurAuthenticationKey),
+        recipientKeys: queueService.recipientKeys,
+        routingKeys: queueService.routingKeys,
+        senderKey: firstOurAuthenticationKey,
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(payload, keys)
@@ -259,8 +276,8 @@ export class MessageSender {
     connectionId,
   }: {
     message: AgentMessage
-    service: DidCommService
-    senderKey: string
+    service: ResolvedDidCommService
+    senderKey: Key
     returnRoute?: boolean
     connectionId?: string
   }) {
@@ -270,11 +287,10 @@ export class MessageSender {
 
     this.logger.debug(`Sending outbound message to service:`, { messageId: message.id, service })
 
-    // TODO We should add a method to return instances of Key rather than keys as a string
     const keys = {
-      recipientKeys: service.recipientKeys.map(stringToInstanceOfKey),
-      routingKeys: service.routingKeys?.map(stringToInstanceOfKey) || [],
-      senderKey: stringToInstanceOfKey(senderKey),
+      recipientKeys: service.recipientKeys,
+      routingKeys: service.routingKeys,
+      senderKey,
     }
 
     // Set return routing for message if requested
@@ -300,14 +316,57 @@ export class MessageSender {
     outboundPackage.endpoint = service.serviceEndpoint
     outboundPackage.connectionId = connectionId
     for (const transport of this.outboundTransports) {
-      const protocolScheme = service.protocolScheme ?? service.serviceEndpoint.split(':')[0]
+      const protocolScheme = getProtocolScheme(service.serviceEndpoint)
       if (!protocolScheme) {
-        this.logger.warn('Service does not have valid procolScheme.')
+        this.logger.warn('Service does not have valid protocolScheme.')
       } else if (transport.supportedSchemes.includes(protocolScheme)) {
         await transport.sendMessage(outboundPackage)
         break
       }
     }
+  }
+
+  private async retrieveServicesFromDid(did: string) {
+    this.logger.debug(`Resolving services for did ${did}.`)
+    const didDocument = await this.resolveDidDocument(did)
+
+    const didCommServices: ResolvedDidCommService[] = []
+
+    // FIXME: we currently retrieve did documents for all didcomm services in the did document, and we don't have caching
+    // yet so this will re-trigger ledger resolves for each one. Should we only resolve the first service, then the second service, etc...?
+    for (const didCommService of didDocument.didCommServices) {
+      if (didCommService instanceof IndyAgentService) {
+        // IndyAgentService (DidComm v0) has keys encoded as raw publicKeyBase58 (verkeys)
+        didCommServices.push({
+          id: didCommService.id,
+          recipientKeys: didCommService.recipientKeys.map(verkeyToInstanceOfKey),
+          routingKeys: didCommService.routingKeys?.map(verkeyToInstanceOfKey) || [],
+          serviceEndpoint: didCommService.serviceEndpoint,
+        })
+      } else if (didCommService instanceof DidCommV1Service) {
+        // Resolve dids to DIDDocs to retrieve routingKeys
+        const routingKeys = []
+        for (const routingKey of didCommService.routingKeys ?? []) {
+          const routingDidDocument = await this.resolveDidDocument(routingKey)
+          routingKeys.push(keyReferenceToKey(routingDidDocument, routingKey))
+        }
+
+        // Dereference recipientKeys
+        const recipientKeys = didCommService.recipientKeys.map((recipientKey) =>
+          keyReferenceToKey(didDocument, recipientKey)
+        )
+
+        // DidCommV1Service has keys encoded as key references
+        didCommServices.push({
+          id: didCommService.id,
+          recipientKeys,
+          routingKeys,
+          serviceEndpoint: didCommService.serviceEndpoint,
+        })
+      }
+    }
+
+    return didCommServices
   }
 
   private async retrieveServicesByConnection(
@@ -320,25 +379,26 @@ export class MessageSender {
       connection,
     })
 
-    let didCommServices: Array<IndyAgentService | DidCommService> = []
-    // If theirDid starts with a did: prefix it means we're using the new did syntax
-    // and we should use the did resolver
+    let didCommServices: ResolvedDidCommService[] = []
+
     if (connection.theirDid) {
       this.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
-      const didDocument = await this.resolveDidDocument(connection.theirDid)
-      didCommServices = didDocument.didCommServices
+      didCommServices = await this.retrieveServicesFromDid(connection.theirDid)
     } else if (outOfBand) {
       this.logger.debug(`Resolving services from out-of-band record ${outOfBand?.id}.`)
-      if (connection.isRequester && outOfBand) {
+      if (connection.isRequester) {
         for (const service of outOfBand.outOfBandMessage.services) {
           // Resolve dids to DIDDocs to retrieve services
           if (typeof service === 'string') {
-            const did = service
-            const didDocument = await this.resolveDidDocument(did)
-            didCommServices = [...didCommServices, ...didDocument.didCommServices]
+            didCommServices = await this.retrieveServicesFromDid(service)
           } else {
-            // Inline service blocks can just be pushed
-            didCommServices.push(service)
+            // Out of band inline service contains keys encoded as did:key references
+            didCommServices.push({
+              id: service.id,
+              recipientKeys: service.recipientKeys.map(didKeyToInstanceOfKey),
+              routingKeys: service.routingKeys?.map(didKeyToInstanceOfKey) || [],
+              serviceEndpoint: service.serviceEndpoint,
+            })
           }
         }
       }
@@ -351,7 +411,7 @@ export class MessageSender {
     // If restrictive will remove services not listed in schemes list
     if (transportPriority?.restrictive) {
       services = services.filter((service) => {
-        const serviceSchema = service.protocolScheme
+        const serviceSchema = getProtocolScheme(service.serviceEndpoint)
         return transportPriority.schemes.includes(serviceSchema)
       })
     }
@@ -359,14 +419,15 @@ export class MessageSender {
     // If transport priority is set we will sort services by our priority
     if (transportPriority?.schemes) {
       services = services.sort(function (a, b) {
-        const aScheme = a.protocolScheme
-        const bScheme = b.protocolScheme
+        const aScheme = getProtocolScheme(a.serviceEndpoint)
+        const bScheme = getProtocolScheme(b.serviceEndpoint)
         return transportPriority?.schemes.indexOf(aScheme) - transportPriority?.schemes.indexOf(bScheme)
       })
     }
 
     this.logger.debug(
-      `Retrieved ${services.length} services for message to connection '${connection.id}'(${connection.theirLabel})'`
+      `Retrieved ${services.length} services for message to connection '${connection.id}'(${connection.theirLabel})'`,
+      { hasQueueService: queueService !== undefined }
     )
     return { services, queueService }
   }
@@ -391,9 +452,9 @@ export function isDidCommTransportQueue(serviceEndpoint: string): serviceEndpoin
 function getAuthenticationKeys(didDocument: DidDocument) {
   return didDocument.authentication.map((authentication) => {
     const verificationMethod =
-      typeof authentication === 'string' ? didDocument.dereferenceKey(authentication) : authentication
+      typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
     const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
     const key = getKeyFromVerificationMethod(verificationMethod)
-    return key.publicKeyBase58
+    return key
   })
 }

@@ -11,8 +11,8 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
-import { DidPeer, IndyAgentService, Key } from '../../dids'
-import { DidCommService } from '../../dids/domain/service/DidCommService'
+import { DidKey, DidPeer, IndyAgentService, Key } from '../../dids'
+import { DidCommV1Service } from '../../dids/domain/service/DidCommV1Service'
 import { PeerDidNumAlgo } from '../../dids/methods/peer/DidPeer'
 import { DidRepository } from '../../dids/repository'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
@@ -165,16 +165,24 @@ describe('ConnectionService', () => {
       expect.assertions(5)
 
       const theirDid = 'their-did'
-      const theirVerkey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const theirKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
       const theirDidDoc = new DidDoc({
         id: theirDid,
         publicKey: [],
-        authentication: [],
+        authentication: [
+          new EmbeddedAuthentication(
+            new Ed25119Sig2018({
+              id: `${theirDid}#key-id`,
+              controller: theirDid,
+              publicKeyBase58: theirKey.publicKeyBase58,
+            })
+          ),
+        ],
         service: [
-          new DidCommService({
+          new DidCommV1Service({
             id: `${theirDid};indy`,
             serviceEndpoint: 'https://endpoint.com',
-            recipientKeys: [theirVerkey],
+            recipientKeys: [`${theirDid}#key-id`],
           }),
         ],
       })
@@ -187,7 +195,7 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {
-        senderKey: Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519),
+        senderKey: theirKey,
         recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
       })
 
@@ -200,7 +208,7 @@ describe('ConnectionService', () => {
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(ConnectionState.Requested)
-      expect(processedConnection.theirDid).toBe('did:peer:1zQmXUaPPhPCbUVZ3hGYmQmGxWTwyDfhqESXCpMFhKaF9Y2A')
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmbCWxDcdq3rxQ1LVTELSWeNMsmiPdwAJzwzHLVDFfVks5')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
       expect(processedConnection.imageUrl).toBe(connectionImageUrl)
@@ -217,16 +225,24 @@ describe('ConnectionService', () => {
       })
 
       const theirDid = 'their-did'
-      const theirVerkey = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const theirKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
       const theirDidDoc = new DidDoc({
         id: theirDid,
         publicKey: [],
-        authentication: [],
+        authentication: [
+          new EmbeddedAuthentication(
+            new Ed25119Sig2018({
+              id: `${theirDid}#key-id`,
+              controller: theirDid,
+              publicKeyBase58: theirKey.publicKeyBase58,
+            })
+          ),
+        ],
         service: [
-          new DidCommService({
+          new DidCommV1Service({
             id: `${theirDid};indy`,
             serviceEndpoint: 'https://endpoint.com',
-            recipientKeys: [theirVerkey],
+            recipientKeys: [`${theirDid}#key-id`],
           }),
         ],
       })
@@ -239,7 +255,7 @@ describe('ConnectionService', () => {
 
       const messageContext = new InboundMessageContext(connectionRequest, {
         connection: connectionRecord,
-        senderKey: Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519),
+        senderKey: theirKey,
         recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
       })
 
@@ -252,7 +268,7 @@ describe('ConnectionService', () => {
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(ConnectionState.Requested)
-      expect(processedConnection.theirDid).toBe('did:peer:1zQmXUaPPhPCbUVZ3hGYmQmGxWTwyDfhqESXCpMFhKaF9Y2A')
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmbCWxDcdq3rxQ1LVTELSWeNMsmiPdwAJzwzHLVDFfVks5')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
 
@@ -327,8 +343,8 @@ describe('ConnectionService', () => {
         },
       })
 
-      const recipientKeys = [verkey]
-      const outOfBand = getMockOutOfBand({ did, recipientKeys })
+      const recipientKeys = [new DidKey(Key.fromPublicKeyBase58(verkey, KeyType.Ed25519))]
+      const outOfBand = getMockOutOfBand({ did, recipientKeys: recipientKeys.map((did) => did.did) })
       const mockDidDoc = new DidDoc({
         id: did,
         publicKey: [
@@ -351,7 +367,7 @@ describe('ConnectionService', () => {
           new IndyAgentService({
             id: `${did}#IndyAgentService`,
             serviceEndpoint: 'http://example.com',
-            recipientKeys,
+            recipientKeys: recipientKeys.map((did) => did.key.publicKeyBase58),
             routingKeys: [],
           }),
         ],
@@ -413,17 +429,27 @@ describe('ConnectionService', () => {
         role: ConnectionRole.Invitee,
       })
 
+      const theirKey = Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519)
+
       const otherPartyConnection = new Connection({
         did: theirDid,
         didDoc: new DidDoc({
           id: theirDid,
           publicKey: [],
-          authentication: [],
+          authentication: [
+            new EmbeddedAuthentication(
+              new Ed25119Sig2018({
+                id: `${theirDid}#key-id`,
+                controller: theirDid,
+                publicKeyBase58: theirKey.publicKeyBase58,
+              })
+            ),
+          ],
           service: [
-            new DidCommService({
+            new DidCommV1Service({
               id: `${did};indy`,
               serviceEndpoint: 'https://endpoint.com',
-              recipientKeys: [theirVerkey],
+              recipientKeys: [`${theirDid}#key-id`],
             }),
           ],
         }),
@@ -437,10 +463,12 @@ describe('ConnectionService', () => {
         connectionSig,
       })
 
-      const outOfBandRecord = getMockOutOfBand({ recipientKeys: [theirVerkey] })
+      const outOfBandRecord = getMockOutOfBand({
+        recipientKeys: [new DidKey(theirKey).did],
+      })
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
-        senderKey: Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519),
+        senderKey: theirKey,
         recipientKey: Key.fromPublicKeyBase58(verkey, KeyType.Ed25519),
       })
 
@@ -485,17 +513,27 @@ describe('ConnectionService', () => {
         state: ConnectionState.Requested,
       })
 
+      const theirKey = Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519)
+
       const otherPartyConnection = new Connection({
         did: theirDid,
         didDoc: new DidDoc({
           id: theirDid,
           publicKey: [],
-          authentication: [],
+          authentication: [
+            new EmbeddedAuthentication(
+              new Ed25119Sig2018({
+                id: `${theirDid}#key-id`,
+                controller: theirDid,
+                publicKeyBase58: theirKey.publicKeyBase58,
+              })
+            ),
+          ],
           service: [
-            new DidCommService({
+            new DidCommV1Service({
               id: `${did};indy`,
               serviceEndpoint: 'https://endpoint.com',
-              recipientKeys: [theirVerkey],
+              recipientKeys: [`${theirDid}#key-id`],
             }),
           ],
         }),
@@ -509,11 +547,13 @@ describe('ConnectionService', () => {
       })
 
       // Recipient key `verkey` is not the same as theirVerkey which was used to sign message,
-      // therfore it should cause a failure.
-      const outOfBandRecord = getMockOutOfBand({ recipientKeys: [verkey] })
+      // therefore it should cause a failure.
+      const outOfBandRecord = getMockOutOfBand({
+        recipientKeys: [new DidKey(Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)).did],
+      })
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
-        senderKey: Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519),
+        senderKey: theirKey,
         recipientKey: Key.fromPublicKeyBase58(verkey, KeyType.Ed25519),
       })
 
@@ -535,13 +575,15 @@ describe('ConnectionService', () => {
         theirDid: undefined,
       })
 
+      const theirKey = Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519)
+
       const otherPartyConnection = new Connection({ did: theirDid })
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection)
       const connectionSig = await signData(plainConnection, wallet, theirVerkey)
 
       const connectionResponse = new ConnectionResponseMessage({ threadId: uuid(), connectionSig })
 
-      const outOfBandRecord = getMockOutOfBand({ recipientKeys: [theirVerkey] })
+      const outOfBandRecord = getMockOutOfBand({ recipientKeys: [new DidKey(theirKey).did] })
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
         recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
