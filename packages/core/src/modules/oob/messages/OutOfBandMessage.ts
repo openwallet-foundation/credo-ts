@@ -14,7 +14,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { serviceToNumAlgo2Did } from '../../dids/methods/peer/peerDidNumAlgo2'
 
-interface OutOfBandMessageOptions {
+export interface OutOfBandMessageOptions {
   id?: string
   label: string
   goalCode?: string
@@ -37,6 +37,7 @@ export class OutOfBandMessage extends AgentMessage {
       this.accept = options.accept
       this.handshakeProtocols = options.handshakeProtocols
       this.services = options.services
+      this.imageUrl = options.imageUrl
     }
   }
 
