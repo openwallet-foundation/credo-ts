@@ -11,7 +11,7 @@ import { InjectionSymbols, AriesFrameworkError } from '../../packages/core/src'
 export class SubjectOutboundTransport implements OutboundTransport {
   private logger!: Logger
   private ourSubject = new Subject<SubjectMessage>()
-  private subscription?: Subscription
+  private returnRouteMessageSubscription?: Subscription
   private subjectMap: { [key: string]: Subject<SubjectMessage> | undefined }
 
   public supportedSchemes = ['rxjs']
@@ -26,12 +26,12 @@ export class SubjectOutboundTransport implements OutboundTransport {
   }
 
   public async stop(): Promise<void> {
-    this.subscription?.unsubscribe()
+    this.returnRouteMessageSubscription?.unsubscribe()
     this.ourSubject.complete()
   }
 
   private subscribe(agent: Agent) {
-    this.subscription = this.ourSubject.subscribe({
+    this.returnRouteMessageSubscription = this.ourSubject.subscribe({
       next: async ({ message }: SubjectMessage) => {
         this.logger.test('Received message')
 
