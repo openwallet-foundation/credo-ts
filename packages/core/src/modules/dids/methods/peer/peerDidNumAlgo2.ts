@@ -2,7 +2,6 @@ import type { JsonObject } from '../../../../types'
 import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCommService'
 import type { DidDocument, VerificationMethod } from '../../domain'
 
-import { KeyType } from '../../../../crypto'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
 import { DidDocumentService, Key } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'

@@ -16,7 +16,6 @@ import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidC
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
-import { sleep } from '../src/utils/sleep'
 
 import { TestMessage } from './TestMessage'
 import { getBaseConfig, prepareForIssuance } from './helpers'

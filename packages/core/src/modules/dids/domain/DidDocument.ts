@@ -1,12 +1,13 @@
-import type { Key } from './Key'
 import type { DidDocumentService } from './service'
 
 import { Expose, Transform, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested } from 'class-validator'
 
+import { KeyType } from '../../../crypto'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { keyReferenceToKey, verkeyToInstanceOfKey } from '../helpers'
 
+import { Key } from './Key'
+import { getKeyDidMappingByVerificationMethod } from './key-type'
 import { IndyAgentService, ServiceTransformer, DidCommV1Service } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
 
@@ -176,7 +177,10 @@ export class DidDocument {
 
     for (const service of this.didCommServices) {
       if (service instanceof IndyAgentService) {
-        recipientKeys = [...recipientKeys, ...service.recipientKeys.map(verkeyToInstanceOfKey)]
+        recipientKeys = [
+          ...recipientKeys,
+          ...service.recipientKeys.map((publicKeyBase58) => Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)),
+        ]
       } else if (service instanceof DidCommV1Service) {
         recipientKeys = [
           ...recipientKeys,
@@ -191,4 +195,15 @@ export class DidDocument {
   public toJSON() {
     return JsonTransformer.toJSON(this)
   }
+}
+
+export function keyReferenceToKey(didDocument: DidDocument, keyId: string) {
+  // FIXME: we allow authentication keys as historically ed25519 keys have been used in did documents
+  // for didcomm. In the future we should update this to only be allowed for IndyAgent and DidCommV1 services
+  // as didcomm v2 doesn't have this issue anymore
+  const verificationMethod = didDocument.dereferenceKey(keyId, ['authentication', 'keyAgreement'])
+  const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+  const key = getKeyFromVerificationMethod(verificationMethod)
+
+  return key
 }

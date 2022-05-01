@@ -5,7 +5,7 @@ import { instanceToInstance } from 'class-transformer'
 
 import { JsonEncoder, MultiBaseEncoder, MultiHashEncoder } from '../../../../utils'
 import { Key } from '../../domain/Key'
-import { getKeyDidMappingByKeyType } from '../../domain/key-type'
+import { getDidDocumentForKey } from '../../domain/keyDidDocument'
 import { parseDid } from '../../domain/parse'
 
 import { didDocumentToNumAlgo2Did, didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
@@ -108,9 +108,7 @@ export class DidPeer {
     // Method 1 (numAlgo 0)
     if (this.numAlgo === PeerDidNumAlgo.InceptionKeyWithoutDoc) {
       const key = Key.fromFingerprint(this.identifierWithoutNumAlgo)
-      const { getDidDocument } = getKeyDidMappingByKeyType(key.keyType)
-
-      return getDidDocument(this.parsedDid.did, key)
+      return getDidDocumentForKey(this.parsedDid.did, key)
     }
     // Method 2 (numAlgo 1)
     else if (this.numAlgo === PeerDidNumAlgo.GenesisDoc) {
