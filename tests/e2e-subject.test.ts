@@ -47,7 +47,6 @@ describe('E2E Subject tests', () => {
 
   test('Full Subject flow (connect, request mediation, issue, verify)', async () => {
     const mediatorMessages = new Subject<SubjectMessage>()
-    const recipientMessages = new Subject<SubjectMessage>()
     const senderMessages = new Subject<SubjectMessage>()
 
     const subjectMap = {
@@ -56,17 +55,16 @@ describe('E2E Subject tests', () => {
     }
 
     // Recipient Setup
-    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(recipientMessages, subjectMap))
-    recipientAgent.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
+    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(mediatorMessages, subjectMap))
+    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.registerOutboundTransport(new SubjectOutboundTransport(senderMessages, subjectMap))
+    senderAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     senderAgent.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 

@@ -88,4 +88,10 @@ export class WebSocketTransportSession implements TransportSession {
 
     this.socket.send(JSON.stringify(encryptedMessage))
   }
+
+  public async close(): Promise<void> {
+    if (this.socket.readyState === WebSocket.OPEN) {
+      this.socket.close()
+    }
+  }
 }

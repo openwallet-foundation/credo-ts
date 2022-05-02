@@ -72,6 +72,7 @@ describe('MessageSender', () => {
 
   const transportService = new TransportService()
   const transportServiceFindSessionMock = mockFunction(transportService.findSessionByConnectionId)
+  const transportServiceFindSessionByIdMock = mockFunction(transportService.findSessionById)
   const transportServiceHasInboundEndpoint = mockFunction(transportService.hasInboundEndpoint)
 
   const firstDidCommService = new DidCommService({
@@ -217,6 +218,21 @@ describe('MessageSender', () => {
         responseRequested: false,
       })
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
+    })
+
+    test('call send message on session when outbound message has sessionId attached', async () => {
+      transportServiceFindSessionByIdMock.mockReturnValue(session)
+      messageSender.registerOutboundTransport(outboundTransport)
+      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
+
+      await messageSender.sendMessage({ ...outboundMessage, sessionId: 'session-123' })
+
+      expect(session.send).toHaveBeenCalledTimes(1)
+      expect(session.send).toHaveBeenNthCalledWith(1, encryptedMessage)
+      expect(sendMessageSpy).toHaveBeenCalledTimes(0)
+      expect(sendMessageToServiceSpy).toHaveBeenCalledTimes(0)
+      expect(transportServiceFindSessionByIdMock).toHaveBeenCalledWith('session-123')
     })
 
     test('call send message on session when there is a session for a given connection', async () => {

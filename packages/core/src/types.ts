@@ -91,6 +91,7 @@ export interface DecryptedMessageContext {
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   payload: T
   connection: ConnectionRecord
+  sessionId?: string
 }
 
 export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {
