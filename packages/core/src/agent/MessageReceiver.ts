@@ -8,7 +8,7 @@ import type { TransportSession } from './TransportService'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
-import { ConnectionRepository } from '../modules/connections'
+import { ConnectionRepository } from '../modules/connections/repository'
 import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { isValidJweStructure } from '../utils/JWE'
