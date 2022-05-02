@@ -51,11 +51,6 @@ export enum DidCommMimeType {
   V1 = 'application/didcomm-envelope-enc',
 }
 
-export enum WalletStorageType {
-  Default = 'default',
-  Postgres = 'postgres_storage',
-}
-
 export interface InitConfig {
   endpoints?: string[]
   label: string

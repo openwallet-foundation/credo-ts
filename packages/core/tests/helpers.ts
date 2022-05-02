@@ -47,7 +47,6 @@ import {
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { DidCommService } from '../src/modules/dids'
-import { WalletStorageType } from '../src/types'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -90,7 +89,7 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
       id: `Wallet${name}`,
       key: `Key${name}`,
       storage: {
-        type: WalletStorageType.Postgres,
+        type: 'postgres_storage',
         config: {
           url: 'localhost:5432',
           wallet_scheme: WalletScheme.DatabasePerWallet,
