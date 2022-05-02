@@ -14,12 +14,16 @@ import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage
 import { MediationRole, MediationState } from '../models'
 import { MediationRecord, MediationRepository } from '../repository'
 import { MediationRecipientService } from '../services'
+import { DidRepository } from '../../dids/repository'
 
 jest.mock('../repository/MediationRepository')
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
 
 jest.mock('../../connections/repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
+
+jest.mock('../../dids/repository/DidRepository')
+const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
 jest.mock('../../../agent/EventEmitter')
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
@@ -41,6 +45,7 @@ describe('MediationRecipientService', () => {
 
   let wallet: Wallet
   let mediationRepository: MediationRepository
+  let didRepository: DidRepository
   let eventEmitter: EventEmitter
   let connectionService: ConnectionService
   let connectionRepository: ConnectionRepository
@@ -61,7 +66,8 @@ describe('MediationRecipientService', () => {
   beforeEach(async () => {
     eventEmitter = new EventEmitterMock()
     connectionRepository = new ConnectionRepositoryMock()
-    connectionService = new ConnectionService(wallet, config, connectionRepository, eventEmitter)
+    didRepository = new DidRepositoryMock()
+    connectionService = new ConnectionService(wallet, config, connectionRepository, didRepository, eventEmitter)
     mediationRepository = new MediationRepositoryMock()
     messageSender = new MessageSenderMock()
 

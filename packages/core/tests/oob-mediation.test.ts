@@ -7,7 +7,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { MediationState } from '../src/modules/routing'
+import { MediationState, MediatorPickupStrategy } from '../src/modules/routing'
 
 import { getBaseConfig, waitForBasicMessage } from './helpers'
 
@@ -16,6 +16,9 @@ const faberConfig = getBaseConfig('OOB mediation - Faber Agent', {
 })
 const aliceConfig = getBaseConfig('OOB mediation - Alice Recipient Agent', {
   endpoints: ['rxjs:alice'],
+  // FIXME: discover features returns that we support this protocol, but we don't support all roles
+  // we should return that we only support the mediator role so we don't have to explicitly declare this
+  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
 const mediatorConfig = getBaseConfig('OOB mediation - Mediator Agent', {
   endpoints: ['rxjs:mediator'],

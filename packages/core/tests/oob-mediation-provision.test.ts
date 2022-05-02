@@ -8,7 +8,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { MediationState } from '../src/modules/routing'
+import { MediationState, MediatorPickupStrategy } from '../src/modules/routing'
 
 import { getBaseConfig, waitForBasicMessage } from './helpers'
 
@@ -17,6 +17,7 @@ const faberConfig = getBaseConfig('OOB mediation provision - Faber Agent', {
 })
 const aliceConfig = getBaseConfig('OOB mediation provision - Alice Recipient Agent', {
   endpoints: ['rxjs:alice'],
+  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
 const mediatorConfig = getBaseConfig('OOB mediation provision - Mediator Agent', {
   endpoints: ['rxjs:mediator'],
