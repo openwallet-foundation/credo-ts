@@ -7,16 +7,16 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 
-import { waitForBasicMessage, getBaseConfig } from './helpers'
+import { waitForBasicMessage, getBasePostgresConfig } from './helpers'
 
-const aliceConfig = getBaseConfig('Agents Alice', {
+const alicePostgresConfig = getBasePostgresConfig('AgentsAlice', {
   endpoints: ['rxjs:alice'],
 })
-const bobConfig = getBaseConfig('Agents Bob', {
+const bobPostgresConfig = getBasePostgresConfig('AgentsBob', {
   endpoints: ['rxjs:bob'],
 })
 
-describe('agents', () => {
+describe('postgres agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
   let aliceConnection: ConnectionRecord
@@ -29,7 +29,7 @@ describe('agents', () => {
     await aliceAgent.wallet.delete()
   })
 
-  test('make a connection between agents', async () => {
+  test('make a connection between postgres agents', async () => {
     const aliceMessages = new Subject<SubjectMessage>()
     const bobMessages = new Subject<SubjectMessage>()
 
@@ -38,12 +38,12 @@ describe('agents', () => {
       'rxjs:bob': bobMessages,
     }
 
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(alicePostgresConfig.config, alicePostgresConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    bobAgent = new Agent(bobConfig.config, bobConfig.agentDependencies)
+    bobAgent = new Agent(bobPostgresConfig.config, bobPostgresConfig.agentDependencies)
     bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
@@ -69,7 +69,7 @@ describe('agents', () => {
     expect(basicMessage.content).toBe(message)
   })
 
-  test('can shutdown and re-initialize the same agent', async () => {
+  test('can shutdown and re-initialize the same postgres agent', async () => {
     expect(aliceAgent.isInitialized).toBe(true)
     await aliceAgent.shutdown()
     expect(aliceAgent.isInitialized).toBe(false)
