@@ -75,6 +75,12 @@ export class HttpTransportSession implements TransportSession {
     this.res = res
   }
 
+  public async close(): Promise<void> {
+    if (!this.res.headersSent) {
+      this.res.status(200).end()
+    }
+  }
+
   public async send(encryptedMessage: EncryptedMessage): Promise<void> {
     if (this.res.headersSent) {
       throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
