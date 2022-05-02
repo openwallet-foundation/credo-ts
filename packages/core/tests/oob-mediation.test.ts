@@ -47,17 +47,17 @@ describe('out of band with mediation', () => {
 
     faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(mediatorMessages, subjectMap))
+    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await mediatorAgent.initialize()
   })
 

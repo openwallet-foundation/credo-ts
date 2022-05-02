@@ -22,7 +22,7 @@ export class TransportService {
   }
 
   public findSessionByOutOfBandId(outOfBandId: string) {
-    return Object.values(this.transportSessionTable).find((session) => session.outOfBand?.id === outOfBandId)
+    return Object.values(this.transportSessionTable).find((session) => session?.outOfBand?.id === outOfBandId)
   }
 
   public hasInboundEndpoint(didDocument: DidDocument): boolean {

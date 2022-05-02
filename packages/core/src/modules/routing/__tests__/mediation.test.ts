@@ -118,11 +118,13 @@ describe('mediator establishment', () => {
 
     senderRecipientConnection = await senderAgent.connections.returnWhenIsConnected(senderRecipientConnection!.id)
 
-    const recipientSenderConnection = await recipientAgent.connections.findByOutOfBandId(recipientOutOfBandRecord.id)
+    let recipientSenderConnection = await recipientAgent.connections.findByOutOfBandId(recipientOutOfBandRecord.id)
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
     expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
     expect(recipientSenderConnection!.isReady).toBe(true)
     expect(senderRecipientConnection.isReady).toBe(true)
+
+    recipientSenderConnection = await recipientAgent.connections.returnWhenIsConnected(recipientSenderConnection!.id)
 
     const message = 'hello, world'
     await senderAgent.basicMessages.sendMessage(senderRecipientConnection.id, message)

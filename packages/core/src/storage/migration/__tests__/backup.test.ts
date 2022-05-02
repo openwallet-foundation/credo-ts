@@ -85,7 +85,7 @@ describe('UpdateAssistant | Backup', () => {
     expect((await credentialRepository.getAll()).sort((a, b) => a.id.localeCompare(b.id))).toMatchSnapshot()
   })
 
-  it('should restore the backup if an error occurs backup', async () => {
+  it('should restore the backup if an error occurs during the update', async () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -7,7 +7,6 @@ import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommS
 import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
-import type { DidExchangeRole } from '../models'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -33,13 +32,13 @@ import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 import {
+  DidExchangeRole,
   DidExchangeState,
   Connection,
   DidDoc,
   Ed25119Sig2018,
   EmbeddedAuthentication,
   HandshakeProtocol,
-  DidExchangeRole,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
