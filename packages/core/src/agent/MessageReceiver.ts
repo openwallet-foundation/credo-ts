@@ -10,7 +10,6 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionsModule } from '../modules/connections'
-import { DidKey } from '../modules/dids'
 import { OutOfBandService } from '../modules/oob/OutOfBandService'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { isValidJweStructure } from '../utils/JWE'
@@ -97,8 +96,7 @@ export class MessageReceiver {
     )
 
     const connection = await this.findConnectionByMessageKeys(decryptedMessage)
-    const outOfBand =
-      (recipientKey && (await this.outOfBandService.findByRecipientKey(new DidKey(recipientKey).did))) || undefined
+    const outOfBand = (recipientKey && (await this.outOfBandService.findByRecipientKey(recipientKey))) || undefined
 
     const message = await this.transformAndValidate(plaintextMessage, connection)
 
@@ -187,12 +185,10 @@ export class MessageReceiver {
     // We only fetch connections that are sent in AuthCrypt mode
     if (!recipientKey || !senderKey) return null
 
-    const senderDidKey = new DidKey(senderKey)
-    const recipientDidKey = new DidKey(recipientKey)
     // Try to find the did records that holds the sender and recipient keys
     return this.connectionsModule.findByKeys({
-      senderKey: senderDidKey.did,
-      recipientKey: recipientDidKey.did,
+      senderKey,
+      recipientKey,
     })
   }
 

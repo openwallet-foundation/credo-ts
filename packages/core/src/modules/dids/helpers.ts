@@ -1,6 +1,6 @@
 import { KeyType } from '../../crypto'
 
-import { Key } from './domain'
+import { Key } from './domain/Key'
 import { DidKey } from './methods/key'
 
 export function didKeyToVerkey(key: string) {
@@ -21,12 +21,12 @@ export function verkeyToDidKey(key: string) {
   return didKey.did
 }
 
-export function stringToInstanceOfKey(key: string) {
-  if (key.startsWith('did:key')) {
-    const didKey = DidKey.fromDid(key)
-    return didKey.key
-  }
-  const publicKeyBase58 = key
-  const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
+export function didKeyToInstanceOfKey(key: string) {
+  const didKey = DidKey.fromDid(key)
+  return didKey.key
+}
+
+export function verkeyToInstanceOfKey(verkey: string) {
+  const ed25519Key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
   return ed25519Key
 }

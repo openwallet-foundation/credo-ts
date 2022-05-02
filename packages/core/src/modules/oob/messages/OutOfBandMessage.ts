@@ -1,8 +1,7 @@
 import type { PlaintextMessage } from '../../../types'
 import type { HandshakeProtocol } from '../../connections'
-import type { DidCommService } from '../../dids'
 
-import { Expose, Type } from 'class-transformer'
+import { Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, Equals, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
@@ -12,16 +11,18 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
-import { serviceToNumAlgo2Did } from '../../dids/methods/peer/peerDidNumAlgo2'
+import { IsStringOrInstance } from '../../../utils/validators'
+import { outOfBandServiceToNumAlgo2Did } from '../../dids/methods/peer/peerDidNumAlgo2'
+import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 
-interface OutOfBandMessageOptions {
+export interface OutOfBandMessageOptions {
   id?: string
   label: string
   goalCode?: string
   goal?: string
   accept?: string[]
   handshakeProtocols?: HandshakeProtocol[]
-  services: Array<DidCommService | string>
+  services: Array<OutOfBandDidCommService | string>
   imageUrl?: string
 }
 
@@ -37,6 +38,7 @@ export class OutOfBandMessage extends AgentMessage {
       this.accept = options.accept
       this.handshakeProtocols = options.handshakeProtocols
       this.services = options.services
+      this.imageUrl = options.imageUrl
     }
   }
 
@@ -90,7 +92,7 @@ export class OutOfBandMessage extends AgentMessage {
       if (typeof didOrService === 'string') {
         return didOrService
       }
-      return serviceToNumAlgo2Did(didOrService)
+      return outOfBandServiceToNumAlgo2Did(didOrService)
     })
     return dids
   }
@@ -123,7 +125,10 @@ export class OutOfBandMessage extends AgentMessage {
 
   @IsArray()
   @ArrayNotEmpty()
-  public services: Array<DidCommService | string> = []
+  @OutOfBandServiceTransformer()
+  @IsStringOrInstance(OutOfBandDidCommService, { each: true })
+  @ValidateNested({ each: true })
+  public services!: Array<OutOfBandDidCommService | string>
 
   /**
    * Custom property. It is not part of the RFC.
@@ -131,4 +136,34 @@ export class OutOfBandMessage extends AgentMessage {
   @IsOptional()
   @IsUrl()
   public readonly imageUrl?: string
+}
+
+/**
+ * Decorator that transforms authentication json to corresponding class instances
+ *
+ * @example
+ * class Example {
+ *   VerificationMethodTransformer()
+ *   private authentication: VerificationMethod
+ * }
+ */
+function OutOfBandServiceTransformer() {
+  return Transform(({ value, type }: { value: Array<string | { type: string }>; type: TransformationType }) => {
+    if (type === TransformationType.PLAIN_TO_CLASS) {
+      return value.map((service) => {
+        // did
+        if (typeof service === 'string') return new String(service)
+
+        // inline didcomm service
+        return JsonTransformer.fromJSON(service, OutOfBandDidCommService)
+      })
+    } else if (type === TransformationType.CLASS_TO_PLAIN) {
+      return value.map((service) =>
+        typeof service === 'string' || service instanceof String ? service.toString() : JsonTransformer.toJSON(service)
+      )
+    }
+
+    // PLAIN_TO_PLAIN
+    return value
+  })
 }

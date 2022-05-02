@@ -3,6 +3,7 @@ import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
 import type { ConnectionRecord, Routing } from '../../modules/connections'
 import type { PlaintextMessage } from '../../types'
+import type { Key } from '../dids'
 
 import { parseUrl } from 'query-string'
 import { EmptyError } from 'rxjs'
@@ -14,6 +15,7 @@ import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import {
   DidExchangeState,
@@ -21,12 +23,14 @@ import {
   ConnectionInvitationMessage,
   ConnectionsModule,
 } from '../../modules/connections'
-import { DidCommService, DidsModule } from '../dids'
-import { verkeyToDidKey } from '../dids/helpers'
-import { serviceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
+import { JsonTransformer } from '../../utils'
+import { DidsModule } from '../dids'
+import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
+import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { MediationRecipientService } from '../routing'
 
 import { OutOfBandService } from './OutOfBandService'
+import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 import { OutOfBandRole } from './domain/OutOfBandRole'
 import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseHandler } from './handlers'
@@ -125,7 +129,7 @@ export class OutOfBandModule {
     }
 
     if (!handshake && customHandshakeProtocols) {
-      throw new AriesFrameworkError(`Attribute 'handshake' can not be 'false' when 'hansdhakeProtocols' is defined.`)
+      throw new AriesFrameworkError(`Attribute 'handshake' can not be 'false' when 'handshakeProtocols' is defined.`)
     }
 
     let handshakeProtocols
@@ -143,9 +147,8 @@ export class OutOfBandModule {
     const routing = config.routing ?? (await this.mediationRecipientService.getRouting({}))
 
     const services = routing.endpoints.map((endpoint, index) => {
-      return new DidCommService({
+      return new OutOfBandDidCommService({
         id: `#inline-${index}`,
-        priority: index,
         serviceEndpoint: endpoint,
         recipientKeys: [routing.verkey].map(verkeyToDidKey),
         routingKeys: routing.routingKeys.map(verkeyToDidKey),
@@ -190,7 +193,7 @@ export class OutOfBandModule {
   /**
    * Creates an outbound out-of-band record in the same way how `createInvitation` method does it,
    * but it also converts out-of-band invitation message to an "legacy" invitation message defined
-   * in RFC 0160: Connection Protocol and returns it togheter with out-of-band record.
+   * in RFC 0160: Connection Protocol and returns it together with out-of-band record.
    *
    * Agent role: sender (inviter)
    *
@@ -254,7 +257,7 @@ export class OutOfBandModule {
   }
 
   /**
-   * Creates inbound out-of-band record and assings out-of-band invitation message to it if the
+   * Creates inbound out-of-band record and assigns out-of-band invitation message to it if the
    * message is valid. It automatically passes out-of-band invitation for further processing to
    * `acceptInvitation` method. If you don't want to do that you can set `autoAcceptInvitation`
    * attribute in `config` parameter to `false` and accept the message later by calling
@@ -382,7 +385,7 @@ export class OutOfBandModule {
         if (connectionRecord.isReady) {
           await this.emitWithConnection(connectionRecord, messages)
         } else {
-          // Wait until the connecion is ready and then pass the messages to the agent for further processing
+          // Wait until the connection is ready and then pass the messages to the agent for further processing
           this.connectionsModule
             .returnWhenIsConnected(connectionRecord.id)
             .then((connectionRecord) => this.emitWithConnection(connectionRecord, messages))
@@ -411,7 +414,7 @@ export class OutOfBandModule {
     return { outOfBandRecord }
   }
 
-  public async findByRecipientKey(recipientKey: string) {
+  public async findByRecipientKey(recipientKey: Key) {
     return this.outOfBandService.findByRecipientKey(recipientKey)
   }
 
@@ -442,11 +445,11 @@ export class OutOfBandModule {
     }
 
     // Order protocols according to `handshakeMessageFamilies` array
-    const orederedProtocols = handshakeMessageFamilies
+    const orderedProtocols = handshakeMessageFamilies
       .map((messageFamily) => handshakeProtocols.find((p) => p.startsWith(messageFamily)))
       .filter((item): item is string => !!item)
 
-    return orederedProtocols as HandshakeProtocol[]
+    return orderedProtocols as HandshakeProtocol[]
   }
 
   private getFirstSupportedProtocol(handshakeProtocols: HandshakeProtocol[]) {
@@ -460,15 +463,17 @@ export class OutOfBandModule {
     return handshakeProtocol
   }
 
-  private async findExistingConnection(services: Array<DidCommService | string>) {
+  private async findExistingConnection(services: Array<OutOfBandDidCommService | string>) {
     this.logger.debug('Searching for an existing connection for out-of-band invitation services.', { services })
+
+    // TODO: for each did we should look for a connection with the invitation did OR a connection with theirDid that matches the service did
     for (const didOrService of services) {
       if (typeof didOrService === 'string') {
         // TODO await this.connectionsModule.findByTheirDid()
         throw new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
       }
 
-      const did = serviceToNumAlgo2Did(didOrService)
+      const did = outOfBandServiceToNumAlgo2Did(didOrService)
       const connections = await this.connectionsModule.findByInvitationDid(did)
       this.logger.debug(`Retrieved ${connections.length} connections for invitation did ${did}`)
 
@@ -504,7 +509,7 @@ export class OutOfBandModule {
     })
   }
 
-  private async emitWithServices(services: Array<DidCommService | string>, messages: PlaintextMessage[]) {
+  private async emitWithServices(services: Array<OutOfBandDidCommService | string>, messages: PlaintextMessage[]) {
     if (!services || services.length === 0) {
       throw new AriesFrameworkError(`There are no services. We can not emit messages`)
     }
@@ -520,13 +525,21 @@ export class OutOfBandModule {
     this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
     // The framework currently supports only older OOB messages with `~service` decorator.
+    // TODO: support receiving messages with other services so we don't have to transform the service
+    // to ~service decorator
     const [service] = services
 
     if (typeof service === 'string') {
       throw new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
     }
 
-    plaintextMessage['~service'] = service
+    const serviceDecorator = new ServiceDecorator({
+      recipientKeys: service.recipientKeys.map(didKeyToVerkey),
+      routingKeys: service.routingKeys?.map(didKeyToVerkey) || [],
+      serviceEndpoint: service.serviceEndpoint,
+    })
+
+    plaintextMessage['~service'] = JsonTransformer.toJSON(serviceDecorator)
     this.eventEmitter.emit<AgentMessageReceivedEvent>({
       type: AgentEventTypes.AgentMessageReceived,
       payload: {

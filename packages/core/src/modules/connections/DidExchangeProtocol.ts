@@ -1,5 +1,7 @@
+import type { ResolvedDidCommService } from '../../agent/MessageSender'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Logger } from '../../logger'
+import type { OutOfBandDidCommService } from '../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
 import type { Routing } from './services/ConnectionService'
@@ -13,11 +15,11 @@ import { Attachment, AttachmentData } from '../../decorators/attachment/Attachme
 import { AriesFrameworkError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
-import { DidCommService, DidDocument, Key } from '../dids'
+import { DidDocument, Key } from '../dids'
 import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
 import { createDidDocumentFromServices } from '../dids/domain/createPeerDidFromServices'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
-import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
+import { didKeyToInstanceOfKey, didKeyToVerkey } from '../dids/helpers'
 import { DidKey } from '../dids/methods/key/DidKey'
 import { DidPeer, PeerDidNumAlgo } from '../dids/methods/peer/DidPeer'
 import { DidRecord, DidRepository } from '../dids/repository'
@@ -176,7 +178,7 @@ export class DidExchangeProtocol {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys: didDocument.recipientKeys.map(verkeyToDidKey),
+        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
       },
     })
 
@@ -227,9 +229,21 @@ export class DidExchangeProtocol {
       throw new AriesFrameworkError('Missing threadId on connection record.')
     }
 
-    const services = routing
-      ? this.routingToServices(routing)
-      : (outOfBandRecord?.outOfBandMessage.services as DidCommService[])
+    let services: ResolvedDidCommService[] = []
+    if (routing) {
+      services = this.routingToServices(routing)
+    } else if (outOfBandRecord) {
+      const inlineServices = outOfBandRecord.outOfBandMessage.services.filter(
+        (service) => typeof service !== 'string'
+      ) as OutOfBandDidCommService[]
+
+      services = inlineServices.map((service) => ({
+        id: service.id,
+        serviceEndpoint: service.serviceEndpoint,
+        recipientKeys: service.recipientKeys.map(didKeyToInstanceOfKey),
+        routingKeys: service.routingKeys?.map(didKeyToInstanceOfKey) ?? [],
+      }))
+    }
 
     const { peerDid, didDocument } = await this.createPeerDidDoc(services)
     const message = new DidExchangeResponseMessage({ did: peerDid.did, threadId })
@@ -242,7 +256,7 @@ export class DidExchangeProtocol {
             services
               .map((s) => s.recipientKeys)
               .reduce((acc, curr) => acc.concat(curr), [])
-              .map(didKeyToVerkey)
+              .map((key) => key.publicKeyBase58)
           )
         )
       )
@@ -293,7 +307,10 @@ export class DidExchangeProtocol {
       )
     }
 
-    const didDocument = await this.extractDidDocument(message, outOfBandRecord.getRecipientKeys())
+    const didDocument = await this.extractDidDocument(
+      message,
+      outOfBandRecord.getRecipientKeys().map((key) => key.publicKeyBase58)
+    )
     const didRecord = new DidRecord({
       id: message.did,
       role: DidDocumentRole.Received,
@@ -301,7 +318,7 @@ export class DidExchangeProtocol {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys: didDocument.recipientKeys.map(verkeyToDidKey),
+        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
       },
     })
 
@@ -384,7 +401,7 @@ export class DidExchangeProtocol {
     return this.connectionService.updateState(connectionRecord, nextState)
   }
 
-  private async createPeerDidDoc(services: DidCommService[]) {
+  private async createPeerDidDoc(services: ResolvedDidCommService[]) {
     const didDocument = createDidDocumentFromServices(services)
     const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
 
@@ -397,7 +414,7 @@ export class DidExchangeProtocol {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys: peerDid.didDocument.recipientKeys.map(verkeyToDidKey),
+        recipientKeyFingerprints: peerDid.didDocument.recipientKeys.map((key) => key.fingerprint),
       },
     })
 
@@ -442,7 +459,7 @@ export class DidExchangeProtocol {
   }
 
   /**
-   * Extracts DID document as is from reqeust or response message attachment and verifies its signature.
+   * Extracts DID document as is from request or response message attachment and verifies its signature.
    *
    * @param message DID request or DID response message
    * @param invitationKeys array containing keys from connection invitation that could be used for signing of DID document
@@ -450,7 +467,7 @@ export class DidExchangeProtocol {
    */
   private async extractDidDocument(
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
-    invitationKeys: string[] = []
+    invitationKeysBase58: string[] = []
   ): Promise<DidDocument> {
     if (!message.didDoc) {
       const problemCode =
@@ -477,19 +494,21 @@ export class DidExchangeProtocol {
     const { isValid, signerVerkeys } = await this.jwsService.verifyJws({ jws, payload })
 
     const didDocument = JsonTransformer.fromJSON(json, DidDocument)
-    const didDocumentKeys = didDocument.authentication
+    const didDocumentKeysBase58 = didDocument.authentication
       .map((authentication) => {
         const verificationMethod =
-          typeof authentication === 'string' ? didDocument.dereferenceKey(authentication) : authentication
+          typeof authentication === 'string'
+            ? didDocument.dereferenceVerificationMethod(authentication)
+            : authentication
         const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
         const key = getKeyFromVerificationMethod(verificationMethod)
         return key.publicKeyBase58
       })
-      .concat(invitationKeys)
+      .concat(invitationKeysBase58)
 
-    this.logger.trace('JWS verification result', { isValid, signerVerkeys, didDocumentKeys })
+    this.logger.trace('JWS verification result', { isValid, signerVerkeys, didDocumentKeysBase58 })
 
-    if (!isValid || !signerVerkeys.every((verkey) => didDocumentKeys.includes(verkey))) {
+    if (!isValid || !signerVerkeys.every((verkey) => didDocumentKeysBase58.includes(verkey))) {
       const problemCode =
         message.type === DidExchangeRequestMessage.type
           ? DidExchangeProblemReportReason.RequestNotAccepted
@@ -500,15 +519,12 @@ export class DidExchangeProtocol {
     return didDocument
   }
 
-  private routingToServices(routing: Routing) {
-    return routing.endpoints.map((endpoint, index) => {
-      return new DidCommService({
-        id: `#inline-${index}`,
-        priority: 0,
-        serviceEndpoint: endpoint,
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
-      })
-    })
+  private routingToServices(routing: Routing): ResolvedDidCommService[] {
+    return routing.endpoints.map((endpoint, index) => ({
+      id: `#inline-${index}`,
+      serviceEndpoint: endpoint,
+      recipientKeys: [Key.fromPublicKeyBase58(routing.verkey, KeyType.Ed25519)],
+      routingKeys: routing.routingKeys.map((routingKey) => Key.fromPublicKeyBase58(routingKey, KeyType.Ed25519)) || [],
+    }))
   }
 }

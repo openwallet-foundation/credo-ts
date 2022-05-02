@@ -33,7 +33,6 @@ describe('OutOfBandMessage', () => {
 
       const invitation = await OutOfBandMessage.fromUrl(invitationUrl)
       const json = JsonTransformer.toJSON(invitation)
-
       expect(json).toEqual({
         '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
         '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
@@ -64,6 +63,29 @@ describe('OutOfBandMessage', () => {
       expect(invitation).toBeInstanceOf(OutOfBandMessage)
     })
 
+    test('create an instance of `OutOfBandMessage` from JSON object with inline service', async () => {
+      const json = {
+        '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
+        '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
+        label: 'Faber College',
+        goal_code: 'issue-vc',
+        goal: 'To issue a Faber College Graduate credential',
+        handshake_protocols: ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0'],
+        services: [
+          {
+            id: '#inline',
+            recipientKeys: ['did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
+            routingKeys: ['did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
+            serviceEndpoint: 'https://example.com/ssi',
+          },
+        ],
+      }
+
+      const invitation = await OutOfBandMessage.fromJson(json)
+      expect(invitation).toBeDefined()
+      expect(invitation).toBeInstanceOf(OutOfBandMessage)
+    })
+
     test('throw validation error when services attribute is empty', async () => {
       const json = {
         '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
@@ -81,6 +103,47 @@ describe('OutOfBandMessage', () => {
       } catch (error) {
         const [firstError] = error as [ValidationError]
         expect(firstError.constraints).toEqual({ arrayNotEmpty: 'services should not be empty' })
+      }
+    })
+
+    test('throw validation error when incorrect service object present in services attribute', async () => {
+      const json = {
+        '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
+        '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
+        label: 'Faber College',
+        goal_code: 'issue-vc',
+        goal: 'To issue a Faber College Graduate credential',
+        handshake_protocols: ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0'],
+        services: [
+          {
+            id: '#inline',
+            routingKeys: ['did:sov:LjgpST2rjsoxYegQDRm7EL'],
+            serviceEndpoint: 'https://example.com/ssi',
+          },
+        ],
+      }
+
+      expect.assertions(1)
+      try {
+        await OutOfBandMessage.fromJson(json)
+      } catch (error) {
+        const [firstError] = error as [ValidationError]
+
+        expect(firstError).toMatchObject({
+          children: [
+            {
+              children: [
+                {
+                  constraints: {
+                    arrayNotEmpty: 'recipientKeys should not be empty',
+                    isDidKeyString: 'each value in recipientKeys must be a did:key string',
+                  },
+                },
+                { constraints: { isDidKeyString: 'each value in routingKeys must be a did:key string' } },
+              ],
+            },
+          ],
+        })
       }
     })
   })

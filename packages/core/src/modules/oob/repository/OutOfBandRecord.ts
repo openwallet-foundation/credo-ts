@@ -1,5 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { DidCommService } from '../../dids'
+import type { Key } from '../../dids'
+import type { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 import type { OutOfBandRole } from '../domain/OutOfBandRole'
 import type { OutOfBandState } from '../domain/OutOfBandState'
 
@@ -8,6 +9,7 @@ import { Type } from 'class-transformer'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
+import { DidKey } from '../../dids'
 import { OutOfBandMessage } from '../messages'
 
 export interface OutOfBandRecordProps {
@@ -24,7 +26,14 @@ export interface OutOfBandRecordProps {
   mediatorId?: string
 }
 
-export class OutOfBandRecord extends BaseRecord<TagsBase> {
+type DefaultOutOfBandRecordTags = {
+  role: OutOfBandRole
+  state: OutOfBandState
+  messageId: string
+  recipientKeyFingerprints: string[]
+}
+
+export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
   @Type(() => OutOfBandMessage)
   public outOfBandMessage!: OutOfBandMessage
   public role!: OutOfBandRole
@@ -55,22 +64,22 @@ export class OutOfBandRecord extends BaseRecord<TagsBase> {
   }
 
   public getTags() {
-    const [recipientKey] = this.getRecipientKeys()
-
     return {
       ...this._tags,
       role: this.role,
       state: this.state,
       messageId: this.outOfBandMessage.id,
-      recipientKey,
+      recipientKeyFingerprints: this.getRecipientKeys().map((key) => key.fingerprint),
     }
   }
 
-  public getRecipientKeys() {
+  // TODO: this only takes into account inline didcomm services, won't work for public dids
+  public getRecipientKeys(): Key[] {
     return this.outOfBandMessage.services
-      .filter((s): s is DidCommService => typeof s !== 'string')
+      .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
       .map((s) => s.recipientKeys)
       .reduce((acc, curr) => [...acc, ...curr], [])
+      .map((didKey) => DidKey.fromDid(didKey).key)
   }
 
   public assertRole(expectedRole: OutOfBandRole) {

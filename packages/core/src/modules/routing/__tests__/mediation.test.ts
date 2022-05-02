@@ -11,14 +11,18 @@ import { ConnectionRecord, HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
-const recipientConfig = getBaseConfig('Mediation: Recipient')
+const recipientConfig = getBaseConfig('Mediation: Recipient', {
+  indyLedgers: [],
+})
 const mediatorConfig = getBaseConfig('Mediation: Mediator', {
   autoAcceptMediationRequests: true,
   endpoints: ['rxjs:mediator'],
+  indyLedgers: [],
 })
 
 const senderConfig = getBaseConfig('Mediation: Sender', {
   endpoints: ['rxjs:sender'],
+  indyLedgers: [],
 })
 
 describe('mediator establishment', () => {
@@ -27,12 +31,12 @@ describe('mediator establishment', () => {
   let senderAgent: Agent
 
   afterEach(async () => {
-    await recipientAgent.shutdown()
-    await recipientAgent.wallet.delete()
-    await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
-    await senderAgent.shutdown()
-    await senderAgent.wallet.delete()
+    await recipientAgent?.shutdown()
+    await recipientAgent?.wallet.delete()
+    await mediatorAgent?.shutdown()
+    await mediatorAgent?.wallet.delete()
+    await senderAgent?.shutdown()
+    await senderAgent?.wallet.delete()
   })
 
   test(`Mediation end-to-end flow
