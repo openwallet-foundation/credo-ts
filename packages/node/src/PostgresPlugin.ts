@@ -95,8 +95,8 @@ export interface IndyPostgresStorageConfig {
   credentials: WalletStorageCredentials
 }
 
-export async function loadPostgresPlugin(config: WalletStorageConfig, credentials: WalletStorageCredentials) {
-  await indyPostgresStorage.postgresstorage_init()
-  await indyPostgresStorage.init_storagetype(JSON.stringify(config), JSON.stringify(credentials))
+export function loadPostgresPlugin(config: WalletStorageConfig, credentials: WalletStorageCredentials) {
+  indyPostgresStorage.postgresstorage_init()
+  indyPostgresStorage.init_storagetype(JSON.stringify(config), JSON.stringify(credentials))
   return true
 }
