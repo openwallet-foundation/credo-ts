@@ -18,7 +18,14 @@ import { DidRepository } from '../../dids/repository'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
-import { Connection, ConnectionState, ConnectionRole, DidDoc, EmbeddedAuthentication, Ed25119Sig2018 } from '../models'
+import {
+  Connection,
+  DidDoc,
+  EmbeddedAuthentication,
+  Ed25119Sig2018,
+  DidExchangeRole,
+  DidExchangeState,
+} from '../models'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 import { ConnectionService } from '../services/ConnectionService'
 import { convertToNewDidDocument } from '../services/helpers'
@@ -76,7 +83,7 @@ describe('ConnectionService', () => {
 
       const { connectionRecord, message } = await connectionService.createRequest(outOfBand, config)
 
-      expect(connectionRecord.state).toBe(ConnectionState.Requested)
+      expect(connectionRecord.state).toBe(DidExchangeState.RequestSent)
       expect(message.label).toBe(agentConfig.label)
       expect(message.connection.did).toBe('fakeDid')
       expect(message.connection.didDoc).toEqual(
@@ -207,7 +214,7 @@ describe('ConnectionService', () => {
       })
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
-      expect(processedConnection.state).toBe(ConnectionState.Requested)
+      expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
       expect(processedConnection.theirDid).toBe('did:peer:1zQmbCWxDcdq3rxQ1LVTELSWeNMsmiPdwAJzwzHLVDFfVks5')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
@@ -219,8 +226,8 @@ describe('ConnectionService', () => {
 
       const connectionRecord = getMockConnection({
         id: 'test',
-        state: ConnectionState.Invited,
-        role: ConnectionRole.Inviter,
+        state: DidExchangeState.InvitationSent,
+        role: DidExchangeRole.Responder,
         multiUseInvitation: true,
       })
 
@@ -267,7 +274,7 @@ describe('ConnectionService', () => {
       })
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
-      expect(processedConnection.state).toBe(ConnectionState.Requested)
+      expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
       expect(processedConnection.theirDid).toBe('did:peer:1zQmbCWxDcdq3rxQ1LVTELSWeNMsmiPdwAJzwzHLVDFfVks5')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
@@ -275,7 +282,7 @@ describe('ConnectionService', () => {
       expect(connectionRepository.save).toHaveBeenCalledTimes(1)
       expect(processedConnection.id).not.toBe(connectionRecord.id)
       expect(connectionRecord.id).toBe('test')
-      expect(connectionRecord.state).toBe(ConnectionState.Invited)
+      expect(connectionRecord.state).toBe(DidExchangeState.InvitationSent)
     })
 
     it('throws an error when the message does not contain a did doc', async () => {
@@ -336,8 +343,8 @@ describe('ConnectionService', () => {
       // Needed for signing connection~sig
       const { did, verkey } = await wallet.createDid()
       const mockConnection = getMockConnection({
-        state: ConnectionState.Requested,
-        role: ConnectionRole.Inviter,
+        state: DidExchangeState.RequestReceived,
+        role: DidExchangeRole.Responder,
         tags: {
           threadId: 'test',
         },
@@ -384,33 +391,42 @@ describe('ConnectionService', () => {
       })
       const plainConnection = JsonTransformer.toJSON(connection)
 
-      expect(connectionRecord.state).toBe(ConnectionState.Responded)
+      expect(connectionRecord.state).toBe(DidExchangeState.ResponseSent)
       expect(await unpackAndVerifySignatureDecorator(message.connectionSig, wallet)).toEqual(plainConnection)
     })
 
-    it(`throws an error when connection role is ${ConnectionRole.Invitee} and not ${ConnectionRole.Inviter}`, async () => {
+    it(`throws an error when connection role is ${DidExchangeRole.Requester} and not ${DidExchangeRole.Responder}`, async () => {
       expect.assertions(1)
 
       const connection = getMockConnection({
-        role: ConnectionRole.Invitee,
-        state: ConnectionState.Requested,
+        role: DidExchangeRole.Requester,
+        state: DidExchangeState.RequestReceived,
       })
       const outOfBand = getMockOutOfBand()
       return expect(connectionService.createResponse(connection, outOfBand)).rejects.toThrowError(
-        `Connection record has invalid role ${ConnectionRole.Invitee}. Expected role ${ConnectionRole.Inviter}.`
+        `Connection record has invalid role ${DidExchangeRole.Requester}. Expected role ${DidExchangeRole.Responder}.`
       )
     })
 
-    const invalidOutOfBandStates = [ConnectionState.Invited, ConnectionState.Responded, ConnectionState.Complete]
+    const invalidOutOfBandStates = [
+      DidExchangeState.InvitationSent,
+      DidExchangeState.InvitationReceived,
+      DidExchangeState.RequestSent,
+      DidExchangeState.ResponseSent,
+      DidExchangeState.ResponseReceived,
+      DidExchangeState.Completed,
+      DidExchangeState.Abandoned,
+      DidExchangeState.Start,
+    ]
     test.each(invalidOutOfBandStates)(
-      `throws an error when connection state is %s and not ${ConnectionState.Requested}`,
+      `throws an error when connection state is %s and not ${DidExchangeState.RequestReceived}`,
       async (state) => {
         expect.assertions(1)
 
         const connection = getMockConnection({ state })
         const outOfBand = getMockOutOfBand()
         return expect(connectionService.createResponse(connection, outOfBand)).rejects.toThrowError(
-          `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Requested}.`
+          `Connection record is in invalid state ${state}. Valid states are: ${DidExchangeState.RequestReceived}.`
         )
       }
     )
@@ -425,8 +441,8 @@ describe('ConnectionService', () => {
 
       const connectionRecord = getMockConnection({
         did,
-        state: ConnectionState.Requested,
-        role: ConnectionRole.Invitee,
+        state: DidExchangeState.RequestSent,
+        role: DidExchangeRole.Requester,
       })
 
       const theirKey = Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519)
@@ -479,17 +495,17 @@ describe('ConnectionService', () => {
         convertToNewDidDocument(otherPartyConnection.didDoc!),
         PeerDidNumAlgo.GenesisDoc
       )
-      expect(processedConnection.state).toBe(ConnectionState.Responded)
+      expect(processedConnection.state).toBe(DidExchangeState.ResponseReceived)
       expect(processedConnection.theirDid).toBe(peerDid.did)
     })
 
-    it(`throws an error when connection role is ${ConnectionRole.Inviter} and not ${ConnectionRole.Invitee}`, async () => {
+    it(`throws an error when connection role is ${DidExchangeRole.Responder} and not ${DidExchangeRole.Requester}`, async () => {
       expect.assertions(1)
 
       const outOfBandRecord = getMockOutOfBand()
       const connectionRecord = getMockConnection({
-        role: ConnectionRole.Inviter,
-        state: ConnectionState.Requested,
+        role: DidExchangeRole.Responder,
+        state: DidExchangeState.RequestSent,
       })
       const messageContext = new InboundMessageContext(jest.fn()(), {
         connection: connectionRecord,
@@ -498,7 +514,7 @@ describe('ConnectionService', () => {
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
-        `Connection record has invalid role ${ConnectionRole.Inviter}. Expected role ${ConnectionRole.Invitee}.`
+        `Connection record has invalid role ${DidExchangeRole.Responder}. Expected role ${DidExchangeRole.Requester}.`
       )
     })
 
@@ -509,8 +525,8 @@ describe('ConnectionService', () => {
       const { did: theirDid, verkey: theirVerkey } = await wallet.createDid()
       const connectionRecord = getMockConnection({
         did,
-        role: ConnectionRole.Invitee,
-        state: ConnectionState.Requested,
+        role: DidExchangeRole.Requester,
+        state: DidExchangeState.RequestSent,
       })
 
       const theirKey = Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519)
@@ -571,7 +587,7 @@ describe('ConnectionService', () => {
       const { did: theirDid, verkey: theirVerkey } = await wallet.createDid()
       const connectionRecord = getMockConnection({
         did,
-        state: ConnectionState.Requested,
+        state: DidExchangeState.RequestSent,
         theirDid: undefined,
       })
 
@@ -600,23 +616,31 @@ describe('ConnectionService', () => {
     it('returns a trust ping message', async () => {
       expect.assertions(2)
 
-      const mockConnection = getMockConnection({ state: ConnectionState.Responded })
+      const mockConnection = getMockConnection({ state: DidExchangeState.ResponseReceived })
 
       const { message, connectionRecord: connectionRecord } = await connectionService.createTrustPing(mockConnection)
 
-      expect(connectionRecord.state).toBe(ConnectionState.Complete)
+      expect(connectionRecord.state).toBe(DidExchangeState.Completed)
       expect(message).toEqual(expect.any(TrustPingMessage))
     })
 
-    const invalidConnectionStates = [ConnectionState.Invited, ConnectionState.Requested]
+    const invalidConnectionStates = [
+      DidExchangeState.InvitationSent,
+      DidExchangeState.InvitationReceived,
+      DidExchangeState.RequestSent,
+      DidExchangeState.RequestReceived,
+      DidExchangeState.ResponseSent,
+      DidExchangeState.Abandoned,
+      DidExchangeState.Start,
+    ]
     test.each(invalidConnectionStates)(
-      `throws an error when connection state is %s and not ${ConnectionState.Responded} or ${ConnectionState.Complete}`,
+      `throws an error when connection state is %s and not ${DidExchangeState.ResponseReceived} or ${DidExchangeState.Completed}`,
       (state) => {
         expect.assertions(1)
         const connection = getMockConnection({ state })
 
         return expect(connectionService.createTrustPing(connection)).rejects.toThrowError(
-          `Connection record is in invalid state ${state}. Valid states are: ${ConnectionState.Responded}, ${ConnectionState.Complete}.`
+          `Connection record is in invalid state ${state}. Valid states are: ${DidExchangeState.ResponseReceived}, ${DidExchangeState.Completed}.`
         )
       }
     )
@@ -638,12 +662,12 @@ describe('ConnectionService', () => {
       )
     })
 
-    it('updates the state to Completed when the state is Responded and role is Inviter', async () => {
+    it('updates the state to Completed when the state is ResponseSent and role is Responder', async () => {
       expect.assertions(1)
 
       const connection = getMockConnection({
-        state: ConnectionState.Responded,
-        role: ConnectionRole.Inviter,
+        state: DidExchangeState.ResponseSent,
+        role: DidExchangeRole.Responder,
       })
 
       const ack = new AckMessage({
@@ -655,15 +679,15 @@ describe('ConnectionService', () => {
 
       const updatedConnection = await connectionService.processAck(messageContext)
 
-      expect(updatedConnection.state).toBe(ConnectionState.Complete)
+      expect(updatedConnection.state).toBe(DidExchangeState.Completed)
     })
 
-    it('does not update the state when the state is not Responded or the role is not Inviter', async () => {
+    it('does not update the state when the state is not ResponseSent or the role is not Responder', async () => {
       expect.assertions(1)
 
       const connection = getMockConnection({
-        state: ConnectionState.Responded,
-        role: ConnectionRole.Invitee,
+        state: DidExchangeState.ResponseReceived,
+        role: DidExchangeRole.Requester,
       })
 
       const ack = new AckMessage({
@@ -675,7 +699,7 @@ describe('ConnectionService', () => {
 
       const updatedConnection = await connectionService.processAck(messageContext)
 
-      expect(updatedConnection.state).toBe(ConnectionState.Responded)
+      expect(updatedConnection.state).toBe(DidExchangeState.ResponseReceived)
     })
   })
 
@@ -684,7 +708,7 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const messageContext = new InboundMessageContext(new AgentMessage(), {
-        connection: getMockConnection({ state: ConnectionState.Complete }),
+        connection: getMockConnection({ state: DidExchangeState.Completed }),
       })
 
       expect(() => connectionService.assertConnectionOrServiceDecorator(messageContext)).not.toThrow()
@@ -694,7 +718,7 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const messageContext = new InboundMessageContext(new AgentMessage(), {
-        connection: getMockConnection({ state: ConnectionState.Invited }),
+        connection: getMockConnection({ state: DidExchangeState.InvitationReceived }),
       })
 
       expect(() => connectionService.assertConnectionOrServiceDecorator(messageContext)).toThrowError(
