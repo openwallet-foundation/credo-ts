@@ -66,8 +66,6 @@ export class SubjectTransportSession implements TransportSession {
   }
 
   public async close(): Promise<void> {
-    // FIXME: we should call complete, but this requires some changes already in this PR: https://github.com/hyperledger/aries-framework-javascript/pull/712
-    // We can then create a replySubject for each interaction, which mimics the the behavior of real transports better.
-    // this.replySubject.complete()
+    this.replySubject.complete()
   }
 }
