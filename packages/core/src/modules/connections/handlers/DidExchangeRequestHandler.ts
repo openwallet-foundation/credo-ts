@@ -54,12 +54,12 @@ export class DidExchangeRequestHandler implements Handler {
       )
     }
 
-    const didRecord = await this.didRepository.findByRecipientKey(senderKey.publicKeyBase58)
+    const didRecord = await this.didRepository.findByRecipientKey(senderKey)
     if (didRecord) {
-      throw new AriesFrameworkError(`Did record for sender key ${senderKey} already exists.`)
+      throw new AriesFrameworkError(`Did record for sender key ${senderKey.fingerprint} already exists.`)
     }
 
-    // TODO Shouln't we check also if the keys match the keys from oob invitation services?
+    // TODO Shouldn't we check also if the keys match the keys from oob invitation services?
 
     if (outOfBandRecord.state === OutOfBandState.Done) {
       throw new AriesFrameworkError(

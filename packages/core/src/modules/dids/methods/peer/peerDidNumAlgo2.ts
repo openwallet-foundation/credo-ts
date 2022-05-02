@@ -1,7 +1,7 @@
 import type { JsonObject } from '../../../../types'
-import type { DidCommService, DidDocument, VerificationMethod } from '../../domain'
+import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCommService'
+import type { DidDocument, VerificationMethod } from '../../domain'
 
-import { KeyType } from '../../../../crypto'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
 import { DidDocumentService, Key } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
@@ -109,7 +109,9 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     if (entries === undefined) continue
 
     // Dereference all entries to full verification methods
-    const dereferenced = entries.map((entry) => (typeof entry === 'string' ? didDocument.dereferenceKey(entry) : entry))
+    const dereferenced = entries.map((entry) =>
+      typeof entry === 'string' ? didDocument.dereferenceVerificationMethod(entry) : entry
+    )
 
     // Transform als verification methods into a fingerprint (multibase, multicodec)
     const encoded = dereferenced.map((entry) => {
@@ -147,17 +149,9 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
   return did
 }
 
-export function serviceToNumAlgo2Did(service: DidCommService) {
+export function outOfBandServiceToNumAlgo2Did(service: OutOfBandDidCommService) {
   let did = 'did:peer:2'
-  let didKey
-  const [recipientKey] = service.recipientKeys
-  if (recipientKey.startsWith('did:key')) {
-    didKey = DidKey.fromDid(recipientKey)
-  } else {
-    const publicKeyBase58 = recipientKey
-    const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
-    didKey = new DidKey(ed25519Key)
-  }
+  const didKey = DidKey.fromDid(service.recipientKeys[0])
 
   const encoded = `.${DidPeerPurpose.Encryption}${didKey.key.fingerprint}`
   did += encoded

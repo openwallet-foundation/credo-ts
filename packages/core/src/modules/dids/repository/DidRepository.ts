@@ -1,3 +1,5 @@
+import type { Key } from '../domain/Key'
+
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../../../constants'
@@ -12,11 +14,11 @@ export class DidRepository extends Repository<DidRecord> {
     super(DidRecord, storageService)
   }
 
-  public findByRecipientKey(recipientKey: string) {
-    return this.findSingleByQuery({ recipientKeys: [recipientKey] })
+  public findByRecipientKey(recipientKey: Key) {
+    return this.findSingleByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
   }
 
-  public findAllByRecipientKey(recipientKey: string) {
-    return this.findByQuery({ recipientKeys: [recipientKey] })
+  public findAllByRecipientKey(recipientKey: Key) {
+    return this.findByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
   }
 }

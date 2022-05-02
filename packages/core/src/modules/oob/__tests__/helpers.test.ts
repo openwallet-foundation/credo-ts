@@ -1,6 +1,6 @@
 import { JsonTransformer } from '../../../utils'
 import { ConnectionInvitationMessage } from '../../connections'
-import { DidCommService } from '../../dids'
+import { DidCommV1Service } from '../../dids'
 import { convertToNewInvitation, convertToOldInvitation } from '../helpers'
 import { OutOfBandMessage } from '../messages'
 
@@ -74,7 +74,7 @@ describe('convertToOldInvitation', () => {
       imageUrl: 'https://my-image.com',
       label: 'a-label',
       services: [
-        new DidCommService({
+        new DidCommV1Service({
           id: '#inline',
           recipientKeys: ['did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
           routingKeys: ['did:key:z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL'],
@@ -119,7 +119,7 @@ describe('convertToOldInvitation', () => {
       imageUrl: 'https://my-image.com',
       label: 'a-label',
       services: [
-        new DidCommService({
+        new DidCommV1Service({
           id: '#inline',
           recipientKeys: ['did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
           routingKeys: ['did:key:z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL'],

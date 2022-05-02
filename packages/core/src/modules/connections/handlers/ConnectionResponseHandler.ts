@@ -40,16 +40,16 @@ export class ConnectionResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }
 
-    const ourDidDocument = await this.resolveDidDocument(connectionRecord.did)
+    const ourDidDocument = await this.didResolverService.resolveDidDocument(connectionRecord.did)
     if (!ourDidDocument) {
       throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved!`)
     }
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
     // connection record did
-    if (!ourDidDocument.recipientKeys.includes(recipientKey.publicKeyBase58)) {
+    if (!ourDidDocument.recipientKeys.find((key) => key.fingerprint === recipientKey.fingerprint)) {
       throw new AriesFrameworkError(
-        `Recipient key ${recipientKey.publicKeyBase58} not found in did document recipient keys.`
+        `Recipient key ${recipientKey.fingerprint} not found in did document recipient keys.`
       )
     }
 
@@ -71,17 +71,5 @@ export class ConnectionResponseHandler implements Handler {
       const { message } = await this.connectionService.createTrustPing(connection, { responseRequested: false })
       return createOutboundMessage(connection, message)
     }
-  }
-
-  private async resolveDidDocument(did: string) {
-    const {
-      didDocument,
-      didResolutionMetadata: { error, message },
-    } = await this.didResolverService.resolve(did)
-
-    if (!didDocument) {
-      throw new AriesFrameworkError(`Unable to resolve did document for did '${did}': ${error} ${message}`)
-    }
-    return didDocument
   }
 }

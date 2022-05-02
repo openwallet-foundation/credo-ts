@@ -5,7 +5,7 @@ import { KeyType } from '../../../crypto'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { DidCommService, DidDocument, DidDocumentBuilder, Key } from '../domain'
+import { DidCommV1Service, DidDocument, DidDocumentBuilder, Key } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../domain/key-type/x25519'
@@ -75,7 +75,7 @@ describe('peer dids', () => {
     // Use ed25519 did:key, which also includes the x25519 key used for didcomm
     const mediatorRoutingKey = `${mediatorEd25519DidKey.did}#${mediatorX25519Key.fingerprint}`
 
-    const service = new DidCommService({
+    const service = new DidCommV1Service({
       id: '#service-0',
       // Fixme: can we use relative reference (#id) instead of absolute reference here (did:example:123#id)?
       // We don't know the did yet
@@ -117,7 +117,11 @@ describe('peer dids', () => {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
+<<<<<<< HEAD
         recipientKeys: didDocument.recipientKeys,
+=======
+        recipientKeyFingerprints: peerDid.didDocument.recipientKeys.map((key) => key.fingerprint),
+>>>>>>> 73d296f6 (fix: always encode keys according to RFCs (#733))
       },
     })
 
@@ -154,7 +158,11 @@ describe('peer dids', () => {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
+<<<<<<< HEAD
         recipientKeys: didDocument.recipientKeys,
+=======
+        recipientKeyFingerprints: didPeer.didDocument.recipientKeys.map((key) => key.fingerprint),
+>>>>>>> 73d296f6 (fix: always encode keys according to RFCs (#733))
       },
     })
 
