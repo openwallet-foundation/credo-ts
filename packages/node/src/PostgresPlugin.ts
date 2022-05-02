@@ -1,6 +1,3 @@
-import type { WalletStorageCreds } from '@aries-framework/core'
-import type { WalletStorageConfig } from 'indy-sdk'
-
 import { Library } from 'ffi-napi'
 import fs from 'fs'
 import os from 'os'
@@ -71,18 +68,35 @@ type NativeIndyPostgres = {
   init_storagetype: (arg0: string, arg1: string) => number
 }
 
+export const indyPostgresStorage = getLibrary() as NativeIndyPostgres
+
+export interface WalletStorageConfig {
+  url: string
+  wallet_scheme: WalletScheme
+  path?: string
+}
+
+export interface WalletStorageCredentials {
+  account: string
+  password: string
+  admin_account: string
+  admin_password: string
+}
+
+export enum WalletScheme {
+  DatabasePerWallet = 'DatabasePerWallet',
+  MultiWalletSingleTable = 'MultiWalletSingleTable',
+  MultiWalletSingleTableSharedPool = 'MultiWalletSingleTableSharedPool',
+}
+
 export interface IndyPostgresStorageConfig {
   type: 'postgres_storage'
   config: WalletStorageConfig
-  credentials: {
-    [key: string]: unknown
-  }
+  credentials: WalletStorageCredentials
 }
 
-export const indyPostgresStorage = getLibrary() as NativeIndyPostgres
-
-export async function loadPostgresPlugin(storageConfig: WalletStorageConfig, storageCreds: WalletStorageCreds) {
+export async function loadPostgresPlugin(config: WalletStorageConfig, credentials: WalletStorageCredentials) {
   await indyPostgresStorage.postgresstorage_init()
-  await indyPostgresStorage.init_storagetype(JSON.stringify(storageConfig), JSON.stringify(storageCreds))
+  await indyPostgresStorage.init_storagetype(JSON.stringify(config), JSON.stringify(credentials))
   return true
 }

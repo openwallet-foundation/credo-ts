@@ -16,12 +16,6 @@ export const enum KeyDerivationMethod {
   Raw = 'RAW',
 }
 
-export enum WalletScheme {
-  DatabasePerWallet = 'DatabasePerWallet',
-  MultiWalletSingleTable = 'MultiWalletSingleTable',
-  MultiWalletSingleTableSharedPool = 'MultiWalletSingleTableSharedPool',
-}
-
 export interface WalletConfig {
   id: string
   key: string
@@ -30,10 +24,6 @@ export interface WalletConfig {
     type: string
     [key: string]: unknown
   }
-}
-
-export interface WalletStorageCreds {
-  [key: string]: unknown
 }
 
 export interface WalletConfigRekey {

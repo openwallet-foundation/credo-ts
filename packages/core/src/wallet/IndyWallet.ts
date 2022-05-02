@@ -6,7 +6,6 @@ import type {
   WalletExportImportConfig,
   WalletConfigRekey,
   KeyDerivationMethod,
-  WalletStorageCreds,
 } from '../types'
 import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo, DidConfig } from './Wallet'
@@ -97,7 +96,7 @@ export class IndyWallet implements Wallet {
       walletCredentials.rekey_derivation_method = rekeyDerivation
     }
     if (walletConfig.storage?.credentials) {
-      walletCredentials.storage_credentials = walletConfig.storage?.credentials as WalletStorageCreds
+      walletCredentials.storage_credentials = walletConfig.storage?.credentials as Record<string, unknown>
     }
 
     return walletCredentials

@@ -22,9 +22,8 @@ import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { agentDependencies } from '../../node/src'
+import { agentDependencies, WalletScheme } from '../../node/src'
 import {
-  WalletScheme,
   LogLevel,
   AgentConfig,
   AriesFrameworkError,
