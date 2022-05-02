@@ -1,24 +1,15 @@
 import type { Agent, ConnectionRecord, ProofRecord } from '../src'
-import type {
-  AcceptPresentationOptions,
-  AcceptProposalOptions,
-  ProposeProofOptions,
-  RequestProofOptions,
-} from '../src/modules/proofs/models/ModuleOptions'
+import type { AcceptProposalOptions, ProposeProofOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
-import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
+import { ProofState } from '../src'
 import { ATTACHMENT_FORMAT } from '../src/modules/proofs/formats/ProofFormats'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
-import {
-  V2PresentationMessage,
-  V2ProposalPresentationMessage,
-  V2RequestPresentationMessage,
-} from '../src/modules/proofs/protocol/v2/messages'
+import { V2ProposalPresentationMessage, V2RequestPresentationMessage } from '../src/modules/proofs/protocol/v2/messages'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
 
-import { setupProofsTest, waitForProofRecord } from './helpers'
+import { setupV2ProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof', () => {
@@ -35,7 +26,7 @@ describe('Present Proof', () => {
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-      await setupProofsTest('Faber agent', 'Alice agent'))
+      await setupV2ProofsTest('Faber agent', 'Alice agent'))
   })
 
   afterAll(async () => {
