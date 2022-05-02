@@ -1,10 +1,11 @@
 import type { Wallet } from '@aries-framework/core'
 
 import { getAgentConfig } from '../../../tests/helpers'
-import { DidKey, Key } from '../../modules/dids'
+import { DidKey } from '../../modules/dids'
 import { Buffer, JsonEncoder } from '../../utils'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { JwsService } from '../JwsService'
+import { Key } from '../Key'
 import { KeyType } from '../KeyType'
 
 import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
