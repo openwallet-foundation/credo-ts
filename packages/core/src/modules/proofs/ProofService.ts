@@ -165,11 +165,11 @@ export abstract class ProofService {
     mediationRecipientService: MediationRecipientService
   ): Promise<void>
 
-  public abstract findRequestMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null>
+  public abstract findRequestMessage(proofRecordId: string): Promise<AgentMessage | null>
 
-  public abstract findPresentationMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null>
+  public abstract findPresentationMessage(proofRecordId: string): Promise<AgentMessage | null>
 
-  public abstract findProposalMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null>
+  public abstract findProposalMessage(proofRecordId: string): Promise<AgentMessage | null>
 
   public async saveOrUpdatePresentationMessage(options: {
     proofRecord: ProofRecord

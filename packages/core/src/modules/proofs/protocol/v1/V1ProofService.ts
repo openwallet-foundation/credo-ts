@@ -885,22 +885,22 @@ export class V1ProofService extends ProofService {
     dispatcher.registerHandler(new PresentationProblemReportHandler(this))
   }
 
-  public async findRequestMessage(options: { proofRecord: ProofRecord }): Promise<V1RequestPresentationMessage | null> {
+  public async findRequestMessage(proofRecordId: string): Promise<V1RequestPresentationMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V1RequestPresentationMessage,
     })
   }
-  public async findPresentationMessage(options: { proofRecord: ProofRecord }): Promise<V1PresentationMessage | null> {
+  public async findPresentationMessage(proofRecordId: string): Promise<V1PresentationMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V1PresentationMessage,
     })
   }
 
-  public async findProposalMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+  public async findProposalMessage(proofRecordId: string): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V1ProposePresentationMessage,
     })
   }

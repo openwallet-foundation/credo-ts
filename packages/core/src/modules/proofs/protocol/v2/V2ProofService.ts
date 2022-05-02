@@ -681,23 +681,23 @@ export class V2ProofService extends ProofService {
     return request.willConfirm
   }
 
-  public async findRequestMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+  public async findRequestMessage(proofRecordId: string): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V2RequestPresentationMessage,
     })
   }
 
-  public async findPresentationMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+  public async findPresentationMessage(proofRecordId: string): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V2PresentationMessage,
     })
   }
 
-  public async findProposalMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+  public async findProposalMessage(proofRecordId: string): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V2ProposalPresentationMessage,
     })
   }
