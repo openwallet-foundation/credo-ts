@@ -64,4 +64,8 @@ export class SubjectTransportSession implements TransportSession {
   public async send(encryptedMessage: EncryptedMessage): Promise<void> {
     this.replySubject.next({ message: encryptedMessage })
   }
+
+  public async close(): Promise<void> {
+    this.replySubject.complete()
+  }
 }
