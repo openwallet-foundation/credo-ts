@@ -1,6 +1,6 @@
+import type { Key } from '../../../crypto'
 import type { PlaintextMessage } from '../../../types'
 import type { HandshakeProtocol } from '../../connections'
-import type { Key } from '../../dids'
 
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
