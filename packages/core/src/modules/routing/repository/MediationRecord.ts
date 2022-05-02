@@ -1,9 +1,11 @@
-import type { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import type { MediationRole } from '../models/MediationRole'
+
+import { Transform } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
+import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
 export interface MediationRecordProps {
@@ -42,6 +44,14 @@ export class MediationRecord
   public endpoint?: string
   public recipientKeys!: string[]
   public routingKeys!: string[]
+
+  @Transform(({ value }) => {
+    if (value === 'Explicit') {
+      return MediatorPickupStrategy.PickUpV1
+    } else {
+      return value
+    }
+  })
   public pickupStrategy?: MediatorPickupStrategy
 
   public static readonly type = 'MediationRecord'
