@@ -12,9 +12,14 @@ To start using Aries Framework JavaScript in NodeJS some platform specific depen
    - [Windows](../docs/libindy/windows.md)
 3. Add `@aries-framework/core` and `@aries-framework/node` to your project.
 
+## Installing dependencies
+
 ```bash
 yarn add @aries-framework/core @aries-framework/node
 ```
+
+Right now, as a patch that will later be changed, some platforms will have an "error" when installing the dependencies. This is because the BBS signatures library that we use is built for Linux x86 and MacOS x86 (and not Windows and MacOS arm). This means that it will show that it could not download the binary.
+This is not an error, as the library that fails is `node-bbs-signaturs` and is an optional dependency for perfomance improvements. It will fallback to a, slower, wasm build.
 
 ## Agent Setup
 

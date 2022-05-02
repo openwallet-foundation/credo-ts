@@ -1,5 +1,5 @@
+import type { Key } from '../../crypto'
 import type { ConnectionRecord } from '../../modules/connections'
-import type { Key } from '../../modules/dids'
 import type { AgentMessage } from '../AgentMessage'
 
 import { AriesFrameworkError } from '../../error'
