@@ -15,10 +15,10 @@ const aliceConfig = getBaseConfig('Agents Alice', {
 const bobConfig = getBaseConfig('Agents Bob', {
   endpoints: ['rxjs:bob'],
 })
-const alicePostgresConfig = getBasePostgresConfig('Agents Alice', {
+const alicePostgresConfig = getBasePostgresConfig('AgentsAlice', {
   endpoints: ['rxjs:alice'],
 })
-const bobPostgresConfig = getBasePostgresConfig('Agents Bob', {
+const bobPostgresConfig = getBasePostgresConfig('AgentsBob', {
   endpoints: ['rxjs:bob'],
 })
 
@@ -108,12 +108,12 @@ describe('postgres agents', () => {
 
     aliceAgent = new Agent(alicePostgresConfig.config, alicePostgresConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     bobAgent = new Agent(bobPostgresConfig.config, bobPostgresConfig.agentDependencies)
     bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(bobMessages, subjectMap))
+    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()

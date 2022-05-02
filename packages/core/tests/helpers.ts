@@ -88,12 +88,12 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
-      id: `Wallet${name.replace(/\s/g, '')}`,
+      id: `Wallet${name}`,
       key: `Key${name}`,
       storageConfig: { url: 'localhost:5432', wallet_scheme: WalletScheme.DatabasePerWallet },
       storageCreds: {
         account: 'postgres',
-        password: 'mysecretpassword',
+        password: 'postgres',
         admin_account: 'postgres',
         admin_password: 'postgres',
       },

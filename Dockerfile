@@ -7,7 +7,9 @@ RUN apt-get update -y && apt-get install -y \
     apt-transport-https \
     curl \
     # Only needed to build indy-sdk
-    build-essential 
+    build-essential \
+    git \
+    libzmq3-dev libsodium-dev pkg-config libssl-dev
 
 # libindy
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
@@ -27,6 +29,19 @@ RUN apt-get update -y && apt-get install -y --allow-unauthenticated \
 
 # Install yarn seperately due to `no-install-recommends` to skip nodejs install 
 RUN apt-get install -y --no-install-recommends yarn
+
+# postgres plugin setup
+# install rust and set up rustup
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# clone indy-sdk and build postgres plugin
+RUN git clone https://github.com/hyperledger/indy-sdk.git
+WORKDIR /indy-sdk/experimental/plugins/postgres_storage/
+RUN cargo build --release
+
+# set up library path for postgres plugin
+ENV LD_LIBRARY_PATH="/indy-sdk/experimental/plugins/postgres_storage/target/release"
 
 FROM base as final
 
