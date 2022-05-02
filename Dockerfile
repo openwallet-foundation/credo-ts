@@ -41,7 +41,7 @@ WORKDIR /indy-sdk/experimental/plugins/postgres_storage/
 RUN cargo build --release
 
 # set up library path for postgres plugin
-ENV LD_LIBRARY_PATH="/indy-sdk/experimental/plugins/postgres_storage/target/release"
+ENV LIB_INDY_STRG_POSTGRES="/indy-sdk/experimental/plugins/postgres_storage/target/release"
 
 FROM base as final
 

@@ -1,11 +1,14 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+import type { IndyPostgresStorageConfig } from '../../node/src'
 import type { ConnectionRecord } from '../src/modules/connections'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { loadPostgresPlugin } from '../../node/src'
 import { Agent } from '../src/agent/Agent'
+import { WalletScheme } from '../src/types'
 
 import { waitForBasicMessage, getBasePostgresConfig } from './helpers'
 
@@ -37,6 +40,23 @@ describe('postgres agents', () => {
       'rxjs:alice': aliceMessages,
       'rxjs:bob': bobMessages,
     }
+
+    const storageConfig: IndyPostgresStorageConfig = {
+      type: 'postgres_storage',
+      config: {
+        url: 'localhost:5432',
+        wallet_scheme: WalletScheme.DatabasePerWallet,
+      },
+      credentials: {
+        account: 'postgres',
+        password: 'postgres',
+        admin_account: 'postgres',
+        admin_password: 'postgres',
+      },
+    }
+
+    // loading the postgres wallet plugin
+    await loadPostgresPlugin(storageConfig.config, storageConfig.credentials)
 
     aliceAgent = new Agent(alicePostgresConfig.config, alicePostgresConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))

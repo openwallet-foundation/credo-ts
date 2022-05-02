@@ -6,16 +6,16 @@ import type {
   WalletExportImportConfig,
   WalletConfigRekey,
   KeyDerivationMethod,
+  WalletStorageCreds,
 } from '../types'
 import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo, DidConfig } from './Wallet'
-import type { default as Indy } from 'indy-sdk'
+import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error'
-import { WalletStorageType } from '../types'
 import { JsonEncoder } from '../utils/JsonEncoder'
 import { isIndyError } from '../utils/indyError'
 
@@ -34,14 +34,6 @@ export class IndyWallet implements Wallet {
   public constructor(agentConfig: AgentConfig) {
     this.logger = agentConfig.logger
     this.indy = agentConfig.agentDependencies.indy
-
-    const { walletConfig, fileSystem } = agentConfig
-
-    if (walletConfig?.storageType === WalletStorageType.Postgres) {
-      if (walletConfig.storageConfig && walletConfig.storageCreds && fileSystem?.loadPostgresPlugin) {
-        fileSystem?.loadPostgresPlugin(walletConfig.storageConfig, walletConfig.storageCreds)
-      }
-    }
   }
 
   public get isProvisioned() {
@@ -79,11 +71,11 @@ export class IndyWallet implements Wallet {
   private walletStorageConfig(walletConfig: WalletConfig): Indy.WalletConfig {
     const walletStorageConfig: Indy.WalletConfig = {
       id: walletConfig.id,
-      storage_type: walletConfig.storageType,
+      storage_type: walletConfig.storage?.type,
     }
 
-    if (walletConfig.storageConfig) {
-      walletStorageConfig.storage_config = walletConfig.storageConfig
+    if (walletConfig.storage?.config) {
+      walletStorageConfig.storage_config = walletConfig.storage?.config as WalletStorageConfig
     }
 
     return walletStorageConfig
@@ -104,8 +96,8 @@ export class IndyWallet implements Wallet {
     if (rekeyDerivation) {
       walletCredentials.rekey_derivation_method = rekeyDerivation
     }
-    if (walletConfig.storageCreds) {
-      walletCredentials.storage_credentials = walletConfig.storageCreds
+    if (walletConfig.storage?.credentials) {
+      walletCredentials.storage_credentials = walletConfig.storage?.credentials as WalletStorageCreds
     }
 
     return walletCredentials

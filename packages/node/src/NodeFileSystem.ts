@@ -1,13 +1,10 @@
-import type { FileSystem, WalletStorageCreds } from '@aries-framework/core'
-import type { WalletStorageConfig } from 'indy-sdk'
+import type { FileSystem } from '@aries-framework/core'
 
 import fs, { promises } from 'fs'
 import http from 'http'
 import https from 'https'
 import { tmpdir } from 'os'
 import { dirname } from 'path'
-
-import storagePlugin from './postgres.plugin'
 
 const { access, readFile, writeFile } = promises
 
@@ -71,11 +68,5 @@ export class NodeFileSystem implements FileSystem {
           reject(`Unable to download file from url: ${url}. ${error.message}`)
         })
     })
-  }
-
-  public async loadPostgresPlugin(storageConfig: WalletStorageConfig, storageCreds: WalletStorageCreds) {
-    await storagePlugin.postgresstorage_init()
-    await storagePlugin.init_storagetype(JSON.stringify(storageConfig), JSON.stringify(storageCreds))
-    return true
   }
 }

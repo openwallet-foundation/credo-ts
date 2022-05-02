@@ -6,6 +6,7 @@ import fetch from 'node-fetch'
 import WebSocket from 'ws'
 
 import { NodeFileSystem } from './NodeFileSystem'
+import { IndyPostgresStorageConfig, loadPostgresPlugin } from './PostgresPlugin'
 import { HttpInboundTransport } from './transport/HttpInboundTransport'
 import { WsInboundTransport } from './transport/WsInboundTransport'
 
@@ -17,4 +18,4 @@ const agentDependencies: AgentDependencies = {
   indy,
 }
 
-export { agentDependencies, HttpInboundTransport, WsInboundTransport }
+export { agentDependencies, HttpInboundTransport, WsInboundTransport, loadPostgresPlugin, IndyPostgresStorageConfig }

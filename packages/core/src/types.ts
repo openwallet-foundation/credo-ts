@@ -6,8 +6,6 @@ import type { DidCommService } from './modules/dids/domain/service/DidCommServic
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
-import type { WalletStorageCreds } from './storage/FileSystem'
-import type { WalletStorageConfig } from 'indy-sdk'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -18,13 +16,24 @@ export const enum KeyDerivationMethod {
   Raw = 'RAW',
 }
 
+export enum WalletScheme {
+  DatabasePerWallet = 'DatabasePerWallet',
+  MultiWalletSingleTable = 'MultiWalletSingleTable',
+  MultiWalletSingleTableSharedPool = 'MultiWalletSingleTableSharedPool',
+}
+
 export interface WalletConfig {
   id: string
   key: string
   keyDerivationMethod?: KeyDerivationMethod
-  storageType?: WalletStorageType
-  storageConfig?: WalletStorageConfig
-  storageCreds?: WalletStorageCreds
+  storage?: {
+    type: string
+    [key: string]: unknown
+  }
+}
+
+export interface WalletStorageCreds {
+  [key: string]: unknown
 }
 
 export interface WalletConfigRekey {
