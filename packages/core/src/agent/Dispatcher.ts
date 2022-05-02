@@ -77,6 +77,7 @@ class Dispatcher {
         returnRoute: true,
       })
     } else if (outboundMessage) {
+      outboundMessage.sessionId = messageContext.sessionId
       await this.messageSender.sendMessage(outboundMessage)
     }
 

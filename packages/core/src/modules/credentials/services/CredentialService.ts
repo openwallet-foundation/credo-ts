@@ -149,7 +149,7 @@ export class CredentialService {
     // Update record
     credentialRecord.proposalMessage = proposalMessage
     credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
-    this.updateState(credentialRecord, CredentialState.ProposalSent)
+    await this.updateState(credentialRecord, CredentialState.ProposalSent)
 
     return { message: proposalMessage, credentialRecord }
   }
@@ -672,6 +672,20 @@ export class CredentialService {
       credentialDefinition,
       revocationRegistryDefinition,
     })
+
+    // If we have the rev_reg_id then we also want to set the cred_rev_id
+    if (indyCredential.rev_reg_id) {
+      const credential = await this.indyHolderService.getCredential(credentialId)
+
+      const indyCredentialRevocationId = credential.cred_rev_id
+      const indyRevocationRegistryId = indyCredential.rev_reg_id
+
+      credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
+        indyCredentialRevocationId,
+        indyRevocationRegistryId,
+      })
+    }
+
     credentialRecord.credentialId = credentialId
     credentialRecord.credentialMessage = issueCredentialMessage
     await this.updateState(credentialRecord, CredentialState.CredentialReceived)

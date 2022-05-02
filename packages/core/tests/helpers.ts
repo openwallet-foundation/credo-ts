@@ -59,6 +59,7 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
+export { agentDependencies }
 
 export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
@@ -568,12 +569,12 @@ export async function setupCredentialTests(
   })
   const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
   faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await faberAgent.initialize()
 
   const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
   aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
+  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await aliceAgent.initialize()
 
   const {
@@ -613,12 +614,12 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   }
   const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
   faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await faberAgent.initialize()
 
   const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
   aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
+  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await aliceAgent.initialize()
 
   const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
