@@ -44,12 +44,12 @@ import {
   ProofState,
   Agent,
 } from '../src'
-import { KeyType } from '../src/crypto'
+import { Key, KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../src/modules/credentials/CredentialProtocolVersion'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/V1CredentialPreview'
-import { DidCommV1Service, DidKey, Key } from '../src/modules/dids'
+import { DidCommV1Service, DidKey } from '../src/modules/dids'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'

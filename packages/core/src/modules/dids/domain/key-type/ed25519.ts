@@ -4,7 +4,7 @@ import type { KeyDidMapping } from './keyDidMapping'
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
 import { KeyType } from '../../../../crypto'
-import { Key } from '../Key'
+import { Key } from '../../../../crypto/Key'
 
 const VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 = 'Ed25519VerificationKey2018'
 
