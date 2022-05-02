@@ -1,7 +1,7 @@
 import { getAgentConfig, mockFunction } from '../../../../../tests/helpers'
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { Key } from '../../../../crypto'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
-import { Key } from '../../../dids'
 import { RoutingEventTypes } from '../../RoutingEvents'
 import { MediationRecipientService } from '../MediationRecipientService'
 import { RoutingService } from '../RoutingService'

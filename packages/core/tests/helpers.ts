@@ -15,40 +15,40 @@ import type {
 } from '../src'
 import type { AcceptOfferOptions } from '../src/modules/credentials'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { Schema, CredDef } from 'indy-sdk'
+import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
 import path from 'path'
-import { firstValueFrom, Subject, ReplaySubject } from 'rxjs'
+import { firstValueFrom, ReplaySubject, Subject } from 'rxjs'
 import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
-  HandshakeProtocol,
-  DidExchangeState,
-  DidExchangeRole,
-  LogLevel,
+  Agent,
   AgentConfig,
   AriesFrameworkError,
   BasicMessageEventTypes,
   ConnectionRecord,
   CredentialEventTypes,
   CredentialState,
+  DidExchangeRole,
+  DidExchangeState,
+  HandshakeProtocol,
+  LogLevel,
   PredicateType,
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
   ProofEventTypes,
   ProofState,
-  Agent,
 } from '../src'
-import { KeyType } from '../src/crypto'
+import { Key, KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/models/CredentialAutoAcceptType'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/messages/V1CredentialPreview'
-import { DidCommV1Service, DidKey, Key } from '../src/modules/dids'
+import { DidCommV1Service, DidKey } from '../src/modules/dids'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'

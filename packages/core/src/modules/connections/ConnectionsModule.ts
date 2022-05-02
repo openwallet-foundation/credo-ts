@@ -1,5 +1,5 @@
+import type { Key } from '../../crypto'
 import type { DependencyManager } from '../../plugins'
-import type { Key } from '../dids'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
@@ -18,14 +18,14 @@ import { RoutingService } from '../routing/services/RoutingService'
 
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import {
+  AckMessageHandler,
   ConnectionRequestHandler,
   ConnectionResponseHandler,
-  AckMessageHandler,
-  TrustPingMessageHandler,
-  TrustPingResponseMessageHandler,
+  DidExchangeCompleteHandler,
   DidExchangeRequestHandler,
   DidExchangeResponseHandler,
-  DidExchangeCompleteHandler,
+  TrustPingMessageHandler,
+  TrustPingResponseMessageHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
 import { ConnectionRepository } from './repository'

@@ -1,5 +1,5 @@
+import type { Key } from '../../crypto'
 import type { DependencyManager } from '../../plugins'
-import type { Key } from './domain/Key'
 import type { DidResolutionOptions } from './types'
 
 import { injectable, module } from '../../plugins'
