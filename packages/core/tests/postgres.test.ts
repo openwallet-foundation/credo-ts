@@ -6,9 +6,8 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { loadPostgresPlugin } from '../../node/src'
+import { loadPostgresPlugin, WalletScheme } from '../../node/src'
 import { Agent } from '../src/agent/Agent'
-import { WalletScheme } from '../src/types'
 
 import { waitForBasicMessage, getBasePostgresConfig } from './helpers'
 
