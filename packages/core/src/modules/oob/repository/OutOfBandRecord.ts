@@ -1,5 +1,5 @@
+import type { Key } from '../../../crypto'
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { Key } from '../../dids'
 import type { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 import type { OutOfBandRole } from '../domain/OutOfBandRole'
 import type { OutOfBandState } from '../domain/OutOfBandState'
