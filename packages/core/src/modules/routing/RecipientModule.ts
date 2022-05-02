@@ -160,7 +160,7 @@ export class RecipientModule {
           await this.openMediationWebSocket(mediator)
           if (mediator.pickupStrategy === MediatorPickupStrategy.PickUpV2) {
             // Start Pickup v2 protocol to receive messages received while websocket offline
-            await this.mediationRecipientService.requestStatus({ mediatorId: mediator.id })
+            await this.sendStatusRequest({ mediatorId: mediator.id })
           }
         } catch (error) {
           this.logger.warn('Unable to re-open websocket connection to mediator', { error })
@@ -182,7 +182,7 @@ export class RecipientModule {
       case MediatorPickupStrategy.PickUpV2:
         this.agentConfig.logger.info(`Starting pickup of messages from mediator '${mediator.id}'`)
         await this.openWebSocketAndPickUp(mediator)
-        await this.mediationRecipientService.requestStatus({ mediatorId: mediator.id })
+        await this.sendStatusRequest({ mediatorId: mediator.id })
         break
       case MediatorPickupStrategy.PickUpV1: {
         // Explicit means polling every X seconds with batch message
@@ -205,6 +205,17 @@ export class RecipientModule {
           `Skipping pickup of messages from mediator '${mediator.id}' due to pickup strategy none`
         )
     }
+  }
+
+  private async sendStatusRequest(config: { mediatorId: string; recipientKey?: string }) {
+    const mediationRecord = await this.mediationRecipientService.getById(config.mediatorId)
+
+    const statusRequestMessage = await this.mediationRecipientService.createStatusRequest(mediationRecord, {
+      recipientKey: config.recipientKey,
+    })
+
+    const mediatorConnection = await this.connectionService.getById(mediationRecord.connectionId)
+    return this.messageSender.sendMessage(createOutboundMessage(mediatorConnection, statusRequestMessage))
   }
 
   private async getPickupStrategyForMediator(mediator: MediationRecord) {
