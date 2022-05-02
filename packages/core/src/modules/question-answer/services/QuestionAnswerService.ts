@@ -192,9 +192,6 @@ export class QuestionAnswerService {
     })
   }
 
-  /**
-   * @todo use connection from message context
-   */
   private async createRecord(options: {
     questionText: string
     questionDetail?: string
