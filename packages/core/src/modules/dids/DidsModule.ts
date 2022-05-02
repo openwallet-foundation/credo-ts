@@ -1,3 +1,4 @@
+import type { Key } from './domain/Key'
 import type { DidResolutionOptions } from './types'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -23,12 +24,12 @@ export class DidsModule {
     return this.resolverService.resolveDidDocument(didUrl)
   }
 
-  public findByRecipientKey(recipientKey: string) {
+  public findByRecipientKey(recipientKey: Key) {
     return this.didRepository.findByRecipientKey(recipientKey)
   }
 
-  public findAllByRecipientKey(verkey: string) {
-    return this.didRepository.findAllByRecipientKey(verkey)
+  public findAllByRecipientKey(recipientKey: Key) {
+    return this.didRepository.findAllByRecipientKey(recipientKey)
   }
 
   public findByDid(did: string) {

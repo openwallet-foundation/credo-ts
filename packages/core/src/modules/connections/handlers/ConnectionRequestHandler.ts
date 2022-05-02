@@ -7,7 +7,6 @@ import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
-import { DidKey } from '../../dids'
 import { ConnectionRequestMessage } from '../messages'
 
 export class ConnectionRequestHandler implements Handler {
@@ -39,11 +38,10 @@ export class ConnectionRequestHandler implements Handler {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientKey')
     }
 
-    const recipientDidKey = new DidKey(recipientKey)
-    const outOfBandRecord = await this.outOfBandService.findByRecipientKey(recipientDidKey.did)
+    const outOfBandRecord = await this.outOfBandService.findByRecipientKey(recipientKey)
 
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError(`Out-of-band record for recipient key ${recipientDidKey.did} was not found.`)
+      throw new AriesFrameworkError(`Out-of-band record for recipient key ${recipientKey.fingerprint} was not found.`)
     }
 
     if (connection && !outOfBandRecord.reusable) {
@@ -52,10 +50,9 @@ export class ConnectionRequestHandler implements Handler {
       )
     }
 
-    const senderDidKey = new DidKey(senderKey)
-    const didRecord = await this.didRepository.findByRecipientKey(senderDidKey.did)
+    const didRecord = await this.didRepository.findByRecipientKey(senderKey)
     if (didRecord) {
-      throw new AriesFrameworkError(`Did record for sender key ${senderDidKey.did} already exists.`)
+      throw new AriesFrameworkError(`Did record for sender key ${senderKey.fingerprint} already exists.`)
     }
 
     // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable

@@ -3,7 +3,7 @@ import { MessageValidator } from '../../../../utils/MessageValidator'
 import didExample123Fixture from '../../__tests__/__fixtures__/didExample123.json'
 import didExample456Invalid from '../../__tests__/__fixtures__/didExample456Invalid.json'
 import { DidDocument } from '../DidDocument'
-import { DidDocumentService, IndyAgentService, DidCommService } from '../service'
+import { DidDocumentService, IndyAgentService, DidCommV1Service } from '../service'
 import { VerificationMethod } from '../verificationMethod'
 
 const didDocumentInstance = new DidDocument({
@@ -43,7 +43,7 @@ const didDocumentInstance = new DidDocument({
       routingKeys: ['Q4zqM7aXqm7gDQkUVLng9h'],
       priority: 5,
     }),
-    new DidCommService({
+    new DidCommV1Service({
       id: 'did:example:123#service-3',
       serviceEndpoint: 'https://agent.com/did-comm',
       recipientKeys: ['DADEajsDSaksLng9h'],
@@ -116,7 +116,7 @@ describe('Did | DidDocument', () => {
     // Check Service
     expect(didDocument.service[0]).toBeInstanceOf(DidDocumentService)
     expect(didDocument.service[1]).toBeInstanceOf(IndyAgentService)
-    expect(didDocument.service[2]).toBeInstanceOf(DidCommService)
+    expect(didDocument.service[2]).toBeInstanceOf(DidCommV1Service)
 
     // Check Authentication
     expect(typeof didDocument.authentication[0]).toBe('string')

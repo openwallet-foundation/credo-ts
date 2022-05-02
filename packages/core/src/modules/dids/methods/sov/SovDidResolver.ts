@@ -8,7 +8,7 @@ import { TypedArrayEncoder } from '../../../../utils/TypedArrayEncoder'
 import { getFullVerkey } from '../../../../utils/did'
 import { DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
-import { DidCommService } from '../../domain/service/DidCommService'
+import { DidCommV1Service } from '../../domain/service/DidCommV1Service'
 import { DidCommV2Service } from '../../domain/service/DidCommV2Service'
 
 export class SovDidResolver implements DidResolver {
@@ -119,7 +119,7 @@ export class SovDidResolver implements DidResolver {
       // If 'did-communication' included in types, add DIDComm v1 entry
       if (processedTypes.includes('did-communication')) {
         builder.addService(
-          new DidCommService({
+          new DidCommV1Service({
             id: `${parsed.did}#did-communication`,
             serviceEndpoint: endpoint,
             priority: 0,

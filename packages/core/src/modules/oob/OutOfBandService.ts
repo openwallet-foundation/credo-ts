@@ -1,3 +1,4 @@
+import type { Key } from '../dids/domain/Key'
 import type { OutOfBandState } from './domain/OutOfBandState'
 import type { OutOfBandRecord } from './repository'
 
@@ -30,8 +31,8 @@ export class OutOfBandService {
     return this.outOfBandRepository.findSingleByQuery({ messageId })
   }
 
-  public async findByRecipientKey(recipientKey: string) {
-    return this.outOfBandRepository.findSingleByQuery({ recipientKey })
+  public async findByRecipientKey(recipientKey: Key) {
+    return this.outOfBandRepository.findSingleByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
   }
 
   public async getAll() {

@@ -1,3 +1,4 @@
+import type { Key } from '../dids'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
@@ -220,7 +221,7 @@ export class ConnectionsModule {
     return this.connectionService.deleteById(connectionId)
   }
 
-  public async findByKeys({ senderKey, recipientKey }: { senderKey: string; recipientKey: string }) {
+  public async findByKeys({ senderKey, recipientKey }: { senderKey: Key; recipientKey: Key }) {
     const theirDidRecord = await this.didRepository.findByRecipientKey(senderKey)
     if (theirDidRecord) {
       const ourDidRecord = await this.didRepository.findByRecipientKey(recipientKey)
@@ -234,7 +235,7 @@ export class ConnectionsModule {
     }
 
     this.agentConfig.logger.debug(
-      `No connection record found for encrypted message with recipient key ${recipientKey} and sender key ${senderKey}`
+      `No connection record found for encrypted message with recipient key ${recipientKey.fingerprint} and sender key ${senderKey.fingerprint}`
     )
 
     return null

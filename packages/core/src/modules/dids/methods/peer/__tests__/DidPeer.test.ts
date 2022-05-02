@@ -6,7 +6,7 @@ import didKeyEd25519 from '../../../__tests__/__fixtures__/didKeyEd25519.json'
 import didKeyX25519 from '../../../__tests__/__fixtures__/didKeyX25519.json'
 import { DidDocument, Key } from '../../../domain'
 import { DidPeer, PeerDidNumAlgo } from '../DidPeer'
-import { serviceToNumAlgo2Did } from '../peerDidNumAlgo2'
+import { outOfBandServiceToNumAlgo2Did } from '../peerDidNumAlgo2'
 
 import didPeer1zQmRDidCommServices from './__fixtures__/didPeer1zQmR-did-comm-service.json'
 import didPeer1zQmR from './__fixtures__/didPeer1zQmR.json'
@@ -57,7 +57,7 @@ describe('DidPeer', () => {
 
   test('transforms a did comm service into a valid method 2 did', () => {
     const didDocument = JsonTransformer.fromJSON(didPeer1zQmRDidCommServices, DidDocument)
-    const peerDid = serviceToNumAlgo2Did(didDocument.didCommServices[0])
+    const peerDid = outOfBandServiceToNumAlgo2Did(didDocument.didCommServices[0])
     const peerDidInstance = DidPeer.fromDid(peerDid)
 
     // TODO the following `console.log` statement throws an error "TypeError: Cannot read property 'toLowerCase'

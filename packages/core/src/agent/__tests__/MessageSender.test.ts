@@ -3,6 +3,7 @@ import type { DidDocumentService } from '../../modules/dids'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
 import type { OutboundMessage, EncryptedMessage } from '../../types'
+import type { ResolvedDidCommService } from '../MessageSender'
 
 import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
@@ -10,7 +11,7 @@ import testLogger from '../../../tests/logger'
 import { KeyType } from '../../crypto'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { Key, DidDocument, VerificationMethod } from '../../modules/dids'
-import { DidCommService } from '../../modules/dids/domain/service/DidCommService'
+import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Service'
 import { DidResolverService } from '../../modules/dids/services/DidResolverService'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
@@ -83,15 +84,15 @@ describe('MessageSender', () => {
   const transportServiceFindSessionMock = mockFunction(transportService.findSessionByConnectionId)
   const transportServiceHasInboundEndpoint = mockFunction(transportService.hasInboundEndpoint)
 
-  const firstDidCommService = new DidCommService({
+  const firstDidCommService = new DidCommV1Service({
     id: `<did>;indy`,
     serviceEndpoint: 'https://www.first-endpoint.com',
-    recipientKeys: [recipientKey.publicKeyBase58],
+    recipientKeys: ['#authentication-1'],
   })
-  const secondDidCommService = new DidCommService({
+  const secondDidCommService = new DidCommV1Service({
     id: `<did>;indy`,
     serviceEndpoint: 'https://www.second-endpoint.com',
-    recipientKeys: [recipientKey.publicKeyBase58],
+    recipientKeys: ['#authentication-1'],
   })
 
   let messageSender: MessageSender
@@ -232,13 +233,22 @@ describe('MessageSender', () => {
 
       await messageSender.sendMessage(outboundMessage)
 
-      expect(sendMessageToServiceSpy).toHaveBeenCalledWith({
+      const [[sendMessage]] = sendMessageToServiceSpy.mock.calls
+
+      expect(sendMessage).toMatchObject({
         connectionId: 'test-123',
         message: outboundMessage.payload,
-        senderKey: 'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
-        service: firstDidCommService,
         returnRoute: false,
+        service: {
+          serviceEndpoint: firstDidCommService.serviceEndpoint,
+        },
       })
+
+      expect(sendMessage.senderKey.publicKeyBase58).toEqual('EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d')
+      expect(sendMessage.service.recipientKeys.map((key) => key.publicKeyBase58)).toEqual([
+        'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
+      ])
+
       expect(sendMessageToServiceSpy).toHaveBeenCalledTimes(1)
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
     })
@@ -253,25 +263,34 @@ describe('MessageSender', () => {
 
       await messageSender.sendMessage(outboundMessage)
 
-      expect(sendMessageToServiceSpy).toHaveBeenNthCalledWith(2, {
+      const [, [sendMessage]] = sendMessageToServiceSpy.mock.calls
+      expect(sendMessage).toMatchObject({
         connectionId: 'test-123',
         message: outboundMessage.payload,
-        senderKey: 'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
-        service: secondDidCommService,
         returnRoute: false,
+        service: {
+          serviceEndpoint: secondDidCommService.serviceEndpoint,
+        },
       })
+
+      expect(sendMessage.senderKey.publicKeyBase58).toEqual('EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d')
+      expect(sendMessage.service.recipientKeys.map((key) => key.publicKeyBase58)).toEqual([
+        'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
+      ])
+
       expect(sendMessageToServiceSpy).toHaveBeenCalledTimes(2)
       expect(sendMessageSpy).toHaveBeenCalledTimes(2)
     })
   })
 
   describe('sendMessageToService', () => {
-    const service = new DidCommService({
+    const service: ResolvedDidCommService = {
       id: 'out-of-band',
-      recipientKeys: ['someKey'],
+      recipientKeys: [Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')],
+      routingKeys: [],
       serviceEndpoint: 'https://example.com',
-    })
-    const senderKey = 'someVerkey'
+    }
+    const senderKey = Key.fromFingerprint('z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th')
 
     beforeEach(() => {
       outboundTransport = new DummyOutboundTransport()
