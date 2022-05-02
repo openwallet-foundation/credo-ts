@@ -1,11 +1,11 @@
 import type { IndyLedgerService } from '../../ledger'
 
 import { getAgentConfig } from '../../../../tests/helpers'
-import { KeyType } from '../../../crypto'
+import { Key, KeyType } from '../../../crypto'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { DidCommV1Service, DidDocument, DidDocumentBuilder, Key } from '../domain'
+import { DidCommV1Service, DidDocument, DidDocumentBuilder } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../domain/key-type/x25519'

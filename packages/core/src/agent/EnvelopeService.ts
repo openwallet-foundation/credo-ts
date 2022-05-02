@@ -5,8 +5,7 @@ import type { AgentMessage } from './AgentMessage'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
-import { KeyType } from '../crypto'
-import { Key } from '../modules/dids'
+import { Key, KeyType } from '../crypto'
 import { ForwardMessage } from '../modules/routing/messages'
 import { Wallet } from '../wallet/Wallet'
 

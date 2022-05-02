@@ -1,5 +1,6 @@
+import type { Key } from '../crypto'
 import type { ConnectionRecord } from '../modules/connections'
-import type { DidDocument, Key } from '../modules/dids'
+import type { DidDocument } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'

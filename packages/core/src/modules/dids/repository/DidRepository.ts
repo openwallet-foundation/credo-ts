@@ -1,4 +1,4 @@
-import type { Key } from '../domain/Key'
+import type { Key } from '../../../crypto'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
