@@ -5,7 +5,10 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../models/SharedOptions'
-import type { IndyGetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
+import type {
+  CreateRequestAsResponseOptions,
+  IndyGetRequestedCredentialsFormat,
+} from './IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
@@ -56,4 +59,6 @@ export abstract class ProofFormatService {
   ): boolean
 
   abstract supportsFormat(formatIdentifier: string): boolean
+
+  abstract createRequestAsResponse(options: CreateRequestAsResponseOptions): Promise<ProofAttachmentFormat>
 }

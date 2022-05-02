@@ -38,7 +38,7 @@ import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { ProofsUtils } from '../../ProofsUtil'
 import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
-import { ATTACHMENT_FORMAT } from '../../formats/ProofFormats'
+import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormats'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
@@ -72,20 +72,12 @@ export class V2ProofService extends ProofService {
 
     let result = {}
     for (const key of proposalMessage.formats) {
-      if (key.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format) {
-        const proofRequest = new ProofRequest({
-          name: options.name,
-          version: options.version,
-          nonce: options.nonce ?? (await this.generateProofRequestNonce()),
-        })
-
+      if (key.format === V2_INDY_PRESENTATION_PROPOSAL) {
         for (const attachment of proposalMessage.proposalsAttach) {
           const proofRequestJson = attachment.getDataAsJson<ProofRequest>() ?? null
-          proofRequest.requestedAttributes = proofRequestJson.requestedAttributes
-          proofRequest.requestedPredicates = proofRequestJson.requestedPredicates
-        }
-        result = {
-          indy: proofRequest,
+          result = {
+            indy: proofRequestJson,
+          }
         }
       } else {
         // PK-TODO create Presentation Exchange request format
@@ -329,12 +321,16 @@ export class V2ProofService extends ProofService {
     }
 
     // create attachment formats
-    const formats = [
-      {
-        format: proposal.formats[0],
-        attachment: proposal.proposalsAttach[0],
-      },
-    ]
+    const formats = []
+
+    for (const key of Object.keys(options.proofFormats)) {
+      const service = this.formatServiceMap[key]
+      formats.push(
+        await service.createRequestAsResponse({
+          formats: options.proofFormats,
+        })
+      )
+    }
 
     // create request message
     const requestMessage = new V2RequestPresentationMessage({
@@ -449,9 +445,7 @@ export class V2ProofService extends ProofService {
       const service = this.formatServiceMap[key]
       formats.push(
         await service.createPresentation({
-          attachment: proofRequest.getAttachmentByFormatIdentifier(
-            ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format
-          ),
+          attachment: proofRequest.getAttachmentByFormatIdentifier(V2_INDY_PRESENTATION_REQUEST),
           formats: options.proofFormats,
         })
       )
@@ -729,7 +723,7 @@ export class V2ProofService extends ProofService {
       const service = this.getFormatServiceForFormat(attachmentFormat)
 
       if (!service) {
-        throw new AriesFrameworkError('')
+        throw new AriesFrameworkError('No format service found for getting requested.')
       }
 
       result = {

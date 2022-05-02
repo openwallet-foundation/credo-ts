@@ -8,7 +8,7 @@ import type { V2ProofService } from '../V2ProofService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
-import { ATTACHMENT_FORMAT } from '../../../formats/ProofFormats'
+import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormats'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
@@ -64,7 +64,7 @@ export class V2ProposePresentationHandler implements Handler {
 
     const proposalAttachment = proposalMessage
       .getAttachmentFormats()
-      .find((x) => x.format.format === ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format)
+      .find((x) => x.format.format === V2_INDY_PRESENTATION_PROPOSAL)
 
     if (!proposalAttachment) {
       throw new AriesFrameworkError('No proposal message could be found')
@@ -87,18 +87,7 @@ export class V2ProposePresentationHandler implements Handler {
       proofRecord: proofRecord,
       protocolVersion: ProofProtocolVersion.V2,
       autoAcceptProof: proofRecord.autoAcceptProof,
-      proofFormats: {
-        indy: {
-          name: proofRequest.indy.name,
-          nonce: proofRequest.indy.nonce,
-          version: proofRequest.indy.version,
-          nonRevoked: proofRequest.indy.nonRevoked,
-          requestedAttributes: proofRequest.indy.requestedAttributes,
-          requestedPredicates: proofRequest.indy.requestedPredicates,
-          ver: proofRequest.indy.ver,
-          proofRequest: proofRequest.indy,
-        },
-      },
+      proofFormats: proofRequest,
     })
 
     return createOutboundMessage(messageContext.connection, message)

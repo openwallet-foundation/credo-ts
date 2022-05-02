@@ -9,7 +9,11 @@ import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/mode
 import type { CredDefId } from 'indy-sdk'
 
 import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
-import { ATTACHMENT_FORMAT } from '../src/modules/proofs/formats/ProofFormats'
+import {
+  V2_INDY_PRESENTATION,
+  V2_INDY_PRESENTATION_PROPOSAL,
+  V2_INDY_PRESENTATION_REQUEST,
+} from '../src/modules/proofs/formats/ProofFormats'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import {
   V2PresentationMessage,
@@ -84,7 +88,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_PROPOSAL.indy.format,
+          format: V2_INDY_PRESENTATION_PROPOSAL,
         },
       ],
       proposalsAttach: [
@@ -134,7 +138,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format,
+          format: V2_INDY_PRESENTATION_REQUEST,
         },
       ],
       requestPresentationsAttach: [
@@ -185,7 +189,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
+          format: V2_INDY_PRESENTATION,
         },
       ],
       presentationsAttach: [
@@ -309,7 +313,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION_REQUEST.indy.format,
+          format: V2_INDY_PRESENTATION_REQUEST,
         },
       ],
       requestPresentationsAttach: [
@@ -365,7 +369,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_INDY_PRESENTATION.indy.format,
+          format: V2_INDY_PRESENTATION,
         },
       ],
       presentationsAttach: [

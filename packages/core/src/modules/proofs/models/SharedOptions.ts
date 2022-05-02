@@ -64,3 +64,8 @@ export interface RequestedCredentialsFormats {
 interface AcceptProposal {
   request: ProofRequest
 }
+
+export interface AutoSelectCredentialOptions {
+  indy?: RetrievedCredentials | undefined
+  jsonLd?: undefined
+}
