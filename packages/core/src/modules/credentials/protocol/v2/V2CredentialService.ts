@@ -247,7 +247,7 @@ export class V2CredentialService extends CredentialService {
    * @param credentialFormatType the format type, indy, jsonld, jwt etc.
    * @returns the formatting service.
    */
-  private getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
+  public getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
     return this.serviceFormatMap[credentialFormatType]
   }
 
@@ -265,6 +265,9 @@ export class V2CredentialService extends CredentialService {
 
     const formats: CredentialFormatService[] = this.getFormats(proposal.credentialFormats)
 
+    if (!formats || formats.length === 0) {
+      throw new AriesFrameworkError(`Unable to create proposal. No supported formats`)
+    }
     const { message: proposalMessage, credentialRecord } = this.credentialMessageBuilder.createProposal(
       formats,
       proposal
@@ -471,6 +474,9 @@ export class V2CredentialService extends CredentialService {
     }
     const formats: CredentialFormatService[] = this.getFormats(options.credentialFormats as Record<string, unknown>)
 
+    if (!formats || formats.length === 0) {
+      throw new AriesFrameworkError(`Unable to create offer as response. No supported formats`)
+    }
     // Create the offer message
     this.logger.debug(`Get the Format Service and Create Offer Message for credential record ${credentialRecord.id}`)
 
@@ -513,6 +519,9 @@ export class V2CredentialService extends CredentialService {
     this.logger.debug(`Processing credential offer with id ${credentialOfferMessage.id}`)
 
     const formats: CredentialFormatService[] = this.getFormatsFromMessage(credentialOfferMessage.formats)
+    if (!formats || formats.length === 0) {
+      throw new AriesFrameworkError(`Unable to create offer. No supported formats`)
+    }
     try {
       // Credential record already exists
       credentialRecord = await this.getByThreadAndConnectionId(credentialOfferMessage.threadId, connection?.id)
@@ -758,6 +767,9 @@ export class V2CredentialService extends CredentialService {
 
     const formats: CredentialFormatService[] = this.getFormats(options.credentialFormats)
 
+    if (!formats || formats.length === 0) {
+      throw new AriesFrameworkError(`Unable to negotiate offer. No supported formats`)
+    }
     const { message: credentialProposalMessage } = this.credentialMessageBuilder.createProposal(formats, options)
     credentialProposalMessage.setThread({ threadId: credentialRecord.threadId })
 
@@ -792,6 +804,9 @@ export class V2CredentialService extends CredentialService {
 
     const formats: CredentialFormatService[] = this.getFormats(options.credentialFormats)
 
+    if (!formats || formats.length === 0) {
+      throw new AriesFrameworkError(`Unable to create offer. No supported formats`)
+    }
     // Create message
     const { credentialRecord, message: credentialOfferMessage } = await this.credentialMessageBuilder.createOffer(
       formats,
@@ -839,6 +854,9 @@ export class V2CredentialService extends CredentialService {
     }
     const formats: CredentialFormatService[] = this.getFormatsFromMessage(proposalMessage.formats)
 
+    if (!formats || formats.length === 0) {
+      throw new AriesFrameworkError(`Unable to create accept proposal options. No supported formats`)
+    }
     const options: ServiceAcceptProposalOptions = {
       credentialRecordId: credentialRecord.id,
       credentialFormats: {},
@@ -888,6 +906,9 @@ export class V2CredentialService extends CredentialService {
       throw new AriesFrameworkError('Missing Offer Message in create credential')
     }
     const credentialFormats: CredentialFormatService[] = this.getFormatsFromMessage(requestMessage.formats)
+    if (!credentialFormats || credentialFormats.length === 0) {
+      throw new AriesFrameworkError(`Unable to create credential. No supported formats`)
+    }
     const { message: issueCredentialMessage, credentialRecord } = await this.credentialMessageBuilder.createCredential(
       credentialFormats,
       record,
@@ -1078,6 +1099,9 @@ export class V2CredentialService extends CredentialService {
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     const formats: CredentialFormatService[] = this.getFormats(credentialOptions.credentialFormats)
 
+    if (!formats || formats.length === 0) {
+      throw new AriesFrameworkError(`Unable to create out of band offer. No supported formats`)
+    }
     // Create message
     const { credentialRecord, message: offerCredentialMessage } = await this.credentialMessageBuilder.createOffer(
       formats,
