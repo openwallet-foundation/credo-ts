@@ -403,12 +403,16 @@ export class IndyCredentialFormatService extends CredentialFormatService {
 
     const credentialDefinition = await this.indyLedgerService.getCredentialDefinition(indyCredential.cred_def_id)
 
+    if (!options.credentialAttachment) {
+      throw new AriesFrameworkError('Missing credential attachment in processCredential')
+    }
+    const revocationRegistry = await this.getRevocationRegistry(options.credentialAttachment)
     const credentialId = await this.indyHolderService.storeCredential({
       credentialId: this.generateId(),
       credentialRequestMetadata,
       credential: indyCredential,
       credentialDefinition,
-      revocationRegistryDefinition: options.revocationRegistry?.indy?.revocationRegistryDefinition,
+      revocationRegistryDefinition: revocationRegistry?.indy?.revocationRegistryDefinition,
     })
     credentialRecord.credentials.push({
       credentialRecordType: CredentialFormatType.Indy,

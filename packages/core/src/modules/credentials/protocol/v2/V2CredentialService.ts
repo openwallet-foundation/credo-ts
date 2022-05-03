@@ -968,11 +968,8 @@ export class V2CredentialService extends CredentialService {
       if (!issueAttachment) {
         throw new AriesFrameworkError('Missing credential attachment in processCredential')
       }
-      const revocationRegistry = await formatService.getRevocationRegistry(issueAttachment)
-
       const options: ServiceAcceptCredentialOptions = {
         credentialAttachment: issueAttachment,
-        revocationRegistry,
       }
       await formatService.processCredential(options, credentialRecord)
     }

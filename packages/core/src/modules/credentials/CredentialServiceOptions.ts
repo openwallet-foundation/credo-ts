@@ -11,7 +11,6 @@ import type {
   OfferCredentialOptions,
   RequestCredentialOptions,
 } from './CredentialsModuleOptions'
-import type { RevocationRegistry } from './formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
 import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
 import type { ProposeCredentialMessageOptions } from './protocol/v1/messages'
@@ -76,7 +75,6 @@ export interface ServiceRequestCredentialOptions extends RequestCredentialOption
 
 export interface ServiceAcceptCredentialOptions {
   credentialAttachment?: Attachment
-  revocationRegistry: RevocationRegistry
 }
 
 export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id'> & {
