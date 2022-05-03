@@ -5,8 +5,8 @@ import path from 'path'
 import { container as baseContainer } from 'tsyringe'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
+import { Agent } from '../../../../src'
 import { agentDependencies } from '../../../../tests/helpers'
-import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { UpdateAssistant } from '../UpdateAssistant'
 

@@ -3,28 +3,28 @@
   "private": true,
   "license": "Apache-2.0",
   "workspaces": [
-    "packages/*",
-    "demo",
-    "samples/*"
+  "packages/*",
+  "demo",
+  "samples/*"
   ],
   "repository": {
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
-    "type": "git"
+  "url": "https://github.com/hyperledger/aries-framework-javascript",
+  "type": "git"
   },
   "scripts": {
-    "check-types": "yarn check-types:build && yarn check-types:tests",
-    "check-types:tests": "tsc -p tsconfig.test.json --noEmit",
-    "check-types:build": "lerna exec tsc -- --noEmit",
-    "prettier": "prettier --ignore-path .gitignore '**/*.+(js|json|ts|md|yml|yaml)'",
-    "format": "yarn prettier --write",
-    "check-format": "yarn prettier --list-different",
-    "clean": "lerna run clean",
-    "build": "lerna run build",
-    "test": "jest",
-    "lint": "eslint --ignore-path .gitignore .",
-    "validate": "yarn lint && yarn check-types && yarn check-format",
-    "prepare": "husky install",
-    "run-mediator": "ts-node ./samples/mediator.ts"
+  "check-types": "yarn check-types:build && yarn check-types:tests",
+  "check-types:tests": "tsc -p tsconfig.test.json --noEmit",
+  "check-types:build": "lerna exec tsc -- --noEmit",
+  "prettier": "prettier --ignore-path .gitignore '**/*.+(js|json|ts|md|yml|yaml)'",
+  "format": "yarn prettier --write",
+  "check-format": "yarn prettier --list-different",
+  "clean": "lerna run clean",
+  "build": "lerna run build",
+  "test": "jest",
+  "lint": "eslint --ignore-path .gitignore .",
+  "validate": "yarn lint && yarn check-types && yarn check-format",
+  "prepare": "husky install",
+  "run-mediator": "ts-node ./samples/mediator.ts"
   },
   "devDependencies": {
     "@types/cors": "^2.8.10",
@@ -33,6 +33,7 @@
     "@types/jest": "^26.0.23",
     "@types/node": "^15.14.4",
     "@types/uuid": "^8.3.1",
+    "@types/varint": "^6.0.0",
     "@types/ws": "^7.4.6",
     "@typescript-eslint/eslint-plugin": "^4.26.1",
     "@typescript-eslint/parser": "^4.26.1",
@@ -58,9 +59,9 @@
     "ws": "^7.4.6"
   },
   "resolutions": {
-    "@types/node": "^15.14.4"
+  "@types/node": "^15.14.4"
   },
   "engines": {
-    "node": ">= 12"
+  "node": ">= 12"
   }
-}
+  }

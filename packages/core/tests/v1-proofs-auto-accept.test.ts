@@ -7,6 +7,7 @@ import type {
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 
 import {
+  ProofProtocolVersion,
   AutoAcceptProof,
   ProofState,
   ProofAttributeInfo,
@@ -14,7 +15,6 @@ import {
   ProofPredicateInfo,
   PredicateType,
 } from '../src'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'

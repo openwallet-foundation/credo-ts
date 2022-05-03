@@ -53,8 +53,8 @@ describe('W3cCredentialService', () => {
       wallet,
       w3cCredentialRepository,
       didResolverService,
-      agentConfig,
-      logger
+      agentConfig
+      // logger
     )
     w3cCredentialService.documentLoader = customDocumentLoader
   })
@@ -323,7 +323,7 @@ describe('W3cCredentialService', () => {
         expect(result.verified).toEqual(true)
       })
     })
-    describe('deriveProof', () => {
+    xdescribe('deriveProof', () => {
       it('should derive proof successfully', async () => {
         const credentialJson = BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT_SIGNED
 

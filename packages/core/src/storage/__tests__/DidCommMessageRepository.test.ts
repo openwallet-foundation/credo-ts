@@ -39,7 +39,7 @@ describe('Repository', () => {
       const record = getRecord({ id: 'test-id' })
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
 
-      const invitation = await repository.getAgentMessage({
+      const invitation = await repository.findAgentMessage({
         messageClass: ConnectionInvitationMessage,
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })

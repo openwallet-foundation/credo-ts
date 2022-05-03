@@ -5,7 +5,7 @@ import type { FaberInquirer } from './FaberInquirer'
 import type {
   Agent,
   BasicMessageStateChangedEvent,
-  CredentialRecord,
+  CredentialExchangeRecord,
   CredentialStateChangedEvent,
   ProofRecord,
   ProofStateChangedEvent,
@@ -19,6 +19,7 @@ import {
   CredentialState,
   ProofEventTypes,
   ProofState,
+  // eslint-disable-next-line import/no-unresolved
 } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
@@ -41,7 +42,7 @@ export class Listener {
     this.on = false
   }
 
-  private printCredentialAttributes(credentialRecord: CredentialRecord) {
+  private printCredentialAttributes(credentialRecord: CredentialExchangeRecord) {
     if (credentialRecord.credentialAttributes) {
       const attribute = credentialRecord.credentialAttributes
       console.log('\n\nCredential preview:')
@@ -51,7 +52,7 @@ export class Listener {
     }
   }
 
-  private async newCredentialPrompt(credentialRecord: CredentialRecord, aliceInquirer: AliceInquirer) {
+  private async newCredentialPrompt(credentialRecord: CredentialExchangeRecord, aliceInquirer: AliceInquirer) {
     this.printCredentialAttributes(credentialRecord)
     this.turnListenerOn()
     await aliceInquirer.acceptCredentialOffer(credentialRecord)

@@ -730,7 +730,7 @@ export class V1ProofService extends ProofService {
     for (const credentialId of credentialIds) {
       // Get the credentialRecord that matches the ID
 
-      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
+      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialIds: [credentialId] })
 
       if (credentialRecord.linkedAttachments) {
         // Get the credentials that have a hashlink as value and are requested
