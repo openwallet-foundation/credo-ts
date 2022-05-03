@@ -71,8 +71,6 @@ export abstract class CredentialFormatService {
   abstract shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean
   abstract shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean
 
-  abstract getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry>
-
   abstract deleteCredentialById(
     credentialRecord: CredentialExchangeRecord,
     options: DeleteCredentialOptions

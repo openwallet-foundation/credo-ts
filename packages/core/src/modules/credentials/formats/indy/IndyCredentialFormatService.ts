@@ -69,7 +69,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     this.indyHolderService = indyHolderService
   }
 
-  public async getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry> {
+  private async getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry> {
     const credential: Cred = issueAttachment.getDataAsJson<Cred>()
     let indyRegistry
     if (credential.rev_reg_id) {
