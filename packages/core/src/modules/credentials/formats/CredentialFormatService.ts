@@ -45,7 +45,7 @@ export abstract class CredentialFormatService {
 
   abstract createOffer(options: ServiceOfferCredentialOptions): Promise<FormatServiceOfferAttachmentFormats>
 
-  abstract setMetaData(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void>
+  abstract processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void>
 
   abstract createRequest(
     options: RequestCredentialOptions,

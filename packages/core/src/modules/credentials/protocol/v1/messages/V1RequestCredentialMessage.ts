@@ -54,7 +54,7 @@ export class V1RequestCredentialMessage extends AgentMessage {
     return credentialReqJson
   }
 
-  public getAttachmentIncludingFormatId(id: string): Attachment | undefined {
-    return this.messageAttachment?.find((attachment) => attachment.id.includes(id))
+  public getAttachmentById(id: string): Attachment | undefined {
+    return this.messageAttachment?.find((attachment) => attachment.id === id)
   }
 }

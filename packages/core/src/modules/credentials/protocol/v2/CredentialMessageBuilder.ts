@@ -145,7 +145,7 @@ export class CredentialMessageBuilder {
       }
       formatsArray.push(format)
 
-      await formatService.setMetaData(offersAttach, credentialRecord)
+      await formatService.processOffer(offersAttach, credentialRecord)
     }
 
     const messageProps: V2OfferCredentialMessageOptions = {
@@ -286,7 +286,7 @@ export class CredentialMessageBuilder {
       if (!service) {
         throw new AriesFrameworkError(`No service found for attachment: ${offersAttach.id}`)
       }
-      await service.setMetaData(offersAttach, credentialRecord)
+      await service.processOffer(offersAttach, credentialRecord)
     }
     return { credentialRecord, message: credentialOfferMessage }
   }

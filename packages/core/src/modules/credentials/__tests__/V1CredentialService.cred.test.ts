@@ -24,7 +24,7 @@ import { ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
-import { MediationRecipientService } from '../../routing'
+import { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
@@ -59,6 +59,7 @@ jest.mock('../../../modules/ledger/services/IndyLedgerService')
 jest.mock('../../indy/services/IndyHolderService')
 jest.mock('../../indy/services/IndyIssuerService')
 jest.mock('../../../../src/storage/didcomm/DidCommMessageRepository')
+jest.mock('../../routing/services/MediationRecipientService')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
@@ -109,7 +110,7 @@ const credentialAttachment = new Attachment({
 const acceptRequestOptions: ServiceAcceptRequestOptions = {
   attachId: INDY_CREDENTIAL_ATTACHMENT_ID,
   comment: 'credential response comment',
-  credentialRecordId: '',
+  credentialRecordId: undefined,
 }
 
 // A record is deserialized to JSON when it's stored into the storage. We want to simulate this behaviour for `offer`
@@ -237,12 +238,12 @@ describe('CredentialService', () => {
     indyIssuerService = new IndyIssuerServiceMock()
     didCommMessageRepository = new DidCommMessageRepositoryMock()
     messageSender = new MessageSenderMock()
+    agentConfig = getAgentConfig('CredentialServiceTest')
     mediationRecipientService = new MediationRecipientServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     indyLedgerService = new IndyLedgerServiceMock()
     mockFunction(indyLedgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
 
-    agentConfig = getAgentConfig('CredentialServiceTest')
     eventEmitter = new EventEmitter(agentConfig)
 
     dispatcher = new Dispatcher(messageSender, eventEmitter, agentConfig)

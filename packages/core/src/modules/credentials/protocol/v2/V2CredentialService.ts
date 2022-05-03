@@ -7,7 +7,6 @@ import type {
   ServiceAcceptCredentialOptions,
   CredentialProtocolMsgReturnType,
   ServiceAcceptProposalOptions,
-  DeleteCredentialOptions,
   ServiceOfferCredentialOptions,
 } from '../../CredentialServiceOptions'
 import type {
@@ -361,14 +360,6 @@ export class V2CredentialService extends CredentialService {
     )
     credentialRecord.connectionId = options.connectionId
 
-    for (const format of formats) {
-      const attachment = format.getAttachment(credentialOfferMessage.formats, credentialOfferMessage.messageAttachment)
-
-      if (!attachment) {
-        throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
-      }
-      await format.setMetaData(attachment, credentialRecord)
-    }
     await this.credentialRepository.save(credentialRecord)
     await this.emitEvent(credentialRecord)
 
@@ -399,15 +390,6 @@ export class V2CredentialService extends CredentialService {
       formats,
       credentialOptions
     )
-
-    for (const format of formats) {
-      const attachment = format.getAttachment(offerCredentialMessage.formats, offerCredentialMessage.messageAttachment)
-
-      if (!attachment) {
-        throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
-      }
-      await format.setMetaData(attachment, credentialRecord)
-    }
 
     // Create and set ~service decorator
     const routing = await this.mediationRecipientService.getRouting()
@@ -530,7 +512,7 @@ export class V2CredentialService extends CredentialService {
         if (!attachment) {
           throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
         }
-        await format.setMetaData(attachment, credentialRecord)
+        await format.processOffer(attachment, credentialRecord)
       }
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
       await this.didCommMessageRepository.saveOrUpdateAgentMessage({
@@ -560,7 +542,7 @@ export class V2CredentialService extends CredentialService {
         if (!attachment) {
           throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
         }
-        await format.setMetaData(attachment, credentialRecord)
+        await format.processOffer(attachment, credentialRecord)
       }
 
       // Save in repository
@@ -885,19 +867,6 @@ export class V2CredentialService extends CredentialService {
     this.dispatcher.registerHandler(new V2IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
     this.dispatcher.registerHandler(new V2CredentialAckHandler(this))
     this.dispatcher.registerHandler(new V2CredentialProblemReportHandler(this))
-  }
-
-  public async deleteById(credentialId: string, options?: DeleteCredentialOptions): Promise<void> {
-    const credentialRecord = await this.getById(credentialId)
-
-    await this.credentialRepository.delete(credentialRecord)
-
-    if (options?.deleteAssociatedCredentials) {
-      for (const credential of credentialRecord.credentials) {
-        const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
-        await formatService.deleteCredentialById(credentialRecord, options)
-      }
-    }
   }
 
   // AUTO ACCEPT METHODS

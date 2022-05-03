@@ -377,6 +377,9 @@ export class CredentialsModule implements CredentialsModule {
    * @returns CredentialExchangeRecord updated with information pertaining to this request
    */
   public async acceptRequest(options: AcceptRequestOptions): Promise<CredentialExchangeRecord> {
+    if (!options.credentialRecordId) {
+      throw new AriesFrameworkError('Missing credential record id in acceptRequest')
+    }
     const record = await this.getById(options.credentialRecordId)
 
     // with version we can get the Service

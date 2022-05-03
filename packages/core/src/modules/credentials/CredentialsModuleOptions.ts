@@ -61,7 +61,7 @@ interface RequestCredentialOptions extends BaseOptions {
 }
 
 interface AcceptRequestOptions extends BaseOptions {
-  credentialRecordId: string
+  credentialRecordId?: string
 }
 
 export {

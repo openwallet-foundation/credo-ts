@@ -16,7 +16,7 @@ import { ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
-import { MediationRecipientService } from '../../routing'
+import { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
@@ -38,6 +38,7 @@ jest.mock('../../../../src/storage/didcomm/DidCommMessageRepository')
 jest.mock('../../../modules/ledger/services/IndyLedgerService')
 jest.mock('../../indy/services/IndyHolderService')
 jest.mock('../../indy/services/IndyIssuerService')
+jest.mock('../../routing/services/MediationRecipientService')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>

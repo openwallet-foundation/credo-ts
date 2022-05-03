@@ -1,9 +1,8 @@
 import type { SubjectMessage } from './SubjectInboundTransport'
 import type { OutboundPackage, OutboundTransport, Agent, Logger } from '@aries-framework/core'
 
-import { takeUntil, Subject, take } from 'rxjs'
-
 import { InjectionSymbols, AriesFrameworkError } from '@aries-framework/core'
+import { takeUntil, Subject, take } from 'rxjs'
 
 export class SubjectOutboundTransport implements OutboundTransport {
   private logger!: Logger

@@ -21,6 +21,7 @@ import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
+  RequestCredentialOptions,
 } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { CredentialFormats, HandlerAutoAcceptOptions } from '../../formats/models/CredentialFormatServiceOptions'
@@ -581,6 +582,13 @@ export class V1CredentialService extends CredentialService {
 
       credentialRecord.linkedAttachments = offerMessage.appendedAttachments?.filter(isLinkedAttachment)
 
+      const attachment = offerCredentialMessage
+        ? offerCredentialMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+        : undefined
+      if (attachment) {
+        await this.formatService.processOffer(attachment, credentialRecord)
+      }
+
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
         schemaId: indyCredentialOffer.schema_id,
         credentialDefinitionId: indyCredentialOffer.cred_def_id,
@@ -607,7 +615,6 @@ export class V1CredentialService extends CredentialService {
         schemaId: indyCredentialOffer.schema_id,
         credentialDefinitionId: indyCredentialOffer.cred_def_id,
       })
-
       // Assert
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
@@ -823,6 +830,11 @@ export class V1CredentialService extends CredentialService {
       previousSentMessage: offerMessage ?? undefined,
     })
 
+    const requestOptions: RequestCredentialOptions = {
+      connectionId: messageContext.connection?.id,
+    }
+    await this.formatService.processRequest(requestOptions, credentialRecord)
+
     this.logger.trace('Credential record found when processing credential request', credentialRecord)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: requestMessage,
@@ -830,7 +842,6 @@ export class V1CredentialService extends CredentialService {
       associatedRecordId: credentialRecord.id,
     })
     await this.updateState(credentialRecord, CredentialState.RequestReceived)
-
     return credentialRecord
   }
   /**
@@ -872,7 +883,7 @@ export class V1CredentialService extends CredentialService {
     } else {
       throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
     }
-    const requestAttachment = requestMessage.getAttachmentIncludingFormatId(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
+    const requestAttachment = requestMessage.getAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
 
     if (!requestAttachment) {
       throw new AriesFrameworkError('Missing requestAttachment in v1 createCredential')
@@ -1157,14 +1168,12 @@ export class V1CredentialService extends CredentialService {
     const formatService: CredentialFormatService = this.getFormatService()
 
     let proposalAttachment, offerAttachment, requestAttachment: Attachment | undefined
-    if (proposeMessage && proposeMessage.appendedAttachments) {
-      proposalAttachment = proposeMessage.appendedAttachments[0]
-    }
+
     if (offerMessage) {
       offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
     }
     if (requestMessage) {
-      requestAttachment = requestMessage.getAttachmentIncludingFormatId(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
+      requestAttachment = requestMessage.getAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
     }
     const handlerOptions: HandlerAutoAcceptOptions = {
       credentialRecord,
@@ -1191,7 +1200,7 @@ export class V1CredentialService extends CredentialService {
 
     const offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
     if (proposeMessage && proposeMessage.appendedAttachments) {
-      proposalAttachment = proposeMessage.appendedAttachments[0]
+      proposalAttachment = proposeMessage.getAttachment()
     }
     const offerValues = offerMessage.credentialPreview?.attributes
 
@@ -1211,15 +1220,6 @@ export class V1CredentialService extends CredentialService {
   }
 
   // REPOSITORY METHODS
-  public async deleteById(credentialId: string, options?: DeleteCredentialOptions): Promise<void> {
-    const credentialRecord = await this.getById(credentialId)
-
-    await this.credentialRepository.delete(credentialRecord)
-
-    if (options?.deleteAssociatedCredentials && credentialRecord) {
-      await this.formatService.deleteCredentialById(credentialRecord, options)
-    }
-  }
 
   public async getOfferMessage(id: string): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
