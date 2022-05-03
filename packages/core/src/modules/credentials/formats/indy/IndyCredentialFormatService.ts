@@ -33,6 +33,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../../../../../src/error'
 import { MessageValidator } from '../../../../../src/utils/MessageValidator'
+import logger from '../../../../../tests/logger'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
@@ -90,6 +91,8 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (!attachment) {
       throw new AriesFrameworkError('Missing offer attachment in processOffer')
     }
+    logger.debug(`Save metadata for credential record ${credentialRecord.id}`)
+
     const credOffer: CredOffer = attachment.getDataAsJson<CredOffer>()
 
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {

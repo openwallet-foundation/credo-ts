@@ -287,8 +287,8 @@ export class V1CredentialService extends CredentialService {
     credentialRecord.assertState(CredentialState.RequestSent)
 
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: offerCredentialMessage ? offerCredentialMessage : undefined,
-      previousSentMessage: requestCredentialMessage ? requestCredentialMessage : undefined,
+      previousReceivedMessage: offerCredentialMessage ?? undefined,
+      previousSentMessage: requestCredentialMessage ?? undefined,
     })
 
     const credentialRequestMetadata = credentialRecord.metadata.get(CredentialMetadataKeys.IndyRequest)
@@ -362,8 +362,8 @@ export class V1CredentialService extends CredentialService {
     credentialRecord.assertState(CredentialState.OfferSent)
 
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: proposalMessage ? proposalMessage : undefined,
-      previousSentMessage: offerMessage ? offerMessage : undefined,
+      previousReceivedMessage: proposalMessage ?? undefined,
+      previousSentMessage: offerMessage ?? undefined,
     })
 
     this.logger.trace('Credential record found when processing credential request', credentialRecord)
@@ -420,8 +420,8 @@ export class V1CredentialService extends CredentialService {
       // Assert
       credentialRecord.assertState(CredentialState.ProposalSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: offerCredentialMessage ? offerCredentialMessage : undefined,
-        previousSentMessage: proposalCredentialMessage ? proposalCredentialMessage : undefined,
+        previousReceivedMessage: offerCredentialMessage ?? undefined,
+        previousSentMessage: proposalCredentialMessage ?? undefined,
       })
 
       credentialRecord.linkedAttachments = offerMessage.appendedAttachments?.filter(isLinkedAttachment)
@@ -643,8 +643,8 @@ export class V1CredentialService extends CredentialService {
     // Assert
     credentialRecord.assertState(CredentialState.CredentialIssued)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: requestCredentialMessage ? requestCredentialMessage : undefined,
-      previousSentMessage: issueCredentialMessage ? issueCredentialMessage : undefined,
+      previousReceivedMessage: requestCredentialMessage ?? undefined,
+      previousSentMessage: issueCredentialMessage ?? undefined,
     })
 
     // Update record
@@ -687,8 +687,8 @@ export class V1CredentialService extends CredentialService {
       })
 
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: proposalCredentialMessage ? proposalCredentialMessage : undefined,
-        previousSentMessage: offerCredentialMessage ? offerCredentialMessage : undefined,
+        previousReceivedMessage: proposalCredentialMessage ?? undefined,
+        previousSentMessage: offerCredentialMessage ?? undefined,
       })
 
       // Update record

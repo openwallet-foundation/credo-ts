@@ -53,8 +53,8 @@ export class V2RequestCredentialHandler implements Handler {
     const shouldAutoRespond = this.credentialService.shouldAutoRespondToRequest(
       credentialRecord,
       requestMessage,
-      proposeMessage ? proposeMessage : undefined,
-      offerMessage ? offerMessage : undefined
+      proposeMessage ?? undefined,
+      offerMessage ?? undefined
     )
     if (shouldAutoRespond) {
       return await this.createCredential(credentialRecord, messageContext, requestMessage, offerMessage)

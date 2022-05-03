@@ -56,7 +56,7 @@ export class V2ProposeCredentialHandler implements Handler {
     const shouldAutoRespond = this.credentialService.shouldAutoRespondToProposal(
       credentialRecord,
       proposalMessage,
-      offerMessage ? offerMessage : undefined
+      offerMessage ?? undefined
     )
     if (shouldAutoRespond) {
       return await this.createOffer(credentialRecord, messageContext)
@@ -85,7 +85,7 @@ export class V2ProposeCredentialHandler implements Handler {
       comment: proposal.comment,
     }
 
-    const message = await this.credentialService.createOfferAsResponse(credentialRecord, options)
+    const message = await this.credentialService.createOfferAsResponse(options, credentialRecord)
 
     return createOutboundMessage(messageContext.connection, message)
   }

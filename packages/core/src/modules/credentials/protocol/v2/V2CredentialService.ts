@@ -26,6 +26,7 @@ import type {
   HandlerAutoAcceptOptions,
 } from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
+import type { CreateRequestOptions } from './CredentialMessageBuilder'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -381,8 +382,8 @@ export class V2CredentialService extends CredentialService {
       // }
       credentialRecord.assertState(CredentialState.OfferSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: proposalCredentialMessage ? proposalCredentialMessage : undefined,
-        previousSentMessage: offerCredentialMessage ? offerCredentialMessage : undefined,
+        previousReceivedMessage: proposalCredentialMessage ?? undefined,
+        previousSentMessage: offerCredentialMessage ?? undefined,
       })
 
       // Update record
@@ -442,12 +443,12 @@ export class V2CredentialService extends CredentialService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     const options: ServiceOfferCredentialOptions = {
-      connectionId: proposal.connectionId ? proposal.connectionId : undefined,
+      connectionId: proposal.connectionId ?? undefined,
       protocolVersion: proposal.protocolVersion,
       credentialFormats: proposal.credentialFormats,
       comment: proposal.comment,
     }
-    const message = await this.createOfferAsResponse(credentialRecord, options)
+    const message = await this.createOfferAsResponse(options, credentialRecord)
 
     return { credentialRecord, message }
   }
@@ -462,8 +463,8 @@ export class V2CredentialService extends CredentialService {
    *
    */
   public async createOfferAsResponse(
-    credentialRecord: CredentialExchangeRecord,
-    proposal: ServiceOfferCredentialOptions | NegotiateProposalOptions
+    proposal: ServiceOfferCredentialOptions | NegotiateProposalOptions,
+    credentialRecord: CredentialExchangeRecord
   ): Promise<V2OfferCredentialMessage> {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
@@ -526,8 +527,8 @@ export class V2CredentialService extends CredentialService {
       })
       credentialRecord.assertState(CredentialState.ProposalSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: offerCredentialMessage ? offerCredentialMessage : undefined,
-        previousSentMessage: proposeCredentialMessage ? proposeCredentialMessage : undefined,
+        previousReceivedMessage: offerCredentialMessage ?? undefined,
+        previousSentMessage: proposeCredentialMessage ?? undefined,
       })
 
       for (const format of formats) {
@@ -539,7 +540,6 @@ export class V2CredentialService extends CredentialService {
         if (!attachment) {
           throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
         }
-        this.logger.debug('Save metadata for offer')
         await format.setMetaData(attachment, credentialRecord)
       }
       await this.updateState(credentialRecord, CredentialState.OfferReceived)
@@ -570,7 +570,6 @@ export class V2CredentialService extends CredentialService {
         if (!attachment) {
           throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
         }
-        this.logger.debug('Save metadata for offer')
         await format.setMetaData(attachment, credentialRecord)
       }
 
@@ -656,13 +655,15 @@ export class V2CredentialService extends CredentialService {
     if (!formats || formats.length == 0) {
       throw new AriesFrameworkError('No format keys found on the RequestCredentialOptions object')
     }
-    const { message, credentialRecord } = await this.credentialMessageBuilder.createRequest(
-      formats,
+
+    const optionsForRequest: CreateRequestOptions = {
+      formatServices: formats,
       record,
-      options,
+      requestOptions: options,
       offerMessage,
-      holderDid
-    )
+      holderDid,
+    }
+    const { message, credentialRecord } = await this.credentialMessageBuilder.createRequest(optionsForRequest)
 
     await this.updateState(credentialRecord, CredentialState.RequestSent)
     return { message, credentialRecord }
@@ -699,8 +700,8 @@ export class V2CredentialService extends CredentialService {
     // Assert
     credentialRecord.assertState(CredentialState.OfferSent)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: proposalMessage ? proposalMessage : undefined,
-      previousSentMessage: offerMessage ? offerMessage : undefined,
+      previousReceivedMessage: proposalMessage ?? undefined,
+      previousSentMessage: offerMessage ?? undefined,
     })
 
     this.logger.debug('Credential record found when processing credential request', credentialRecord)
@@ -732,7 +733,7 @@ export class V2CredentialService extends CredentialService {
       )
     }
 
-    const message = await this.createOfferAsResponse(credentialRecord, options)
+    const message = await this.createOfferAsResponse(options, credentialRecord)
 
     return { credentialRecord, message }
   }
@@ -939,8 +940,8 @@ export class V2CredentialService extends CredentialService {
     // Assert
     credentialRecord.assertState(CredentialState.RequestSent)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: offerMessage ? offerMessage : undefined,
-      previousSentMessage: requestMessage ? requestMessage : undefined,
+      previousReceivedMessage: offerMessage ?? undefined,
+      previousSentMessage: requestMessage ?? undefined,
     })
 
     const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(issueCredentialMessage.formats)
@@ -1039,8 +1040,8 @@ export class V2CredentialService extends CredentialService {
     // Assert
     credentialRecord.assertState(CredentialState.CredentialIssued)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: requestMessage ? requestMessage : undefined,
-      previousSentMessage: credentialMessage ? credentialMessage : undefined,
+      previousReceivedMessage: requestMessage ?? undefined,
+      previousSentMessage: credentialMessage ?? undefined,
     })
 
     // Update record
@@ -1090,7 +1091,6 @@ export class V2CredentialService extends CredentialService {
       if (!attachment) {
         throw new AriesFrameworkError(`Missing offer attachment in credential offer message`)
       }
-      this.logger.debug('Save metadata for offer')
       await format.setMetaData(attachment, credentialRecord)
     }
 
