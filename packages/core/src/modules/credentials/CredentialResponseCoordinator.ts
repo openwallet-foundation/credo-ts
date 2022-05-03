@@ -1,18 +1,9 @@
-import type {
-  V1IssueCredentialMessage,
-  V1OfferCredentialMessage,
-  V1ProposeCredentialMessage,
-  V1RequestCredentialMessage,
-} from './protocol/v1/messages'
-import type { CredentialExchangeRecord } from './repository'
-
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { DidCommMessageRepository } from '../../storage'
 
 import { AutoAcceptCredential } from './CredentialAutoAcceptType'
-import { CredentialUtils } from './CredentialUtils'
 
 /**
  * This class handles all the automation with all the messages in the issue credential protocol
