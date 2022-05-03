@@ -13,6 +13,7 @@ export interface FieldOptions {
 
 export interface ConstraintOptions {
   fields: FieldOptions[]
+  limitDisclosure?: string
 }
 
 export interface SchemaOptions {

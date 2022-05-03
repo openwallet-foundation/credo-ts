@@ -839,14 +839,14 @@ export class V1ProofService extends ProofService {
       messageClass: V1ProposePresentationMessage,
     })
 
-    const indyProofRequest = requestMessage?.indyProofRequest
+    const indyProofRequest = requestMessage?.requestPresentationAttachments
 
     if (!indyProofRequest) {
       throw new AriesFrameworkError('Could not find proof request')
     }
 
     return await this.indyProofFormatService.getRequestedCredentialsForProofRequest({
-      proofRequest: indyProofRequest,
+      attachment: indyProofRequest[0],
       presentationProposal: proposalMessage?.presentationProposal,
       config: options.config ?? undefined,
     })

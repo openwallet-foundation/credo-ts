@@ -5,7 +5,7 @@ import type {
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
 import type { PresentationPreviewAttribute } from '../../protocol/v1/models/V1PresentationPreview'
-import type { IndyGetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
+import type { GetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
@@ -340,11 +340,15 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async getRequestedCredentialsForProofRequest(
-    options: IndyGetRequestedCredentialsFormat
+    options: GetRequestedCredentialsFormat
   ): Promise<RetrievedCredentialOptions> {
     const retrievedCredentials = new RetrievedCredentials({})
-    const { proofRequest, presentationProposal } = options
+
+    const { attachment, presentationProposal } = options
     const filterByNonRevocationRequirements = options.config?.filterByNonRevocationRequirements
+
+    const proofRequestJson = attachment.getDataAsJson<ProofRequest>() ?? null
+    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 
     for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
       let credentialMatch: Credential[] = []

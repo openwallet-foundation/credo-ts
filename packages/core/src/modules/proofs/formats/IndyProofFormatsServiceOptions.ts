@@ -46,3 +46,9 @@ export interface IndyGetRequestedCredentialsFormat {
   presentationProposal?: PresentationPreview
   config?: GetRequestedCredentialsConfig
 }
+
+export interface GetRequestedCredentialsFormat {
+  attachment: Attachment
+  presentationProposal?: PresentationPreview
+  config?: GetRequestedCredentialsConfig
+}

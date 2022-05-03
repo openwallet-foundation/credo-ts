@@ -1,11 +1,9 @@
 import type { InputDescriptors } from './InputDescriptors'
 
 import { Expose } from 'class-transformer'
-import { IsString, ValidateNested } from 'class-validator'
+import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../../../utils'
-
-type PresentationDefinitionFormatType = LdpVc | LdpVp
 
 interface ProofTypeOptions {
   proofType: string[]
@@ -21,34 +19,56 @@ export class ProofType {
   public proofType!: string[]
 }
 
-export class LdpVc {
-  public constructor(ldpVc: ProofType) {
-    if (ldpVc) {
-      this.ldpVc = ldpVc
-    }
-  }
+// export class LdpVc {
+//   public constructor(ldpVc: ProofType) {
+//     if (ldpVc) {
+//       this.ldpVc = ldpVc
+//     }
+//   }
 
-  @Expose({ name: 'ldp_vc' })
-  public ldpVc!: ProofType
+//   @Expose({ name: 'ldp_vc' })
+//   public ldpVc!: ProofType
+// }
+// export class LdpVp {
+//   public constructor(ldpVp: ProofType) {
+//     if (ldpVp) {
+//       this.ldpVp = ldpVp
+//     }
+//   }
+
+//   @Expose({ name: 'ldp_vp' })
+//   public ldpVp!: ProofType
+
+//   public toJSON() {
+//     return JsonTransformer.toJSON(this)
+//   }
+// }
+
+export interface ClaimFormatSchemaOptions {
+  ldpVp?: ProofType
+  ldpVc?: ProofType
 }
-export class LdpVp {
-  public constructor(ldpVp: ProofType) {
-    if (ldpVp) {
-      this.ldpVp = ldpVp
+
+export class ClaimFormatSchema {
+  public constructor(options: ClaimFormatSchemaOptions) {
+    if (options) {
+      this.ldpVp = options.ldpVp
+      this.ldpVc = options.ldpVc
     }
   }
 
   @Expose({ name: 'ldp_vp' })
-  public ldpVp!: ProofType
+  @IsOptional()
+  public ldpVp?: ProofType
 
-  public toJSON() {
-    return JsonTransformer.toJSON(this)
-  }
+  @Expose({ name: 'ldp_vc' })
+  @IsOptional()
+  public ldpVc?: ProofType
 }
 
 export interface PresentationDefinitionOptions {
   inputDescriptors: InputDescriptors[]
-  format: PresentationDefinitionFormatType
+  format: ClaimFormatSchema
 }
 
 export class PresentationDefinition {
@@ -64,7 +84,7 @@ export class PresentationDefinition {
   public inputDescriptors!: InputDescriptors[]
 
   @IsString()
-  public format!: PresentationDefinitionFormatType
+  public format!: ClaimFormatSchema
 
   public toJSON() {
     return JsonTransformer.toJSON(this)
