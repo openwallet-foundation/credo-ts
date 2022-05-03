@@ -80,6 +80,10 @@ export class AgentConfig {
     return this.initConfig.mediatorPickupStrategy
   }
 
+  public get maximumMessagePickup() {
+    return this.initConfig.maximumMessagePickup ?? 10
+  }
+
   public get endpoints(): [string, ...string[]] {
     // if endpoints is not set, return queue endpoint
     // https://github.com/hyperledger/aries-rfcs/issues/405#issuecomment-582612875

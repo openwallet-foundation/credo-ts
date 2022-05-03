@@ -67,4 +67,5 @@ export interface TransportSession {
   inboundMessage?: AgentMessage
   connection?: ConnectionRecord
   send(encryptedMessage: EncryptedMessage): Promise<void>
+  close(): Promise<void>
 }

@@ -8,7 +8,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { CredentialPreview } from '../src/modules/credentials'
+import { CredentialPreview } from '../src/modules/credentials/messages/CredentialPreview'
 import {
   PredicateType,
   ProofState,
@@ -19,6 +19,7 @@ import {
   ProofEventTypes,
 } from '../src/modules/proofs'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
+import { MediatorPickupStrategy } from '../src/modules/routing/MediatorPickupStrategy'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -238,12 +239,14 @@ describe('Present Proof', () => {
     const faberConfig = getBaseConfig(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       mediatorConnectionsInvite: faberMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
     const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       // logger: new TestLogger(LogLevel.test),
       mediatorConnectionsInvite: aliceMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
     const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
