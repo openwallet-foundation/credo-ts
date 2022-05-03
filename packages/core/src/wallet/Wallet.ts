@@ -1,3 +1,5 @@
+import type { Key } from '../crypto/Key'
+import type { KeyType } from '../crypto/KeyType'
 import type {
   EncryptedMessage,
   DecryptedMessageContext,

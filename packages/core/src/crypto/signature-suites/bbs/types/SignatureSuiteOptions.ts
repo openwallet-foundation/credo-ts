@@ -12,8 +12,8 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Bls12381G2KeyPair } from "@mattrglobal/bls12381-key-pair";
-import { KeyPairSigner } from "./KeyPairSigner";
+import type { KeyPairSigner } from './KeyPairSigner'
+import type { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 
 /**
  * Options for constructing a signature suite
@@ -22,30 +22,30 @@ export interface SignatureSuiteOptions {
   /**
    * An optional signer interface for handling the sign operation
    */
-  readonly signer?: KeyPairSigner;
+  readonly signer?: KeyPairSigner
   /**
    * The key pair used to generate the proof
    */
-  readonly key?: Bls12381G2KeyPair;
+  readonly key?: Bls12381G2KeyPair
   /**
    * A key id URL to the paired public key used for verifying the proof
    */
-  readonly verificationMethod?: string;
+  readonly verificationMethod?: string
   /**
    * The `created` date to report in generated proofs
    */
-  readonly date?: string | Date;
+  readonly date?: string | Date
   /**
    * Indicates whether to use the native implementation
    * of RDF Dataset Normalization
    */
-  readonly useNativeCanonize?: boolean;
+  readonly useNativeCanonize?: boolean
   /**
    * Additional proof elements
    */
-  readonly proof?: any;
+  readonly proof?: any
   /**
    * Linked Data Key class implementation
    */
-  readonly LDKeyClass?: any;
+  readonly LDKeyClass?: any
 }

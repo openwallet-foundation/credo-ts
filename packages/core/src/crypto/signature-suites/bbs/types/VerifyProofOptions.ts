@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import type { DocumentLoader } from '../../JwsLinkedDataSignature'
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Options for verifying a proof
@@ -19,21 +21,21 @@ export interface VerifyProofOptions {
   /**
    * The proof
    */
-  readonly proof: any;
+  readonly proof: any
   /**
    * The document
    */
-  readonly document: any;
+  readonly document: any
   /**
    * The proof purpose to specify for the generated proof
    */
-  readonly purpose: any;
+  readonly purpose: any
   /**
    * Optional custom document loader
    */
-  documentLoader?: Function;
+  documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
-  expansionMap?: Function;
+  expansionMap?: () => void
 }

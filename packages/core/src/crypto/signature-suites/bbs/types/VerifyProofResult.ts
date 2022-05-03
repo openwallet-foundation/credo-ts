@@ -18,9 +18,9 @@ export interface VerifyProofResult {
   /**
    * A boolean indicating if the verification was successful
    */
-  readonly verified: boolean;
+  readonly verified: boolean
   /**
    * A string representing the error if the verification failed
    */
-  readonly error?: string;
+  readonly error?: unknown
 }

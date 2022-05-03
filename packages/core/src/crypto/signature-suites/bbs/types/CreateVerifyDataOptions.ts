@@ -19,21 +19,23 @@ export interface CreateVerifyDataOptions {
   /**
    * Document to create the proof for
    */
-  readonly document: any;
+  readonly document: any
   /**
    * The proof
    */
-  readonly proof: any;
+  readonly proof: any
   /**
    * Optional custom document loader
    */
-  documentLoader?: Function;
+  // eslint-disable-next-line
+  documentLoader?: Function
   /**
    * Optional expansion map
    */
-  expansionMap?: Function;
+  // eslint-disable-next-line
+  expansionMap?: Function
   /**
    * Indicates whether to compact the proof
    */
-  readonly compactProof: boolean;
+  readonly compactProof: boolean
 }

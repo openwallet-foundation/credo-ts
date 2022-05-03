@@ -4,7 +4,6 @@ import type { W3cCredential } from './credential/W3cCredential'
 import type { W3cVerifiableCredential } from './credential/W3cVerifiableCredential'
 import type { W3cPresentation } from './presentation/W3Presentation'
 import type { W3cVerifiablePresentation } from './presentation/W3cVerifiablePresentation'
-import type { Frame } from '@digitalcredentials/jsonld/jsonld-spec'
 
 export interface SignCredentialOptions {
   credential: W3cCredential
@@ -45,11 +44,12 @@ export interface VerifyPresentationOptions {
   presentation: W3cVerifiablePresentation
   proofType: string
   verificationMethod: string
-  purpose: ProofPurpose
+  purpose?: ProofPurpose
+  challenge?: string
 }
 
 export interface DeriveProofOptions {
   credential: W3cVerifiableCredential
-  revealDocument: Frame
+  revealDocument: Record<string, any>
   verificationMethod: string
 }

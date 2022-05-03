@@ -1,6 +1,5 @@
 import type { W3cVerifiableCredentialOptions } from '../credential/W3cVerifiableCredential'
 import type { ValidationOptions } from 'class-validator'
-import type { ContextDefinition } from 'jsonld'
 
 import { Expose } from 'class-transformer'
 import { buildMessage, IsOptional, IsString, ValidateBy } from 'class-validator'
@@ -13,7 +12,7 @@ import { VerifiableCredentialTransformer, W3cVerifiableCredential } from '../cre
 
 export interface W3cPresentationOptions {
   id?: string
-  context: Array<string> | ContextDefinition
+  context: Array<string> | Record<string, any>
   verifiableCredential: SingleOrArray<W3cVerifiableCredentialOptions>
   type: Array<string>
   holder?: string
@@ -34,7 +33,7 @@ export class W3cPresentation {
 
   @Expose({ name: '@context' })
   @IsJsonLdContext()
-  public context!: Array<string> | ContextDefinition
+  public context!: Array<string> | Record<string, any>
 
   @IsOptional()
   @IsUri()

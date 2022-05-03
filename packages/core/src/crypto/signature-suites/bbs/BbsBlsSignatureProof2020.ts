@@ -12,20 +12,15 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type {
-  DeriveProofOptions,
-  DidDocumentPublicKey,
-  VerifyProofOptions,
-  CreateVerifyDataOptions,
-  CanonizeOptions,
-} from './types'
+import type { DocumentLoader, Proof } from '../JwsLinkedDataSignature'
+import type { DeriveProofOptions, VerifyProofOptions, CreateVerifyDataOptions, CanonizeOptions } from './types'
 import type { VerifyProofResult } from './types/VerifyProofResult'
 
+import jsonld from '@digitalcredentials/jsonld'
 import { suites, SECURITY_CONTEXT_URL } from '@digitalcredentials/jsonld-signatures'
 import { blsCreateProof, blsVerifyProof } from '@mattrglobal/bbs-signatures'
 import { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 import { randomBytes } from '@stablelib/random'
-import jsonld from 'jsonld'
 
 import { TypedArrayEncoder } from '../../../utils'
 
@@ -34,7 +29,7 @@ import { BbsBlsSignature2020 } from './BbsBlsSignature2020'
 export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
   public constructor({ useNativeCanonize, key, LDKeyClass }: any = {}) {
     super({
-      type: 'sec:BbsBlsSignatureProof2020',
+      type: 'BbsBlsSignatureProof2020',
     })
 
     this.proof = {
@@ -51,7 +46,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
       ],
       type: 'BbsBlsSignatureProof2020',
     }
-    this.mappedDerivedProofType = 'https://w3id.org/security#BbsBlsSignature2020'
+    this.mappedDerivedProofType = 'BbsBlsSignature2020'
     this.supportedDeriveProofType = BbsBlsSignatureProof2020.supportedDerivedProofType
 
     this.LDKeyClass = LDKeyClass ?? Bls12381G2KeyPair
@@ -159,7 +154,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
 
     // Create a nonce if one is not supplied
     if (!nonce) {
-      nonce = await randomBytes(50)
+      nonce = randomBytes(50)
     }
 
     // Set the nonce on the derived proof
@@ -175,9 +170,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     // Fetch the verification method
     const verificationMethod = await this.getVerificationMethod({
       proof,
-      document,
       documentLoader,
-      expansionMap,
     })
 
     // Construct a key pair class from the returned verification method
@@ -187,10 +180,10 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
 
     // Compute the proof
     const outputProof = await blsCreateProof({
-      signature: new Uint8Array(signature),
-      publicKey: new Uint8Array(key.publicKeyBuffer),
+      signature,
+      publicKey: key.publicKeyBuffer,
       messages: allInputStatements,
-      nonce: nonce,
+      nonce,
       revealed: revealIndicies,
     })
 
@@ -220,8 +213,10 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     try {
       proof.type = this.mappedDerivedProofType
 
+      const proof2 = { ...proof, '@context': document['@context'] }
+
       // Get the proof statements
-      const proofStatements = await this.createVerifyProofData(proof, {
+      const proofStatements = await this.createVerifyProofData(proof2, {
         documentLoader,
         expansionMap,
       })
@@ -246,9 +241,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
       // Fetch the verification method
       const verificationMethod = await this.getVerificationMethod({
         proof,
-        document,
         documentLoader,
-        expansionMap,
       })
 
       // Construct a key pair class from the returned verification method
@@ -258,10 +251,10 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
 
       // Verify the proof
       const verified = await blsVerifyProof({
-        proof: new Uint8Array(TypedArrayEncoder.fromBase64(proof.proofValue)),
-        publicKey: new Uint8Array(key.publicKeyBuffer),
+        proof: TypedArrayEncoder.fromBase64(proof.proofValue),
+        publicKey: key.publicKeyBuffer,
         messages: statementsToVerify,
-        nonce: new Uint8Array(TypedArrayEncoder.fromBase64(proof.nonce as string)),
+        nonce: TypedArrayEncoder.fromBase64(proof.nonce as string),
       })
 
       // Ensure proof was performed for a valid purpose
@@ -359,48 +352,30 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     return c14nDocument.split('\n').filter((_) => _.length > 0)
   }
 
-  /**
-   * @param document {object} to be signed.
-   * @param proof {object}
-   * @param documentLoader {function}
-   * @param expansionMap {function}
-   */
-  public async getVerificationMethod({ proof, documentLoader }: any): Promise<DidDocumentPublicKey> {
-    let { verificationMethod } = proof
+  public async getVerificationMethod(options: { proof: Proof; documentLoader: any }) {
+    if (this.key) {
+      // This happens most often during sign() operations. For verify(),
+      // the expectation is that the verification method will be fetched
+      // by the documentLoader (below), not provided as a `key` parameter.
+      return this.key.export({ publicKey: true })
+    }
 
-    if (typeof verificationMethod === 'object') {
+    let { verificationMethod } = options.proof
+
+    if (typeof verificationMethod === 'object' && verificationMethod !== null) {
       verificationMethod = verificationMethod.id
     }
+
     if (!verificationMethod) {
       throw new Error('No "verificationMethod" found in proof.')
     }
 
-    // Note: `expansionMap` is intentionally not passed; we can safely drop
-    // properties here and must allow for it
-    const result = await jsonld.frame(
-      verificationMethod,
-      {
-        // adding jws-2020 context to allow publicKeyJwk
-        '@context': ['https://w3id.org/security/v2', 'https://w3id.org/security/suites/jws-2020/v1'],
-        '@embed': '@always',
-        id: verificationMethod,
-      },
-      {
-        documentLoader,
-        compactToRelative: false,
-        expandContext: SECURITY_CONTEXT_URL,
-      }
-    )
-    if (!result) {
-      throw new Error(`Verification method ${verificationMethod} not found.`)
-    }
+    const { document } = await options.documentLoader(verificationMethod)
 
-    // ensure verification method has not been revoked
-    if (result.revoked !== undefined) {
-      throw new Error('The verification method has been revoked.')
-    }
+    verificationMethod = typeof document === 'string' ? JSON.parse(document) : document
 
-    return result
+    // await this.assertVerificationMethod(verificationMethod)
+    return verificationMethod
   }
 
   public static proofType = [

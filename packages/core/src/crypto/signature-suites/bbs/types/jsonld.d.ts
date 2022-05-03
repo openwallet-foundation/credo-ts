@@ -14,4 +14,4 @@
 /**
  * Declare missing types for jsonld
  */
-declare module "jsonld";
+declare module 'jsonld'

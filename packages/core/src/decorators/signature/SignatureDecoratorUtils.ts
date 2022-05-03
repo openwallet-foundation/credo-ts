@@ -1,6 +1,7 @@
 import type { Wallet } from '../../wallet/Wallet'
 
-import { Key, KeyType } from '../../crypto'
+import { KeyType } from '../../crypto'
+import { Key } from '../../crypto/Key'
 import { AriesFrameworkError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { TypedArrayEncoder } from '../../utils/TypedArrayEncoder'

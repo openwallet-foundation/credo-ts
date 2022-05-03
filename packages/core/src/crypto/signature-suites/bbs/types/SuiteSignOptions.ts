@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import type { DocumentLoader } from '../../JwsLinkedDataSignature'
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Options for signing using a signature suite
@@ -19,21 +21,21 @@ export interface SuiteSignOptions {
   /**
    * Input document to sign
    */
-  readonly document: any;
+  readonly document: any
   /**
    * Optional custom document loader
    */
-  documentLoader?: Function;
+  documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
-  expansionMap?: Function;
+  expansionMap?: () => void
   /**
    * The array of statements to sign
    */
-  readonly verifyData: readonly Uint8Array[];
+  readonly verifyData: readonly Uint8Array[]
   /**
    * The proof
    */
-  readonly proof: any;
+  readonly proof: any
 }

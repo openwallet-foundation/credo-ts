@@ -1,4 +1,4 @@
-import type { Key } from '../../crypto'
+import type { Key } from '../../crypto/Key'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
   CreatePresentationOptions,
@@ -10,12 +10,19 @@ import type {
   VerifyPresentationOptions,
 } from './models/W3cCredentialServiceOptions'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
-import type { RemoteDocument, Url } from 'jsonld/jsonld-spec'
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+// eslint-disable-next-line import/no-extraneous-dependencies
 import jsonld, { expand, frame } from '@digitalcredentials/jsonld'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
+// eslint-disable-next-line import/no-extraneous-dependencies
 import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+// eslint-disable-next-line import/no-extraneous-dependencies
+import documentLoaderXhr from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
 import vc from '@digitalcredentials/vc'
 import { deriveProof } from '@mattrglobal/jsonld-signatures-bbs'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -25,6 +32,8 @@ import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { JsonTransformer, orArrayToArray } from '../../utils'
+import { isNodeJS, isReactNative } from '../../utils/environment'
+import { uuid } from '../../utils/uuid'
 import { Wallet } from '../../wallet'
 import { DidResolverService, VerificationMethod } from '../dids'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
@@ -70,8 +79,11 @@ export class W3cCredentialService {
     const WalletKeyPair = createWalletKeyPairClass(this.wallet)
 
     const signingKey = await this.getPublicKeyFromVerificationMethod(options.verificationMethod)
-
     const suiteInfo = this.suiteRegistry.getByProofType(options.proofType)
+
+    if (signingKey.keyType !== suiteInfo.keyType) {
+      throw new AriesFrameworkError('The key type of the verification method does not match the suite')
+    }
 
     const keyPair = new WalletKeyPair({
       controller: options.credential.issuerId, // should we check this against the verificationMethod.controller?
@@ -149,30 +161,6 @@ export class W3cCredentialService {
   }
 
   /**
-   * Writes a credential to storage
-   *
-   * @param record the credential to be stored
-   * @returns the credential record that was written to storage
-   */
-  public async storeCredential(options: StoreCredentialOptions): Promise<W3cCredentialRecord> {
-    // Get the expanded types
-    const expandedTypes = (
-      await expand(JsonTransformer.toJSON(options.record), { documentLoader: this.documentLoader })
-    )[0]['@type']
-
-    // Create an instance of the w3cCredentialRecord
-    const w3cCredentialRecord = new W3cCredentialRecord({
-      tags: { expandedTypes: orArrayToArray(expandedTypes) },
-      credential: options.record,
-    })
-
-    // Store the w3c credential record
-    await this.w3cCredentialRepository.save(w3cCredentialRecord)
-
-    return w3cCredentialRecord
-  }
-
-  /**
    * Utility method that creates a {@link W3cPresentation} from one or more {@link W3cVerifiableCredential}s.
    *
    * **NOTE: the presentation that is returned is unsigned.**
@@ -213,6 +201,11 @@ export class W3cCredentialService {
     }
 
     const signingKey = await this.getPublicKeyFromVerificationMethod(options.verificationMethod)
+
+    if (signingKey.keyType !== suiteInfo.keyType) {
+      throw new AriesFrameworkError('The key type of the verification method does not match the suite')
+    }
+
     const verificationMethodObject = (await this.documentLoader(options.verificationMethod)).document as Record<
       string,
       any
@@ -238,9 +231,10 @@ export class W3cCredentialService {
     const result = await vc.signPresentation({
       presentation: JsonTransformer.toJSON(options.presentation),
       suite: suite,
-      purpose: options.purpose,
+      challenge: uuid(),
       documentLoader: this.documentLoader,
     })
+
     return JsonTransformer.fromJSON(result, W3cVerifiablePresentation)
   }
 
@@ -259,8 +253,9 @@ export class W3cCredentialService {
     if (!Array.isArray(proofs)) {
       proofs = [proofs]
     }
-
-    proofs = proofs.filter((x) => x.proofPurpose === options.purpose.term)
+    if (options.purpose) {
+      proofs = proofs.filter((x) => x.proofPurpose === options.purpose.term)
+    }
 
     const suites = proofs.map((x) => {
       const SuiteClass = this.suiteRegistry.getByProofType(x.type).suiteClass
@@ -277,6 +272,7 @@ export class W3cCredentialService {
     const verifyOptions: Record<string, any> = {
       presentation: JsonTransformer.toJSON(options.presentation),
       suite: suites,
+      challenge: options.challenge,
       documentLoader: this.documentLoader,
     }
 
@@ -290,26 +286,11 @@ export class W3cCredentialService {
     return result as unknown as VerifyPresentationResult
   }
 
-  public async deriveProof(options: DeriveProofOptions) {
-    const WalletKeyPair = createWalletKeyPairClass(this.wallet)
-
+  public async deriveProof(options: DeriveProofOptions): Promise<W3cVerifiableCredential> {
     const suiteInfo = this.suiteRegistry.getByProofType('BbsBlsSignatureProof2020')
     const SuiteClass = suiteInfo.suiteClass
 
-    const signingKey = await this.getPublicKeyFromVerificationMethod(options.verificationMethod)
-
-    const keyPair = new WalletKeyPair({
-      controller: options.credential.issuerId, // is this correct? I guess this should be the holders keyId, or not?
-      id: options.verificationMethod, // should the verificationMethod be passed in or can we infer this somehow?
-      key: signingKey,
-      wallet: this.wallet,
-    })
-
-    const suite = new SuiteClass({
-      key: keyPair,
-      // LDClass: WalletKeyPair,
-      useNativeCanonize: false,
-    })
+    const suite = new SuiteClass()
 
     const proof = await deriveProof(JsonTransformer.toJSON(options.credential), options.revealDocument, {
       suite: suite,
@@ -319,7 +300,7 @@ export class W3cCredentialService {
     return proof
   }
 
-  public documentLoader = async (url: Url): Promise<RemoteDocument> => {
+  public documentLoader = async (url: string): Promise<Record<string, any>> => {
     if (url.startsWith('did:')) {
       const result = await this.didResolver.resolve(url)
 
@@ -335,14 +316,21 @@ export class W3cCredentialService {
       })
 
       return {
-        // contextUrl: result.didDocument.context[0],
         contextUrl: null,
         documentUrl: url,
         document: framed,
       }
     }
 
-    const loader = documentLoaderNode.apply(jsonld, [])
+    let loader
+
+    if (isNodeJS()) {
+      loader = documentLoaderNode.apply(jsonld, [])
+    } else if (isReactNative()) {
+      loader = documentLoaderXhr.apply(jsonld, [])
+    } else {
+      throw new AriesFrameworkError('Unsupported environment')
+    }
 
     return await loader(url)
   }
@@ -354,5 +342,49 @@ export class W3cCredentialService {
     const key = getKeyDidMappingByVerificationMethod(verificationMethodClass)
 
     return key.getKeyFromVerificationMethod(verificationMethodClass)
+  }
+
+  /**
+   * Writes a credential to storage
+   *
+   * @param record the credential to be stored
+   * @returns the credential record that was written to storage
+   */
+  public async storeCredential(options: StoreCredentialOptions): Promise<W3cCredentialRecord> {
+    // Get the expanded types
+    const expandedTypes = (
+      await expand(JsonTransformer.toJSON(options.record), { documentLoader: this.documentLoader })
+    )[0]['@type']
+
+    // Create an instance of the w3cCredentialRecord
+    const w3cCredentialRecord = new W3cCredentialRecord({
+      tags: { expandedTypes: orArrayToArray(expandedTypes) },
+      credential: options.record,
+    })
+
+    // Store the w3c credential record
+    await this.w3cCredentialRepository.save(w3cCredentialRecord)
+
+    return w3cCredentialRecord
+  }
+
+  public async getAllCredentials(): Promise<W3cVerifiableCredential[]> {
+    return (await this.w3cCredentialRepository.getAll()).map((x) => x.credential)
+  }
+
+  public async getCredentialById(id: string): Promise<W3cVerifiableCredential> {
+    return (await this.w3cCredentialRepository.getById(id)).credential
+  }
+
+  public async findCredentialByQuery(
+    query: Parameters<typeof W3cCredentialRepository.prototype.findByQuery>[0]
+  ): Promise<W3cVerifiableCredential[]> {
+    return (await this.w3cCredentialRepository.findByQuery(query)).map((x) => x.credential)
+  }
+
+  public async findSingleCredentialByQuery(
+    query: Parameters<typeof W3cCredentialRepository.prototype.findSingleByQuery>[0]
+  ): Promise<W3cVerifiableCredential | undefined> {
+    return (await this.w3cCredentialRepository.findSingleByQuery(query))?.credential
   }
 }
