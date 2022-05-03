@@ -448,7 +448,7 @@ export class V2CredentialService extends CredentialService {
       credentialFormats: proposal.credentialFormats,
       comment: proposal.comment,
     }
-    const message = await this.createOfferAsResponse(options, credentialRecord)
+    const message = await this.createOfferAsResponse(credentialRecord, options)
 
     return { credentialRecord, message }
   }
@@ -463,13 +463,26 @@ export class V2CredentialService extends CredentialService {
    *
    */
   public async createOfferAsResponse(
-    proposal: ServiceOfferCredentialOptions | NegotiateProposalOptions,
-    credentialRecord: CredentialExchangeRecord
+    credentialRecord: CredentialExchangeRecord,
+    proposal?: ServiceOfferCredentialOptions | NegotiateProposalOptions
   ): Promise<V2OfferCredentialMessage> {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
 
-    const formats: CredentialFormatService[] = this.getFormats(proposal.credentialFormats as Record<string, unknown>)
+    let options: ServiceOfferCredentialOptions | undefined
+    if (!proposal) {
+      const acceptProposalOptions: AcceptProposalOptions = await this.createAcceptProposalOptions(credentialRecord)
+
+      options = {
+        credentialFormats: acceptProposalOptions.credentialFormats,
+        protocolVersion: CredentialProtocolVersion.V2,
+        credentialRecordId: acceptProposalOptions.connectionId ? acceptProposalOptions.connectionId : undefined,
+        comment: acceptProposalOptions.comment,
+      }
+    } else {
+      options = proposal
+    }
+    const formats: CredentialFormatService[] = this.getFormats(options.credentialFormats as Record<string, unknown>)
 
     // Create the offer message
     this.logger.debug(`Get the Format Service and Create Offer Message for credential record ${credentialRecord.id}`)
@@ -482,7 +495,7 @@ export class V2CredentialService extends CredentialService {
     const credentialOfferMessage = await this.credentialMessageBuilder.createOfferAsResponse(
       formats,
       credentialRecord,
-      proposal
+      options
     )
 
     credentialOfferMessage.credentialPreview = proposeCredentialMessage?.credentialProposal
@@ -733,7 +746,7 @@ export class V2CredentialService extends CredentialService {
       )
     }
 
-    const message = await this.createOfferAsResponse(options, credentialRecord)
+    const message = await this.createOfferAsResponse(credentialRecord, options)
 
     return { credentialRecord, message }
   }
@@ -826,7 +839,9 @@ export class V2CredentialService extends CredentialService {
    * @return options attributes of the proposal
    *
    */
-  public async createAcceptProposalOptions(credentialRecord: CredentialExchangeRecord): Promise<AcceptProposalOptions> {
+  private async createAcceptProposalOptions(
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<AcceptProposalOptions> {
     const proposalMessage: V2ProposeCredentialMessage | null = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V2ProposeCredentialMessage,

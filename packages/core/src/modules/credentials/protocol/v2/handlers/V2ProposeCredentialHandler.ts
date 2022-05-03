@@ -2,14 +2,11 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { ServiceOfferCredentialOptions } from '../../../CredentialServiceOptions'
-import type { AcceptProposalOptions } from '../../../CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { AriesFrameworkError } from '../../../../../../src/error'
 import { createOutboundMessage } from '../../../../../agent/helpers'
-import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
@@ -76,16 +73,7 @@ export class V2ProposeCredentialHandler implements Handler {
       return
     }
 
-    const proposal: AcceptProposalOptions = await this.credentialService.createAcceptProposalOptions(credentialRecord)
-
-    const options: ServiceOfferCredentialOptions = {
-      credentialFormats: proposal.credentialFormats,
-      protocolVersion: CredentialProtocolVersion.V2,
-      credentialRecordId: proposal.connectionId ? proposal.connectionId : '',
-      comment: proposal.comment,
-    }
-
-    const message = await this.credentialService.createOfferAsResponse(options, credentialRecord)
+    const message = await this.credentialService.createOfferAsResponse(credentialRecord)
 
     return createOutboundMessage(messageContext.connection, message)
   }
