@@ -49,7 +49,7 @@ export class V1ProposeCredentialHandler implements Handler {
       throw new AriesFrameworkError('Missing attributes in proposal message')
     }
     let proposalAttachment, offerAttachment: Attachment | undefined
-    if (proposalMessage && proposalMessage.appendedAttachments) {
+    if (proposalMessage) {
       proposalValues = proposalMessage.credentialProposal.attributes
     }
     if (offerMessage) {

@@ -569,6 +569,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   ) {
     const indyCredentialRequest = requestAttachment?.getDataAsJson<CredReq>()
     const indyCredentialProposal = proposeAttachment?.getDataAsJson<CredPropose>()
+
     const indyCredentialOffer = offerAttachment?.getDataAsJson<CredOffer>()
 
     if (indyCredentialProposal || indyCredentialOffer) {

@@ -174,7 +174,7 @@ export class V1CredentialService extends CredentialService {
     const shouldAutoReturn =
       this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
       credentialRecord.autoAcceptCredential === AutoAcceptCredential.Always ||
-      formatService.shouldAutoRespondToProposal(handlerOptions)
+      formatService.shouldAutoRespondToRequest(handlerOptions)
 
     return shouldAutoReturn
   }
