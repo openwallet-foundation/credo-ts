@@ -130,8 +130,6 @@ export abstract class CredentialService {
 
   abstract registerHandlers(): void
 
-  abstract getFormatService(credentialFormatType?: CredentialFormatType): CredentialFormatService
-
   /**
    * Decline a credential offer
    * @param credentialRecord The credential to be declined

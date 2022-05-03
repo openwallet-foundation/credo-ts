@@ -247,7 +247,7 @@ export class V2CredentialService extends CredentialService {
    * @param credentialFormatType the format type, indy, jsonld, jwt etc.
    * @returns the formatting service.
    */
-  public getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
+  private getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
     return this.serviceFormatMap[credentialFormatType]
   }
 

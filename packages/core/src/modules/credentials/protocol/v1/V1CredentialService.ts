@@ -1237,7 +1237,7 @@ export class V1CredentialService extends CredentialService {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public getFormatService(credentialFormatType?: CredentialFormatType): CredentialFormatService {
+  private getFormatService(credentialFormatType?: CredentialFormatType): CredentialFormatService {
     return this.formatService
   }
 }
