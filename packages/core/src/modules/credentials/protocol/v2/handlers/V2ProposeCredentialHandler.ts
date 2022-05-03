@@ -30,24 +30,21 @@ export class V2ProposeCredentialHandler implements Handler {
   public async handle(messageContext: InboundMessageContext<V2ProposeCredentialMessage>) {
     const credentialRecord = await this.credentialService.processProposal(messageContext)
 
-    let offerMessage: V2OfferCredentialMessage | undefined
-    let proposalMessage: V2ProposeCredentialMessage | undefined
-
-    try {
-      proposalMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2ProposeCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
-      throw new AriesFrameworkError('Missing proposal message in V2RequestCredentialHandler')
+    let offerMessage = null
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2ProposeCredentialMessage,
+    })
+    if (!proposalMessage) {
+      throw new AriesFrameworkError('Missing proposal message in V2ProposeCredentialHandler')
     }
     try {
-      offerMessage = await this.didCommMessageRepository.getAgentMessage({
+      offerMessage = await this.didCommMessageRepository.findAgentMessage({
         associatedRecordId: credentialRecord.id,
         messageClass: V2OfferCredentialMessage,
       })
-    } catch (RecordNotFoundError) {
-      // can happen sometimes
+    } catch (Error) {
+      this.agentConfig.logger.info(`Error in findAgentMessage for record id ${credentialRecord.id}`)
     }
 
     const shouldAutoRespond = this.credentialService.shouldAutoRespondToProposal(

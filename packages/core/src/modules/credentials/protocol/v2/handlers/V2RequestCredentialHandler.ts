@@ -30,16 +30,14 @@ export class V2RequestCredentialHandler implements Handler {
 
   public async handle(messageContext: InboundMessageContext<V2RequestCredentialMessage>) {
     const credentialRecord = await this.credentialService.processRequest(messageContext)
-    let requestMessage
-    try {
-      requestMessage = await this.didCommMessageRepository.getAgentMessage({
-        associatedRecordId: credentialRecord.id,
-        messageClass: V2RequestCredentialMessage,
-      })
-    } catch (RecordNotFoundError) {
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialRecord.id,
+      messageClass: V2RequestCredentialMessage,
+    })
+
+    if (!requestMessage) {
       throw new AriesFrameworkError('Missing request message in V2RequestCredentialHandler')
     }
-
     const offerMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V2OfferCredentialMessage,

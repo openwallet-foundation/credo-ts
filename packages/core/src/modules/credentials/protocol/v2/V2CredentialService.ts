@@ -377,9 +377,6 @@ export class V2CredentialService extends CredentialService {
         associatedRecordId: credentialRecord.id,
         messageClass: V2OfferCredentialMessage,
       })
-      // } catch (RecordNotFoundError) {
-      //   // record not found - expected (sometimes)
-      // }
       credentialRecord.assertState(CredentialState.OfferSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
         previousReceivedMessage: proposalCredentialMessage ?? undefined,
