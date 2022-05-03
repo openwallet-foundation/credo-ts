@@ -989,7 +989,7 @@ export class V2CredentialService extends CredentialService {
 
     await this.credentialRepository.delete(credentialRecord)
 
-    if (options?.deleteAssociatedCredential && credentialRecord) {
+    if (options?.deleteAssociatedCredentials) {
       for (const credential of credentialRecord.credentials) {
         const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
         await formatService.deleteCredentialById(credentialRecord, options)

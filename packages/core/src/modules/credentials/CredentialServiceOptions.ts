@@ -83,5 +83,5 @@ export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id
 }
 
 export interface DeleteCredentialOptions {
-  deleteAssociatedCredential: boolean
+  deleteAssociatedCredentials: boolean
 }

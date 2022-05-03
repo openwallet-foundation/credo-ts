@@ -817,7 +817,7 @@ describe('CredentialService', () => {
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       await credentialService.deleteById(credential.id, {
-        deleteAssociatedCredential: true,
+        deleteAssociatedCredentials: true,
       })
       expect(storeCredentialMock).toHaveBeenNthCalledWith(1, credential.credentials[0].credentialRecordId)
     })

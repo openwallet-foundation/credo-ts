@@ -546,7 +546,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (indyCredential.length != 1) {
       throw new AriesFrameworkError(`Could not find Indy record id for credential record ${credentialRecord.id}`)
     }
-    if (options?.deleteAssociatedCredential && indyCredential[0].credentialRecordId) {
+    if (options?.deleteAssociatedCredentials && indyCredential[0].credentialRecordId) {
       await this.indyHolderService.deleteCredential(indyCredential[0].credentialRecordId)
     }
   }

@@ -100,7 +100,7 @@ export class V1CredentialService extends CredentialService {
 
     await this.credentialRepository.delete(credentialRecord)
 
-    if (options?.deleteAssociatedCredential && credentialRecord) {
+    if (options?.deleteAssociatedCredentials) {
       await this.formatService.deleteCredentialById(credentialRecord, options)
     }
   }
