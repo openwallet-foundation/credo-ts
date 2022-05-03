@@ -160,7 +160,7 @@ export class MessageSender {
       transportPriority?: TransportPriorityOptions
     }
   ) {
-    const { connection, payload } = outboundMessage
+    const { connection, payload, sessionId } = outboundMessage
     const errors: Error[] = []
 
     this.logger.debug('Send outbound message', {
@@ -168,8 +168,16 @@ export class MessageSender {
       connectionId: connection.id,
     })
 
+    let session: TransportSession | undefined
+
+    if (sessionId) {
+      session = this.transportService.findSessionById(sessionId)
+    }
+    if (!session) {
+      session = this.transportService.findSessionByConnectionId(connection.id)
+    }
+
     // Try to send to already open session
-    const session = this.transportService.findSessionByConnectionId(connection.id)
     if (session?.inboundMessage?.hasReturnRouting(payload.threadId)) {
       this.logger.debug(`Found session with return routing for message '${payload.id}' (connection '${connection.id}'`)
       try {

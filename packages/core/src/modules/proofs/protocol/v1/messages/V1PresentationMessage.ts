@@ -7,7 +7,7 @@ import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } fro
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
-import { ATTACHMENT_FORMAT } from '../../../formats/ProofFormats'
+import { V2_INDY_PRESENTATION } from '../../../formats/ProofFormats'
 import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
 
 export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
@@ -69,7 +69,7 @@ export class V1PresentationMessage extends AgentMessage {
 
     return [
       {
-        format: new ProofFormatSpec({ format: ATTACHMENT_FORMAT.V2_PRESENTATION.indy.format }),
+        format: new ProofFormatSpec({ format: V2_INDY_PRESENTATION }),
         attachment: attachment,
       },
     ]

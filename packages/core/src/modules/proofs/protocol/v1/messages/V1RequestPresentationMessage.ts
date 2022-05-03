@@ -7,7 +7,7 @@ import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { ATTACHMENT_FORMAT } from '../../../formats/ProofFormats'
+import { V2_INDY_PRESENTATION_REQUEST } from '../../../formats/ProofFormats'
 import { ProofRequest } from '../../../formats/indy/models/ProofRequest'
 import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
 
@@ -78,7 +78,7 @@ export class V1RequestPresentationMessage extends AgentMessage {
 
     return [
       {
-        format: new ProofFormatSpec({ format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format }),
+        format: new ProofFormatSpec({ format: V2_INDY_PRESENTATION_REQUEST }),
         attachment: attachment,
       },
     ]

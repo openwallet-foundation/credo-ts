@@ -262,7 +262,7 @@ export class ProofsModule {
     }
     const { message, proofRecord } = await service.createPresentation(presentationOptions)
 
-    const requestMessage = await service.findRequestMessage({ proofRecord: proofRecord })
+    const requestMessage = await service.findRequestMessage(proofRecord.id)
 
     // Use connection if present
     if (proofRecord.connectionId) {
@@ -359,13 +359,9 @@ export class ProofsModule {
     }
     // Use ~service decorator otherwise
     else {
-      const requestMessage = await service.findRequestMessage({
-        proofRecord: record,
-      })
+      const requestMessage = await service.findRequestMessage(record.id)
 
-      const presentationMessage = await service.findPresentationMessage({
-        proofRecord: record,
-      })
+      const presentationMessage = await service.findPresentationMessage(record.id)
 
       if (requestMessage?.service && presentationMessage?.service) {
         const recipientService = presentationMessage.service

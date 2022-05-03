@@ -10,6 +10,7 @@ import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { V1CredentialPreview } from '../src/modules/credentials'
 import {
+  ProofProtocolVersion,
   PredicateType,
   ProofState,
   ProofAttributeInfo,
@@ -18,7 +19,7 @@ import {
   AutoAcceptProof,
   ProofEventTypes,
 } from '../src/modules/proofs'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
+import { MediatorPickupStrategy } from '../src/modules/routing'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -227,7 +228,7 @@ describe('Present Proof', () => {
 
     // Initialize mediator
     const mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(mediatorMessages, subjectMap))
+    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
@@ -237,21 +238,23 @@ describe('Present Proof', () => {
     const faberConfig = getBaseConfig(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       mediatorConnectionsInvite: faberMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
     const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       // logger: new TestLogger(LogLevel.test),
       mediatorConnectionsInvite: aliceMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
     const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
+    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     await faberAgent.initialize()
 
     const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     await aliceAgent.initialize()
 

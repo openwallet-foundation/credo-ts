@@ -45,7 +45,7 @@ import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
-import { ATTACHMENT_FORMAT } from '../../formats/ProofFormats'
+import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormats'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
@@ -774,7 +774,7 @@ export class V1ProofService extends ProofService {
 
     const requestAttachment = request
       .getAttachmentFormats()
-      .find((x) => x.format.format === ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format)?.attachment
+      .find((x) => x.format.format === V2_INDY_PRESENTATION_REQUEST)?.attachment
 
     if (!requestAttachment) {
       throw new AriesFrameworkError('Request message has no attachment linked to it')
@@ -885,22 +885,22 @@ export class V1ProofService extends ProofService {
     dispatcher.registerHandler(new PresentationProblemReportHandler(this))
   }
 
-  public async findRequestMessage(options: { proofRecord: ProofRecord }): Promise<V1RequestPresentationMessage | null> {
+  public async findRequestMessage(proofRecordId: string): Promise<V1RequestPresentationMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V1RequestPresentationMessage,
     })
   }
-  public async findPresentationMessage(options: { proofRecord: ProofRecord }): Promise<V1PresentationMessage | null> {
+  public async findPresentationMessage(proofRecordId: string): Promise<V1PresentationMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V1PresentationMessage,
     })
   }
 
-  public async findProposalMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+  public async findProposalMessage(proofRecordId: string): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V1ProposePresentationMessage,
     })
   }

@@ -41,7 +41,7 @@ import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { ProofsUtils } from '../../ProofsUtil'
 import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
-import { ATTACHMENT_FORMAT } from '../../formats/ProofFormats'
+import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormats'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { PresentationExchangeFormatService } from '../../formats/presentation-exchange/PresentationExchangeFormatService'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
@@ -75,8 +75,8 @@ export class V2ProofService extends ProofService {
 
     let result = {}
     for (const key of proposalMessage.formats) {
-      if (key.format === ATTACHMENT_FORMAT.V2_PRESENTATION_PROPOSAL.indy.format) {
-        for await (const attachment of proposalMessage.proposalsAttach) {
+      if (key.format === V2_INDY_PRESENTATION_PROPOSAL) {
+        for (const attachment of proposalMessage.proposalsAttach) {
           const proofRequestJson = attachment.getDataAsJson<ProofRequest>() ?? null
           result = {
             indy: proofRequestJson,
@@ -337,6 +337,7 @@ export class V2ProofService extends ProofService {
       )
     }
 
+    // create attachment formats
     const formats = []
 
     for (const key of Object.keys(options.proofFormats)) {
@@ -461,9 +462,7 @@ export class V2ProofService extends ProofService {
       const service = this.formatServiceMap[key]
       formats.push(
         await service.createPresentation({
-          attachment: proofRequest.getAttachmentByFormatIdentifier(
-            ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format
-          ),
+          attachment: proofRequest.getAttachmentByFormatIdentifier(V2_INDY_PRESENTATION_REQUEST),
           formats: options.proofFormats,
         })
       )
@@ -699,23 +698,23 @@ export class V2ProofService extends ProofService {
     return request.willConfirm
   }
 
-  public async findRequestMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+  public async findRequestMessage(proofRecordId: string): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V2RequestPresentationMessage,
     })
   }
 
-  public async findPresentationMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+  public async findPresentationMessage(proofRecordId: string): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V2PresentationMessage,
     })
   }
 
-  public async findProposalMessage(options: { proofRecord: ProofRecord }): Promise<AgentMessage | null> {
+  public async findProposalMessage(proofRecordId: string): Promise<AgentMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: options.proofRecord.id,
+      associatedRecordId: proofRecordId,
       messageClass: V2ProposalPresentationMessage,
     })
   }
@@ -739,7 +738,7 @@ export class V2ProofService extends ProofService {
       const service = this.getFormatServiceForFormat(attachmentFormat.format)
 
       if (!service) {
-        throw new AriesFrameworkError('No format service found for getting requested .')
+        throw new AriesFrameworkError('No format service found for getting requested.')
       }
 
       result = {

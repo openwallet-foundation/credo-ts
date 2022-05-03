@@ -5,13 +5,12 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../models/SharedOptions'
-import type { GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
+import type { CreateRequestAsResponseOptions, GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
   CreatePresentationOptions,
   CreateProposalOptions,
-  CreateRequestAsResponseOptions,
   CreateRequestOptions,
   ProcessPresentationOptions,
 } from './models/ProofFormatServiceOptions'
