@@ -99,36 +99,26 @@ export class V2CredentialService extends CredentialService {
     }
   }
 
-  public shouldAutoRespondToProposal(
-    credentialRecord: CredentialExchangeRecord,
-    proposeMessage: V2ProposeCredentialMessage,
-    offerMessage?: V2OfferCredentialMessage
-  ): boolean {
+  public async shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): Promise<boolean> {
     if (this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Never) {
       return false
     }
-    const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(proposeMessage.formats)
+    if (options.credentialRecord.autoAcceptCredential === AutoAcceptCredential.Never) {
+      return false
+    }
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: options.credentialRecord.id,
+      messageClass: V2ProposeCredentialMessage,
+    })
+    if (!proposalMessage) {
+      throw new AriesFrameworkError('Missing proposal message in V2ProposeCredentialHandler')
+    }
+    const formatServices: CredentialFormatService[] = this.getFormatsFromMessage(proposalMessage.formats)
     let shouldAutoRespond = true
-    let proposalValues: CredentialPreviewAttribute[] | undefined
     for (const formatService of formatServices) {
-      let proposalAttachment, offerAttachment: Attachment | undefined
-      if (proposeMessage && proposeMessage.appendedAttachments) {
-        proposalAttachment = formatService.getAttachment(proposeMessage.formats, proposeMessage.messageAttachment)
-        proposalValues = proposeMessage.credentialProposal?.attributes
-      }
-      if (offerMessage) {
-        offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
-      }
-      const handlerOptions: HandlerAutoAcceptOptions = {
-        credentialRecord,
-        autoAcceptType: this.agentConfig.autoAcceptCredentials,
-        messageAttributes: proposalValues,
-        proposalAttachment,
-        offerAttachment,
-      }
       const formatShouldAutoRespond =
         this.agentConfig.autoAcceptCredentials == AutoAcceptCredential.Always ||
-        formatService.shouldAutoRespondToProposal(handlerOptions)
+        formatService.shouldAutoRespondToProposal(options)
 
       shouldAutoRespond = shouldAutoRespond && formatShouldAutoRespond
     }

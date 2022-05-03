@@ -106,6 +106,7 @@ export interface HandlerAutoAcceptOptions {
   offerAttachment?: Attachment
   requestAttachment?: Attachment
   credentialAttachment?: Attachment
+  credentialDefinitionId?: string
 }
 
 export interface RevocationRegistry {

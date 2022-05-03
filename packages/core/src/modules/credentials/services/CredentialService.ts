@@ -24,7 +24,7 @@ import type {
   ProposeCredentialOptions,
 } from './../CredentialsModuleOptions'
 import type { CredentialFormatService } from './../formats/CredentialFormatService'
-import type { CredentialFormats } from './../formats/models/CredentialFormatServiceOptions'
+import type { CredentialFormats, HandlerAutoAcceptOptions } from './../formats/models/CredentialFormatServiceOptions'
 import type {
   V1CredentialProblemReportMessage,
   V1IssueCredentialMessage,
@@ -169,11 +169,7 @@ export abstract class CredentialService {
     await this.update(credentialRecord)
     return credentialRecord
   }
-  abstract shouldAutoRespondToProposal(
-    credentialRecord: CredentialExchangeRecord,
-    proposeMessage: V1ProposeCredentialMessage | V2ProposeCredentialMessage,
-    offerMessage?: V1OfferCredentialMessage | V2OfferCredentialMessage
-  ): boolean
+  abstract shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): Promise<boolean>
 
   abstract shouldAutoRespondToOffer(
     credentialRecord: CredentialExchangeRecord,

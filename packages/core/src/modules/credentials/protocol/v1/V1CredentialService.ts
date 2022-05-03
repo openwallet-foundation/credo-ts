@@ -25,6 +25,7 @@ import type {
 } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { CredentialFormats, HandlerAutoAcceptOptions } from '../../formats/models/CredentialFormatServiceOptions'
+import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type { CredOffer } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -42,6 +43,7 @@ import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
+import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialState } from '../../CredentialState'
 import { CredentialUtils } from '../../CredentialUtils'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
@@ -90,6 +92,7 @@ export class V1CredentialService extends CredentialService {
 
     const shouldAutoReturn =
       this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
+      credentialRecord.autoAcceptCredential === AutoAcceptCredential.Always ||
       formatService.shouldAutoRespondToCredential(handlerOptions)
 
     return shouldAutoReturn
@@ -100,11 +103,49 @@ export class V1CredentialService extends CredentialService {
 
     await this.credentialRepository.delete(credentialRecord)
 
-    if (options?.deleteAssociatedCredentials) {
+    if (options?.deleteAssociatedCredentials && credentialRecord) {
       await this.formatService.deleteCredentialById(credentialRecord, options)
     }
   }
 
+  public async shouldAutoRespondToProposal(handlerOptions: HandlerAutoAcceptOptions): Promise<boolean> {
+    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+      handlerOptions.credentialRecord.autoAcceptCredential,
+      handlerOptions.autoAcceptType
+    )
+
+    if (autoAccept === AutoAcceptCredential.ContentApproved) {
+      return (
+        this.areProposalValuesValid(handlerOptions.credentialRecord, handlerOptions.messageAttributes) &&
+        this.areProposalAndOfferDefinitionIdEqual(handlerOptions.credentialDefinitionId, handlerOptions.offerAttachment)
+      )
+    }
+    return false
+  }
+  private areProposalValuesValid(
+    credentialRecord: CredentialExchangeRecord,
+    proposeMessageAttributes?: CredentialPreviewAttribute[]
+  ) {
+    const { credentialAttributes } = credentialRecord
+
+    if (proposeMessageAttributes && credentialAttributes) {
+      const proposeValues = CredentialUtils.convertAttributesToValues(proposeMessageAttributes)
+      const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
+      if (CredentialUtils.checkValuesMatch(proposeValues, defaultValues)) {
+        return true
+      }
+    }
+    return false
+  }
+  private areProposalAndOfferDefinitionIdEqual(proposalCredentialDefinitionId?: string, offerAttachment?: Attachment) {
+    let credOffer: CredOffer | undefined
+
+    if (offerAttachment) {
+      credOffer = offerAttachment.getDataAsJson<CredOffer>()
+    }
+    const offerCredentialDefinitionId = credOffer?.cred_def_id
+    return proposalCredentialDefinitionId === offerCredentialDefinitionId
+  }
   public shouldAutoRespondToRequest(
     credentialRecord: CredentialExchangeRecord,
     requestMessage: V1RequestCredentialMessage,
@@ -132,18 +173,12 @@ export class V1CredentialService extends CredentialService {
     }
     const shouldAutoReturn =
       this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
+      credentialRecord.autoAcceptCredential === AutoAcceptCredential.Always ||
       formatService.shouldAutoRespondToProposal(handlerOptions)
 
     return shouldAutoReturn
   }
 
-  public shouldAutoRespondToProposal(
-    credentialRecord: CredentialExchangeRecord,
-    proposeMessage: V1ProposeCredentialMessage,
-    offerMessage?: V1OfferCredentialMessage
-  ): boolean {
-    return false // not implemented
-  }
   public shouldAutoRespondToOffer(
     credentialRecord: CredentialExchangeRecord,
     offerMessage: V1OfferCredentialMessage,
@@ -167,6 +202,7 @@ export class V1CredentialService extends CredentialService {
     }
     const shouldAutoReturn =
       this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
+      credentialRecord.autoAcceptCredential === AutoAcceptCredential.Always ||
       formatService.shouldAutoRespondToProposal(handlerOptions)
 
     return shouldAutoReturn

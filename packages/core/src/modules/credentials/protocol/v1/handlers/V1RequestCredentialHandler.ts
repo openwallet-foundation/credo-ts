@@ -75,6 +75,7 @@ export class V1RequestCredentialHandler implements Handler {
     }
     if (
       this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
+      credentialRecord.autoAcceptCredential === AutoAcceptCredential.Always ||
       formatService.shouldAutoRespondToRequest(handlerOptions)
     ) {
       return await this.createCredential(credentialRecord, messageContext, offerMessage, requestMessage)
