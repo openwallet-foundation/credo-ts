@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
   NegotiateProposalOptions,
@@ -206,8 +205,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * Not implemented; there for future versions
    */
   public async processRequest(
-    options: RequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    _options: RequestCredentialOptions,
+    _credentialRecord: CredentialExchangeRecord
+    /* eslint-enable @typescript-eslint/no-unused-vars */
   ): Promise<void> {
     // not needed for Indy
   }

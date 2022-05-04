@@ -510,8 +510,7 @@ describe('CredentialService', () => {
         credentialValues: {},
       })
       const [responseAttachment] = v2CredentialResponse.messageAttachment
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
+      expect(responseAttachment.getDataAsJson()).toEqual(cred)
     })
   })
 
