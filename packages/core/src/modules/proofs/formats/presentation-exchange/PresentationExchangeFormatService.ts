@@ -1,12 +1,10 @@
+import type { W3cCredential } from '../../../vc/models'
 import type {
   AutoSelectCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type {
-  GetRequestedCredentialsFormat,
-  IndyGetRequestedCredentialsFormat,
-} from '../IndyProofFormatsServiceOptions'
+import type { GetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
@@ -24,17 +22,23 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
+import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { JsonTransformer } from '../../../../utils'
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import { W3cCredentialService } from '../../../vc'
+import { W3cVerifiableCredential } from '../../../vc/models'
 import { ProofFormatService } from '../ProofFormatService'
-import { ATTACHMENT_FORMAT } from '../ProofFormats'
+import {
+  V2_PRESENTATION_EXCHANGE_PRESENTATION,
+  V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
+  V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
+} from '../ProofFormats'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
-import { InputDescriptorsSchema } from './models'
+import { InputDescriptors, InputDescriptorsSchema } from './models'
 import { ClaimFormatSchema, PresentationDefinition, RequestPresentation } from './models/RequestPresentation'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -100,12 +104,17 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       throw Error('Presentation Exchange format missing')
     }
 
-    if (!options.formats.presentationExchange.inputDescriptors) {
-      throw Error('Input Descriptor missing')
+    const presentationDefinition = JsonTransformer.fromJSON(
+      options.formats.presentationExchange,
+      PresentationDefinition
+    )
+
+    if (!presentationDefinition.inputDescriptors) {
+      throw Error('Input Descriptor missing while creating the request in presentation exchange service.')
     }
 
     const inputDescriptorsSchemaOptions: InputDescriptorsSchemaOptions = {
-      inputDescriptors: options.formats.presentationExchange.inputDescriptors,
+      inputDescriptors: presentationDefinition.inputDescriptors,
     }
 
     const proposalInputDescriptor = new InputDescriptorsSchema(inputDescriptorsSchemaOptions)
@@ -113,7 +122,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const format = new ProofFormatSpec({
       attachmentId: attachId,
-      format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.ldproof.format,
+      format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
     })
 
     const attachment = new Attachment({
@@ -129,11 +138,11 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
   public async createRequestAsResponse(options: CreateRequestAsResponseOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.presentationExchange) {
-      throw Error('Presentation Exchange format missing')
+      throw Error('Presentation Exchange format missing while creating proof request as response.')
     }
 
     if (!options.formats.presentationExchange) {
-      throw Error('Input Descriptor missing')
+      throw Error('Input Descriptor missing while creating proof request as response.')
     }
 
     const presentationExchangeRequestMessage: RequestPresentation = new RequestPresentation({
@@ -145,7 +154,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const format = new ProofFormatSpec({
       attachmentId: attachId,
-      format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.ldproof.format,
+      format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
     })
 
     const attachment = new Attachment({
@@ -159,18 +168,60 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat> {
-    throw new Error('Method not implemented.')
+  public async createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat> {
+    if (!options.formats.presentationExchange) {
+      throw Error('Presentation Exchange format missing while creating presentation in presentation exchange service.')
+    }
+
+    console.log('options in PE service to createPresentation', JSON.stringify(options, null, 2))
+
+    const w3cVerifiableCredentials = JsonTransformer.fromJSON(
+      options.formats.presentationExchange,
+      W3cVerifiableCredential
+    )
+
+    // const pex: PEX = new PEX()
+
+    const presentation = await this.w3cCredentialService.createPresentation({
+      credentials: w3cVerifiableCredentials,
+    })
+
+    console.log('presentation:::\n', presentation)
+
+    const signedPresentation = await this.w3cCredentialService.signPresentation({
+      presentation,
+      purpose: presentation.verifiableCredential[0].proof,
+      signatureType: '',
+      verificationMethod: ''
+    })
+    console.log('signedPresentation:::\n', signedPresentation)
+
+    const attachId = options.attachId ?? uuid()
+
+    const format = new ProofFormatSpec({
+      attachmentId: attachId,
+      format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
+    })
+
+    const attachment = new Attachment({
+      id: attachId,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        json: presentation.toJSON(),
+      }),
+    })
+
+    return { format, attachment }
   }
 
-  public processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
+  public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
+
     throw new Error('Method not implemented.')
   }
 
   public async getRequestedCredentialsForProofRequest(
     options: GetRequestedCredentialsFormat
   ): Promise<AutoSelectCredentialOptions> {
-    console.log('options:\n\n', JSON.stringify(options.attachment, null, 2))
 
     const requestMessageJson = options.attachment.getDataAsJson<RequestPresentation>()
     const requestMessage = JsonTransformer.fromJSON(requestMessageJson, RequestPresentation)
@@ -181,34 +232,30 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const claimFormat = JsonTransformer.fromJSON(presentationDefinition.format, ClaimFormatSchema)
 
-    console.log('presentationDefinition in PE service', requestMessage.presentationDefinition)
-    console.log('inputDescriptors in PE service', presentationDefinition.inputDescriptors)
-
-    const credentialsList = []
+    let credentialsList: W3cCredential[] = []
     // const claimFormat = presentationDefinition.format
     let difHandlerProofType
     for (const inputDescriptor of presentationDefinition.inputDescriptors) {
-      console.log('inputDescriptor', inputDescriptor)
 
       let proofType: string[] = []
       const limitDisclosure = inputDescriptor.constraints.limitDisclosure
 
       const uriList = []
-      const oneOfUriGroups = []
+      // const oneOfUriGroups = []
 
-      if (inputDescriptor.schema['oneOf_filter']) {
-        oneOfUriGroups.push(await this.retrieveUriListFromSchemaFilter(inputDescriptor.schema['uri_groups']))
-      } else {
-        const schemaUris = inputDescriptor.schema[0]
-        uriList.push(schemaUris.uri)
-      }
+      // if (inputDescriptor.schema['oneOf_filter']) {
+      //   oneOfUriGroups.push(await this.retrieveUriListFromSchemaFilter(inputDescriptor.schema['uri_groups']))
+      // } else {
+      const schemaUris = inputDescriptor.schema[0]
+      uriList.push(schemaUris.uri)
+      // }
 
       if (uriList.length === 0) {
         uriList.splice(0)
       }
-      if (oneOfUriGroups.length === 0) {
-        oneOfUriGroups.splice(0)
-      }
+      // if (oneOfUriGroups.length === 0) {
+      //   oneOfUriGroups.splice(0)
+      // }
       if (limitDisclosure) {
         proofType = BbsBlsSignature2020.proofType
         difHandlerProofType = BbsBlsSignature2020.proofType
@@ -221,133 +268,34 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       //     }
       //   }
       // }
+      const searched = await this.w3cCredentialService.findCredentialByQuery({ contexts: uriList })
+
+      // TODO pex select
+
+      if (!searched) {
+        throw new AriesFrameworkError('No credential found')
+      }
+
+      credentialsList = searched
     }
-    // this.w3cCredentialService.
-
-    // for input_descriptor in input_descriptors:
-
-    //     if len(uri_list) == 0:
-    //         uri_list = None
-    //     if len(one_of_uri_groups) == 0:
-    //         one_of_uri_groups = None
-    //     if limit_disclosure:
-    //         proof_type = [BbsBlsSignature2020.signature_type]
-    //         dif_handler_proof_type = BbsBlsSignature2020.signature_type
-    //     if claim_fmt:
-    //         if claim_fmt.ldp_vp:
-    //             if "proof_type" in claim_fmt.ldp_vp:
-    //                 proof_types = claim_fmt.ldp_vp.get("proof_type")
-    //                 if limit_disclosure and (
-    //                     BbsBlsSignature2020.signature_type not in proof_types
-    //                 ):
-    //                     raise V20PresFormatHandlerError(
-    //                         "Verifier submitted presentation request with "
-    //                         "limit_disclosure [selective disclosure] "
-    //                         "option but verifier does not support "
-    //                         "BbsBlsSignature2020 format"
-    //                     )
-    //                 elif (
-    //                     len(proof_types) == 1
-    //                     and (
-    //                         BbsBlsSignature2020.signature_type
-    //                         not in proof_types
-    //                     )
-    //                     and (
-    //                         Ed25519Signature2018.signature_type
-    //                         not in proof_types
-    //                     )
-    //                 ):
-    //                     raise V20PresFormatHandlerError(
-    //                         "Only BbsBlsSignature2020 and/or "
-    //                         "Ed25519Signature2018 signature types "
-    //                         "are supported"
-    //                     )
-    //                 elif (
-    //                     len(proof_types) >= 2
-    //                     and (
-    //                         BbsBlsSignature2020.signature_type
-    //                         not in proof_types
-    //                     )
-    //                     and (
-    //                         Ed25519Signature2018.signature_type
-    //                         not in proof_types
-    //                     )
-    //                 ):
-    //                     raise V20PresFormatHandlerError(
-    //                         "Only BbsBlsSignature2020 and "
-    //                         "Ed25519Signature2018 signature types "
-    //                         "are supported"
-    //                     )
-    //                 else:
-    //                     for proof_format in proof_types:
-    //                         if (
-    //                             proof_format
-    //                             == Ed25519Signature2018.signature_type
-    //                         ):
-    //                             proof_type = [
-    //                                 Ed25519Signature2018.signature_type
-    //                             ]
-    //                             dif_handler_proof_type = (
-    //                                 Ed25519Signature2018.signature_type
-    //                             )
-    //                             break
-    //                         elif (
-    //                             proof_format
-    //                             == BbsBlsSignature2020.signature_type
-    //                         ):
-    //                             proof_type = [
-    //                                 BbsBlsSignature2020.signature_type
-    //                             ]
-    //                             dif_handler_proof_type = (
-    //                                 BbsBlsSignature2020.signature_type
-    //                             )
-    //                             break
-    //         else:
-    //             raise V20PresFormatHandlerError(
-    //                 "Currently, only ldp_vp with "
-    //                 "BbsBlsSignature2020 and Ed25519Signature2018"
-    //                 " signature types are supported"
-    //             )
-    //     if one_of_uri_groups:
-    //         records = []
-    //         cred_group_record_ids = set()
-    //         for uri_group in one_of_uri_groups:
-    //             search = holder.search_credentials(
-    //                 proof_types=proof_type, pd_uri_list=uri_group
-    //             )
-    //             max_results = 1000
-    //             cred_group = await search.fetch(max_results)
-    //             (
-    //                 cred_group_vcrecord_list,
-    //                 cred_group_vcrecord_ids_set,
-    //             ) = await self.process_vcrecords_return_list(
-    //                 cred_group, cred_group_record_ids
-    //             )
-    //             cred_group_record_ids = cred_group_vcrecord_ids_set
-    //             records = records + cred_group_vcrecord_list
-    //     else:
-    //         search = holder.search_credentials(
-    //             proof_types=proof_type, pd_uri_list=uri_list
-    //         )
-    //         # Defaults to page_size but would like to include all
-    //         # For now, setting to 1000
-    //         max_results = 1000
-    //         records = await search.fetch(max_results)
-    //     # Avoiding addition of duplicate records
-    //     (
-    //         vcrecord_list,
-    //         vcrecord_ids_set,
-    //     ) = await self.process_vcrecords_return_list(records, record_ids)
-    //     record_ids = vcrecord_ids_set
-    //     credentials_list = credentials_list + vcrecord_list
-
-    throw new Error('Method not implemented.')
+    return {
+      presentationExchange: credentialsList,
+    }
   }
 
-  public autoSelectCredentialsForProofRequest(
+  public async autoSelectCredentialsForProofRequest(
     options: AutoSelectCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
-    throw new Error('Method not implemented.')
+    const presentationExchange = options.presentationExchange
+
+    if (!presentationExchange) {
+      throw new AriesFrameworkError('No presentation options provided')
+    }
+
+    return {
+      presentationExchange: await presentationExchange[0],
+    }
+    // throw new Error('Method not implemented.')
   }
 
   public proposalAndRequestAreEqual(
@@ -359,9 +307,9 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
   public supportsFormat(formatIdentifier: string): boolean {
     const supportedFormats = [
-      ATTACHMENT_FORMAT.V2_PRESENTATION_PROPOSAL.ldproof.format,
-      ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.ldproof.format,
-      ATTACHMENT_FORMAT.V2_PRESENTATION.ldproof.format,
+      V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
+      V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
+      V2_PRESENTATION_EXCHANGE_PRESENTATION,
     ]
     return supportedFormats.includes(formatIdentifier)
   }

@@ -8,7 +8,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { V1CredentialPreview } from '../src/modules/credentials'
+import { CredentialProtocolVersion, V1CredentialPreview } from '../src/modules/credentials'
 import {
   ProofProtocolVersion,
   PredicateType,
@@ -291,6 +291,7 @@ describe('Present Proof', () => {
           }),
         ],
       },
+      protocolVersion: CredentialProtocolVersion.V1,
     })
     const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
     const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()

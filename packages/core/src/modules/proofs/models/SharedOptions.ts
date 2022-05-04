@@ -1,3 +1,4 @@
+import type { W3cCredential } from '../../vc/models'
 import type {
   IndyProposeProofFormat,
   IndyRequestProofFormat,
@@ -31,7 +32,7 @@ export interface CreatePresentationFormats {
   // If you want to propose an indy proof without attributes or
   // any of the other properties you should pass an empty object
   indy?: RequestedCredentialsOptions
-  presentationExchange?: never // TBD
+  presentationExchange?: W3cCredential
 }
 
 export interface AcceptProposalFormats {
@@ -53,7 +54,7 @@ export interface RequestedCredentialConfigOptions {
 
 export interface RetrievedCredentialOptions {
   indy?: RetrievedCredentials | undefined
-  presentationExchange?: undefined
+  presentationExchange?: W3cCredential[] | undefined
 }
 
 export interface ProofRequestFormats {
@@ -63,7 +64,7 @@ export interface ProofRequestFormats {
 
 export interface RequestedCredentialsFormats {
   indy?: RequestedCredentials | undefined
-  presentationExchange?: undefined
+  presentationExchange?: W3cCredential | undefined
 }
 
 interface AcceptProposal {
@@ -72,5 +73,5 @@ interface AcceptProposal {
 
 export interface AutoSelectCredentialOptions {
   indy?: RetrievedCredentials | undefined
-  jsonLd?: undefined
+  presentationExchange?: W3cCredential[] | undefined
 }

@@ -49,7 +49,8 @@ import {
   ProofState,
   Agent,
 } from '../src'
-import { Key, KeyType } from '../src/crypto'
+import { KeyType } from '../src/crypto'
+import { Key } from '../src/crypto/Key'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../src/modules/credentials/CredentialProtocolVersion'
@@ -761,12 +762,12 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
   }
   const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
   faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await faberAgent.initialize()
 
   const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
   aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
+  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await aliceAgent.initialize()
 
   const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])

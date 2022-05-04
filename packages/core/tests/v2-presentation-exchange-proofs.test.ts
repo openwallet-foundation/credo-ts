@@ -1,10 +1,14 @@
 import type { Agent, ConnectionRecord, ProofRecord } from '../src'
-import type { AcceptProposalOptions, ProposeProofOptions } from '../src/modules/proofs/models/ModuleOptions'
+import type {
+  AcceptPresentationOptions,
+  AcceptProposalOptions,
+  ProposeProofOptions,
+} from '../src/modules/proofs/models/ModuleOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
 import { ProofState } from '../src'
-import { ATTACHMENT_FORMAT } from '../src/modules/proofs/formats/ProofFormats'
+import { V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST } from '../src/modules/proofs/formats/ProofFormats'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { V2ProposalPresentationMessage, V2RequestPresentationMessage } from '../src/modules/proofs/protocol/v2/messages'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
@@ -53,7 +57,7 @@ describe('Present Proof', () => {
               group: ['A'],
               schema: [
                 {
-                  uri: 'hub://did:foo:123/Collections/schema.us.gov/passport.json',
+                  uri: 'https://w3id.org/citizenship/v1',
                 },
               ],
               constraints: {
@@ -95,7 +99,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.ldproof.format,
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
         },
       ],
       proposalsAttach: [
@@ -149,7 +153,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.ldproof.format,
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
         },
       ],
       requestPresentationsAttach: [
@@ -214,18 +218,18 @@ describe('Present Proof', () => {
       },
     })
 
-    // const acceptPresentationOptions: AcceptPresentationOptions = {
-    //   proofRecordId: aliceProofRecord.id,
-    //   proofFormats: { presentationExchange: },
-    // }
-    // await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+    const acceptPresentationOptions: AcceptPresentationOptions = {
+      proofRecordId: aliceProofRecord.id,
+      proofFormats: { presentationExchange: requestedCredentials.presentationExchange },
+    }
+    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
 
-    // // Faber waits for the presentation from Alice
-    // testLogger.test('Faber waits for presentation from Alice')
-    // faberProofRecord = await waitForProofRecord(faberAgent, {
-    //   threadId: aliceProofRecord.threadId,
-    //   state: ProofState.PresentationReceived,
-    // })
+    // Faber waits for the presentation from Alice
+    testLogger.test('Faber waits for presentation from Alice')
+    faberProofRecord = await waitForProofRecord(faberAgent, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.PresentationReceived,
+    })
 
     // const presentation = await didCommMessageRepository.findAgentMessage({
     //   associatedRecordId: faberProofRecord.id,

@@ -458,14 +458,25 @@ export class V2ProofService extends ProofService {
     })
 
     const formats = []
-    for (const key of Object.keys(options.proofFormats)) {
-      const service = this.formatServiceMap[key]
-      formats.push(
-        await service.createPresentation({
-          attachment: proofRequest.getAttachmentByFormatIdentifier(V2_INDY_PRESENTATION_REQUEST),
-          formats: options.proofFormats,
-        })
-      )
+    for (const attachmentFormat of proofRequest.getAttachmentFormats()) {
+      const service = this.getFormatServiceForFormat(attachmentFormat.format)
+      if (service) {
+        try {
+          formats.push(
+            await service.createPresentation({
+              attachment: proofRequest.getAttachmentByFormatIdentifier(attachmentFormat.format.format),
+              formats: options.proofFormats,
+            })
+          )
+        } catch (e) {
+          if (e instanceof AriesFrameworkError) {
+            throw new PresentationProblemReportError(e.message, {
+              problemCode: PresentationProblemReportReason.Abandoned,
+            })
+          }
+          throw e
+        }
+      }
     }
 
     const presentationMessage = new V2PresentationMessage({
@@ -532,8 +543,8 @@ export class V2ProofService extends ProofService {
           )
         } catch (e) {
           if (e instanceof AriesFrameworkError) {
-            throw new V2PresentationProblemReportError(e.message, {
-              problemCode: V2PresentationProblemReportReason.Abandoned,
+            throw new PresentationProblemReportError(e.message, {
+              problemCode: PresentationProblemReportReason.Abandoned,
             })
           }
           throw e
@@ -541,8 +552,8 @@ export class V2ProofService extends ProofService {
       }
     }
     if (formatVerificationResults.length === 0) {
-      throw new V2PresentationProblemReportError('None of the received formats are supported.', {
-        problemCode: V2PresentationProblemReportReason.Abandoned,
+      throw new PresentationProblemReportError('None of the received formats are supported.', {
+        problemCode: PresentationProblemReportReason.Abandoned,
       })
     }
 
