@@ -111,7 +111,6 @@ describe('credentials', () => {
     const acceptOfferOptions: AcceptOfferOptions = {
       credentialRecordId: aliceCredentialRecord.id,
     }
-    aliceCredentialRecord.protocolVersion = CredentialProtocolVersion.V2
 
     const credentialRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
@@ -135,10 +134,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(
-      aliceCredentialRecord.id,
-      CredentialProtocolVersion.V2
-    )
+    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -208,7 +204,6 @@ describe('credentials', () => {
       credentialRecordId: aliceCredentialRecord.id,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     }
-    aliceCredentialRecord.protocolVersion = CredentialProtocolVersion.V2
 
     await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 

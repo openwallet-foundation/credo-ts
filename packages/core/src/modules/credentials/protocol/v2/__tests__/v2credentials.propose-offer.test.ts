@@ -369,22 +369,13 @@ describe('credentials', () => {
         state: CredentialState.CredentialReceived,
       })
 
-      // // testLogger.test('Alice sends credential ack to Faber')
-      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
+      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
       testLogger.test('Faber waits for credential ack from Alice')
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.Done,
       })
-      // expect(aliceCredentialRecord).toMatchObject({
-      //   type: CredentialExchangeRecord.name,
-      //   id: expect.any(String),
-      //   createdAt: expect.any(Date),
-      //   threadId: expect.any(String),
-      //   connectionId: expect.any(String),
-      //   state: CredentialState.CredentialReceived,
-      // })
     } else {
       throw new AriesFrameworkError('Missing Connection Id')
     }
@@ -519,7 +510,7 @@ describe('credentials', () => {
     })
 
     // testLogger.test('Alice sends credential ack to Faber')
-    await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
+    await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {

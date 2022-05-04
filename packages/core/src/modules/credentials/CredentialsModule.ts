@@ -56,7 +56,7 @@ export interface CredentialsModule {
   acceptRequest(options: AcceptRequestOptions): Promise<CredentialExchangeRecord>
 
   // Credential
-  acceptCredential(credentialRecordId: string, version: CredentialProtocolVersion): Promise<CredentialExchangeRecord>
+  acceptCredential(credentialRecordId: string): Promise<CredentialExchangeRecord>
 
   // Record Methods
   getAll(): Promise<CredentialExchangeRecord[]>
@@ -144,8 +144,6 @@ export class CredentialsModule implements CredentialsModule {
 
     await this.messageSender.sendMessage(outboundMessage)
 
-    credentialRecord.protocolVersion = version
-
     return credentialRecord
   }
 
@@ -181,7 +179,6 @@ export class CredentialsModule implements CredentialsModule {
 
     this.logger.debug('In proposeCredential: Send Proposal to Issuer')
     await this.messageSender.sendMessage(outbound)
-    credentialRecord.protocolVersion = version
     return credentialRecord
   }
 
@@ -216,7 +213,6 @@ export class CredentialsModule implements CredentialsModule {
 
     this.logger.debug('In acceptCredentialProposal: Send Proposal to Issuer')
     await this.messageSender.sendMessage(outbound)
-    credentialRecord.protocolVersion = version
 
     return credentialRecord
   }
@@ -258,7 +254,6 @@ export class CredentialsModule implements CredentialsModule {
       this.logger.debug('We have a proposal message (sending outbound): ', message)
 
       await this.messageSender.sendMessage(outboundMessage)
-      credentialRecord.protocolVersion = record.protocolVersion
       await this.credentialRepository.update(credentialRecord)
       return credentialRecord
     }
@@ -282,8 +277,6 @@ export class CredentialsModule implements CredentialsModule {
         requestOptions,
         ourService.recipientKeys[0]
       )
-
-      credentialRecord.protocolVersion = record.protocolVersion
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
@@ -340,7 +333,6 @@ export class CredentialsModule implements CredentialsModule {
     const outboundMessage = createOutboundMessage(connection, message)
 
     await this.messageSender.sendMessage(outboundMessage)
-    credentialRecord.protocolVersion = version
 
     return credentialRecord
   }
