@@ -126,7 +126,7 @@ export class BbsService {
    * @throws {WalletError} When the verification process failed
    */
   public static async verify({ signature, messages, publicKey }: BbsVerifyOptions): Promise<boolean> {
-    if (messages.length === 0) throw new WalletError('Unable to create a signature without any messages')
+    if (messages.length === 0) throw new WalletError('Unable to verify a signature without any messages')
     // Check if it is a single message or list and if it is a single message convert it to a list
     const normalizedMessages = (TypedArrayEncoder.isTypedArray(messages) ? [messages as Buffer] : messages) as Buffer[]
 
