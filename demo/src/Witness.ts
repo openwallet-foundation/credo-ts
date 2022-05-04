@@ -1,13 +1,11 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
+import type { ConnectionRecord } from '@aries-framework/core'
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
-import { JsonTransformer } from '@aries-framework/core'
-import { OutOfBandInvitationMessage } from '@aries-framework/core/src/modules/connections/messages/OutOfBandInvitationMessage'
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
-import { JsonEncoder } from '@aries-framework/core/src/utils'
 
 import { BaseAgent } from './BaseAgent'
-import { Output } from './OutputClass'
+import { greenText, Output } from './OutputClass'
 
 export class Witness extends BaseAgent {
   public connectionRecordGetterId?: string
@@ -26,17 +24,24 @@ export class Witness extends BaseAgent {
     return witness
   }
 
-  public async acceptGetterConnection(invitationJSON: string) {
-    this.connectionRecordGetterId = (await this.acceptConnection(invitationJSON)).connectionRecord.id
+  private async receiveConnectionRequest(invitationUrl: string) {
+    return await this.agent.connections.receiveInvitationFromUrl(invitationUrl)
   }
 
-  public async acceptGiverConnection(invitationJSON: string) {
-    this.connectionRecordGiverId = (await this.acceptConnection(invitationJSON)).connectionRecord.id
+  private async waitForConnection(connectionRecord: ConnectionRecord) {
+    connectionRecord = await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
+    console.log(greenText(Output.ConnectionEstablished))
+    return connectionRecord.id
   }
 
-  public async acceptConnection(invitationJSON: string) {
-    const invitation = JsonTransformer.fromJSON(JsonEncoder.fromString(invitationJSON), OutOfBandInvitationMessage)
-    return this.agent.connections.acceptOutOfBandInvitation(invitation)
+  public async acceptGetterConnection(invitation_url: string) {
+    const connectionRecord = await this.receiveConnectionRequest(invitation_url)
+    this.connectionRecordGetterId = await this.waitForConnection(connectionRecord)
+  }
+
+  public async acceptGiverConnection(invitation_url: string) {
+    const connectionRecord = await this.receiveConnectionRequest(invitation_url)
+    this.connectionRecordGiverId = await this.waitForConnection(connectionRecord)
   }
 
   public async exit() {

@@ -75,7 +75,7 @@ class Dispatcher {
     }
 
     if (outboundMessage && isOutboundServiceMessage(outboundMessage)) {
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.packAndSendMessage({
         message: outboundMessage.payload,
         service: outboundMessage.service,
         senderKey: outboundMessage.senderKey,

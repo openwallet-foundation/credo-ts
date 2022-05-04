@@ -155,8 +155,8 @@ export class ValueTransferService {
     }
 
     const requestMessage = new RequestMessage({
-      from: getter,
-      to: giver,
+      from: witnessConnection.did,
+      to: witnessConnection.theirDid,
       body: message,
     })
 
@@ -206,7 +206,7 @@ export class ValueTransferService {
 
     if (role === ValueTransferRole.Witness) {
       const giverConnection = await this.connectionService.findByTheirDid(requestMessage.body.payment.giver)
-      if (!giverConnection) {
+      if (!giverConnection || !giverConnection.theirDid) {
         throw new AriesFrameworkError(`Connection not found for Giver DID: ${requestMessage.body.payment.giver}`)
       }
 
@@ -216,6 +216,7 @@ export class ValueTransferService {
         throw new AriesFrameworkError(`VTP: Failed to verify Payment Request: ${error?.message}`)
       }
       requestMessage.body = message
+      requestMessage.to = [giverConnection.theirDid]
       connectionData = {
         getterConnectionId: connection?.id,
         giverConnectionId: giverConnection.id,
@@ -324,7 +325,7 @@ export class ValueTransferService {
     messageContext: InboundMessageContext<RequestAcceptedMessage>
   ): Promise<{ record: ValueTransferRecord; message: RequestAcceptedMessage }> {
     // Verify that we are in appropriate state to perform action
-    const { message: requestAcceptedMessage } = messageContext
+    const { message: requestAcceptedMessage, connection } = messageContext
 
     if (!requestAcceptedMessage.thid) {
       throw new AriesFrameworkError(`Thread id not found in the Payment Request Acceptance message.`)
@@ -342,6 +343,10 @@ export class ValueTransferService {
       if (error || !message) {
         throw new AriesFrameworkError(`Witness: Failed to verify Payment Request: ${error?.message}`)
       }
+      if (!connection || !connection.theirDid) {
+        throw new AriesFrameworkError(`Connection to Getter not found.`)
+      }
+      requestAcceptedMessage.to = [connection.theirDid]
     }
     if (record.role === ValueTransferRole.Getter) {
       // Getter: nothing to do
@@ -428,7 +433,7 @@ export class ValueTransferService {
     messageContext: InboundMessageContext<CashAcceptedMessage>
   ): Promise<{ record: ValueTransferRecord; message: CashAcceptedMessage }> {
     // Verify that we are in appropriate state to perform action
-    const { message: cashAcceptedMessage } = messageContext
+    const { message: cashAcceptedMessage, connection } = messageContext
     if (!cashAcceptedMessage.thid) {
       throw new AriesFrameworkError(`Thread id not found in the Cash Accepted message.`)
     }
@@ -445,6 +450,10 @@ export class ValueTransferService {
       if (error || !message) {
         throw new AriesFrameworkError(`Witness: Failed to verify Payment Request: ${error?.message}`)
       }
+      if (!connection || !connection.theirDid) {
+        throw new AriesFrameworkError(`Connection to Giver not found.`)
+      }
+      cashAcceptedMessage.to = [connection.theirDid]
     }
     if (record.role === ValueTransferRole.Giver) {
       // Giver: nothing to do

@@ -291,7 +291,7 @@ export class CredentialsModule {
       credentialRecord.requestMessage = message
       await this.credentialService.update(credentialRecord)
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],
@@ -387,7 +387,7 @@ export class CredentialsModule {
       credentialRecord.credentialMessage = message
       await this.credentialService.update(credentialRecord)
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],
@@ -427,7 +427,7 @@ export class CredentialsModule {
       const recipientService = credentialRecord.credentialMessage.service
       const ourService = credentialRecord.requestMessage.service
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],

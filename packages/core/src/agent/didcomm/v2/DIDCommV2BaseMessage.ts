@@ -30,7 +30,7 @@ export class DIDCommV2BaseMessage {
   public static readonly type: string
 
   @Expose({ name: 'typ' })
-  public readonly typ = DIDCommV2BaseMessage.type
+  public readonly typ = DIDCommV2BaseMessage.typ
   public static readonly typ = 'application/didcomm-plain+json'
 
   @Expose({ name: 'from' })

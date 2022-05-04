@@ -1,4 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
+import type { Transport, AcceptProtocol } from '../../routing/services/MediationRecipientService'
 import type { ConnectionRole } from '../models/ConnectionRole'
 
 import { Type } from 'class-transformer'
@@ -32,6 +33,8 @@ export interface ConnectionRecordProps {
   multiUseInvitation: boolean
   mediatorId?: string
   errorMessage?: string
+  accept?: AcceptProtocol[]
+  transport?: Transport
 }
 
 export type CustomConnectionTags = TagsBase
@@ -75,6 +78,8 @@ export class ConnectionRecord
   public imageUrl?: string
   public multiUseInvitation!: boolean
 
+  public accept?: AcceptProtocol[]
+  public transport?: Transport
   public threadId?: string
   public mediatorId?: string
   public errorMessage?: string
@@ -106,6 +111,8 @@ export class ConnectionRecord
       this.multiUseInvitation = props.multiUseInvitation
       this.mediatorId = props.mediatorId
       this.errorMessage = props.errorMessage
+      this.transport = props.transport
+      this.accept = props.accept
     }
   }
 

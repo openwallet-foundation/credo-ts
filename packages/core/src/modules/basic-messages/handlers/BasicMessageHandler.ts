@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage, HandlerV2 } from '../../../agent/Handler'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { BasicMessageService } from '../services/BasicMessageService'
 
 import { AriesFrameworkError } from '../../../error'

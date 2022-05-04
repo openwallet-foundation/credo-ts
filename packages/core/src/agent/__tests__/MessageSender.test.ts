@@ -2,14 +2,13 @@ import type { ConnectionRecord } from '../../modules/connections'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
 import type { OutboundMessage } from '../../types'
-import type { PackMessageParams } from '../didcomm/EnvelopeService'
 import type { EncryptedMessage } from '@aries-framework/core'
 
 import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
 import testLogger from '../../../tests/logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { DidDocument } from '../../modules/dids'
+import { DidDocument, IndyAgentService } from '../../modules/dids'
 import { DidCommService } from '../../modules/dids/domain/service/DidCommService'
 import { DidResolverService } from '../../modules/dids/services/DidResolverService'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
@@ -224,12 +223,12 @@ describe('MessageSender', () => {
     test('call send message on session when there is a session for a given connection', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
-      const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
+      const sendMessageToServiceSpy = jest.spyOn(messageSender, 'packAndSendMessage')
 
       await messageSender.sendMessage(outboundMessage)
 
       expect(sendMessageToServiceSpy).toHaveBeenCalledWith({
-        connectionId: 'test-123',
+        connection: connection,
         message: outboundMessage.payload,
         senderKey: connection.verkey,
         service: firstDidCommService,
@@ -239,10 +238,10 @@ describe('MessageSender', () => {
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
     })
 
-    test('calls sendMessageToService with payload and endpoint from second DidComm service when the first fails', async () => {
+    test('calls packAndSendMessage with payload and endpoint from second DidComm service when the first fails', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
-      const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
+      const sendMessageToServiceSpy = jest.spyOn(messageSender, 'packAndSendMessage')
 
       // Simulate the case when the first call fails
       sendMessageSpy.mockRejectedValueOnce(new Error())
@@ -250,7 +249,7 @@ describe('MessageSender', () => {
       await messageSender.sendMessage(outboundMessage)
 
       expect(sendMessageToServiceSpy).toHaveBeenNthCalledWith(2, {
-        connectionId: 'test-123',
+        connection: connection,
         message: outboundMessage.payload,
         senderKey: connection.verkey,
         service: secondDidCommService,
@@ -288,7 +287,7 @@ describe('MessageSender', () => {
 
     test('throws error when there is no outbound transport', async () => {
       await expect(
-        messageSender.sendMessageToService({
+        messageSender.packAndSendMessage({
           message: new TestMessage(),
           senderKey,
           service,
@@ -300,7 +299,7 @@ describe('MessageSender', () => {
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
-      await messageSender.sendMessageToService({
+      await messageSender.packAndSendMessage({
         message: new TestMessage(),
         senderKey,
         service,
@@ -321,7 +320,7 @@ describe('MessageSender', () => {
       const message = new TestMessage()
       message.setReturnRouting(ReturnRouteTypes.all)
 
-      await messageSender.sendMessageToService({
+      await messageSender.packAndSendMessage({
         message,
         senderKey,
         service,
@@ -360,17 +359,20 @@ describe('MessageSender', () => {
       const message = new TestMessage()
       const endpoint = 'https://example.com'
 
-      const params: PackMessageParams = {
-        recipientKeys: ['service.recipientKeys'],
-        routingKeys: [],
+      const result = await messageSender.packMessage({
+        message,
         senderKey: connection.verkey,
-      }
-      const result = await messageSender.packMessage({ message, params, endpoint })
+        service: new IndyAgentService({
+          id: 'test',
+          recipientKeys: ['service.recipientKeys'],
+          routingKeys: [],
+          serviceEndpoint: endpoint,
+        }),
+      })
 
       expect(result).toEqual({
         payload: encryptedMessage,
         responseRequested: message.hasAnyReturnRoute(),
-        endpoint,
       })
     })
   })

@@ -13,7 +13,7 @@ import { SecretResolverService } from './SecretResolverService'
 
 export interface PackMessageParams {
   toDID: string
-  fromDID: string
+  fromDID: string | null
   signByDID: string | null
 }
 
@@ -46,8 +46,9 @@ export class DIDCommV2EnvelopeService {
   }
 
   public async packMessage(payload: DIDCommV2Message, params: PackMessageParams): Promise<EncryptedMessage> {
-    // @ts-ignore
+    // @ts-ignore FIXME
     const message = new Message(payload)
+
     const [encryptedMsg] = await message.pack_encrypted(
       params.toDID,
       params.fromDID,

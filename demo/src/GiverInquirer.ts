@@ -1,13 +1,10 @@
 import type { ValueTransferRecord } from '@aries-framework/core/src/modules/value-transfer'
 
-import { CredentialRecord } from '@aries-framework/core'
 import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
 
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
-import { Faber } from './Faber'
-import { Getter } from './Getter'
 import { Giver } from './Giver'
 import { Listener } from './Listener'
 import { Title } from './OutputClass'
@@ -44,7 +41,7 @@ export class GiverInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.giver.connectionRecordFWitnessId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    if (this.giver.connectionRecordWitnessId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
 
     const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
     return inquirer.prompt([this.inquireOptions(reducedOption)])

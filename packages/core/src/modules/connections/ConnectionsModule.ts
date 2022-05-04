@@ -1,3 +1,4 @@
+import type { Transport, AcceptProtocol } from '../routing/services/MediationRecipientService'
 import type { OutOfBandInvitationMessage } from './messages/OutOfBandInvitationMessage'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
@@ -183,16 +184,37 @@ export class ConnectionsModule {
   }
 
   public async createOutOfBandConnection(config?: {
-    goalCode?: string
     alias?: string
     myLabel?: string
     myImageUrl?: string
-    accept?: string[]
+    goalCode?: string
+    accept?: AcceptProtocol[]
+    transport?: Transport
+    autoAcceptConnection?: boolean
+    mediatorId?: string
+    useDefaultMediator?: boolean
+    multiUseInvitation?: boolean
   }): Promise<{
     invitation: OutOfBandInvitationMessage
     connectionRecord: ConnectionRecord
   }> {
-    const { connectionRecord, message: invitation } = await this.connectionService.createOutOfBandConnection(config)
+    const myRouting = await this.mediationRecipientService.getRouting({
+      mediatorId: config?.mediatorId,
+      useDefaultMediator: config?.useDefaultMediator,
+      accept: config?.accept,
+    })
+
+    const { connectionRecord, message: invitation } = await this.connectionService.createOutOfBandConnection({
+      autoAcceptConnection: config?.autoAcceptConnection,
+      alias: config?.alias,
+      routing: myRouting,
+      multiUseInvitation: config?.multiUseInvitation,
+      myLabel: config?.myLabel,
+      myImageUrl: config?.myImageUrl,
+      goalCode: config?.goalCode,
+      transport: config?.transport,
+      accept: config?.accept,
+    })
     return { connectionRecord, invitation }
   }
 
@@ -204,7 +226,15 @@ export class ConnectionsModule {
   ): Promise<{
     connectionRecord: ConnectionRecord
   }> {
-    const { connectionRecord } = await this.connectionService.acceptOutOfBandInvitation(invitation, config)
+    const routing = await this.mediationRecipientService.getRouting({
+      useDefaultMediator: true,
+      accept: invitation.body?.accept,
+    })
+
+    const { connectionRecord } = await this.connectionService.acceptOutOfBandInvitation(invitation, {
+      ...config,
+      routing,
+    })
     return { connectionRecord }
   }
 

@@ -40,7 +40,7 @@ export class KeyService {
   }): Promise<KeyRecord> {
     const type = params.keyType || KeyType.Ed25519
     const keyRepresentationType = params.keyRepresentation || KeyRepresentationType.Base58
-    const keyPair = await this.crypto.createKey({ keyType: type })
+    const keyPair = await this.crypto.createKey({ keyType: type, seed: params.seed })
 
     const kid = params.kid
       ? params.kid

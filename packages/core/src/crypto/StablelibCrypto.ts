@@ -17,10 +17,10 @@ export class StablelibCrypto implements Crypto {
     const keyType = params.keyType || defaultKeyType
     switch (keyType) {
       case KeyType.Ed25519: {
-        return this.createEd25519Key()
+        return this.createEd25519Key(params.seed)
       }
       case KeyType.X25519: {
-        return this.createX25519Key()
+        return this.createX25519Key(params.seed)
       }
       default:
         throw new AriesFrameworkError(`Key type is not supported: ${keyType}`)
@@ -96,15 +96,15 @@ export class StablelibCrypto implements Crypto {
     }
   }
 
-  private async createEd25519Key(seed?: Uint8Array): Promise<KeyPair> {
-    const keyPair = seed ? ed25519.generateKeyPairFromSeed(seed) : ed25519.generateKeyPair()
+  private async createEd25519Key(seed?: string): Promise<KeyPair> {
+    const keyPair = seed ? ed25519.generateKeyPairFromSeed(new Buffer(seed)) : ed25519.generateKeyPair()
     return {
       privateKey: keyPair.secretKey,
       publicKey: keyPair.publicKey,
     }
   }
 
-  private async createX25519Key(seed?: Uint8Array): Promise<KeyPair> {
+  private async createX25519Key(seed?: string): Promise<KeyPair> {
     const keyPair = await this.createEd25519Key(seed)
     return {
       privateKey: ed25519.convertSecretKeyToX25519(keyPair.privateKey),

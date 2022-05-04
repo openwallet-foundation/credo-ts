@@ -5,7 +5,7 @@ import type { ValueTransferResponseCoordinator } from '../ValueTransferResponseC
 import type { ValueTransferService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { CashRemovedMessage } from '../messages'
+import { CashRemovedMessage, ReceiptMessage } from '../messages'
 
 export class CashRemovedHandler implements HandlerV2 {
   private agentConfig: AgentConfig
@@ -38,11 +38,32 @@ export class CashRemovedHandler implements HandlerV2 {
       return
     }
     const getterConnection = await this.connectionService.getById(record.getterConnectionId)
+    if (!getterConnection || !getterConnection.theirDid) {
+      this.agentConfig.logger.error(`Connection to Getter not found for value transfer protocol: ${record.id}.`)
+      return
+    }
     const giverConnection = await this.connectionService.getById(record.giverConnectionId)
+    if (!giverConnection || !giverConnection.theirDid) {
+      this.agentConfig.logger.error(`Connection to Giver not found for value transfer protocol: ${record.id}.`)
+      return
+    }
     if (!record.receiptMessage) {
       this.agentConfig.logger.error(`Receipt not found for value transfer protocol: ${record.id}.`)
       return
     }
-    return createOutboundMessage(getterConnection, record.receiptMessage) // TODO: Send to both connections
+    const getterReceiptMessage = new ReceiptMessage({
+      from: record.receiptMessage.from,
+      to: getterConnection.theirDid,
+      body: record.receiptMessage.body,
+      thid: record.receiptMessage.thid,
+    })
+    const giverReceiptMessage = new ReceiptMessage({
+      from: record.receiptMessage.from,
+      to: getterConnection.theirDid,
+      body: record.receiptMessage.body,
+      thid: record.receiptMessage.thid,
+    })
+
+    return createOutboundMessage(getterConnection, getterReceiptMessage) // TODO: Send to both connections
   }
 }

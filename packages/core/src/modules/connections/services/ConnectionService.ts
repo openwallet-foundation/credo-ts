@@ -2,9 +2,11 @@ import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Messag
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
+import type { DidCommService } from '../../dids'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
+import type { AcceptProtocol, Transport } from '@aries-framework/core'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
@@ -18,7 +20,7 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
-import { DidResolverService, DidType } from '../../dids'
+import { DidResolverService } from '../../dids'
 import { IndyAgentService } from '../../dids/domain/service'
 import { DidService } from '../../dids/services/DidService'
 import { ConnectionEventTypes } from '../ConnectionEvents'
@@ -480,47 +482,42 @@ export class ConnectionService {
    * @param config config for creation of connection and invitation
    * @returns new connection record
    */
-  public async createOutOfBandConnection(config?: {
+  public async createOutOfBandConnection(config: {
     goalCode?: string
     alias?: string
     myLabel?: string
     myImageUrl?: string
-    accept?: string[]
+    autoAcceptConnection?: boolean
+    multiUseInvitation?: boolean
+    routing: Routing
+    transport?: Transport
+    accept?: AcceptProtocol[]
   }): Promise<{ connectionRecord: ConnectionRecord; message: OutOfBandInvitationMessage }> {
-    const { id: did, didDocument } = await this.didService.createDID(DidType.KeyDid)
-    if (!didDocument) {
-      throw new AriesFrameworkError(`Unable to create DIDDoc`)
-    }
-
+    const connectionRecord = await this.createConnection({
+      role: ConnectionRole.Inviter,
+      state: ConnectionState.Complete,
+      alias: config?.alias,
+      routing: config.routing,
+      autoAcceptConnection: config?.autoAcceptConnection,
+      multiUseInvitation: config.multiUseInvitation ?? false,
+      transport: config?.transport,
+      accept: config?.accept,
+    })
     const invitation = new OutOfBandInvitationMessage({
-      from: did,
+      from: connectionRecord.didDoc.id,
       body: {
         label: config?.myLabel ?? this.config.label,
         goalCode: config?.goalCode,
         accept: config?.accept,
         imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
+        service: connectionRecord.didDoc.didCommServices[0],
+        transport: config?.transport,
       },
     })
 
-    const didDoc = DidDoc.convertDIDDocToConnectionDIDDoc(didDocument)
-    const verkey = didDoc.getPublicKey()?.value
-    if (!verkey) {
-      throw new AriesFrameworkError(`Unable to convert DIDDoc`)
-    }
+    connectionRecord.outOfBandInvitation = invitation
 
-    const connectionRecord = new ConnectionRecord({
-      did,
-      didDoc,
-      verkey,
-      state: ConnectionState.Complete,
-      role: ConnectionRole.Inviter,
-      alias: config?.alias,
-      imageUrl: config?.myImageUrl,
-      multiUseInvitation: false,
-      outOfBandInvitation: invitation,
-    })
-
-    await this.connectionRepository.save(connectionRecord)
+    await this.connectionRepository.update(connectionRecord)
 
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
       type: ConnectionEventTypes.ConnectionStateChanged,
@@ -530,7 +527,7 @@ export class ConnectionService {
       },
     })
 
-    return { connectionRecord, message: invitation }
+    return { connectionRecord: connectionRecord, message: invitation }
   }
 
   /**
@@ -542,45 +539,36 @@ export class ConnectionService {
    */
   public async acceptOutOfBandInvitation(
     invitation: OutOfBandInvitationMessage,
-    config?: {
+    config: {
       alias?: string
+      routing: Routing
     }
   ): Promise<{ connectionRecord: ConnectionRecord; message: OutOfBandInvitationMessage }> {
     if (!invitation.from) {
       throw new AriesFrameworkError(`Invalid Out-Of-Band invitation: 'from' field is missing`)
     }
 
-    const { didDocument: theirDidDocument } = await this.didResolverService.resolve(invitation.from)
-    const { id: did, didDocument } = await this.didService.createDID(DidType.KeyDid)
-
-    if (!didDocument || !theirDidDocument) {
-      throw new AriesFrameworkError(`Invalid Out-Of-Band invitation: 'from' field is missing`)
-    }
-
-    const didDoc = DidDoc.convertDIDDocToConnectionDIDDoc(didDocument)
-    const theirDidDoc = DidDoc.convertDIDDocToConnectionDIDDoc(theirDidDocument)
-    const verkey = didDoc.getPublicKey()?.value
-    if (!verkey) {
-      throw new AriesFrameworkError(`Unable to convert DIDDoc`)
-    }
-
-    const connectionRecord = new ConnectionRecord({
-      did,
-      didDoc,
-      verkey,
-      theirDid: invitation.from,
-      theirDidDoc,
-      state: ConnectionState.Complete,
+    const connectionRecord = await this.createConnection({
       role: ConnectionRole.Invitee,
-      theirLabel: invitation.body?.label,
-      imageUrl: invitation.body?.imageUrl,
+      state: ConnectionState.Complete,
       alias: config?.alias,
-      multiUseInvitation: false,
       outOfBandInvitation: invitation,
+      theirLabel: invitation.body?.label,
+      routing: config.routing,
+      imageUrl: invitation.body?.imageUrl,
+      multiUseInvitation: false,
+      transport: invitation.body?.transport,
+      accept: invitation.body?.accept,
     })
 
-    await this.connectionRepository.save(connectionRecord)
+    const { didDocument: theirDidDocument } = await this.didResolverService.resolve(invitation.from)
+    if (!theirDidDocument) {
+      throw new AriesFrameworkError(`Invalid Out-Of-Band invitation: 'from' field is missing`)
+    }
+    connectionRecord.theirDidDoc = DidDoc.convertDIDDocToConnectionDIDDoc(theirDidDocument)
+    connectionRecord.theirDid = invitation.from
 
+    await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
       type: ConnectionEventTypes.ConnectionStateChanged,
       payload: {
@@ -793,6 +781,7 @@ export class ConnectionService {
     role: ConnectionRole
     state: ConnectionState
     invitation?: ConnectionInvitationMessage
+    outOfBandInvitation?: OutOfBandInvitationMessage
     alias?: string
     routing: Routing
     theirLabel?: string
@@ -800,6 +789,8 @@ export class ConnectionService {
     multiUseInvitation: boolean
     tags?: CustomConnectionTags
     imageUrl?: string
+    accept?: AcceptProtocol[]
+    transport?: Transport
   }): Promise<ConnectionRecord> {
     const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
 
@@ -809,18 +800,22 @@ export class ConnectionService {
       publicKeyBase58: verkey,
     })
 
-    // IndyAgentService is old service type
-    const services = endpoints.map(
-      (endpoint, index) =>
-        new IndyAgentService({
-          id: `${did}#IndyAgentService`,
-          serviceEndpoint: endpoint,
-          recipientKeys: [verkey],
-          routingKeys: routingKeys,
-          // Order of endpoint determines priority
-          priority: index,
-        })
-    )
+    let services: IndyAgentService[] | DidCommService[]
+    if (options?.transport && ['didcomm://nfc'].includes(options.transport)) {
+      services = []
+    } else {
+      services = endpoints.map(
+        (endpoint, index) =>
+          new IndyAgentService({
+            id: `${did}#IndyAgentService`,
+            serviceEndpoint: endpoint,
+            recipientKeys: [verkey],
+            routingKeys: routingKeys,
+            // Order of endpoint determines priority
+            priority: index,
+          })
+      )
+    }
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
@@ -841,12 +836,15 @@ export class ConnectionService {
       role: options.role,
       tags: options.tags,
       invitation: options.invitation,
+      outOfBandInvitation: options.outOfBandInvitation,
       alias: options.alias,
       theirLabel: options.theirLabel,
       autoAcceptConnection: options.autoAcceptConnection,
       imageUrl: options.imageUrl,
       multiUseInvitation: options.multiUseInvitation,
       mediatorId,
+      accept: options.accept,
+      transport: options.transport,
     })
 
     await this.connectionRepository.save(connectionRecord)

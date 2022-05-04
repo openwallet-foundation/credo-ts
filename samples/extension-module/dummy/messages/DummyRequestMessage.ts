@@ -1,4 +1,4 @@
-import { DIDCommV1Message } from '@aries-framework/core'
+import { DIDCommV1Message } from '@aries-framework/core/src/agent/didcomm'
 import { Equals } from 'class-validator'
 
 export interface DummyRequestMessageOptions {

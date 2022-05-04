@@ -15,8 +15,10 @@ import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
+import { TypedArrayEncoder } from '../../../utils'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../../connections/services/ConnectionService'
+import { DidService, DidType } from '../../dids'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { KeylistUpdateAction, MediationRequestMessage } from '../messages'
 import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMessage'
@@ -30,6 +32,7 @@ export class MediationRecipientService {
   private mediatorRepository: MediationRepository
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
+  private didService: DidService
   private messageSender: MessageSender
   private config: AgentConfig
 
@@ -39,7 +42,8 @@ export class MediationRecipientService {
     messageSender: MessageSender,
     config: AgentConfig,
     mediatorRepository: MediationRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    didService: DidService
   ) {
     this.config = config
     this.wallet = wallet
@@ -47,6 +51,7 @@ export class MediationRecipientService {
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
+    this.didService = didService
   }
 
   public async createRequest(
@@ -180,8 +185,23 @@ export class MediationRecipientService {
     let endpoints = this.config.endpoints
     let routingKeys: string[] = []
 
+    // FIXME: Temp solution: Creates keys with sane random DID in Indy Key wallet and our custom wallet layer. Quick way to get DIDComm V1 and V2 packing to work
+    const seed = Array.from(Array(32), () => Math.floor(Math.random() * 36).toString(36)).join('')
+
+    // if (accept?.includes('didcomm/v2')) {
+    const { id, didDocument } = await this.didService.createDID(DidType.KeyDid, undefined, seed)
+    if (!didDocument?.verificationMethod.length) {
+      throw new AriesFrameworkError(`Unable to create DIDDoc`)
+    }
+    const did = id
+    const verkey = TypedArrayEncoder.toBase58(didDocument.verificationMethod[0].keyBytes)
+    // } else {
+    await this.wallet.createDid({ seed })
+    // did = result.did
+    // verkey = result.verkey
+    // }
+
     // Create and store new key
-    const { did, verkey } = await this.wallet.createDid()
     if (mediationRecord) {
       routingKeys = [...routingKeys, ...mediationRecord.routingKeys]
       endpoints = mediationRecord.endpoint ? [mediationRecord.endpoint] : endpoints
@@ -298,6 +318,9 @@ export interface MediationProtocolMsgReturnType<MessageType extends DIDCommV1Mes
   mediationRecord: MediationRecord
 }
 
+export type Transport = 'didcomm://http' | 'didcomm://https' | 'didcomm://ws' | 'didcomm://wss' | 'didcomm://nfc'
+export type AcceptProtocol = 'didcomm/v1' | 'didcomm/v2'
+
 export interface GetRoutingOptions {
   /**
    * Identifier of the mediator to use when setting up routing
@@ -305,8 +328,18 @@ export interface GetRoutingOptions {
   mediatorId?: string
 
   /**
+   * Identifier the transport to use
+   */
+  transport?: Transport
+
+  /**
    * Whether to use the default mediator if available and `mediatorId` has not been provided
    * @default true
    */
   useDefaultMediator?: boolean
+
+  /**
+   * Identifier of the DIDComm protocol to use
+   */
+  accept?: AcceptProtocol[]
 }

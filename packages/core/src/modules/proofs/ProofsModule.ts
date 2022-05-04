@@ -256,7 +256,7 @@ export class ProofsModule {
       proofRecord.presentationMessage = message
       await this.proofService.update(proofRecord)
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],
@@ -307,7 +307,7 @@ export class ProofsModule {
       const recipientService = proofRecord.presentationMessage?.service
       const ourService = proofRecord.requestMessage?.service
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],
