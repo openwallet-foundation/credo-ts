@@ -1,6 +1,6 @@
 import type { LinkedAttachment } from '../../../../../src/utils/LinkedAttachment'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { ParseRevocationRegistryDefitinionTemplate } from '../../../ledger/services'
+import type { ParseRevocationRegistryDefinitionTemplate } from '../../../ledger/services'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
@@ -110,6 +110,6 @@ export interface HandlerAutoAcceptOptions {
 }
 
 export interface RevocationRegistry {
-  indy?: ParseRevocationRegistryDefitinionTemplate
+  indy?: ParseRevocationRegistryDefinitionTemplate
   jsonld?: undefined
 }

@@ -143,7 +143,7 @@ describe('credentials', () => {
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -158,7 +158,7 @@ describe('credentials', () => {
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -218,7 +218,7 @@ describe('credentials', () => {
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -233,7 +233,7 @@ describe('credentials', () => {
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       state: CredentialState.Done,

@@ -176,7 +176,7 @@ describe('credentials', () => {
       state: aliceCredentialRecord.state,
       credentialIds: [],
     })
-    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
+    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
     if (aliceCredentialRecord.connectionId) {
       const acceptOfferOptions: AcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
@@ -331,7 +331,7 @@ describe('credentials', () => {
       connectionId: aliceCredentialRecord.connectionId,
       state: aliceCredentialRecord.state,
     })
-    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
+    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
 
     if (aliceCredentialRecord.connectionId) {
       const acceptOfferOptions: ServiceAcceptOfferOptions = {
@@ -438,7 +438,6 @@ describe('credentials', () => {
       connectionId: aliceConnection.id,
       credentialIds: [],
     })
-    expect(record.type).toBe(CredentialExchangeRecord.name)
 
     // // Check if the state of the credential records did not change
     faberCredentialRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
@@ -518,7 +517,7 @@ describe('credentials', () => {
       state: CredentialState.Done,
     })
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: expect.any(String),
@@ -689,7 +688,7 @@ describe('credentials', () => {
       connectionId: aliceConnection.id,
       credentialIds: [],
     })
-    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
+    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
     testLogger.test('Alice declines offer')
     if (aliceCredentialRecord.id) {
       await aliceAgent.credentials.declineOffer(aliceCredentialRecord.id)

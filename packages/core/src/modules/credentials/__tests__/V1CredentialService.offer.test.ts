@@ -152,7 +152,7 @@ describe('CredentialService', () => {
 
       const [[createdCredentialRecord]] = repositorySaveSpy.mock.calls
       expect(createdCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         threadId: createdCredentialRecord.threadId,
@@ -298,7 +298,7 @@ describe('CredentialService', () => {
 
       // then
       const expectedCredentialRecord = {
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         threadId: credentialOfferMessage.id,
