@@ -471,4 +471,105 @@ describe('Present Proof', () => {
       `The proof request contains duplicate items: age`
     )
   })
+
+  test('Faber starts with proof request to Alice but gets Problem Reported', async () => {
+    const attributes = {
+      name: new ProofAttributeInfo({
+        name: 'name',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+      image_0: new ProofAttributeInfo({
+        name: 'image_0',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    // Sample predicates
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const requestProofsOptions: RequestProofOptions = {
+      protocolVersion: ProofProtocolVersion.V1,
+      connectionId: faberConnection.id,
+      proofFormats: {
+        indy: {
+          name: 'proof-request',
+          version: '1.0',
+          nonce: '1298236324864',
+          requestedAttributes: attributes,
+          requestedPredicates: predicates,
+        },
+      },
+    }
+
+    // Faber sends a presentation request to Alice
+    testLogger.test('Faber sends a presentation request to Alice')
+    faberProofRecord = await faberAgent.proofs.requestProof(requestProofsOptions)
+
+    // Alice waits for presentation request from Faber
+    testLogger.test('Alice waits for presentation request from Faber')
+    aliceProofRecord = await waitForProofRecord(aliceAgent, {
+      threadId: faberProofRecord.threadId,
+      state: ProofState.RequestReceived,
+    })
+
+    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+
+    const request = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V1RequestPresentationMessage,
+    })
+
+    expect(request).toMatchObject({
+      type: 'https://didcomm.org/present-proof/1.0/request-presentation',
+      id: expect.any(String),
+      requestPresentationAttachments: [
+        {
+          id: 'libindy-request-presentation-0',
+          mimeType: 'application/json',
+          data: {
+            base64: expect.any(String),
+          },
+        },
+      ],
+    })
+
+    expect(aliceProofRecord.id).not.toBeNull()
+    expect(aliceProofRecord).toMatchObject({
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.RequestReceived,
+      protocolVersion: ProofProtocolVersion.V1,
+    })
+
+    aliceProofRecord = await aliceAgent.proofs.sendProblemReport(aliceProofRecord.id, 'Problem inside proof request')
+
+    faberProofRecord = await waitForProofRecord(faberAgent, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.Abandoned,
+    })
+
+    expect(faberProofRecord).toMatchObject({
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.Abandoned,
+      protocolVersion: ProofProtocolVersion.V1,
+    })
+  })
 })

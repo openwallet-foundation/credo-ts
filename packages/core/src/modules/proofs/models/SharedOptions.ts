@@ -18,7 +18,7 @@ export interface ProposeProofFormats {
   // If you want to propose an indy proof without attributes or
   // any of the other properties you should pass an empty object
   indy?: IndyProposeProofFormat
-  presentationExchange?: PresentationExchangeProposalFormat // TBD
+  presentationExchange?: PresentationExchangeProposalFormat
 }
 
 export interface RequestProofFormats {
@@ -39,7 +39,7 @@ export interface AcceptProposalFormats {
   // If you want to propose an indy proof without attributes or
   // any of the other properties you should pass an empty object
   indy?: AcceptProposal
-  presentationExchange?: never // TBD
+  presentationExchange?: never
 }
 
 export interface VerifyProofFormats {

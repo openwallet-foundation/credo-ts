@@ -40,7 +40,6 @@ import { ConnectionService } from '../../../connections'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { ProofsUtils } from '../../ProofsUtil'
-import { PresentationProblemReportError, PresentationProblemReportReason } from '../../errors'
 import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormats'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { PresentationExchangeFormatService } from '../../formats/presentation-exchange/PresentationExchangeFormatService'
@@ -376,9 +375,9 @@ export class V2ProofService extends ProofService {
 
     // assert
     if (proofRequestMessage.requestPresentationsAttach.length === 0) {
-      throw new PresentationProblemReportError(
+      throw new V2PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`,
-        { problemCode: PresentationProblemReportReason.Abandoned }
+        { problemCode: V2PresentationProblemReportReason.Abandoned }
       )
     }
 
@@ -665,7 +664,7 @@ export class V2ProofService extends ProofService {
     })
 
     proofRecord.errorMessage = `${presentationProblemReportMessage.description.code}: ${presentationProblemReportMessage.description.en}`
-    await this.proofRepository.update(proofRecord)
+    await this.updateState(proofRecord, ProofState.Abandoned)
     return proofRecord
   }
 
