@@ -22,5 +22,5 @@ export interface VerifyProofResult {
   /**
    * A string representing the error if the verification failed
    */
-  readonly error?: string
+  readonly error?: unknown
 }

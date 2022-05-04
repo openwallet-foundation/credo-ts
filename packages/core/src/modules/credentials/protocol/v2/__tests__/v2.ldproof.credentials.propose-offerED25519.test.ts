@@ -74,6 +74,7 @@ describe('credentials', () => {
     proofType: 'Ed25519Signature2018',
     verificationMethod: '',
   }
+  const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
@@ -81,11 +82,16 @@ describe('credentials', () => {
       'Alice Agent Credentials LD'
     ))
     wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-    await wallet.initPublicDid({})
-    const pubDid = wallet.publicDid
+    // await wallet.initPublicDid({})
+    // const pubDid = wallet.publicDid
+    // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
+    // issuerDidKey = new DidKey(key)\
+
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-    issuerDidKey = new DidKey(key)
+    const issuerDidInfo = await wallet.createDid({ seed })
+    const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+    issuerDidKey = new DidKey(issuerKey)
 
     credential.issuer = issuerDidKey.did
     signCredentialOptions.verificationMethod = issuerDidKey.keyId

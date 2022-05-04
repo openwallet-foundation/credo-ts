@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import type { DocumentLoader } from '../../JwsLinkedDataSignature'
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Options for verifying a signature
@@ -35,9 +37,9 @@ export interface VerifySignatureOptions {
   /**
    * Optional custom document loader
    */
-  documentLoader?: Function
+  documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
-  expansionMap?: Function
+  expansionMap?: () => void
 }

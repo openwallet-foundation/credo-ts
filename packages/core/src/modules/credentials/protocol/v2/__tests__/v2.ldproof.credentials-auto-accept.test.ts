@@ -9,9 +9,9 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
 } from '../../../CredentialsModuleOptions'
-import type { Schema } from 'indy-sdk'
 
-import { Key, KeyType } from '../../../../../../src/crypto'
+import { KeyType } from '../../../../../../src/crypto'
+import { Key } from '../../../../../../src/crypto/Key'
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { DidKey } from '../../../../../../src/modules/dids'
 import { W3cCredential } from '../../../../../../src/modules/vc/models'
@@ -19,7 +19,6 @@ import { JsonTransformer } from '../../../../../../src/utils'
 import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
-import { sleep } from '../../../../../utils/sleep'
 import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
@@ -39,19 +38,24 @@ describe('credentials', () => {
   let signCredentialOptions: SignCredentialOptions
 
   describe('Auto accept on `always`', () => {
+    const seed = 'testseed000000000000000000000001'
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
         'faber agent: always v2 jsonld',
         'alice agent: always v2 jsonld',
         AutoAcceptCredential.Always
       ))
-
       wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-      await wallet.initPublicDid({})
-      const pubDid = wallet.publicDid
+      // await wallet.initPublicDid({})
+      // const pubDid = wallet.publicDid
+      // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
+      // issuerDidKey = new DidKey(key)
+
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-      issuerDidKey = new DidKey(key)
+      const issuerDidInfo = await wallet.createDid({ seed })
+      const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+      issuerDidKey = new DidKey(issuerKey)
 
       const inputDoc = {
         '@context': [
@@ -183,6 +187,8 @@ describe('credentials', () => {
   })
 
   describe('Auto accept on `contentApproved`', () => {
+    const seed = 'testseed000000000000000000000001'
+
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
         'faber agent: content-approved v2 jsonld',
@@ -190,11 +196,16 @@ describe('credentials', () => {
         AutoAcceptCredential.ContentApproved
       ))
       wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-      await wallet.initPublicDid({})
-      const pubDid = wallet.publicDid
+      // await wallet.initPublicDid({})
+      // const pubDid = wallet.publicDid
+      // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
+      // issuerDidKey = new DidKey(key)
+
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-      issuerDidKey = new DidKey(key)
+      const issuerDidInfo = await wallet.createDid({ seed })
+      const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+      issuerDidKey = new DidKey(issuerKey)
 
       const inputDoc = {
         '@context': [

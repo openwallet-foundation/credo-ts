@@ -1,19 +1,3 @@
-import type { Buffer } from '../utils/buffer'
-import type { JsonLdDocument } from 'jsonld'
-
-// export abstract class KeyPair {
-//   abstract sign(message: Buffer): Promise<Buffer>
-
-//   abstract verify(message: Buffer, signature: Buffer): Promise<boolean>
-
-//   abstract get hasPublicKey(): boolean
-
-//   abstract get publicKey(): Buffer | undefined
-
-//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//   abstract from(verificationMethod: Record<string, any>): Promise<KeyPair>
-// }
-
 export interface LdKeyPairOptions {
   id: string
   controller: string
