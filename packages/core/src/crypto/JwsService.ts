@@ -9,6 +9,9 @@ import { JsonEncoder, TypedArrayEncoder } from '../utils'
 import { Wallet } from '../wallet'
 import { WalletError } from '../wallet/error'
 
+import { Key } from './Key'
+import { KeyType } from './KeyType'
+
 // TODO: support more key types, more generic jws format
 const JWS_KEY_TYPE = 'OKP'
 const JWS_CURVE = 'Ed25519'
@@ -25,9 +28,10 @@ export class JwsService {
   public async createJws({ payload, verkey, header }: CreateJwsOptions): Promise<JwsGeneralFormat> {
     const base64Payload = TypedArrayEncoder.toBase64URL(payload)
     const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(verkey))
+    const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
 
     const signature = TypedArrayEncoder.toBase64URL(
-      await this.wallet.sign(TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), verkey)
+      await this.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), key })
     )
 
     return {
@@ -38,7 +42,7 @@ export class JwsService {
   }
 
   /**
-   * Verify a a JWS
+   * Verify a JWS
    */
   public async verifyJws({ jws, payload }: VerifyJwsOptions): Promise<VerifyJwsResult> {
     const base64Payload = TypedArrayEncoder.toBase64URL(payload)
@@ -64,10 +68,12 @@ export class JwsService {
       const signature = TypedArrayEncoder.fromBase64(jws.signature)
 
       const verkey = TypedArrayEncoder.toBase58(TypedArrayEncoder.fromBase64(protectedJson?.jwk?.x))
+      const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
+
       signerVerkeys.push(verkey)
 
       try {
-        const isValid = await this.wallet.verify(verkey, data, signature)
+        const isValid = await this.wallet.verify({ key, data, signature })
 
         if (!isValid) {
           return {

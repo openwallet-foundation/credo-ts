@@ -252,6 +252,7 @@ export class CredentialsModule implements CredentialsModule {
         role: DidCommMessageRole.Sender,
         associatedRecordId: credentialRecord.id,
       })
+
       this.logger.debug('We have sent a credential request')
       const outboundMessage = createOutboundMessage(connection, message)
 
@@ -388,6 +389,7 @@ export class CredentialsModule implements CredentialsModule {
     this.logger.debug(`Got a CredentialService object for version ${record.protocolVersion}`)
 
     const { message, credentialRecord } = await service.createCredential(record, options)
+
     this.logger.debug('We have a credential message (sending outbound): ', message)
 
     const requestMessage = await service.getRequestMessage(credentialRecord.id)

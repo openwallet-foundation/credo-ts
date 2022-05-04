@@ -162,8 +162,8 @@ describe('credentials', () => {
   describe('Auto accept on `contentApproved`', () => {
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection } = await setupCredentialTests(
-        'faber agent: contentApproved',
-        'alice agent: contentApproved',
+        'faber agent: contentApproved v1',
+        'alice agent: contentApproved v1',
         AutoAcceptCredential.ContentApproved
       ))
     })

@@ -112,14 +112,14 @@ describe('CredentialService', () => {
       agentConfig,
       mediationRecipientService,
       didCommMessageRepository,
+      revocationService,
       new IndyCredentialFormatService(
         credentialRepository,
         eventEmitter,
         indyIssuerService,
         indyLedgerService,
         indyHolderService
-      ),
-      revocationService
+      )
     )
     mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
   })
@@ -302,14 +302,14 @@ describe('CredentialService', () => {
         agentConfig,
         mediationRecipientService,
         didCommMessageRepository,
+        revocationService,
         new IndyCredentialFormatService(
           credentialRepository,
           eventEmitter,
           indyIssuerService,
           indyLedgerService,
           indyHolderService
-        ),
-        revocationService
+        )
       )
       // when
       const returnedCredentialRecord = await credentialService.processOffer(messageContext)

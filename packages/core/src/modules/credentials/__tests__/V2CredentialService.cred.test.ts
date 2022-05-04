@@ -255,14 +255,14 @@ describe('CredentialService', () => {
       agentConfig,
       mediationRecipientService,
       didCommMessageRepository,
+      revocationService,
       new IndyCredentialFormatService(
         credentialRepository,
         eventEmitter,
         indyIssuerService,
         indyLedgerService,
         indyHolderService
-      ),
-      revocationService
+      )
     )
   })
 

@@ -20,11 +20,11 @@ import type { V1CredentialPreview } from '../../protocol/v1/V1CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { CredPropose } from '../models/CredPropose'
 import type {
-  FormatServiceCredentialAttachmentFormats,
   CredentialFormatSpec,
-  HandlerAutoAcceptOptions,
+  FormatServiceCredentialAttachmentFormats,
   FormatServiceOfferAttachmentFormats,
   FormatServiceProposeAttachmentFormats,
+  HandlerAutoAcceptOptions,
   RevocationRegistry,
 } from '../models/CredentialFormatServiceOptions'
 import type { Cred, CredDef, CredOffer, CredReq, CredReqMetadata } from 'indy-sdk'
@@ -144,7 +144,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     const attachmentId = options.attachId ? options.attachId : formats.attachId
 
     const offersAttach: Attachment = this.getFormatData(offer, attachmentId)
-
     // with credential preview now being a required field (as per spec)
     // attributes could be empty
     if (preview && preview.attributes.length > 0) {
@@ -287,6 +286,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (!proposal.credentialFormats?.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing Credential Definition id')
     }
+
     const credOffer: CredOffer = await this.indyIssuerService.createCredentialOffer(
       proposal.credentialFormats.indy.credentialDefinitionId
     )
@@ -550,7 +550,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     const credOffer = offerAttachment?.getDataAsJson<CredOffer>()
 
     const schema = await this.indyLedgerService.getSchema(credOffer.schema_id)
-
     CredentialUtils.checkAttributesMatch(schema, preview)
   }
 
