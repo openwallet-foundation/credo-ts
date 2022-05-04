@@ -278,15 +278,15 @@ export class MediationRecipientService {
   }
 
   public async processDelivery(messageDeliveryMessage: MessageDeliveryMessage) {
-    const { attachments } = messageDeliveryMessage
+    const { appendedAttachments } = messageDeliveryMessage
 
-    if (!attachments)
+    if (!appendedAttachments)
       throw new ProblemReportError('Error processing attachments', {
         problemCode: RoutingProblemReportReason.ErrorProcessingAttachments,
       })
 
     const ids: string[] = []
-    for (const attachment of attachments) {
+    for (const attachment of appendedAttachments) {
       ids.push(attachment.id)
       try {
         await this.messageReceiver.receiveMessage(attachment.getDataAsJson<EncryptedMessage>())
