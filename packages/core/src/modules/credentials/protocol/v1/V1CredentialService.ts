@@ -646,26 +646,28 @@ export class V1CredentialService extends CredentialService {
 
     // Create message
     const { credentialDefinitionId, comment, preview, linkedAttachments } = credentialTemplate
-    const options: ServiceOfferCredentialOptions = {
-      attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-      credentialFormats: {
-        indy: {
-          credentialDefinitionId,
-          attributes: preview.attributes,
-        },
-      },
-      protocolVersion: CredentialProtocolVersion.V1,
-    }
-    const { attachment: offersAttach } = await this.formatService.createOffer(options)
-
-    if (!offersAttach) {
-      throw new AriesFrameworkError('Missing offers attach in Offer')
-    }
 
     // Create and link credential to attachment
     const credentialPreview = linkedAttachments
       ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
       : preview
+
+    const options: ServiceOfferCredentialOptions = {
+      attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+      credentialFormats: {
+        indy: {
+          credentialDefinitionId,
+          attributes: credentialPreview.attributes,
+        },
+      },
+      protocolVersion: CredentialProtocolVersion.V1,
+    }
+
+    const { attachment: offersAttach } = await this.formatService.createOffer(options)
+
+    if (!offersAttach) {
+      throw new AriesFrameworkError('Missing offers attach in Offer')
+    }
 
     // Construct offer message
     const offerMessage = new V1OfferCredentialMessage({
