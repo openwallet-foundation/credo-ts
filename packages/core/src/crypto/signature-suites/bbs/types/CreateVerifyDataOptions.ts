@@ -27,10 +27,12 @@ export interface CreateVerifyDataOptions {
   /**
    * Optional custom document loader
    */
+  // eslint-disable-next-line
   documentLoader?: Function
   /**
    * Optional expansion map
    */
+  // eslint-disable-next-line
   expansionMap?: Function
   /**
    * Indicates whether to compact the proof

@@ -11,7 +11,8 @@ import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { Key, KeyType } from '../../../../../../src/crypto'
+import { KeyType } from '../../../../../../src/crypto'
+import { Key } from '../../../../../../src/crypto/Key'
 import { DidKey } from '../../../../../../src/modules/dids'
 import { JsonTransformer } from '../../../../../../src/utils'
 import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
@@ -33,7 +34,6 @@ const aliceConfig = getBaseConfig('Alice LD connection-less Credentials V2', {
 })
 
 let wallet: IndyWallet
-let issuerDidKey: DidKey
 let credential: W3cCredential
 let signCredentialOptions: SignCredentialOptions
 
@@ -42,6 +42,8 @@ describe('credentials', () => {
   let aliceAgent: Agent
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
+  let issuerDidKey: DidKey
+  const seed = 'testseed000000000000000000000001'
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -74,11 +76,15 @@ describe('credentials', () => {
       .subscribe(aliceReplay)
 
     wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-    await wallet.initPublicDid({})
-    const pubDid = wallet.publicDid
+    // await wallet.initPublicDid({})
+    // const pubDid = wallet.publicDid
+    // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
+    // issuerDidKey = new DidKey(key)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-    issuerDidKey = new DidKey(key)
+    const issuerDidInfo = await wallet.createDid({ seed })
+    const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+    issuerDidKey = new DidKey(issuerKey)
 
     const inputDoc = {
       '@context': [

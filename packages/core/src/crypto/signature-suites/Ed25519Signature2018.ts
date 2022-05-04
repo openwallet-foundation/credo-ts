@@ -193,18 +193,18 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
   const hasCred = _includesContext({ document: options.document, contextUrl: CRED_CONTEXT })
   const hasSecV2 = _includesContext({ document: options.document, contextUrl: SECURITY_CONTEXT })
 
-  // TODO: log commented warnings
+  // TODO: the console.warn statements below should probably be replaced with logging statements. However, this would currently require injection and I'm not sure we want to do that.
   if (hasEd2018 && hasCred) {
     // Warn if both are present
-    console.warn('Warning: The ed25519-2018/v1 and credentials/v1 ' + 'contexts are incompatible.')
-    console.warn('For VCs using Ed25519Signature2018 suite,' + ' using the credentials/v1 context is sufficient.')
+    // console.warn('Warning: The ed25519-2018/v1 and credentials/v1 ' + 'contexts are incompatible.')
+    // console.warn('For VCs using Ed25519Signature2018 suite,' + ' using the credentials/v1 context is sufficient.')
     return false
   }
 
   if (hasEd2018 && hasSecV2) {
     // Warn if both are present
-    console.warn('Warning: The ed25519-2018/v1 and security/v2 ' + 'contexts are incompatible.')
-    console.warn('For VCs using Ed25519Signature2018 suite,' + ' using the security/v2 context is sufficient.')
+    // console.warn('Warning: The ed25519-2018/v1 and security/v2 ' + 'contexts are incompatible.')
+    // console.warn('For VCs using Ed25519Signature2018 suite,' + ' using the security/v2 context is sufficient.')
     return false
   }
 
