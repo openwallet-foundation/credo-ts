@@ -37,8 +37,7 @@ describe('credentials', () => {
   let wallet: IndyWallet
   let issuerDidKey: DidKey
   let didCommMessageRepository: DidCommMessageRepository
-  let credential: W3cCredential
-  let signCredentialOptions: SignCredentialOptions
+
   const inputDoc = {
     '@context': [
       'https://www.w3.org/2018/credentials/v1',
@@ -69,9 +68,9 @@ describe('credentials', () => {
     },
   }
 
-  credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
+  const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
 
-  signCredentialOptions = {
+  const signCredentialOptions = {
     credential,
     proofType: 'Ed25519Signature2018',
     verificationMethod: '',

@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import type { Key } from '../../crypto'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
@@ -15,6 +16,7 @@ import type { RemoteDocument, Url } from 'jsonld/jsonld-spec'
 import jsonld, { expand, frame } from '@digitalcredentials/jsonld'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
+// eslint-disable-next-line import/no-extraneous-dependencies
 import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
 import vc from '@digitalcredentials/vc'
 import { deriveProof } from '@mattrglobal/jsonld-signatures-bbs'
