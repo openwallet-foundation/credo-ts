@@ -22,7 +22,7 @@ export interface BlsKeyPair {
 }
 
 interface BbsCreateKeyOptions extends CreateKeyOptions {
-  keyType: Extract<KeyType, KeyType.Bls12381g1 | KeyType.Bls12381g2>
+  keyType: KeyType.Bls12381g1 | KeyType.Bls12381g2
 }
 
 interface BbsSignOptions {
