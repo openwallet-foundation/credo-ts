@@ -26,7 +26,7 @@ import { ConnectionState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
-import { MediationRecipientService } from '../../routing'
+import { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
@@ -60,6 +60,7 @@ jest.mock('../../../modules/ledger/services/IndyLedgerService')
 jest.mock('../../indy/services/IndyHolderService')
 jest.mock('../../indy/services/IndyIssuerService')
 jest.mock('../../../../src/storage/didcomm/DidCommMessageRepository')
+jest.mock('../../routing/services/MediationRecipientService')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
@@ -124,7 +125,7 @@ const offerOptions: V2OfferCredentialMessageOptions = {
   comment: 'some comment',
   credentialPreview: credentialPreview,
   offerAttachments: [offerAttachment],
-  replacementId: '',
+  replacementId: undefined,
 }
 const requestFormat: CredentialFormatSpec = {
   attachId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
@@ -807,7 +808,7 @@ describe('CredentialService', () => {
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       await credentialService.deleteById(credential.id, {
-        deleteAssociatedCredential: true,
+        deleteAssociatedCredentials: true,
       })
       expect(storeCredentialMock).toHaveBeenNthCalledWith(1, credential.credentials[0].credentialRecordId)
     })

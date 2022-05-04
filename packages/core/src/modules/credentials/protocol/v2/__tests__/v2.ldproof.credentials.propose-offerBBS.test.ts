@@ -131,6 +131,7 @@ describe('credentials, BBS+ signature', () => {
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
+      protocolVersion: CredentialProtocolVersion.V2,
     }
     testLogger.test('Faber sends credential offer to Alice')
     await faberAgent.credentials.acceptProposal(options)

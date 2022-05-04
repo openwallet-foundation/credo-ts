@@ -26,7 +26,7 @@ export interface IndyCredentialPreview {
 }
 
 export interface IndyProposeCredentialFormat {
-  attributes: CredentialPreviewAttribute[]
+  attributes?: CredentialPreviewAttribute[]
   linkedAttachments?: LinkedAttachment[]
   payload?: CredPropose
 }
@@ -59,7 +59,7 @@ export type FormatKeys = {
 
 export interface FormatServiceCredentialAttachmentFormats {
   format: CredentialFormatSpec
-  attachment?: Attachment
+  attachment: Attachment
 }
 
 export interface FormatServiceProposeAttachmentFormats extends FormatServiceCredentialAttachmentFormats {
@@ -96,10 +96,10 @@ export interface FormatServiceProposeCredentialFormats {
 export interface FormatServiceAcceptProposeCredentialFormats {
   indy?: {
     credentialDefinitionId?: string
+    attributes: CredentialPreviewAttribute[]
+    linkedAttachments?: LinkedAttachment[]
   }
-  jsonld?: {
-    // undefined
-  }
+  jsonld?: SignCredentialOptions
 }
 
 export interface FormatServiceRequestCredentialFormats {
@@ -120,6 +120,7 @@ export interface HandlerAutoAcceptOptions {
   offerAttachment?: Attachment
   requestAttachment?: Attachment
   credentialAttachment?: Attachment
+  credentialDefinitionId?: string
 }
 
 export interface RevocationRegistry {

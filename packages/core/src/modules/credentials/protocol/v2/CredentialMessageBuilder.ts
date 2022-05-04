@@ -1,23 +1,18 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
   CredentialProtocolMsgReturnType,
-  ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
-  ServiceNegotiateProposalOptions,
   ServiceOfferCredentialOptions,
   ServiceRequestCredentialOptions,
 } from '../../CredentialServiceOptions'
-import type { AcceptProposalOptions, ProposeCredentialOptions } from '../../CredentialsModuleOptions'
+import type { NegotiateProposalOptions, ProposeCredentialOptions } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { CredentialFormatSpec } from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialExchangeRecordProps } from '../../repository/CredentialExchangeRecord'
-import type { V2CredentialPreview } from './V2CredentialPreview'
 import type { V2IssueCredentialMessageProps } from './messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from './messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessageProps } from './messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessageOptions } from './messages/V2RequestCredentialMessage'
-
-import { assert } from 'console'
 
 import { AriesFrameworkError } from '../../../../../src/error/AriesFrameworkError'
 import { uuid } from '../../../../utils/uuid'
@@ -25,10 +20,19 @@ import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialState } from '../../CredentialState'
 import { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 
+import { V2CredentialPreview } from './V2CredentialPreview'
 import { V2IssueCredentialMessage } from './messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from './messages/V2ProposeCredentialMessage'
 import { V2RequestCredentialMessage } from './messages/V2RequestCredentialMessage'
+
+export interface CreateRequestOptions {
+  formatServices: CredentialFormatService[]
+  record: CredentialExchangeRecord
+  requestOptions: ServiceRequestCredentialOptions
+  offerMessage: V2OfferCredentialMessage
+  holderDid?: string
+}
 
 export class CredentialMessageBuilder {
   /**
@@ -44,7 +48,9 @@ export class CredentialMessageBuilder {
     formatServices: CredentialFormatService[],
     proposal: ProposeCredentialOptions
   ): CredentialProtocolMsgReturnType<V2ProposeCredentialMessage> {
-    assert(formatServices.length > 0)
+    if (formatServices.length === 0) {
+      throw new AriesFrameworkError('no format services provided to createProposal')
+    }
 
     // create message
     // there are two arrays in each message, one for formats the other for attachments
@@ -96,7 +102,7 @@ export class CredentialMessageBuilder {
    * @param connectionId optional connection id for the agent to agent connection
    * @return a version 2.0 credential record object see {@link CredentialRecord}
    */
-  public acceptProposal(message: V2ProposeCredentialMessage, connectionId?: string): CredentialExchangeRecord {
+  public processProposal(message: V2ProposeCredentialMessage, connectionId?: string): CredentialExchangeRecord {
     const props: CredentialExchangeRecordProps = {
       connectionId: connectionId,
       threadId: message.threadId,
@@ -111,19 +117,21 @@ export class CredentialMessageBuilder {
   public async createOfferAsResponse(
     formatServices: CredentialFormatService[],
     credentialRecord: CredentialExchangeRecord,
-    proposal: ServiceAcceptProposalOptions | ServiceNegotiateProposalOptions
+    options: ServiceOfferCredentialOptions | NegotiateProposalOptions
   ): Promise<V2OfferCredentialMessage> {
-    assert(formatServices.length > 0)
-
+    if (formatServices.length === 0) {
+      throw new AriesFrameworkError('no format services provided to createProposal')
+    }
     // create message
     // there are two arrays in each message, one for formats the other for attachments
     const formatsArray: CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
-    let previewAttachments: V2CredentialPreview | undefined
+    let previewAttachments: V2CredentialPreview = new V2CredentialPreview({
+      attributes: [],
+    })
 
     for (const formatService of formatServices) {
-      const { attachment: offersAttach, preview, format } = await formatService.createOffer(proposal)
-      proposal.offerAttachment = offersAttach
+      const { attachment: offersAttach, preview, format } = await formatService.createOffer(options)
       if (offersAttach === undefined) {
         throw new AriesFrameworkError('offersAttach not initialized for credential offer')
       }
@@ -132,21 +140,18 @@ export class CredentialMessageBuilder {
       } else {
         throw new AriesFrameworkError('offersAttach not initialized for credential proposal')
       }
-      if (preview) {
+      if (preview && preview.attributes.length > 0) {
         previewAttachments = preview
-        await formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
       }
       formatsArray.push(format)
 
-      if (proposal.offerAttachment) {
-        await formatService.processOffer(proposal.offerAttachment, credentialRecord)
-      }
+      await formatService.processOffer(offersAttach, credentialRecord)
     }
 
     const messageProps: V2OfferCredentialMessageOptions = {
       id: this.generateId(),
       formats: formatsArray,
-      comment: proposal.comment,
+      comment: options.comment,
       offerAttachments: offersAttachArray,
       credentialPreview: previewAttachments,
     }
@@ -171,52 +176,48 @@ export class CredentialMessageBuilder {
    *
    */
   public async createRequest(
-    formatServices: CredentialFormatService[],
-    record: CredentialExchangeRecord,
-    requestOptions: ServiceRequestCredentialOptions,
-    offerMessage: V2OfferCredentialMessage,
-    holderDid?: string
+    options: CreateRequestOptions
   ): Promise<CredentialProtocolMsgReturnType<V2RequestCredentialMessage>> {
-    // Assert credential
-    record.assertState(CredentialState.OfferReceived)
-    if (!offerMessage) {
-      throw new AriesFrameworkError(`Missing message for credential Record ${record.id}`)
+    if (options.formatServices.length === 0) {
+      throw new AriesFrameworkError('no format services provided to createProposal')
     }
+
     const formatsArray: CredentialFormatSpec[] = []
     const requestAttachArray: Attachment[] | undefined = []
-    for (const format of formatServices) {
+    for (const format of options.formatServices) {
       // use the attach id in the formats object to find the correct attachment
-      const attachment = format.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
+      const attachment = format.getAttachment(options.offerMessage.formats, options.offerMessage.messageAttachment)
 
       if (attachment) {
-        requestOptions.offerAttachment = attachment
+        options.requestOptions.offerAttachment = attachment
       } else {
-        throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
+        throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${options.record.id}`)
       }
       const { format: formats, attachment: requestAttach } = await format.createRequest(
-        requestOptions,
-        record,
-        holderDid
+        options.requestOptions,
+        options.record,
+        options.holderDid
       )
 
-      requestOptions.requestAttachment = requestAttach
+      options.requestOptions.requestAttachment = requestAttach
       if (formats && requestAttach) {
         formatsArray.push(formats)
         requestAttachArray.push(requestAttach)
       }
     }
-    const options: V2RequestCredentialMessageOptions = {
+    const messageOptions: V2RequestCredentialMessageOptions = {
       id: this.generateId(),
       formats: formatsArray,
       requestsAttach: requestAttachArray,
-      comment: requestOptions.comment,
+      comment: options.requestOptions.comment,
     }
-    const credentialRequestMessage = new V2RequestCredentialMessage(options)
-    credentialRequestMessage.setThread({ threadId: record.threadId })
+    const credentialRequestMessage = new V2RequestCredentialMessage(messageOptions)
+    credentialRequestMessage.setThread({ threadId: options.record.threadId })
 
-    record.autoAcceptCredential = requestOptions.autoAcceptCredential ?? record.autoAcceptCredential
+    options.record.autoAcceptCredential =
+      options.requestOptions.autoAcceptCredential ?? options.record.autoAcceptCredential
 
-    return { message: credentialRequestMessage, credentialRecord: record }
+    return { message: credentialRequestMessage, credentialRecord: options.record }
   }
 
   /**
@@ -231,23 +232,27 @@ export class CredentialMessageBuilder {
     formatServices: CredentialFormatService[],
     options: ServiceOfferCredentialOptions
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: V2OfferCredentialMessage }> {
+    if (formatServices.length === 0) {
+      throw new AriesFrameworkError('no format services provided to createProposal')
+    }
     const formatsArray: CredentialFormatSpec[] = []
     const offersAttachArray: Attachment[] | undefined = []
-    let previewAttachments: V2CredentialPreview | undefined
+    let previewAttachments: V2CredentialPreview = new V2CredentialPreview({
+      attributes: [],
+    })
 
+    const offerMap = new Map<Attachment, CredentialFormatService>()
     for (const formatService of formatServices) {
-      const offerOptions = options as unknown as AcceptProposalOptions
-      const { attachment: offersAttach, preview, format } = await formatService.createOffer(offerOptions)
+      const { attachment: offersAttach, preview, format } = await formatService.createOffer(options)
 
       if (offersAttach) {
         offersAttachArray.push(offersAttach)
-        options.offerAttachment = offersAttach
+        offerMap.set(offersAttach, formatService)
       } else {
         throw new AriesFrameworkError('offersAttach not initialized for credential proposal')
       }
       if (preview) {
         previewAttachments = preview
-        await formatService.checkPreviewAttributesMatchSchemaAttributes(offersAttach, preview)
       }
       formatsArray.push(format)
     }
@@ -257,7 +262,7 @@ export class CredentialMessageBuilder {
       formats: formatsArray,
       comment: options.comment,
       offerAttachments: offersAttachArray,
-      replacementId: '', // replacementId
+      replacementId: undefined,
       credentialPreview: previewAttachments,
     }
 
@@ -276,10 +281,12 @@ export class CredentialMessageBuilder {
 
     const credentialRecord = new CredentialExchangeRecord(recordProps)
 
-    for (const service of formatServices) {
-      if (options.offerAttachment) {
-        await service.processOffer(options.offerAttachment, credentialRecord)
+    for (const offersAttach of offerMap.keys()) {
+      const service = offerMap.get(offersAttach)
+      if (!service) {
+        throw new AriesFrameworkError(`No service found for attachment: ${offersAttach.id}`)
       }
+      await service.processOffer(offersAttach, credentialRecord)
     }
     return { credentialRecord, message: credentialOfferMessage }
   }
@@ -295,22 +302,27 @@ export class CredentialMessageBuilder {
   public async createCredential(
     credentialFormats: CredentialFormatService[],
     record: CredentialExchangeRecord,
-    options: ServiceAcceptRequestOptions,
+    serviceOptions: ServiceAcceptRequestOptions,
     requestMessage: V2RequestCredentialMessage,
-    offerMessage?: V2OfferCredentialMessage
+    offerMessage: V2OfferCredentialMessage
   ): Promise<CredentialProtocolMsgReturnType<V2IssueCredentialMessage>> {
     const formatsArray: CredentialFormatSpec[] = []
     const credAttachArray: Attachment[] | undefined = []
 
     for (const formatService of credentialFormats) {
-      if (offerMessage) {
-        options.offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
-      } else {
-        throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
-      }
-      options.requestAttachment = formatService.getAttachment(requestMessage.formats, requestMessage.messageAttachment)
+      const offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
+      const requestAttachment = formatService.getAttachment(requestMessage.formats, requestMessage.messageAttachment)
 
-      const { format: formats, attachment: credentialsAttach } = await formatService.createCredential(options, record)
+      if (!requestAttachment) {
+        throw new Error(`Missing request attachment in createCredential`)
+      }
+
+      const { format: formats, attachment: credentialsAttach } = await formatService.createCredential(
+        serviceOptions,
+        record,
+        requestAttachment,
+        offerAttachment
+      )
 
       if (!formats) {
         throw new AriesFrameworkError('formats not initialized for credential')
@@ -325,7 +337,7 @@ export class CredentialMessageBuilder {
       id: this.generateId(),
       formats: formatsArray,
       credentialsAttach: credAttachArray,
-      comment: options.comment,
+      comment: serviceOptions.comment,
     }
 
     const message: V2IssueCredentialMessage = new V2IssueCredentialMessage(messageOptions)

@@ -64,7 +64,7 @@ export class V1RequestCredentialHandler implements Handler {
       offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
     }
     if (requestMessage) {
-      requestAttachment = requestMessage.getAttachmentIncludingFormatId(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
+      requestAttachment = requestMessage.getAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
     }
     const handlerOptions: HandlerAutoAcceptOptions = {
       credentialRecord,
@@ -75,6 +75,7 @@ export class V1RequestCredentialHandler implements Handler {
     }
     if (
       this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
+      credentialRecord.autoAcceptCredential === AutoAcceptCredential.Always ||
       formatService.shouldAutoRespondToRequest(handlerOptions)
     ) {
       return await this.createCredential(credentialRecord, messageContext, offerMessage, requestMessage)

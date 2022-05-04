@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import type { SignCredentialOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
@@ -9,6 +10,7 @@ import type {
 } from '../../CredentialServiceOptions'
 import type { ProposeCredentialOptions, RequestCredentialOptions } from '../../CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from '../../repository'
+import type { CredPropose } from '../models/CredPropose'
 import type {
   CredentialFormatSpec,
   FormatServiceCredentialAttachmentFormats,
@@ -53,11 +55,17 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     this.credentialRepository = credentialRepository
     this.w3cCredentialService = w3cCredentialService
   }
-  public async processProposal(
-    _options: ServiceAcceptProposalOptions,
-    _credentialRecord: CredentialExchangeRecord
-  ): Promise<void> {
-    // no meta data set for ld proofs
+
+  public async processProposal(options: ServiceAcceptProposalOptions): Promise<void> {
+    const credPropose = options.proposalAttachment?.getDataAsJson<SignCredentialOptions>()
+
+    if (!credPropose) {
+      throw new AriesFrameworkError('Missing jsonld credential proposal data payload')
+    }
+
+    options.credentialFormats = {
+      jsonld: credPropose,
+    }
   }
 
   public processOffer(_attachment: Attachment, _credentialRecord: CredentialExchangeRecord): void {
@@ -66,9 +74,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
 
   public async createCredential(
     options: ServiceAcceptRequestOptions,
-    credentialRecord: CredentialExchangeRecord
+    credentialRecord: CredentialExchangeRecord,
+    requestAttachment: Attachment
   ): Promise<FormatServiceCredentialAttachmentFormats> {
-    if (!options.requestAttachment || !options.requestAttachment?.data?.base64) {
+    if (!requestAttachment || !requestAttachment?.data?.base64) {
       throw new AriesFrameworkError(
         `Missing request attachment from request message, credential record id = ${credentialRecord.id}`
       )
@@ -83,7 +92,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
 
     // sign credential here. The credential subject is received as the request attachment
     // (attachment in the request message from holder to issuer)
-    const credentialOptions = options.requestAttachment?.getDataAsJson<SignCredentialOptions>()
+    const credentialOptions = requestAttachment?.getDataAsJson<SignCredentialOptions>()
     const signCredentialOptions: SignCredentialOptions = {
       credential: JsonTransformer.fromJSON(credentialOptions.credential, W3cCredential),
       proofType: credentialOptions.proofType,
@@ -94,10 +103,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     const issueAttachment: Attachment = this.getFormatData(verifiableCredential, attachmentId)
 
     return { format: formats, attachment: issueAttachment }
-  }
-
-  public async getRevocationRegistry(_issueAttachment: Attachment): Promise<RevocationRegistry | undefined> {
-    return undefined
   }
 
   public getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
@@ -124,7 +129,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     } else {
       messageAttachment = options.proposalAttachment.getDataAsJson<SignCredentialOptions>()
     }
-
     const offersAttach: Attachment = this.getFormatData(messageAttachment, attachmentId)
 
     return { format: formats, attachment: offersAttach }
@@ -132,8 +136,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
 
   public async createRequest(
     options: FormatServiceRequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord,
-    _holderDid?: string
+    credentialRecord: CredentialExchangeRecord
   ): Promise<FormatServiceCredentialAttachmentFormats> {
     if (!options.offerAttachment) {
       throw new AriesFrameworkError(

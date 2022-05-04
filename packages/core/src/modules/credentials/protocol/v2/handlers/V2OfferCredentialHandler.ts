@@ -53,7 +53,7 @@ export class V2OfferCredentialHandler implements Handler {
     const shouldAutoRespond = this.credentialService.shouldAutoRespondToOffer(
       credentialRecord,
       offerMessage,
-      proposeMessage ? proposeMessage : undefined
+      proposeMessage ?? undefined
     )
 
     if (shouldAutoRespond) {

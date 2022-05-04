@@ -1,5 +1,4 @@
 import type { W3cVerifiableCredential } from '../../../../../../src/modules/vc/models'
-import type { SignCredentialOptions } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
 import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
@@ -136,6 +135,7 @@ describe('credentials', () => {
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
+      protocolVersion: CredentialProtocolVersion.V2,
     }
     testLogger.test('Faber sends credential offer to Alice')
     await faberAgent.credentials.acceptProposal(options)
@@ -311,6 +311,13 @@ describe('credentials', () => {
             data: new AttachmentData({ base64: 'base64encodedpic' }),
           }),
         }),
+        new LinkedAttachment({
+          name: 'x-ray',
+          attachment: new Attachment({
+            mimeType: 'image/png',
+            data: new AttachmentData({ base64: 'base64encodedpic' }),
+          }),
+        }),
       ],
       payload: {
         schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
@@ -353,9 +360,11 @@ describe('credentials', () => {
       credentialFormats: {
         indy: {
           credentialDefinitionId: credDefId,
+          attributes: credentialPreview.attributes,
         },
         jsonld: signCredentialOptions,
       },
+      protocolVersion: CredentialProtocolVersion.V2,
     }
     testLogger.test('Faber sends credential offer to Alice')
     await faberAgent.credentials.acceptProposal(options)

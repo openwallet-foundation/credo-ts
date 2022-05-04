@@ -44,12 +44,7 @@ export class V2IssueCredentialHandler implements Handler {
 
     const shouldAutoRespond = this.credentialService.shouldAutoRespondToCredential(credentialRecord, credentialMessage)
     if (shouldAutoRespond) {
-      return await this.createAck(
-        credentialRecord,
-        messageContext,
-        requestMessage ? requestMessage : undefined,
-        credentialMessage
-      )
+      return await this.createAck(credentialRecord, messageContext, requestMessage ?? undefined, credentialMessage)
     }
   }
 

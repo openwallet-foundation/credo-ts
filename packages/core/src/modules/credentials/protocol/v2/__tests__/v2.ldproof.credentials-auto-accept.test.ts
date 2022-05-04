@@ -108,7 +108,7 @@ describe('credentials', () => {
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
-        comment: 'v propose credential test',
+        comment: 'v2 propose credential test',
       }
       const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential(proposeOptions)
       testLogger.test('Alice waits for credential from Faber')
@@ -268,6 +268,7 @@ describe('credentials', () => {
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
+        protocolVersion: CredentialProtocolVersion.V2,
       }
       const faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal(options)
 
@@ -396,6 +397,7 @@ describe('credentials', () => {
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
+        protocolVersion: CredentialProtocolVersion.V2,
       }
 
       // await sleep(5000)

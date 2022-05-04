@@ -6,18 +6,11 @@ import type { HandlerAutoAcceptOptions } from '../../../formats/models/Credentia
 import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
-import type { CredOffer } from 'indy-sdk'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
-import { CredentialResponseCoordinator } from '../../../CredentialResponseCoordinator'
-import { CredentialUtils } from '../../../CredentialUtils'
 import { V1OfferCredentialMessage, V1ProposeCredentialMessage } from '../messages'
-
-interface V1HandlerAutoAcceptOptions extends HandlerAutoAcceptOptions {
-  credentialDefinitionId?: string
-}
 
 export class V1ProposeCredentialHandler implements Handler {
   private credentialService: V1CredentialService
@@ -56,13 +49,13 @@ export class V1ProposeCredentialHandler implements Handler {
       throw new AriesFrameworkError('Missing attributes in proposal message')
     }
     let proposalAttachment, offerAttachment: Attachment | undefined
-    if (proposalMessage && proposalMessage.appendedAttachments) {
+    if (proposalMessage) {
       proposalValues = proposalMessage.credentialProposal.attributes
     }
     if (offerMessage) {
       offerAttachment = offerMessage.getAttachmentById('indy')
     }
-    const handlerOptions: V1HandlerAutoAcceptOptions = {
+    const handlerOptions: HandlerAutoAcceptOptions = {
       credentialRecord,
       autoAcceptType: this.agentConfig.autoAcceptCredentials,
       messageAttributes: proposalValues,
@@ -72,51 +65,12 @@ export class V1ProposeCredentialHandler implements Handler {
     }
     if (
       this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
-      this.shouldAutoRespondToProposal(handlerOptions)
+      credentialRecord.autoAcceptCredential === AutoAcceptCredential.Always ||
+      (await this.credentialService.shouldAutoRespondToProposal(handlerOptions))
     ) {
       return await this.createOffer(credentialRecord, messageContext, proposalMessage)
     }
   }
-
-  public shouldAutoRespondToProposal(handlerOptions: V1HandlerAutoAcceptOptions): boolean {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
-      handlerOptions.credentialRecord.autoAcceptCredential,
-      handlerOptions.autoAcceptType
-    )
-
-    if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      return (
-        this.areProposalValuesValid(handlerOptions.credentialRecord, handlerOptions.messageAttributes) &&
-        this.areProposalAndOfferDefinitionIdEqual(handlerOptions.credentialDefinitionId, handlerOptions.offerAttachment)
-      )
-    }
-    return false
-  }
-  private areProposalValuesValid(
-    credentialRecord: CredentialExchangeRecord,
-    proposeMessageAttributes?: CredentialPreviewAttribute[]
-  ) {
-    const { credentialAttributes } = credentialRecord
-
-    if (proposeMessageAttributes && credentialAttributes) {
-      const proposeValues = CredentialUtils.convertAttributesToValues(proposeMessageAttributes)
-      const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
-      if (CredentialUtils.checkValuesMatch(proposeValues, defaultValues)) {
-        return true
-      }
-    }
-    return false
-  }
-  private areProposalAndOfferDefinitionIdEqual(proposalCredentialDefinitionId?: string, offerAttachment?: Attachment) {
-    let credOffer: CredOffer | undefined
-
-    if (offerAttachment) {
-      credOffer = offerAttachment.getDataAsJson<CredOffer>()
-    }
-    const offerCredentialDefinitionId = credOffer?.cred_def_id
-    return proposalCredentialDefinitionId === offerCredentialDefinitionId
-  }
-
   private async createOffer(
     credentialRecord: CredentialExchangeRecord,
     messageContext: HandlerInboundMessage<V1ProposeCredentialHandler>,

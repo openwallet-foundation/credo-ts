@@ -11,7 +11,6 @@ import type {
   OfferCredentialOptions,
   RequestCredentialOptions,
 } from './CredentialsModuleOptions'
-import type { RevocationRegistry } from './formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
 import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
 import type { ProposeCredentialMessageOptions } from './protocol/v1/messages'
@@ -47,7 +46,8 @@ export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
 }
 
 export interface ServiceOfferCredentialOptions extends OfferCredentialOptions {
-  offerAttachment?: Attachment
+  connectionId?: string
+  attachId?: string
 }
 
 export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {
@@ -58,8 +58,6 @@ export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {
 
 export interface ServiceAcceptRequestOptions extends AcceptRequestOptions {
   attachId?: string
-  offerAttachment?: Attachment
-  requestAttachment?: Attachment
 }
 export interface ServiceNegotiateProposalOptions extends NegotiateProposalOptions {
   offerAttachment?: Attachment
@@ -77,7 +75,6 @@ export interface ServiceRequestCredentialOptions extends RequestCredentialOption
 
 export interface ServiceAcceptCredentialOptions {
   credentialAttachment?: Attachment
-  revocationRegistry?: RevocationRegistry
 }
 
 export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id'> & {
@@ -86,5 +83,5 @@ export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id
 }
 
 export interface DeleteCredentialOptions {
-  deleteAssociatedCredential: boolean
+  deleteAssociatedCredentials: boolean
 }
