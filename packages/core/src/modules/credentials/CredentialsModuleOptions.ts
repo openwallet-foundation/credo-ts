@@ -10,7 +10,6 @@ import type {
 // keys used to create a format service
 export enum CredentialFormatType {
   Indy = 'Indy',
-  // JsonLd = 'jsonld',
   // others to follow
 }
 
