@@ -1,4 +1,5 @@
 import type { W3cCredential } from '../../../vc/models'
+import type { SignPresentationOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type {
   AutoSelectCredentialOptions,
   ProofRequestFormats,
@@ -30,6 +31,7 @@ import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '.
 import { IndyLedgerService } from '../../../ledger'
 import { W3cCredentialService } from '../../../vc'
 import { W3cVerifiableCredential } from '../../../vc/models'
+import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import { ProofFormatService } from '../ProofFormatService'
 import {
   V2_PRESENTATION_EXCHANGE_PRESENTATION,
@@ -180,20 +182,25 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       W3cVerifiableCredential
     )
 
-    // const pex: PEX = new PEX()
+    const proof = JsonTransformer.fromJSON(w3cVerifiableCredentials.proof, LinkedDataProof)
+
+    console.log('w3cVerifiableCredentials', JSON.stringify(w3cVerifiableCredentials, null, 2))
 
     const presentation = await this.w3cCredentialService.createPresentation({
       credentials: w3cVerifiableCredentials,
     })
 
-    console.log('presentation:::\n', presentation)
+    console.log('presentation:::\n', JSON.stringify(presentation, null, 2))
 
-    const signedPresentation = await this.w3cCredentialService.signPresentation({
+    const signPresentationOptions: SignPresentationOptions = {
       presentation,
-      purpose: presentation.verifiableCredential[0].proof,
-      signatureType: '',
-      verificationMethod: ''
-    })
+      purpose: 'assertionMethod',
+      signatureType: proof.proofPurpose,
+      verificationMethod: proof.verificationMethod,
+    }
+    console.log('signPresentationOptions:\n', signPresentationOptions)
+
+    const signedPresentation = await this.w3cCredentialService.signPresentation(signPresentationOptions)
     console.log('signedPresentation:::\n', signedPresentation)
 
     const attachId = options.attachId ?? uuid()
@@ -215,14 +222,12 @@ export class PresentationExchangeFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
-
     throw new Error('Method not implemented.')
   }
 
   public async getRequestedCredentialsForProofRequest(
     options: GetRequestedCredentialsFormat
   ): Promise<AutoSelectCredentialOptions> {
-
     const requestMessageJson = options.attachment.getDataAsJson<RequestPresentation>()
     const requestMessage = JsonTransformer.fromJSON(requestMessageJson, RequestPresentation)
     const presentationDefinition = JsonTransformer.fromJSON(
@@ -236,7 +241,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     // const claimFormat = presentationDefinition.format
     let difHandlerProofType
     for (const inputDescriptor of presentationDefinition.inputDescriptors) {
-
       let proofType: string[] = []
       const limitDisclosure = inputDescriptor.constraints.limitDisclosure
 
