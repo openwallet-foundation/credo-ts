@@ -9,7 +9,6 @@ import type { V2ProofService } from '../V2ProofService'
 import { createOutboundMessage } from '../../../../../agent/helpers'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormats'
-import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
 export class V2ProposePresentationHandler implements Handler {
@@ -85,7 +84,6 @@ export class V2ProposePresentationHandler implements Handler {
 
     const { message } = await this.proofService.createRequestAsResponse({
       proofRecord: proofRecord,
-      protocolVersion: ProofProtocolVersion.V2,
       autoAcceptProof: proofRecord.autoAcceptProof,
       proofFormats: proofRequest,
       willConfirm: true,

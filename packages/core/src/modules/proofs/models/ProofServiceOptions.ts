@@ -50,7 +50,6 @@ export interface CreateRequestOptions {
 
 export interface CreateRequestAsResponseOptions {
   proofRecord: ProofRecord
-  protocolVersion: ProofProtocolVersion
   proofFormats: RequestProofFormats
   willConfirm?: boolean
   goalCode?: string

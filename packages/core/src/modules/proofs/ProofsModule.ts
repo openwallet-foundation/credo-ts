@@ -123,8 +123,7 @@ export class ProofsModule {
     const { proofRecordId } = options
     const proofRecord = await this.getById(proofRecordId)
 
-    const version: ProofProtocolVersion = proofRecord.protocolVersion
-    const service = this.getService(version)
+    const service = this.getService(proofRecord.protocolVersion)
 
     if (!proofRecord.connectionId) {
       throw new AriesFrameworkError(
@@ -148,7 +147,6 @@ export class ProofsModule {
 
     const { message } = await service.createRequestAsResponse({
       proofRecord: proofRecord,
-      protocolVersion: version,
       proofFormats: proofRequest,
       goalCode: options.goalCode,
       willConfirm: options.willConfirm ?? true,
@@ -170,7 +168,7 @@ export class ProofsModule {
    */
   public async requestProof(options: RequestProofOptions): Promise<ProofRecord> {
     const version: ProofProtocolVersion = options.protocolVersion
-    const service = this.getService(version)
+    const service = this.getService(options.protocolVersion)
 
     const connection = await this.connectionService.getById(options.connectionId)
 

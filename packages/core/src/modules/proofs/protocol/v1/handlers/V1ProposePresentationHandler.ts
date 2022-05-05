@@ -7,7 +7,6 @@ import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V1ProofService } from '../V1ProofService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
-import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V1ProposePresentationMessage } from '../messages'
 
 export class V1ProposePresentationHandler implements Handler {
@@ -89,7 +88,6 @@ export class V1ProposePresentationHandler implements Handler {
         },
       },
       proofRecord: proofRecord,
-      protocolVersion: ProofProtocolVersion.V1,
       autoAcceptProof: proofRecord.autoAcceptProof,
       willConfirm: true,
     })
