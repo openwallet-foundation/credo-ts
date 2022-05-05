@@ -140,17 +140,23 @@ export class ConnectionInvitationMessage extends AgentMessage {
         )
       }
     } catch (error) {
-      // eslint-disable-next-line no-restricted-globals
-      const abortController = new AbortController()
-      const id = setTimeout(() => abortController.abort(), 15000)
-      const response = await axios.get(invitationUrl, {
-        headers: {
-          Accept: 'application/json',
-        },
-      })
-      clearTimeout(id)
-      if (response) {
-        if (response.status === 200) {
+      return await this.fromShortUrl(invitationUrl)
+    }
+  }
+
+  public static async fromShortUrl(invitationUrl: string) {
+    // eslint-disable-next-line no-restricted-globals
+    const abortController = new AbortController()
+    const id = setTimeout(() => abortController.abort(), 15000)
+    const response = await axios.get(invitationUrl, {
+      headers: {
+        Accept: 'application/json',
+      },
+    })
+    clearTimeout(id)
+    if (response) {
+      if (response.status === 200) {
+        if (response.headers['content-type'] === 'application/json') {
           const inviatationJson = response.data
           const invitation = JsonTransformer.fromJSON(inviatationJson, ConnectionInvitationMessage)
 
@@ -158,9 +164,29 @@ export class ConnectionInvitationMessage extends AgentMessage {
 
           return invitation
         } else {
-          throw error
+          const parsedUrl = parseUrl(invitationUrl).query
+          const encodedInvitation = parsedUrl['c_i'] ?? parsedUrl['d_m']
+
+          if (typeof encodedInvitation === 'string') {
+            const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
+            const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
+
+            await MessageValidator.validate(invitation)
+
+            return invitation
+          } else {
+            throw new AriesFrameworkError(
+              'InvitationUrl is invalid. Needs to be encrypted with either c_i or d_m or must be valid shortened URL'
+            )
+          }
         }
-      } else throw new AriesFrameworkError('HTTP request time out or did not receive valid response')
+      } else {
+        throw new AriesFrameworkError(
+          'InvitationUrl is invalid. Needs to be encrypted with either c_i or d_m or must be valid shortened URL'
+        )
+      }
+    } else {
+      throw new AriesFrameworkError('HTTP request time out or did not receive valid response')
     }
   }
 }
