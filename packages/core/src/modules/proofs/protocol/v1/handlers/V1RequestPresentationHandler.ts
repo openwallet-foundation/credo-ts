@@ -3,18 +3,17 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { MediationRecipientService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofService } from '../../../ProofService'
 import type { ProofRecord } from '../../../repository/ProofRecord'
+import type { V1ProofService } from '../V1ProofService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { DidCommMessageRole } from '../../../../../storage'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V1RequestPresentationMessage } from '../messages'
 
 export class V1RequestPresentationHandler implements Handler {
-  private proofService: ProofService
+  private proofService: V1ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
   private mediationRecipientService: MediationRecipientService
@@ -22,7 +21,7 @@ export class V1RequestPresentationHandler implements Handler {
   public supportedMessages = [V1RequestPresentationMessage]
 
   public constructor(
-    proofService: ProofService,
+    proofService: V1ProofService,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
@@ -70,7 +69,8 @@ export class V1RequestPresentationHandler implements Handler {
     })
 
     if (!retrievedCredentials.indy) {
-      throw new AriesFrameworkError('No matching Indy credentials could be retrieved')
+      this.agentConfig.logger.error('No matching Indy credentials could be retrieved.')
+      return
     }
 
     const requestedCredentials = await this.proofService.autoSelectCredentialsForProofRequest({
@@ -83,7 +83,7 @@ export class V1RequestPresentationHandler implements Handler {
         indy: requestedCredentials.indy,
       },
       protocolVersion: ProofProtocolVersion.V1,
-      // Not sure to what to do with goalCode, willConfirm and comment fields here
+      willConfirm: true,
     })
 
     if (messageContext.connection) {

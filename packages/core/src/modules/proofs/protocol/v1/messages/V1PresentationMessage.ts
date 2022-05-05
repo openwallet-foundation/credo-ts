@@ -80,7 +80,7 @@ export class V1PresentationMessage extends AgentMessage {
   }
 
   public get indyProof(): IndyProof | null {
-    const attachment = this.presentationAttachments.find((attachment) => attachment.id === INDY_PROOF_ATTACHMENT_ID)
+    const attachment = this.indyAttachment
 
     const proofJson = attachment?.getDataAsJson<IndyProof>() ?? null
 

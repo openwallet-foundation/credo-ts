@@ -1,4 +1,3 @@
-import type { ProofRequestOptions } from '../formats/indy/models/ProofRequest'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
@@ -47,10 +46,6 @@ export interface OutOfBandRequestOptions {
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
-
-export type CreateProofRequestOptions = Partial<
-  Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
->
 
 export interface AcceptPresentationOptions {
   proofRecordId: string

@@ -22,7 +22,6 @@ import type {
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
 import type { PresentationPreviewAttribute } from './models/V1PresentationPreview'
-import type { CredDef, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -39,12 +38,11 @@ import { uuid } from '../../../../utils/uuid'
 import { Wallet } from '../../../../wallet'
 import { AckStatus } from '../../../common/messages/AckMessage'
 import { ConnectionService } from '../../../connections'
-import { Credential, CredentialRepository, IndyCredentialInfo } from '../../../credentials'
+import { CredentialRepository, IndyCredentialInfo } from '../../../credentials'
 import { IndyHolderService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
-import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormats'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
@@ -772,19 +770,22 @@ export class V1ProofService extends ProofService {
       throw new AriesFrameworkError(`Expected to find a request message for ProofRecord with id ${proofRecord.id}`)
     }
 
-    const requestAttachment = request
-      .getAttachmentFormats()
-      .find((x) => x.format.format === V2_INDY_PRESENTATION_REQUEST)?.attachment
+    const proofRequest = request.indyProofRequest
 
-    if (!requestAttachment) {
-      throw new AriesFrameworkError('Request message has no attachment linked to it')
+    // Assert attachment
+    if (!proofRequest) {
+      throw new V1PresentationProblemReportError(
+        `Missing required base64 or json encoded attachment data for presentation request with thread id ${request.threadId}`,
+        { problemCode: V1PresentationProblemReportReason.Abandoned }
+      )
     }
+    await validateOrReject(proofRequest)
 
-    const requestAttachmentJSON = requestAttachment.getDataAsJson<ProofRequest>()
-    const requestAttachmentData = JsonTransformer.fromJSON(requestAttachmentJSON, ProofRequest)
+    // Assert attribute and predicate (group) names do not match
+    checkProofRequestForDuplicates(proofRequest)
 
     const proposalAttributes = proposal.presentationProposal.attributes
-    const requestedAttributes = requestAttachmentData.requestedAttributes
+    const requestedAttributes = proofRequest.requestedAttributes
 
     const proposedAttributeNames = proposalAttributes.map((x) => x.name)
     let requestedAttributeNames: string[] = []
@@ -813,7 +814,7 @@ export class V1ProofService extends ProofService {
 
     // assert that all requested attributes are provided
     const providedPredicateNames = proposal.presentationProposal.predicates.map((x) => x.name)
-    requestAttachmentData.requestedPredicates.forEach((x) => {
+    proofRequest.requestedPredicates.forEach((x) => {
       if (!providedPredicateNames.includes(x.name)) {
         return false
       }
@@ -823,6 +824,7 @@ export class V1ProofService extends ProofService {
   }
 
   public async shouldAutoRespondToPresentation(proofRecord: ProofRecord): Promise<boolean> {
+    this.logger.debug(`Should auto respond to presentation for proof record id: ${proofRecord.id}`)
     return true
   }
 
@@ -981,57 +983,5 @@ export class V1ProofService extends ProofService {
     await this.updateState(proofRecord, ProofState.Done)
 
     return { message: ackMessage, proofRecord }
-  }
-
-  private async getCredentialsForProofRequest(
-    proofRequest: ProofRequest,
-    attributeReferent: string
-  ): Promise<Credential[]> {
-    const credentialsJson = await this.indyHolderService.getCredentialsForProofRequest({
-      proofRequest: proofRequest.toJSON(),
-      attributeReferent,
-    })
-
-    return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
-  }
-
-  /**
-   * Build schemas object needed to create and verify proof objects.
-   *
-   * Creates object with `{ schemaId: Schema }` mapping
-   *
-   * @param schemaIds List of schema ids
-   * @returns Object containing schemas for specified schema ids
-   *
-   */
-  private async getSchemas(schemaIds: Set<string>) {
-    const schemas: { [key: string]: Schema } = {}
-
-    for (const schemaId of schemaIds) {
-      const schema = await this.ledgerService.getSchema(schemaId)
-      schemas[schemaId] = schema
-    }
-
-    return schemas
-  }
-
-  /**
-   * Build credential definitions object needed to create and verify proof objects.
-   *
-   * Creates object with `{ credentialDefinitionId: CredentialDefinition }` mapping
-   *
-   * @param credentialDefinitionIds List of credential definition ids
-   * @returns Object containing credential definitions for specified credential definition ids
-   *
-   */
-  private async getCredentialDefinitions(credentialDefinitionIds: Set<string>) {
-    const credentialDefinitions: { [key: string]: CredDef } = {}
-
-    for (const credDefId of credentialDefinitionIds) {
-      const credDef = await this.ledgerService.getCredentialDefinition(credDefId)
-      credentialDefinitions[credDefId] = credDef
-    }
-
-    return credentialDefinitions
   }
 }

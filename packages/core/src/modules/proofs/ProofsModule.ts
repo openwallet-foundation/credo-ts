@@ -1,6 +1,5 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { ProofService } from './ProofService'
-import type { ProofRequestOptions } from './formats/indy/models/ProofRequest'
 import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
@@ -152,7 +151,7 @@ export class ProofsModule {
       protocolVersion: version,
       proofFormats: proofRequest,
       goalCode: options.goalCode,
-      willConfirm: options.willConfirm,
+      willConfirm: options.willConfirm ?? true,
       comment: options.comment,
     })
 
@@ -490,10 +489,6 @@ export class ProofsModule {
     }
   }
 }
-
-export type CreateProofRequestOptions = Partial<
-  Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
->
 
 export interface ProofRequestConfig {
   comment?: string

@@ -1,5 +1,6 @@
 export * from './protocol/v1/messages'
 export * from './protocol/v1/models'
+export * from './protocol/v2/messages'
 export * from './ProofService'
 export * from './models/ProofState'
 export * from './repository'

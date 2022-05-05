@@ -60,11 +60,10 @@ export interface VerifyProofOptions {
   proof: Attachment
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CreateProblemReportOptions {
   proofRecord: ProofRecord
   description: string
-} // TBD
+}
 
 export interface CreatePresentationFormatsOptions {
   presentationAttachment: Attachment
