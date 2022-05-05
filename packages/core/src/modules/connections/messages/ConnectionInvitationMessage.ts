@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { Transform } from 'class-transformer'
 import { ArrayNotEmpty, Equals, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
 import { parseUrl } from 'query-string'
@@ -119,23 +120,47 @@ export class ConnectionInvitationMessage extends AgentMessage {
    * @param invitationUrl invitation url containing c_i or d_m parameter
    *
    * @throws Error when url can not be decoded to JSON, or decoded message is not a valid `ConnectionInvitationMessage`
-   * @throws Error when the url does not contain c_i or d_m as parameter
+   * @throws Error when the url is invalid encrypted url or shortened url is invalid
    */
   public static async fromUrl(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl['c_i'] ?? parsedUrl['d_m']
 
-    if (typeof encodedInvitation === 'string') {
-      const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
-      const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
+    try {
+      if (typeof encodedInvitation === 'string') {
+        const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
+        const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
-      await MessageValidator.validate(invitation)
+        await MessageValidator.validate(invitation)
 
-      return invitation
-    } else {
-      throw new AriesFrameworkError(
-        'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `c_i` or `d_m`'
-      )
+        return invitation
+      } else {
+        throw new AriesFrameworkError(
+          'InvitationUrl is invalid. Needs to be encrypted with either c_i or d_m or must be valid shortened URL'
+        )
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-restricted-globals
+      const abortController = new AbortController()
+      const id = setTimeout(() => abortController.abort(), 15000)
+      const response = await axios.get(invitationUrl, {
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+      clearTimeout(id)
+      if (response) {
+        if (response.status === 200) {
+          const inviatationJson = response.data
+          const invitation = JsonTransformer.fromJSON(inviatationJson, ConnectionInvitationMessage)
+
+          await MessageValidator.validate(invitation)
+
+          return invitation
+        } else {
+          throw error
+        }
+      } else throw new AriesFrameworkError('HTTP request time out or did not receive valid response')
     }
   }
 }

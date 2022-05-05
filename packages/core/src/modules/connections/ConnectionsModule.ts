@@ -1,14 +1,11 @@
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
-import axios from 'axios'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { JsonTransformer } from '../../utils/JsonTransformer'
-import { MessageValidator } from '../../utils/MessageValidator'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import {
@@ -123,35 +120,6 @@ export class ConnectionsModule {
       mediatorId?: string
     }
   ): Promise<ConnectionRecord> {
-    //const fetch = this.agentConfig.agentDependencies.fetch
-    const logger = this.agentConfig.logger
-    // eslint-disable-next-line no-restricted-globals
-    const abortController = new AbortController()
-    const id = setTimeout(() => abortController.abort(), 15000)
-    let response
-    try {
-      response = await axios.get(invitationUrl, {
-        responseType: 'json',
-        maxRedirects: 0,
-      })
-      clearTimeout(id)
-      // eslint-disable-next-line no-empty
-    } catch (error) {
-      logger.error('Http response timed out or failed', { error })
-    }
-    if (response) {
-      if (response.status === 200) {
-        const inviatationJson = response.data
-        const invitation = JsonTransformer.fromJSON(inviatationJson, ConnectionInvitationMessage)
-        await MessageValidator.validate(invitation)
-        return this.receiveInvitation(invitation, config)
-      } else {
-        if (response.status === 301 || response.status === 302) {
-          const url = response.headers['Location']
-          if (url) invitationUrl = url
-        }
-      }
-    }
     const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
     return this.receiveInvitation(invitation, config)
   }
