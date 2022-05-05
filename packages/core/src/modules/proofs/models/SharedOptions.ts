@@ -4,7 +4,7 @@ import type {
   IndyVerifyProofFormat,
 } from '../formats/IndyProofFormatsServiceOptions'
 import type { ProofRequest } from '../formats/indy/models/ProofRequest'
-import type { RequestedCredentials, RequestedCredentialsOptions } from '../formats/indy/models/RequestedCredentials'
+import type { RequestedCredentials, IndyRequestedCredentialsOptions } from '../formats/indy/models/RequestedCredentials'
 import type { RetrievedCredentials } from '../formats/indy/models/RetrievedCredentials'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 
@@ -25,14 +25,14 @@ export interface RequestProofFormats {
 export interface CreatePresentationFormats {
   // If you want to propose an indy proof without attributes or
   // any of the other properties you should pass an empty object
-  indy?: RequestedCredentialsOptions
+  indy?: IndyRequestedCredentialsOptions
   presentationExchange?: never
 }
 
 export interface AcceptProposalFormats {
   // If you want to propose an indy proof without attributes or
   // any of the other properties you should pass an empty object
-  indy?: AcceptProposal
+  indy?: IndyAcceptProposalOptions
   presentationExchange?: never
 }
 
@@ -61,7 +61,7 @@ export interface RequestedCredentialsFormats {
   presentationExchange?: undefined
 }
 
-interface AcceptProposal {
+interface IndyAcceptProposalOptions {
   request: ProofRequest
 }
 

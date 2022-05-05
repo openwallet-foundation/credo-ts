@@ -2,21 +2,21 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofService } from '../../../ProofService'
 import type { ProofRecord } from '../../../repository'
+import type { V1ProofService } from '../V1ProofService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { V1PresentationMessage, V1RequestPresentationMessage } from '../messages'
 
 export class V1PresentationHandler implements Handler {
-  private proofService: ProofService
+  private proofService: V1ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
   private didCommMessageRepository: DidCommMessageRepository
   public supportedMessages = [V1PresentationMessage]
 
   public constructor(
-    proofService: ProofService,
+    proofService: V1ProofService,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     didCommMessageRepository: DidCommMessageRepository

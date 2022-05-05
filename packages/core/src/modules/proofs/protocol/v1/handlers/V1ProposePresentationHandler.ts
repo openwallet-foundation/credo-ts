@@ -7,7 +7,6 @@ import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V1ProofService } from '../V1ProofService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V1ProposePresentationMessage } from '../messages'
 
@@ -72,7 +71,8 @@ export class V1ProposePresentationHandler implements Handler {
     const indyProofRequest = proofRequest.indy
 
     if (!indyProofRequest) {
-      throw new AriesFrameworkError('No Indy proof request was found')
+      this.agentConfig.logger.error(`Indy proof request is missing required proof request`)
+      return
     }
 
     const { message } = await this.proofService.createRequestAsResponse({
@@ -91,7 +91,7 @@ export class V1ProposePresentationHandler implements Handler {
       proofRecord: proofRecord,
       protocolVersion: ProofProtocolVersion.V1,
       autoAcceptProof: proofRecord.autoAcceptProof,
-      // Not sure to what to do with goalCode, willConfirm and comment fields here
+      willConfirm: true,
     })
 
     return createOutboundMessage(messageContext.connection, message)

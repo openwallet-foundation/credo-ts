@@ -88,6 +88,7 @@ export class V2ProposePresentationHandler implements Handler {
       protocolVersion: ProofProtocolVersion.V2,
       autoAcceptProof: proofRecord.autoAcceptProof,
       proofFormats: proofRequest,
+      willConfirm: true,
     })
 
     return createOutboundMessage(messageContext.connection, message)

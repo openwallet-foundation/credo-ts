@@ -152,7 +152,7 @@ export class ProofsModule {
       protocolVersion: version,
       proofFormats: proofRequest,
       goalCode: options.goalCode,
-      willConfirm: options.willConfirm,
+      willConfirm: options.willConfirm ?? true,
       comment: options.comment,
     })
 

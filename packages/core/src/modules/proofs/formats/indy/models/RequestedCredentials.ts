@@ -8,7 +8,7 @@ import { RecordTransformer } from '../../../../../utils/transformers'
 import { RequestedAttribute } from '../../../protocol/v1/models/RequestedAttribute'
 import { RequestedPredicate } from '../../../protocol/v1/models/RequestedPredicate'
 
-export interface RequestedCredentialsOptions {
+export interface IndyRequestedCredentialsOptions {
   requestedAttributes?: Record<string, RequestedAttribute>
   requestedPredicates?: Record<string, RequestedPredicate>
   selfAttestedAttributes?: Record<string, string>
@@ -20,7 +20,7 @@ export interface RequestedCredentialsOptions {
  * @see https://github.com/hyperledger/indy-sdk/blob/57dcdae74164d1c7aa06f2cccecaae121cefac25/libindy/src/api/anoncreds.rs#L1433-L1445
  */
 export class RequestedCredentials {
-  public constructor(options: RequestedCredentialsOptions = {}) {
+  public constructor(options: IndyRequestedCredentialsOptions = {}) {
     if (options) {
       this.requestedAttributes = options.requestedAttributes ?? {}
       this.requestedPredicates = options.requestedPredicates ?? {}
