@@ -45,6 +45,7 @@ import { CredentialState } from '../../CredentialState'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
+import { JsonLdCredentialFormatService } from '../../formats/jsonld/JsonLdCredentialFormatService'
 import { FORMAT_KEYS } from '../../formats/models/CredentialFormatServiceOptions'
 import { CredentialRepository, CredentialExchangeRecord } from '../../repository'
 import { RevocationService } from '../../services'
@@ -63,12 +64,21 @@ import { V2OfferCredentialMessage } from './messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from './messages/V2ProposeCredentialMessage'
 import { V2RequestCredentialMessage } from './messages/V2RequestCredentialMessage'
 
+interface AcceptOptions {
+  proposalOptions: AcceptProposalOptions
+  formats: CredentialFormatService[]
+}
+
 @scoped(Lifecycle.ContainerScoped)
 export class V2CredentialService extends CredentialService {
   private connectionService: ConnectionService
   private credentialMessageBuilder: CredentialMessageBuilder
-  private indyCredentialFormatService: IndyCredentialFormatService
-  private serviceFormatMap: { Indy: IndyCredentialFormatService } // jsonld todo
+  private indyCredentialFormatService!: IndyCredentialFormatService
+  private jsonldCredentialFormatService!: JsonLdCredentialFormatService
+  private serviceFormatMap: {
+    Indy: IndyCredentialFormatService
+    jsonld: JsonLdCredentialFormatService
+  }
 
   public constructor(
     connectionService: ConnectionService,
@@ -78,8 +88,9 @@ export class V2CredentialService extends CredentialService {
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
-    indyCredentialFormatService: IndyCredentialFormatService,
-    revocationService: RevocationService
+    revocationService: RevocationService,
+    indyCredentialFormatService?: IndyCredentialFormatService,
+    jsonldCredentialFormatService?: JsonLdCredentialFormatService
   ) {
     super(
       credentialRepository,
@@ -91,10 +102,17 @@ export class V2CredentialService extends CredentialService {
       revocationService
     )
     this.connectionService = connectionService
-    this.indyCredentialFormatService = indyCredentialFormatService
+
+    if (indyCredentialFormatService) {
+      this.indyCredentialFormatService = indyCredentialFormatService
+    }
+    if (jsonldCredentialFormatService) {
+      this.jsonldCredentialFormatService = jsonldCredentialFormatService
+    }
     this.credentialMessageBuilder = new CredentialMessageBuilder()
     this.serviceFormatMap = {
       [CredentialFormatType.Indy]: this.indyCredentialFormatService,
+      [CredentialFormatType.JsonLd]: this.jsonldCredentialFormatService,
     }
   }
 
@@ -237,9 +255,7 @@ export class V2CredentialService extends CredentialService {
    * @return options attributes of the proposal
    *
    */
-  private async createAcceptProposalOptions(
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<AcceptProposalOptions> {
+  private async createAcceptProposalOptions(credentialRecord: CredentialExchangeRecord): Promise<AcceptOptions> {
     const proposalMessage: V2ProposeCredentialMessage | null = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V2ProposeCredentialMessage,
@@ -264,10 +280,11 @@ export class V2CredentialService extends CredentialService {
         proposalMessage.formats,
         proposalMessage.messageAttachment
       )
+
       // should fill in the credential formats
       await formatService.processProposal(options, credentialRecord)
     }
-    return options
+    return { proposalOptions: options, formats }
   }
 
   /**
@@ -423,22 +440,23 @@ export class V2CredentialService extends CredentialService {
     // Assert
     credentialRecord.assertState(CredentialState.ProposalReceived)
 
-    let options: ServiceOfferCredentialOptions | undefined
+    let acceptFormats
+    let options: ServiceOfferCredentialOptions | NegotiateProposalOptions
     if (!proposal) {
-      const acceptProposalOptions: AcceptProposalOptions = await this.createAcceptProposalOptions(credentialRecord)
+      const { proposalOptions, formats } = await this.createAcceptProposalOptions(credentialRecord)
 
+      acceptFormats = formats
       options = {
-        credentialFormats: acceptProposalOptions.credentialFormats,
+        credentialFormats: proposalOptions.credentialFormats,
         protocolVersion: CredentialProtocolVersion.V2,
-        credentialRecordId: acceptProposalOptions.connectionId ? acceptProposalOptions.connectionId : undefined,
-        comment: acceptProposalOptions.comment,
+        credentialRecordId: proposalOptions.connectionId ? proposalOptions.connectionId : undefined,
+        comment: proposalOptions.comment,
       }
     } else {
       options = proposal
+      acceptFormats = this.getFormats(proposal.credentialFormats)
     }
-    const formats: CredentialFormatService[] = this.getFormats(options.credentialFormats as Record<string, unknown>)
-
-    if (!formats || formats.length === 0) {
+    if (!acceptFormats || acceptFormats.length === 0) {
       throw new AriesFrameworkError(`Unable to create offer as response. No supported formats`)
     }
     // Create the offer message
@@ -450,7 +468,7 @@ export class V2CredentialService extends CredentialService {
     })
 
     const credentialOfferMessage = await this.credentialMessageBuilder.createOfferAsResponse(
-      formats,
+      acceptFormats,
       credentialRecord,
       options
     )
@@ -480,7 +498,6 @@ export class V2CredentialService extends CredentialService {
     const { message: credentialOfferMessage, connection } = messageContext
 
     this.logger.debug(`Processing credential offer with id ${credentialOfferMessage.id}`)
-
     const formats: CredentialFormatService[] = this.getFormatsFromMessage(credentialOfferMessage.formats)
     if (!formats || formats.length === 0) {
       throw new AriesFrameworkError(`Unable to create offer. No supported formats`)
@@ -1083,7 +1100,7 @@ export class V2CredentialService extends CredentialService {
       if (msg.format.includes('indy')) {
         formats.push(this.getFormatService(CredentialFormatType.Indy))
       } else if (msg.format.includes('aries')) {
-        // todo
+        formats.push(this.getFormatService(CredentialFormatType.JsonLd))
       } else {
         throw new AriesFrameworkError(`Unknown Message Format: ${msg.format}`)
       }

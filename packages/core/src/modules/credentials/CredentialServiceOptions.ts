@@ -37,7 +37,7 @@ export interface CredentialOfferTemplate {
 
 export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
   attachId?: string
-  credentialFormats: {
+  credentialFormats?: {
     indy?: IndyCredentialPreview
     jsonld?: {
       // todo
@@ -48,10 +48,10 @@ export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
 export interface ServiceOfferCredentialOptions extends OfferCredentialOptions {
   connectionId?: string
   attachId?: string
-  // offerAttachment?: Attachment
 }
 
 export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {
+  attachId?: string
   offerAttachment?: Attachment
   proposalAttachment?: Attachment
 }

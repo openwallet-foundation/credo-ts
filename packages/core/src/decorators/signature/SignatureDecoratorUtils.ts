@@ -1,5 +1,7 @@
 import type { Wallet } from '../../wallet/Wallet'
 
+import { KeyType } from '../../crypto'
+import { Key } from '../../crypto/Key'
 import { AriesFrameworkError } from '../../error'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { TypedArrayEncoder } from '../../utils/TypedArrayEncoder'
@@ -21,12 +23,14 @@ export async function unpackAndVerifySignatureDecorator(
   wallet: Wallet
 ): Promise<Record<string, unknown>> {
   const signerVerkey = decorator.signer
+  const key = Key.fromPublicKeyBase58(signerVerkey, KeyType.Ed25519)
 
   // first 8 bytes are for 64 bit integer from unix epoch
   const signedData = TypedArrayEncoder.fromBase64(decorator.signatureData)
   const signature = TypedArrayEncoder.fromBase64(decorator.signature)
 
-  const isValid = await wallet.verify(signerVerkey, signedData, signature)
+  // const isValid = await wallet.verify(signerVerkey, signedData, signature)
+  const isValid = await wallet.verify({ signature, data: signedData, key })
 
   if (!isValid) {
     throw new AriesFrameworkError('Signature is not valid')
@@ -47,8 +51,9 @@ export async function unpackAndVerifySignatureDecorator(
  */
 export async function signData(data: unknown, wallet: Wallet, signerKey: string): Promise<SignatureDecorator> {
   const dataBuffer = Buffer.concat([timestamp(), JsonEncoder.toBuffer(data)])
+  const key = Key.fromPublicKeyBase58(signerKey, KeyType.Ed25519)
 
-  const signatureBuffer = await wallet.sign(dataBuffer, signerKey)
+  const signatureBuffer = await wallet.sign({ key, data: dataBuffer })
 
   const signatureDecorator = new SignatureDecorator({
     signatureType: 'https://didcomm.org/signature/1.0/ed25519Sha512_single',

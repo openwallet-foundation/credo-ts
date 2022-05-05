@@ -6,6 +6,8 @@ import type {
 } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialService } from '../../../services/CredentialService'
 
+import { W3cCredential } from '../../../../../../src/modules/vc/models'
+import { JsonTransformer } from '../../../../../../src/utils'
 import { getBaseConfig } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
@@ -42,11 +44,59 @@ const proposal: ProposeCredentialOptions = {
   comment: 'v2 propose credential test',
 }
 
+const inputDoc = {
+  '@context': [
+    'https://www.w3.org/2018/credentials/v1',
+    'https://w3id.org/citizenship/v1',
+    'https://w3id.org/security/bbs/v1',
+  ],
+  id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+  type: ['VerifiableCredential', 'PermanentResidentCard'],
+  issuer: 'weidfhwefhew',
+  identifier: '83627465',
+  name: 'Permanent Resident Card',
+  description: 'Government of Example Permanent Resident Card.',
+  issuanceDate: '2019-12-03T12:19:52Z',
+  expirationDate: '2029-12-03T12:19:52Z',
+  credentialSubject: {
+    id: 'did:example:b34ca6cd37bbf23',
+    type: ['PermanentResident', 'Person'],
+    givenName: 'JOHN',
+    familyName: 'SMITH',
+    gender: 'Male',
+    image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+    residentSince: '2015-01-01',
+    lprCategory: 'C09',
+    lprNumber: '999-999-999',
+    commuterClassification: 'C1',
+    birthCountry: 'Bahamas',
+    birthDate: '1958-07-17',
+  },
+}
+
+const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
+
+const signCredentialOptions = {
+  credential,
+  proofType: 'Ed25519Signature2018',
+  verificationMethod: 'weprih2ofueb',
+}
+
+const jsonProposal: ProposeCredentialOptions = {
+  connectionId: '',
+  protocolVersion: CredentialProtocolVersion.V2,
+  credentialFormats: {
+    jsonld: signCredentialOptions,
+  },
+  comment: 'v2 propose credential test',
+}
+
 const multiFormatProposal: ProposeCredentialOptions = {
   connectionId: '',
   protocolVersion: CredentialProtocolVersion.V2,
   credentialFormats: {
     indy: testAttributes,
+    jsonld: signCredentialOptions,
   },
   comment: 'v2 propose credential test',
 }
@@ -81,7 +131,16 @@ describe('V2 Credential Architecture', () => {
       expect(type).toEqual('IndyCredentialFormatService')
     })
 
-    test('propose credential format service returns correct format and filters~attach', () => {
+    test('returns the correct credential format service for jsonld', () => {
+      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
+      const service: CredentialService = api.getService(version)
+      const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.JsonLd)
+      expect(formatService).not.toBeNull()
+      const type: string = formatService.constructor.name
+      expect(type).toEqual('JsonLdCredentialFormatService')
+    })
+
+    test('propose credential format service returns correct format and filters~attach (indy)', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
@@ -89,6 +148,17 @@ describe('V2 Credential Architecture', () => {
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-filter@v2.0')
+      expect(filtersAttach).toBeTruthy()
+    })
+
+    test('propose credential format service returns correct format and filters~attach (jsonld)', () => {
+      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
+      const service: CredentialService = api.getService(version)
+      const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.JsonLd)
+      const { format: formats, attachment: filtersAttach } = formatService.createProposal(jsonProposal)
+
+      expect(formats.attachId.length).toBeGreaterThan(0)
+      expect(formats.format).toEqual('aries/ld-proof-vc-detail@v1.0')
       expect(filtersAttach).toBeTruthy()
     })
     test('propose credential format service transforms and validates CredPropose payload correctly', () => {
@@ -108,14 +178,14 @@ describe('V2 Credential Architecture', () => {
       const credFormats: FormatServiceProposeCredentialFormats =
         multiFormatProposal.credentialFormats as FormatServiceProposeCredentialFormats
       const formats: CredentialFormatService[] = service.getFormats(credFormats)
-      expect(formats.length).toBe(1) // for now will be added to with jsonld
+      expect(formats.length).toBe(2) // for now will be added to with jsonld
       const messageBuilder: CredentialMessageBuilder = new CredentialMessageBuilder()
 
       const v2Proposal = messageBuilder.createProposal(formats, multiFormatProposal)
 
-      expect(v2Proposal.message.formats.length).toBe(1)
+      expect(v2Proposal.message.formats.length).toBe(2)
       expect(v2Proposal.message.formats[0].format).toEqual('hlindy/cred-filter@v2.0')
-      // expect(v2Proposal.message.formats[1].format).toEqual('aries/ld-proof-vc-detail@v1.0')
+      expect(v2Proposal.message.formats[1].format).toEqual('aries/ld-proof-vc-detail@v1.0')
     })
   })
 })

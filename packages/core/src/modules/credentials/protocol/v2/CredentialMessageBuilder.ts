@@ -5,7 +5,7 @@ import type {
   ServiceOfferCredentialOptions,
   ServiceRequestCredentialOptions,
 } from '../../CredentialServiceOptions'
-import type { ProposeCredentialOptions } from '../../CredentialsModuleOptions'
+import type { NegotiateProposalOptions, ProposeCredentialOptions } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { CredentialFormatSpec } from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialExchangeRecordProps } from '../../repository/CredentialExchangeRecord'
@@ -117,7 +117,7 @@ export class CredentialMessageBuilder {
   public async createOfferAsResponse(
     formatServices: CredentialFormatService[],
     credentialRecord: CredentialExchangeRecord,
-    options: ServiceOfferCredentialOptions
+    options: ServiceOfferCredentialOptions | NegotiateProposalOptions
   ): Promise<V2OfferCredentialMessage> {
     if (formatServices.length === 0) {
       throw new AriesFrameworkError('no format services provided to createProposal')

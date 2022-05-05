@@ -9,11 +9,10 @@ import type {
 } from '../CredentialServiceOptions'
 import type {
   AcceptRequestOptions,
+  NegotiateProposalOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../CredentialsModuleOptions'
-import type { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
-import type { V2CredentialPreview } from '../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord, CredentialRepository } from '../repository'
 import type {
   FormatServiceCredentialAttachmentFormats,
@@ -21,7 +20,6 @@ import type {
   HandlerAutoAcceptOptions,
   FormatServiceOfferAttachmentFormats,
   FormatServiceProposeAttachmentFormats,
-  RevocationRegistry,
 } from './models/CredentialFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
@@ -43,9 +41,11 @@ export abstract class CredentialFormatService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<void>
 
-  abstract createOffer(options: ServiceOfferCredentialOptions): Promise<FormatServiceOfferAttachmentFormats>
+  abstract createOffer(
+    options: ServiceOfferCredentialOptions | NegotiateProposalOptions
+  ): Promise<FormatServiceOfferAttachmentFormats>
 
-  abstract processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void>
+  abstract processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): void
 
   abstract createRequest(
     options: RequestCredentialOptions,

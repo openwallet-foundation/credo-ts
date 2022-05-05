@@ -2,7 +2,7 @@ import type { VerificationMethod } from '../verificationMethod'
 import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto'
-import { Key } from '../Key'
+import { Key } from '../../../../crypto/Key'
 
 import { getSignatureKeyBase } from './getSignatureKeyBase'
 

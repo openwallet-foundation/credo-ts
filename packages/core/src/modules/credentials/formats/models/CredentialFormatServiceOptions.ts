@@ -1,11 +1,15 @@
 import type { LinkedAttachment } from '../../../../../src/utils/LinkedAttachment'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ParseRevocationRegistryDefitinionTemplate } from '../../../ledger/services'
+import type { SignCredentialOptions } from '../../../vc/models/W3cCredentialServiceOptions'
+import type { W3cCredential } from '../../../vc/models/credential/W3cCredential'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
+import type { ServiceRequestCredentialOptions } from '../../CredentialServiceOptions'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { CredPropose } from './CredPropose'
+import type { CredDef } from 'indy-sdk'
 
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
@@ -67,16 +71,26 @@ export interface FormatServiceOfferAttachmentFormats extends FormatServiceCreden
 }
 export const FORMAT_KEYS: FormatKeys = {
   indy: CredentialFormatType.Indy,
+  jsonld: CredentialFormatType.JsonLd,
+}
+
+export interface FormatServiceRequestCredentialOptions extends ServiceRequestCredentialOptions {
+  indy?: {
+    credentialDefinition?: {
+      credDef: CredDef
+    }
+  }
+  jsonld?: W3cCredential
 }
 
 export interface FormatServiceOfferCredentialFormats {
   indy?: IndyOfferCredentialFormat
-  jsonld?: undefined
+  jsonld?: SignCredentialOptions
 }
 
 export interface FormatServiceProposeCredentialFormats {
   indy?: IndyProposeCredentialFormat
-  jsonld?: undefined
+  jsonld?: SignCredentialOptions
 }
 
 export interface FormatServiceAcceptProposeCredentialFormats {
@@ -85,17 +99,17 @@ export interface FormatServiceAcceptProposeCredentialFormats {
     attributes: CredentialPreviewAttribute[]
     linkedAttachments?: LinkedAttachment[]
   }
-  jsonld?: undefined
+  jsonld?: SignCredentialOptions
 }
 
 export interface FormatServiceRequestCredentialFormats {
   indy?: IndyRequestCredentialFormat
-  jsonld?: undefined
+  jsonld?: SignCredentialOptions
 }
 
 export interface FormatServiceIssueCredentialFormats {
   indy?: IndyIssueCredentialFormat
-  jsonld?: undefined
+  jsonld?: SignCredentialOptions
 }
 
 export interface HandlerAutoAcceptOptions {
