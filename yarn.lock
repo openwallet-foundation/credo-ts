@@ -753,16 +753,6 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
-"@digitalbazaar/ed25519-verification-key-2018@^3.1.2":
-  version "3.1.2"
-  resolved "https://registry.yarnpkg.com/@digitalbazaar/ed25519-verification-key-2018/-/ed25519-verification-key-2018-3.1.2.tgz#1673ab1d50311d82809785f3f4aa6eccf2e41328"
-  integrity sha512-UD7rETyyaHtKYeKfQu/FoeZ00EmANInX0ftmMKQJsI1q8YcRHUAiMF0sIbVM/T73+VBR2dObtfLnZTNM+PkXug==
-  dependencies:
-    "@stablelib/ed25519" "^1.0.1"
-    base58-universal "^1.0.0"
-    crypto-ld "^5.0.0"
-    esm "^3.2.25"
-
 "@digitalbazaar/ed25519-verification-key-2020@^3.2.0":
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/@digitalbazaar/ed25519-verification-key-2020/-/ed25519-verification-key-2020-3.2.0.tgz#7b4638f8393cbbd617ffb8f77963f36efa10a714"
@@ -4208,7 +4198,7 @@ crypto-ld@^3.7.0:
   optionalDependencies:
     sodium-native "^3.2.0"
 
-crypto-ld@^5.0.0, crypto-ld@^5.1.0:
+crypto-ld@^5.1.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/crypto-ld/-/crypto-ld-5.1.0.tgz#fbc1344c553f10aa1bcfc9d94c8c161a56c07150"
   integrity sha512-Dy1QoQzj+2K6UlGZ9l34cPp+g/YHOd+r3/DXXQTnnz5btGb0vqDlkZBn+icYmwntEmW0bvGVwFWvcwZSbk1EEQ==
@@ -4529,16 +4519,6 @@ ecc-jsbn@~0.1.1:
   dependencies:
     jsbn "~0.1.0"
     safer-buffer "^2.1.0"
-
-ed25519-signature-2018-context@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/ed25519-signature-2018-context/-/ed25519-signature-2018-context-1.1.0.tgz#68002ea7497c32e8170667cfd67468dedf7d220e"
-  integrity sha512-ppDWYMNwwp9bploq0fS4l048vHIq41nWsAbPq6H4mNVx9G/GxW3fwg4Ln0mqctP13MoEpREK7Biz8TbVVdYXqA==
-
-ed25519-signature-2020-context@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/ed25519-signature-2020-context/-/ed25519-signature-2020-context-1.1.0.tgz#b2f724f07db154ddf0fd6605410d88736e56fd07"
-  integrity sha512-dBGSmoUIK6h2vadDctrDnhhTO01PR2hJk0mRNEfrRDPCjaIwrfy4J+eziEQ9Q1m8By4f/CSRgKM1h53ydKfdNg==
 
 ee-first@1.1.1:
   version "1.1.1"
