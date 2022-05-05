@@ -1,6 +1,5 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { ProofService } from './ProofService'
-import type { ProofRequestOptions } from './formats/indy/models/ProofRequest'
 import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,

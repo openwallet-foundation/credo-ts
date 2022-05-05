@@ -1,4 +1,3 @@
-import type { ProofRequestOptions } from '../formats/indy/models/ProofRequest'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
