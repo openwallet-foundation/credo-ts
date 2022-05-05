@@ -129,7 +129,7 @@ export class ConnectionRecord
       expectedStates = [expectedStates]
     }
 
-    if (this.state && !expectedStates.includes(this.state)) {
+    if (!expectedStates.includes(this.state)) {
       throw new AriesFrameworkError(
         `Connection record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
       )

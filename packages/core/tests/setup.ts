@@ -10,14 +10,7 @@ function toBeConnectedWith(actual: ConnectionRecord, expected: ConnectionRecord)
   actual.assertReady()
   expected.assertReady()
 
-  let pass
-  if (actual.did.startsWith('did:') && expected.did.startsWith('did:')) {
-    // If connections contain resolvebale dids we can just compare them.
-    pass = actual.theirDid === expected.did
-  } else {
-    pass = actual.theirDid === expected.did
-  }
-
+  const pass = actual.theirDid === expected.did
   if (pass) {
     return {
       message: () => `expected connection ${actual.theirDid} not to be connected to with ${expected.did}`,

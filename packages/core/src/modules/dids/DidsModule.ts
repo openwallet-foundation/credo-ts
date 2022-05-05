@@ -31,8 +31,4 @@ export class DidsModule {
   public findAllByRecipientKey(recipientKey: Key) {
     return this.didRepository.findAllByRecipientKey(recipientKey)
   }
-
-  public findByDid(did: string) {
-    return this.didRepository.findById(did)
-  }
 }

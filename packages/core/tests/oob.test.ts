@@ -16,6 +16,7 @@ import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidC
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandMessage } from '../src/modules/oob/messages'
+import { sleep } from '../src/utils/sleep'
 
 import { TestMessage } from './TestMessage'
 import { getBaseConfig, prepareForIssuance } from './helpers'
@@ -295,7 +296,7 @@ describe('out of band', () => {
       let credentials: CredentialRecord[] = []
       while (credentials.length < 1) {
         credentials = await aliceAgent.credentials.getAll()
-        await wait(100)
+        await sleep(100)
       }
 
       expect(credentials).toHaveLength(1)
@@ -357,7 +358,7 @@ describe('out of band', () => {
       let credentials: CredentialRecord[] = []
       while (credentials.length < 1) {
         credentials = await aliceAgent.credentials.getAll()
-        await wait(100)
+        await sleep(100)
       }
 
       expect(credentials).toHaveLength(1)
@@ -508,9 +509,3 @@ describe('out of band', () => {
     })
   })
 })
-
-function wait(ms = 1000) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}

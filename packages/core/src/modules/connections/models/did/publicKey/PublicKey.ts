@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator'
+import { IsOptional, IsString } from 'class-validator'
 
 export class PublicKey {
   public constructor(options: { id: string; controller: string; type: string; value?: string }) {
@@ -20,5 +20,6 @@ export class PublicKey {
   public type!: string
 
   @IsString()
+  @IsOptional()
   public value?: string
 }
