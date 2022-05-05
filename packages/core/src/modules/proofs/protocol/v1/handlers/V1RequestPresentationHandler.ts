@@ -83,7 +83,7 @@ export class V1RequestPresentationHandler implements Handler {
         indy: requestedCredentials.indy,
       },
       protocolVersion: ProofProtocolVersion.V1,
-      // Not sure to what to do with goalCode, willConfirm and comment fields here
+      willConfirm: true,
     })
 
     if (messageContext.connection) {

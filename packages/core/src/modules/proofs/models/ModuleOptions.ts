@@ -48,10 +48,6 @@ export interface OutOfBandRequestOptions {
   autoAcceptProof?: AutoAcceptProof
 }
 
-export type CreateProofRequestOptions = Partial<
-  Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
->
-
 export interface AcceptPresentationOptions {
   proofRecordId: string
   comment?: string

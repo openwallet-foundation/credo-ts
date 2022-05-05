@@ -66,6 +66,7 @@ export interface CreatePresentationOptions {
   goalCode?: string
   comment?: string
   protocolVersion: ProofProtocolVersion
+  willConfirm?: boolean
 }
 
 export interface CreateAckOptions {

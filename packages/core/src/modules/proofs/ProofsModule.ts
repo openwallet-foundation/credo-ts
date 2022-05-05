@@ -491,10 +491,6 @@ export class ProofsModule {
   }
 }
 
-export type CreateProofRequestOptions = Partial<
-  Pick<ProofRequestOptions, 'name' | 'nonce' | 'requestedAttributes' | 'requestedPredicates'>
->
-
 export interface ProofRequestConfig {
   comment?: string
   autoAcceptProof?: AutoAcceptProof
