@@ -469,8 +469,8 @@ export class V2ProofService extends ProofService {
           )
         } catch (e) {
           if (e instanceof AriesFrameworkError) {
-            throw new PresentationProblemReportError(e.message, {
-              problemCode: PresentationProblemReportReason.Abandoned,
+            throw new V2PresentationProblemReportError(e.message, {
+              problemCode: V2PresentationProblemReportReason.Abandoned,
             })
           }
           throw e
@@ -542,8 +542,8 @@ export class V2ProofService extends ProofService {
           )
         } catch (e) {
           if (e instanceof AriesFrameworkError) {
-            throw new PresentationProblemReportError(e.message, {
-              problemCode: PresentationProblemReportReason.Abandoned,
+            throw new V2PresentationProblemReportError(e.message, {
+              problemCode: V2PresentationProblemReportReason.Abandoned,
             })
           }
           throw e
@@ -551,8 +551,8 @@ export class V2ProofService extends ProofService {
       }
     }
     if (formatVerificationResults.length === 0) {
-      throw new PresentationProblemReportError('None of the received formats are supported.', {
-        problemCode: PresentationProblemReportReason.Abandoned,
+      throw new V2PresentationProblemReportError('None of the received formats are supported.', {
+        problemCode: V2PresentationProblemReportReason.Abandoned,
       })
     }
 

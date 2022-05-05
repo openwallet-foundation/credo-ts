@@ -32,7 +32,7 @@ export interface CreatePresentationFormats {
   // If you want to propose an indy proof without attributes or
   // any of the other properties you should pass an empty object
   indy?: IndyRequestedCredentialsOptions
-  presentationExchange?: never
+  presentationExchange?: W3cCredential
 }
 
 export interface AcceptProposalFormats {

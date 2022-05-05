@@ -194,11 +194,11 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const signPresentationOptions: SignPresentationOptions = {
       presentation,
-      purpose: 'assertionMethod',
-      signatureType: proof.proofPurpose,
+      purpose: proof.proofPurpose,
+      signatureType: proof.type,
       verificationMethod: proof.verificationMethod,
     }
-    console.log('signPresentationOptions:\n', signPresentationOptions)
+    console.log('signPresentationOptions:\n', JSON.stringify(signPresentationOptions, null, 2))
 
     const signedPresentation = await this.w3cCredentialService.signPresentation(signPresentationOptions)
     console.log('signedPresentation:::\n', signedPresentation)
