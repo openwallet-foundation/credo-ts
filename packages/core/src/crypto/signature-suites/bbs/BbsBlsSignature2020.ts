@@ -23,7 +23,6 @@ import type {
 } from './types'
 
 import { suites } from '@digitalcredentials/jsonld-signatures'
-import { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 import jsonld from 'jsonld'
 
 import { SECURITY_CONTEXT_BBS_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
@@ -65,7 +64,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
       type: 'BbsBlsSignature2020',
     }
 
-    this.LDKeyClass = LDKeyClass ?? Bls12381G2KeyPair
+    this.LDKeyClass = LDKeyClass
     this.signer = signer
     this.verificationMethod = verificationMethod
     this.proofSignatureKey = 'proofValue'
