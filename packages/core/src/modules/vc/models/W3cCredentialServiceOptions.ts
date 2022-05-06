@@ -38,6 +38,7 @@ export interface SignPresentationOptions {
   signatureType: string
   purpose: ProofPurpose
   verificationMethod: string
+  challenge?: string
 }
 
 export interface VerifyPresentationOptions {
