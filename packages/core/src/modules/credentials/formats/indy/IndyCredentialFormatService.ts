@@ -1,4 +1,5 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { Logger } from '../../../../logger'
 import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
@@ -32,7 +33,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../../../../../src/error'
 import { MessageValidator } from '../../../../../src/utils/MessageValidator'
-import logger from '../../../../../tests/logger'
+import { AgentConfig } from '../../../../agent/AgentConfig'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
@@ -53,19 +54,22 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   private indyLedgerService: IndyLedgerService
   private indyHolderService: IndyHolderService
   protected credentialRepository: CredentialRepository // protected as in base class
+  private logger: Logger
 
   public constructor(
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
     indyIssuerService: IndyIssuerService,
     indyLedgerService: IndyLedgerService,
-    indyHolderService: IndyHolderService
+    indyHolderService: IndyHolderService,
+    agentConfig: AgentConfig
   ) {
     super(credentialRepository, eventEmitter)
     this.credentialRepository = credentialRepository
     this.indyIssuerService = indyIssuerService
     this.indyLedgerService = indyLedgerService
     this.indyHolderService = indyHolderService
+    this.logger = agentConfig.logger
   }
 
   /**
@@ -156,7 +160,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (!attachment) {
       throw new AriesFrameworkError('Missing offer attachment in processOffer')
     }
-    logger.debug(`Save metadata for credential record ${credentialRecord.id}`)
+    this.logger.debug(`Save metadata for credential record ${credentialRecord.id}`)
 
     const credOffer: CredOffer = attachment.getDataAsJson<CredOffer>()
 
