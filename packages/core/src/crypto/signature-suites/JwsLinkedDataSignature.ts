@@ -227,15 +227,14 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     documentLoader: DocumentLoader
     expansionMap: () => void
   }) {
-    if (
-      !(await super.matchProof({
-        proof: options.proof,
-        document: options.document,
-        purpose: options.purpose,
-        documentLoader: options.documentLoader,
-        expansionMap: options.expansionMap,
-      }))
-    ) {
+    const proofMatches = await super.matchProof({
+      proof: options.proof,
+      document: options.document,
+      purpose: options.purpose,
+      documentLoader: options.documentLoader,
+      expansionMap: options.expansionMap,
+    })
+    if (!proofMatches) {
       return false
     }
     // NOTE: When subclassing this suite: Extending suites will need to check
