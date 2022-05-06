@@ -1,5 +1,4 @@
 import type { JwsLinkedDataSignature } from '../../../crypto/signature-suites/JwsLinkedDataSignature'
-// @ts-ignore
 import type { Proof, DocumentLoader } from '../../../utils'
 
 import jsonld from '@digitalcredentials/jsonld'
@@ -66,6 +65,8 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
         throw result.error
       }
 
+      // This @ts-ignore is necessary because the .getValues() method is not part of the public API.
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
       const issuer = jsonld.util.getValues(options.document, 'issuer')
 
