@@ -266,7 +266,8 @@ describe('CredentialService', () => {
         eventEmitter,
         indyIssuerService,
         indyLedgerService,
-        indyHolderService
+        indyHolderService,
+        agentConfig
       ),
       revocationService
     )
