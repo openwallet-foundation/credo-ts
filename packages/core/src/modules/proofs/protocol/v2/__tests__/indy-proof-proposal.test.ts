@@ -38,7 +38,7 @@ describe('Present Proof', () => {
   })
 
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
-    testLogger.test('Alice sends (v2) proof proposal to Faber')
+    testLogger.test('Alice sends proof proposal to Faber')
 
     const proposeOptions: ProposeProofOptions = {
       connectionId: aliceConnection.id,
@@ -90,8 +90,8 @@ describe('Present Proof', () => {
       id: expect.any(String),
       comment: 'V2 propose proof test',
     })
-    expect(faberPresentationRecord.id).not.toBeNull()
     expect(faberPresentationRecord).toMatchObject({
+      id: expect.anything(),
       threadId: faberPresentationRecord.threadId,
       state: ProofState.ProposalReceived,
       protocolVersion: ProofProtocolVersion.V2,

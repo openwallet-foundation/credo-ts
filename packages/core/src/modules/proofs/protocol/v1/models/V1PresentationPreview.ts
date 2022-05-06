@@ -140,30 +140,4 @@ export class PresentationPreview {
   public toJSON(): Record<string, unknown> {
     return JsonTransformer.toJSON(this)
   }
-
-  public static fromRecord(record: Record<string, string>) {
-    const attributes = Object.entries(record).map(
-      ([name, value]) =>
-        new PresentationPreviewAttribute({
-          name,
-          mimeType: 'text/plain',
-          value,
-        })
-    )
-
-    const predicates = Object.entries(record).map(
-      ([age, credDefId]) =>
-        new PresentationPreviewPredicate({
-          name: age,
-          credentialDefinitionId: credDefId,
-          predicate: PredicateType.GreaterThanOrEqualTo,
-          threshold: 50,
-        })
-    )
-
-    return new PresentationPreview({
-      attributes,
-      predicates,
-    })
-  }
 }

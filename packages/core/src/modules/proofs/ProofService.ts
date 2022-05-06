@@ -89,11 +89,11 @@ export abstract class ProofService {
 
   /**
    * 1. Assert (connection ready, record state)
-   * 1. Create proposal message
-   * 2. loop through all formats from ProposeProofOptions and call format service
-   * 3. Create and store proof record
-   * 4. Store proposal message
-   * 5. Return proposal message + proof record
+   * 2. Create proposal message
+   * 3. loop through all formats from ProposeProofOptions and call format service
+   * 4. Create and store proof record
+   * 5. Store proposal message
+   * 6. Return proposal message + proof record
    */
   abstract createProposal(options: CreateProposalOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
@@ -101,11 +101,11 @@ export abstract class ProofService {
    * Create a proposal message in response to a received proof request message
    *
    * 1. assert record state
-   * 1. Create proposal message
-   * 2. loop through all formats from ProposeProofOptions and call format service
-   * 3. Update proof record
-   * 4. Create or update proposal message
-   * 5. Return proposal message + proof record
+   * 2. Create proposal message
+   * 3. loop through all formats from ProposeProofOptions and call format service
+   * 4. Update proof record
+   * 5. Create or update proposal message
+   * 6. Return proposal message + proof record
    */
   abstract createProposalAsResponse(
     options: CreateProposalAsResponseOptions
