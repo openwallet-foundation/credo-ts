@@ -20,6 +20,7 @@ export abstract class LdKeyPair {
     throw new Error('Not implemented')
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public static async from(verificationMethod: Record<string, any>): Promise<LdKeyPair> {
     throw new Error('Abstract method from() must be implemented in subclass.')
   }

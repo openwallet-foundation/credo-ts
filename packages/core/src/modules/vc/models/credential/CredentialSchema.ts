@@ -1,6 +1,3 @@
-import type { SingleOrArray } from '../../../../utils/type'
-
-import { Transform, TransformationType, plainToInstance, instanceToPlain } from 'class-transformer'
 import { IsString } from 'class-validator'
 
 import { IsUri } from '../../../../utils/validators'
