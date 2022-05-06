@@ -5,7 +5,6 @@ import type {
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
-  CredentialOfferTemplate,
   CredentialStateChangedEvent,
   InitConfig,
   ProofAttributeInfo,
@@ -13,7 +12,8 @@ import type {
   ProofStateChangedEvent,
   SchemaTemplate,
 } from '../src'
-import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/interfaces'
+import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
+import type { CredentialOfferTemplate } from '../src/modules/credentials/protocol'
 import type { Schema, CredDef } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -25,6 +25,9 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { agentDependencies } from '../../node/src'
 import {
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
   LogLevel,
   AgentConfig,
   AriesFrameworkError,
@@ -44,8 +47,7 @@ import {
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../src/modules/credentials/CredentialProtocolVersion'
-import { CredentialRecordType } from '../src/modules/credentials/interfaces'
-import { V1CredentialPreview } from '../src/modules/credentials/v1/V1CredentialPreview'
+import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/V1CredentialPreview'
 import { DidCommService } from '../src/modules/dids'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
@@ -57,6 +59,7 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
+export { agentDependencies }
 
 export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
@@ -358,13 +361,14 @@ export async function issueCredential({
   const offerOptions: OfferCredentialOptions = {
     comment: 'some comment about credential',
     connectionId: issuerConnectionId,
+    protocolVersion: CredentialProtocolVersion.V1,
     credentialFormats: {
       indy: {
         attributes: credentialTemplate.preview.attributes,
         credentialDefinitionId: credentialTemplate.credentialDefinitionId,
+        linkedAttachments: credentialTemplate.linkedAttachments,
       },
     },
-    protocolVersion: CredentialProtocolVersion.V1_0,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
   let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(offerOptions)
@@ -376,8 +380,6 @@ export async function issueCredential({
 
   const acceptOfferOptions: AcceptOfferOptions = {
     credentialRecordId: holderCredentialRecord.id,
-    credentialRecordType: CredentialRecordType.Indy,
-    protocolVersion: CredentialProtocolVersion.V1_0,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
 
@@ -421,14 +423,15 @@ export async function issueConnectionLessCredential({
 
   const offerOptions: OfferCredentialOptions = {
     comment: 'V1 Out of Band offer',
+    protocolVersion: CredentialProtocolVersion.V1,
     credentialFormats: {
       indy: {
         attributes: credentialTemplate.preview.attributes,
         credentialDefinitionId: credentialTemplate.credentialDefinitionId,
       },
     },
-    protocolVersion: CredentialProtocolVersion.V2_0,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+    connectionId: '',
   }
   // eslint-disable-next-line prefer-const
   let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOutOfBandOffer(
@@ -443,8 +446,6 @@ export async function issueConnectionLessCredential({
   })
   const acceptOfferOptions: AcceptOfferOptions = {
     credentialRecordId: holderCredentialRecord.id,
-    credentialRecordType: CredentialRecordType.Indy,
-    protocolVersion: CredentialProtocolVersion.V1_0,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
 
@@ -497,10 +498,7 @@ export async function presentProof({
     state: ProofState.RequestReceived,
   })
 
-  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(
-    ProofProtocolVersion.V1_0,
-    holderRecord.id
-  )
+  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(holderRecord.id)
   const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
   await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
 
@@ -566,12 +564,12 @@ export async function setupCredentialTests(
   })
   const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
   faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await faberAgent.initialize()
 
   const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
   aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
+  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await aliceAgent.initialize()
 
   const {
@@ -611,12 +609,12 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   }
   const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
   faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await faberAgent.initialize()
 
   const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
   aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
+  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await aliceAgent.initialize()
 
   const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])

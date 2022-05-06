@@ -1,5 +1,0 @@
-export * from './V1ProposePresentationMessage'
-export * from './V1RequestPresentationMessage'
-export * from './V1PresentationMessage'
-export * from './V1PresentationAckMessageV1'
-export * from './V1PresentationProblemReportMessage'

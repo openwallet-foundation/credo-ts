@@ -5,7 +5,7 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
-import { JsonEncoder, BufferEncoder } from '../utils'
+import { JsonEncoder, TypedArrayEncoder } from '../utils'
 import { Wallet } from '../wallet'
 import { WalletError } from '../wallet/error'
 
@@ -23,11 +23,11 @@ export class JwsService {
   }
 
   public async createJws({ payload, verkey, header }: CreateJwsOptions): Promise<JwsGeneralFormat> {
-    const base64Payload = BufferEncoder.toBase64URL(payload)
+    const base64Payload = TypedArrayEncoder.toBase64URL(payload)
     const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(verkey))
 
-    const signature = BufferEncoder.toBase64URL(
-      await this.wallet.sign(BufferEncoder.fromString(`${base64Protected}.${base64Payload}`), verkey)
+    const signature = TypedArrayEncoder.toBase64URL(
+      await this.wallet.sign(TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), verkey)
     )
 
     return {
@@ -41,7 +41,7 @@ export class JwsService {
    * Verify a a JWS
    */
   public async verifyJws({ jws, payload }: VerifyJwsOptions): Promise<VerifyJwsResult> {
-    const base64Payload = BufferEncoder.toBase64URL(payload)
+    const base64Payload = TypedArrayEncoder.toBase64URL(payload)
     const signatures = 'signatures' in jws ? jws.signatures : [jws]
 
     if (signatures.length === 0) {
@@ -60,10 +60,10 @@ export class JwsService {
         throw new AriesFrameworkError('Invalid protected header')
       }
 
-      const data = BufferEncoder.fromString(`${jws.protected}.${base64Payload}`)
-      const signature = BufferEncoder.fromBase64(jws.signature)
+      const data = TypedArrayEncoder.fromString(`${jws.protected}.${base64Payload}`)
+      const signature = TypedArrayEncoder.fromBase64(jws.signature)
 
-      const verkey = BufferEncoder.toBase58(BufferEncoder.fromBase64(protectedJson?.jwk?.x))
+      const verkey = TypedArrayEncoder.toBase58(TypedArrayEncoder.fromBase64(protectedJson?.jwk?.x))
       signerVerkeys.push(verkey)
 
       try {
@@ -102,7 +102,7 @@ export class JwsService {
       jwk: {
         kty: 'OKP',
         crv: 'Ed25519',
-        x: BufferEncoder.toBase64URL(BufferEncoder.fromBase58(verkey)),
+        x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(verkey)),
       },
     }
   }

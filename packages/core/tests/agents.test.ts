@@ -40,12 +40,12 @@ describe('agents', () => {
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     bobAgent = new Agent(bobConfig.config, bobConfig.agentDependencies)
     bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(bobMessages, subjectMap))
+    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()
@@ -67,5 +67,13 @@ describe('agents', () => {
     })
 
     expect(basicMessage.content).toBe(message)
+  })
+
+  test('can shutdown and re-initialize the same agent', async () => {
+    expect(aliceAgent.isInitialized).toBe(true)
+    await aliceAgent.shutdown()
+    expect(aliceAgent.isInitialized).toBe(false)
+    await aliceAgent.initialize()
+    expect(aliceAgent.isInitialized).toBe(true)
   })
 })

@@ -78,10 +78,3 @@ export class ConsoleLogger extends BaseLogger {
     this.log(LogLevel.fatal, message, data)
   }
 }
-
-// import this with whatever log level required for testing
-const defaultTestLogger: ConsoleLogger = new ConsoleLogger(LogLevel.debug)
-
-export const unitTestLogger = (message: string, data?: Record<string, any>): void => {
-  defaultTestLogger.debug(message, data)
-}

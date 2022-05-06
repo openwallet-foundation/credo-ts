@@ -23,9 +23,13 @@ import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
+import { StorageUpdateService } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
+import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
+import { DEFAULT_UPDATE_CONFIG } from '../storage/migration/updates'
 import { IndyWallet } from '../wallet/IndyWallet'
+import { WalletModule } from '../wallet/WalletModule'
 import { WalletError } from '../wallet/error'
 
 import { AgentConfig } from './AgentConfig'
@@ -45,23 +49,26 @@ export class Agent {
   protected messageSender: MessageSender
   private _isInitialized = false
   public messageSubscription: Subscription
+  private walletService: Wallet
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
   public readonly basicMessages: BasicMessagesModule
   public readonly ledger: LedgerModule
-  public readonly credentials!: CredentialsModule
-  // public readonly credentials: CredentialsModule
+  public readonly credentials: CredentialsModule
   public readonly mediationRecipient: RecipientModule
   public readonly mediator: MediatorModule
   public readonly discovery: DiscoverFeaturesModule
   public readonly dids: DidsModule
+  public readonly wallet: WalletModule
 
-  public readonly wallet: Wallet
-
-  public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
-    // Create child container so we don't interfere with anything outside of this agent
-    this.container = baseContainer.createChildContainer()
+  public constructor(
+    initialConfig: InitConfig,
+    dependencies: AgentDependencies,
+    injectionContainer?: DependencyContainer
+  ) {
+    // Take input container or child container so we don't interfere with anything outside of this agent
+    this.container = injectionContainer ?? baseContainer.createChildContainer()
 
     this.agentConfig = new AgentConfig(initialConfig, dependencies)
     this.logger = this.agentConfig.logger
@@ -70,10 +77,18 @@ export class Agent {
     this.container.registerInstance(AgentConfig, this.agentConfig)
 
     // Based on interfaces. Need to register which class to use
-    this.container.registerInstance(InjectionSymbols.Logger, this.logger)
-    this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
-    this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
-    this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
+    if (!this.container.isRegistered(InjectionSymbols.Wallet)) {
+      this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
+    }
+    if (!this.container.isRegistered(InjectionSymbols.Logger)) {
+      this.container.registerInstance(InjectionSymbols.Logger, this.logger)
+    }
+    if (!this.container.isRegistered(InjectionSymbols.StorageService)) {
+      this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
+    }
+    if (!this.container.isRegistered(InjectionSymbols.MessageRepository)) {
+      this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
+    }
 
     this.logger.info('Creating agent with config', {
       ...initialConfig,
@@ -95,13 +110,11 @@ export class Agent {
     this.messageSender = this.container.resolve(MessageSender)
     this.messageReceiver = this.container.resolve(MessageReceiver)
     this.transportService = this.container.resolve(TransportService)
-    this.wallet = this.container.resolve(InjectionSymbols.Wallet)
+    this.walletService = this.container.resolve(InjectionSymbols.Wallet)
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
-    // this.credentials = this.container.resolve(CredentialsModule)
     this.credentials = this.container.resolve(CredentialsModule)
-
     this.proofs = this.container.resolve(ProofsModule)
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
@@ -109,6 +122,7 @@ export class Agent {
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
     this.dids = this.container.resolve(DidsModule)
+    this.wallet = this.container.resolve(WalletModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
@@ -163,9 +177,32 @@ export class Agent {
       )
     }
 
+    // Make sure the storage is up to date
+    const storageUpdateService = this.container.resolve(StorageUpdateService)
+    const isStorageUpToDate = await storageUpdateService.isUpToDate()
+    this.logger.info(`Agent storage is ${isStorageUpToDate ? '' : 'not '}up to date.`)
+
+    if (!isStorageUpToDate && this.agentConfig.autoUpdateStorageOnStartup) {
+      const updateAssistant = new UpdateAssistant(this, DEFAULT_UPDATE_CONFIG)
+
+      await updateAssistant.initialize()
+      await updateAssistant.update()
+    } else if (!isStorageUpToDate) {
+      const currentVersion = await storageUpdateService.getCurrentStorageVersion()
+      // Close wallet to prevent un-initialized agent with initialized wallet
+      await this.wallet.close()
+      throw new AriesFrameworkError(
+        // TODO: add link to where documentation on how to update can be found.
+        `Current agent storage is not up to date. ` +
+          `To prevent the framework state from getting corrupted the agent initialization is aborted. ` +
+          `Make sure to update the agent storage (currently at ${currentVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). ` +
+          `You can also downgrade your version of Aries Framework JavaScript.`
+      )
+    }
+
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
-      await this.wallet.initPublicDid({ seed: publicDidSeed })
+      await this.walletService.initPublicDid({ seed: publicDidSeed })
     }
 
     // As long as value isn't false we will async connect to all genesis pools on startup
@@ -176,11 +213,11 @@ export class Agent {
     }
 
     for (const transport of this.inboundTransports) {
-      transport.start(this)
+      await transport.start(this)
     }
 
     for (const transport of this.outboundTransports) {
-      transport.start(this)
+      await transport.start(this)
     }
 
     // Connect to mediator through provided invitation if provided in config
@@ -201,21 +238,19 @@ export class Agent {
     this.agentConfig.stop$.next(true)
 
     // Stop transports
-    for (const transport of this.outboundTransports) {
-      transport.stop()
-    }
-    for (const transport of this.inboundTransports) {
-      transport.stop()
-    }
+    const allTransports = [...this.inboundTransports, ...this.outboundTransports]
+    const transportPromises = allTransports.map((transport) => transport.stop())
+    await Promise.all(transportPromises)
 
     // close wallet if still initialized
     if (this.wallet.isInitialized) {
       await this.wallet.close()
     }
+    this._isInitialized = false
   }
 
   public get publicDid() {
-    return this.wallet.publicDid
+    return this.walletService.publicDid
   }
 
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {

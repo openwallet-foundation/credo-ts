@@ -1,4 +1,10 @@
-import type { EncryptedMessage, DecryptedMessageContext, WalletConfig } from '../types'
+import type {
+  EncryptedMessage,
+  DecryptedMessageContext,
+  WalletConfig,
+  WalletExportImportConfig,
+  WalletConfigRekey,
+} from '../types'
 import type { Buffer } from '../utils/buffer'
 
 export interface Wallet {
@@ -6,11 +12,14 @@ export interface Wallet {
   isInitialized: boolean
   isProvisioned: boolean
 
-  initialize(walletConfig: WalletConfig): Promise<void>
   create(walletConfig: WalletConfig): Promise<void>
+  createAndOpen(walletConfig: WalletConfig): Promise<void>
   open(walletConfig: WalletConfig): Promise<void>
+  rotateKey(walletConfig: WalletConfigRekey): Promise<void>
   close(): Promise<void>
   delete(): Promise<void>
+  export(exportConfig: WalletExportImportConfig): Promise<void>
+  import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
 
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>

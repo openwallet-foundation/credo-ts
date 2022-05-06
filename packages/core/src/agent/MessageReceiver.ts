@@ -8,9 +8,10 @@ import type { TransportSession } from './TransportService'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
-import { ConnectionRepository } from '../modules/connections'
+import { ConnectionRepository } from '../modules/connections/repository'
 import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
+import { isValidJweStructure } from '../utils/JWE'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
@@ -66,11 +67,12 @@ export class MessageReceiver {
    */
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
     this.logger.debug(`Agent ${this.config.label} received message`)
-
-    if (this.isPlaintextMessage(inboundMessage)) {
+    if (this.isEncryptedMessage(inboundMessage)) {
+      await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
+    } else if (this.isPlaintextMessage(inboundMessage)) {
       await this.receivePlaintextMessage(inboundMessage)
     } else {
-      await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
+      throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
     }
   }
 
@@ -93,6 +95,15 @@ export class MessageReceiver {
 
     const message = await this.transformAndValidate(plaintextMessage, connection)
 
+    const messageContext = new InboundMessageContext(message, {
+      // Only make the connection available in message context if the connection is ready
+      // To prevent unwanted usage of unready connections. Connections can still be retrieved from
+      // Storage if the specific protocol allows an unready connection to be used.
+      connection: connection?.isReady ? connection : undefined,
+      senderVerkey: senderKey,
+      recipientVerkey: recipientKey,
+    })
+
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
@@ -109,17 +120,13 @@ export class MessageReceiver {
       // use return routing to make connections. This is especially useful for creating connections
       // with mediators when you don't have a public endpoint yet.
       session.connection = connection ?? undefined
+      messageContext.sessionId = session.id
       this.transportService.saveSession(session)
+    } else if (session) {
+      // No need to wait for session to stay open if we're not actually going to respond to the message.
+      await session.close()
     }
 
-    const messageContext = new InboundMessageContext(message, {
-      // Only make the connection available in message context if the connection is ready
-      // To prevent unwanted usage of unready connections. Connections can still be retrieved from
-      // Storage if the specific protocol allows an unready connection to be used.
-      connection: connection?.isReady ? connection : undefined,
-      senderVerkey: senderKey,
-      recipientVerkey: recipientKey,
-    })
     await this.dispatcher.dispatch(messageContext)
   }
 
@@ -143,10 +150,15 @@ export class MessageReceiver {
 
   private isPlaintextMessage(message: unknown): message is PlaintextMessage {
     if (typeof message !== 'object' || message == null) {
-      throw new AriesFrameworkError('Invalid message received. Message should be object')
+      return false
     }
-    // If the message does have an @type field we assume the message is in plaintext and it is not encrypted.
+    // If the message has a @type field we assume the message is in plaintext and it is not encrypted.
     return '@type' in message
+  }
+
+  private isEncryptedMessage(message: unknown): message is EncryptedMessage {
+    // If the message does has valid JWE structure, we can assume the message is encrypted.
+    return isValidJweStructure(message)
   }
 
   private async transformAndValidate(

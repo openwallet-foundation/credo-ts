@@ -1,9 +1,17 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
+import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
-import type { MediationGrantMessage, MediationDenyMessage, KeylistUpdateResponseMessage } from '../messages'
+import type {
+  KeylistUpdateResponseMessage,
+  MediationDenyMessage,
+  MediationGrantMessage,
+  MessageDeliveryMessage,
+  StatusMessage,
+} from '../messages'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
@@ -11,14 +19,23 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { MessageReceiver } from '../../../agent/MessageReceiver'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../../connections/services/ConnectionService'
+import { ProblemReportError } from '../../problem-reports'
 import { RoutingEventTypes } from '../RoutingEvents'
-import { KeylistUpdateAction, MediationRequestMessage } from '../messages'
+import { RoutingProblemReportReason } from '../error'
+import {
+  StatusRequestMessage,
+  DeliveryRequestMessage,
+  MessagesReceivedMessage,
+  KeylistUpdateAction,
+  MediationRequestMessage,
+} from '../messages'
 import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMessage'
 import { MediationRole, MediationState } from '../models'
 import { MediationRecord } from '../repository/MediationRecord'
@@ -32,6 +49,8 @@ export class MediationRecipientService {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private config: AgentConfig
+  private logger: Logger
+  private messageReceiver: MessageReceiver
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
@@ -39,7 +58,8 @@ export class MediationRecipientService {
     messageSender: MessageSender,
     config: AgentConfig,
     mediatorRepository: MediationRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    messageReveiver: MessageReceiver
   ) {
     this.config = config
     this.wallet = wallet
@@ -47,6 +67,33 @@ export class MediationRecipientService {
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
+    this.logger = config.logger
+    this.messageReceiver = messageReveiver
+  }
+
+  public async requestStatus(
+    config: {
+      mediatorId?: string
+      recipientKey?: string
+    } = {}
+  ) {
+    let mediator
+    let mediatorRecord
+
+    if (config.mediatorId) {
+      const record = await this.getById(config.mediatorId)
+      mediator = await this.connectionService.findById(record.id)
+    } else {
+      mediatorRecord = await this.findDefaultMediator()
+      if (mediatorRecord) mediator = await this.connectionService.getById(mediatorRecord.connectionId)
+    }
+
+    const { recipientKey } = config
+    const statusRequest = new StatusRequestMessage({
+      recipientKey,
+    })
+    if (!mediator) throw new AriesFrameworkError('Could not find mediator connection')
+    return this.messageSender.sendMessage(createOutboundMessage(mediator, statusRequest))
   }
 
   public async createRequest(
@@ -57,7 +104,7 @@ export class MediationRecipientService {
     const mediationRecord = new MediationRecord({
       threadId: message.threadId,
       state: MediationState.Requested,
-      role: MediationRole.Mediator,
+      role: MediationRole.Recipient,
       connectionId: connection.id,
     })
     await this.mediatorRepository.save(mediationRecord)
@@ -81,6 +128,7 @@ export class MediationRecipientService {
 
     // Assert
     mediationRecord.assertState(MediationState.Requested)
+    mediationRecord.assertRole(MediationRole.Recipient)
 
     // Update record
     mediationRecord.endpoint = messageContext.message.endpoint
@@ -93,16 +141,23 @@ export class MediationRecipientService {
     const connection = messageContext.assertReadyConnection()
 
     const mediationRecord = await this.mediatorRepository.getByConnectionId(connection.id)
+
+    // Assert
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(MediationRole.Recipient)
+
     const keylist = messageContext.message.updated
 
     // update keylist in mediationRecord
     for (const update of keylist) {
       if (update.action === KeylistUpdateAction.add) {
-        await this.saveRoute(update.recipientKey, mediationRecord)
+        mediationRecord.addRecipientKey(update.recipientKey)
       } else if (update.action === KeylistUpdateAction.remove) {
-        await this.removeRoute(update.recipientKey, mediationRecord)
+        mediationRecord.removeRecipientKey(update.recipientKey)
       }
     }
+
+    await this.mediatorRepository.update(mediationRecord)
     this.eventEmitter.emit<KeylistUpdatedEvent>({
       type: RoutingEventTypes.RecipientKeylistUpdated,
       payload: {
@@ -119,6 +174,9 @@ export class MediationRecipientService {
   ): Promise<MediationRecord> {
     const message = this.createKeylistUpdateMessage(verKey)
     const connection = await this.connectionService.getById(mediationRecord.connectionId)
+
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(MediationRole.Recipient)
 
     // Create observable for event
     const observable = this.eventEmitter.observable<KeylistUpdatedEvent>(RoutingEventTypes.RecipientKeylistUpdated)
@@ -182,19 +240,6 @@ export class MediationRecipientService {
     return { endpoints, routingKeys, did, verkey, mediatorId: mediationRecord?.id }
   }
 
-  public async saveRoute(recipientKey: string, mediationRecord: MediationRecord) {
-    mediationRecord.recipientKeys.push(recipientKey)
-    this.mediatorRepository.update(mediationRecord)
-  }
-
-  public async removeRoute(recipientKey: string, mediationRecord: MediationRecord) {
-    const index = mediationRecord.recipientKeys.indexOf(recipientKey, 0)
-    if (index > -1) {
-      mediationRecord.recipientKeys.splice(index, 1)
-    }
-    this.mediatorRepository.update(mediationRecord)
-  }
-
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {
     const connection = messageContext.assertReadyConnection()
 
@@ -206,12 +251,53 @@ export class MediationRecipientService {
     }
 
     // Assert
+    mediationRecord.assertRole(MediationRole.Recipient)
     mediationRecord.assertState(MediationState.Requested)
 
     // Update record
     await this.updateState(mediationRecord, MediationState.Denied)
 
     return mediationRecord
+  }
+
+  public processStatus(statusMessage: StatusMessage) {
+    const { messageCount, recipientKey } = statusMessage
+
+    //No messages to be sent
+    if (messageCount === 0) return null
+
+    const { maximumMessagePickup } = this.config
+    const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
+
+    const deliveryRequestMessage = new DeliveryRequestMessage({
+      limit,
+      recipientKey,
+    })
+
+    return deliveryRequestMessage
+  }
+
+  public async processDelivery(messageDeliveryMessage: MessageDeliveryMessage) {
+    const { appendedAttachments } = messageDeliveryMessage
+
+    if (!appendedAttachments)
+      throw new ProblemReportError('Error processing attachments', {
+        problemCode: RoutingProblemReportReason.ErrorProcessingAttachments,
+      })
+
+    const ids: string[] = []
+    for (const attachment of appendedAttachments) {
+      ids.push(attachment.id)
+      try {
+        await this.messageReceiver.receiveMessage(attachment.getDataAsJson<EncryptedMessage>())
+      } catch (error) {
+        this.logger.error(`Failed to process message id: ${attachment.id}`, { error, attachment })
+      }
+    }
+
+    return new MessagesReceivedMessage({
+      messageIdList: ids,
+    })
   }
 
   /**

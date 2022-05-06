@@ -10,7 +10,8 @@ import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../domain/key-type/x25519'
 import { DidKey } from '../methods/key'
-import { DidPeer, PeerDidNumAlgo } from '../methods/peer/DidPeer'
+import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../methods/peer/didPeer'
+import { didDocumentJsonToNumAlgo1Did } from '../methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../repository'
 import { DidResolverService } from '../services'
 
@@ -26,7 +27,7 @@ describe('peer dids', () => {
   beforeEach(async () => {
     wallet = new IndyWallet(config)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(config.walletConfig!)
+    await wallet.createAndOpen(config.walletConfig!)
 
     const storageService = new IndyStorageService<DidRecord>(wallet, config)
     didRepository = new DidRepository(storageService)
@@ -96,10 +97,15 @@ describe('peer dids', () => {
         .addService(service)
         .build()
 
-    const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
+    const didDocumentJson = didDocument.toJSON()
+    const did = didDocumentJsonToNumAlgo1Did(didDocumentJson)
 
-    expect(peerDid.did).toBe(didPeer1zQmY.id)
-    expect(peerDid.didDocument).toMatchObject(didPeer1zQmY)
+    expect(did).toBe(didPeer1zQmY.id)
+
+    // Set did after generating it
+    didDocument.id = did
+
+    expect(didDocument.toJSON()).toMatchObject(didPeer1zQmY)
 
     // Save the record to storage
     const didDocumentRecord = new DidRecord({
@@ -107,11 +113,11 @@ describe('peer dids', () => {
       role: DidDocumentRole.Created,
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
-      didDocument: peerDid.didDocument,
+      didDocument: didDocument,
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys: peerDid.didDocument.recipientKeys,
+        recipientKeys: didDocument.recipientKeys,
       },
     })
 
@@ -122,33 +128,33 @@ describe('peer dids', () => {
     // This flow assumes peer dids. When implementing for did exchange other did methods could be used
 
     // We receive the did and did document from the did exchange message (request or response)
+    // It is important to not parse the did document to a DidDocument class yet as we need the raw json
+    // to consistently verify the hash of the did document
     const did = didPeer1zQmY.id
+    const numAlgo = getNumAlgoFromPeerDid(did)
 
     // Note that the did document could be undefined (if inlined did:peer or public did)
     const didDocument = JsonTransformer.fromJSON(didPeer1zQmY, DidDocument)
 
-    // Create a did peer instance from the did document document, or only the did if no did document provided
-    const didPeer = didDocument ? DidPeer.fromDidDocument(didDocument) : DidPeer.fromDid(did)
-
     // make sure the dids are valid by matching them against our encoded variants
-    expect(didPeer.did).toBe(did)
+    expect(didDocumentJsonToNumAlgo1Did(didPeer1zQmY)).toBe(did)
 
     // If a did document was provided, we match it against the did document of the peer did
     // This validates whether we get the same did document
     if (didDocument) {
-      expect(didPeer.didDocument.toJSON()).toMatchObject(didPeer1zQmY)
+      expect(didDocument.toJSON()).toMatchObject(didPeer1zQmY)
     }
 
     const didDocumentRecord = new DidRecord({
-      id: didPeer.did,
+      id: did,
       role: DidDocumentRole.Received,
       // If the method is a genesis doc (did:peer:1) we should store the document
       // Otherwise we only need to store the did itself (as the did can be generated)
-      didDocument: didPeer.numAlgo === PeerDidNumAlgo.GenesisDoc ? didPeer.didDocument : undefined,
+      didDocument: numAlgo === PeerDidNumAlgo.GenesisDoc ? didDocument : undefined,
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys: didPeer.didDocument.recipientKeys,
+        recipientKeys: didDocument.recipientKeys,
       },
     })
 
@@ -158,7 +164,7 @@ describe('peer dids', () => {
     // connectionRecord.theirDid = didPeer.did
 
     // Then when we want to send a message we can resolve the did document
-    const { didDocument: resolvedDidDocument } = await didResolverService.resolve(didPeer.did)
+    const { didDocument: resolvedDidDocument } = await didResolverService.resolve(did)
     expect(resolvedDidDocument).toBeInstanceOf(DidDocument)
     expect(resolvedDidDocument?.toJSON()).toMatchObject(didPeer1zQmY)
   })
