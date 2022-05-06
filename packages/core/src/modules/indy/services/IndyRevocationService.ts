@@ -1,6 +1,6 @@
 import type { Logger } from '../../../logger'
 import type { FileSystem } from '../../../storage/FileSystem'
-import type { RevocationInterval } from '../../credentials/models/RevocationInterval'
+import type { RevocationInterval } from '../../credentials'
 import type { RequestedCredentials } from '../../proofs'
 import type { default as Indy } from 'indy-sdk'
 

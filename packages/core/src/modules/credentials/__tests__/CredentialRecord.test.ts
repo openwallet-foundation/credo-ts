@@ -1,7 +1,8 @@
-import { CredentialPreviewAttribute } from '../CredentialPreviewAttributes'
+import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
-import { CredentialExchangeRecord } from '../repository/CredentialRecord'
-import { CredentialMetadataKeys } from '../repository/credentialMetadataTypes'
+import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
+import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
+import { CredentialMetadataKeys } from '../repository/CredentialMetadataTypes'
 
 describe('CredentialRecord', () => {
   describe('getCredentialInfo()', () => {
@@ -16,6 +17,7 @@ describe('CredentialRecord', () => {
             value: '25',
           }),
         ],
+        protocolVersion: CredentialProtocolVersion.V1,
       })
 
       credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {

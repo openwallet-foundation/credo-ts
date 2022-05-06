@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, isEnum } from 'class-validator'
+import { IsArray, IsEnum } from 'class-validator'
 
 export enum AckValues {
   Receipt = 'RECEIPT',

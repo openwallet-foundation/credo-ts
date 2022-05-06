@@ -1,16 +1,17 @@
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
-import type { V1CredentialPreview } from './v1/V1CredentialPreview'
-import type { V2CredentialPreview } from './v2/V2CredentialPreview'
-import type { CredValues } from 'indy-sdk'
+import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
+import type { V2CredentialPreview } from './protocol/v2/V2CredentialPreview'
+import type { CredValues, Schema } from 'indy-sdk'
 
-import { hash as sha256 } from '@stablelib/sha256'
 import BigNumber from 'bn.js'
 
+import { AriesFrameworkError } from '../../error/AriesFrameworkError'
+import { Hasher } from '../../utils'
 import { encodeAttachment } from '../../utils/attachment'
 import { Buffer } from '../../utils/buffer'
 import { isBoolean, isNumber, isString } from '../../utils/type'
 
-import { CredentialPreviewAttribute } from './CredentialPreviewAttributes'
+import { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
 
 export class CredentialUtils {
   /**
@@ -28,10 +29,9 @@ export class CredentialUtils {
     const credentialPreviewAttributeNames = credentialPreview.attributes.map((attribute) => attribute.name)
     attachments.forEach((linkedAttachment) => {
       if (credentialPreviewAttributeNames.includes(linkedAttachment.attributeName)) {
-        // MJR -> This is causing an issue remove for now
-        // throw new AriesFrameworkError(
-        //   `linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`
-        // )
+        throw new AriesFrameworkError(
+          `linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`
+        )
       } else {
         const credentialPreviewAttribute = new CredentialPreviewAttribute({
           name: linkedAttachment.attributeName,
@@ -169,18 +169,10 @@ export class CredentialUtils {
       value = 'None'
     }
 
-    return new BigNumber(sha256(Buffer.from(value as string))).toString()
+    return new BigNumber(Hasher.hash(Buffer.from(value as string), 'sha2-256')).toString()
   }
 
-  private static isInt32(number: number) {
-    const minI32 = -2147483648
-    const maxI32 = 2147483647
-
-    // Check if number is integer and in range of int32
-    return Number.isInteger(number) && number >= minI32 && number <= maxI32
-  }
-
-  public static checkAttributesMatch(schema: Schema, credentialPreview: CredentialPreview) {
+  public static checkAttributesMatch(schema: Schema, credentialPreview: V1CredentialPreview | V2CredentialPreview) {
     const schemaAttributes = schema.attrNames
     const credAttributes = credentialPreview.attributes.map((a) => a.name)
 
@@ -193,5 +185,12 @@ export class CredentialUtils {
         `The credential preview attributes do not match the schema attributes (difference is: ${difference}, needs: ${schemaAttributes})`
       )
     }
+  }
+  private static isInt32(number: number) {
+    const minI32 = -2147483648
+    const maxI32 = 2147483647
+
+    // Check if number is integer and in range of int32
+    return Number.isInteger(number) && number >= minI32 && number <= maxI32
   }
 }

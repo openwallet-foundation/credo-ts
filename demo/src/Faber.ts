@@ -1,8 +1,13 @@
-import type { ConnectionRecord } from '@aries-framework/core'
-import type { CredDef, Schema } from 'indy-sdk-react-native'
+/* eslint-disable import/no-unresolved */
+/* eslint-disable import/no-duplicates */
+/* eslint-disable import/order */
+import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
+import type { ConnectionRecord } from '@aries-framework/core'
+import { CredentialProtocolVersion } from '@aries-framework/core'
 
-import { AttributeFilter, CredentialPreview, ProofAttributeInfo, utils } from '@aries-framework/core'
+// eslint-disable-next-line import/no-unresolved
+import { V1CredentialPreview, AttributeFilter, ProofAttributeInfo, utils } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
@@ -43,7 +48,6 @@ export class Faber extends BaseAgent {
 
   public async acceptConnection(invitation_url: string) {
     const connectionRecord = await this.receiveConnectionRequest(invitation_url)
-
     this.connectionRecordAliceId = await this.waitForConnection(connectionRecord)
   }
 
@@ -63,23 +67,23 @@ export class Faber extends BaseAgent {
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attributes)
     this.ui.updateBottomBar(greenText('\nRegistering schema...\n', false))
     const schema = await this.agent.ledger.registerSchema(schemaTemplate)
-    this.ui.updateBottomBar('\nSchema registerd!\n')
+    this.ui.updateBottomBar('\nSchema registered!\n')
     return schema
   }
 
-  private async registerCredentialDefiniton(schema: Schema) {
+  private async registerCredentialDefinition(schema: Schema) {
     this.ui.updateBottomBar('\nRegistering credential definition...\n')
     this.credentialDefinition = await this.agent.ledger.registerCredentialDefinition({
       schema,
       tag: 'latest',
       supportRevocation: false,
     })
-    this.ui.updateBottomBar('\nCredential definition registerd!!\n')
+    this.ui.updateBottomBar('\nCredential definition registered!!\n')
     return this.credentialDefinition
   }
 
   private getCredentialPreview() {
-    const credentialPreview = CredentialPreview.fromRecord({
+    const credentialPreview = V1CredentialPreview.fromRecord({
       name: 'Alice Smith',
       degree: 'Computer Science',
       date: '01/01/2022',
@@ -89,14 +93,21 @@ export class Faber extends BaseAgent {
 
   public async issueCredential() {
     const schema = await this.registerSchema()
-    const credDef = await this.registerCredentialDefiniton(schema)
+    const credDef = await this.registerCredentialDefinition(schema)
     const credentialPreview = this.getCredentialPreview()
     const connectionRecord = await this.getConnectionRecord()
 
     this.ui.updateBottomBar('\nSending credential offer...\n')
-    await this.agent.credentials.offerCredential(connectionRecord.id, {
-      credentialDefinitionId: credDef.id,
-      preview: credentialPreview,
+
+    await this.agent.credentials.offerCredential({
+      connectionId: connectionRecord.id,
+      protocolVersion: CredentialProtocolVersion.V1,
+      credentialFormats: {
+        indy: {
+          attributes: credentialPreview.attributes,
+          credentialDefinitionId: credDef.id,
+        },
+      },
     })
     this.ui.updateBottomBar(
       `\nCredential offer sent!\n\nGo to the Alice agent to accept the credential offer\n\n${Color.Reset}`

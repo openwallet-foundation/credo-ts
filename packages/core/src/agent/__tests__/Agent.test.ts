@@ -12,9 +12,8 @@ import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
 import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerModule } from '../../modules/ledger/LedgerModule'
-import { ProofRepository } from '../../modules/proofs'
+import { ProofRepository, ProofService } from '../../modules/proofs'
 import { ProofsModule } from '../../modules/proofs/ProofsModule'
-import { V1LegacyProofService } from '../../modules/proofs/protocol/v1/V1LegacyProofService'
 import {
   MediatorModule,
   RecipientModule,
@@ -75,22 +74,20 @@ describe('Agent', () => {
       const { walletConfig, ...withoutWalletConfig } = config
       agent = new Agent(withoutWalletConfig, dependencies)
 
-      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-
       expect(agent.isInitialized).toBe(false)
-      expect(wallet.isInitialized).toBe(false)
+      expect(agent.wallet.isInitialized).toBe(false)
 
       expect(agent.initialize()).rejects.toThrowError(WalletError)
       expect(agent.isInitialized).toBe(false)
-      expect(wallet.isInitialized).toBe(false)
+      expect(agent.wallet.isInitialized).toBe(false)
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      await wallet.initialize(walletConfig!)
+      await agent.wallet.initialize(walletConfig!)
       expect(agent.isInitialized).toBe(false)
-      expect(wallet.isInitialized).toBe(true)
+      expect(agent.wallet.isInitialized).toBe(true)
 
       await agent.initialize()
-      expect(wallet.isInitialized).toBe(true)
+      expect(agent.wallet.isInitialized).toBe(true)
       expect(agent.isInitialized).toBe(true)
     })
   })
@@ -122,7 +119,7 @@ describe('Agent', () => {
       expect(container.resolve(TrustPingService)).toBeInstanceOf(TrustPingService)
 
       expect(container.resolve(ProofsModule)).toBeInstanceOf(ProofsModule)
-      expect(container.resolve(V1LegacyProofService)).toBeInstanceOf(V1LegacyProofService)
+      expect(container.resolve(ProofService)).toBeInstanceOf(ProofService)
       expect(container.resolve(ProofRepository)).toBeInstanceOf(ProofRepository)
 
       expect(container.resolve(CredentialsModule)).toBeInstanceOf(CredentialsModule)
@@ -165,7 +162,7 @@ describe('Agent', () => {
       expect(container.resolve(TrustPingService)).toBe(container.resolve(TrustPingService))
 
       expect(container.resolve(ProofsModule)).toBe(container.resolve(ProofsModule))
-      expect(container.resolve(V1LegacyProofService)).toBe(container.resolve(V1LegacyProofService))
+      expect(container.resolve(ProofService)).toBe(container.resolve(ProofService))
       expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
 
       expect(container.resolve(CredentialsModule)).toBe(container.resolve(CredentialsModule))

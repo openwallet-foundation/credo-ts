@@ -1,5 +1,12 @@
 import type { Logger } from '../logger'
-import type { EncryptedMessage, DecryptedMessageContext, WalletConfig } from '../types'
+import type {
+  EncryptedMessage,
+  DecryptedMessageContext,
+  WalletConfig,
+  WalletExportImportConfig,
+  WalletConfigRekey,
+  KeyDerivationMethod,
+} from '../types'
 import type { Buffer } from '../utils/buffer'
 import type { Wallet, DidInfo, DidConfig } from './Wallet'
 import type { default as Indy } from 'indy-sdk'
@@ -60,55 +67,39 @@ export class IndyWallet implements Wallet {
     return this.walletConfig.id
   }
 
-  public async initialize(walletConfig: WalletConfig) {
-    this.logger.info(`Initializing wallet '${walletConfig.id}'`, walletConfig)
-
-    if (this.isInitialized) {
-      throw new WalletError(
-        'Wallet instance already initialized. Close the currently opened wallet before re-initializing the wallet'
-      )
-    }
-
-    // Open wallet, creating if it doesn't exist yet
-    try {
-      await this.open(walletConfig)
-    } catch (error) {
-      // If the wallet does not exist yet, create it and try to open again
-      if (error instanceof WalletNotFoundError) {
-        await this.create(walletConfig)
-        await this.open(walletConfig)
-      } else {
-        throw error
-      }
-    }
-
-    this.logger.debug(`Wallet '${walletConfig.id}' initialized with handle '${this.handle}'`)
+  /**
+   * @throws {WalletDuplicateError} if the wallet already exists
+   * @throws {WalletError} if another error occurs
+   */
+  public async create(walletConfig: WalletConfig): Promise<void> {
+    await this.createAndOpen(walletConfig)
+    await this.close()
   }
 
   /**
    * @throws {WalletDuplicateError} if the wallet already exists
    * @throws {WalletError} if another error occurs
    */
-  public async create(walletConfig: WalletConfig): Promise<void> {
+  public async createAndOpen(walletConfig: WalletConfig): Promise<void> {
     this.logger.debug(`Creating wallet '${walletConfig.id}' using SQLite storage`)
 
     try {
-      await this.indy.createWallet({ id: walletConfig.id }, { key: walletConfig.key })
+      await this.indy.createWallet(
+        { id: walletConfig.id },
+        { key: walletConfig.key, key_derivation_method: walletConfig.keyDerivationMethod }
+      )
 
-      this.walletConfig = {
-        id: walletConfig.id,
-        key: walletConfig.key,
-      }
+      this.walletConfig = walletConfig
 
       // We usually want to create master secret only once, therefore, we can to do so when creating a wallet.
       await this.open(walletConfig)
 
       // We need to open wallet before creating master secret because we need wallet handle here.
       await this.createMasterSecret(this.handle, walletConfig.id)
-
-      // We opened wallet just to create master secret, we can close it now.
-      await this.close()
     } catch (error) {
+      // If an error ocurred while creating the master secret, we should close the wallet
+      if (this.isInitialized) await this.close()
+
       if (isIndyError(error, 'WalletAlreadyExistsError')) {
         const errorMessage = `Wallet '${walletConfig.id}' already exists`
         this.logger.debug(errorMessage)
@@ -127,6 +118,8 @@ export class IndyWallet implements Wallet {
         throw new WalletError(errorMessage, { cause: error })
       }
     }
+
+    this.logger.debug(`Successfully created wallet '${walletConfig.id}'`)
   }
 
   /**
@@ -134,6 +127,33 @@ export class IndyWallet implements Wallet {
    * @throws {WalletError} if another error occurs
    */
   public async open(walletConfig: WalletConfig): Promise<void> {
+    await this._open(walletConfig)
+  }
+
+  /**
+   * @throws {WalletNotFoundError} if the wallet does not exist
+   * @throws {WalletError} if another error occurs
+   */
+  public async rotateKey(walletConfig: WalletConfigRekey): Promise<void> {
+    if (!walletConfig.rekey) {
+      throw new WalletError('Wallet rekey undefined!. Please specify the new wallet key')
+    }
+    await this._open(
+      { id: walletConfig.id, key: walletConfig.key, keyDerivationMethod: walletConfig.keyDerivationMethod },
+      walletConfig.rekey,
+      walletConfig.rekeyDerivationMethod
+    )
+  }
+
+  /**
+   * @throws {WalletNotFoundError} if the wallet does not exist
+   * @throws {WalletError} if another error occurs
+   */
+  private async _open(
+    walletConfig: WalletConfig,
+    rekey?: string,
+    rekeyDerivation?: KeyDerivationMethod
+  ): Promise<void> {
     if (this.walletHandle) {
       throw new WalletError(
         'Wallet instance already opened. Close the currently opened wallet before re-opening the wallet'
@@ -141,10 +161,19 @@ export class IndyWallet implements Wallet {
     }
 
     try {
-      this.walletHandle = await this.indy.openWallet({ id: walletConfig.id }, { key: walletConfig.key })
-      this.walletConfig = {
-        id: walletConfig.id,
-        key: walletConfig.key,
+      this.walletHandle = await this.indy.openWallet(
+        { id: walletConfig.id },
+        {
+          key: walletConfig.key,
+          rekey: rekey,
+          key_derivation_method: walletConfig.keyDerivationMethod,
+          rekey_derivation_method: rekeyDerivation,
+        }
+      )
+      if (rekey) {
+        this.walletConfig = { ...walletConfig, key: rekey, keyDerivationMethod: rekeyDerivation }
+      } else {
+        this.walletConfig = walletConfig
       }
     } catch (error) {
       if (isIndyError(error, 'WalletNotFoundError')) {
@@ -163,7 +192,7 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
-        const errorMessage = `Error opening wallet '${walletConfig.id}'`
+        const errorMessage = `Error opening wallet '${walletConfig.id}': ${error.message}`
         this.logger.error(errorMessage, {
           error,
           errorMessage: error.message,
@@ -172,6 +201,8 @@ export class IndyWallet implements Wallet {
         throw new WalletError(errorMessage, { cause: error })
       }
     }
+
+    this.logger.debug(`Wallet '${walletConfig.id}' opened with handle '${this.handle}'`)
   }
 
   /**
@@ -192,7 +223,10 @@ export class IndyWallet implements Wallet {
     }
 
     try {
-      await this.indy.deleteWallet({ id: this.walletConfig.id }, { key: this.walletConfig.key })
+      await this.indy.deleteWallet(
+        { id: this.walletConfig.id },
+        { key: this.walletConfig.key, key_derivation_method: this.walletConfig.keyDerivationMethod }
+      )
     } catch (error) {
       if (isIndyError(error, 'WalletNotFoundError')) {
         const errorMessage = `Error deleting wallet: wallet '${this.walletConfig.id}' not found`
@@ -214,12 +248,44 @@ export class IndyWallet implements Wallet {
     }
   }
 
+  public async export(exportConfig: WalletExportImportConfig) {
+    try {
+      this.logger.debug(`Exporting wallet ${this.walletConfig?.id} to path ${exportConfig.path}`)
+      await this.indy.exportWallet(this.handle, exportConfig)
+    } catch (error) {
+      const errorMessage = `Error exporting wallet: ${error.message}`
+      this.logger.error(errorMessage, {
+        error,
+      })
+
+      throw new WalletError(errorMessage, { cause: error })
+    }
+  }
+
+  public async import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig) {
+    try {
+      this.logger.debug(`Importing wallet ${walletConfig.id} from path ${importConfig.path}`)
+      await this.indy.importWallet(
+        { id: walletConfig.id },
+        { key: walletConfig.key, key_derivation_method: walletConfig.keyDerivationMethod },
+        importConfig
+      )
+    } catch (error) {
+      const errorMessage = `Error importing wallet': ${error.message}`
+      this.logger.error(errorMessage, {
+        error,
+      })
+
+      throw new WalletError(errorMessage, { cause: error })
+    }
+  }
+
   /**
    * @throws {WalletError} if the wallet is already closed or another error occurs
    */
   public async close(): Promise<void> {
     if (!this.walletHandle) {
-      throw new WalletError('Wallet is in inavlid state, you are trying to close wallet that has no `walletHandle`.')
+      throw new WalletError('Wallet is in invalid state, you are trying to close wallet that has no `walletHandle`.')
     }
 
     try {

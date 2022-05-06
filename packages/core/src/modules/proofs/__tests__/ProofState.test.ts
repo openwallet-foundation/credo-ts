@@ -1,4 +1,4 @@
-import { ProofState } from '../models/ProofState'
+import { ProofState } from '../ProofState'
 
 describe('ProofState', () => {
   test('state matches Present Proof 1.0 (RFC 0037) state value', () => {
