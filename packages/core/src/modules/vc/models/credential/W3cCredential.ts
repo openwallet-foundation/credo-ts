@@ -3,7 +3,7 @@ import type { IssuerOptions } from './Issuer'
 import type { ValidationOptions } from 'class-validator'
 import type { ContextDefinition } from 'jsonld'
 
-import { Expose } from 'class-transformer'
+import { Expose, Type } from 'class-transformer'
 import { buildMessage, IsOptional, IsString, ValidateBy } from 'class-validator'
 
 import { SingleOrArray } from '../../../../utils/type'
@@ -60,7 +60,7 @@ export class W3cCredential {
   @IsOptional()
   public expirationDate?: string
 
-  @CredentialSubjectTransformer()
+  @Type(() => CredentialSubject)
   @IsInstanceOrArrayOfInstances({ classType: CredentialSubject })
   public credentialSubject!: SingleOrArray<CredentialSubject>
 

@@ -24,19 +24,3 @@ export class CredentialSchema {
   @IsString()
   public type!: string
 }
-
-// Custom transformers
-
-export function CredentialSchemaTransformer() {
-  return Transform(({ value, type }: { value: SingleOrArray<CredentialSchema>; type: TransformationType }) => {
-    if (type === TransformationType.PLAIN_TO_CLASS) {
-      if (Array.isArray(value)) return value.map((v) => plainToInstance(CredentialSchema, v))
-      return plainToInstance(CredentialSchema, value)
-    } else if (type === TransformationType.CLASS_TO_PLAIN) {
-      if (Array.isArray(value)) return value.map((v) => instanceToPlain(v))
-      return instanceToPlain(value)
-    }
-    // PLAIN_TO_PLAIN
-    return value
-  })
-}
