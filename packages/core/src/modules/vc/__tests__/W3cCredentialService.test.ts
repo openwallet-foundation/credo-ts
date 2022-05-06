@@ -289,7 +289,7 @@ describe('W3cCredentialService', () => {
       issuerDidKey = new DidKey(key)
     })
     describe('signCredential', () => {
-      it('should return a successfully signed credential', async () => {
+      it('should return a successfully signed credential bbs', async () => {
         const credentialJson = BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT
         credentialJson.issuer = issuerDidKey.did
 

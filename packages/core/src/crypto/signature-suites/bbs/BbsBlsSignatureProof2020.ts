@@ -12,16 +12,18 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { DocumentLoader, Proof } from '../JwsLinkedDataSignature'
+
+import type { Proof } from '../../../utils'
 import type { DeriveProofOptions, VerifyProofOptions, CreateVerifyDataOptions, CanonizeOptions } from './types'
 import type { VerifyProofResult } from './types/VerifyProofResult'
 
 import jsonld from '@digitalcredentials/jsonld'
-import { suites, SECURITY_CONTEXT_URL } from '@digitalcredentials/jsonld-signatures'
+import { suites } from '@digitalcredentials/jsonld-signatures'
 import { blsCreateProof, blsVerifyProof } from '@mattrglobal/bbs-signatures'
 import { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 import { randomBytes } from '@stablelib/random'
 
+import { SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
 import { TypedArrayEncoder } from '../../../utils'
 
 import { BbsBlsSignature2020 } from './BbsBlsSignature2020'

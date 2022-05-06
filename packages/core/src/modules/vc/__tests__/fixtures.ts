@@ -1,6 +1,8 @@
+import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_BBS_URL } from '../constants'
+
 export const Ed25519Signature2018Fixtures = {
   TEST_LD_DOCUMENT: {
-    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+    '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
     // id: 'http://example.edu/credentials/temporary/28934792387492384',
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
     issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
@@ -13,7 +15,7 @@ export const Ed25519Signature2018Fixtures = {
     },
   },
   TEST_LD_DOCUMENT_SIGNED: {
-    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+    '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
     issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
     issuanceDate: '2017-10-22T12:23:48Z',
@@ -33,7 +35,7 @@ export const Ed25519Signature2018Fixtures = {
     },
   },
   TEST_LD_DOCUMENT_BAD_SIGNED: {
-    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+    '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
     issuer: 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
     issuanceDate: '2017-10-22T12:23:48Z',
@@ -53,11 +55,11 @@ export const Ed25519Signature2018Fixtures = {
     },
   },
   TEST_VP_DOCUMENT: {
-    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    '@context': [CREDENTIALS_CONTEXT_V1_URL],
     type: ['VerifiablePresentation'],
     verifiableCredential: [
       {
-        '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+        '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
         type: ['VerifiableCredential', 'UniversityDegreeCredential'],
         issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
         issuanceDate: '2017-10-22T12:23:48Z',
@@ -79,11 +81,11 @@ export const Ed25519Signature2018Fixtures = {
     ],
   },
   TEST_VP_DOCUMENT_SIGNED: {
-    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    '@context': [CREDENTIALS_CONTEXT_V1_URL],
     type: ['VerifiablePresentation'],
     verifiableCredential: [
       {
-        '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+        '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
         type: ['VerifiableCredential', 'UniversityDegreeCredential'],
         issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
         issuanceDate: '2017-10-22T12:23:48Z',
@@ -117,11 +119,7 @@ export const Ed25519Signature2018Fixtures = {
 
 export const BbsBlsSignature2020Fixtures = {
   TEST_LD_DOCUMENT: {
-    '@context': [
-      'https://www.w3.org/2018/credentials/v1',
-      'https://w3id.org/citizenship/v1',
-      'https://w3id.org/security/bbs/v1',
-    ],
+    '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://w3id.org/citizenship/v1', SECURITY_CONTEXT_BBS_URL],
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
     type: ['VerifiableCredential', 'PermanentResidentCard'],
     issuer: '',
@@ -147,11 +145,7 @@ export const BbsBlsSignature2020Fixtures = {
   },
 
   TEST_LD_DOCUMENT_SIGNED: {
-    '@context': [
-      'https://www.w3.org/2018/credentials/v1',
-      'https://w3id.org/citizenship/v1',
-      'https://w3id.org/security/bbs/v1',
-    ],
+    '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://w3id.org/citizenship/v1', SECURITY_CONTEXT_BBS_URL],
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
     type: ['VerifiableCredential', 'PermanentResidentCard'],
     issuer:
@@ -186,11 +180,7 @@ export const BbsBlsSignature2020Fixtures = {
     },
   },
   TEST_LD_DOCUMENT_BAD_SIGNED: {
-    '@context': [
-      'https://www.w3.org/2018/credentials/v1',
-      'https://w3id.org/citizenship/v1',
-      'https://w3id.org/security/bbs/v1',
-    ],
+    '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://w3id.org/citizenship/v1', SECURITY_CONTEXT_BBS_URL],
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
     type: ['VerifiableCredential', 'PermanentResidentCard'],
     issuer:
@@ -226,11 +216,7 @@ export const BbsBlsSignature2020Fixtures = {
   },
 
   TEST_VALID_DERIVED: {
-    '@context': [
-      'https://www.w3.org/2018/credentials/v1',
-      'https://w3id.org/citizenship/v1',
-      'https://w3id.org/security/bbs/v1',
-    ],
+    '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://w3id.org/citizenship/v1', SECURITY_CONTEXT_BBS_URL],
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
     type: ['PermanentResidentCard', 'VerifiableCredential'],
     description: 'Government of Example Permanent Resident Card.',
@@ -260,15 +246,11 @@ export const BbsBlsSignature2020Fixtures = {
   },
 
   TEST_VP_DOCUMENT: {
-    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    '@context': [CREDENTIALS_CONTEXT_V1_URL],
     type: ['VerifiablePresentation'],
     verifiableCredential: [
       {
-        '@context': [
-          'https://www.w3.org/2018/credentials/v1',
-          'https://w3id.org/citizenship/v1',
-          'https://w3id.org/security/bbs/v1',
-        ],
+        '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://w3id.org/citizenship/v1', SECURITY_CONTEXT_BBS_URL],
         id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
         type: ['PermanentResidentCard', 'VerifiableCredential'],
         description: 'Government of Example Permanent Resident Card.',
@@ -299,15 +281,11 @@ export const BbsBlsSignature2020Fixtures = {
     ],
   },
   TEST_VP_DOCUMENT_SIGNED: {
-    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    '@context': [CREDENTIALS_CONTEXT_V1_URL],
     type: ['VerifiablePresentation'],
     verifiableCredential: [
       {
-        '@context': [
-          'https://www.w3.org/2018/credentials/v1',
-          'https://w3id.org/citizenship/v1',
-          'https://w3id.org/security/bbs/v1',
-        ],
+        '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://w3id.org/citizenship/v1', SECURITY_CONTEXT_BBS_URL],
         id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
         type: ['PermanentResidentCard', 'VerifiableCredential'],
         description: 'Government of Example Permanent Resident Card.',

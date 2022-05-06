@@ -232,7 +232,7 @@ export class W3cCredentialService {
     const result = await vc.signPresentation({
       presentation: JsonTransformer.toJSON(options.presentation),
       suite: suite,
-      challenge: uuid(),
+      challenge: options.challenge,
       documentLoader: this.documentLoader,
     })
 

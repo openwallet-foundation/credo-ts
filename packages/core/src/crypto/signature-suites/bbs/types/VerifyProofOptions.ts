@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '../../JwsLinkedDataSignature'
+import type { DocumentLoader } from '../../../../utils'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**

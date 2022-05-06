@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2020-2021 Digital Bazaar, Inc. All rights reserved.
  */
+import type { DocumentLoader, Proof, VerificationMethod } from '../../utils'
 import type { LdKeyPair } from '../LdKeyPair'
 
 import jsigs from '@digitalcredentials/jsonld-signatures'
@@ -8,21 +9,6 @@ import jsigs from '@digitalcredentials/jsonld-signatures'
 import { TypedArrayEncoder, JsonEncoder } from '../../utils'
 
 const LinkedDataSignature = jsigs.suites.LinkedDataSignature
-
-export type JsonLdDoc = Record<string, unknown>
-export interface VerificationMethod {
-  id: string
-  [key: string]: unknown
-}
-
-export interface Proof {
-  verificationMethod: string | VerificationMethod
-  [key: string]: unknown
-}
-
-export type DocumentLoaderResult = Promise<Record<string, unknown>>
-
-export type DocumentLoader = (url: string) => DocumentLoaderResult
 
 export type ProofPurpose = any
 
@@ -153,7 +139,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
 
     let header
     try {
-      header = JsonEncoder.fromBase64(encodedHeader) // VERIFY if this is correct
+      header = JsonEncoder.fromBase64(encodedHeader)
     } catch (e) {
       throw new Error('Could not parse JWS header; ' + e)
     }

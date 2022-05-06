@@ -1,30 +1,17 @@
-import type {
-  DocumentLoader,
-  JsonLdDoc,
-  JwsLinkedDataSignatureOptions,
-  ProofPurpose,
-  VerificationMethod,
-  Proof,
-} from './JwsLinkedDataSignature'
+import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../../utils'
+import type { JwsLinkedDataSignatureOptions, ProofPurpose } from '../JwsLinkedDataSignature'
 
 // @ts-ignore
 import { Ed25519VerificationKey2020 } from '@digitalbazaar/ed25519-verification-key-2020'
 // @ts-ignore
 import jsonld from '@digitalcredentials/jsonld'
-import {
-  constants as ed25519Signature2018Constants,
-  contexts as ed25519Signature2018Contexts,
-} from 'ed25519-signature-2018-context'
-import { constants as ed25519Signature2020Constants } from 'ed25519-signature-2020-context'
 
-import { TypedArrayEncoder } from '../../utils'
+import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
+import { TypedArrayEncoder, _includesContext } from '../../../utils'
+import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 
-import { JwsLinkedDataSignature } from './JwsLinkedDataSignature'
-
-// 'https://w3id.org/security/suites/ed25519-2018/v1'
-const SUITE_CONTEXT_URL = ed25519Signature2018Constants.CONTEXT_URL
-// 'https://w3id.org/security/suites/ed25519-2020/v1'
-const SUITE_CONTEXT_URL_2020 = ed25519Signature2020Constants.CONTEXT_URL
+import { ED25519_SUITE_CONTEXT_URL_2018, ED25519_SUITE_CONTEXT_URL_2020 } from './constants'
+import { ed25519Signature2018Context } from './context'
 
 type Ed25519Signature2018Options = Pick<
   JwsLinkedDataSignatureOptions,
@@ -32,8 +19,8 @@ type Ed25519Signature2018Options = Pick<
 >
 
 export class Ed25519Signature2018 extends JwsLinkedDataSignature {
-  public static CONTEXT = SUITE_CONTEXT_URL
-  public static CONTEXT_URL = ed25519Signature2018Contexts.get(SUITE_CONTEXT_URL)
+  public static CONTEXT_URL = ED25519_SUITE_CONTEXT_URL_2018
+  public static CONTEXT = ed25519Signature2018Context.get(ED25519_SUITE_CONTEXT_URL_2018)
 
   /**
    * @param {object} options - Options hashmap.
@@ -67,7 +54,7 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
       type: 'Ed25519Signature2018',
       algorithm: 'EdDSA',
       LDKeyClass: options.LDKeyClass,
-      contextUrl: SUITE_CONTEXT_URL,
+      contextUrl: ED25519_SUITE_CONTEXT_URL_2018,
       key: options.key,
       proof: options.proof,
       date: options.date,
@@ -180,18 +167,16 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
 
 function _includesCompatibleContext(options: { document: JsonLdDoc }) {
   // Handle the unfortunate Ed25519Signature2018 / credentials/v1 collision
-  const CRED_CONTEXT = 'https://www.w3.org/2018/credentials/v1'
-  const SECURITY_CONTEXT = 'https://w3id.org/security/v2'
   const hasEd2018 = _includesContext({
     document: options.document,
-    contextUrl: SUITE_CONTEXT_URL,
+    contextUrl: ED25519_SUITE_CONTEXT_URL_2018,
   })
   const hasEd2020 = _includesContext({
     document: options.document,
-    contextUrl: SUITE_CONTEXT_URL_2020,
+    contextUrl: ED25519_SUITE_CONTEXT_URL_2020,
   })
-  const hasCred = _includesContext({ document: options.document, contextUrl: CRED_CONTEXT })
-  const hasSecV2 = _includesContext({ document: options.document, contextUrl: SECURITY_CONTEXT })
+  const hasCred = _includesContext({ document: options.document, contextUrl: CREDENTIALS_CONTEXT_V1_URL })
+  const hasSecV2 = _includesContext({ document: options.document, contextUrl: SECURITY_CONTEXT_URL })
 
   // TODO: the console.warn statements below should probably be replaced with logging statements. However, this would currently require injection and I'm not sure we want to do that.
   if (hasEd2018 && hasCred) {
@@ -212,26 +197,10 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
   return hasEd2018 || hasEd2020 || hasCred || hasSecV2
 }
 
-/**
- * Tests whether a provided JSON-LD document includes a context url in its
- * `@context` property.
- *
- * @param {object} options - Options hashmap.
- * @param {object} options.document - A JSON-LD document.
- * @param {string} options.contextUrl - A context url.
- *
- * @returns {boolean} Returns true if document includes context.
- */
-function _includesContext(options: { document: JsonLdDoc; contextUrl: string }) {
-  const context = options.document['@context']
-
-  return context === options.contextUrl || (Array.isArray(context) && context.includes(options.contextUrl))
-}
-
 function _isEd2018Key(verificationMethod: JsonLdDoc) {
   const hasEd2018 = _includesContext({
     document: verificationMethod,
-    contextUrl: SUITE_CONTEXT_URL,
+    contextUrl: ED25519_SUITE_CONTEXT_URL_2018,
   })
 
   // @ts-ignore - .hasValue is not part of the public API
@@ -241,7 +210,7 @@ function _isEd2018Key(verificationMethod: JsonLdDoc) {
 function _isEd2020Key(verificationMethod: JsonLdDoc) {
   const hasEd2020 = _includesContext({
     document: verificationMethod,
-    contextUrl: SUITE_CONTEXT_URL_2020,
+    contextUrl: ED25519_SUITE_CONTEXT_URL_2020,
   })
 
   // @ts-ignore - .hasValue is not part of the public API

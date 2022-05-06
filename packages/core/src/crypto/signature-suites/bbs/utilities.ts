@@ -10,8 +10,9 @@
 
 import type { GetProofsOptions, GetProofsResult, GetTypeOptions } from './types'
 
-import { SECURITY_CONTEXT_URL } from '@digitalcredentials/jsonld-signatures'
 import jsonld from 'jsonld'
+
+import { SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
 
 /**
  * The property identifying the linked data proof
