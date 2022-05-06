@@ -1,7 +1,7 @@
 import type { Agent } from '../../../../agent/Agent'
-import type { CredentialMetadata, CredentialRecord } from '../../../../modules/credentials'
+import type { CredentialMetadata, CredentialExchangeRecord } from '../../../../modules/credentials'
 
-import { CredentialMetadataKeys } from '../../../../modules/credentials'
+import { CredentialMetadataKeys } from '../../../../modules/credentials/repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../../../../modules/credentials/repository/CredentialRepository'
 import { Metadata } from '../../../Metadata'
 
@@ -62,7 +62,7 @@ export async function migrateCredentialRecordToV0_2(agent: Agent) {
  * }
  * ```
  */
-export async function updateIndyMetadata(agent: Agent, credentialRecord: CredentialRecord) {
+export async function updateIndyMetadata(agent: Agent, credentialRecord: CredentialExchangeRecord) {
   agent.config.logger.debug(`Updating indy metadata to use the generic metadata api available to records.`)
 
   const { requestMetadata, schemaId, credentialDefinitionId, ...rest } = credentialRecord.metadata.data
