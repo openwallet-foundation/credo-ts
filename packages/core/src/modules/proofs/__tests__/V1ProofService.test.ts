@@ -14,10 +14,10 @@ import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyRevocationService } from '../../indy/services/IndyRevocationService'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
+import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
 import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import { ProofState } from '../models/ProofState'
 import { V1ProofService } from '../protocol/v1'
-import { V1PresentationProblemReportReason } from '../protocol/v1/errors'
 import { INDY_PROOF_REQUEST_ATTACHMENT_ID, V1RequestPresentationMessage } from '../protocol/v1/messages'
 import { V1PresentationProblemReportMessage } from '../protocol/v1/messages/V1PresentationProblemReportMessage'
 import { ProofRecord } from '../repository/ProofRecord'
@@ -205,7 +205,7 @@ describe('ProofService', () => {
       const presentationProblemReportMessage = await new V1PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: V1PresentationProblemReportReason.Abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
 
@@ -233,7 +233,7 @@ describe('ProofService', () => {
       const presentationProblemReportMessage = new V1PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: V1PresentationProblemReportReason.Abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })

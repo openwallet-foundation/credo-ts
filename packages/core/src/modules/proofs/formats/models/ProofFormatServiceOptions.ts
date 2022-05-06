@@ -6,17 +6,17 @@ import type { ProofRequestOptions } from '../indy/models/ProofRequest'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
 
 export interface CreateRequestAttachmentOptions {
-  attachId?: string
+  id?: string
   proofRequestOptions: ProofRequestOptions
 }
 
 export interface CreateProofAttachmentOptions {
-  attachId?: string
+  id?: string
   proofProposalOptions: PresentationPreview
 }
 
 export interface CreateProposalOptions {
-  attachId?: string
+  id?: string
   formats: ProposeProofFormats
 }
 
@@ -26,7 +26,7 @@ export interface ProcessProposalOptions {
 }
 
 export interface CreateRequestOptions {
-  attachId?: string
+  id?: string
   formats: ProposeProofFormats
 }
 
@@ -36,7 +36,7 @@ export interface ProcessRequestOptions {
 }
 
 export interface CreatePresentationOptions {
-  attachId?: string
+  id?: string
   attachment: Attachment
   formats: CreatePresentationFormats
 }

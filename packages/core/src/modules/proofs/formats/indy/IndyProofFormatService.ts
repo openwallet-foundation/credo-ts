@@ -81,7 +81,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
   private createRequestAttachment(options: CreateRequestAttachmentOptions): ProofAttachmentFormat {
     const format = new ProofFormatSpec({
-      attachmentId: options.attachId,
+      attachmentId: options.id,
       format: V2_INDY_PRESENTATION_REQUEST,
     })
 
@@ -91,7 +91,7 @@ export class IndyProofFormatService extends ProofFormatService {
     checkProofRequestForDuplicates(request)
 
     const attachment = new Attachment({
-      id: options.attachId,
+      id: options.id,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(request),
@@ -102,12 +102,12 @@ export class IndyProofFormatService extends ProofFormatService {
 
   private createProofAttachment(options: CreateProofAttachmentOptions): ProofAttachmentFormat {
     const format = new ProofFormatSpec({
-      attachmentId: options.attachId,
+      attachmentId: options.id,
       format: V2_INDY_PRESENTATION_PROPOSAL,
     })
 
     const attachment = new Attachment({
-      id: options.attachId,
+      id: options.id,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(options.proofProposalOptions),
@@ -132,7 +132,7 @@ export class IndyProofFormatService extends ProofFormatService {
     }
 
     return this.createProofAttachment({
-      attachId: options.attachId ?? uuid(),
+      id: options.id ?? uuid(),
       proofProposalOptions: preview,
     })
   }
@@ -142,15 +142,15 @@ export class IndyProofFormatService extends ProofFormatService {
       throw Error('Missing indy format to create proposal attachment format')
     }
 
-    const attachId = options.attachId ?? uuid()
+    const id = options.id ?? uuid()
 
     const format = new ProofFormatSpec({
-      attachmentId: attachId,
+      attachmentId: id,
       format: V2_INDY_PRESENTATION_REQUEST,
     })
 
     const attachment = new Attachment({
-      id: attachId,
+      id: id,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(options.formats.indy),
@@ -165,7 +165,7 @@ export class IndyProofFormatService extends ProofFormatService {
     }
 
     return this.createRequestAttachment({
-      attachId: options.attachId ?? uuid(),
+      id: options.id ?? uuid(),
       proofRequestOptions: options.formats.indy,
     })
   }
@@ -188,7 +188,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
     const proof = await this.createProof(proofRequest, requestedCredentials)
 
-    const attachmentId = options.attachId ?? uuid()
+    const attachmentId = options.id ?? uuid()
 
     const format = new ProofFormatSpec({
       attachmentId,

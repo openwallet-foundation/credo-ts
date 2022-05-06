@@ -11,11 +11,11 @@ import { DidCommMessageRepository } from '../../../storage'
 import { ConnectionService, ConnectionState } from '../../connections'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
+import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
 import { V2_INDY_PRESENTATION } from '../formats/ProofFormats'
 import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import { ProofState } from '../models/ProofState'
 import { V2ProofService } from '../protocol/v2/V2ProofService'
-import { V2PresentationProblemReportReason } from '../protocol/v2/errors'
 import { V2PresentationProblemReportMessage, V2RequestPresentationMessage } from '../protocol/v2/messages'
 import { ProofRecord } from '../repository/ProofRecord'
 import { ProofRepository } from '../repository/ProofRepository'
@@ -206,7 +206,7 @@ describe('V2ProofService', () => {
       const presentationProblemReportMessage = await new V2PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: V2PresentationProblemReportReason.Abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
 
@@ -234,7 +234,7 @@ describe('V2ProofService', () => {
       const presentationProblemReportMessage = new V2PresentationProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: V2PresentationProblemReportReason.Abandoned,
+          code: PresentationProblemReportReason.Abandoned,
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })

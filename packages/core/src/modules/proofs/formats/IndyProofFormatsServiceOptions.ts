@@ -49,6 +49,6 @@ export interface IndyGetRequestedCredentialsFormat {
 }
 
 export interface CreateRequestAsResponseOptions {
-  attachId?: string
+  id?: string
   formats: RequestProofFormats
 }

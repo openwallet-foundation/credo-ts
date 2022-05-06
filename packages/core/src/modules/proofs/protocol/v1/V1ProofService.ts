@@ -43,6 +43,7 @@ import { IndyHolderService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
+import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
@@ -51,7 +52,7 @@ import { ProofState } from '../../models/ProofState'
 import { ProofRecord } from '../../repository/ProofRecord'
 import { ProofRepository } from '../../repository/ProofRepository'
 
-import { V1PresentationProblemReportError, V1PresentationProblemReportReason } from './errors'
+import { V1PresentationProblemReportError } from './errors'
 import {
   V1PresentationAckHandler,
   V1PresentationHandler,
@@ -262,7 +263,7 @@ export class V1ProofService extends ProofService {
 
     // Create message
     const { attachment } = await this.indyProofFormatService.createRequest({
-      attachId: INDY_PROOF_REQUEST_ATTACHMENT_ID,
+      id: INDY_PROOF_REQUEST_ATTACHMENT_ID,
       formats: options.proofFormats,
     })
 
@@ -296,7 +297,7 @@ export class V1ProofService extends ProofService {
 
     // Create message
     const { attachment } = await this.indyProofFormatService.createRequest({
-      attachId: INDY_PROOF_REQUEST_ATTACHMENT_ID,
+      id: INDY_PROOF_REQUEST_ATTACHMENT_ID,
       formats: options.proofFormats,
     })
 
@@ -343,7 +344,7 @@ export class V1ProofService extends ProofService {
     if (!proofRequest) {
       throw new V1PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`,
-        { problemCode: V1PresentationProblemReportReason.Abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
     await validateOrReject(proofRequest)
@@ -431,12 +432,12 @@ export class V1ProofService extends ProofService {
     if (!requestAttachment) {
       throw new V1PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation with thread id ${proofRecord.threadId}`,
-        { problemCode: V1PresentationProblemReportReason.Abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
 
     const proof = await this.indyProofFormatService.createPresentation({
-      attachId: INDY_PROOF_ATTACHMENT_ID,
+      id: INDY_PROOF_ATTACHMENT_ID,
       attachment: requestAttachment,
       formats: {
         indy: {
@@ -527,7 +528,7 @@ export class V1ProofService extends ProofService {
     } catch (e) {
       if (e instanceof AriesFrameworkError) {
         throw new V1PresentationProblemReportError(e.message, {
-          problemCode: V1PresentationProblemReportReason.Abandoned,
+          problemCode: PresentationProblemReportReason.Abandoned,
         })
       }
       throw e
@@ -571,7 +572,7 @@ export class V1ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const msg = new V1PresentationProblemReportMessage({
       description: {
-        code: V1PresentationProblemReportReason.Abandoned,
+        code: PresentationProblemReportReason.Abandoned,
         en: options.description,
       },
     })
@@ -776,7 +777,7 @@ export class V1ProofService extends ProofService {
     if (!proofRequest) {
       throw new V1PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${request.threadId}`,
-        { problemCode: V1PresentationProblemReportReason.Abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
     await validateOrReject(proofRequest)

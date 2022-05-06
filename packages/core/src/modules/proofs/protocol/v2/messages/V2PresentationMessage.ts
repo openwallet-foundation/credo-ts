@@ -52,7 +52,7 @@ export class V2PresentationMessage extends AgentMessage {
       const attachment = this.presentationsAttach.find((attachment) => attachment.id === format.attachmentId)
 
       if (!attachment) {
-        throw new AriesFrameworkError(`Could not find a matching attachment with attachId: ${format.attachmentId}`)
+        throw new AriesFrameworkError(`Could not find a matching attachment with attachmentId: ${format.attachmentId}`)
       }
 
       attachmentFormats.push({ format, attachment })
