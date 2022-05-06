@@ -10,7 +10,7 @@ import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../modul
 import { TypedArrayEncoder, _includesContext } from '../../../utils'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 
-import { SUITE_CONTEXT_URL_2018, SUITE_CONTEXT_URL_2020 } from './constants'
+import { ED25519_SUITE_CONTEXT_URL_2018, ED25519_SUITE_CONTEXT_URL_2020 } from './constants'
 import { ed25519Signature2018Context } from './context'
 
 type Ed25519Signature2018Options = Pick<
@@ -19,8 +19,8 @@ type Ed25519Signature2018Options = Pick<
 >
 
 export class Ed25519Signature2018 extends JwsLinkedDataSignature {
-  public static CONTEXT_URL = SUITE_CONTEXT_URL_2018
-  public static CONTEXT = ed25519Signature2018Context.get(SUITE_CONTEXT_URL_2018)
+  public static CONTEXT_URL = ED25519_SUITE_CONTEXT_URL_2018
+  public static CONTEXT = ed25519Signature2018Context.get(ED25519_SUITE_CONTEXT_URL_2018)
 
   /**
    * @param {object} options - Options hashmap.
@@ -54,7 +54,7 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
       type: 'Ed25519Signature2018',
       algorithm: 'EdDSA',
       LDKeyClass: options.LDKeyClass,
-      contextUrl: SUITE_CONTEXT_URL_2018,
+      contextUrl: ED25519_SUITE_CONTEXT_URL_2018,
       key: options.key,
       proof: options.proof,
       date: options.date,
@@ -169,11 +169,11 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
   // Handle the unfortunate Ed25519Signature2018 / credentials/v1 collision
   const hasEd2018 = _includesContext({
     document: options.document,
-    contextUrl: SUITE_CONTEXT_URL_2018,
+    contextUrl: ED25519_SUITE_CONTEXT_URL_2018,
   })
   const hasEd2020 = _includesContext({
     document: options.document,
-    contextUrl: SUITE_CONTEXT_URL_2020,
+    contextUrl: ED25519_SUITE_CONTEXT_URL_2020,
   })
   const hasCred = _includesContext({ document: options.document, contextUrl: CREDENTIALS_CONTEXT_V1_URL })
   const hasSecV2 = _includesContext({ document: options.document, contextUrl: SECURITY_CONTEXT_URL })
@@ -200,7 +200,7 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
 function _isEd2018Key(verificationMethod: JsonLdDoc) {
   const hasEd2018 = _includesContext({
     document: verificationMethod,
-    contextUrl: SUITE_CONTEXT_URL_2018,
+    contextUrl: ED25519_SUITE_CONTEXT_URL_2018,
   })
 
   // @ts-ignore - .hasValue is not part of the public API
@@ -210,7 +210,7 @@ function _isEd2018Key(verificationMethod: JsonLdDoc) {
 function _isEd2020Key(verificationMethod: JsonLdDoc) {
   const hasEd2020 = _includesContext({
     document: verificationMethod,
-    contextUrl: SUITE_CONTEXT_URL_2020,
+    contextUrl: ED25519_SUITE_CONTEXT_URL_2020,
   })
 
   // @ts-ignore - .hasValue is not part of the public API

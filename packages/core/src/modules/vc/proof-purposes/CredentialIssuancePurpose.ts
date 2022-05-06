@@ -1,10 +1,7 @@
-import type {
-  DocumentLoader,
-  JwsLinkedDataSignature,
-  Proof,
-} from '../../../crypto/signature-suites/JwsLinkedDataSignature'
-
+import type { JwsLinkedDataSignature } from '../../../crypto/signature-suites/JwsLinkedDataSignature'
 // @ts-ignore
+import type { Proof, DocumentLoader } from '../../../utils'
+
 import jsonld from '@digitalcredentials/jsonld'
 import jsigs from '@digitalcredentials/jsonld-signatures'
 
