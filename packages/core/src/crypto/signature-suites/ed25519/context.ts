@@ -1,4 +1,4 @@
-import { SUITE_CONTEXT_URL_2018 } from './constants'
+import { ED25519_SUITE_CONTEXT_URL_2018 } from './constants'
 
 export const context = {
   '@context': {
@@ -94,6 +94,6 @@ export const context = {
 }
 
 const ed25519Signature2018Context = new Map()
-ed25519Signature2018Context.set(SUITE_CONTEXT_URL_2018, context)
+ed25519Signature2018Context.set(ED25519_SUITE_CONTEXT_URL_2018, context)
 
 export { ed25519Signature2018Context }

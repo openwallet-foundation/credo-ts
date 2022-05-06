@@ -10,9 +10,6 @@ declare module '@digitalcredentials/jsonld-signatures' {
     AssertionProofPurpose: any
   }
 
-  export const SECURITY_CONTEXT_URL: any
-  export const SECURITY_PROOF_URL: any
-
   export const constants: any
 
   // export default suites

@@ -22,10 +22,11 @@ import type {
   SuiteSignOptions,
 } from './types'
 
-import { SECURITY_CONTEXT_URL, suites } from '@digitalcredentials/jsonld-signatures'
+import { suites } from '@digitalcredentials/jsonld-signatures'
 import { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 import jsonld from 'jsonld'
 
+import { SECURITY_CONTEXT_BBS_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
 import { TypedArrayEncoder } from '../../../utils'
 
 import { w3cDate } from './utilities'
@@ -59,7 +60,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
             '@container': '@graph',
           },
         },
-        'https://w3id.org/security/bbs/v1',
+        SECURITY_CONTEXT_BBS_URL,
       ],
       type: 'BbsBlsSignature2020',
     }
@@ -91,15 +92,16 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
   }
 
   public ensureSuiteContext({ document }: any) {
-    const contextUrl = 'https://w3id.org/security/bbs/v1'
     if (
-      document['@context'] === contextUrl ||
-      (Array.isArray(document['@context']) && document['@context'].includes(contextUrl))
+      document['@context'] === SECURITY_CONTEXT_BBS_URL ||
+      (Array.isArray(document['@context']) && document['@context'].includes(SECURITY_CONTEXT_BBS_URL))
     ) {
       // document already includes the required context
       return
     }
-    throw new TypeError(`The document to be signed must contain this suite's @context, ` + `"${contextUrl}".`)
+    throw new TypeError(
+      `The document to be signed must contain this suite's @context, ` + `"${SECURITY_CONTEXT_BBS_URL}".`
+    )
   }
 
   /**

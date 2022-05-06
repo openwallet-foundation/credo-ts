@@ -5,6 +5,8 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
+import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../../../crypto/signature-suites/ed25519/constants'
+import { SECURITY_X25519_CONTEXT_URL } from '../../../vc/constants'
 
 import { getSignatureKeyBase } from './getSignatureKeyBase'
 import { getX25519VerificationMethod } from './x25519'
@@ -34,8 +36,8 @@ export function getEd25519DidDoc(did: string, key: Key) {
   const didDocBuilder = getSignatureKeyBase({ did, key, verificationMethod })
 
   didDocBuilder
-    .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
-    .addContext('https://w3id.org/security/suites/x25519-2019/v1')
+    .addContext(ED25519_SUITE_CONTEXT_URL_2018)
+    .addContext(SECURITY_X25519_CONTEXT_URL)
     .addKeyAgreement(x25519VerificationMethod)
 
   return didDocBuilder.build()

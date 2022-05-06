@@ -6,6 +6,7 @@ import { Ed25519VerificationKey2020 } from '@digitalbazaar/ed25519-verification-
 // @ts-ignore
 import jsonld from '@digitalcredentials/jsonld'
 
+import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
 import { TypedArrayEncoder, _includesContext } from '../../../utils'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 
@@ -166,8 +167,6 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
 
 function _includesCompatibleContext(options: { document: JsonLdDoc }) {
   // Handle the unfortunate Ed25519Signature2018 / credentials/v1 collision
-  const CRED_CONTEXT = 'https://www.w3.org/2018/credentials/v1'
-  const SECURITY_CONTEXT = 'https://w3id.org/security/v2'
   const hasEd2018 = _includesContext({
     document: options.document,
     contextUrl: SUITE_CONTEXT_URL_2018,
@@ -176,8 +175,8 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
     document: options.document,
     contextUrl: SUITE_CONTEXT_URL_2020,
   })
-  const hasCred = _includesContext({ document: options.document, contextUrl: CRED_CONTEXT })
-  const hasSecV2 = _includesContext({ document: options.document, contextUrl: SECURITY_CONTEXT })
+  const hasCred = _includesContext({ document: options.document, contextUrl: CREDENTIALS_CONTEXT_V1_URL })
+  const hasSecV2 = _includesContext({ document: options.document, contextUrl: SECURITY_CONTEXT_URL })
 
   // TODO: the console.warn statements below should probably be replaced with logging statements. However, this would currently require injection and I'm not sure we want to do that.
   if (hasEd2018 && hasCred) {
