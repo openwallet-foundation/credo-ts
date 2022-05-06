@@ -3,6 +3,7 @@ import type { W3cCredentialOptions } from './W3cCredential'
 
 import { instanceToPlain, plainToInstance, Transform, TransformationType } from 'class-transformer'
 
+import { orArrayToArray } from '../../../../utils'
 import { SingleOrArray } from '../../../../utils/type'
 import { IsInstanceOrArrayOfInstances } from '../../../../utils/validators'
 import { LinkedDataProof, LinkedDataProofTransformer } from '../LinkedDataProof'
@@ -26,6 +27,11 @@ export class W3cVerifiableCredential extends W3cCredential {
   @LinkedDataProofTransformer()
   @IsInstanceOrArrayOfInstances({ classType: LinkedDataProof })
   public proof!: SingleOrArray<LinkedDataProof>
+
+  public get proofTypes(): Array<string> {
+    const proofArray = orArrayToArray<LinkedDataProof>(this.proof)
+    return proofArray?.map((x) => x.type) ?? []
+  }
 }
 
 // Custom transformers

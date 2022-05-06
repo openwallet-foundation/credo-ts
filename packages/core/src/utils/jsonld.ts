@@ -15,7 +15,7 @@ export type DocumentLoaderResult = Promise<Record<string, unknown>>
 
 export type DocumentLoader = (url: string) => DocumentLoaderResult
 
-export const orArrayToArray = (val?: SingleOrArray<string>): Array<string> | undefined => {
+export const orArrayToArray = <T>(val?: SingleOrArray<T>): Array<T> | undefined => {
   if (!val) return undefined
   if (Array.isArray(val)) return val
   return [val]
