@@ -64,7 +64,7 @@ export class W3cCredential {
   public credentialSubject!: SingleOrArray<CredentialSubject>
 
   @IsOptional()
-  @CredentialSchemaTransformer()
+  @Type(() => CredentialSchema)
   @IsInstanceOrArrayOfInstances({ classType: CredentialSchema })
   public credentialSchema?: SingleOrArray<CredentialSchema>
 

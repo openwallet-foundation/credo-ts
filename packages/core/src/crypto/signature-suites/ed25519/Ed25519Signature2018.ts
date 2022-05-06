@@ -1,18 +1,12 @@
-import type {
-  DocumentLoader,
-  JsonLdDoc,
-  JwsLinkedDataSignatureOptions,
-  ProofPurpose,
-  VerificationMethod,
-  Proof,
-} from '../JwsLinkedDataSignature'
+import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../../utils'
+import type { JwsLinkedDataSignatureOptions, ProofPurpose } from '../JwsLinkedDataSignature'
 
 // @ts-ignore
 import { Ed25519VerificationKey2020 } from '@digitalbazaar/ed25519-verification-key-2020'
 // @ts-ignore
 import jsonld from '@digitalcredentials/jsonld'
 
-import { TypedArrayEncoder } from '../../../utils'
+import { TypedArrayEncoder, _includesContext } from '../../../utils'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 
 import { SUITE_CONTEXT_URL_2018, SUITE_CONTEXT_URL_2020 } from './constants'
@@ -202,22 +196,6 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
 
   // Either one by itself is fine, for this suite
   return hasEd2018 || hasEd2020 || hasCred || hasSecV2
-}
-
-/**
- * Tests whether a provided JSON-LD document includes a context url in its
- * `@context` property.
- *
- * @param {object} options - Options hashmap.
- * @param {object} options.document - A JSON-LD document.
- * @param {string} options.contextUrl - A context url.
- *
- * @returns {boolean} Returns true if document includes context.
- */
-function _includesContext(options: { document: JsonLdDoc; contextUrl: string }) {
-  const context = options.document['@context']
-
-  return context === options.contextUrl || (Array.isArray(context) && context.includes(options.contextUrl))
 }
 
 function _isEd2018Key(verificationMethod: JsonLdDoc) {
