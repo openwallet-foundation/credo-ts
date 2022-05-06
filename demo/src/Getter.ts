@@ -7,6 +7,7 @@ import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class Getter extends BaseAgent {
+  public valueTransferRecordId?: string
   public connectionRecordWitnessId?: string
   public connected: boolean
 
@@ -31,6 +32,13 @@ export class Getter extends BaseAgent {
     return await this.agent.connections.getById(this.connectionRecordWitnessId)
   }
 
+  private async getValueTransferRecord() {
+    if (!this.valueTransferRecordId) {
+      throw Error(redText(Output.MissingValueTransferRecord))
+    }
+    return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
+  }
+
   private async printConnectionInvite() {
     const invite = await this.agent.connections.createConnection()
     this.connectionRecordWitnessId = invite.connectionRecord.id
@@ -42,7 +50,7 @@ export class Getter extends BaseAgent {
   private async waitForConnection() {
     const connectionRecord = await this.getConnectionRecord()
 
-    console.log('Waiting for Faber to finish connection...')
+    console.log('Waiting for Witness to finish connection...')
     try {
       await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
     } catch (e) {
@@ -51,6 +59,23 @@ export class Getter extends BaseAgent {
     }
     console.log(greenText(Output.ConnectionEstablished))
     this.connected = true
+  }
+
+  private async waitForPayment() {
+    const valueTransferRecord = await this.getValueTransferRecord()
+
+    console.log('Waiting for Giver to pay...')
+    try {
+      const record = await this.agent.valueTransfer.returnWhenIsCompleted(valueTransferRecord.id)
+      console.log(greenText(Output.PaymentReceived))
+      console.log(greenText('Receipt:'))
+      console.log(record.receiptMessage)
+      const balance = await this.agent.valueTransfer.getBalance()
+      console.log(greenText('Balance: ' + balance))
+    } catch (e) {
+      console.log(redText(`\nTimeout of 120 seconds reached.. Returning to home screen.\n`))
+      return
+    }
   }
 
   public async setupConnection() {
@@ -73,8 +98,10 @@ export class Getter extends BaseAgent {
     if (!this.connectionRecordWitnessId) {
       throw Error(redText(Output.MissingConnectionRecord))
     }
-    await this.agent.valueTransfer.requestPayment(this.connectionRecordWitnessId, 10, giver)
-    console.log(greenText('\nCredential offer accepted!\n'))
+    const { record } = await this.agent.valueTransfer.requestPayment(this.connectionRecordWitnessId, 10, giver)
+    this.valueTransferRecordId = record.id
+    console.log(greenText('\nRequest Sent!\n'))
+    await this.waitForPayment()
   }
 
   public async exit() {

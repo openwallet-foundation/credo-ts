@@ -13,4 +13,8 @@ export class ValueTransferStateRepository extends Repository<ValueTransferStateR
   ) {
     super(ValueTransferStateRecord, storageService)
   }
+
+  public getState(): Promise<ValueTransferStateRecord> {
+    return this.getSingleByQuery({})
+  }
 }

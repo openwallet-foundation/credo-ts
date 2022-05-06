@@ -7,7 +7,10 @@ export enum Color {
 
 export enum Output {
   ConnectionEstablished = `\nConnection established!`,
+  PaymentReceived = `\nPayment Received!`,
+  PaymentDone = `\nPayment Done!`,
   MissingConnectionRecord = `\nNo connectionRecord ID has been set yet\n`,
+  MissingValueTransferRecord = `\nNo valueTransferRecord ID has been set yet\n`,
   ConnectionLink = `\nRun 'Receive connection invitation' in Faber and paste this invitation link:\n\n`,
   Exit = 'Shutting down agent...\nExiting...',
 }

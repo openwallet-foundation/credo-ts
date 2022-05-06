@@ -1,6 +1,6 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 import type { DidCommService } from '../../dids'
-import type { AcceptProtocol, Transport } from '../../routing/services/MediationRecipientService'
+import type { AcceptProtocol } from '../../routing/types'
 
 import { Expose } from 'class-transformer'
 import { Equals, ValidateNested } from 'class-validator'
@@ -16,8 +16,7 @@ export interface OutOfBandInvitationBody {
   imageUrl?: string
   goalCode?: string
   accept?: AcceptProtocol[]
-  service?: DidCommService
-  transport?: Transport
+  service: DidCommService
 }
 
 type OutOfBandInvitationOptions = DIDCommV2MessageParams & {
@@ -25,8 +24,11 @@ type OutOfBandInvitationOptions = DIDCommV2MessageParams & {
 }
 
 export class OutOfBandInvitationMessage extends DIDCommV2Message {
-  public constructor(options: OutOfBandInvitationOptions) {
+  public constructor(options?: OutOfBandInvitationOptions) {
     super(options)
+    if (options) {
+      this.body = options.body
+    }
   }
 
   @Equals(OutOfBandInvitationMessage.type)

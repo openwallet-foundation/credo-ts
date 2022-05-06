@@ -3,6 +3,7 @@ import type { CryptoInterface } from '@value-transfer/value-transfer-lib'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { KeyType } from '../../../crypto'
 import { DidService } from '../../dids/services/DidService'
 import { KeyService } from '../../keys'
 
@@ -18,13 +19,13 @@ export class ValueTransferCryptoService implements CryptoInterface {
 
   // @ts-ignore
   public async sign(payload: Buffer, did: string): Promise<Buffer> {
-    const kid = await this.didService.resolveLocalKey(did)
-    return this.keysService.sign({ payload, kid })
+    const kid = await this.didService.resolveLocalKey(did, KeyType.Ed25519)
+    return await this.keysService.sign({ payload, kid })
   }
 
   // @ts-ignore
   public async verify(payload: Buffer, signature: Buffer, did: string): Promise<boolean> {
-    const key = await this.didService.resolveRemoteKey(did)
+    const key = await this.didService.resolveRemoteKey(did, KeyType.Ed25519)
     return this.keysService.verify({ payload, signature, key })
   }
 

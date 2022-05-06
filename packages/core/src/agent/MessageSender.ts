@@ -1,11 +1,11 @@
 import type { ConnectionRecord } from '../modules/connections'
 import type { DidCommService, IndyAgentService } from '../modules/dids/domain/service'
-import type { AcceptProtocol } from '../modules/routing/services/MediationRecipientService'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, SendMessageOptions } from '../types'
 import type { TransportSession } from './TransportService'
 import type { DIDCommMessage, EncryptedMessage } from './didcomm'
 import type { PackMessageParams } from './didcomm/EnvelopeService'
+import type { AcceptProtocol } from '@aries-framework/core'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -14,6 +14,7 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
+import { offlineTransports } from '../modules/routing/types'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 
@@ -134,7 +135,7 @@ export class MessageSender {
     }
 
     // Retrieve DIDComm services
-    const { services, queueService, localTransport } = await this.retrieveServicesByConnection(
+    const { services, queueService, offlineTransport } = await this.retrieveServicesByConnection(
       connection,
       options?.transportPriority
     )
@@ -143,8 +144,10 @@ export class MessageSender {
       throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
-    if (localTransport) {
-      const transport = this.outboundTransports.find((transport) => transport.supportedSchemes.includes(localTransport))
+    if (offlineTransport) {
+      const transport = this.outboundTransports.find((transport) =>
+        transport.supportedSchemes.includes(offlineTransport.split(':')[1])
+      )
       if (!transport) {
         this.logger.error(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`, {
           message: encryptedMessage,
@@ -161,7 +164,7 @@ export class MessageSender {
     }
 
     if (services) {
-      // Loop trough all available services and try to send the message
+      // Loop through all available services and try to send the message
       for await (const service of services) {
         this.logger.debug(`Sending outbound message to service:`, { service })
         try {
@@ -228,12 +231,12 @@ export class MessageSender {
     }
 
     // Retrieve DIDComm services
-    const { services, queueService, localTransport } = await this.retrieveServicesByConnection(
+    const { services, queueService, offlineTransport } = await this.retrieveServicesByConnection(
       connection,
       options?.transportPriority
     )
 
-    if (localTransport) {
+    if (offlineTransport) {
       try {
         await this.packAndSendMessage({
           message: payload,
@@ -375,8 +378,8 @@ export class MessageSender {
 
     let didCommServices: Array<IndyAgentService | DidCommService> = []
 
-    if (connection.transport && ['didcomm://nfc'].includes(connection?.transport)) {
-      return { services: null, queueService: null, localTransport: connection.transport }
+    if (connection.transport && offlineTransports.includes(connection?.transport)) {
+      return { services: null, queueService: null, offlineTransport: connection.transport }
     }
 
     // If theirDid starts with a did: prefix it means we're using the new did syntax

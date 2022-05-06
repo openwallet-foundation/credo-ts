@@ -31,7 +31,7 @@ export class StablelibCrypto implements Crypto {
     const keyType = params.keyType || defaultKeyType
     switch (keyType) {
       case KeyType.Ed25519: {
-        const signature = await ed25519.sign(params.payload, params.signKey)
+        const signature = await ed25519.sign(params.signKey, params.payload)
         return Buffer.from(signature)
       }
       default:
@@ -43,7 +43,7 @@ export class StablelibCrypto implements Crypto {
     const keyType = params.keyType || defaultKeyType
     switch (keyType) {
       case KeyType.Ed25519: {
-        return ed25519.verify(params.signature, params.payload, params.key)
+        return ed25519.verify(params.key, params.payload, params.signature)
       }
       default:
         throw new AriesFrameworkError(`Unsupported key type: ${keyType}`)
@@ -58,13 +58,13 @@ export class StablelibCrypto implements Crypto {
           ed25519.convertSecretKeyToX25519(params.senderPrivateKey),
           ed25519.convertPublicKeyToX25519(params.recipientPublicKey)
         )
-        const encrypted: Uint8Array = new Uint8Array([])
+        const encrypted: Uint8Array = new Uint8Array(params.payload.length)
         new aes.AES(shared).encryptBlock(params.payload, encrypted)
         return Buffer.from(encrypted)
       }
       case KeyType.X25519: {
         const shared = x25518.sharedKey(params.senderPrivateKey, params.recipientPublicKey)
-        const encrypted: Uint8Array = new Uint8Array([])
+        const encrypted: Uint8Array = new Uint8Array(params.payload.length)
         new aes.AES(shared).encryptBlock(params.payload, encrypted)
         return Buffer.from(encrypted)
       }
@@ -81,19 +81,24 @@ export class StablelibCrypto implements Crypto {
           ed25519.convertSecretKeyToX25519(params.recipientPrivateKey),
           ed25519.convertPublicKeyToX25519(params.senderPublicKey)
         )
-        const encrypted: Uint8Array = new Uint8Array([])
-        new aes.AES(shared).encryptBlock(params.payload, encrypted)
+        const encrypted: Uint8Array = new Uint8Array(params.payload.length)
+        new aes.AES(shared).decryptBlock(params.payload, encrypted)
         return Buffer.from(encrypted)
       }
       case KeyType.X25519: {
         const shared = x25518.sharedKey(params.recipientPrivateKey, params.senderPublicKey)
-        const encrypted: Uint8Array = new Uint8Array([])
-        new aes.AES(shared).encryptBlock(params.payload, encrypted)
+        const encrypted: Uint8Array = new Uint8Array(params.payload.length)
+        new aes.AES(shared).decryptBlock(params.payload, encrypted)
         return Buffer.from(encrypted)
       }
       default:
         throw new AriesFrameworkError(`Unsupported key type: ${keyType}`)
     }
+  }
+
+  public async randomSeed(): Promise<string> {
+    // TODO: provide better implementation
+    return Array.from(Array(32), () => Math.floor(Math.random() * 36).toString(36)).join('')
   }
 
   private async createEd25519Key(seed?: string): Promise<KeyPair> {

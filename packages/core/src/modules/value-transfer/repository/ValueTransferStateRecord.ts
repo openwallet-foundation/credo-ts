@@ -1,6 +1,8 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
-import type { ValueTransferState } from '../ValueTransferState'
-import type { VerifiableNote } from '@value-transfer/value-transfer-lib'
+
+import { VerifiableNote } from '@value-transfer/value-transfer-lib'
+import { Type } from 'class-transformer'
+import { IsInstance, ValidateNested } from 'class-validator'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
@@ -19,7 +21,12 @@ export interface ValueTransferStateProps {
 
 export class ValueTransferStateRecord extends BaseRecord<DefaultValueTransferStateTags, CustomValueTransferStateTags> {
   public previousHash!: string
+
+  @Type(() => VerifiableNote)
+  @ValidateNested({ each: true })
+  @IsInstance(VerifiableNote, { each: true })
   public verifiableNotes!: Array<VerifiableNote>
+
   public publicDid!: string
 
   public static readonly type = 'ValueTransferState'

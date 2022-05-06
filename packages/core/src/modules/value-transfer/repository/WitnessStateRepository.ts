@@ -11,4 +11,8 @@ export class WitnessStateRepository extends Repository<WitnessStateRecord> {
   public constructor(@inject(InjectionSymbols.StorageService) storageService: StorageService<WitnessStateRecord>) {
     super(WitnessStateRecord, storageService)
   }
+
+  public getState(): Promise<WitnessStateRecord> {
+    return this.getSingleByQuery({})
+  }
 }

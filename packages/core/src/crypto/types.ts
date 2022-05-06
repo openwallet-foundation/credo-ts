@@ -9,7 +9,7 @@ export enum KeyType {
 
 export const defaultKeyType = KeyType.Ed25519
 
-export enum KeyRepresentationType {
+export enum KeyFormat {
   Base58 = 'Base58',
   Base64 = 'Base64',
   JWK = 'JWK',

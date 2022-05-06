@@ -2,8 +2,9 @@ import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Messag
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
-import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
-import type { MediationGrantMessage, MediationDenyMessage, KeylistUpdateResponseMessage } from '../messages'
+import type { KeylistUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
+import type { KeylistUpdateResponseMessage, MediationDenyMessage, MediationGrantMessage } from '../messages'
+import type { GetRoutingOptions } from '@aries-framework/core'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
@@ -14,8 +15,8 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
+import { Crypto } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
-import { TypedArrayEncoder } from '../../../utils'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { DidService, DidType } from '../../dids'
@@ -25,6 +26,7 @@ import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMe
 import { MediationRole, MediationState } from '../models'
 import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
+import { defaultProfiles, DIDCommAip1Profile, DIDCommV2Profile } from '../types'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MediationRecipientService {
@@ -35,9 +37,11 @@ export class MediationRecipientService {
   private didService: DidService
   private messageSender: MessageSender
   private config: AgentConfig
+  private crypto: Crypto
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
+    @inject(InjectionSymbols.Crypto) crypto: Crypto,
     connectionService: ConnectionService,
     messageSender: MessageSender,
     config: AgentConfig,
@@ -52,6 +56,7 @@ export class MediationRecipientService {
     this.connectionService = connectionService
     this.messageSender = messageSender
     this.didService = didService
+    this.crypto = crypto
   }
 
   public async createRequest(
@@ -171,7 +176,7 @@ export class MediationRecipientService {
     return keylistUpdateMessage
   }
 
-  public async getRouting({ mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}): Promise<Routing> {
+  public async getRouting({ mediatorId, useDefaultMediator = true, accept }: GetRoutingOptions = {}): Promise<Routing> {
     let mediationRecord: MediationRecord | null = null
 
     if (mediatorId) {
@@ -185,21 +190,31 @@ export class MediationRecipientService {
     let endpoints = this.config.endpoints
     let routingKeys: string[] = []
 
-    // FIXME: Temp solution: Creates keys with sane random DID in Indy Key wallet and our custom wallet layer. Quick way to get DIDComm V1 and V2 packing to work
-    const seed = Array.from(Array(32), () => Math.floor(Math.random() * 36).toString(36)).join('')
+    const acceptProfiles = accept || defaultProfiles
 
-    // if (accept?.includes('didcomm/v2')) {
-    const { id, didDocument } = await this.didService.createDID(DidType.KeyDid, undefined, seed)
-    if (!didDocument?.verificationMethod.length) {
-      throw new AriesFrameworkError(`Unable to create DIDDoc`)
+    // FIXME: Temp solution
+    // Creates keys with sane random Seed in Indy Key wallet and our custom wallet layer.
+    // It's a quick way to get DIDComm V1 and V2 packing to work together
+    const seed = await this.crypto.randomSeed()
+
+    let did = ''
+    let verkey = ''
+
+    if (acceptProfiles?.includes(DIDCommV2Profile)) {
+      const { id, didDocument } = await this.didService.createDID(DidType.KeyDid, undefined, seed)
+      if (!didDocument?.verificationMethod.length) {
+        throw new AriesFrameworkError(`Unable to create DIDDoc`)
+      }
+      did = id
+      verkey = didDocument.verificationKey
     }
-    const did = id
-    const verkey = TypedArrayEncoder.toBase58(didDocument.verificationMethod[0].keyBytes)
-    // } else {
-    await this.wallet.createDid({ seed })
-    // did = result.did
-    // verkey = result.verkey
-    // }
+    if (acceptProfiles?.includes(DIDCommAip1Profile)) {
+      const result = await this.wallet.createDid({ seed })
+      if (!did) {
+        did = result.did
+        verkey = result.verkey
+      }
+    }
 
     // Create and store new key
     if (mediationRecord) {
@@ -210,7 +225,7 @@ export class MediationRecipientService {
     } else {
       // TODO: check that recipient keys are in wallet
     }
-    return { endpoints, routingKeys, did, verkey, mediatorId: mediationRecord?.id }
+    return { endpoints, routingKeys, did, verkey, mediatorId: mediationRecord?.id, accept: acceptProfiles }
   }
 
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {
@@ -316,30 +331,4 @@ export class MediationRecipientService {
 export interface MediationProtocolMsgReturnType<MessageType extends DIDCommV1Message> {
   message: MessageType
   mediationRecord: MediationRecord
-}
-
-export type Transport = 'didcomm://http' | 'didcomm://https' | 'didcomm://ws' | 'didcomm://wss' | 'didcomm://nfc'
-export type AcceptProtocol = 'didcomm/v1' | 'didcomm/v2'
-
-export interface GetRoutingOptions {
-  /**
-   * Identifier of the mediator to use when setting up routing
-   */
-  mediatorId?: string
-
-  /**
-   * Identifier the transport to use
-   */
-  transport?: Transport
-
-  /**
-   * Whether to use the default mediator if available and `mediatorId` has not been provided
-   * @default true
-   */
-  useDefaultMediator?: boolean
-
-  /**
-   * Identifier of the DIDComm protocol to use
-   */
-  accept?: AcceptProtocol[]
 }

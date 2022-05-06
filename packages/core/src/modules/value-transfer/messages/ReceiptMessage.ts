@@ -1,8 +1,8 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { ValueTransferMessage } from '@value-transfer/value-transfer-lib'
-import { Expose } from 'class-transformer'
-import { Equals, ValidateNested } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
+import { Equals, IsInstance, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 
@@ -11,9 +11,11 @@ type ReceiptMessageParams = DIDCommV2MessageParams & {
 }
 
 export class ReceiptMessage extends DIDCommV2Message {
-  public constructor(options: ReceiptMessageParams) {
+  public constructor(options?: ReceiptMessageParams) {
     super(options)
-    this.body = options.body
+    if (options) {
+      this.body = options.body
+    }
   }
 
   @Equals(ReceiptMessage.type)
@@ -21,6 +23,8 @@ export class ReceiptMessage extends DIDCommV2Message {
   public static readonly type = 'https://didcomm.org/vtp/1.0/receipt'
 
   @Expose({ name: 'body' })
+  @Type(() => ValueTransferMessage)
   @ValidateNested()
+  @IsInstance(ValueTransferMessage)
   public body!: ValueTransferMessage
 }

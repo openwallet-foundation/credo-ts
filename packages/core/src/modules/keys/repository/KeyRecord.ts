@@ -3,7 +3,7 @@ import type { TagsBase } from '../../../storage/BaseRecord'
 import assert from 'assert'
 import { IsEnum, IsString } from 'class-validator'
 
-import { KeyRepresentationType, KeyType } from '../../../crypto'
+import { KeyFormat, KeyType } from '../../../crypto'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { TypedArrayEncoder } from '../../../utils'
 
@@ -62,7 +62,7 @@ export interface KeyRecordProps {
   kid: string
   controller?: string
   keyType: KeyType
-  keyRepresentationType: KeyRepresentationType
+  format: KeyFormat
   privateKey: KeyRepresentation
   publicKey: KeyRepresentation
 }
@@ -77,14 +77,14 @@ export class KeyRecord extends BaseRecord<DefaultKeyTags, CustomKeyTags> {
   @IsEnum(KeyType)
   public keyType!: KeyType
 
-  @IsEnum(KeyRepresentationType)
-  public keyRepresentationType!: KeyRepresentationType
+  @IsEnum(KeyFormat)
+  public format!: KeyFormat
 
   @IsString()
-  public privateKey!: KeyRepresentation
+  public privateKey!: any
 
   @IsString()
-  public publicKey!: KeyRepresentation
+  public publicKey!: any
 
   public constructor(props: KeyRecordProps) {
     super()
@@ -94,7 +94,7 @@ export class KeyRecord extends BaseRecord<DefaultKeyTags, CustomKeyTags> {
       this.kid = props.kid
       this.controller = props.controller
       this.keyType = props.keyType
-      this.keyRepresentationType = props.keyRepresentationType
+      this.format = props.format
       this.privateKey = props.privateKey
       this.publicKey = props.publicKey
     }
@@ -117,15 +117,14 @@ export class KeyRecord extends BaseRecord<DefaultKeyTags, CustomKeyTags> {
     return this.keyBytes(this.privateKey)
   }
 
-  private keyBytes(key: KeyRepresentation): Buffer {
-    switch (this.keyRepresentationType) {
-      case KeyRepresentationType.Base58: {
+  private keyBytes(key: any): Buffer {
+    switch (this.format) {
+      case KeyFormat.Base58: {
         assert(key as Base58KeyRepresentation)
-        return TypedArrayEncoder.fromBase58((key as Base58KeyRepresentation).Base58)
+        return TypedArrayEncoder.fromBase58(key)
       }
-      case KeyRepresentationType.Base64: {
-        assert(key as Base64KeyRepresentation)
-        return TypedArrayEncoder.fromBase64((key as Base64KeyRepresentation).Base64)
+      case KeyFormat.Base64: {
+        return TypedArrayEncoder.fromBase64(key)
       }
       default:
         return Buffer.from([])

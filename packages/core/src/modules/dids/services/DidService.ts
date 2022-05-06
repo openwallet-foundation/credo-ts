@@ -1,11 +1,10 @@
-import type { KeyType } from '../../../crypto'
 import type { Logger } from '../../../logger'
 import type { DidDocument, VerificationMethod } from '../domain'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { defaultKeyType } from '../../../crypto'
+import { defaultKeyType, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { KeyService } from '../../keys'
 import { DidType, Key } from '../domain'
@@ -40,20 +39,28 @@ export class DidService {
     const type = didType || DidType.KeyDid
     this.logger.debug(`creating DID with type ${type}`)
 
-    const keyRecord = await this.keysService.createKey({ keyType, seed })
+    // FIXME: We need properly generate keys
+    // `.didDocument` method creates x25519 key from the ed25519
+    // x25519 also need to be stored in the wallet
+    //drop the workaround below
+    const keyRecord = await this.keysService.createKey({ keyType: KeyType.Ed25519, seed })
+    const keyRecord2 = await this.keysService.createKey({ keyType: KeyType.X25519, seed })
 
     let did: string
     let didDocument: DidDocument
 
+    const key = Key.fromPublicKey(keyRecord.publicKeyBytes, keyRecord.keyType)
+    const key2 = Key.fromPublicKey(keyRecord2.publicKeyBytes, keyRecord2.keyType)
+
     switch (type) {
       case DidType.KeyDid: {
-        const didKey = new DidKey(Key.fromPublicKey(keyRecord.publicKeyBytes, keyRecord.keyType))
+        const didKey = new DidKey(key)
         did = didKey.did
         didDocument = didKey.didDocument
         break
       }
       case DidType.PeerDid: {
-        const didKey = DidPeer.fromKey(Key.fromPublicKey(keyRecord.publicKeyBytes, keyRecord.keyType))
+        const didKey = DidPeer.fromKey(key)
         did = didKey.did
         didDocument = didKey.didDocument
         break
@@ -71,8 +78,16 @@ export class DidService {
     })
     await this.didRepository.save(didRecord)
 
+    keyRecord.kid = `${did}#${key.fingerprint}`
     keyRecord.controller = did
     await this.keysService.update(keyRecord)
+
+    keyRecord2.kid = `${did}#${key2.fingerprint}`
+    keyRecord2.controller = did
+    await this.keysService.update(keyRecord2)
+
+    await this.keysService.getByKid(keyRecord.kid)
+    await this.keysService.getByKid(keyRecord2.kid)
 
     return didRecord
   }

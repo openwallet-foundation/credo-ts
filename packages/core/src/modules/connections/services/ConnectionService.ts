@@ -2,7 +2,7 @@ import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Messag
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
-import type { DidCommService } from '../../dids'
+import type { IndyAgentService } from '../../dids/domain/service'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
@@ -20,9 +20,9 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
-import { DidResolverService } from '../../dids'
-import { IndyAgentService } from '../../dids/domain/service'
+import { DidCommService, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
+import { offlineTransports } from '../../routing/types'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import {
@@ -508,10 +508,9 @@ export class ConnectionService {
       body: {
         label: config?.myLabel ?? this.config.label,
         goalCode: config?.goalCode,
-        accept: config?.accept,
+        accept: connectionRecord?.accept,
         imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
         service: connectionRecord.didDoc.didCommServices[0],
-        transport: config?.transport,
       },
     })
 
@@ -557,8 +556,8 @@ export class ConnectionService {
       routing: config.routing,
       imageUrl: invitation.body?.imageUrl,
       multiUseInvitation: false,
-      transport: invitation.body?.transport,
       accept: invitation.body?.accept,
+      transport: invitation.body.service.serviceEndpoint as Transport,
     })
 
     const { didDocument: theirDidDocument } = await this.didResolverService.resolve(invitation.from)
@@ -792,7 +791,7 @@ export class ConnectionService {
     accept?: AcceptProtocol[]
     transport?: Transport
   }): Promise<ConnectionRecord> {
-    const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
+    const { endpoints, did, verkey, routingKeys, mediatorId, accept } = options.routing
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
@@ -801,16 +800,25 @@ export class ConnectionService {
     })
 
     let services: IndyAgentService[] | DidCommService[]
-    if (options?.transport && ['didcomm://nfc'].includes(options.transport)) {
-      services = []
+    if (options?.transport && offlineTransports.includes(options.transport)) {
+      services = [
+        new DidCommService({
+          id: `${did}#OffilineTransport`,
+          serviceEndpoint: options.transport,
+          recipientKeys: [verkey],
+          routingKeys: routingKeys,
+          accept: accept,
+        }),
+      ]
     } else {
       services = endpoints.map(
         (endpoint, index) =>
-          new IndyAgentService({
+          new DidCommService({
             id: `${did}#IndyAgentService`,
             serviceEndpoint: endpoint,
             recipientKeys: [verkey],
             routingKeys: routingKeys,
+
             // Order of endpoint determines priority
             priority: index,
           })
@@ -843,7 +851,7 @@ export class ConnectionService {
       imageUrl: options.imageUrl,
       multiUseInvitation: options.multiUseInvitation,
       mediatorId,
-      accept: options.accept,
+      accept,
       transport: options.transport,
     })
 
@@ -884,6 +892,7 @@ export interface Routing {
   did: string
   routingKeys: string[]
   mediatorId?: string
+  accept?: AcceptProtocol[]
 }
 
 export interface ConnectionProtocolMsgReturnType<MessageType extends DIDCommV1Message> {

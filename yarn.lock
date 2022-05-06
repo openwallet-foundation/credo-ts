@@ -4171,10 +4171,8 @@ did-resolver@^3.1.3, did-resolver@^3.1.5:
   resolved "https://registry.npmjs.org/did-resolver/-/did-resolver-3.1.5.tgz#1a82a00fa96d64085676183bff40ebc13c88cd6a"
   integrity sha512-/4lM1vK5osnWVZ2oN9QhlWV5xOwssuLSL1MvueBc8LQWotbD5kM9XQMe7h4GydYpbh3JaWMFkOWwc9jvSZ+qgg==
 
-didcomm-node@^0.3.0:
+"didcomm-node@file:../didcomm-rust/wasm/pkg":
   version "0.3.0"
-  resolved "https://registry.yarnpkg.com/didcomm-node/-/didcomm-node-0.3.0.tgz#349d145e125a925abdb916d6a974482f87a44628"
-  integrity sha512-d+aVznpQxX7xKhFnr9A7ZNgCe5RqpI4m7lzvvbiwQQ3xSuz5vRhldBqjxTkgkYHHGURxZCvwQOVHtH/T7M5C/w==
 
 diff-sequences@^26.6.2:
   version "26.6.2"

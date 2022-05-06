@@ -1,4 +1,4 @@
-import type { Transport, AcceptProtocol } from '../routing/services/MediationRecipientService'
+import type { AcceptProtocol, Transport } from '../routing/types'
 import type { OutOfBandInvitationMessage } from './messages/OutOfBandInvitationMessage'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
@@ -183,6 +183,12 @@ export class ConnectionsModule {
     return connectionRecord
   }
 
+  /**
+   * Create Out-of-Band connection and invitation message.
+   *
+   * @param config config for creating invitation
+   * @returns new connection record
+   */
   public async createOutOfBandConnection(config?: {
     alias?: string
     myLabel?: string
@@ -218,6 +224,13 @@ export class ConnectionsModule {
     return { connectionRecord, invitation }
   }
 
+  /**
+   * Create connection from received Out-of-Band invitation.
+   *
+   * @param invitation invitation to receive
+   * @param config config for handling of invitation
+   * @returns connection record
+   */
   public async acceptOutOfBandInvitation(
     invitation: OutOfBandInvitationMessage,
     config?: {

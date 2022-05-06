@@ -1,5 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { Transport, AcceptProtocol } from '../../routing/services/MediationRecipientService'
+import type { AcceptProtocol, Transport } from '../../routing/types'
 import type { ConnectionRole } from '../models/ConnectionRole'
 
 import { Type } from 'class-transformer'

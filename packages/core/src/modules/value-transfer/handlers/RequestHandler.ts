@@ -30,7 +30,6 @@ export class RequestHandler implements HandlerV2 {
 
   public async handle(messageContext: HandlerV2InboundMessage<RequestHandler>) {
     const { record, message } = await this.valueTransferService.processRequest(messageContext)
-
     if (record.role === ValueTransferRole.Witness) {
       if (!record.giverConnectionId) {
         this.agentConfig.logger.error(`Connection to Giver not found for value transfer protocol: ${record.id}.`)

@@ -1,5 +1,6 @@
 import type { ValueTransferConfig } from '../../types'
-import type { ValueTransferTags } from './repository'
+import type { RequestAcceptedMessage, RequestMessage } from './messages'
+import type { ValueTransferTags, ValueTransferRecord } from './repository'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -57,8 +58,8 @@ export class ValueTransferModule {
     giver: string,
     witness?: string,
     usePublicDid?: boolean
-  ) {
-    const { message } = await this.valueTransferService.createRequest(
+  ): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
+    const { message, record } = await this.valueTransferService.createRequest(
       connectionId,
       amount,
       giver,
@@ -68,17 +69,33 @@ export class ValueTransferModule {
     const connection = await this.connectionService.getById(connectionId)
     const outboundMessage = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outboundMessage)
+    return { message, record }
   }
 
-  public async acceptPaymentRequest(recordId: string) {
-    const record = await this.valueTransferService.getByThread(recordId)
-    const { message } = await this.valueTransferService.acceptRequest(record)
+  public async acceptPaymentRequest(
+    recordId: string
+  ): Promise<{ record: ValueTransferRecord; message: RequestAcceptedMessage }> {
+    const record = await this.valueTransferService.getById(recordId)
+    const { message, record: updatedRecord } = await this.valueTransferService.acceptRequest(record)
     if (!record.witnessConnectionId) {
       throw new AriesFrameworkError(`No witness connectionId found for proof record '${record.id}'.`)
     }
     const connection = await this.connectionService.getById(record.witnessConnectionId)
     const outboundMessage = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outboundMessage)
+    return { message, record: updatedRecord }
+  }
+
+  public async returnWhenIsCompleted(recordId: string, options?: { timeoutMs: number }): Promise<ValueTransferRecord> {
+    return this.valueTransferService.returnWhenIsCompleted(recordId, options?.timeoutMs)
+  }
+
+  public async getBalance(): Promise<number> {
+    return this.valueTransferService.getBalance()
+  }
+
+  public async getById(recordId: string): Promise<ValueTransferRecord> {
+    return this.valueTransferService.getById(recordId)
   }
 
   public async findAllByQuery(query: Partial<ValueTransferTags>) {
@@ -115,7 +132,8 @@ export class ValueTransferModule {
         this.config,
         this.valueTransferService,
         this.valueTransferResponseCoordinator,
-        this.connectionService
+        this.connectionService,
+        this.messageSender
       )
     )
     dispatcher.registerDIDCommV2Handler(new ReceiptHandler(this.valueTransferService))

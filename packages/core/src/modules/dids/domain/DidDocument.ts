@@ -3,6 +3,7 @@ import type { DidDocumentService } from './service'
 import { Expose, Transform, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested } from 'class-validator'
 
+import { TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 
 import { IndyAgentService, ServiceTransformer, DidCommService } from './service'
@@ -143,6 +144,11 @@ export class DidDocument {
       (recipientKeys, service) => recipientKeys.concat(service.recipientKeys),
       []
     )
+  }
+
+  public get verificationKey(): string {
+    // get first available verification key
+    return TypedArrayEncoder.toBase58(this.verificationMethod[0].keyBytes)
   }
 
   public toJSON() {

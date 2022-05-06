@@ -1,5 +1,5 @@
-import type { ValueTransferRecord } from '../repository'
-import type { ValueTransferMessage, State, StorageInterface, WitnessState } from '@value-transfer/value-transfer-lib'
+import type { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
+import type { State, StorageInterface, WitnessState } from '@value-transfer/value-transfer-lib'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -23,7 +23,7 @@ export class ValueTransferStateService implements StorageInterface {
     this.witnessStateRepository = witnessStateRepository
   }
 
-  public async getState(): Promise<State> {
+  public async getState(): Promise<ValueTransferStateRecord> {
     return this.valueTransferStateRepository.getSingleByQuery({})
   }
 
@@ -42,11 +42,5 @@ export class ValueTransferStateService implements StorageInterface {
     const record = await this.witnessStateRepository.getSingleByQuery({})
     record.stateAccumulator = state.stateAccumulator
     await this.witnessStateRepository.update(record)
-  }
-
-  public async storeReceipt(receipt: ValueTransferMessage): Promise<void> {
-    const valueTransferRecord: ValueTransferRecord = await this.valueTransferRepository.getById(receipt.payment.txId)
-    valueTransferRecord.receipt = receipt
-    await this.valueTransferRepository.update(valueTransferRecord)
   }
 }

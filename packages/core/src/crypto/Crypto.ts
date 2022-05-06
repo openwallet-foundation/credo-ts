@@ -39,4 +39,5 @@ export interface Crypto {
   verify(params: VerifyParams): Promise<boolean>
   aesEncrypt(params: AesEncryptParams): Promise<Buffer>
   aesDecrypt(params: AesDecryptParams): Promise<Buffer>
+  randomSeed(): Promise<string>
 }

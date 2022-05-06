@@ -75,6 +75,7 @@ export class GetterInquirer extends BaseInquirer {
     const title = 'Paster Giver DID here'
     const giver = await inquirer.prompt([this.inquireInput(title)])
     await this.getter.requestPayment(giver.input)
+    await this.processAnswer()
   }
 
   public async exit() {

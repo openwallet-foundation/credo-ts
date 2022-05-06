@@ -3,11 +3,13 @@ import type { ValueTransferRecord } from '@aries-framework/core/src/modules/valu
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
+import { createVerifiableNotes } from '@value-transfer/value-transfer-lib'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class Giver extends BaseAgent {
+  public valueTransferRecordId?: string
   public connectionRecordWitnessId?: string
   public connected: boolean
 
@@ -19,6 +21,7 @@ export class Giver extends BaseAgent {
   public static async build(): Promise<Giver> {
     const valueTransferConfig: ValueTransferConfig = {
       role: ValueTransferRole.Giver,
+      verifiableNotes: createVerifiableNotes(10),
     }
     const giver = new Giver(9001, 'giver', valueTransferConfig)
     await giver.initializeAgent()
@@ -32,6 +35,13 @@ export class Giver extends BaseAgent {
     return await this.agent.connections.getById(this.connectionRecordWitnessId)
   }
 
+  private async getValueTransferRecord() {
+    if (!this.valueTransferRecordId) {
+      throw Error(redText(Output.MissingValueTransferRecord))
+    }
+    return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
+  }
+
   private async printConnectionInvite() {
     const invite = await this.agent.connections.createConnection()
     this.connectionRecordWitnessId = invite.connectionRecord.id
@@ -43,7 +53,7 @@ export class Giver extends BaseAgent {
   private async waitForConnection() {
     const connectionRecord = await this.getConnectionRecord()
 
-    console.log('Waiting for Faber to finish connection...')
+    console.log('Waiting for Witness to finish connection...')
     try {
       await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
       const giverConnectionRecord = await this.getConnectionRecord()
@@ -54,6 +64,23 @@ export class Giver extends BaseAgent {
     }
     console.log(greenText(Output.ConnectionEstablished))
     this.connected = true
+  }
+
+  private async waitForPayment() {
+    const valueTransferRecord = await this.getValueTransferRecord()
+
+    console.log('Waiting for finishing payment...')
+    try {
+      const record = await this.agent.valueTransfer.returnWhenIsCompleted(valueTransferRecord.id)
+      console.log(greenText(Output.PaymentDone))
+      console.log(greenText('Receipt:'))
+      console.log(record.receiptMessage)
+      const balance = await this.agent.valueTransfer.getBalance()
+      console.log(greenText('Balance: ' + balance))
+    } catch (e) {
+      console.log(redText(`\nTimeout of 120 seconds reached.. Returning to home screen.\n`))
+      return
+    }
   }
 
   public async setupConnection() {
@@ -72,8 +99,10 @@ export class Giver extends BaseAgent {
   // }
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
-    await this.agent.valueTransfer.acceptPaymentRequest(valueTransferRecord.id)
+    const { record } = await this.agent.valueTransfer.acceptPaymentRequest(valueTransferRecord.id)
+    this.valueTransferRecordId = record.id
     console.log(greenText('\nPayment request accepted!\n'))
+    await this.waitForPayment()
   }
 
   public async exit() {

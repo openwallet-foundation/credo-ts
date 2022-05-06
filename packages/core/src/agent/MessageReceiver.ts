@@ -94,7 +94,9 @@ export class MessageReceiver {
     const connection = await this.findConnectionByMessageKeys(decryptedMessage)
 
     this.logger.info(
-      `Received message with type '${plaintextMessage['@type']}' from connection ${connection?.id} (${connection?.theirLabel})`,
+      `Received message with type '${plaintextMessage['@type'] || plaintextMessage['type']}' from connection ${
+        connection?.id
+      } (${connection?.theirLabel})`,
       plaintextMessage
     )
 
@@ -190,17 +192,18 @@ export class MessageReceiver {
     // Try to find the did records that holds the sender and recipient keys
 
     // Try 1: Find DID which control the recipient kid
-    const ourKeyRecord = await this.keyRepository.findById(recipient)
+    const ourKeyRecord = await this.keyRepository.findByKid(recipient)
     if (ourKeyRecord && ourKeyRecord.controller) {
       connection = await this.connectionRepository.findSingleByQuery({
         did: ourKeyRecord.controller,
       })
       // Throw error if the recipient key (ourKey) does not match the key of the connection record
-      if (connection && connection.theirKey !== null && connection.theirKey !== sender) {
-        throw new AriesFrameworkError(
-          `Inbound message senderKey '${sender}' is different from connection.theirKey '${connection.theirKey}'`
-        )
-      }
+      // FIXME: check that key matches to connection. Problem: x25519 is used for sending   Ed25519 is stored in connection
+      // if (connection && connection.theirKey !== null && connection.theirKey !== sender) {
+      //   throw new AriesFrameworkError(
+      //     `Inbound message senderKey '${sender}' is different from connection.theirKey '${connection.theirKey}'`
+      //   )
+      // }
       if (connection) return connection
     }
 

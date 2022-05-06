@@ -11,4 +11,16 @@ export class KeyRepository extends Repository<KeyRecord> {
   public constructor(@inject(InjectionSymbols.StorageService) storageService: StorageService<KeyRecord>) {
     super(KeyRecord, storageService)
   }
+
+  public async getByKid(kid: string) {
+    return this.getSingleByQuery({
+      kid,
+    })
+  }
+
+  public async findByKid(kid: string) {
+    return this.findSingleByQuery({
+      kid,
+    })
+  }
 }

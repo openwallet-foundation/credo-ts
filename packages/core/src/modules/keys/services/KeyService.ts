@@ -2,13 +2,12 @@ import type { KeyPair } from '../../../crypto'
 import type { Logger } from '../../../logger'
 import type { Buffer } from '../../../utils'
 import type { VerificationMethod } from '../../dids'
-import type { KeyRepresentation } from '../repository'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { InjectionSymbols } from '../../../constants'
-import { Crypto, KeyRepresentationType, KeyType } from '../../../crypto'
+import { Crypto, KeyFormat, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { TypedArrayEncoder } from '../../../utils'
 import { Key } from '../../dids/domain/Key'
@@ -35,11 +34,11 @@ export class KeyService {
     controller?: string
     kid?: string
     keyType?: KeyType
-    keyRepresentation?: KeyRepresentationType
+    keyFormat?: KeyFormat
     seed?: string
   }): Promise<KeyRecord> {
     const type = params.keyType || KeyType.Ed25519
-    const keyRepresentationType = params.keyRepresentation || KeyRepresentationType.Base58
+    const format = params.keyFormat || KeyFormat.Base58
     const keyPair = await this.crypto.createKey({ keyType: type, seed: params.seed })
 
     const kid = params.kid
@@ -48,13 +47,13 @@ export class KeyService {
       ? `${params.controller}#${Key.fromPublicKey(keyPair.publicKey, type).fingerprint}`
       : TypedArrayEncoder.toBase58(keyPair.publicKey)
 
-    const { privateKey, publicKey } = KeyService.getKeysRepresentation(keyPair, keyRepresentationType)
+    const { privateKey, publicKey } = KeyService.getKeysRepresentation(keyPair, format)
 
     const keyRecord = new KeyRecord({
       kid,
       controller: params.controller,
       keyType: type,
-      keyRepresentationType,
+      format,
       privateKey,
       publicKey,
     })
@@ -65,7 +64,7 @@ export class KeyService {
   }
 
   public async sign(params: { payload: Buffer; kid: string }): Promise<Buffer> {
-    const keyRecord: KeyRecord | null = await this.keyRepository.getById(params.kid)
+    const keyRecord: KeyRecord | null = await this.keyRepository.getByKid(params.kid)
     if (!keyRecord) {
       throw new AriesFrameworkError(`Unable to find sign key for did: ${params.kid}`)
     }
@@ -90,7 +89,7 @@ export class KeyService {
     senderKid: string
     recipientKey: VerificationMethod
   }): Promise<Buffer> {
-    const senderKeyRecord: KeyRecord | null = await this.keyRepository.getById(params.senderKid)
+    const senderKeyRecord: KeyRecord | null = await this.keyRepository.getByKid(params.senderKid)
     if (!senderKeyRecord) {
       throw new AriesFrameworkError(`Unable to find sign key for did: ${params.senderKid}`)
     }
@@ -107,7 +106,7 @@ export class KeyService {
     senderKey: VerificationMethod
     recipientKid: string
   }): Promise<Buffer> {
-    const recipientKeyRecord: KeyRecord | null = await this.keyRepository.getById(params.recipientKid)
+    const recipientKeyRecord: KeyRecord | null = await this.keyRepository.getByKid(params.recipientKid)
     if (!recipientKeyRecord) {
       throw new AriesFrameworkError(`Unable to find sign key for did: ${params.recipientKid}`)
     }
@@ -134,33 +133,29 @@ export class KeyService {
     return this.keyRepository.getById(kid)
   }
 
+  public getByKid(kid: string): Promise<KeyRecord | null> {
+    return this.keyRepository.getByKid(kid)
+  }
+
   public findByKid(kid: string): Promise<KeyRecord | null> {
-    return this.keyRepository.getById(kid)
+    return this.keyRepository.findByKid(kid)
   }
 
   private static getKeysRepresentation(
     keyPair: KeyPair,
-    keyRepresentationType: KeyRepresentationType
-  ): { publicKey: KeyRepresentation; privateKey: KeyRepresentation } {
+    keyRepresentationType: KeyFormat
+  ): { publicKey: any; privateKey: any } {
     switch (keyRepresentationType) {
-      case KeyRepresentationType.Base58: {
+      case KeyFormat.Base58: {
         return {
-          publicKey: {
-            Base58: TypedArrayEncoder.toBase58(keyPair.publicKey),
-          },
-          privateKey: {
-            Base58: TypedArrayEncoder.toBase58(keyPair.privateKey),
-          },
+          publicKey: TypedArrayEncoder.toBase58(keyPair.publicKey),
+          privateKey: TypedArrayEncoder.toBase58(keyPair.privateKey),
         }
       }
-      case KeyRepresentationType.Base64: {
+      case KeyFormat.Base64: {
         return {
-          publicKey: {
-            Base64: TypedArrayEncoder.toBase64(keyPair.publicKey),
-          },
-          privateKey: {
-            Base64: TypedArrayEncoder.toBase64(keyPair.privateKey),
-          },
+          publicKey: TypedArrayEncoder.toBase64(keyPair.publicKey),
+          privateKey: TypedArrayEncoder.toBase64(keyPair.privateKey),
         }
       }
       default: {

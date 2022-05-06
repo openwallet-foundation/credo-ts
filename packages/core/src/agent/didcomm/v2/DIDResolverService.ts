@@ -70,15 +70,16 @@ export class DIDResolverService implements DIDResolver {
       type: verificationMethod.type,
       controller: verificationMethod.controller,
       verification_material: verificationMethod.publicKeyBase58
-        ? { Base58: verificationMethod.publicKeyBase58 }
+        ? { format: 'Base58', value: verificationMethod.publicKeyBase58 }
         : verificationMethod.publicKeyMultibase
-        ? { Multibase: verificationMethod.publicKeyMultibase }
+        ? { format: 'Multibase', value: verificationMethod.publicKeyMultibase }
         : verificationMethod.publicKeyHex
-        ? { Hex: verificationMethod.publicKeyHex }
+        ? { format: 'Hex', value: verificationMethod.publicKeyHex }
         : verificationMethod.publicKeyJwk
-        ? { JWK: verificationMethod.publicKeyJwk }
+        ? { format: 'JWK', value: verificationMethod.publicKeyJwk }
         : {
-            Other:
+            format: 'Other',
+            value:
               verificationMethod.publicKeyPem ||
               verificationMethod.publicKeyBase64 ||
               verificationMethod.blockchainAccountId ||

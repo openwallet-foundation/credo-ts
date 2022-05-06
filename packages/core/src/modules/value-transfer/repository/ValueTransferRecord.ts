@@ -35,7 +35,6 @@ export interface ValueTransferStorageProps {
   threadId: string
   createdAt?: Date
   autoAcceptValueTransfer?: AutoAcceptValueTransfer
-  receipt?: ValueTransferMessage
   witnessConnectionId?: string
   getterConnectionId?: string
   giverConnectionId?: string
@@ -80,9 +79,6 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   @Type(() => RejectMessage)
   public rejectMessage?: RejectMessage
 
-  @Type(() => ValueTransferMessage)
-  public receipt?: ValueTransferMessage
-
   public autoAcceptValueTransfer?: AutoAcceptValueTransfer
 
   public static readonly type = 'ValueTransferRecord'
@@ -119,6 +115,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       getterConnectionId: this.getterConnectionId,
       giverConnectionId: this.giverConnectionId,
       threadId: this.threadId,
+      txnId: this.payment?.txId,
       role: this.role,
     }
   }

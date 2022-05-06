@@ -71,7 +71,7 @@ export class DIDCommV2EnvelopeService {
     // find actual key decrypted message
     // TODO: it will be great of `didcomm` package return this data
     let recipient: string | undefined
-    for (const recipientKid in unpackMetadata.encrypted_to_kids) {
+    for (const recipientKid of unpackMetadata.encrypted_to_kids || []) {
       const secret = await this.secretResolverService.get_secret(recipientKid)
       if (secret) {
         recipient = recipientKid
