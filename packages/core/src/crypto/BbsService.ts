@@ -120,7 +120,7 @@ export class BbsService {
    * @param messages Buffer[] The messages that have to be verified if they are signed
    * @param signature Buffer The signature that has to be verified if it was created with the messages and public key
    *
-   * @returns A boolean whether the signature is create with the public key over the messages
+   * @returns A boolean whether the signature is created with the public key over the messages
    *
    * @throws {WalletError} When the message list is empty
    * @throws {WalletError} When the verification process failed
