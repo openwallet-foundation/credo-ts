@@ -8,9 +8,16 @@ import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/mode
 import type { CredDefId } from 'indy-sdk'
 
 import { ProofState } from '../src'
-import { V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST } from '../src/modules/proofs/formats/ProofFormats'
+import {
+  V2_PRESENTATION_EXCHANGE_PRESENTATION,
+  V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
+} from '../src/modules/proofs/formats/ProofFormats'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
-import { V2ProposalPresentationMessage, V2RequestPresentationMessage } from '../src/modules/proofs/protocol/v2/messages'
+import {
+  V2PresentationMessage,
+  V2ProposalPresentationMessage,
+  V2RequestPresentationMessage,
+} from '../src/modules/proofs/protocol/v2/messages'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
 
 import { setupV2ProofsTest, waitForProofRecord } from './helpers'
@@ -222,7 +229,9 @@ describe('Present Proof', () => {
       proofRecordId: aliceProofRecord.id,
       proofFormats: { presentationExchange: requestedCredentials.presentationExchange },
     }
-    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+    aliceProofRecord = await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+
+    console.log('aliceProofRecord', JSON.stringify(aliceProofRecord, null, 2))
 
     // Faber waits for the presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')
@@ -241,7 +250,7 @@ describe('Present Proof', () => {
     //   formats: [
     //     {
     //       attachmentId: expect.any(String),
-    //       format: ATTACHMENT_FORMAT.V2_PRESENTATION.indy.format,
+    //       format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
     //     },
     //   ],
     //   presentationsAttach: [

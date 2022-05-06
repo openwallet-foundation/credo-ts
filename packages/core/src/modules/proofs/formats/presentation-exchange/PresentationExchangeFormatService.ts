@@ -181,6 +181,9 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       throw Error('Presentation Exchange format missing while creating presentation in presentation exchange service.')
     }
 
+    const requestAttachment = options.attachment.getDataAsJson<Attachment>()
+    const requestPresentation = JsonTransformer.fromJSON(requestAttachment, RequestPresentation)
+
     const w3cVerifiableCredentials = JsonTransformer.fromJSON(
       options.formats.presentationExchange,
       W3cVerifiableCredential
@@ -208,6 +211,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       purpose: proof.proofPurpose,
       signatureType: proof.type,
       verificationMethod: (didResolutionResult.didDocument?.authentication[0]).toString(),
+      challenge: requestPresentation.options.challenge,
     }
 
     const signedPresentation = await this.w3cCredentialService.signPresentation(signPresentationOptions)
@@ -263,13 +267,10 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       presentation: w3cVerifiablePresentation,
       proofType: proof.type,
       verificationMethod: proof.verificationMethod,
-      // challenge: requestMessage.options.challenge,
-      purpose: proof.proofPurpose,
+      challenge: requestMessage.options.challenge,
     })
 
-    console.log('verify:', JSON.stringify(verify, null, 2))
-
-    return true
+    return verify.verified
   }
 
   public async getRequestedCredentialsForProofRequest(
