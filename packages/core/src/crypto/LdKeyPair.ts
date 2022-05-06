@@ -1,19 +1,16 @@
 export interface LdKeyPairOptions {
   id: string
   controller: string
-  revoked?: string
 }
 
 export abstract class LdKeyPair {
   public readonly id: string
   public readonly controller: string
-  public readonly revoked?: string
   public abstract type: string
 
   public constructor(options: LdKeyPairOptions) {
     this.id = options.id
     this.controller = options.controller
-    this.revoked = options.revoked
   }
 
   public static async generate(): Promise<LdKeyPair> {
@@ -33,10 +30,6 @@ export abstract class LdKeyPair {
       id: this.id,
       type: this.type,
       controller: this.controller,
-      revoked: this.revoked ?? undefined,
-    }
-    if (this.revoked) {
-      key.revoked = this.revoked
     }
 
     return key

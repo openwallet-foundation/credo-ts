@@ -1,6 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 
 import { purposes } from '@digitalcredentials/jsonld-signatures'
+import { inspect } from 'util'
 
 import { getAgentConfig } from '../../../../tests/helpers'
 import { TestLogger } from '../../../../tests/logger'
@@ -232,6 +233,7 @@ describe('W3cCredentialService', () => {
           presentation: presentation,
           purpose: purpose,
           signatureType: 'Ed25519Signature2018',
+          challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
           verificationMethod: issuerDidKey.keyId,
         })
 
@@ -397,10 +399,29 @@ describe('W3cCredentialService', () => {
           presentation: presentation,
           purpose: purpose,
           signatureType: 'Ed25519Signature2018',
+          challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
           verificationMethod: signingDidKey.keyId,
         })
 
         expect(verifiablePresentation).toBeInstanceOf(W3cVerifiablePresentation)
+      })
+    })
+    describe('verifyPresentation', () => {
+      it('should successfully verify a presentation containing a single verifiable credential bbs', async () => {
+        const vp = JsonTransformer.fromJSON(
+          BbsBlsSignature2020Fixtures.TEST_VP_DOCUMENT_SIGNED,
+          W3cVerifiablePresentation
+        )
+
+        const result = await w3cCredentialService.verifyPresentation({
+          presentation: vp,
+          proofType: 'Ed25519Signature2018',
+          challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+          verificationMethod:
+            'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        })
+
+        expect(result.verified).toBe(true)
       })
     })
   })
