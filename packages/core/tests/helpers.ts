@@ -811,6 +811,15 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
   const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
   const issuerDidKey: DidKey = new DidKey(key)
 
+  const aliceWallet: IndyWallet = aliceAgent.injectionContainer.resolve(IndyWallet)
+
+  await aliceWallet.initPublicDid({})
+
+  const alicePubDid = aliceWallet.publicDid
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const aliceKey = Key.fromPublicKeyBase58(alicePubDid!.verkey, KeyType.Ed25519)
+  const aliceDidKey: DidKey = new DidKey(aliceKey)
+
   const inputDoc = {
     '@context': [
       'https://www.w3.org/2018/credentials/v1',
@@ -826,7 +835,7 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
     issuanceDate: '2019-12-03T12:19:52Z',
     expirationDate: '2029-12-03T12:19:52Z',
     credentialSubject: {
-      id: 'did:example:b34ca6cd37bbf23',
+      id: aliceDidKey.did,
       type: ['PermanentResident', 'Person'],
       givenName: 'JOHN',
       familyName: 'SMITH',

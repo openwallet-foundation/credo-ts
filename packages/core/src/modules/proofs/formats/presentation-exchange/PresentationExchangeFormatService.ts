@@ -27,11 +27,13 @@ import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { JsonTransformer } from '../../../../utils'
 import { uuid } from '../../../../utils/uuid'
+import { DidKey } from '../../../dids'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import { W3cCredentialService } from '../../../vc'
 import { W3cVerifiableCredential } from '../../../vc/models'
 import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
+import { CredentialSubject } from '../../../vc/models/credential/CredentialSubject'
 import { ProofFormatService } from '../ProofFormatService'
 import {
   V2_PRESENTATION_EXCHANGE_PRESENTATION,
@@ -40,7 +42,7 @@ import {
 } from '../ProofFormats'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
-import { InputDescriptors, InputDescriptorsSchema } from './models'
+import { InputDescriptorsSchema } from './models'
 import { ClaimFormatSchema, PresentationDefinition, RequestPresentation } from './models/RequestPresentation'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -175,33 +177,32 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       throw Error('Presentation Exchange format missing while creating presentation in presentation exchange service.')
     }
 
-    console.log('options in PE service to createPresentation', JSON.stringify(options, null, 2))
-
     const w3cVerifiableCredentials = JsonTransformer.fromJSON(
       options.formats.presentationExchange,
       W3cVerifiableCredential
     )
 
     const proof = JsonTransformer.fromJSON(w3cVerifiableCredentials.proof, LinkedDataProof)
+    const subject = JsonTransformer.fromJSON(w3cVerifiableCredentials.credentialSubject, CredentialSubject)
 
-    console.log('w3cVerifiableCredentials', JSON.stringify(w3cVerifiableCredentials, null, 2))
+    const key = DidKey.fromDid(subject.id)
 
     const presentation = await this.w3cCredentialService.createPresentation({
       credentials: w3cVerifiableCredentials,
     })
 
-    console.log('presentation:::\n', JSON.stringify(presentation, null, 2))
+    // console.log('presentation:::\n', JSON.stringify(presentation, null, 2))
 
     const signPresentationOptions: SignPresentationOptions = {
       presentation,
       purpose: proof.proofPurpose,
       signatureType: proof.type,
-      verificationMethod: proof.verificationMethod,
+      verificationMethod: key.keyId,
     }
-    console.log('signPresentationOptions:\n', JSON.stringify(signPresentationOptions, null, 2))
+    // console.log('signPresentationOptions:\n', JSON.stringify(signPresentationOptions, null, 2))
 
     const signedPresentation = await this.w3cCredentialService.signPresentation(signPresentationOptions)
-    console.log('signedPresentation:::\n', signedPresentation)
+    // console.log('signedPresentation:::\n', signedPresentation)
 
     const attachId = options.attachId ?? uuid()
 
@@ -214,7 +215,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       id: attachId,
       mimeType: 'application/json',
       data: new AttachmentData({
-        json: presentation.toJSON(),
+        json: JsonTransformer.toJSON(signedPresentation),
       }),
     })
 
@@ -222,6 +223,12 @@ export class PresentationExchangeFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
+    if (!options.presentation) {
+      throw Error('Presentation  missing while processing presentation in presentation exchange service.')
+    }
+
+    console.log('options in process ', options)
+
     throw new Error('Method not implemented.')
   }
 
