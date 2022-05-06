@@ -1,7 +1,6 @@
 import type { CredentialSubjectOptions } from './CredentialSubject'
 import type { IssuerOptions } from './Issuer'
 import type { ValidationOptions } from 'class-validator'
-import type { ContextDefinition } from 'jsonld'
 
 import { Expose, Type } from 'class-transformer'
 import { buildMessage, IsOptional, IsString, ValidateBy } from 'class-validator'
@@ -11,8 +10,8 @@ import { IsInstanceOrArrayOfInstances, IsUri } from '../../../../utils/validator
 import { CREDENTIALS_CONTEXT_V1_URL, VERIFIABLE_CREDENTIAL_TYPE } from '../../constants'
 import { IsJsonLdContext } from '../../validators'
 
-import { CredentialSchema, CredentialSchemaTransformer } from './CredentialSchema'
-import { CredentialSubjectTransformer, CredentialSubject } from './CredentialSubject'
+import { CredentialSchema } from './CredentialSchema'
+import { CredentialSubject } from './CredentialSubject'
 import { Issuer, IsIssuer, IssuerTransformer } from './Issuer'
 
 export interface W3cCredentialOptions {
