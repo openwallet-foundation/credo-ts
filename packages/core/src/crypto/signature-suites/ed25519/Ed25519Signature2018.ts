@@ -24,8 +24,8 @@ type Ed25519Signature2018Options = Pick<
 >
 
 export class Ed25519Signature2018 extends JwsLinkedDataSignature {
-  public static CONTEXT = SUITE_CONTEXT_URL_2018
-  public static CONTEXT_URL = ed25519Signature2018Context.get(SUITE_CONTEXT_URL_2018)
+  public static CONTEXT_URL = SUITE_CONTEXT_URL_2018
+  public static CONTEXT = ed25519Signature2018Context.get(SUITE_CONTEXT_URL_2018)
 
   /**
    * @param {object} options - Options hashmap.
