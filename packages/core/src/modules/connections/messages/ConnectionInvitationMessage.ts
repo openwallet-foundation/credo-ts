@@ -162,8 +162,8 @@ export class ConnectionInvitationMessage extends AgentMessage {
     }
     clearTimeout(id)
     if (response) {
-      if (response.headers.get('Content-Type') == 'application/json' && response.ok) {
-        const inviatationJson = response
+      if (response.headers.get('Content-Type') === 'application/json' && response.ok) {
+        const inviatationJson = await response.json()
         const invitation = JsonTransformer.fromJSON(inviatationJson, ConnectionInvitationMessage)
 
         await MessageValidator.validate(invitation)
