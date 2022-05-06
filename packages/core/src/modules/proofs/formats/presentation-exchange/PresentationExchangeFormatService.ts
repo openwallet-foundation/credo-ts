@@ -27,13 +27,14 @@ import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { JsonTransformer } from '../../../../utils'
 import { uuid } from '../../../../utils/uuid'
-import { DidKey } from '../../../dids'
+import { DidResolverService } from '../../../dids'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import { W3cCredentialService } from '../../../vc'
 import { W3cVerifiableCredential } from '../../../vc/models'
 import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import { CredentialSubject } from '../../../vc/models/credential/CredentialSubject'
+import { W3cVerifiablePresentation } from '../../../vc/models/presentation/W3cVerifiablePresentation'
 import { ProofFormatService } from '../ProofFormatService'
 import {
   V2_PRESENTATION_EXCHANGE_PRESENTATION,
@@ -52,6 +53,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
   private indyRevocationService: IndyRevocationService
   private ledgerService: IndyLedgerService
   private w3cCredentialService: W3cCredentialService
+  private didResolver: DidResolverService
 
   public constructor(
     agentConfig: AgentConfig,
@@ -60,7 +62,8 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     indyRevocationService: IndyRevocationService,
     ledgerService: IndyLedgerService,
     didCommMessageRepository: DidCommMessageRepository,
-    w3cCredentialService: W3cCredentialService
+    w3cCredentialService: W3cCredentialService,
+    didResolver: DidResolverService
   ) {
     super(didCommMessageRepository, agentConfig)
     this.indyHolderService = indyHolderService
@@ -68,6 +71,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     this.indyRevocationService = indyRevocationService
     this.ledgerService = ledgerService
     this.w3cCredentialService = w3cCredentialService
+    this.didResolver = didResolver
   }
 
   public async createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats> {
@@ -84,7 +88,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const presentationExchangeRequestMessage: RequestPresentation = new RequestPresentation({
       options: {
-        challenge: '',
+        challenge: uuid(),
         domain: '',
       },
       presentationDefinition: presentationDefinition,
@@ -185,24 +189,28 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     const proof = JsonTransformer.fromJSON(w3cVerifiableCredentials.proof, LinkedDataProof)
     const subject = JsonTransformer.fromJSON(w3cVerifiableCredentials.credentialSubject, CredentialSubject)
 
-    const key = DidKey.fromDid(subject.id)
+    const didResolutionResult = await this.didResolver.resolve(subject.id)
+
+    if (!didResolutionResult.didDocument) {
+      throw new AriesFrameworkError(`No did document found for did ${subject.id}`)
+    }
+
+    if (!didResolutionResult.didDocument?.authentication) {
+      throw new AriesFrameworkError(`No did authentication found for did ${subject.id} in did document`)
+    }
 
     const presentation = await this.w3cCredentialService.createPresentation({
       credentials: w3cVerifiableCredentials,
     })
 
-    // console.log('presentation:::\n', JSON.stringify(presentation, null, 2))
-
     const signPresentationOptions: SignPresentationOptions = {
       presentation,
       purpose: proof.proofPurpose,
       signatureType: proof.type,
-      verificationMethod: key.keyId,
+      verificationMethod: (didResolutionResult.didDocument?.authentication[0]).toString(),
     }
-    // console.log('signPresentationOptions:\n', JSON.stringify(signPresentationOptions, null, 2))
 
     const signedPresentation = await this.w3cCredentialService.signPresentation(signPresentationOptions)
-    // console.log('signedPresentation:::\n', signedPresentation)
 
     const attachId = options.attachId ?? uuid()
 
@@ -227,9 +235,41 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       throw Error('Presentation  missing while processing presentation in presentation exchange service.')
     }
 
-    console.log('options in process ', options)
+    // console.log('options in process presentations:\n', JSON.stringify(options.presentation, null, 2))
 
-    throw new Error('Method not implemented.')
+    const requestFormat = options.presentation.request.find(
+      (x) => x.format.format === V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST
+    )
+
+    const proofFormat = options.presentation.proof.find(
+      (x) => x.format.format === V2_PRESENTATION_EXCHANGE_PRESENTATION
+    )
+
+    const proofRequestJson = requestFormat?.attachment.getDataAsJson<Attachment>() ?? null
+
+    const requestMessage = JsonTransformer.fromJSON(proofRequestJson, RequestPresentation)
+
+    // console.log('proofRequestJson', proofRequestJson)
+
+    // console.log('requestMessage', requestMessage.options.challenge)
+
+    const proofPresentationRequestJson = proofFormat?.attachment.getDataAsJson<Attachment>() ?? null
+
+    const w3cVerifiablePresentation = JsonTransformer.fromJSON(proofPresentationRequestJson, W3cVerifiablePresentation)
+
+    const proof = JsonTransformer.fromJSON(w3cVerifiablePresentation.proof, LinkedDataProof)
+
+    const verify = await this.w3cCredentialService.verifyPresentation({
+      presentation: w3cVerifiablePresentation,
+      proofType: proof.type,
+      verificationMethod: proof.verificationMethod,
+      // challenge: requestMessage.options.challenge,
+      purpose: proof.proofPurpose,
+    })
+
+    console.log('verify:', JSON.stringify(verify, null, 2))
+
+    return true
   }
 
   public async getRequestedCredentialsForProofRequest(
