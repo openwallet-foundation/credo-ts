@@ -28,7 +28,7 @@ import jsonld from 'jsonld'
 import { SECURITY_CONTEXT_BBS_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
 import { TypedArrayEncoder } from '../../../utils'
 
-import { w3cDate } from './utilities'
+import { w3cDate } from './bbs-utils'
 
 /**
  * A BBS+ signature suite for use with BLS12-381 key pairs
