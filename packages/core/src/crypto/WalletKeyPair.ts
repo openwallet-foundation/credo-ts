@@ -115,7 +115,6 @@ export function createWalletKeyPairClass(wallet: Wallet) {
       }
     }
 
-    // EXPERIMENTAL
     public get publicKeyBuffer(): Uint8Array {
       return new Uint8Array(this.key.publicKey)
     }
