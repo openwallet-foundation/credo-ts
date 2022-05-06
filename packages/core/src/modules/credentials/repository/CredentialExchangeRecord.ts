@@ -70,7 +70,8 @@ export class CredentialExchangeRecord extends BaseRecord<
   @Type(() => Attachment)
   public linkedAttachments?: Attachment[]
 
-  public static readonly type = 'CredentialExchangeRecord'
+  // Type is CredentialRecord on purpose (without Exchange) as this is how the record was initially called.
+  public static readonly type = 'CredentialRecord'
   public readonly type = CredentialExchangeRecord.type
 
   public constructor(props: CredentialExchangeRecordProps) {

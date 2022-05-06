@@ -19,7 +19,6 @@ import {
   CredentialState,
   ProofEventTypes,
   ProofState,
-  // eslint-disable-next-line import/no-unresolved
 } from '@aries-framework/core'
 import { ui } from 'inquirer'
 

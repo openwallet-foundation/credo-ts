@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
   NegotiateProposalOptions,
@@ -189,7 +188,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     const offer = options.offerAttachment.getDataAsJson<CredOffer>()
     const credDef = await this.getCredentialDefinition(offer)
 
-    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer, credDef, holderDid)
+    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(offer, credDef, holderDid)
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
 
     const formats: CredentialFormatSpec = {
@@ -206,8 +205,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * Not implemented; there for future versions
    */
   public async processRequest(
-    options: RequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    _options: RequestCredentialOptions,
+    _credentialRecord: CredentialExchangeRecord
+    /* eslint-enable @typescript-eslint/no-unused-vars */
   ): Promise<void> {
     // not needed for Indy
   }
@@ -301,18 +302,14 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns The created credential offer
    */
   private async createIndyCredentialRequest(
-    options: ServiceRequestCredentialOptions,
     offer: CredOffer,
-    credDef: CredDef,
+    credentialDefinition: CredDef,
     holderDid: string
   ): Promise<{ credReq: CredReq; credReqMetadata: CredReqMetadata }> {
-    // if (!options.credentialDefinition || !options.credentialDefinition.credDef) {
-    //   throw new AriesFrameworkError('Unable to create Credential Request')
-    // }
     const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
       holderDid: holderDid,
       credentialOffer: offer,
-      credentialDefinition: credDef,
+      credentialDefinition,
     })
     return { credReq, credReqMetadata }
   }

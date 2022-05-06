@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type {
   DeleteCredentialOptions,
   ServiceAcceptCredentialOptions,
-  ServiceAcceptOfferOptions,
   ServiceAcceptProposalOptions,
   ServiceOfferCredentialOptions,
 } from '../CredentialServiceOptions'
@@ -12,8 +10,6 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../CredentialsModuleOptions'
-import type { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
-import type { V2CredentialPreview } from '../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord, CredentialRepository } from '../repository'
 import type {
   FormatServiceCredentialAttachmentFormats,
@@ -21,7 +17,6 @@ import type {
   HandlerAutoAcceptOptions,
   FormatServiceOfferAttachmentFormats,
   FormatServiceProposeAttachmentFormats,
-  RevocationRegistry,
 } from './models/CredentialFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
