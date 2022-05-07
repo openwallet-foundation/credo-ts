@@ -50,7 +50,7 @@ describe('out of band', () => {
     handshake: false,
   }
 
-  const receiveMessageConfig = {
+  const receiveInvitationConfig = {
     autoAcceptConnection: false,
   }
 
@@ -291,7 +291,7 @@ describe('out of band', () => {
 
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
-      await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, receiveMessageConfig)
+      await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, receiveInvitationConfig)
 
       let credentials: CredentialRecord[] = []
       while (credentials.length < 1) {
@@ -468,7 +468,7 @@ describe('out of band', () => {
       const unsupportedProtocol = 'https://didcomm.org/unsupported-connections-protocol/1.0'
       outOfBandInvitation.handshakeProtocols = [unsupportedProtocol as HandshakeProtocol]
 
-      await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveMessageConfig)).rejects.toEqual(
+      await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
         new AriesFrameworkError(
           `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.0,https://didcomm.org/connections/1.0]`
         )
@@ -478,7 +478,7 @@ describe('out of band', () => {
     test('throw an error when the OOB message does not contain either handshake or requests', async () => {
       const outOfBandInvitation = new OutOfBandInvitation({ label: 'test-connection', services: [] })
 
-      await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveMessageConfig)).rejects.toEqual(
+      await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
         new AriesFrameworkError(
           'One or both of handshake_protocols and requests~attach MUST be included in the message.'
         )
@@ -493,12 +493,12 @@ describe('out of band', () => {
         messages: [testMessage],
       })
 
-      await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveMessageConfig)).rejects.toEqual(
+      await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
         new AriesFrameworkError('There is no message in requests~attach supported by agent.')
       )
     })
 
-    test('throw an error when the OOB message does not contain either handshake or requests', async () => {
+    test('throw an error when a did is used in the out of band message', async () => {
       const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         ...issueCredentialConfig,
@@ -506,8 +506,8 @@ describe('out of band', () => {
       })
       outOfBandInvitation.services = ['somedid']
 
-      await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveMessageConfig)).rejects.toEqual(
-        new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
+      await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
+        new AriesFrameworkError('Dids are not currently supported in out-of-band invitation services attribute.')
       )
     })
   })

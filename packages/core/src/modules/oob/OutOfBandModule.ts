@@ -470,9 +470,10 @@ export class OutOfBandModule {
 
     // TODO: for each did we should look for a connection with the invitation did OR a connection with theirDid that matches the service did
     for (const didOrService of services) {
-      if (typeof didOrService === 'string') {
+      // We need to check if the service is an instance of string because of limitations from class-validator
+      if (typeof didOrService === 'string' || didOrService instanceof String) {
         // TODO await this.connectionsModule.findByTheirDid()
-        throw new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
+        throw new AriesFrameworkError('Dids are not currently supported in out-of-band invitation services attribute.')
       }
 
       const did = outOfBandServiceToNumAlgo2Did(didOrService)
@@ -532,7 +533,7 @@ export class OutOfBandModule {
     const [service] = services
 
     if (typeof service === 'string') {
-      throw new AriesFrameworkError('Dids are not currently supported in out-of-band message services attribute.')
+      throw new AriesFrameworkError('Dids are not currently supported in out-of-band invitation services attribute.')
     }
 
     const serviceDecorator = new ServiceDecorator({
