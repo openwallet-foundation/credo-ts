@@ -10,14 +10,14 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { DidKey } from '../../dids'
-import { OutOfBandMessage } from '../messages'
+import { OutOfBandInvitation } from '../messages'
 
 export interface OutOfBandRecordProps {
   id?: string
   createdAt?: Date
   updatedAt?: Date
   tags?: TagsBase
-  outOfBandMessage: OutOfBandMessage
+  outOfBandInvitation: OutOfBandInvitation
   role: OutOfBandRole
   state: OutOfBandState
   autoAcceptConnection?: boolean
@@ -34,8 +34,8 @@ type DefaultOutOfBandRecordTags = {
 }
 
 export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
-  @Type(() => OutOfBandMessage)
-  public outOfBandMessage!: OutOfBandMessage
+  @Type(() => OutOfBandInvitation)
+  public outOfBandInvitation!: OutOfBandInvitation
   public role!: OutOfBandRole
   public state!: OutOfBandState
   public reusable!: boolean
@@ -52,7 +52,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this.outOfBandMessage = props.outOfBandMessage
+      this.outOfBandInvitation = props.outOfBandInvitation
       this.role = props.role
       this.state = props.state
       this.autoAcceptConnection = props.autoAcceptConnection
@@ -68,14 +68,14 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
       ...this._tags,
       role: this.role,
       state: this.state,
-      messageId: this.outOfBandMessage.id,
+      messageId: this.outOfBandInvitation.id,
       recipientKeyFingerprints: this.getRecipientKeys().map((key) => key.fingerprint),
     }
   }
 
   // TODO: this only takes into account inline didcomm services, won't work for public dids
   public getRecipientKeys(): Key[] {
-    return this.outOfBandMessage.services
+    return this.outOfBandInvitation.services
       .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
       .map((s) => s.recipientKeys)
       .reduce((acc, curr) => [...acc, ...curr], [])

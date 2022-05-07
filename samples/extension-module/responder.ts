@@ -40,8 +40,8 @@ const run = async () => {
 
   // Allow to create invitation, no other way to ask for invitation yet
   app.get('/invitation', async (req, res) => {
-    const { outOfBandMessage } = await agent.oob.createInvitation()
-    res.send(outOfBandMessage.toUrl({ domain: `http://localhost:${port}/invitation` }))
+    const { outOfBandInvitation } = await agent.oob.createInvitation()
+    res.send(outOfBandInvitation.toUrl({ domain: `http://localhost:${port}/invitation` }))
   })
 
   // Inject DummyModule

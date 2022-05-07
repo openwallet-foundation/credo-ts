@@ -36,7 +36,7 @@ export class Alice extends BaseAgent {
 
     console.log(
       Output.ConnectionLink,
-      outOfBand.outOfBandMessage.toUrl({ domain: `http://localhost:${this.port}` }),
+      outOfBand.outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }),
       '\n'
     )
     return connectionRecord

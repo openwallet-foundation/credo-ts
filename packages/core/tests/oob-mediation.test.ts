@@ -80,8 +80,8 @@ describe('out of band with mediation', () => {
       ...makeConnectionConfig,
       routing: mediatorRouting,
     })
-    const { outOfBandMessage: mediatorOutOfBandMessage } = mediationOutOfBandRecord
-    const mediatorUrlMessage = mediatorOutOfBandMessage.toUrl({ domain: 'http://example.com' })
+    const { outOfBandInvitation: mediatorOutOfBandInvitation } = mediationOutOfBandRecord
+    const mediatorUrlMessage = mediatorOutOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
     let { connectionRecord: aliceMediatorConnection } = await aliceAgent.oob.receiveInvitationFromUrl(
       mediatorUrlMessage
@@ -106,8 +106,8 @@ describe('out of band with mediation', () => {
     // ========== Make a connection between Alice and Faber ==========
     const faberRouting = await faberAgent.mediationRecipient.getRouting({})
     const outOfBandRecord = await faberAgent.oob.createInvitation({ ...makeConnectionConfig, routing: faberRouting })
-    const { outOfBandMessage } = outOfBandRecord
-    const urlMessage = outOfBandMessage.toUrl({ domain: 'http://example.com' })
+    const { outOfBandInvitation } = outOfBandRecord
+    const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
 

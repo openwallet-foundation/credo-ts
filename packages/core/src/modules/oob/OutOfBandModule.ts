@@ -35,12 +35,12 @@ import { OutOfBandRole } from './domain/OutOfBandRole'
 import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseHandler } from './handlers'
 import { convertToNewInvitation, convertToOldInvitation } from './helpers'
-import { OutOfBandMessage, HandshakeReuseMessage } from './messages'
+import { OutOfBandInvitation, HandshakeReuseMessage } from './messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
-export interface CreateOutOfBandMessageConfig {
+export interface CreateOutOfBandInvitationConfig {
   label?: string
   alias?: string
   imageUrl?: string
@@ -54,7 +54,7 @@ export interface CreateOutOfBandMessageConfig {
   routing?: Routing
 }
 
-export interface ReceiveOutOfBandMessageConfig {
+export interface ReceiveOutOfBandInvitationConfig {
   label?: string
   alias?: string
   imageUrl?: string
@@ -113,7 +113,7 @@ export class OutOfBandModule {
    * @param config configuration of how out-of-band invitation should be created
    * @returns out-of-band record
    */
-  public async createInvitation(config: CreateOutOfBandMessageConfig = {}): Promise<OutOfBandRecord> {
+  public async createInvitation(config: CreateOutOfBandInvitationConfig = {}): Promise<OutOfBandRecord> {
     const multiUseInvitation = config.multiUseInvitation ?? false
     const handshake = config.handshake ?? true
     const customHandshakeProtocols = config.handshakeProtocols
@@ -164,7 +164,7 @@ export class OutOfBandModule {
       services,
       handshakeProtocols,
     }
-    const outOfBandMessage = new OutOfBandMessage(options)
+    const outOfBandInvitation = new OutOfBandInvitation(options)
 
     if (messages) {
       messages.forEach((message) => {
@@ -172,7 +172,7 @@ export class OutOfBandModule {
           // We can remove `~service` attribute from message. Newer OOB messages have `services` attribute instead.
           message.service = undefined
         }
-        outOfBandMessage.addRequest(message)
+        outOfBandInvitation.addRequest(message)
       })
     }
 
@@ -181,7 +181,7 @@ export class OutOfBandModule {
       mediatorId: routing.mediatorId,
       role: OutOfBandRole.Sender,
       state: OutOfBandState.AwaitResponse,
-      outOfBandMessage: outOfBandMessage,
+      outOfBandInvitation: outOfBandInvitation,
       reusable: multiUseInvitation,
       autoAcceptConnection,
     })
@@ -200,7 +200,7 @@ export class OutOfBandModule {
    * @param config configuration of how out-of-band invitation should be created
    * @returns out-of-band record and connection invitation
    */
-  public async createLegacyInvitation(config: CreateOutOfBandMessageConfig = {}) {
+  public async createLegacyInvitation(config: CreateOutOfBandInvitationConfig = {}) {
     if (config.handshake === false) {
       throw new AriesFrameworkError(
         `Invalid value of handshake in config. Value is ${config.handshake}, but this method supports only 'true' or 'undefined'.`
@@ -214,7 +214,7 @@ export class OutOfBandModule {
         ...config,
         handshakeProtocols: [HandshakeProtocol.Connections],
       })
-      return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandMessage) }
+      return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
     }
     throw new AriesFrameworkError(
       `Invalid value of handshakeProtocols in config. Value is ${config.handshakeProtocols}, but this method supports only ${HandshakeProtocol.Connections}.`
@@ -230,7 +230,7 @@ export class OutOfBandModule {
    * @param config configuration of how out-of-band invitation should be processed
    * @returns out-of-band record and connection record if one has been created
    */
-  public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandMessageConfig = {}) {
+  public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig = {}) {
     const message = await this.parseInvitation(invitationUrl)
     return this.receiveInvitation(message, config)
   }
@@ -240,13 +240,13 @@ export class OutOfBandModule {
    *
    * @param invitationUrl URL containing encoded invitation
    *
-   * @returns OutOfBandMessage
+   * @returns OutOfBandInvitation
    */
   public async parseInvitation(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query
     if (parsedUrl['oob']) {
-      const outOfBandMessage = await OutOfBandMessage.fromUrl(invitationUrl)
-      return outOfBandMessage
+      const outOfBandInvitation = await OutOfBandInvitation.fromUrl(invitationUrl)
+      return outOfBandInvitation
     } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
       const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
       return convertToNewInvitation(invitation)
@@ -268,16 +268,16 @@ export class OutOfBandModule {
    *
    * Agent role: receiver (invitee)
    *
-   * @param outOfBandMessage
+   * @param outOfBandInvitation
    * @param config config for handling of invitation
    *
    * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveInvitation(
-    outOfBandMessage: OutOfBandMessage,
-    config: ReceiveOutOfBandMessageConfig = {}
+    outOfBandInvitation: OutOfBandInvitation,
+    config: ReceiveOutOfBandInvitationConfig = {}
   ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
-    const { handshakeProtocols } = outOfBandMessage
+    const { handshakeProtocols } = outOfBandInvitation
     const { routing } = config
 
     const autoAcceptInvitation = config.autoAcceptInvitation ?? true
@@ -287,7 +287,7 @@ export class OutOfBandModule {
     const alias = config.alias
     const imageUrl = config.imageUrl ?? this.agentConfig.connectionImageUrl
 
-    const messages = outOfBandMessage.getRequests()
+    const messages = outOfBandInvitation.getRequests()
 
     if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
       throw new AriesFrameworkError(
@@ -298,7 +298,7 @@ export class OutOfBandModule {
     const outOfBandRecord = new OutOfBandRecord({
       role: OutOfBandRole.Receiver,
       state: OutOfBandState.Initial,
-      outOfBandMessage: outOfBandMessage,
+      outOfBandInvitation: outOfBandInvitation,
       autoAcceptConnection,
     })
     await this.outOfBandService.save(outOfBandRecord)
@@ -343,10 +343,10 @@ export class OutOfBandModule {
       routing?: Routing
     }
   ) {
-    const { outOfBandMessage } = outOfBandRecord
+    const { outOfBandInvitation } = outOfBandRecord
     const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, routing } = config
-    const { handshakeProtocols, services } = outOfBandMessage
-    const messages = outOfBandMessage.getRequests()
+    const { handshakeProtocols, services } = outOfBandInvitation
+    const messages = outOfBandInvitation.getRequests()
 
     const existingConnection = await this.findExistingConnection(services)
 
@@ -363,7 +363,7 @@ export class OutOfBandModule {
         connectionRecord = existingConnection
         if (!messages) {
           this.logger.debug('Out of band message does not contain any request messages.')
-          await this.sendReuse(outOfBandMessage, connectionRecord)
+          await this.sendReuse(outOfBandInvitation, connectionRecord)
         }
       } else {
         this.logger.debug('Connection does not exist or reuse is disabled. Creating a new connection.')
@@ -548,8 +548,8 @@ export class OutOfBandModule {
     })
   }
 
-  private async sendReuse(outOfBandMessage: OutOfBandMessage, connection: ConnectionRecord) {
-    const message = new HandshakeReuseMessage({ parentThreadId: outOfBandMessage.id })
+  private async sendReuse(outOfBandInvitation: OutOfBandInvitation, connection: ConnectionRecord) {
+    const message = new HandshakeReuseMessage({ parentThreadId: outOfBandInvitation.id })
     const outbound = createOutboundMessage(connection, message)
     await this.messageSender.sendMessage(outbound)
   }

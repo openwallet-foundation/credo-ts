@@ -271,8 +271,8 @@ export class Agent {
   }
 
   private async getMediationConnection(mediatorInvitationUrl: string) {
-    const outOfBandMessage = await this.oob.parseInvitation(mediatorInvitationUrl)
-    const outOfBandRecord = await this.oob.findByMessageId(outOfBandMessage.id)
+    const outOfBandInvitation = await this.oob.parseInvitation(mediatorInvitationUrl)
+    const outOfBandRecord = await this.oob.findByMessageId(outOfBandInvitation.id)
     const connection = outOfBandRecord && (await this.connections.findByOutOfBandId(outOfBandRecord.id))
 
     if (!connection) {
@@ -281,10 +281,10 @@ export class Agent {
       const routing = await this.mediationRecipient.getRouting({ useDefaultMediator: false })
 
       this.logger.debug('Routing created', routing)
-      const { connectionRecord: newConnection } = await this.oob.receiveInvitation(outOfBandMessage, {
+      const { connectionRecord: newConnection } = await this.oob.receiveInvitation(outOfBandInvitation, {
         routing,
       })
-      this.logger.debug(`Mediation invitation processed`, { outOfBandMessage })
+      this.logger.debug(`Mediation invitation processed`, { outOfBandInvitation })
 
       if (!newConnection) {
         throw new AriesFrameworkError('No connection record to provision mediation.')

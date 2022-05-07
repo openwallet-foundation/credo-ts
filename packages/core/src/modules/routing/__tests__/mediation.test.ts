@@ -73,7 +73,7 @@ describe('mediator establishment', () => {
     recipientAgent = new Agent(
       {
         ...recipientConfig.config,
-        mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandMessage.toUrl({
+        mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
           domain: 'https://example.com/ssi',
         }),
         mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -110,7 +110,7 @@ describe('mediator establishment', () => {
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
-    const recipientInvitation = recipientOutOfBandRecord.outOfBandMessage
+    const recipientInvitation = recipientOutOfBandRecord.outOfBandInvitation
 
     let { connectionRecord: senderRecipientConnection } = await senderAgent.oob.receiveInvitationFromUrl(
       recipientInvitation.toUrl({ domain: 'https://example.com/ssi' })
@@ -163,7 +163,7 @@ describe('mediator establishment', () => {
     recipientAgent = new Agent(
       {
         ...recipientConfig.config,
-        mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandMessage.toUrl({
+        mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
           domain: 'https://example.com/ssi',
         }),
         mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -192,7 +192,7 @@ describe('mediator establishment', () => {
     recipientAgent = new Agent(
       {
         ...recipientConfig.config,
-        mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandMessage.toUrl({
+        mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
           domain: 'https://example.com/ssi',
         }),
         mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -214,7 +214,7 @@ describe('mediator establishment', () => {
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
-    const recipientInvitation = recipientOutOfBandRecord.outOfBandMessage
+    const recipientInvitation = recipientOutOfBandRecord.outOfBandInvitation
 
     let { connectionRecord: senderRecipientConnection } = await senderAgent.oob.receiveInvitationFromUrl(
       recipientInvitation.toUrl({ domain: 'https://example.com/ssi' })

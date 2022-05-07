@@ -1,2 +1,2 @@
-export * from './OutOfBandMessage'
+export * from './OutOfBandInvitation'
 export * from './HandshakeReuseMessage'

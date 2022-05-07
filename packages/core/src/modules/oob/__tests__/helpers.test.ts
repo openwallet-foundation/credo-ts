@@ -2,7 +2,7 @@ import { JsonTransformer } from '../../../utils'
 import { ConnectionInvitationMessage } from '../../connections'
 import { DidCommV1Service } from '../../dids'
 import { convertToNewInvitation, convertToOldInvitation } from '../helpers'
-import { OutOfBandMessage } from '../messages'
+import { OutOfBandInvitation } from '../messages'
 
 describe('convertToNewInvitation', () => {
   it('should convert a connection invitation with service to an out of band invitation', () => {
@@ -69,7 +69,7 @@ describe('convertToNewInvitation', () => {
 
 describe('convertToOldInvitation', () => {
   it('should convert an out of band invitation with inline service to a connection invitation', () => {
-    const oobInvitation = new OutOfBandMessage({
+    const oobInvitation = new OutOfBandInvitation({
       id: 'd88ff8fd-6c43-4683-969e-11a87a572cf2',
       imageUrl: 'https://my-image.com',
       label: 'a-label',
@@ -96,7 +96,7 @@ describe('convertToOldInvitation', () => {
   })
 
   it('should convert an out of band invitation with did service to a connection invitation', () => {
-    const oobInvitation = new OutOfBandMessage({
+    const oobInvitation = new OutOfBandInvitation({
       id: 'd88ff8fd-6c43-4683-969e-11a87a572cf2',
       imageUrl: 'https://my-image.com',
       label: 'a-label',
@@ -114,7 +114,7 @@ describe('convertToOldInvitation', () => {
   })
 
   it('throws an error when more than service is present in the out of band invitation', () => {
-    const oobInvitation = new OutOfBandMessage({
+    const oobInvitation = new OutOfBandInvitation({
       id: 'd88ff8fd-6c43-4683-969e-11a87a572cf2',
       imageUrl: 'https://my-image.com',
       label: 'a-label',

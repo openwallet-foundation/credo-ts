@@ -68,21 +68,21 @@ export class DidExchangeProtocol {
   ): Promise<{ message: DidExchangeRequestMessage; connectionRecord: ConnectionRecord }> {
     this.logger.debug(`Create message ${DidExchangeRequestMessage.type} start`, { outOfBandRecord, params })
 
-    const { outOfBandMessage } = outOfBandRecord
+    const { outOfBandInvitation } = outOfBandRecord
     const { alias, goal, goalCode, routing, autoAcceptConnection } = params
 
     const { did, mediatorId } = routing
 
     // TODO: We should store only one did that we'll use to send the request message with success.
     // We take just the first one for now.
-    const [invitationDid] = outOfBandMessage.invitationDids
+    const [invitationDid] = outOfBandInvitation.invitationDids
 
     const connectionRecord = await this.connectionService.createConnection({
       protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Requester,
       alias,
       state: DidExchangeState.InvitationReceived,
-      theirLabel: outOfBandMessage.label,
+      theirLabel: outOfBandInvitation.label,
       multiUseInvitation: false,
       did,
       mediatorId,
@@ -97,7 +97,7 @@ export class DidExchangeProtocol {
     const label = params.label ?? this.config.label
     const { verkey } = routing
     const { peerDid, didDocument } = await this.createPeerDidDoc(this.routingToServices(routing))
-    const parentThreadId = outOfBandMessage.id
+    const parentThreadId = outOfBandInvitation.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: peerDid.did, goal, goalCode })
 
@@ -233,7 +233,7 @@ export class DidExchangeProtocol {
     if (routing) {
       services = this.routingToServices(routing)
     } else if (outOfBandRecord) {
-      const inlineServices = outOfBandRecord.outOfBandMessage.services.filter(
+      const inlineServices = outOfBandRecord.outOfBandInvitation.services.filter(
         (service) => typeof service !== 'string'
       ) as OutOfBandDidCommService[]
 
@@ -346,7 +346,7 @@ export class DidExchangeProtocol {
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     const threadId = connectionRecord.threadId
-    const parentThreadId = outOfBandRecord.outOfBandMessage.id
+    const parentThreadId = outOfBandRecord.outOfBandInvitation.id
 
     if (!threadId) {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have 'threadId' attribute.`)

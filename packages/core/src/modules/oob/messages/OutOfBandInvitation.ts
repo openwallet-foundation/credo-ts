@@ -15,7 +15,7 @@ import { IsStringOrInstance } from '../../../utils/validators'
 import { outOfBandServiceToNumAlgo2Did } from '../../dids/methods/peer/peerDidNumAlgo2'
 import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 
-export interface OutOfBandMessageOptions {
+export interface OutOfBandInvitationOptions {
   id?: string
   label: string
   goalCode?: string
@@ -26,8 +26,8 @@ export interface OutOfBandMessageOptions {
   imageUrl?: string
 }
 
-export class OutOfBandMessage extends AgentMessage {
-  public constructor(options: OutOfBandMessageOptions) {
+export class OutOfBandInvitation extends AgentMessage {
+  public constructor(options: OutOfBandInvitationOptions) {
     super()
 
     if (options) {
@@ -82,7 +82,7 @@ export class OutOfBandMessage extends AgentMessage {
   }
 
   public static async fromJson(json: Record<string, unknown>) {
-    const invitation = JsonTransformer.fromJSON(json, OutOfBandMessage)
+    const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation)
     await MessageValidator.validate(invitation)
     return invitation
   }
@@ -97,8 +97,8 @@ export class OutOfBandMessage extends AgentMessage {
     return dids
   }
 
-  @Equals(OutOfBandMessage.type)
-  public readonly type = OutOfBandMessage.type
+  @Equals(OutOfBandInvitation.type)
+  public readonly type = OutOfBandInvitation.type
   public static readonly type = `https://didcomm.org/out-of-band/1.1/invitation`
 
   public readonly label!: string

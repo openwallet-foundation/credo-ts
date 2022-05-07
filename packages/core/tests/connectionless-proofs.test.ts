@@ -217,7 +217,7 @@ describe('Present Proof', () => {
 
     const faberConfig = getBaseConfig(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandMessage.toUrl({
+      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
         domain: 'https://example.com',
       }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -225,7 +225,7 @@ describe('Present Proof', () => {
 
     const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandMessage.toUrl({
+      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
         domain: 'https://example.com',
       }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,

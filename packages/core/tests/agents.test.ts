@@ -55,7 +55,7 @@ describe('agents', () => {
     })
 
     const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveInvitation(
-      aliceBobOutOfBandRecord.outOfBandMessage
+      aliceBobOutOfBandRecord.outOfBandInvitation
     )
     bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
 

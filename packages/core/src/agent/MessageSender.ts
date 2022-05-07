@@ -395,7 +395,7 @@ export class MessageSender {
     } else if (outOfBand) {
       this.logger.debug(`Resolving services from out-of-band record ${outOfBand?.id}.`)
       if (connection.isRequester) {
-        for (const service of outOfBand.outOfBandMessage.services) {
+        for (const service of outOfBand.outOfBandInvitation.services) {
           // Resolve dids to DIDDocs to retrieve services
           if (typeof service === 'string') {
             didCommServices = await this.retrieveServicesFromDid(service)

@@ -47,13 +47,19 @@ describe('connections', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const {
-      invitation,
-      connectionRecord: { id: faberConnectionId },
-    } = await faberAgent.connections.createConnection({
+    // const {
+    //   invitation,
+    //   connectionRecord: { id: faberConnectionId },
+    // } = await faberAgent.connections.createConnection({
+    //   multiUseInvitation: true,
+    // })
+
+    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
+      handshakeProtocols: [HandshakeProtocol.Connections],
       multiUseInvitation: true,
     })
 
+    const invitation = faberOutOfBandRecord.outOfBandInvitation
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Create first connection
@@ -88,7 +94,7 @@ describe('connections', () => {
       multiUseInvitation: true,
     })
 
-    const invitation = faberOutOfBandRecord.outOfBandMessage
+    const invitation = faberOutOfBandRecord.outOfBandInvitation
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Create first connection

@@ -1,11 +1,11 @@
-import type { OutOfBandMessageOptions } from './messages'
+import type { OutOfBandInvitationOptions } from './messages'
 
 import { AriesFrameworkError } from '../../error'
 import { ConnectionInvitationMessage, HandshakeProtocol } from '../connections'
 import { DidCommV1Service } from '../dids'
 import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 
-import { OutOfBandMessage } from './messages'
+import { OutOfBandInvitation } from './messages'
 
 export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessage) {
   let service
@@ -23,7 +23,7 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
     throw new Error('Missing required serviceEndpoint, routingKeys and/or did fields in connection invitation')
   }
 
-  const options: OutOfBandMessageOptions = {
+  const options: OutOfBandInvitationOptions = {
     id: oldInvitation.id,
     label: oldInvitation.label,
     imageUrl: oldInvitation.imageUrl,
@@ -32,10 +32,10 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
     handshakeProtocols: [HandshakeProtocol.Connections],
   }
 
-  return new OutOfBandMessage(options)
+  return new OutOfBandInvitation(options)
 }
 
-export function convertToOldInvitation(newInvitation: OutOfBandMessage) {
+export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
   if (newInvitation.services.length > 1) {
     throw new AriesFrameworkError(
       `Attribute 'services' MUST have exactly one entry. It contains ${newInvitation.services.length} entries.`

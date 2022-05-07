@@ -94,20 +94,20 @@ export class ConnectionService {
 
     // TODO check there is no connection record for particular oob record
 
-    const { outOfBandMessage } = outOfBandRecord
+    const { outOfBandInvitation } = outOfBandRecord
 
     const { did, mediatorId } = config.routing
     const didDoc = this.createDidDoc(config.routing)
 
     // TODO: We should store only one did that we'll use to send the request message with success.
     // We take just the first one for now.
-    const [invitationDid] = outOfBandMessage.invitationDids
+    const [invitationDid] = outOfBandInvitation.invitationDids
 
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
       role: DidExchangeRole.Requester,
       state: DidExchangeState.InvitationReceived,
-      theirLabel: outOfBandMessage.label,
+      theirLabel: outOfBandInvitation.label,
       alias: config?.alias,
       did,
       mediatorId,
@@ -231,7 +231,7 @@ export class ConnectionService {
         did,
         endpoints: Array.from(
           new Set(
-            outOfBandRecord.outOfBandMessage.services
+            outOfBandRecord.outOfBandInvitation.services
               .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
               .map((s) => s.serviceEndpoint)
           )
@@ -239,7 +239,7 @@ export class ConnectionService {
         verkey: Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58,
         routingKeys: Array.from(
           new Set(
-            outOfBandRecord.outOfBandMessage.services
+            outOfBandRecord.outOfBandInvitation.services
               .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
               .map((s) => s.routingKeys)
               .filter((r): r is string[] => r !== undefined)
