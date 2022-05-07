@@ -215,10 +215,10 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     try {
       proof.type = this.mappedDerivedProofType
 
-      const proof2 = { ...proof, '@context': document['@context'] }
+      const proofIncludingDocumentContext = { ...proof, '@context': document['@context'] }
 
       // Get the proof statements
-      const proofStatements = await this.createVerifyProofData(proof2, {
+      const proofStatements = await this.createVerifyProofData(proofIncludingDocumentContext, {
         documentLoader,
         expansionMap,
       })

@@ -23,6 +23,7 @@ export type DefaultCredentialTags = {
   subjectIds: Array<string>
   schemaIds: Array<string>
   contexts: Array<string>
+  proofTypes: Array<string>
 }
 
 export class W3cCredentialRecord extends BaseRecord<DefaultCredentialTags, CustomW3cCredentialTags> {
@@ -49,6 +50,7 @@ export class W3cCredentialRecord extends BaseRecord<DefaultCredentialTags, Custo
       subjectIds: this.credential.credentialSubjectIds,
       schemaIds: this.credential.credentialSchemaIds,
       contexts: this.credential.contexts,
+      proofTypes: this.credential.proofTypes,
     }
   }
 }

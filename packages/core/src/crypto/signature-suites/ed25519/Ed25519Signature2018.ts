@@ -2,12 +2,11 @@ import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../..
 import type { JwsLinkedDataSignatureOptions, ProofPurpose } from '../JwsLinkedDataSignature'
 
 // @ts-ignore
-import { Ed25519VerificationKey2020 } from '@digitalbazaar/ed25519-verification-key-2020'
-// @ts-ignore
 import jsonld from '@digitalcredentials/jsonld'
 
 import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
-import { TypedArrayEncoder, _includesContext } from '../../../utils'
+import { MultiBaseEncoder, _includesContext } from '../../../utils'
+import { encodeToBase58 } from '../../../utils/base58'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 
 import { ED25519_SUITE_CONTEXT_URL_2018, ED25519_SUITE_CONTEXT_URL_2020 } from './constants'
@@ -88,17 +87,22 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
 
     // convert Ed25519VerificationKey2020 to Ed25519VerificationKey2018
     if (_isEd2020Key(verificationMethod)) {
-      const key2020 = await Ed25519VerificationKey2020.from(verificationMethod)
+      // -- convert multibase to base58 --
+      const pubKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase)
+      const pubKeyBase58 = encodeToBase58(pubKeyBuffer.data)
+      delete verificationMethod.publicKeyMultibase
+      verificationMethod.publicKeyBase58 = pubKeyBase58
 
-      const key2018 = key2020.export({ publicKey: true, context: true })
+      // -- update context --
+      // remove 2020 context
+      const context2020Index = verificationMethod['@context'].indexOf(ED25519_SUITE_CONTEXT_URL_2020)
+      verificationMethod['@context'].splice(context2020Index, 1)
 
-      // remove 2020 public key representation
-      delete key2018.publicKeyMultibase
+      // add 2018 context
+      verificationMethod['@context'].push(ED25519_SUITE_CONTEXT_URL_2018)
 
-      // create 2018 public key representation
-      key2018.publicKeyBase58 = TypedArrayEncoder.toBase58(key2020._publicKeyBuffer)
-
-      return key2018
+      // -- update type
+      verificationMethod['@type'] = 'Ed25519VerificationKey2018'
     }
 
     return verificationMethod

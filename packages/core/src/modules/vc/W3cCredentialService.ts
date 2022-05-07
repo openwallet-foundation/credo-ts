@@ -344,7 +344,7 @@ export class W3cCredentialService {
 
     // Create an instance of the w3cCredentialRecord
     const w3cCredentialRecord = new W3cCredentialRecord({
-      tags: { expandedTypes: orArrayToArray(expandedTypes) },
+      tags: { expandedTypes: orArrayToArray<string>(expandedTypes) },
       credential: options.record,
     })
 

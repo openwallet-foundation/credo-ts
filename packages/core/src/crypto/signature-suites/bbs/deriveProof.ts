@@ -15,7 +15,7 @@
 import { constants } from '@digitalcredentials/jsonld-signatures'
 import jsonld from 'jsonld'
 
-import { getProofs, getTypeInfo } from './utilities'
+import { getProofs, getTypeInfo } from './bbs-utils'
 
 /**
  * Derives a proof from a document featuring a supported linked data proof
