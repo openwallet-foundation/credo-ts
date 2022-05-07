@@ -4,8 +4,8 @@ import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
-import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { V1IssueCredentialMessage, V1RequestCredentialMessage } from '../messages'
 
 export class V1IssueCredentialHandler implements Handler {
