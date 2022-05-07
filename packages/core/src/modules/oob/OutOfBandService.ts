@@ -27,6 +27,10 @@ export class OutOfBandService {
     return this.outOfBandRepository.findById(outOfBandRecordId)
   }
 
+  public async getById(outOfBandRecordId: string) {
+    return this.outOfBandRepository.getById(outOfBandRecordId)
+  }
+
   public async findByMessageId(messageId: string) {
     return this.outOfBandRepository.findSingleByQuery({ messageId })
   }

@@ -304,7 +304,7 @@ export class OutOfBandModule {
     await this.outOfBandService.save(outOfBandRecord)
 
     if (autoAcceptInvitation) {
-      return await this.acceptInvitation(outOfBandRecord, {
+      return await this.acceptInvitation(outOfBandRecord.id, {
         label,
         alias,
         imageUrl,
@@ -318,21 +318,21 @@ export class OutOfBandModule {
   }
 
   /**
-   * Creates a connection if the out-of-band invitation message contains `hanshake_protocols`
+   * Creates a connection if the out-of-band invitation message contains `handshake_protocols`
    * attribute, except for the case when connection already exists and `reuseConnection` is enabled.
    *
-   * It passes first supported message from `requests~attach` attribute to the agent, execpt for the
+   * It passes first supported message from `requests~attach` attribute to the agent, except for the
    * case reuse of connection is applied when it just sends `handshake-reuse` message to existing
    * connection.
    *
    * Agent role: receiver (invitee)
    *
-   * @param outOfBandRecord
+   * @param outOfBandId
    * @param config
    * @returns out-of-band record and connection record if one has been created.
    */
   public async acceptInvitation(
-    outOfBandRecord: OutOfBandRecord,
+    outOfBandId: string,
     config: {
       autoAcceptConnection?: boolean
       reuseConnection?: boolean
@@ -343,6 +343,8 @@ export class OutOfBandModule {
       routing?: Routing
     }
   ) {
+    const outOfBandRecord = await this.outOfBandService.getById(outOfBandId)
+
     const { outOfBandInvitation } = outOfBandRecord
     const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, routing } = config
     const { handshakeProtocols, services } = outOfBandInvitation

@@ -342,7 +342,7 @@ describe('out of band', () => {
 
       // Accept connection invitation
       let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.acceptInvitation(
-        aliceFaberOutOfBandRecord,
+        aliceFaberOutOfBandRecord.id,
         {
           label: 'alice',
           autoAcceptConnection: true,
