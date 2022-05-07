@@ -31,10 +31,10 @@ import type { Cred, CredDef, CredOffer, CredReq, CredReqMetadata } from 'indy-sd
 
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { AriesFrameworkError } from '../../../../../src/error'
-import { MessageValidator } from '../../../../../src/utils/MessageValidator'
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../../../error'
+import { MessageValidator } from '../../../../utils/MessageValidator'
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'

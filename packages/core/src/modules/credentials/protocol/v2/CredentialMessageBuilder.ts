@@ -14,7 +14,7 @@ import type { V2OfferCredentialMessageOptions } from './messages/V2OfferCredenti
 import type { V2ProposeCredentialMessageProps } from './messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessageOptions } from './messages/V2RequestCredentialMessage'
 
-import { AriesFrameworkError } from '../../../../../src/error/AriesFrameworkError'
+import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { uuid } from '../../../../utils/uuid'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialState } from '../../CredentialState'

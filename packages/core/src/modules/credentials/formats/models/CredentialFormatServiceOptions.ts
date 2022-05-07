@@ -1,5 +1,5 @@
-import type { LinkedAttachment } from '../../../../../src/utils/LinkedAttachment'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import type { ParseRevocationRegistryDefinitionTemplate } from '../../../ledger/services'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
