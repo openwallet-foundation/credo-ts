@@ -198,7 +198,7 @@ describe('Present Proof', () => {
           },
         },
       ],
-      attachments: [
+      appendedAttachments: [
         {
           id: expect.any(String),
           filename: expect.any(String),
@@ -378,7 +378,7 @@ describe('Present Proof', () => {
           },
         },
       ],
-      attachments: [
+      appendedAttachments: [
         {
           id: expect.any(String),
           filename: expect.any(String),

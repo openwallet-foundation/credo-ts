@@ -38,7 +38,8 @@ import { uuid } from '../../../../utils/uuid'
 import { Wallet } from '../../../../wallet'
 import { AckStatus } from '../../../common/messages/AckMessage'
 import { ConnectionService } from '../../../connections'
-import { CredentialRepository, IndyCredentialInfo } from '../../../credentials'
+import { CredentialRepository } from '../../../credentials'
+import { IndyCredentialInfo } from '../../../credentials/protocol/v1/models'
 import { IndyHolderService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
@@ -729,7 +730,7 @@ export class V1ProofService extends ProofService {
     for (const credentialId of credentialIds) {
       // Get the credentialRecord that matches the ID
 
-      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
+      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialIds: [credentialId] })
 
       if (credentialRecord.linkedAttachments) {
         // Get the credentials that have a hashlink as value and are requested

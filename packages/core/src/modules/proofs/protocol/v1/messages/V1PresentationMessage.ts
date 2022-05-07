@@ -33,7 +33,7 @@ export class V1PresentationMessage extends AgentMessage {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
       this.presentationAttachments = options.presentationAttachments
-      this.attachments = options.attachments
+      this.appendedAttachments = options.attachments
     }
   }
 

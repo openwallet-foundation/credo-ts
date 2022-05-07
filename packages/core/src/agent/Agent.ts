@@ -254,7 +254,7 @@ export class Agent {
   }
 
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
-    return await this.messageReceiver.receiveMessage(inboundMessage, session)
+    await this.messageReceiver.receiveMessage(inboundMessage, session)
   }
 
   public get injectionContainer() {

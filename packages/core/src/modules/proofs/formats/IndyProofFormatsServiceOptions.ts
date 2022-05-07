@@ -1,5 +1,5 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
-import type { RevocationInterval } from '../../credentials/models/RevocationInterval'
+import type { RevocationInterval } from '../../credentials/protocol/v1/models/RevocationInterval'
 import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
 import type { RequestProofFormats } from '../models/SharedOptions'
 import type { RequestedAttribute, RequestedPredicate } from '../protocol/v1/models'
