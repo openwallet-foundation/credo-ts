@@ -231,48 +231,51 @@ describe('Present Proof', () => {
     }
     aliceProofRecord = await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
 
-    console.log('aliceProofRecord', JSON.stringify(aliceProofRecord, null, 2))
-
     // Faber waits for the presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
+      timeoutMs: 200000,
     })
 
-    // const presentation = await didCommMessageRepository.findAgentMessage({
-    //   associatedRecordId: faberProofRecord.id,
-    //   messageClass: V2PresentationMessage,
-    // })
+    const presentation = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V2PresentationMessage,
+    })
 
-    // expect(presentation).toMatchObject({
-    //   type: 'https://didcomm.org/present-proof/2.0/presentation',
-    //   formats: [
-    //     {
-    //       attachmentId: expect.any(String),
-    //       format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
-    //     },
-    //   ],
-    //   presentationsAttach: [
-    //     {
-    //       id: expect.any(String),
-    //       mimeType: 'application/json',
-    //       data: {
-    //         base64: expect.any(String),
-    //       },
-    //     },
-    //   ],
-    //   id: expect.any(String),
-    //   thread: {
-    //     threadId: faberProofRecord.threadId,
-    //   },
-    // })
-    // expect(faberProofRecord.id).not.toBeNull()
-    // expect(faberProofRecord).toMatchObject({
-    //   threadId: faberProofRecord.threadId,
-    //   state: ProofState.PresentationReceived,
-    //   protocolVersion: ProofProtocolVersion.V2,
-    // })
+    expect(presentation).toMatchObject({
+      type: 'https://didcomm.org/present-proof/2.0/presentation',
+      formats: [
+        {
+          attachmentId: expect.any(String),
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
+        },
+      ],
+      presentationsAttach: [
+        {
+          id: expect.any(String),
+          mimeType: 'application/json',
+          data: {
+            json: {
+              '@context': expect.any(Array),
+              type: expect.any(Array),
+              verifiableCredential: expect.any(Array),
+            },
+          },
+        },
+      ],
+      id: expect.any(String),
+      thread: {
+        threadId: faberProofRecord.threadId,
+      },
+    })
+    expect(faberProofRecord.id).not.toBeNull()
+    expect(faberProofRecord).toMatchObject({
+      threadId: faberProofRecord.threadId,
+      state: ProofState.PresentationReceived,
+      protocolVersion: ProofProtocolVersion.V2,
+    })
 
     // // Faber accepts the presentation provided by Alice
     // testLogger.test('Faber accepts the presentation provided by Alice')

@@ -1,5 +1,5 @@
 import type { W3cCredential } from '../../../vc/models'
-import type { SignPresentationOptions } from '../../../vc/models/W3cCredentialServiceOptions'
+import type { SignPresentationOptions, VerifyPresentationOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type {
   AutoSelectCredentialOptions,
   ProofRequestFormats,
@@ -254,25 +254,23 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     const requestMessage = JsonTransformer.fromJSON(proofRequestJson, RequestPresentation)
 
     // console.log('proofRequestJson', proofRequestJson)
-
-    // console.log('requestMessage', requestMessage.options.challenge)
-
     const proofPresentationRequestJson = proofFormat?.attachment.getDataAsJson<Attachment>() ?? null
 
     const w3cVerifiablePresentation = JsonTransformer.fromJSON(proofPresentationRequestJson, W3cVerifiablePresentation)
 
     const proof = JsonTransformer.fromJSON(w3cVerifiablePresentation.proof, LinkedDataProof)
 
-    const verify = await this.w3cCredentialService.verifyPresentation({
+    const verifyPresentationOptions: VerifyPresentationOptions = {
       presentation: w3cVerifiablePresentation,
       proofType: proof.type,
       verificationMethod: proof.verificationMethod,
       challenge: requestMessage.options.challenge,
-    })
+    }
 
-    return verify.verified
+    const verifyResult = await this.w3cCredentialService.verifyPresentation(verifyPresentationOptions)
+
+    return verifyResult.verified
   }
-
   public async getRequestedCredentialsForProofRequest(
     options: GetRequestedCredentialsFormat
   ): Promise<AutoSelectCredentialOptions> {
