@@ -1,8 +1,10 @@
 import type { Agent, ConnectionRecord, ProofRecord } from '../src'
+import type { InputDescriptors } from '../src/modules/proofs/formats/presentation-exchange/models'
 import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
   ProposeProofOptions,
+  RequestProofOptions,
 } from '../src/modules/proofs/models/ModuleOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
@@ -12,6 +14,7 @@ import {
   V2_PRESENTATION_EXCHANGE_PRESENTATION,
   V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
 } from '../src/modules/proofs/formats/ProofFormats'
+import { PresentationDefinition } from '../src/modules/proofs/formats/presentation-exchange/models/RequestPresentation'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import {
   V2PresentationMessage,
@@ -277,81 +280,77 @@ describe('Present Proof', () => {
       protocolVersion: ProofProtocolVersion.V2,
     })
 
-    // // Faber accepts the presentation provided by Alice
-    // testLogger.test('Faber accepts the presentation provided by Alice')
-    // await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
+    // Faber accepts the presentation provided by Alice
+    testLogger.test('Faber accepts the presentation provided by Alice')
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
-    // // Alice waits until she received a presentation acknowledgement
-    // testLogger.test('Alice waits until she receives a presentation acknowledgement')
-    // aliceProofRecord = await waitForProofRecord(aliceAgent, {
-    //   threadId: aliceProofRecord.threadId,
-    //   state: ProofState.Done,
-    // })
+    // Alice waits until she received a presentation acknowledgement
+    testLogger.test('Alice waits until she receives a presentation acknowledgement')
+    aliceProofRecord = await waitForProofRecord(aliceAgent, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.Done,
+    })
 
-    // expect(faberProofRecord).toMatchObject({
-    //   // type: ProofRecord.name,
-    //   id: expect.any(String),
-    //   createdAt: expect.any(Date),
-    //   threadId: aliceProofRecord.threadId,
-    //   connectionId: expect.any(String),
-    //   isVerified: true,
-    //   state: ProofState.PresentationReceived,
-    // })
+    expect(faberProofRecord).toMatchObject({
+      // type: ProofRecord.name,
+      id: expect.any(String),
+      createdAt: expect.any(Date),
+      threadId: aliceProofRecord.threadId,
+      connectionId: expect.any(String),
+      isVerified: true,
+      state: ProofState.PresentationReceived,
+    })
 
-    // expect(aliceProofRecord).toMatchObject({
-    //   // type: ProofRecord.name,
-    //   id: expect.any(String),
-    //   createdAt: expect.any(Date),
-    //   threadId: faberProofRecord.threadId,
-    //   connectionId: expect.any(String),
-    //   state: ProofState.Done,
-    // })
+    expect(aliceProofRecord).toMatchObject({
+      // type: ProofRecord.name,
+      id: expect.any(String),
+      createdAt: expect.any(Date),
+      threadId: faberProofRecord.threadId,
+      connectionId: expect.any(String),
+      state: ProofState.Done,
+    })
   })
 
   // test('Faber starts with proof request to Alice', async () => {
-  //   const attributes = {
-  //     name: new ProofAttributeInfo({
-  //       name: 'name',
-  //       restrictions: [
-  //         new AttributeFilter({
-  //           credentialDefinitionId: credDefId,
-  //         }),
+  //   const inputDescriptors: InputDescriptors[] = [
+  //     {
+  //       id: 'citizenship_input',
+  //       name: 'US Passport',
+  //       group: ['A'],
+  //       schema: [
+  //         {
+  //           uri: 'https://w3id.org/citizenship/v1',
+  //         },
   //       ],
-  //     }),
-  //     image_0: new ProofAttributeInfo({
-  //       name: 'image_0',
-  //       restrictions: [
-  //         new AttributeFilter({
-  //           credentialDefinitionId: credDefId,
-  //         }),
-  //       ],
-  //     }),
-  //   }
+  //       constraints: {
+  //         fields: [
+  //           {
+  //             path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
+  //             filter: {
+  //               type: 'date',
+  //               minimum: '1999-5-16',
+  //             },
+  //           },
+  //         ],
+  //       },
+  //     },
+  //   ]
 
-  //   // Sample predicates
-  //   const predicates = {
-  //     age: new ProofPredicateInfo({
-  //       name: 'age',
-  //       predicateType: PredicateType.GreaterThanOrEqualTo,
-  //       predicateValue: 50,
-  //       restrictions: [
-  //         new AttributeFilter({
-  //           credentialDefinitionId: credDefId,
-  //         }),
-  //       ],
-  //     }),
-  //   }
+  //   const presentationDefinition: PresentationDefinition = new PresentationDefinition({
+  //     inputDescriptors,
+  //     format: {
+  //       ldpVc: {
+  //         proofType: ['Ed25519Signature2018'],
+  //       },
+  //     },
+  //   })
 
   //   const requestProofsOptions: RequestProofOptions = {
   //     protocolVersion: ProofProtocolVersion.V2,
   //     connectionId: faberConnection.id,
   //     proofFormats: {
-  //       indy: {
-  //         name: 'proof-request',
-  //         version: '1.0',
-  //         nonce: '1298236324864',
-  //         requestedAttributes: attributes,
-  //         requestedPredicates: predicates,
+  //       presentationExchange: {
+  //         inputDescriptors,
   //       },
   //     },
   //   }
@@ -372,12 +371,15 @@ describe('Present Proof', () => {
   //     messageClass: V2RequestPresentationMessage,
   //   })
 
+  //   console.log('reqeuest', JSON.stringify(request, null, 2))
+
   //   expect(request).toMatchObject({
   //     type: 'https://didcomm.org/present-proof/2.0/request-presentation',
+  //     id: expect.any(String),
   //     formats: [
   //       {
   //         attachmentId: expect.any(String),
-  //         format: ATTACHMENT_FORMAT.V2_PRESENTATION_REQUEST.indy.format,
+  //         format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
   //       },
   //     ],
   //     requestPresentationsAttach: [
@@ -385,16 +387,49 @@ describe('Present Proof', () => {
   //         id: expect.any(String),
   //         mimeType: 'application/json',
   //         data: {
-  //           base64: expect.any(String),
+  //           json: {
+  //             options: {
+  //               challenge: expect.any(String),
+  //               domain: expect.any(String),
+  //             },
+  //             presentation_definition: {
+  //               input_descriptors: [
+  //                 {
+  //                   id: 'citizenship_input',
+  //                   name: 'US Passport',
+  //                   group: ['A'],
+  //                   schema: [
+  //                     {
+  //                       uri: expect.any(String),
+  //                     },
+  //                   ],
+  //                   constraints: {
+  //                     fields: [
+  //                       {
+  //                         path: expect.any(Array),
+  //                         filter: {
+  //                           type: expect.any(String),
+  //                           minimum: expect.any(String),
+  //                         },
+  //                       },
+  //                     ],
+  //                   },
+  //                 },
+  //               ],
+  //               format: {
+  //                 ldpVc: {
+  //                   proofType: ['Ed25519Signature2018'],
+  //                 },
+  //               },
+  //             },
+  //           },
   //         },
   //       },
   //     ],
-  //     id: expect.any(String),
   //   })
-
   //   expect(aliceProofRecord.id).not.toBeNull()
   //   expect(aliceProofRecord).toMatchObject({
-  //     threadId: aliceProofRecord.threadId,
+  //     threadId: faberProofRecord.threadId,
   //     state: ProofState.RequestReceived,
   //     protocolVersion: ProofProtocolVersion.V2,
   //   })
@@ -411,7 +446,7 @@ describe('Present Proof', () => {
 
   //   const acceptPresentationOptions: AcceptPresentationOptions = {
   //     proofRecordId: aliceProofRecord.id,
-  //     proofFormats: { indy: requestedCredentials.indy },
+  //     proofFormats: { presentationExchange: requestedCredentials.presentationExchange },
   //   }
 
   //   await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
@@ -433,7 +468,7 @@ describe('Present Proof', () => {
   //     formats: [
   //       {
   //         attachmentId: expect.any(String),
-  //         format: ATTACHMENT_FORMAT.V2_PRESENTATION.indy.format,
+  //         format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
   //       },
   //     ],
   //     presentationsAttach: [
