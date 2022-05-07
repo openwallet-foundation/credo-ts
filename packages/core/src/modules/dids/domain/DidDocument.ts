@@ -132,7 +132,7 @@ export class DidDocument {
     const purposes = allowedPurposes ?? allPurposes
 
     for (const purpose of purposes) {
-      for (const key of this[purpose]) {
+      for (const key of this[purpose] ?? []) {
         if (typeof key === 'string' && key.endsWith(keyId)) {
           return this.dereferenceVerificationMethod(key)
         } else if (typeof key !== 'string' && key.id.endsWith(keyId)) {

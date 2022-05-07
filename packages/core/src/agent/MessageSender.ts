@@ -458,11 +458,13 @@ export function isDidCommTransportQueue(serviceEndpoint: string): serviceEndpoin
 }
 
 function getAuthenticationKeys(didDocument: DidDocument) {
-  return didDocument.authentication.map((authentication) => {
-    const verificationMethod =
-      typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
-    const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
-    const key = getKeyFromVerificationMethod(verificationMethod)
-    return key
-  })
+  return (
+    didDocument.authentication?.map((authentication) => {
+      const verificationMethod =
+        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
+      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+      const key = getKeyFromVerificationMethod(verificationMethod)
+      return key
+    }) ?? []
+  )
 }

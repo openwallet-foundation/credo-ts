@@ -3,9 +3,9 @@ import type { DidDoc, PublicKey } from '../models'
 
 import { KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
-import { DidPeer, Key, DidDocumentBuilder } from '../../dids'
+import { Key, DidDocumentBuilder } from '../../dids'
 import { getEd25519VerificationMethod } from '../../dids/domain/key-type/ed25519'
-import { PeerDidNumAlgo } from '../../dids/methods/peer/DidPeer'
+import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 
 export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
   const didDocumentBuilder = new DidDocumentBuilder('')
@@ -31,8 +31,10 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
 
   const didDocument = didDocumentBuilder.build()
 
-  const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
-  return peerDid.didDocument
+  const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
+  didDocument.id = peerDid
+
+  return didDocument
 }
 
 function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {

@@ -1,4 +1,4 @@
-import { ConnectionInvitationMessage, ConnectionRecord, DidDoc } from '../../modules/connections'
+import { ConnectionInvitationMessage, ConnectionRecord } from '../../modules/connections'
 import { JsonTransformer } from '../JsonTransformer'
 
 describe('JsonTransformer', () => {

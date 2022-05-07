@@ -21,10 +21,10 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
-import { Key, DidPeer, IndyAgentService } from '../../dids'
+import { Key, IndyAgentService } from '../../dids'
 import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
 import { didKeyToVerkey } from '../../dids/helpers'
-import { PeerDidNumAlgo } from '../../dids/methods/peer/DidPeer'
+import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRepository, DidRecord } from '../../dids/repository'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
@@ -665,9 +665,10 @@ export class ConnectionService {
   }
 
   private async createDid({ role, didDocument }: { role: DidDocumentRole; didDocument: DidDocument }) {
-    const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
+    const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
+    didDocument.id = peerDid
     const didRecord = new DidRecord({
-      id: peerDid.did,
+      id: peerDid,
       role,
       didDocument,
       tags: {
@@ -686,7 +687,7 @@ export class ConnectionService {
 
     await this.didRepository.save(didRecord)
     this.logger.debug('Did record created.', didRecord)
-    return { did: peerDid.did, didDocument }
+    return { did: peerDid, didDocument }
   }
 
   private createDidDoc(routing: Routing) {

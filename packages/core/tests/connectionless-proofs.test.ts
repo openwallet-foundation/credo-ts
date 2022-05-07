@@ -7,8 +7,8 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { V1CredentialPreview } from '../src/modules/credentials'
 import { HandshakeProtocol } from '../src/modules/connections'
+import { V1CredentialPreview } from '../src/modules/credentials'
 import {
   PredicateType,
   ProofState,

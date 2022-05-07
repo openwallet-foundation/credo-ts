@@ -21,7 +21,8 @@ import { createDidDocumentFromServices } from '../dids/domain/createPeerDidFromS
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 import { didKeyToInstanceOfKey, didKeyToVerkey } from '../dids/helpers'
 import { DidKey } from '../dids/methods/key/DidKey'
-import { DidPeer, PeerDidNumAlgo } from '../dids/methods/peer/DidPeer'
+import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../dids/methods/peer/didPeer'
+import { didDocumentJsonToNumAlgo1Did } from '../dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../dids/repository'
 
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
@@ -96,18 +97,18 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? this.config.label
     const { verkey } = routing
-    const { peerDid, didDocument } = await this.createPeerDidDoc(this.routingToServices(routing))
+    const didDocument = await this.createPeerDidDoc(this.routingToServices(routing))
     const parentThreadId = outOfBandInvitation.id
 
-    const message = new DidExchangeRequestMessage({ label, parentThreadId, did: peerDid.did, goal, goalCode })
+    const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
     // Create sign attachment containing didDoc
-    if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
+    if (getNumAlgoFromPeerDid(didDocument.id) === PeerDidNumAlgo.GenesisDoc) {
       const didDocAttach = await this.createSignedAttachment(didDocument, [verkey].map(didKeyToVerkey))
       message.didDoc = didDocAttach
     }
 
-    connectionRecord.did = peerDid.did
+    connectionRecord.did = didDocument.id
     connectionRecord.threadId = message.id
 
     if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
@@ -158,10 +159,10 @@ export class DidExchangeProtocol {
         }
       )
     }
-    const peerDid = DidPeer.fromDid(message.did)
-    if (peerDid.numAlgo !== PeerDidNumAlgo.GenesisDoc) {
+    const numAlgo = getNumAlgoFromPeerDid(message.did)
+    if (numAlgo !== PeerDidNumAlgo.GenesisDoc) {
       throw new DidExchangeProblemReportError(
-        `Unsupported numalgo ${peerDid.numAlgo}. Supported numalgos are [${PeerDidNumAlgo.GenesisDoc}]`,
+        `Unsupported numalgo ${numAlgo}. Supported numalgos are [${PeerDidNumAlgo.GenesisDoc}]`,
         {
           problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
         }
@@ -245,10 +246,10 @@ export class DidExchangeProtocol {
       }))
     }
 
-    const { peerDid, didDocument } = await this.createPeerDidDoc(services)
-    const message = new DidExchangeResponseMessage({ did: peerDid.did, threadId })
+    const didDocument = await this.createPeerDidDoc(services)
+    const message = new DidExchangeResponseMessage({ did: didDocument.id, threadId })
 
-    if (peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc) {
+    if (getNumAlgoFromPeerDid(didDocument.id) === PeerDidNumAlgo.GenesisDoc) {
       const didDocAttach = await this.createSignedAttachment(
         didDocument,
         Array.from(
@@ -263,7 +264,7 @@ export class DidExchangeProtocol {
       message.didDoc = didDocAttach
     }
 
-    connectionRecord.did = peerDid.did
+    connectionRecord.did = didDocument.id
 
     await this.updateState(DidExchangeResponseMessage.type, connectionRecord)
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} end`, { connectionRecord, message })
@@ -297,10 +298,10 @@ export class DidExchangeProtocol {
         }
       )
     }
-    const peerDid = DidPeer.fromDid(message.did)
-    if (peerDid.numAlgo !== PeerDidNumAlgo.GenesisDoc) {
+    const numAlgo = getNumAlgoFromPeerDid(message.did)
+    if (numAlgo !== PeerDidNumAlgo.GenesisDoc) {
       throw new DidExchangeProblemReportError(
-        `Unsupported numalgo ${peerDid.numAlgo}. Supported numalgos are [${PeerDidNumAlgo.GenesisDoc}]`,
+        `Unsupported numalgo ${numAlgo}. Supported numalgos are [${PeerDidNumAlgo.GenesisDoc}]`,
         {
           problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
         }
@@ -403,18 +404,18 @@ export class DidExchangeProtocol {
 
   private async createPeerDidDoc(services: ResolvedDidCommService[]) {
     const didDocument = createDidDocumentFromServices(services)
-    const peerDid = DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.GenesisDoc)
+
+    const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
+    didDocument.id = peerDid
 
     const didRecord = new DidRecord({
-      id: peerDid.did,
+      id: peerDid,
       role: DidDocumentRole.Created,
-      // It is important to take the did document from the PeerDid class
-      // as it will have the id property
-      didDocument: peerDid.numAlgo === PeerDidNumAlgo.GenesisDoc ? peerDid.didDocument : undefined,
+      didDocument,
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeyFingerprints: peerDid.didDocument.recipientKeys.map((key) => key.fingerprint),
+        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
       },
     })
 
@@ -427,7 +428,7 @@ export class DidExchangeProtocol {
 
     await this.didRepository.save(didRecord)
     this.logger.debug('Did record created.', didRecord)
-    return { peerDid, didDocument }
+    return didDocument
   }
 
   private async createSignedAttachment(didDoc: DidDocument, verkeys: string[]) {
@@ -495,7 +496,7 @@ export class DidExchangeProtocol {
 
     const didDocument = JsonTransformer.fromJSON(json, DidDocument)
     const didDocumentKeysBase58 = didDocument.authentication
-      .map((authentication) => {
+      ?.map((authentication) => {
         const verificationMethod =
           typeof authentication === 'string'
             ? didDocument.dereferenceVerificationMethod(authentication)
@@ -508,7 +509,7 @@ export class DidExchangeProtocol {
 
     this.logger.trace('JWS verification result', { isValid, signerVerkeys, didDocumentKeysBase58 })
 
-    if (!isValid || !signerVerkeys.every((verkey) => didDocumentKeysBase58.includes(verkey))) {
+    if (!isValid || !signerVerkeys.every((verkey) => didDocumentKeysBase58?.includes(verkey))) {
       const problemCode =
         message.type === DidExchangeRequestMessage.type
           ? DidExchangeProblemReportReason.RequestNotAccepted

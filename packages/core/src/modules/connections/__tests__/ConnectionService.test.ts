@@ -11,9 +11,9 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
-import { DidKey, DidPeer, IndyAgentService, Key } from '../../dids'
+import { DidKey, IndyAgentService, Key } from '../../dids'
 import { DidCommV1Service } from '../../dids/domain/service/DidCommV1Service'
-import { PeerDidNumAlgo } from '../../dids/methods/peer/DidPeer'
+import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRepository } from '../../dids/repository'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
@@ -215,7 +215,7 @@ describe('ConnectionService', () => {
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
-      expect(processedConnection.theirDid).toBe('did:peer:1zQmbCWxDcdq3rxQ1LVTELSWeNMsmiPdwAJzwzHLVDFfVks5')
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmT9fa3LQf8sBMuMWXSnACVmbrsSKBjRsJNbpmeXynp7Vr')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
       expect(processedConnection.imageUrl).toBe(connectionImageUrl)
@@ -275,7 +275,7 @@ describe('ConnectionService', () => {
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
-      expect(processedConnection.theirDid).toBe('did:peer:1zQmbCWxDcdq3rxQ1LVTELSWeNMsmiPdwAJzwzHLVDFfVks5')
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmT9fa3LQf8sBMuMWXSnACVmbrsSKBjRsJNbpmeXynp7Vr')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
 
@@ -490,13 +490,11 @@ describe('ConnectionService', () => {
 
       const processedConnection = await connectionService.processResponse(messageContext, outOfBandRecord)
 
-      const peerDid = DidPeer.fromDidDocument(
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        convertToNewDidDocument(otherPartyConnection.didDoc!),
-        PeerDidNumAlgo.GenesisDoc
-      )
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const peerDid = didDocumentJsonToNumAlgo1Did(convertToNewDidDocument(otherPartyConnection.didDoc!).toJSON())
+
       expect(processedConnection.state).toBe(DidExchangeState.ResponseReceived)
-      expect(processedConnection.theirDid).toBe(peerDid.did)
+      expect(processedConnection.theirDid).toBe(peerDid)
     })
 
     it(`throws an error when connection role is ${DidExchangeRole.Responder} and not ${DidExchangeRole.Requester}`, async () => {

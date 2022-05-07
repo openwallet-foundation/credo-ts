@@ -26,7 +26,7 @@ export class TransportService {
   }
 
   public hasInboundEndpoint(didDocument: DidDocument): boolean {
-    return Boolean(didDocument.service.find((s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE))
+    return Boolean(didDocument.service?.find((s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE))
   }
 
   public findSessionById(sessionId: string) {

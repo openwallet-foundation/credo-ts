@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { CredentialRecord, CredentialOfferTemplate } from '../src/modules/credentials'
+import type { OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
 import type { DidCommV1Service } from '../src/modules/dids'
-import type { AgentMessageReceivedEvent } from '@aries-framework/core'
+import type { AgentMessageReceivedEvent, CredentialExchangeRecord } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
 
@@ -25,8 +25,9 @@ import {
   AgentEventTypes,
   AriesFrameworkError,
   AutoAcceptCredential,
-  CredentialPreview,
   CredentialState,
+  V1CredentialPreview,
+  CredentialProtocolVersion,
 } from '@aries-framework/core' // Maybe it's not bad to import from package?
 
 const faberConfig = getBaseConfig('Faber Agent OOB', {
@@ -56,7 +57,7 @@ describe('out of band', () => {
 
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credentialTemplate: CredentialOfferTemplate
+  let credentialTemplate: OfferCredentialOptions
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -79,13 +80,18 @@ describe('out of band', () => {
     const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
 
     credentialTemplate = {
-      credentialDefinitionId: definition.id,
-      preview: CredentialPreview.fromRecord({
-        name: 'name',
-        age: 'age',
-        profile_picture: 'profile_picture',
-        'x-ray': 'x-ray',
-      }),
+      protocolVersion: CredentialProtocolVersion.V1,
+      credentialFormats: {
+        indy: {
+          attributes: V1CredentialPreview.fromRecord({
+            name: 'name',
+            age: 'age',
+            profile_picture: 'profile_picture',
+            'x-ray': 'x-ray',
+          }).attributes,
+          credentialDefinitionId: definition.id,
+        },
+      },
       autoAcceptCredential: AutoAcceptCredential.Never,
     }
   })
@@ -153,11 +159,11 @@ describe('out of band', () => {
     })
 
     test('create OOB message only with requests', async () => {
-      const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         label: 'test-connection',
         handshake: false,
-        messages: [offerMessage],
+        messages: [message],
       })
 
       // expect supported handshake protocols
@@ -177,11 +183,11 @@ describe('out of band', () => {
     })
 
     test('create OOB message with both handshake and requests', async () => {
-      const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         label: 'test-connection',
         handshakeProtocols: [HandshakeProtocol.Connections],
-        messages: [offerMessage],
+        messages: [message],
       })
 
       // expect supported handshake protocols
@@ -283,17 +289,17 @@ describe('out of band', () => {
     })
 
     test('process credential offer requests based on OOB message', async () => {
-      const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         ...issueCredentialConfig,
-        messages: [offerMessage],
+        messages: [message],
       })
 
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, receiveInvitationConfig)
 
-      let credentials: CredentialRecord[] = []
+      let credentials: CredentialExchangeRecord[] = []
       while (credentials.length < 1) {
         credentials = await aliceAgent.credentials.getAll()
         await sleep(100)
@@ -308,10 +314,10 @@ describe('out of band', () => {
       const eventListener = jest.fn()
       aliceAgent.events.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, eventListener)
 
-      const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         ...makeConnectionConfig,
-        messages: [offerMessage],
+        messages: [message],
       })
 
       // First, we crate a connection but we won't accept it, therefore it won't be ready
@@ -324,10 +330,10 @@ describe('out of band', () => {
     })
 
     test('make a connection based on OOB invitation and process requests after the acceptation', async () => {
-      const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
       const outOfBandRecord = await faberAgent.oob.createInvitation({
         ...makeConnectionConfig,
-        messages: [offerMessage],
+        messages: [message],
       })
       const { outOfBandInvitation } = outOfBandRecord
 
@@ -358,7 +364,7 @@ describe('out of band', () => {
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
 
       // The credential should be processed when connection is made. It asynchronous so it can take a moment.
-      let credentials: CredentialRecord[] = []
+      let credentials: CredentialExchangeRecord[] = []
       while (credentials.length < 1) {
         credentials = await aliceAgent.credentials.getAll()
         await sleep(100)
@@ -379,7 +385,7 @@ describe('out of band', () => {
       // To simulate the usage of the same connection we set up the same service as it is in
       // the existing faber connection to the out-of-band message services attribute.
       const theirDidDocument = await aliceAgent.dids.resolveDidDocument(firstAliceFaberConnection.theirDid!)
-      const didDocumentService = theirDidDocument.service[0] as DidCommV1Service
+      const [didDocumentService] = (theirDidDocument.service ?? []) as DidCommV1Service[]
 
       // Convert did-communication service into an out of band service
       // Maybe extract this into a util in the future
@@ -392,6 +398,8 @@ describe('out of band', () => {
               Key.fromPublicKeyBase58(theirDidDocument.dereferenceKey(keyId).publicKeyBase58!, KeyType.Ed25519)
             ).did
         ),
+        // We assume routingKeys are did:key:123#123 keys
+        routingKeys: didDocumentService.routingKeys?.map((keyId) => DidKey.fromDid(keyId).did),
       })
       outOfBandInvitation.services = [oobService]
 
@@ -499,10 +507,10 @@ describe('out of band', () => {
     })
 
     test('throw an error when a did is used in the out of band message', async () => {
-      const { offerMessage } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         ...issueCredentialConfig,
-        messages: [offerMessage],
+        messages: [message],
       })
       outOfBandInvitation.services = ['somedid']
 

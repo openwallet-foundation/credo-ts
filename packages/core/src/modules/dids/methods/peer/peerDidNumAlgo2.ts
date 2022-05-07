@@ -3,7 +3,7 @@ import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCo
 import type { DidDocument, VerificationMethod } from '../../domain'
 
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
-import { DidDocumentService, Key } from '../../domain'
+import { DidCommV1Service, DidDocumentService, Key } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { getKeyDidMappingByKeyType, getKeyDidMappingByVerificationMethod } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
@@ -150,17 +150,28 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
 }
 
 export function outOfBandServiceToNumAlgo2Did(service: OutOfBandDidCommService) {
-  let did = 'did:peer:2'
-  const didKey = DidKey.fromDid(service.recipientKeys[0])
+  // FIXME: add the key entries for the recipientKeys to the did document.
+  const didDocument = new DidDocumentBuilder('')
+    .addService(
+      new DidCommV1Service({
+        id: service.id,
+        serviceEndpoint: service.serviceEndpoint,
+        accept: service.accept,
+        // FIXME: this should actually be local key references, not did:key:123#456 references
+        recipientKeys: service.recipientKeys.map((recipientKey) => {
+          const did = DidKey.fromDid(recipientKey)
+          return `${did.did}#${did.key.fingerprint}`
+        }),
+        // Map did:key:xxx to actual did:key:xxx#123
+        routingKeys: service.routingKeys?.map((routingKey) => {
+          const did = DidKey.fromDid(routingKey)
+          return `${did.did}#${did.key.fingerprint}`
+        }),
+      })
+    )
+    .build()
 
-  const encoded = `.${DidPeerPurpose.Encryption}${didKey.key.fingerprint}`
-  did += encoded
-
-  const serviceOnlyWithEndpoint = {
-    serviceEndpoint: service.serviceEndpoint,
-  }
-  const encodedServices = JsonEncoder.toBase64URL(abbreviateServiceJson(serviceOnlyWithEndpoint))
-  did += `.${DidPeerPurpose.Service}${encodedServices}`
+  const did = didDocumentToNumAlgo2Did(didDocument)
 
   return did
 }
