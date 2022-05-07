@@ -5,8 +5,6 @@
     "https://w3id.org/security/suites/x25519-2019/v1"
   ],
   "id": "did:sov:R1xKJw17sUoXhejEpugMYJ",
-  "alsoKnownAs": [],
-  "controller": [],
   "verificationMethod": [
     {
       "type": "Ed25519VerificationKey2018",
@@ -24,8 +22,6 @@
   "authentication": ["did:sov:R1xKJw17sUoXhejEpugMYJ#key-1"],
   "assertionMethod": ["did:sov:R1xKJw17sUoXhejEpugMYJ#key-1"],
   "keyAgreement": ["did:sov:R1xKJw17sUoXhejEpugMYJ#key-agreement-1"],
-  "capabilityDelegation": [],
-  "capabilityInvocation": [],
   "service": [
     {
       "id": "did:sov:R1xKJw17sUoXhejEpugMYJ#endpoint",

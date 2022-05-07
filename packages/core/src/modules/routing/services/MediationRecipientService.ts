@@ -274,20 +274,20 @@ export class MediationRecipientService {
   public async processDelivery(messageContext: InboundMessageContext<MessageDeliveryMessage>) {
     const connection = messageContext.assertReadyConnection()
 
-    const { attachments } = messageContext.message
+    const { appendedAttachments } = messageContext.message
 
     const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Recipient)
 
-    if (!attachments)
+    if (!appendedAttachments)
       throw new ProblemReportError('Error processing attachments', {
         problemCode: RoutingProblemReportReason.ErrorProcessingAttachments,
       })
 
     const ids: string[] = []
-    for (const attachment of attachments) {
+    for (const attachment of appendedAttachments) {
       ids.push(attachment.id)
 
       this.eventEmitter.emit<AgentMessageReceivedEvent>({
