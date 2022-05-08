@@ -15,6 +15,7 @@ import type {
   CreateRequestOptions,
   ProcessPresentationOptions,
   ProcessProposalOptions,
+  ProcessRequestOptions,
 } from '../models/ProofFormatServiceOptions'
 import type { InputDescriptorsSchemaOptions, SchemaOptions } from './models'
 
@@ -28,8 +29,6 @@ import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMes
 import { JsonTransformer } from '../../../../utils'
 import { uuid } from '../../../../utils/uuid'
 import { DidResolverService } from '../../../dids'
-import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
-import { IndyLedgerService } from '../../../ledger'
 import { W3cCredentialService } from '../../../vc'
 import { W3cVerifiableCredential } from '../../../vc/models'
 import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
@@ -48,30 +47,54 @@ import { ClaimFormatSchema, PresentationDefinition, RequestPresentation } from '
 
 @scoped(Lifecycle.ContainerScoped)
 export class PresentationExchangeFormatService extends ProofFormatService {
-  private indyHolderService: IndyHolderService
-  private indyVerifierService: IndyVerifierService
-  private indyRevocationService: IndyRevocationService
-  private ledgerService: IndyLedgerService
   private w3cCredentialService: W3cCredentialService
   private didResolver: DidResolverService
 
   public constructor(
     agentConfig: AgentConfig,
-    indyHolderService: IndyHolderService,
-    indyVerifierService: IndyVerifierService,
-    indyRevocationService: IndyRevocationService,
-    ledgerService: IndyLedgerService,
     didCommMessageRepository: DidCommMessageRepository,
     w3cCredentialService: W3cCredentialService,
     didResolver: DidResolverService
   ) {
     super(didCommMessageRepository, agentConfig)
-    this.indyHolderService = indyHolderService
-    this.indyVerifierService = indyVerifierService
-    this.indyRevocationService = indyRevocationService
-    this.ledgerService = ledgerService
     this.w3cCredentialService = w3cCredentialService
     this.didResolver = didResolver
+  }
+
+  public async createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat> {
+    if (!options.formats.presentationExchange) {
+      throw Error('Presentation Exchange format missing while creating proof proposal.')
+    }
+
+    if (!options.formats.presentationExchange.inputDescriptors) {
+      throw Error('Input Descriptor missing while creating proof proposal.')
+    }
+
+    const inputDescriptorsSchemaOptions: InputDescriptorsSchemaOptions = {
+      inputDescriptors: options.formats.presentationExchange.inputDescriptors,
+    }
+
+    const proposalInputDescriptor = new InputDescriptorsSchema(inputDescriptorsSchemaOptions)
+    const attachId = options.attachId ?? uuid()
+
+    const format = new ProofFormatSpec({
+      attachmentId: attachId,
+      format: V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
+    })
+
+    const attachment = new Attachment({
+      id: attachId,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        json: proposalInputDescriptor.toJSON(),
+      }),
+    })
+
+    return { format, attachment }
+  }
+
+  public processProposal(options: ProcessProposalOptions): void {
+    throw new Error('Method not implemented.')
   }
 
   public async createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats> {
@@ -97,51 +120,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     return {
       presentationExchange: presentationExchangeRequestMessage,
     }
-  }
-
-  public createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat> {
-    throw new Error('Method not implemented.')
-  }
-
-  public processProposal(options: ProcessProposalOptions): void {
-    throw new Error('Method not implemented.')
-  }
-
-  public async createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat> {
-    if (!options.formats.presentationExchange) {
-      throw Error('Presentation Exchange format missing')
-    }
-
-    const presentationDefinition = JsonTransformer.fromJSON(
-      options.formats.presentationExchange,
-      PresentationDefinition
-    )
-
-    if (!presentationDefinition.inputDescriptors) {
-      throw Error('Input Descriptor missing while creating the request in presentation exchange service.')
-    }
-
-    const inputDescriptorsSchemaOptions: InputDescriptorsSchemaOptions = {
-      inputDescriptors: presentationDefinition.inputDescriptors,
-    }
-
-    const proposalInputDescriptor = new InputDescriptorsSchema(inputDescriptorsSchemaOptions)
-    const attachId = options.attachId ?? uuid()
-
-    const format = new ProofFormatSpec({
-      attachmentId: attachId,
-      format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
-    })
-
-    const attachment = new Attachment({
-      id: attachId,
-      mimeType: 'application/json',
-      data: new AttachmentData({
-        json: proposalInputDescriptor.toJSON(),
-      }),
-    })
-
-    return { format, attachment }
   }
 
   public async createRequestAsResponse(options: CreateRequestAsResponseOptions): Promise<ProofAttachmentFormat> {
@@ -174,6 +152,58 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     })
 
     return { format, attachment }
+  }
+
+  public async createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat> {
+    if (!options.formats.presentationExchange) {
+      throw Error('Presentation Exchange format missing')
+    }
+
+    const presentationExchangeFormat = options.formats.presentationExchange
+
+    const requestPresentation = JsonTransformer.fromJSON(presentationExchangeFormat, RequestPresentation)
+
+    if (!requestPresentation.presentationDefinition.inputDescriptors) {
+      throw Error('Input Descriptor missing while creating the request in presentation exchange service.')
+    }
+
+    const inputDescriptorsSchemaOptions: InputDescriptorsSchemaOptions = {
+      inputDescriptors: requestPresentation.presentationDefinition.inputDescriptors,
+    }
+
+    const presentationDefinition: PresentationDefinition = new PresentationDefinition({
+      inputDescriptors: inputDescriptorsSchemaOptions.inputDescriptors,
+      format: requestPresentation.presentationDefinition.format,
+    })
+
+    const presentationExchangeRequestMessage: RequestPresentation = new RequestPresentation({
+      options: {
+        challenge: requestPresentation.options.challenge ?? uuid(),
+        domain: '',
+      },
+      presentationDefinition: presentationDefinition,
+    })
+
+    const attachId = options.attachId ?? uuid()
+
+    const format = new ProofFormatSpec({
+      attachmentId: attachId,
+      format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
+    })
+
+    const attachment = new Attachment({
+      id: attachId,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        json: presentationExchangeRequestMessage.toJSON(),
+      }),
+    })
+
+    return { format, attachment }
+  }
+
+  public processRequest(options: ProcessRequestOptions): void {
+    throw new Error('Method not implemented.')
   }
 
   public async createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat> {
@@ -271,6 +301,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     return verifyResult.verified
   }
+
   public async getRequestedCredentialsForProofRequest(
     options: GetRequestedCredentialsFormat
   ): Promise<AutoSelectCredentialOptions> {

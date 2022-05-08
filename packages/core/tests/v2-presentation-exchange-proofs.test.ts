@@ -311,215 +311,224 @@ describe('Present Proof', () => {
     })
   })
 
-  // test('Faber starts with proof request to Alice', async () => {
-  //   const inputDescriptors: InputDescriptors[] = [
-  //     {
-  //       id: 'citizenship_input',
-  //       name: 'US Passport',
-  //       group: ['A'],
-  //       schema: [
-  //         {
-  //           uri: 'https://w3id.org/citizenship/v1',
-  //         },
-  //       ],
-  //       constraints: {
-  //         fields: [
-  //           {
-  //             path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
-  //             filter: {
-  //               type: 'date',
-  //               minimum: '1999-5-16',
-  //             },
-  //           },
-  //         ],
-  //       },
-  //     },
-  //   ]
+  test('Faber starts with proof request to Alice', async () => {
+    const inputDescriptors: InputDescriptors[] = [
+      {
+        id: 'citizenship_input',
+        name: 'US Passport',
+        group: ['A'],
+        schema: [
+          {
+            uri: 'https://w3id.org/citizenship/v1',
+          },
+        ],
+        constraints: {
+          fields: [
+            {
+              path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
+              filter: {
+                type: 'date',
+                minimum: '1999-5-16',
+              },
+            },
+          ],
+        },
+      },
+    ]
 
-  //   const presentationDefinition: PresentationDefinition = new PresentationDefinition({
-  //     inputDescriptors,
-  //     format: {
-  //       ldpVc: {
-  //         proofType: ['Ed25519Signature2018'],
-  //       },
-  //     },
-  //   })
+    const presentationDefinition: PresentationDefinition = new PresentationDefinition({
+      inputDescriptors,
+      format: {
+        ldpVc: {
+          proofType: ['Ed25519Signature2018'],
+        },
+      },
+    })
 
-  //   const requestProofsOptions: RequestProofOptions = {
-  //     protocolVersion: ProofProtocolVersion.V2,
-  //     connectionId: faberConnection.id,
-  //     proofFormats: {
-  //       presentationExchange: {
-  //         inputDescriptors,
-  //       },
-  //     },
-  //   }
+    const requestProofsOptions: RequestProofOptions = {
+      protocolVersion: ProofProtocolVersion.V2,
+      connectionId: faberConnection.id,
+      proofFormats: {
+        presentationExchange: {
+          options: {
+            challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            domain: '',
+          },
+          presentationDefinition,
+        },
+      },
+    }
 
-  //   // Faber sends a presentation request to Alice
-  //   testLogger.test('Faber sends a presentation request to Alice')
-  //   faberProofRecord = await faberAgent.proofs.requestProof(requestProofsOptions)
+    // Faber sends a presentation request to Alice
+    testLogger.test('Faber sends a presentation request to Alice')
+    faberProofRecord = await faberAgent.proofs.requestProof(requestProofsOptions)
 
-  //   // Alice waits for presentation request from Faber
-  //   testLogger.test('Alice waits for presentation request from Faber')
-  //   aliceProofRecord = await waitForProofRecord(aliceAgent, {
-  //     threadId: faberProofRecord.threadId,
-  //     state: ProofState.RequestReceived,
-  //   })
+    // Alice waits for presentation request from Faber
+    testLogger.test('Alice waits for presentation request from Faber')
+    aliceProofRecord = await waitForProofRecord(aliceAgent, {
+      threadId: faberProofRecord.threadId,
+      state: ProofState.RequestReceived,
+    })
 
-  //   const request = await didCommMessageRepository.findAgentMessage({
-  //     associatedRecordId: faberProofRecord.id,
-  //     messageClass: V2RequestPresentationMessage,
-  //   })
+    const request = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V2RequestPresentationMessage,
+    })
 
-  //   console.log('reqeuest', JSON.stringify(request, null, 2))
+    // console.log('request', JSON.stringify(request, null, 2))
 
-  //   expect(request).toMatchObject({
-  //     type: 'https://didcomm.org/present-proof/2.0/request-presentation',
-  //     id: expect.any(String),
-  //     formats: [
-  //       {
-  //         attachmentId: expect.any(String),
-  //         format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
-  //       },
-  //     ],
-  //     requestPresentationsAttach: [
-  //       {
-  //         id: expect.any(String),
-  //         mimeType: 'application/json',
-  //         data: {
-  //           json: {
-  //             options: {
-  //               challenge: expect.any(String),
-  //               domain: expect.any(String),
-  //             },
-  //             presentation_definition: {
-  //               input_descriptors: [
-  //                 {
-  //                   id: 'citizenship_input',
-  //                   name: 'US Passport',
-  //                   group: ['A'],
-  //                   schema: [
-  //                     {
-  //                       uri: expect.any(String),
-  //                     },
-  //                   ],
-  //                   constraints: {
-  //                     fields: [
-  //                       {
-  //                         path: expect.any(Array),
-  //                         filter: {
-  //                           type: expect.any(String),
-  //                           minimum: expect.any(String),
-  //                         },
-  //                       },
-  //                     ],
-  //                   },
-  //                 },
-  //               ],
-  //               format: {
-  //                 ldpVc: {
-  //                   proofType: ['Ed25519Signature2018'],
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         },
-  //       },
-  //     ],
-  //   })
-  //   expect(aliceProofRecord.id).not.toBeNull()
-  //   expect(aliceProofRecord).toMatchObject({
-  //     threadId: faberProofRecord.threadId,
-  //     state: ProofState.RequestReceived,
-  //     protocolVersion: ProofProtocolVersion.V2,
-  //   })
+    expect(request).toMatchObject({
+      type: 'https://didcomm.org/present-proof/2.0/request-presentation',
+      id: expect.any(String),
+      formats: [
+        {
+          attachmentId: expect.any(String),
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
+        },
+      ],
+      requestPresentationsAttach: [
+        {
+          id: expect.any(String),
+          mimeType: 'application/json',
+          data: {
+            json: {
+              options: {
+                challenge: expect.any(String),
+                domain: expect.any(String),
+              },
+              presentation_definition: {
+                input_descriptors: [
+                  {
+                    id: 'citizenship_input',
+                    name: 'US Passport',
+                    group: ['A'],
+                    schema: [
+                      {
+                        uri: expect.any(String),
+                      },
+                    ],
+                    constraints: {
+                      fields: [
+                        {
+                          path: expect.any(Array),
+                          filter: {
+                            type: expect.any(String),
+                            minimum: expect.any(String),
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+                format: {
+                  ldpVc: {
+                    proofType: ['Ed25519Signature2018'],
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    })
+    expect(aliceProofRecord.id).not.toBeNull()
+    expect(aliceProofRecord).toMatchObject({
+      threadId: faberProofRecord.threadId,
+      state: ProofState.RequestReceived,
+      protocolVersion: ProofProtocolVersion.V2,
+    })
 
-  //   // Alice retrieves the requested credentials and accepts the presentation request
-  //   testLogger.test('Alice accepts presentation request from Faber')
+    // Alice retrieves the requested credentials and accepts the presentation request
+    testLogger.test('Alice accepts presentation request from Faber')
 
-  //   const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-  //     proofRecordId: aliceProofRecord.id,
-  //     config: {
-  //       filterByPresentationPreview: true,
-  //     },
-  //   })
+    const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
+      proofRecordId: aliceProofRecord.id,
+      config: {
+        filterByPresentationPreview: true,
+      },
+    })
 
-  //   const acceptPresentationOptions: AcceptPresentationOptions = {
-  //     proofRecordId: aliceProofRecord.id,
-  //     proofFormats: { presentationExchange: requestedCredentials.presentationExchange },
-  //   }
+    const acceptPresentationOptions: AcceptPresentationOptions = {
+      proofRecordId: aliceProofRecord.id,
+      proofFormats: { presentationExchange: requestedCredentials.presentationExchange },
+    }
 
-  //   await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+    aliceProofRecord = await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
 
-  //   // Faber waits until it receives a presentation from Alice
-  //   testLogger.test('Faber waits for presentation from Alice')
-  //   faberProofRecord = await waitForProofRecord(faberAgent, {
-  //     threadId: aliceProofRecord.threadId,
-  //     state: ProofState.PresentationReceived,
-  //   })
+    // Faber waits for the presentation from Alice
+    testLogger.test('Faber waits for presentation from Alice')
+    faberProofRecord = await waitForProofRecord(faberAgent, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.PresentationReceived,
+      timeoutMs: 200000,
+    })
 
-  //   const presentation = await didCommMessageRepository.findAgentMessage({
-  //     associatedRecordId: faberProofRecord.id,
-  //     messageClass: V2PresentationMessage,
-  //   })
+    const presentation = await didCommMessageRepository.findAgentMessage({
+      associatedRecordId: faberProofRecord.id,
+      messageClass: V2PresentationMessage,
+    })
 
-  //   expect(presentation).toMatchObject({
-  //     type: 'https://didcomm.org/present-proof/2.0/presentation',
-  //     formats: [
-  //       {
-  //         attachmentId: expect.any(String),
-  //         format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
-  //       },
-  //     ],
-  //     presentationsAttach: [
-  //       {
-  //         id: expect.any(String),
-  //         mimeType: 'application/json',
-  //         data: {
-  //           base64: expect.any(String),
-  //         },
-  //       },
-  //     ],
-  //     id: expect.any(String),
-  //     thread: {
-  //       threadId: faberProofRecord.threadId,
-  //     },
-  //   })
-  //   expect(faberProofRecord.id).not.toBeNull()
-  //   expect(faberProofRecord).toMatchObject({
-  //     threadId: faberProofRecord.threadId,
-  //     state: ProofState.PresentationReceived,
-  //     protocolVersion: ProofProtocolVersion.V2,
-  //   })
+    expect(presentation).toMatchObject({
+      type: 'https://didcomm.org/present-proof/2.0/presentation',
+      formats: [
+        {
+          attachmentId: expect.any(String),
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
+        },
+      ],
+      presentationsAttach: [
+        {
+          id: expect.any(String),
+          mimeType: 'application/json',
+          data: {
+            json: {
+              '@context': expect.any(Array),
+              type: expect.any(Array),
+              verifiableCredential: expect.any(Array),
+            },
+          },
+        },
+      ],
+      id: expect.any(String),
+      thread: {
+        threadId: faberProofRecord.threadId,
+      },
+    })
+    expect(faberProofRecord.id).not.toBeNull()
+    expect(faberProofRecord).toMatchObject({
+      threadId: faberProofRecord.threadId,
+      state: ProofState.PresentationReceived,
+      protocolVersion: ProofProtocolVersion.V2,
+    })
 
-  //   // Faber accepts the presentation
-  //   testLogger.test('Faber accept the presentation from Alice')
-  //   await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
+    // Faber accepts the presentation provided by Alice
+    testLogger.test('Faber accepts the presentation provided by Alice')
+    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
-  //   // Alice waits until she receives a presentation acknowledgement
-  //   testLogger.test('Alice waits for acceptance by Faber')
-  //   aliceProofRecord = await waitForProofRecord(aliceAgent, {
-  //     threadId: aliceProofRecord.threadId,
-  //     state: ProofState.Done,
-  //   })
+    // Alice waits until she received a presentation acknowledgement
+    testLogger.test('Alice waits until she receives a presentation acknowledgement')
+    aliceProofRecord = await waitForProofRecord(aliceAgent, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.Done,
+    })
 
-  //   expect(faberProofRecord).toMatchObject({
-  //     // type: ProofRecord.name,
-  //     id: expect.any(String),
-  //     createdAt: expect.any(Date),
-  //     threadId: aliceProofRecord.threadId,
-  //     connectionId: expect.any(String),
-  //     isVerified: true,
-  //     state: ProofState.PresentationReceived,
-  //   })
+    expect(faberProofRecord).toMatchObject({
+      // type: ProofRecord.name,
+      id: expect.any(String),
+      createdAt: expect.any(Date),
+      threadId: aliceProofRecord.threadId,
+      connectionId: expect.any(String),
+      isVerified: true,
+      state: ProofState.PresentationReceived,
+    })
 
-  //   expect(aliceProofRecord).toMatchObject({
-  //     // type: ProofRecord.name,
-  //     id: expect.any(String),
-  //     createdAt: expect.any(Date),
-  //     threadId: faberProofRecord.threadId,
-  //     connectionId: expect.any(String),
-  //     state: ProofState.Done,
-  //   })
-  // })
+    expect(aliceProofRecord).toMatchObject({
+      // type: ProofRecord.name,
+      id: expect.any(String),
+      createdAt: expect.any(Date),
+      threadId: faberProofRecord.threadId,
+      connectionId: expect.any(String),
+      state: ProofState.Done,
+    })
+  })
 })

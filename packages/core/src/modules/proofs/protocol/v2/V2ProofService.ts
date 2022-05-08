@@ -40,14 +40,15 @@ import { ConnectionService } from '../../../connections'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { ProofsUtils } from '../../ProofsUtil'
-import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormats'
+import { V2_INDY_PRESENTATION_PROPOSAL } from '../../formats/ProofFormats'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { PresentationExchangeFormatService } from '../../formats/presentation-exchange/PresentationExchangeFormatService'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
 
-import { V2PresentationProblemReportError, V2PresentationProblemReportReason } from './errors'
+import { V2PresentationProblemReportError } from './errors'
+import { V2PresentationProblemReportReason } from './errors/V2PresentationProblemReportReason'
 import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
 import { V2PresentationHandler } from './handlers/V2PresentationHandler'
 import { V2PresentationProblemReportHandler } from './handlers/V2PresentationProblemReportHandler'
@@ -134,12 +135,11 @@ export class V2ProofService extends ProofService {
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
       formats.push(
-        await service.createRequest({
-          formats:
-            key === PresentationRecordType.Indy
-              ? await ProofsUtils.createRequestFromPreview(options)
-              : options.proofFormats,
-        })
+        key === PresentationRecordType.Indy
+          ? await service.createRequest({
+              formats: await ProofsUtils.createRequestFromPreview(options),
+            })
+          : await service.createProposal({ formats: options.proofFormats })
       )
     }
 
