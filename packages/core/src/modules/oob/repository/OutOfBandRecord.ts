@@ -30,7 +30,7 @@ export interface OutOfBandRecordProps {
 type DefaultOutOfBandRecordTags = {
   role: OutOfBandRole
   state: OutOfBandState
-  messageId: string
+  invitationId: string
   recipientKeyFingerprints: string[]
 }
 
@@ -71,7 +71,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
       ...this._tags,
       role: this.role,
       state: this.state,
-      messageId: this.outOfBandInvitation.id,
+      invitationId: this.outOfBandInvitation.id,
       recipientKeyFingerprints: this.getRecipientKeys().map((key) => key.fingerprint),
     }
   }

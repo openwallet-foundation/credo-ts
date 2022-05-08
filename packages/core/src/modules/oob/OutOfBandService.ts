@@ -34,7 +34,7 @@ export class OutOfBandService {
       throw new AriesFrameworkError('handshake-reuse message must have a parent thread id')
     }
 
-    const outOfBandRecord = await this.findByMessageId(parentThreadId)
+    const outOfBandRecord = await this.findByInvitationId(parentThreadId)
     if (!outOfBandRecord) {
       throw new AriesFrameworkError('No out of band record found for handshake-reuse message')
     }
@@ -79,7 +79,7 @@ export class OutOfBandService {
       throw new AriesFrameworkError('handshake-reuse-accepted message must have a parent thread id')
     }
 
-    const outOfBandRecord = await this.findByMessageId(parentThreadId)
+    const outOfBandRecord = await this.findByInvitationId(parentThreadId)
     if (!outOfBandRecord) {
       throw new AriesFrameworkError('No out of band record found for handshake-reuse-accepted message')
     }
@@ -149,8 +149,8 @@ export class OutOfBandService {
     return this.outOfBandRepository.getById(outOfBandRecordId)
   }
 
-  public async findByMessageId(messageId: string) {
-    return this.outOfBandRepository.findSingleByQuery({ messageId })
+  public async findByInvitationId(invitationId: string) {
+    return this.outOfBandRepository.findSingleByQuery({ invitationId })
   }
 
   public async findByRecipientKey(recipientKey: Key) {

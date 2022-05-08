@@ -314,7 +314,7 @@ export class OutOfBandModule {
     }
 
     // Make sure we haven't processed this invitation before.
-    let outOfBandRecord = await this.findByMessageId(outOfBandInvitation.id)
+    let outOfBandRecord = await this.findByInvitationId(outOfBandInvitation.id)
     if (outOfBandRecord) {
       throw new AriesFrameworkError(
         `An out of band record with invitation ${outOfBandInvitation.id} already exists. Invitations should have a unique id.`
@@ -470,8 +470,8 @@ export class OutOfBandModule {
     return this.outOfBandService.findByRecipientKey(recipientKey)
   }
 
-  public async findByMessageId(messageId: string) {
-    return this.outOfBandService.findByMessageId(messageId)
+  public async findByInvitationId(invitationId: string) {
+    return this.outOfBandService.findByInvitationId(invitationId)
   }
 
   /**

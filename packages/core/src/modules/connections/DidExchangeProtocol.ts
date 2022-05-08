@@ -131,7 +131,7 @@ export class DidExchangeProtocol {
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type} start`, messageContext)
 
     // TODO check oob role is sender
-    // TODO check oob state is await-respons
+    // TODO check oob state is await-response
     // TODO check there is no connection record for particular oob record
 
     const { did, mediatorId } = routing ? routing : outOfBandRecord
@@ -143,7 +143,7 @@ export class DidExchangeProtocol {
 
     // Check corresponding invitation ID is the request's ~thread.pthid
     // TODO Maybe we can do it in handler, but that actually does not make sense because we try to find oob by parent thread ID there.
-    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().messageId) {
+    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().invitationId) {
       throw new DidExchangeProblemReportError('Missing reference to invitation.', {
         problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
       })
@@ -385,7 +385,7 @@ export class DidExchangeProtocol {
       })
     }
 
-    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().messageId) {
+    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().invitationId) {
       throw new DidExchangeProblemReportError('Invalid or missing parent thread ID referencing to the invitation.', {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })
