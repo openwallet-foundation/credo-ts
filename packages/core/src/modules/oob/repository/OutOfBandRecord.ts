@@ -24,6 +24,7 @@ export interface OutOfBandRecordProps {
   reusable?: boolean
   did?: string
   mediatorId?: string
+  reuseConnectionId?: string
 }
 
 type DefaultOutOfBandRecordTags = {
@@ -42,6 +43,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
   public autoAcceptConnection?: boolean
   public did?: string
   public mediatorId?: string
+  public reuseConnectionId?: string
 
   public static readonly type = 'OutOfBandRecord'
   public readonly type = OutOfBandRecord.type
@@ -59,6 +61,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
       this.reusable = props.reusable ?? false
       this.did = props.did
       this.mediatorId = props.mediatorId
+      this.reuseConnectionId = props.reuseConnectionId
       this._tags = props.tags ?? {}
     }
   }

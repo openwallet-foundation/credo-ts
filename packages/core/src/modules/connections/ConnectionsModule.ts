@@ -241,8 +241,8 @@ export class ConnectionsModule {
     return null
   }
 
-  public async findByOutOfBandId(outOfBandId: string) {
-    return this.connectionService.findByOutOfBandId(outOfBandId)
+  public async findAllByOutOfBandId(outOfBandId: string) {
+    return this.connectionService.findAllByOutOfBandId(outOfBandId)
   }
 
   /**

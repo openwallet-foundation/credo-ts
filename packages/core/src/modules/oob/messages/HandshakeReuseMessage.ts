@@ -4,7 +4,7 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 
 export interface HandshakeReuseMessageOptions {
   id?: string
-  parentThreadId?: string
+  parentThreadId: string
 }
 
 export class HandshakeReuseMessage extends AgentMessage {

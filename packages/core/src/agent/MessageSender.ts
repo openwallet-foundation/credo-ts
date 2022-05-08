@@ -293,7 +293,10 @@ export class MessageSender {
       throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
-    this.logger.debug(`Sending outbound message to service:`, { messageId: message.id, service })
+    this.logger.debug(`Sending outbound message to service:`, {
+      messageId: message.id,
+      service: { ...service, recipientKeys: 'omitted...', routingKeys: 'omitted...' },
+    })
 
     const keys = {
       recipientKeys: service.recipientKeys,

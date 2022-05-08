@@ -59,7 +59,7 @@ describe('agents', () => {
     )
     bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
 
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.findByOutOfBandId(aliceBobOutOfBandRecord.id)
+    const [aliceConnectionAtAliceBob] = await aliceAgent.connections.findAllByOutOfBandId(aliceBobOutOfBandRecord.id)
     aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob!.id)
 
     expect(aliceConnection).toBeConnectedWith(bobConnection)

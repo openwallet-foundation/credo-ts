@@ -622,8 +622,8 @@ export class ConnectionService {
     return this.connectionRepository.findSingleByQuery({ did })
   }
 
-  public async findByOutOfBandId(outOfBandId: string) {
-    return this.connectionRepository.findSingleByQuery({ outOfBandId })
+  public async findAllByOutOfBandId(outOfBandId: string) {
+    return this.connectionRepository.findByQuery({ outOfBandId })
   }
 
   public async findByInvitationDid(invitationDid: string) {

@@ -91,7 +91,9 @@ describe('mediator establishment', () => {
     expect(recipientMediatorConnection).toBeInstanceOf(ConnectionRecord)
     expect(recipientMediatorConnection?.isReady).toBe(true)
 
-    const mediatorRecipientConnection = await mediatorAgent.connections.findByOutOfBandId(mediatorOutOfBandRecord.id)
+    const [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(
+      mediatorOutOfBandRecord.id
+    )
     expect(mediatorRecipientConnection!.isReady).toBe(true)
 
     expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection)
@@ -118,7 +120,7 @@ describe('mediator establishment', () => {
 
     senderRecipientConnection = await senderAgent.connections.returnWhenIsConnected(senderRecipientConnection!.id)
 
-    let recipientSenderConnection = await recipientAgent.connections.findByOutOfBandId(recipientOutOfBandRecord.id)
+    let [recipientSenderConnection] = await recipientAgent.connections.findAllByOutOfBandId(recipientOutOfBandRecord.id)
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
     expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
     expect(recipientSenderConnection!.isReady).toBe(true)
@@ -178,7 +180,9 @@ describe('mediator establishment', () => {
     const recipientMediatorConnection = await recipientAgent.connections.getById(recipientMediator!.connectionId)
     expect(recipientMediatorConnection?.isReady).toBe(true)
 
-    const mediatorRecipientConnection = await mediatorAgent.connections.findByOutOfBandId(mediatorOutOfBandRecord.id)
+    const [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(
+      mediatorOutOfBandRecord.id
+    )
     expect(mediatorRecipientConnection!.isReady).toBe(true)
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -221,7 +225,9 @@ describe('mediator establishment', () => {
     )
 
     senderRecipientConnection = await senderAgent.connections.returnWhenIsConnected(senderRecipientConnection!.id)
-    const recipientSenderConnection = await recipientAgent.connections.findByOutOfBandId(recipientOutOfBandRecord.id)
+    const [recipientSenderConnection] = await recipientAgent.connections.findAllByOutOfBandId(
+      recipientOutOfBandRecord.id
+    )
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
     expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
 

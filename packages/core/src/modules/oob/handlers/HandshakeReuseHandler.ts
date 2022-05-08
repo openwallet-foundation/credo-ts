@@ -1,17 +1,22 @@
 import type { Handler } from '../../../agent/Handler'
-import type { Logger } from '../../../logger'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { OutOfBandService } from '../OutOfBandService'
 
+import { createOutboundMessage } from '../../../agent/helpers'
 import { HandshakeReuseMessage } from '../messages/HandshakeReuseMessage'
 
 export class HandshakeReuseHandler implements Handler {
   public supportedMessages = [HandshakeReuseMessage]
-  private logger: Logger
+  private outOfBandService: OutOfBandService
 
-  public constructor(logger: Logger) {
-    this.logger = logger
+  public constructor(outOfBandService: OutOfBandService) {
+    this.outOfBandService = outOfBandService
   }
 
-  public async handle() {
-    this.logger.error(`Out of band ${HandshakeReuseMessage.type} message not implemented yet.`)
+  public async handle(messageContext: InboundMessageContext<HandshakeReuseMessage>) {
+    const connectionRecord = messageContext.assertReadyConnection()
+    const handshakeReuseAcceptedMessage = await this.outOfBandService.processHandshakeReuse(messageContext)
+
+    return createOutboundMessage(connectionRecord, handshakeReuseAcceptedMessage)
   }
 }

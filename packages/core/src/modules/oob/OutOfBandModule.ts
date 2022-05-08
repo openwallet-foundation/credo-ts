@@ -4,9 +4,10 @@ import type { Logger } from '../../logger'
 import type { ConnectionRecord, Routing } from '../../modules/connections'
 import type { PlaintextMessage } from '../../types'
 import type { Key } from '../dids'
+import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
 
 import { parseUrl } from 'query-string'
-import { EmptyError } from 'rxjs'
+import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -31,11 +32,13 @@ import { MediationRecipientService } from '../routing'
 
 import { OutOfBandService } from './OutOfBandService'
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
+import { OutOfBandEventTypes } from './domain/OutOfBandEvents'
 import { OutOfBandRole } from './domain/OutOfBandRole'
 import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseHandler } from './handlers'
+import { HandshakeReuseAcceptedHandler } from './handlers/HandshakeReuseAcceptedHandler'
 import { convertToNewInvitation, convertToOldInvitation } from './helpers'
-import { OutOfBandInvitation, HandshakeReuseMessage } from './messages'
+import { OutOfBandInvitation } from './messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
@@ -118,7 +121,8 @@ export class OutOfBandModule {
     const handshake = config.handshake ?? true
     const customHandshakeProtocols = config.handshakeProtocols
     const autoAcceptConnection = config.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections
-    const messages = config.messages
+    // We don't want to treat an empty array as messages being provided
+    const messages = config.messages && config.messages.length > 0 ? config.messages : undefined
     const label = config.label ?? this.agentConfig.label
     const imageUrl = config.imageUrl ?? this.agentConfig.connectionImageUrl
 
@@ -132,9 +136,15 @@ export class OutOfBandModule {
       throw new AriesFrameworkError(`Attribute 'handshake' can not be 'false' when 'handshakeProtocols' is defined.`)
     }
 
+    // For now we disallow creating multi-use invitation with attachments. This would mean we need multi-use
+    // credential and presentation exchanges.
+    if (messages && multiUseInvitation) {
+      throw new AriesFrameworkError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
+    }
+
     let handshakeProtocols
     if (handshake) {
-      // Find first supported handshake protocol preserving the order of handshake protocols defined
+      // Find supported handshake protocol preserving the order of handshake protocols defined
       // by agent
       if (customHandshakeProtocols) {
         this.assertHandshakeProtocols(customHandshakeProtocols)
@@ -185,7 +195,15 @@ export class OutOfBandModule {
       reusable: multiUseInvitation,
       autoAcceptConnection,
     })
+
     await this.outOfBandService.save(outOfBandRecord)
+    this.eventEmitter.emit<OutOfBandStateChangedEvent>({
+      type: OutOfBandEventTypes.OutOfBandStateChanged,
+      payload: {
+        outOfBandRecord,
+        previousState: null,
+      },
+    })
 
     return outOfBandRecord
   }
@@ -295,13 +313,28 @@ export class OutOfBandModule {
       )
     }
 
-    const outOfBandRecord = new OutOfBandRecord({
+    // Make sure we haven't processed this invitation before.
+    let outOfBandRecord = await this.findByMessageId(outOfBandInvitation.id)
+    if (outOfBandRecord) {
+      throw new AriesFrameworkError(
+        `An out of band record with invitation ${outOfBandInvitation.id} already exists. Invitations should have a unique id.`
+      )
+    }
+
+    outOfBandRecord = new OutOfBandRecord({
       role: OutOfBandRole.Receiver,
       state: OutOfBandState.Initial,
       outOfBandInvitation: outOfBandInvitation,
       autoAcceptConnection,
     })
     await this.outOfBandService.save(outOfBandRecord)
+    this.eventEmitter.emit<OutOfBandStateChangedEvent>({
+      type: OutOfBandEventTypes.OutOfBandStateChanged,
+      payload: {
+        outOfBandRecord,
+        previousState: null,
+      },
+    })
 
     if (autoAcceptInvitation) {
       return await this.acceptInvitation(outOfBandRecord.id, {
@@ -362,12 +395,29 @@ export class OutOfBandModule {
         this.logger.debug(
           `Connection already exists and reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`
         )
-        connectionRecord = existingConnection
+
         if (!messages) {
           this.logger.debug('Out of band message does not contain any request messages.')
-          await this.sendReuse(outOfBandInvitation, connectionRecord)
+          const isHandshakeReuseSuccessful = await this.handleHandshakeReuse(outOfBandRecord, existingConnection)
+
+          // Handshake reuse was successful
+          if (isHandshakeReuseSuccessful) {
+            this.logger.debug(`Handshake reuse successful. Reusing existing connection ${existingConnection.id}.`)
+            connectionRecord = existingConnection
+          } else {
+            // Handshake reuse failed. Not setting connection record
+            this.logger.debug(`Handshake reuse failed. Not using existing connection ${existingConnection.id}.`)
+          }
+        } else {
+          // Handshake reuse because we found a connection and we can respond directly to the message
+          this.logger.debug(`Reusing existing connection ${existingConnection.id}.`)
+          connectionRecord = existingConnection
         }
-      } else {
+      }
+
+      // If no existing connection was found, reuseConnection is false, or we didn't receive a
+      // handshake-reuse-accepted message we create a new connection
+      if (!connectionRecord) {
         this.logger.debug('Connection does not exist or reuse is disabled. Creating a new connection.')
         // Find first supported handshake protocol preserving the order of handshake protocols
         // defined by `handshake_protocols` attribute in the invitation message
@@ -422,6 +472,10 @@ export class OutOfBandModule {
 
   public async findByMessageId(messageId: string) {
     return this.outOfBandService.findByMessageId(messageId)
+  }
+
+  public async getById(outOfBandId: string) {
+    return this.outOfBandService.getById(outOfBandId)
   }
 
   private assertHandshakeProtocols(handshakeProtocols: HandshakeProtocol[]) {
@@ -551,13 +605,35 @@ export class OutOfBandModule {
     })
   }
 
-  private async sendReuse(outOfBandInvitation: OutOfBandInvitation, connection: ConnectionRecord) {
-    const message = new HandshakeReuseMessage({ parentThreadId: outOfBandInvitation.id })
-    const outbound = createOutboundMessage(connection, message)
+  private async handleHandshakeReuse(outOfBandRecord: OutOfBandRecord, connectionRecord: ConnectionRecord) {
+    const reuseMessage = await this.outOfBandService.createHandShakeReuse(outOfBandRecord, connectionRecord)
+
+    const reuseAcceptedEventPromise = firstValueFrom(
+      this.eventEmitter.observable<HandshakeReusedEvent>(OutOfBandEventTypes.HandshakeReused).pipe(
+        // Find the first reuse event where the handshake reuse accepted matches the reuse message thread
+        // TODO: Should we store the reuse state? Maybe we can keep it in memory for now
+        first(
+          (event) =>
+            event.payload.reuseThreadId === reuseMessage.threadId &&
+            event.payload.outOfBandRecord.id === outOfBandRecord.id &&
+            event.payload.connectionRecord.id === connectionRecord.id
+        ),
+        // If the event is found, we return the value true
+        map(() => true),
+        timeout(15000),
+        // If timeout is reached, we return false
+        catchError(() => of(false))
+      )
+    )
+
+    const outbound = createOutboundMessage(connectionRecord, reuseMessage)
     await this.messageSender.sendMessage(outbound)
+
+    return reuseAcceptedEventPromise
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new HandshakeReuseHandler(this.logger))
+    dispatcher.registerHandler(new HandshakeReuseHandler(this.outOfBandService))
+    dispatcher.registerHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
   }
 }

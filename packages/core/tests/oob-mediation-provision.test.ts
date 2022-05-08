@@ -102,7 +102,7 @@ describe('out of band with mediation set up with provision method', () => {
     aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
-    let faberAliceConnection = await faberAgent.connections.findByOutOfBandId(outOfBandRecord.id)
+    let [faberAliceConnection] = await faberAgent.connections.findAllByOutOfBandId(outOfBandRecord.id)
     faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
@@ -116,8 +116,9 @@ describe('out of band with mediation set up with provision method', () => {
 
     // Test if we can call provision for the same out-of-band record, respectively connection
     const reusedOutOfBandRecord = await aliceAgent.oob.findByMessageId(mediatorOutOfBandInvitation.id)
-    const reusedAliceMediatorConnection =
-      reusedOutOfBandRecord && (await aliceAgent.connections.findByOutOfBandId(reusedOutOfBandRecord.id))
+    const [reusedAliceMediatorConnection] = reusedOutOfBandRecord
+      ? await aliceAgent.connections.findAllByOutOfBandId(reusedOutOfBandRecord.id)
+      : []
     await aliceAgent.mediationRecipient.provision(reusedAliceMediatorConnection!)
     const mediators = await aliceAgent.mediationRecipient.getMediators()
     expect(mediators).toHaveLength(1)

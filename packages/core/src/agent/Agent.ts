@@ -273,7 +273,7 @@ export class Agent {
   private async getMediationConnection(mediatorInvitationUrl: string) {
     const outOfBandInvitation = await this.oob.parseInvitation(mediatorInvitationUrl)
     const outOfBandRecord = await this.oob.findByMessageId(outOfBandInvitation.id)
-    const connection = outOfBandRecord && (await this.connections.findByOutOfBandId(outOfBandRecord.id))
+    const [connection] = outOfBandRecord ? await this.connections.findAllByOutOfBandId(outOfBandRecord.id) : []
 
     if (!connection) {
       this.logger.debug('Mediation connection does not exist, creating connection')
