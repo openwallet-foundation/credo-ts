@@ -4,10 +4,11 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { PresentationPreviewAttribute } from '../../protocol/v1/models/V1PresentationPreview'
+import type { ProofAttributeInfo, ProofPredicateInfo } from '../../protocol/v1/models'
 import type {
   CreateRequestAsResponseOptions,
-  IndyGetRequestedCredentialsFormat,
+  GetRequestedCredentialsFormat,
+  IndyProposeProofFormat,
 } from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
@@ -33,17 +34,12 @@ import { checkProofRequestForDuplicates } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { uuid } from '../../../../utils/uuid'
-import { Credential, CredentialUtils, IndyCredentialInfo } from '../../../credentials'
+import { CredentialUtils } from '../../../credentials'
+import { Credential, IndyCredentialInfo } from '../../../credentials/protocol/v1/models'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
-import {
-  PartialProof,
-  RequestedPredicate,
-  RequestedAttribute,
-  ProofAttributeInfo,
-  AttributeFilter,
-  ProofPredicateInfo,
-} from '../../protocol/v1/models'
+import { ProofsUtils } from '../../ProofsUtil'
+import { PartialProof, RequestedPredicate, RequestedAttribute } from '../../protocol/v1/models'
 import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import { ProofFormatService } from '../ProofFormatService'
 import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../ProofFormats'
@@ -328,11 +324,14 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async getRequestedCredentialsForProofRequest(
-    options: IndyGetRequestedCredentialsFormat
+    options: GetRequestedCredentialsFormat
   ): Promise<RetrievedCredentialOptions> {
     const retrievedCredentials = new RetrievedCredentials({})
-    const { proofRequest, presentationProposal } = options
+    const { attachment, presentationProposal } = options
     const filterByNonRevocationRequirements = options.config?.filterByNonRevocationRequirements
+
+    const proofRequestJson = attachment.getDataAsJson<ProofRequest>() ?? null
+    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 
     for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
       let credentialMatch: Credential[] = []
@@ -547,72 +546,13 @@ export class IndyProofFormatService extends ProofFormatService {
 
     const nonce = indyConfig?.nonce ?? (await uuid())
 
-    const proofRequest = new ProofRequest({
+    const indyProposeProofFormat: IndyProposeProofFormat = {
       name: indyConfig?.name ?? 'Proof Request',
       version: indyConfig?.version ?? '1.0',
       nonce: nonce,
-    })
-
-    /**
-     * Create mapping of attributes by referent. This required the
-     * attributes to come from the same credential.
-     * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#referent
-     *
-     * {
-     *  "referent1": [Attribute1, Attribute2],
-     *  "referent2": [Attribute3]
-     * }
-     */
-    const attributesByReferent: Record<string, PresentationPreviewAttribute[]> = {}
-    for (const proposedAttributes of proposalJson.attributes) {
-      if (!proposedAttributes.referent) proposedAttributes.referent = uuid()
-
-      const referentAttributes = attributesByReferent[proposedAttributes.referent]
-
-      // Referent key already exist, add to list
-      if (referentAttributes) {
-        referentAttributes.push(proposedAttributes)
-      }
-      // Referent key does not exist yet, create new entry
-      else {
-        attributesByReferent[proposedAttributes.referent] = [proposedAttributes]
-      }
     }
 
-    // Transform attributes by referent to requested attributes
-    for (const [referent, proposedAttributes] of Object.entries(attributesByReferent)) {
-      // Either attributeName or attributeNames will be undefined
-      const attributeName = proposedAttributes.length == 1 ? proposedAttributes[0].name : undefined
-      const attributeNames = proposedAttributes.length > 1 ? proposedAttributes.map((a) => a.name) : undefined
-
-      const requestedAttribute = new ProofAttributeInfo({
-        name: attributeName,
-        names: attributeNames,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: proposedAttributes[0].credentialDefinitionId,
-          }),
-        ],
-      })
-
-      proofRequest.requestedAttributes.set(referent, requestedAttribute)
-    }
-
-    // Transform proposed predicates to requested predicates
-    for (const proposedPredicate of proposalJson.predicates) {
-      const requestedPredicate = new ProofPredicateInfo({
-        name: proposedPredicate.name,
-        predicateType: proposedPredicate.predicate,
-        predicateValue: proposedPredicate.threshold,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: proposedPredicate.credentialDefinitionId,
-          }),
-        ],
-      })
-
-      proofRequest.requestedPredicates.set(uuid(), requestedPredicate)
-    }
+    const proofRequest = ProofsUtils.createReferentForProofRequest(indyProposeProofFormat, proposalJson)
 
     return {
       indy: proofRequest,

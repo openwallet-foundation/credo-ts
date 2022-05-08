@@ -5,6 +5,7 @@ import type { MediationRecipientService } from '../../../routing/services/Mediat
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
+import type { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
 import type {
@@ -30,7 +31,6 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
-import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { Wallet } from '../../../../wallet/Wallet'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
@@ -40,7 +40,6 @@ import { ProofsUtils } from '../../ProofsUtil'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormats'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
-import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
@@ -714,13 +713,11 @@ export class V2ProofService extends ProofService {
       throw new AriesFrameworkError('No proof request found.')
     }
 
-    const proofRequestJson = requestMessage.requestPresentationsAttach[0].getDataAsJson<ProofRequest>() ?? null
-    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
-    const requestAttachments = requestMessage.formats
+    const requestAttachments = requestMessage.getAttachmentFormats()
 
     let result = {}
     for (const attachmentFormat of requestAttachments) {
-      const service = this.getFormatServiceForFormat(attachmentFormat)
+      const service = this.getFormatServiceForFormat(attachmentFormat.format)
 
       if (!service) {
         throw new AriesFrameworkError('No format service found for getting requested.')
@@ -729,7 +726,7 @@ export class V2ProofService extends ProofService {
       result = {
         ...result,
         ...(await service.getRequestedCredentialsForProofRequest({
-          proofRequest: proofRequest,
+          attachment: attachmentFormat.attachment,
           presentationProposal: undefined,
           config: options.config,
         })),

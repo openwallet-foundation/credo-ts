@@ -5,10 +5,7 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../models/SharedOptions'
-import type {
-  CreateRequestAsResponseOptions,
-  IndyGetRequestedCredentialsFormat,
-} from './IndyProofFormatsServiceOptions'
+import type { CreateRequestAsResponseOptions, GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
@@ -46,7 +43,7 @@ export abstract class ProofFormatService {
   abstract createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats>
 
   public abstract getRequestedCredentialsForProofRequest(
-    options: IndyGetRequestedCredentialsFormat
+    options: GetRequestedCredentialsFormat
   ): Promise<RetrievedCredentialOptions>
 
   public abstract autoSelectCredentialsForProofRequest(

@@ -42,8 +42,8 @@ export interface IndyPresentationProofFormat {
   selfAttestedAttributes?: Record<string, string>
 }
 
-export interface IndyGetRequestedCredentialsFormat {
-  proofRequest: ProofRequest
+export interface GetRequestedCredentialsFormat {
+  attachment: Attachment
   presentationProposal?: PresentationPreview
   config?: GetRequestedCredentialsConfig
 }

@@ -5,6 +5,7 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import type { IndyProposeProofFormat } from '../../formats/IndyProofFormatsServiceOptions'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type {
   CreateAckOptions,
@@ -21,7 +22,7 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { PresentationPreviewAttribute } from './models/V1PresentationPreview'
+import type { ProofAttributeInfo } from './models'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -34,7 +35,6 @@ import { DidCommMessageRole } from '../../../../storage'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { checkProofRequestForDuplicates } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
-import { uuid } from '../../../../utils/uuid'
 import { Wallet } from '../../../../wallet'
 import { AckStatus } from '../../../common/messages/AckMessage'
 import { ConnectionService } from '../../../connections'
@@ -44,6 +44,7 @@ import { IndyHolderService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
+import { ProofsUtils } from '../../ProofsUtil'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
@@ -70,7 +71,6 @@ import {
   V1RequestPresentationMessage,
 } from './messages'
 import { V1PresentationProblemReportMessage } from './messages/V1PresentationProblemReportMessage'
-import { ProofAttributeInfo, AttributeFilter, ProofPredicateInfo } from './models'
 import { PresentationPreview } from './models/V1PresentationPreview'
 
 /**
@@ -618,72 +618,16 @@ export class V1ProofService extends ProofService {
       throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
     }
 
-    const proofRequest = new ProofRequest({
-      name: options.name,
-      version: options.version,
+    const indyProposeProofFormat: IndyProposeProofFormat = {
+      name: options?.name ?? 'Proof Request',
+      version: options?.version ?? '1.0',
       nonce: options.nonce ?? (await this.generateProofRequestNonce()),
-    })
-
-    /**
-     * Create mapping of attributes by referent. This required the
-     * attributes to come from the same credential.
-     * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#referent
-     *
-     * {
-     *  "referent1": [Attribute1, Attribute2],
-     *  "referent2": [Attribute3]
-     * }
-     */
-    const attributesByReferent: Record<string, PresentationPreviewAttribute[]> = {}
-    for (const proposedAttributes of proposalMessage.presentationProposal.attributes) {
-      if (!proposedAttributes.referent) proposedAttributes.referent = uuid()
-
-      const referentAttributes = attributesByReferent[proposedAttributes.referent]
-
-      // Referent key already exist, add to list
-      if (referentAttributes) {
-        referentAttributes.push(proposedAttributes)
-      }
-      // Referent key does not exist yet, create new entry
-      else {
-        attributesByReferent[proposedAttributes.referent] = [proposedAttributes]
-      }
     }
 
-    // Transform attributes by referent to requested attributes
-    for (const [referent, proposedAttributes] of Object.entries(attributesByReferent)) {
-      // Either attributeName or attributeNames will be undefined
-      const attributeName = proposedAttributes.length == 1 ? proposedAttributes[0].name : undefined
-      const attributeNames = proposedAttributes.length > 1 ? proposedAttributes.map((a) => a.name) : undefined
-
-      const requestedAttribute = new ProofAttributeInfo({
-        name: attributeName,
-        names: attributeNames,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: proposedAttributes[0].credentialDefinitionId,
-          }),
-        ],
-      })
-
-      proofRequest.requestedAttributes.set(referent, requestedAttribute)
-    }
-
-    // Transform proposed predicates to requested predicates
-    for (const proposedPredicate of proposalMessage.presentationProposal.predicates) {
-      const requestedPredicate = new ProofPredicateInfo({
-        name: proposedPredicate.name,
-        predicateType: proposedPredicate.predicate,
-        predicateValue: proposedPredicate.threshold,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: proposedPredicate.credentialDefinitionId,
-          }),
-        ],
-      })
-
-      proofRequest.requestedPredicates.set(uuid(), requestedPredicate)
-    }
+    const proofRequest = ProofsUtils.createReferentForProofRequest(
+      indyProposeProofFormat,
+      proposalMessage.presentationProposal
+    )
 
     return {
       indy: proofRequest,
@@ -843,14 +787,14 @@ export class V1ProofService extends ProofService {
       messageClass: V1ProposePresentationMessage,
     })
 
-    const indyProofRequest = requestMessage?.indyProofRequest
+    const indyProofRequest = requestMessage?.requestPresentationAttachments
 
     if (!indyProofRequest) {
       throw new AriesFrameworkError('Could not find proof request')
     }
 
     return await this.indyProofFormatService.getRequestedCredentialsForProofRequest({
-      proofRequest: indyProofRequest,
+      attachment: indyProofRequest[0],
       presentationProposal: proposalMessage?.presentationProposal,
       config: options.config ?? undefined,
     })
