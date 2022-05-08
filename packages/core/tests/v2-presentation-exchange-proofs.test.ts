@@ -6,8 +6,6 @@ import type {
   ProposeProofOptions,
   RequestProofOptions,
 } from '../src/modules/proofs/models/ModuleOptions'
-import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
-import type { CredDefId } from 'indy-sdk'
 
 import { ProofState } from '../src'
 import {
@@ -29,18 +27,18 @@ import testLogger from './logger'
 describe('Present Proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credDefId: CredDefId
   let aliceConnection: ConnectionRecord
   let faberConnection: ConnectionRecord
   let faberProofRecord: ProofRecord
   let aliceProofRecord: ProofRecord
-  let presentationPreview: PresentationPreview
   let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-      await setupV2ProofsTest('Faber agent', 'Alice agent'))
+    ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupV2ProofsTest(
+      'Faber agent',
+      'Alice agent'
+    ))
   })
 
   afterAll(async () => {

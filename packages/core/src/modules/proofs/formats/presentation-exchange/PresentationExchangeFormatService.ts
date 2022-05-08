@@ -349,11 +349,10 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       //     }
       //   }
       // }
+
       const searched = await this.w3cCredentialService.findCredentialByQuery({ contexts: uriList })
 
-      // TODO pex select
-
-      if (!searched) {
+      if (searched.length === 0) {
         throw new AriesFrameworkError('No credential found')
       }
 
@@ -383,7 +382,32 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     proposalAttachments: ProofAttachmentFormat[],
     requestAttachments: ProofAttachmentFormat[]
   ): boolean {
-    throw new Error('Method not implemented.')
+    const proposalAttachment = proposalAttachments.find(
+      (x) => x.format.format === V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL
+    )?.attachment
+    const requestAttachment = requestAttachments.find(
+      (x) => x.format.format === V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST
+    )?.attachment
+
+    if (!proposalAttachment) {
+      throw new AriesFrameworkError('Proposal message has no attachment linked to it')
+    }
+
+    if (!requestAttachment) {
+      throw new AriesFrameworkError('Request message has no attachment linked to it')
+    }
+
+    const proposalAttachmentData = proposalAttachment.getDataAsJson<InputDescriptorsSchema>()
+    const requestAttachmentData = requestAttachment.getDataAsJson<InputDescriptorsSchema>()
+
+    if (
+      proposalAttachmentData.inputDescriptors === requestAttachmentData.inputDescriptors &&
+      proposalAttachmentData.inputDescriptors === requestAttachmentData.inputDescriptors
+    ) {
+      return true
+    }
+
+    return false
   }
 
   public supportsFormat(formatIdentifier: string): boolean {

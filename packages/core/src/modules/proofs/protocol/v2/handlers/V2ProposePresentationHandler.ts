@@ -7,8 +7,6 @@ import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V2ProofService } from '../V2ProofService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
-import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormats'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
@@ -62,14 +60,6 @@ export class V2ProposePresentationHandler implements Handler {
       return
     }
 
-    const proposalAttachment = proposalMessage
-      .getAttachmentFormats()
-      .find((x) => x.format.format === V2_INDY_PRESENTATION_PROPOSAL)
-
-    if (!proposalAttachment) {
-      throw new AriesFrameworkError('No proposal message could be found')
-    }
-
     const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
       name: 'proof-request',
       version: '1.0',
@@ -79,14 +69,9 @@ export class V2ProposePresentationHandler implements Handler {
 
     const proofRequest = await this.proofService.createProofRequestFromProposal(proofRequestFromProposalOptions)
 
-    if (!proofRequest.indy) {
-      throw new AriesFrameworkError('Failed to create proof request')
-    }
-
     const { message } = await this.proofService.createRequestAsResponse({
       proofRecord: proofRecord,
       protocolVersion: ProofProtocolVersion.V2,
-      autoAcceptProof: proofRecord.autoAcceptProof,
       proofFormats: proofRequest,
       willConfirm: true,
     })
