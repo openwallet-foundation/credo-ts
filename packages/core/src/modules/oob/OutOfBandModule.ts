@@ -474,8 +474,44 @@ export class OutOfBandModule {
     return this.outOfBandService.findByMessageId(messageId)
   }
 
-  public async getById(outOfBandId: string) {
+  /**
+   * Retrieve all out of bands records
+   *
+   * @returns List containing all  out of band records
+   */
+  public getAll() {
+    return this.outOfBandService.getAll()
+  }
+
+  /**
+   * Retrieve a out of band record by id
+   *
+   * @param outOfBandId The  out of band record id
+   * @throws {RecordNotFoundError} If no record is found
+   * @return The out of band record
+   *
+   */
+  public getById(outOfBandId: string): Promise<OutOfBandRecord> {
     return this.outOfBandService.getById(outOfBandId)
+  }
+
+  /**
+   * Find an out of band record by id
+   *
+   * @param outOfBandId the  out of band record id
+   * @returns The out of band record or null if not found
+   */
+  public findById(outOfBandId: string): Promise<OutOfBandRecord | null> {
+    return this.outOfBandService.findById(outOfBandId)
+  }
+
+  /**
+   * Delete an out of band record by id
+   *
+   * @param outOfBandId the out of band record id
+   */
+  public async deleteById(outOfBandId: string) {
+    return this.outOfBandService.deleteById(outOfBandId)
   }
 
   private assertHandshakeProtocols(handshakeProtocols: HandshakeProtocol[]) {

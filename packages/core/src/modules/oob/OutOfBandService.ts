@@ -160,4 +160,9 @@ export class OutOfBandService {
   public async getAll() {
     return this.outOfBandRepository.getAll()
   }
+
+  public async deleteById(outOfBandId: string) {
+    const outOfBandRecord = await this.getById(outOfBandId)
+    return this.outOfBandRepository.delete(outOfBandRecord)
+  }
 }
