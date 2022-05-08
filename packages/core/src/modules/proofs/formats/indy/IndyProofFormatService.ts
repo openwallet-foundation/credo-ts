@@ -34,6 +34,7 @@ import { checkProofRequestForDuplicates } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { uuid } from '../../../../utils/uuid'
+import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { CredentialUtils } from '../../../credentials'
 import { Credential, IndyCredentialInfo } from '../../../credentials/protocol/v1/models'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
@@ -58,6 +59,7 @@ export class IndyProofFormatService extends ProofFormatService {
   private indyRevocationService: IndyRevocationService
   private ledgerService: IndyLedgerService
   private logger: Logger
+  private wallet: IndyWallet
 
   public constructor(
     agentConfig: AgentConfig,
@@ -65,13 +67,15 @@ export class IndyProofFormatService extends ProofFormatService {
     indyVerifierService: IndyVerifierService,
     indyRevocationService: IndyRevocationService,
     ledgerService: IndyLedgerService,
-    didCommMessageRepository: DidCommMessageRepository
+    didCommMessageRepository: DidCommMessageRepository,
+    wallet: IndyWallet
   ) {
     super(didCommMessageRepository, agentConfig)
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
     this.indyRevocationService = indyRevocationService
     this.ledgerService = ledgerService
+    this.wallet = wallet
     this.logger = new ConsoleLogger(LogLevel.off)
   }
 
@@ -544,7 +548,7 @@ export class IndyProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError(`Presentation Preview is missing`)
     }
 
-    const nonce = indyConfig?.nonce ?? (await uuid())
+    const nonce = indyConfig?.nonce ?? (await this.wallet.generateNonce())
 
     const indyProposeProofFormat: IndyProposeProofFormat = {
       name: indyConfig?.name ?? 'Proof Request',
