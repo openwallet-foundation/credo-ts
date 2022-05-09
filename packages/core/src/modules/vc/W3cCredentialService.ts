@@ -156,7 +156,7 @@ export class W3cCredentialService {
     }
 
     const presentationJson = vc.createPresentation({
-      verifiableCredential: options.credentials.map((x) => JsonTransformer.toJSON(x)),
+      verifiableCredential: options.credentials.map((credential) => JsonTransformer.toJSON(credential)),
       id: options.id,
       holder: options.holderUrl,
     })
@@ -237,14 +237,14 @@ export class W3cCredentialService {
       proofs = proofs.filter((proof) => proof.proofPurpose === options.purpose.term)
     }
 
-    const presentationSuites = proofs.map((x) => {
-      const SuiteClass = this.suiteRegistry.getByProofType(x.type).suiteClass
+    const presentationSuites = proofs.map((proof) => {
+      const SuiteClass = this.suiteRegistry.getByProofType(proof.type).suiteClass
       return new SuiteClass({
         LDKeyClass: WalletKeyPair,
         proof: {
-          verificationMethod: x.verificationMethod,
+          verificationMethod: proof.verificationMethod,
         },
-        date: x.created,
+        date: proof.created,
         useNativeCanonize: false,
       })
     })
@@ -253,7 +253,7 @@ export class W3cCredentialService {
       ? options.presentation.verifiableCredential
       : [options.presentation.verifiableCredential]
 
-    const credentialSuites = credentials.map((x) => this.getSignatureSuitesForCredential(x))
+    const credentialSuites = credentials.map((credential) => this.getSignatureSuitesForCredential(credential))
     const allSuites = presentationSuites.concat(...credentialSuites)
 
     const verifyOptions: Record<string, unknown> = {
@@ -355,7 +355,7 @@ export class W3cCredentialService {
   }
 
   public async getAllCredentials(): Promise<W3cVerifiableCredential[]> {
-    return (await this.w3cCredentialRepository.getAll()).map((x) => x.credential)
+    return (await this.w3cCredentialRepository.getAll()).map((record) => record.credential)
   }
 
   public async getCredentialById(id: string): Promise<W3cVerifiableCredential> {
@@ -365,7 +365,7 @@ export class W3cCredentialService {
   public async findCredentialByQuery(
     query: Parameters<typeof W3cCredentialRepository.prototype.findByQuery>[0]
   ): Promise<W3cVerifiableCredential[]> {
-    return (await this.w3cCredentialRepository.findByQuery(query)).map((x) => x.credential)
+    return (await this.w3cCredentialRepository.findByQuery(query)).map((record) => record.credential)
   }
 
   public async findSingleCredentialByQuery(
@@ -383,15 +383,15 @@ export class W3cCredentialService {
       proofs = [proofs]
     }
 
-    return proofs.map((x) => {
-      const SuiteClass = this.suiteRegistry.getByProofType(x.type)?.suiteClass
+    return proofs.map((proof) => {
+      const SuiteClass = this.suiteRegistry.getByProofType(proof.type)?.suiteClass
       if (SuiteClass) {
         return new SuiteClass({
           LDKeyClass: WalletKeyPair,
           proof: {
-            verificationMethod: x.verificationMethod,
+            verificationMethod: proof.verificationMethod,
           },
-          date: x.created,
+          date: proof.created,
           useNativeCanonize: false,
         })
       }
