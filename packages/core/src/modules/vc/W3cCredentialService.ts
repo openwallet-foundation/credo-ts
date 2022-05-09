@@ -363,7 +363,7 @@ export class W3cCredentialService {
     return (await this.w3cCredentialRepository.getById(id)).credential
   }
 
-  public async findCredentialByQuery(
+  public async findCredentialsByQuery(
     query: Parameters<typeof W3cCredentialRepository.prototype.findByQuery>[0]
   ): Promise<W3cVerifiableCredential[]> {
     const result = await this.w3cCredentialRepository.findByQuery(query)
