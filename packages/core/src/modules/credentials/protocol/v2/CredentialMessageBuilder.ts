@@ -14,7 +14,7 @@ import type { V2OfferCredentialMessageOptions } from './messages/V2OfferCredenti
 import type { V2ProposeCredentialMessageProps } from './messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessageOptions } from './messages/V2RequestCredentialMessage'
 
-import { AriesFrameworkError } from '../../../../../src/error/AriesFrameworkError'
+import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { uuid } from '../../../../utils/uuid'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialState } from '../../CredentialState'
@@ -140,7 +140,9 @@ export class CredentialMessageBuilder {
       } else {
         throw new AriesFrameworkError('offersAttach not initialized for credential proposal')
       }
-      if (preview && preview.attributes.length > 0) {
+      if (preview) {
+        // note preview attributes may be length 0 (RFC spec for json ld states this is mandatory
+        // field even though it is not used)
         previewAttachments = preview
       }
       formatsArray.push(format)

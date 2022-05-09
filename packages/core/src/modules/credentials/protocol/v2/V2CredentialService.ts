@@ -472,9 +472,10 @@ export class V2CredentialService extends CredentialService {
       credentialRecord,
       options
     )
-
-    credentialOfferMessage.credentialPreview = proposeCredentialMessage?.credentialProposal
-    credentialRecord.credentialAttributes = proposeCredentialMessage?.credentialProposal?.attributes
+    if (proposeCredentialMessage?.credentialProposal) {
+      credentialOfferMessage.credentialPreview = proposeCredentialMessage?.credentialProposal
+      credentialRecord.credentialAttributes = proposeCredentialMessage?.credentialProposal?.attributes
+    }
 
     await this.updateState(credentialRecord, CredentialState.OfferSent)
     await this.didCommMessageRepository.saveOrUpdateAgentMessage({
@@ -941,6 +942,7 @@ export class V2CredentialService extends CredentialService {
         proposalAttachment,
         offerAttachment,
       }
+
       const formatShouldAutoRespond =
         this.agentConfig.autoAcceptCredentials == AutoAcceptCredential.Always ||
         formatService.shouldAutoRespondToProposal(handlerOptions)

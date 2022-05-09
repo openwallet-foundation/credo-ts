@@ -1,15 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type {
   DeleteCredentialOptions,
   ServiceAcceptCredentialOptions,
-  ServiceAcceptOfferOptions,
   ServiceAcceptProposalOptions,
   ServiceOfferCredentialOptions,
 } from '../CredentialServiceOptions'
 import type {
   AcceptRequestOptions,
-  NegotiateProposalOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../CredentialsModuleOptions'
@@ -41,11 +38,9 @@ export abstract class CredentialFormatService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<void>
 
-  abstract createOffer(
-    options: ServiceOfferCredentialOptions | NegotiateProposalOptions
-  ): Promise<FormatServiceOfferAttachmentFormats>
+  abstract createOffer(options: ServiceOfferCredentialOptions): Promise<FormatServiceOfferAttachmentFormats>
 
-  abstract processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): void
+  abstract processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void>
 
   abstract createRequest(
     options: RequestCredentialOptions,

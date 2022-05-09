@@ -1,6 +1,6 @@
-import type { Attachment } from '../../../../../../src/decorators/attachment/Attachment'
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { Attachment } from '../../../../../decorators/attachment/Attachment'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ServiceAcceptRequestOptions } from '../../../CredentialServiceOptions'
 import type { CredentialFormatService } from '../../../formats/CredentialFormatService'

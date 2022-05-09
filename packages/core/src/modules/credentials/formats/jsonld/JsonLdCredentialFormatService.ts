@@ -32,6 +32,8 @@ import { W3cVerifiableCredential, W3cCredential } from '../../../vc/models'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
+import { CredentialPreviewAttribute } from '../../models'
+import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
 
@@ -66,10 +68,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     options.credentialFormats = {
       jsonld: credPropose,
     }
-  }
-
-  public processOffer(_attachment: Attachment, _credentialRecord: CredentialExchangeRecord): void {
-    // not needed in jsonld
   }
 
   public async createCredential(
@@ -116,6 +114,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
       attachId: uuid(),
       format: 'aries/ld-proof-vc-detail@v1.0',
     }
+
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const attachmentId = options.attachId ? options.attachId : formats.attachId
 
@@ -131,7 +130,16 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     }
     const offersAttach: Attachment = this.getFormatData(messageAttachment, attachmentId)
 
-    return { format: formats, attachment: offersAttach }
+    // need to provide an empty preview as per the spec
+    const preview = new V2CredentialPreview({
+      attributes: [],
+    })
+
+    return { format: formats, preview, attachment: offersAttach }
+  }
+
+  public processOffer(_attachment: Attachment, _credentialRecord: CredentialExchangeRecord): Promise<void> {
+    return Promise.resolve()
   }
 
   public async createRequest(

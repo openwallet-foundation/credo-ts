@@ -41,7 +41,6 @@ export class V2OfferCredentialMessage extends AgentMessage {
   @IsOptional()
   public comment?: string
 
-  @IsOptional()
   @Expose({ name: 'credential_preview' })
   @Type(() => V2CredentialPreview)
   @ValidateNested()

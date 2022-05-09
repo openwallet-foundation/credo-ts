@@ -6,8 +6,18 @@ import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import type { ConnectionRecord } from '@aries-framework/core'
 import { CredentialProtocolVersion } from '@aries-framework/core'
 
+<<<<<<< HEAD
 // eslint-disable-next-line import/no-unresolved
 import { V1CredentialPreview, AttributeFilter, ProofAttributeInfo, utils } from '@aries-framework/core'
+=======
+import {
+  CredentialProtocolVersion,
+  V1CredentialPreview,
+  AttributeFilter,
+  ProofAttributeInfo,
+  utils,
+} from '@aries-framework/core'
+>>>>>>> 1dfa32edc6029793588040de9b8b933a0615e926
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
