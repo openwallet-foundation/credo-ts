@@ -1,6 +1,9 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 // eslint-disable-next-line import/no-extraneous-dependencies
+import type { JsonObject } from '../../../types'
+import type { DocumentLoaderResult } from '../../../utils'
+
 import { frame } from '@digitalcredentials/jsonld'
 
 import { BBS_V1, EXAMPLES_V1, ODRL, SCHEMA_ORG, VACCINATION_V1 } from './contexts'
@@ -81,7 +84,7 @@ export const DOCUMENTS = {
   'https://w3id.org/vaccination/v1': VACCINATION_V1,
 }
 
-export const customDocumentLoader = async (url: string): Promise<Record<string, any>> => {
+export const customDocumentLoader = async (url: string): Promise<DocumentLoaderResult> => {
   let result = DOCUMENTS[url]
 
   if (!result) {
@@ -104,6 +107,6 @@ export const customDocumentLoader = async (url: string): Promise<Record<string, 
   return {
     contextUrl: null,
     documentUrl: url,
-    document: result,
+    document: result as JsonObject,
   }
 }

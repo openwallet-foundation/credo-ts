@@ -167,7 +167,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     return verifier.verify({ data, signature })
   }
 
-  public async getVerificationMethod(options: { proof: Proof; documentLoader: DocumentLoader }) {
+  public async getVerificationMethod(options: { proof: Proof; documentLoader?: DocumentLoader }) {
     if (this.key) {
       // This happens most often during sign() operations. For verify(),
       // the expectation is that the verification method will be fetched
@@ -217,8 +217,8 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     proof: Proof
     document: VerificationMethod
     purpose: ProofPurpose
-    documentLoader: DocumentLoader
-    expansionMap: () => void
+    documentLoader?: DocumentLoader
+    expansionMap?: () => void
   }) {
     const proofMatches = await super.matchProof({
       proof: options.proof,

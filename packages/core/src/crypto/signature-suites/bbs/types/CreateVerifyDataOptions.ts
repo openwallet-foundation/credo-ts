@@ -11,7 +11,9 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { JsonObject } from '../../../../types'
+import type { DocumentLoader } from '../../../../utils'
+
 /**
  * Options for creating a proof
  */
@@ -19,21 +21,21 @@ export interface CreateVerifyDataOptions {
   /**
    * Document to create the proof for
    */
-  readonly document: any
+  readonly document: JsonObject
   /**
    * The proof
    */
-  readonly proof: any
+  readonly proof: JsonObject
   /**
    * Optional custom document loader
    */
-  // eslint-disable-next-line
-  documentLoader?: Function
+
+  documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
-  // eslint-disable-next-line
-  expansionMap?: Function
+
+  expansionMap?: () => void
   /**
    * Indicates whether to compact the proof
    */

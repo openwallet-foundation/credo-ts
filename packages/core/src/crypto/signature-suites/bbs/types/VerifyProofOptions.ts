@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '../../../../utils'
+import type { JsonObject } from '../../../../types'
+import type { DocumentLoader, Proof } from '../../../../utils'
 import type { ProofPurpose } from '../../JwsLinkedDataSignature'
 
 /**
@@ -21,11 +22,11 @@ export interface VerifyProofOptions {
   /**
    * The proof
    */
-  readonly proof: Record<string, unknown>
+  readonly proof: Proof
   /**
    * The document
    */
-  readonly document: Record<string, unknown>
+  readonly document: JsonObject
   /**
    * The proof purpose to specify for the generated proof
    */

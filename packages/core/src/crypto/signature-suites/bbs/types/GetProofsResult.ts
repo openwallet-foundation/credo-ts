@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { JsonArray, JsonObject } from '../../../../types'
+
 /**
  * Result for getting proofs from a JSON-LD document
  */
@@ -19,9 +20,9 @@ export interface GetProofsResult {
   /**
    * The JSON-LD document with the linked data proofs removed.
    */
-  document: any
+  document: JsonObject
   /**
    * The list of proofs that matched the requested type.
    */
-  proofs: any
+  proofs: JsonArray
 }

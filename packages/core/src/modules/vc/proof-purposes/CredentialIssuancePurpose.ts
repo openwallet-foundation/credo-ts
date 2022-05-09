@@ -54,8 +54,8 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
       document: Record<string, unknown>
       suite: JwsLinkedDataSignature
       verificationMethod: string
-      documentLoader: DocumentLoader
-      expansionMap: () => void
+      documentLoader?: DocumentLoader
+      expansionMap?: () => void
     }
   ) {
     try {

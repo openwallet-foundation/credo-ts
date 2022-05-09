@@ -13,7 +13,6 @@
 
 import type { DocumentLoader } from '../../../../utils'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Options for canonizing a document
  */

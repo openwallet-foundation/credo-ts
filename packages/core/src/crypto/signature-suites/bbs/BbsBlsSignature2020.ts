@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import type { JsonObject } from '../../../types'
+import type { DocumentLoader, Proof, VerificationMethod } from '../../../utils'
 import type {
   SignatureSuiteOptions,
   CreateProofOptions,
@@ -24,8 +26,9 @@ import type {
 import { suites } from '@digitalcredentials/jsonld-signatures'
 import jsonld from 'jsonld'
 
+import { AriesFrameworkError } from '../../../error'
 import { SECURITY_CONTEXT_BBS_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
-import { DocumentLoader, TypedArrayEncoder } from '../../../utils'
+import { TypedArrayEncoder } from '../../../utils'
 
 import { w3cDate } from './bbs-utils'
 
@@ -110,7 +113,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
   public async createProof(options: CreateProofOptions): Promise<Record<string, unknown>> {
     const { document, purpose, documentLoader, expansionMap, compactProof } = options
 
-    let proof: Record<string, unknown>
+    let proof: JsonObject
 
     // use proof JSON-LD document passed to API
     if (this.proof) {
@@ -204,9 +207,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
       // fetch verification method
       const verificationMethod = await this.getVerificationMethod({
         proof,
-        document,
         documentLoader,
-        expansionMap,
       })
 
       // verify signature on data
@@ -294,7 +295,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
    */
   public async createVerifyProofData(
     proof: Record<string, unknown>,
-    { documentLoader, expansionMap }: { documentLoader: DocumentLoader; expansionMap: () => void }
+    { documentLoader, expansionMap }: { documentLoader?: DocumentLoader; expansionMap?: () => void }
   ): Promise<string[]> {
     const c14nProofOptions = await this.canonizeProof(proof, {
       documentLoader,
@@ -312,7 +313,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
    */
   public async createVerifyDocumentData(
     document: Record<string, unknown>,
-    { documentLoader, expansionMap }: { documentLoader: DocumentLoader; expansionMap: () => void }
+    { documentLoader, expansionMap }: { documentLoader?: DocumentLoader; expansionMap?: () => void }
   ): Promise<string[]> {
     const c14nDocument = await this.canonize(document, {
       documentLoader,
@@ -332,9 +333,9 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
     proof,
     documentLoader,
   }: {
-    proof: Record<string, unknown>
-    documentLoader: DocumentLoader
-  }): Promise<Record<string, unknown>> {
+    proof: Proof
+    documentLoader?: DocumentLoader
+  }): Promise<VerificationMethod> {
     let { verificationMethod } = proof
 
     if (typeof verificationMethod === 'object' && verificationMethod !== null) {
@@ -343,6 +344,12 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
 
     if (!verificationMethod) {
       throw new Error('No "verificationMethod" found in proof.')
+    }
+
+    if (!documentLoader) {
+      throw new AriesFrameworkError(
+        'Missing custom document loader. This is required for resolving verification methods.'
+      )
     }
 
     const { document } = await documentLoader(verificationMethod)
@@ -356,7 +363,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
       throw new Error('The verification method has been revoked.')
     }
 
-    return document
+    return document as VerificationMethod
   }
 
   /**
@@ -364,7 +371,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
    *
    * @returns {Promise<{object}>} the proof containing the signature value.
    */
-  public async sign(options: SuiteSignOptions): Promise<Record<string, unknown>> {
+  public async sign(options: SuiteSignOptions): Promise<Proof> {
     const { verifyData, proof } = options
 
     if (!(this.signer && typeof this.signer.sign === 'function')) {
@@ -377,7 +384,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
 
     proof[this.proofSignatureKey] = TypedArrayEncoder.toBase64(proofValue)
 
-    return proof
+    return proof as Proof
   }
 
   /**

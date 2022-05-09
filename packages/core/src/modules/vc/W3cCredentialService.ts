@@ -1,4 +1,5 @@
 import type { Key } from '../../crypto/Key'
+import type { DocumentLoaderResult } from '../../utils'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
   CreatePresentationOptions,
@@ -122,7 +123,7 @@ export class W3cCredentialService {
   public async verifyCredential(options: VerifyCredentialOptions): Promise<W3cVerifyCredentialResult> {
     const suites = this.getSignatureSuitesForCredential(options.credential)
 
-    const verifyOptions: Record<string, any> = {
+    const verifyOptions: Record<string, unknown> = {
       credential: JsonTransformer.toJSON(options.credential),
       suite: suites,
       documentLoader: this.documentLoader,
@@ -186,11 +187,11 @@ export class W3cCredentialService {
 
     const verificationMethodObject = (await this.documentLoader(options.verificationMethod)).document as Record<
       string,
-      any
+      unknown
     >
 
     const keyPair = new WalletKeyPair({
-      controller: verificationMethodObject['controller'],
+      controller: verificationMethodObject['controller'] as string,
       id: options.verificationMethod,
       key: signingKey,
       wallet: this.wallet,
@@ -285,12 +286,11 @@ export class W3cCredentialService {
     return proof
   }
 
-  public documentLoader = async (url: string): Promise<Record<string, any>> => {
+  public documentLoader = async (url: string): Promise<DocumentLoaderResult> => {
     if (url.startsWith('did:')) {
       const result = await this.didResolver.resolve(url)
 
       if (result.didResolutionMetadata.error || !result.didDocument) {
-        // TODO: we should probably handle this more gracefully
         throw new AriesFrameworkError(`Unable to resolve DID: ${url}`)
       }
 

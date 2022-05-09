@@ -11,9 +11,11 @@
  * limitations under the License.
  */
 
+import type { JsonObject } from '../../../types'
+import type { Proof } from '../../../utils'
+
 import { constants } from '@digitalcredentials/jsonld-signatures'
 import jsonld from 'jsonld'
-import { JsonObject } from 'packages/core/src/types'
 
 import { getProofs, getTypeInfo } from './bbs-utils'
 
@@ -27,10 +29,10 @@ import { getProofs, getTypeInfo } from './bbs-utils'
  * @param options Options for proof derivation
  */
 export const deriveProof = async (
-  proofDocument: Record<string, unknown>,
+  proofDocument: Proof,
   revealDocument: JsonObject,
   { suite, skipProofCompaction, documentLoader, expansionMap, nonce }: any
-): Promise<Record<string, unknown>> => {
+): Promise<Proof> => {
   if (!suite) {
     throw new TypeError('"options.suite" is required.')
   }
@@ -82,7 +84,7 @@ export const deriveProof = async (
 
   if (!skipProofCompaction) {
     /* eslint-disable prefer-const */
-    let expandedProof: any = {
+    let expandedProof: Record<string, unknown> = {
       [constants.SECURITY_PROOF_URL]: {
         '@graph': derivedProof.proof,
       },

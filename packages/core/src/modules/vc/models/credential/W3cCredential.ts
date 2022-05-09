@@ -1,3 +1,4 @@
+import type { JsonObject } from '../../../../types'
 import type { CredentialSubjectOptions } from './CredentialSubject'
 import type { IssuerOptions } from './Issuer'
 import type { ValidationOptions } from 'class-validator'
@@ -15,7 +16,7 @@ import { CredentialSubject } from './CredentialSubject'
 import { Issuer, IsIssuer, IssuerTransformer } from './Issuer'
 
 export interface W3cCredentialOptions {
-  context: Array<string> | Record<string, any>
+  context: Array<string> | JsonObject
   id?: string
   type: Array<string>
   issuer: string | IssuerOptions
@@ -39,7 +40,7 @@ export class W3cCredential {
 
   @Expose({ name: '@context' })
   @IsJsonLdContext()
-  public context!: Array<string> | Record<string, any>
+  public context!: Array<string> | JsonObject
 
   @IsOptional()
   @IsUri()
@@ -99,7 +100,7 @@ export class W3cCredential {
       return [this.context]
     }
 
-    return [this.context.id]
+    return [this.context.id as string]
   }
 }
 

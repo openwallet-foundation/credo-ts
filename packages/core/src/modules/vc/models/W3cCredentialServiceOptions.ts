@@ -1,4 +1,5 @@
 import type { ProofPurpose } from '../../../crypto/signature-suites'
+import type { JsonObject } from '../../../types'
 import type { SingleOrArray } from '../../../utils/type'
 import type { W3cCredential } from './credential/W3cCredential'
 import type { W3cVerifiableCredential } from './credential/W3cVerifiableCredential'
@@ -51,6 +52,6 @@ export interface VerifyPresentationOptions {
 
 export interface DeriveProofOptions {
   credential: W3cVerifiableCredential
-  revealDocument: Record<string, any>
+  revealDocument: JsonObject
   verificationMethod: string
 }

@@ -1,19 +1,24 @@
+import type { JsonObject, JsonValue } from '../types'
 import type { SingleOrArray } from './type'
 
 export type JsonLdDoc = Record<string, unknown>
-export interface VerificationMethod {
+export interface VerificationMethod extends JsonObject {
   id: string
-  [key: string]: unknown
+  [key: string]: JsonValue
 }
 
-export interface Proof {
+export interface Proof extends JsonObject {
   verificationMethod: string | VerificationMethod
-  [key: string]: unknown
+  [key: string]: JsonValue
 }
 
-export type DocumentLoaderResult = Promise<Record<string, unknown>>
+export interface DocumentLoaderResult {
+  contextUrl?: string | null
+  documentUrl: string
+  document: JsonObject
+}
 
-export type DocumentLoader = (url: string) => DocumentLoaderResult
+export type DocumentLoader = (url: string) => Promise<DocumentLoaderResult>
 
 export const orArrayToArray = <T>(val?: SingleOrArray<T>): Array<T> | undefined => {
   if (!val) return undefined

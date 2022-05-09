@@ -1,11 +1,11 @@
-import { DocumentLoader, JsonLdDoc, Proof, TypedArrayEncoder, VerificationMethod } from '../../../utils'
+import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../../utils'
 import type { JwsLinkedDataSignatureOptions, ProofPurpose } from '../JwsLinkedDataSignature'
 
 // @ts-ignore
 import jsonld from '@digitalcredentials/jsonld'
 
 import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
-import { MultiBaseEncoder, _includesContext } from '../../../utils'
+import { TypedArrayEncoder, MultiBaseEncoder, _includesContext } from '../../../utils'
 import { encodeToBase58 } from '../../../utils/base58'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 
@@ -79,7 +79,7 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
     }
   }
 
-  public async getVerificationMethod(options: { proof: Proof; documentLoader: DocumentLoader }) {
+  public async getVerificationMethod(options: { proof: Proof; documentLoader?: DocumentLoader }) {
     let verificationMethod = await super.getVerificationMethod({
       proof: options.proof,
       documentLoader: options.documentLoader,
@@ -156,8 +156,8 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
     proof: Proof
     document: VerificationMethod
     purpose: ProofPurpose
-    documentLoader: DocumentLoader
-    expansionMap: () => void
+    documentLoader?: DocumentLoader
+    expansionMap?: () => void
   }) {
     if (!_includesCompatibleContext({ document: options.document })) {
       return false

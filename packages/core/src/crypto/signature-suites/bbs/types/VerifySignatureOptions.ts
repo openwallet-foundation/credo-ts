@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '../../../../utils'
+import type { JsonObject } from '../../../../types'
+import type { DocumentLoader, Proof, VerificationMethod } from '../../../../utils'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Options for verifying a signature
  */
@@ -21,7 +21,7 @@ export interface VerifySignatureOptions {
   /**
    * Document to verify
    */
-  readonly document: Record<string, unknown>
+  readonly document: JsonObject
   /**
    * Array of statements to verify
    */
@@ -29,11 +29,11 @@ export interface VerifySignatureOptions {
   /**
    * Verification method to verify the signature against
    */
-  readonly verificationMethod: string
+  readonly verificationMethod: VerificationMethod
   /**
    * Proof to verify
    */
-  readonly proof: Record<string, unknown>
+  readonly proof: Proof
   /**
    * Optional custom document loader
    */

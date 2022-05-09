@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import { DocumentLoader } from 'packages/core/src/utils'
+import type { JsonObject } from '../../../../types'
+import type { DocumentLoader, Proof } from '../../../../utils'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Options for creating a proof
  */
@@ -21,15 +21,15 @@ export interface DeriveProofOptions {
   /**
    * Document outlining what statements to reveal
    */
-  readonly revealDocument: Record<string, unknown>
+  readonly revealDocument: JsonObject
   /**
    * The document featuring the proof to derive from
    */
-  readonly document: Record<string, unknown>
+  readonly document: JsonObject
   /**
    * The proof for the document
    */
-  readonly proof: Record<string, unknown>
+  readonly proof: Proof
   /**
    * Optional custom document loader
    */
