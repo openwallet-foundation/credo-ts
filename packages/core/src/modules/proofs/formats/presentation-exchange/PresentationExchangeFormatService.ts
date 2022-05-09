@@ -98,10 +98,9 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
   public async createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats> {
     const inputDescriptorsJson = options.presentationAttachment.getDataAsJson<InputDescriptorsSchema>() ?? null
-    const inputDescriptors = JsonTransformer.fromJSON(inputDescriptorsJson, InputDescriptorsSchema)
 
     const presentationDefinition: PresentationDefinition = new PresentationDefinition({
-      inputDescriptors: inputDescriptors.inputDescriptors,
+      inputDescriptors: inputDescriptorsJson['input_descriptors'],
       format: {
         ldpVc: {
           proofType: ['Ed25519Signature2018'],
