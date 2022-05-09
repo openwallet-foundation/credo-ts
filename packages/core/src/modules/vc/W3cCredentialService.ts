@@ -355,7 +355,8 @@ export class W3cCredentialService {
   }
 
   public async getAllCredentials(): Promise<W3cVerifiableCredential[]> {
-    return (await this.w3cCredentialRepository.getAll()).map((record) => record.credential)
+    const allRecords = await this.w3cCredentialRepository.getAll()
+    return allRecords.map((record) => record.credential)
   }
 
   public async getCredentialById(id: string): Promise<W3cVerifiableCredential> {
@@ -365,13 +366,15 @@ export class W3cCredentialService {
   public async findCredentialByQuery(
     query: Parameters<typeof W3cCredentialRepository.prototype.findByQuery>[0]
   ): Promise<W3cVerifiableCredential[]> {
-    return (await this.w3cCredentialRepository.findByQuery(query)).map((record) => record.credential)
+    const result = await this.w3cCredentialRepository.findByQuery(query)
+    return result.map((record) => record.credential)
   }
 
   public async findSingleCredentialByQuery(
     query: Parameters<typeof W3cCredentialRepository.prototype.findSingleByQuery>[0]
   ): Promise<W3cVerifiableCredential | undefined> {
-    return (await this.w3cCredentialRepository.findSingleByQuery(query))?.credential
+    const result = await this.w3cCredentialRepository.findSingleByQuery(query)
+    return result?.credential
   }
 
   private getSignatureSuitesForCredential(credential: W3cVerifiableCredential) {
