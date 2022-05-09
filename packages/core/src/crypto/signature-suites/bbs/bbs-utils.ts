@@ -6,8 +6,6 @@
  * Copyright (c) 2017-2018 Digital Bazaar, Inc. All rights reserved.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { GetProofsOptions, GetProofsResult, GetTypeOptions } from './types'
 
 import jsonld from 'jsonld'
@@ -49,13 +47,13 @@ export const getProofs = async (options: GetProofsOptions): Promise<GetProofsRes
   delete document[PROOF_PROPERTY]
 
   if (typeof proofType === 'string') {
-    proofs = proofs.filter((_: any) => _.type == proofType)
+    proofs = proofs.filter((_: Record<string, unknown>) => _.type == proofType)
   }
   if (Array.isArray(proofType)) {
-    proofs = proofs.filter((_: any) => proofType.includes(_.type))
+    proofs = proofs.filter((_: Record<string, unknown>) => proofType.includes(_.type))
   }
 
-  proofs = proofs.map((matchedProof: any) => ({
+  proofs = proofs.map((matchedProof: Record<string, unknown>) => ({
     '@context': SECURITY_CONTEXT_URL,
     ...matchedProof,
   }))
@@ -88,7 +86,10 @@ export const w3cDate = (date?: number | string): string => {
  *
  * @returns {object} Type info for the JSON-LD document
  */
-export const getTypeInfo = async (document: any, options: GetTypeOptions): Promise<any> => {
+export const getTypeInfo = async (
+  document: Record<string, unknown>,
+  options: GetTypeOptions
+): Promise<Record<string, unknown>> => {
   const { documentLoader, expansionMap } = options
 
   // determine `@type` alias, if any
@@ -105,7 +106,7 @@ export const getTypeInfo = async (document: any, options: GetTypeOptions): Promi
 
   // optimize: expand only `@type` and `type` values
   /* eslint-disable prefer-const */
-  let toExpand: any = { '@context': context }
+  let toExpand: Record<string, unknown> = { '@context': context }
   toExpand['@type'] = jsonld.getValues(document, '@type').concat(jsonld.getValues(document, alias))
 
   const expanded = (await jsonld.expand(toExpand, { documentLoader, expansionMap }))[0] || {}
