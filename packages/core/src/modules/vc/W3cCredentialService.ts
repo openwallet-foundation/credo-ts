@@ -1,6 +1,6 @@
 import type { Key } from '../../crypto/Key'
 import type { JsonObject } from '../../types'
-import type { DocumentLoaderResult, Proof } from '../../utils'
+import { DocumentLoaderResult, Proof, w3cDate } from '../../utils'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
   CreatePresentationOptions,
@@ -102,7 +102,7 @@ export class W3cCredentialService {
         verificationMethod: options.verificationMethod,
       },
       useNativeCanonize: false,
-      date: options.created ?? new Date().toISOString(),
+      date: options.created ?? w3cDate(),
     })
 
     const result = await vc.issue({
