@@ -11,7 +11,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type {
   SignatureSuiteOptions,
   CreateProofOptions,
@@ -26,7 +25,7 @@ import { suites } from '@digitalcredentials/jsonld-signatures'
 import jsonld from 'jsonld'
 
 import { SECURITY_CONTEXT_BBS_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
-import { TypedArrayEncoder } from '../../../utils'
+import { DocumentLoader, TypedArrayEncoder } from '../../../utils'
 
 import { w3cDate } from './bbs-utils'
 
@@ -34,7 +33,7 @@ import { w3cDate } from './bbs-utils'
  * A BBS+ signature suite for use with BLS12-381 key pairs
  */
 export class BbsBlsSignature2020 extends suites.LinkedDataProof {
-  private proof: Record<string, any>
+  private proof: Record<string, unknown>
   /**
    * Default constructor
    * @param options {SignatureSuiteOptions} options for constructing the signature suite
@@ -90,7 +89,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
     this.useNativeCanonize = useNativeCanonize
   }
 
-  public ensureSuiteContext({ document }: any) {
+  public ensureSuiteContext({ document }: { document: Record<string, unknown> }) {
     if (
       document['@context'] === SECURITY_CONTEXT_BBS_URL ||
       (Array.isArray(document['@context']) && document['@context'].includes(SECURITY_CONTEXT_BBS_URL))
@@ -241,7 +240,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
     }
   }
 
-  public async canonize(input: any, options: CanonizeOptions): Promise<string> {
+  public async canonize(input: Record<string, unknown>, options: CanonizeOptions): Promise<string> {
     const { documentLoader, expansionMap, skipExpansion } = options
     return jsonld.canonize(input, {
       algorithm: 'URDNA2015',
@@ -253,7 +252,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
     })
   }
 
-  public async canonizeProof(proof: any, options: CanonizeOptions): Promise<string> {
+  public async canonizeProof(proof: Record<string, unknown>, options: CanonizeOptions): Promise<string> {
     const { documentLoader, expansionMap } = options
     proof = { ...proof }
     delete proof[this.proofSignatureKey]
@@ -293,7 +292,10 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
    *
    * @returns {Promise<{string[]>}.
    */
-  public async createVerifyProofData(proof: any, { documentLoader, expansionMap }: any): Promise<string[]> {
+  public async createVerifyProofData(
+    proof: Record<string, unknown>,
+    { documentLoader, expansionMap }: { documentLoader: DocumentLoader; expansionMap: () => void }
+  ): Promise<string[]> {
     const c14nProofOptions = await this.canonizeProof(proof, {
       documentLoader,
       expansionMap,
@@ -308,7 +310,10 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
    *
    * @returns {Promise<{string[]>}.
    */
-  public async createVerifyDocumentData(document: any, { documentLoader, expansionMap }: any): Promise<string[]> {
+  public async createVerifyDocumentData(
+    document: Record<string, unknown>,
+    { documentLoader, expansionMap }: { documentLoader: DocumentLoader; expansionMap: () => void }
+  ): Promise<string[]> {
     const c14nDocument = await this.canonize(document, {
       documentLoader,
       expansionMap,
@@ -323,7 +328,13 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
    * @param documentLoader {function}
    * @param expansionMap {function}
    */
-  public async getVerificationMethod({ proof, documentLoader }: any): Promise<any> {
+  public async getVerificationMethod({
+    proof,
+    documentLoader,
+  }: {
+    proof: Record<string, unknown>
+    documentLoader: DocumentLoader
+  }): Promise<Record<string, unknown>> {
     let { verificationMethod } = proof
 
     if (typeof verificationMethod === 'object' && verificationMethod !== null) {

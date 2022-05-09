@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { constants } from '@digitalcredentials/jsonld-signatures'
 import jsonld from 'jsonld'
+import { JsonObject } from 'packages/core/src/types'
 
 import { getProofs, getTypeInfo } from './bbs-utils'
 
@@ -27,10 +27,10 @@ import { getProofs, getTypeInfo } from './bbs-utils'
  * @param options Options for proof derivation
  */
 export const deriveProof = async (
-  proofDocument: any,
-  revealDocument: any,
-  { suite, documentLoader, expansionMap, skipProofCompaction, nonce }: any
-): Promise<any> => {
+  proofDocument: Record<string, unknown>,
+  revealDocument: JsonObject,
+  { suite, skipProofCompaction, documentLoader, expansionMap, nonce }: any
+): Promise<Record<string, unknown>> => {
   if (!suite) {
     throw new TypeError('"options.suite" is required.')
   }

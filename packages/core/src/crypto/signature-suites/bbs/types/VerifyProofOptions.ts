@@ -12,8 +12,8 @@
  */
 
 import type { DocumentLoader } from '../../../../utils'
+import type { ProofPurpose } from '../../JwsLinkedDataSignature'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Options for verifying a proof
  */
@@ -21,15 +21,15 @@ export interface VerifyProofOptions {
   /**
    * The proof
    */
-  readonly proof: any
+  readonly proof: Record<string, unknown>
   /**
    * The document
    */
-  readonly document: any
+  readonly document: Record<string, unknown>
   /**
    * The proof purpose to specify for the generated proof
    */
-  readonly purpose: any
+  readonly purpose: ProofPurpose
   /**
    * Optional custom document loader
    */

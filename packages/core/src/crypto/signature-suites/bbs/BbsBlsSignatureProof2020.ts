@@ -11,9 +11,7 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import type { Proof } from '../../../utils'
+import type { DocumentLoader, Proof } from '../../../utils'
 import type { DeriveProofOptions, VerifyProofOptions, CreateVerifyDataOptions, CanonizeOptions } from './types'
 import type { VerifyProofResult } from './types/VerifyProofResult'
 
@@ -29,7 +27,7 @@ import { TypedArrayEncoder } from '../../../utils'
 import { BbsBlsSignature2020 } from './BbsBlsSignature2020'
 
 export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
-  public constructor({ useNativeCanonize, key, LDKeyClass }: any = {}) {
+  public constructor({ useNativeCanonize, key, LDKeyClass }: Record<string, unknown> = {}) {
     super({
       type: 'BbsBlsSignatureProof2020',
     })
@@ -64,7 +62,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
    *
    * @returns {Promise<object>} Resolves with the derived proof object.
    */
-  public async deriveProof(options: DeriveProofOptions): Promise<Record<string, any>> {
+  public async deriveProof(options: DeriveProofOptions): Promise<Record<string, unknown>> {
     const { document, proof, revealDocument, documentLoader, expansionMap, skipProofCompaction } = options
     let { nonce } = options
 
@@ -277,7 +275,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     }
   }
 
-  public async canonize(input: any, options: CanonizeOptions): Promise<string> {
+  public async canonize(input: Record<string, unknown>, options: CanonizeOptions): Promise<string> {
     const { documentLoader, expansionMap, skipExpansion } = options
     return jsonld.canonize(input, {
       algorithm: 'URDNA2015',
@@ -289,7 +287,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     })
   }
 
-  public async canonizeProof(proof: any, options: CanonizeOptions): Promise<string> {
+  public async canonizeProof(proof: Record<string, unknown>, options: CanonizeOptions): Promise<string> {
     const { documentLoader, expansionMap } = options
     proof = { ...proof }
 
@@ -330,7 +328,10 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
    *
    * @returns {Promise<{string[]>}.
    */
-  public async createVerifyProofData(proof: any, { documentLoader, expansionMap }: any): Promise<string[]> {
+  public async createVerifyProofData(
+    proof: Record<string, unknown>,
+    { documentLoader, expansionMap }: { documentLoader: DocumentLoader; expansionMap: () => void }
+  ): Promise<string[]> {
     const c14nProofOptions = await this.canonizeProof(proof, {
       documentLoader,
       expansionMap,
@@ -345,7 +346,10 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
    *
    * @returns {Promise<{string[]>}.
    */
-  public async createVerifyDocumentData(document: any, { documentLoader, expansionMap }: any): Promise<string[]> {
+  public async createVerifyDocumentData(
+    document: Record<string, unknown>,
+    { documentLoader, expansionMap }: { documentLoader: DocumentLoader; expansionMap: () => void }
+  ): Promise<string[]> {
     const c14nDocument = await this.canonize(document, {
       documentLoader,
       expansionMap,
@@ -354,7 +358,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     return c14nDocument.split('\n').filter((_) => _.length > 0)
   }
 
-  public async getVerificationMethod(options: { proof: Proof; documentLoader: any }) {
+  public async getVerificationMethod(options: { proof: Proof; documentLoader: DocumentLoader }) {
     if (this.key) {
       // This happens most often during sign() operations. For verify(),
       // the expectation is that the verification method will be fetched

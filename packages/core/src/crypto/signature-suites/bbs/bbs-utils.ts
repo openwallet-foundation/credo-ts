@@ -5,7 +5,7 @@
  *
  * Copyright (c) 2017-2018 Digital Bazaar, Inc. All rights reserved.
  */
-
+import type { JsonObject } from '../../../types'
 import type { GetProofsOptions, GetProofsResult, GetTypeOptions } from './types'
 
 import jsonld from 'jsonld'
@@ -87,9 +87,9 @@ export const w3cDate = (date?: number | string): string => {
  * @returns {object} Type info for the JSON-LD document
  */
 export const getTypeInfo = async (
-  document: Record<string, unknown>,
+  document: JsonObject,
   options: GetTypeOptions
-): Promise<Record<string, unknown>> => {
+): Promise<{ types: string[]; alias: string }> => {
   const { documentLoader, expansionMap } = options
 
   // determine `@type` alias, if any

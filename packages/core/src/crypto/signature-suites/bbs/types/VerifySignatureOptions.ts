@@ -21,7 +21,7 @@ export interface VerifySignatureOptions {
   /**
    * Document to verify
    */
-  readonly document: any
+  readonly document: Record<string, unknown>
   /**
    * Array of statements to verify
    */
@@ -33,7 +33,7 @@ export interface VerifySignatureOptions {
   /**
    * Proof to verify
    */
-  readonly proof: any
+  readonly proof: Record<string, unknown>
   /**
    * Optional custom document loader
    */

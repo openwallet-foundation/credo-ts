@@ -26,7 +26,7 @@ export interface CanonizeOptions {
    * Optional expansion map
    */
   // eslint-disable-next-line
-  expansionMap?: Function
+  expansionMap?: () => void
   /**
    * Indicates whether to skip expansion during canonization
    */

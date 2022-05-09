@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { DocumentLoader } from 'packages/core/src/utils'
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Options for creating a proof
@@ -19,25 +21,25 @@ export interface DeriveProofOptions {
   /**
    * Document outlining what statements to reveal
    */
-  readonly revealDocument: any
+  readonly revealDocument: Record<string, unknown>
   /**
    * The document featuring the proof to derive from
    */
-  readonly document: any
+  readonly document: Record<string, unknown>
   /**
    * The proof for the document
    */
-  readonly proof: any
+  readonly proof: Record<string, unknown>
   /**
    * Optional custom document loader
    */
   // eslint-disable-next-line
-  documentLoader?: Function
+  documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
   // eslint-disable-next-line
-  expansionMap?: Function
+  expansionMap?: () => void
   /**
    * Nonce to include in the derived proof
    */
