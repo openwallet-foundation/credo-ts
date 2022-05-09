@@ -11,7 +11,7 @@ import { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttrib
  *
  * This is not a message but an inner object for other messages in this protocol. It is used construct a preview of the data for the credential.
  *
- * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#preview-credential
+ * @see https://github.com/hyperledger/aries-rfcs/tree/main/features/0453-issue-credential-v2#preview-credential
  */
 export class V2CredentialPreview {
   public constructor(options: CredentialPreviewOptions) {

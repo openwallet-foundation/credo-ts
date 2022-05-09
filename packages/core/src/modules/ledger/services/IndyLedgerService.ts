@@ -267,7 +267,7 @@ export class IndyLedgerService {
 
   public async getRevocationRegistryDefinition(
     revocationRegistryDefinitionId: string
-  ): Promise<ParseRevocationRegistryDefitinionTemplate> {
+  ): Promise<ParseRevocationRegistryDefinitionTemplate> {
     const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
     const { pool } = await this.indyPoolService.getPoolForDid(did)
 
@@ -527,7 +527,7 @@ export interface CredentialDefinitionTemplate {
   supportRevocation: boolean
 }
 
-export interface ParseRevocationRegistryDefitinionTemplate {
+export interface ParseRevocationRegistryDefinitionTemplate {
   revocationRegistryDefinition: Indy.RevocRegDef
   revocationRegistryDefinitionTxnTime: number
 }

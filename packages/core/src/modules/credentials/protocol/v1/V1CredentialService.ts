@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
@@ -12,19 +11,17 @@ import type {
   CredentialProtocolMsgReturnType,
   ServiceAcceptRequestOptions,
   ServiceRequestCredentialOptions,
-  DeleteCredentialOptions,
   ServiceOfferCredentialOptions,
 } from '../../CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
-  CredentialFormatType,
   NegotiateProposalOptions,
   OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
-import type { CredentialFormats, HandlerAutoAcceptOptions } from '../../formats/models/CredentialFormatServiceOptions'
+import type { HandlerAutoAcceptOptions } from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type { CredOffer } from 'indy-sdk'
 
@@ -1244,12 +1241,11 @@ export class V1CredentialService extends CredentialService {
     })
   }
 
-  public getFormats(credentialFormats: CredentialFormats): CredentialFormatService[] {
+  public getFormats(): CredentialFormatService[] {
     throw new Error('Method not implemented.')
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public getFormatService(credentialFormatType?: CredentialFormatType): CredentialFormatService {
+  public getFormatService(): CredentialFormatService {
     return this.formatService
   }
 }

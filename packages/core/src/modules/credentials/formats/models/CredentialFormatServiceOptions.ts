@@ -1,6 +1,6 @@
-import type { LinkedAttachment } from '../../../../../src/utils/LinkedAttachment'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { ParseRevocationRegistryDefitinionTemplate } from '../../../ledger/services'
+import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
+import type { ParseRevocationRegistryDefinitionTemplate } from '../../../ledger/services'
 import type { SignCredentialOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type { W3cCredential } from '../../../vc/models/credential/W3cCredential'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
@@ -124,6 +124,6 @@ export interface HandlerAutoAcceptOptions {
 }
 
 export interface RevocationRegistry {
-  indy?: ParseRevocationRegistryDefitinionTemplate
+  indy?: ParseRevocationRegistryDefinitionTemplate
   jsonld?: undefined
 }

@@ -266,7 +266,8 @@ describe('CredentialService', () => {
         eventEmitter,
         indyIssuerService,
         indyLedgerService,
-        indyHolderService
+        indyHolderService,
+        agentConfig
       ),
       revocationService
     )
@@ -504,8 +505,7 @@ describe('CredentialService', () => {
         credentialValues: {},
       })
       const [responseAttachment] = credentialResponse.credentialAttachments
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      expect(JsonEncoder.fromBase64(responseAttachment.data.base64!)).toEqual(cred)
+      expect(responseAttachment.getDataAsJson()).toEqual(cred)
     })
   })
 

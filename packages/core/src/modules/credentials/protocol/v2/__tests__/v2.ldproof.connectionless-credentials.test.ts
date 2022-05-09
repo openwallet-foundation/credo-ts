@@ -183,10 +183,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(
-      aliceCredentialRecord.id,
-      CredentialProtocolVersion.V2
-    )
+    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -195,7 +192,7 @@ describe('credentials', () => {
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       state: CredentialState.Done,
@@ -203,7 +200,7 @@ describe('credentials', () => {
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       state: CredentialState.Done,

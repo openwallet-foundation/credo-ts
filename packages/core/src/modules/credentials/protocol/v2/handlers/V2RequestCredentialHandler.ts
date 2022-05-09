@@ -6,9 +6,8 @@ import type { AcceptRequestOptions } from '../../../CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialService } from '../V2CredentialService'
 
-import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
-import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
@@ -55,7 +54,6 @@ export class V2RequestCredentialHandler implements Handler {
       proposeMessage ?? undefined,
       offerMessage ?? undefined
     )
-
     if (shouldAutoRespond) {
       return await this.createCredential(credentialRecord, messageContext, requestMessage, offerMessage)
     }

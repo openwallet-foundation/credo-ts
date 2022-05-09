@@ -6,9 +6,9 @@ import type { MediationRecipientService } from '../../../../routing/services/Med
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
-import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
@@ -34,6 +34,7 @@ export class V2OfferCredentialHandler implements Handler {
   }
 
   public async handle(messageContext: InboundMessageContext<V2OfferCredentialMessage>) {
+
     const credentialRecord = await this.credentialService.processOffer(messageContext)
 
     const offerMessage = await this.didCommMessageRepository.findAgentMessage({

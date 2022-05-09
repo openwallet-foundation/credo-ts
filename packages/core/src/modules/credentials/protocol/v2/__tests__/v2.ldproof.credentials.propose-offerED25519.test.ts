@@ -82,11 +82,6 @@ describe('credentials', () => {
       'Alice Agent Credentials LD'
     ))
     wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-    // await wallet.initPublicDid({})
-    // const pubDid = wallet.publicDid
-    // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-    // issuerDidKey = new DidKey(key)\
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const issuerDidInfo = await wallet.createDid({ seed })
@@ -190,15 +185,18 @@ describe('credentials', () => {
       '~timing': undefined,
       '~transport': undefined,
       '~l10n': undefined,
-      credential_preview: undefined,
+      credential_preview: expect.any(Object),
       replacement_id: undefined,
     })
     expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
+    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
 
     if (aliceCredentialRecord.connectionId) {
       const acceptOfferOptions: ServiceAcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
+        credentialFormats: {
+          jsonld: undefined,
+        },
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
         acceptOfferOptions
@@ -230,7 +228,7 @@ describe('credentials', () => {
       })
 
       testLogger.test('Alice sends credential ack to Faber')
-      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
+      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
       testLogger.test('Faber waits for credential ack from Alice')
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
@@ -238,7 +236,7 @@ describe('credentials', () => {
         state: CredentialState.Done,
       })
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         threadId: expect.any(String),
@@ -436,11 +434,15 @@ describe('credentials', () => {
       replacement_id: undefined,
     })
     expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
+    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
 
     if (aliceCredentialRecord.connectionId) {
       const acceptOfferOptions: ServiceAcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
+        credentialFormats: {
+          indy: undefined,
+          jsonld: undefined,
+        },
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
         acceptOfferOptions
@@ -472,7 +474,7 @@ describe('credentials', () => {
       })
 
       testLogger.test('Alice sends credential ack to Faber')
-      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
+      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
       testLogger.test('Faber waits for credential ack from Alice')
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
@@ -480,7 +482,7 @@ describe('credentials', () => {
         state: CredentialState.Done,
       })
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         threadId: expect.any(String),

@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { Logger } from '../../../../logger'
 import type {
   NegotiateProposalOptions,
   OfferCredentialOptions,
@@ -20,21 +20,21 @@ import type { V1CredentialPreview } from '../../protocol/v1/V1CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { CredPropose } from '../models/CredPropose'
 import type {
-  CredentialFormatSpec,
   FormatServiceCredentialAttachmentFormats,
+  CredentialFormatSpec,
+  HandlerAutoAcceptOptions,
   FormatServiceOfferAttachmentFormats,
   FormatServiceProposeAttachmentFormats,
-  HandlerAutoAcceptOptions,
   RevocationRegistry,
 } from '../models/CredentialFormatServiceOptions'
 import type { Cred, CredDef, CredOffer, CredReq, CredReqMetadata } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { AriesFrameworkError } from '../../../../../src/error'
-import { MessageValidator } from '../../../../../src/utils/MessageValidator'
-import logger from '../../../../../tests/logger'
+import { AgentConfig } from '../../../../agent/AgentConfig'
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../../../error'
+import { MessageValidator } from '../../../../utils/MessageValidator'
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
@@ -47,6 +47,7 @@ import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialMetadataKeys } from '../../repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
+import { ConnectionsModule } from '../../../connections'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyCredentialFormatService extends CredentialFormatService {
@@ -54,19 +55,22 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   private indyLedgerService: IndyLedgerService
   private indyHolderService: IndyHolderService
   protected credentialRepository: CredentialRepository // protected as in base class
+  private logger: Logger
 
   public constructor(
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
     indyIssuerService: IndyIssuerService,
     indyLedgerService: IndyLedgerService,
-    indyHolderService: IndyHolderService
+    indyHolderService: IndyHolderService,
+    agentConfig: AgentConfig
   ) {
     super(credentialRepository, eventEmitter)
     this.credentialRepository = credentialRepository
     this.indyIssuerService = indyIssuerService
     this.indyLedgerService = indyLedgerService
     this.indyHolderService = indyHolderService
+    this.logger = agentConfig.logger
   }
 
   /**
@@ -156,7 +160,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (!attachment) {
       throw new AriesFrameworkError('Missing offer attachment in processOffer')
     }
-    logger.debug(`Save metadata for credential record ${credentialRecord.id}`)
+    this.logger.debug(`Save metadata for credential record ${credentialRecord.id}`)
 
     const credOffer: CredOffer = attachment.getDataAsJson<CredOffer>()
 
@@ -188,7 +192,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     const offer = options.offerAttachment.getDataAsJson<CredOffer>()
     const credDef = await this.getCredentialDefinition(offer)
 
-    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(options, offer, credDef, holderDid)
+    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(offer, credDef, holderDid)
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
 
     const formats: CredentialFormatSpec = {
@@ -205,8 +209,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * Not implemented; there for future versions
    */
   public async processRequest(
-    options: RequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    _options: RequestCredentialOptions,
+    _credentialRecord: CredentialExchangeRecord
+    /* eslint-enable @typescript-eslint/no-unused-vars */
   ): Promise<void> {
     // not needed for Indy
   }
@@ -286,7 +292,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (!proposal.credentialFormats?.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing Credential Definition id')
     }
-
     const credOffer: CredOffer = await this.indyIssuerService.createCredentialOffer(
       proposal.credentialFormats.indy.credentialDefinitionId
     )
@@ -301,18 +306,14 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns The created credential offer
    */
   private async createIndyCredentialRequest(
-    options: ServiceRequestCredentialOptions,
     offer: CredOffer,
-    credDef: CredDef,
+    credentialDefinition: CredDef,
     holderDid: string
   ): Promise<{ credReq: CredReq; credReqMetadata: CredReqMetadata }> {
-    // if (!options.credentialDefinition || !options.credentialDefinition.credDef) {
-    //   throw new AriesFrameworkError('Unable to create Credential Request')
-    // }
     const [credReq, credReqMetadata] = await this.indyHolderService.createCredentialRequest({
       holderDid: holderDid,
       credentialOffer: offer,
-      credentialDefinition: credDef,
+      credentialDefinition,
     })
     return { credReq, credReqMetadata }
   }
@@ -432,6 +433,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
         this.areProposalAndOfferDefinitionIdEqual(handlerOptions.proposalAttachment, handlerOptions.offerAttachment)
       )
     }
+
     return false
   }
 
@@ -492,6 +494,8 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (proposeMessageAttributes && credentialAttributes) {
       const proposeValues = CredentialUtils.convertAttributesToValues(proposeMessageAttributes)
       const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
+
+
       if (CredentialUtils.checkValuesMatch(proposeValues, defaultValues)) {
         return true
       }
