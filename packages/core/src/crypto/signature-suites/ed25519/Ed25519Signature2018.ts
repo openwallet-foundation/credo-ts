@@ -1,4 +1,4 @@
-import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../../utils'
+import { DocumentLoader, JsonLdDoc, Proof, TypedArrayEncoder, VerificationMethod } from '../../../utils'
 import type { JwsLinkedDataSignatureOptions, ProofPurpose } from '../JwsLinkedDataSignature'
 
 // @ts-ignore
@@ -80,7 +80,7 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
   }
 
   public async getVerificationMethod(options: { proof: Proof; documentLoader: DocumentLoader }) {
-    const verificationMethod = await super.getVerificationMethod({
+    let verificationMethod = await super.getVerificationMethod({
       proof: options.proof,
       documentLoader: options.documentLoader,
     })
@@ -88,10 +88,7 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
     // convert Ed25519VerificationKey2020 to Ed25519VerificationKey2018
     if (_isEd2020Key(verificationMethod)) {
       // -- convert multibase to base58 --
-      const pubKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase)
-      const pubKeyBase58 = encodeToBase58(pubKeyBuffer.data)
-      delete verificationMethod.publicKeyMultibase
-      verificationMethod.publicKeyBase58 = pubKeyBase58
+      const publicKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase)
 
       // -- update context --
       // remove 2020 context
@@ -102,7 +99,13 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
       verificationMethod['@context'].push(ED25519_SUITE_CONTEXT_URL_2018)
 
       // -- update type
-      verificationMethod['@type'] = 'Ed25519VerificationKey2018'
+      verificationMethod.type = 'Ed25519VerificationKey2018'
+
+      verificationMethod = {
+        ...verificationMethod,
+        publicKeyMultibase: undefined,
+        publicKeyBase58: TypedArrayEncoder.toBase58(publicKeyBuffer.data),
+      }
     }
 
     return verificationMethod
