@@ -234,7 +234,7 @@ export class W3cCredentialService {
       proofs = [proofs]
     }
     if (options.purpose) {
-      proofs = proofs.filter((x) => x.proofPurpose === options.purpose.term)
+      proofs = proofs.filter((proof) => proof.proofPurpose === options.purpose.term)
     }
 
     const presentationSuites = proofs.map((x) => {
