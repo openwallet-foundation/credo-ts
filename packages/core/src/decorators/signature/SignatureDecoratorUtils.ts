@@ -29,7 +29,6 @@ export async function unpackAndVerifySignatureDecorator(
   const signedData = TypedArrayEncoder.fromBase64(decorator.signatureData)
   const signature = TypedArrayEncoder.fromBase64(decorator.signature)
 
-  // const isValid = await wallet.verify(signerVerkey, signedData, signature)
   const isValid = await wallet.verify({ signature, data: signedData, key })
 
   if (!isValid) {
