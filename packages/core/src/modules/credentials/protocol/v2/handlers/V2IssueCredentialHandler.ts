@@ -5,8 +5,8 @@ import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
-import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
@@ -44,12 +44,7 @@ export class V2IssueCredentialHandler implements Handler {
 
     const shouldAutoRespond = this.credentialService.shouldAutoRespondToCredential(credentialRecord, credentialMessage)
     if (shouldAutoRespond) {
-      return await this.createAck(
-        credentialRecord,
-        messageContext,
-        requestMessage ? requestMessage : undefined,
-        credentialMessage
-      )
+      return await this.createAck(credentialRecord, messageContext, requestMessage ?? undefined, credentialMessage)
     }
   }
 

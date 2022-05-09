@@ -1,18 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type {
   DeleteCredentialOptions,
   ServiceAcceptCredentialOptions,
-  ServiceAcceptOfferOptions,
   ServiceAcceptProposalOptions,
+  ServiceOfferCredentialOptions,
 } from '../CredentialServiceOptions'
 import type {
   AcceptRequestOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../CredentialsModuleOptions'
-import type { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
-import type { V2CredentialPreview } from '../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord, CredentialRepository } from '../repository'
 import type {
   FormatServiceCredentialAttachmentFormats,
@@ -20,7 +17,6 @@ import type {
   HandlerAutoAcceptOptions,
   FormatServiceOfferAttachmentFormats,
   FormatServiceProposeAttachmentFormats,
-  RevocationRegistry,
 } from './models/CredentialFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
@@ -42,9 +38,9 @@ export abstract class CredentialFormatService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<void>
 
-  abstract createOffer(proposal: ServiceAcceptOfferOptions): Promise<FormatServiceOfferAttachmentFormats>
+  abstract createOffer(options: ServiceOfferCredentialOptions): Promise<FormatServiceOfferAttachmentFormats>
 
-  abstract processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): void
+  abstract processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void>
 
   abstract createRequest(
     options: RequestCredentialOptions,
@@ -56,7 +52,9 @@ export abstract class CredentialFormatService {
 
   abstract createCredential(
     options: AcceptRequestOptions,
-    credentialRecord: CredentialExchangeRecord
+    credentialRecord: CredentialExchangeRecord,
+    requestAttachment: Attachment,
+    offerAttachment?: Attachment
   ): Promise<FormatServiceCredentialAttachmentFormats>
 
   abstract processCredential(
@@ -67,15 +65,6 @@ export abstract class CredentialFormatService {
   abstract shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): boolean
   abstract shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean
   abstract shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean
-
-  abstract getRevocationRegistry(issueAttachment: Attachment): Promise<RevocationRegistry | undefined>
-
-  public async checkPreviewAttributesMatchSchemaAttributes(
-    offersAttach: Attachment,
-    preview: V1CredentialPreview | V2CredentialPreview
-  ): Promise<void> {
-    // empty implementation
-  }
 
   abstract deleteCredentialById(
     credentialRecord: CredentialExchangeRecord,

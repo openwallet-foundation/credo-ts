@@ -1,6 +1,6 @@
-import type { LinkedAttachment } from '../../../../../src/utils/LinkedAttachment'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { ParseRevocationRegistryDefitinionTemplate } from '../../../ledger/services'
+import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
+import type { ParseRevocationRegistryDefinitionTemplate } from '../../../ledger/services'
 import type { SignCredentialOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type { W3cCredential } from '../../../vc/models/credential/W3cCredential'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
@@ -26,7 +26,7 @@ export interface IndyCredentialPreview {
 }
 
 export interface IndyProposeCredentialFormat {
-  attributes: CredentialPreviewAttribute[]
+  attributes?: CredentialPreviewAttribute[]
   linkedAttachments?: LinkedAttachment[]
   payload?: CredPropose
 }
@@ -59,7 +59,7 @@ export type FormatKeys = {
 
 export interface FormatServiceCredentialAttachmentFormats {
   format: CredentialFormatSpec
-  attachment?: Attachment
+  attachment: Attachment
 }
 
 export interface FormatServiceProposeAttachmentFormats extends FormatServiceCredentialAttachmentFormats {
@@ -96,10 +96,10 @@ export interface FormatServiceProposeCredentialFormats {
 export interface FormatServiceAcceptProposeCredentialFormats {
   indy?: {
     credentialDefinitionId?: string
+    attributes: CredentialPreviewAttribute[]
+    linkedAttachments?: LinkedAttachment[]
   }
-  jsonld?: {
-    // undefined
-  }
+  jsonld?: SignCredentialOptions
 }
 
 export interface FormatServiceRequestCredentialFormats {
@@ -120,9 +120,10 @@ export interface HandlerAutoAcceptOptions {
   offerAttachment?: Attachment
   requestAttachment?: Attachment
   credentialAttachment?: Attachment
+  credentialDefinitionId?: string
 }
 
 export interface RevocationRegistry {
-  indy?: ParseRevocationRegistryDefitinionTemplate
+  indy?: ParseRevocationRegistryDefinitionTemplate
   jsonld?: undefined
 }

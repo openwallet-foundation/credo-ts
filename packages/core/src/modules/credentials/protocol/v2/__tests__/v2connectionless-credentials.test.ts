@@ -51,12 +51,12 @@ describe('credentials', () => {
     }
     faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     const { definition, schema } = await prepareForIssuance(faberAgent, ['name', 'age'])
@@ -111,7 +111,6 @@ describe('credentials', () => {
     const acceptOfferOptions: AcceptOfferOptions = {
       credentialRecordId: aliceCredentialRecord.id,
     }
-    aliceCredentialRecord.protocolVersion = CredentialProtocolVersion.V2
 
     const credentialRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
@@ -135,10 +134,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(
-      aliceCredentialRecord.id,
-      CredentialProtocolVersion.V2
-    )
+    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -147,7 +143,7 @@ describe('credentials', () => {
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -162,7 +158,7 @@ describe('credentials', () => {
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -177,7 +173,7 @@ describe('credentials', () => {
     })
   })
 
-  xtest('Faber starts with V2 Indy connection-less credential offer to Alice with auto-accept enabled', async () => {
+  test('Faber starts with V2 Indy connection-less credential offer to Alice with auto-accept enabled', async () => {
     const offerOptions: OfferCredentialOptions = {
       comment: 'V2 Out of Band offer',
       credentialFormats: {
@@ -208,7 +204,6 @@ describe('credentials', () => {
       credentialRecordId: aliceCredentialRecord.id,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     }
-    aliceCredentialRecord.protocolVersion = CredentialProtocolVersion.V2
 
     await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
@@ -223,7 +218,7 @@ describe('credentials', () => {
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -238,7 +233,7 @@ describe('credentials', () => {
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       state: CredentialState.Done,

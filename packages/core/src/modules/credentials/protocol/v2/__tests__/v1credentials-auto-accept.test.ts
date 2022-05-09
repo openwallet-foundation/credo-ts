@@ -88,7 +88,7 @@ describe('credentials', () => {
         state: CredentialState.Done,
       })
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {
@@ -130,7 +130,7 @@ describe('credentials', () => {
         state: CredentialState.Done,
       })
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {
@@ -151,7 +151,7 @@ describe('credentials', () => {
         state: CredentialState.Done,
       })
       expect(faberCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         state: CredentialState.Done,
@@ -210,8 +210,10 @@ describe('credentials', () => {
         credentialFormats: {
           indy: {
             credentialDefinitionId: credDefId,
+            attributes: credentialPreview.attributes,
           },
         },
+        protocolVersion: CredentialProtocolVersion.V1,
       }
       testLogger.test('Faber sends credential offer to Alice')
       options.credentialRecordId = faberCredentialExchangeRecord.id
@@ -230,7 +232,7 @@ describe('credentials', () => {
       })
 
       expect(aliceCredentialExchangeRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {
@@ -252,7 +254,7 @@ describe('credentials', () => {
       })
 
       expect(faberCredentialExchangeRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {
@@ -304,7 +306,6 @@ describe('credentials', () => {
         connectionId: aliceConnection.id,
         credentialIds: [],
       })
-      expect(aliceCredentialExchangeRecord.type).toBe(CredentialExchangeRecord.name)
 
       if (aliceCredentialExchangeRecord.connectionId) {
         const acceptOfferOptions: AcceptOfferOptions = {
@@ -326,7 +327,7 @@ describe('credentials', () => {
         })
 
         expect(aliceCredentialExchangeRecord).toMatchObject({
-          type: CredentialExchangeRecord.name,
+          type: CredentialExchangeRecord.type,
           id: expect.any(String),
           createdAt: expect.any(Date),
           metadata: {
@@ -348,7 +349,7 @@ describe('credentials', () => {
         })
 
         expect(faberCredentialExchangeRecord).toMatchObject({
-          type: CredentialExchangeRecord.name,
+          type: CredentialExchangeRecord.type,
           id: expect.any(String),
           createdAt: expect.any(Date),
           state: CredentialState.Done,
@@ -389,6 +390,7 @@ describe('credentials', () => {
             attributes: newCredentialPreview.attributes,
           },
         },
+        protocolVersion: CredentialProtocolVersion.V1,
       }
       await faberAgent.credentials.negotiateProposal(negotiateOptions)
 
@@ -407,7 +409,6 @@ describe('credentials', () => {
         connectionId: aliceConnection.id,
         credentialIds: [],
       })
-      expect(record.type).toBe(CredentialExchangeRecord.name)
 
       // Check if the state of the credential records did not change
       faberCredentialExchangeRecord = await faberAgent.credentials.getById(faberCredentialExchangeRecord.id)
@@ -446,7 +447,6 @@ describe('credentials', () => {
         connectionId: aliceConnection.id,
         credentialIds: [],
       })
-      expect(aliceCredentialExchangeRecord.type).toBe(CredentialExchangeRecord.name)
 
       testLogger.test('Alice sends credential request to Faber')
       const negotiateOfferOptions: NegotiateOfferOptions = {

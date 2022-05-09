@@ -19,7 +19,7 @@ export class MessageDeliveryMessage extends AgentMessage {
     if (options) {
       this.id = options.id || this.generateId()
       this.recipientKey = options.recipientKey
-      this.attachments = options.attachments
+      this.appendedAttachments = options.attachments
     }
     this.setReturnRouting(ReturnRouteTypes.all)
   }

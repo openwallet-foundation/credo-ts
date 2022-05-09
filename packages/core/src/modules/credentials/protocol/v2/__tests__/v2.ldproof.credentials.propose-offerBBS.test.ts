@@ -22,6 +22,8 @@ import { CredentialState } from '../../../CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
+import { AnonymousSubject } from 'rxjs/internal/Subject'
+import { V2CredentialPreview } from '../V2CredentialPreview'
 
 let faberAgent: Agent
 let aliceAgent: Agent
@@ -131,6 +133,7 @@ describe('credentials, BBS+ signature', () => {
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
+      protocolVersion: CredentialProtocolVersion.V2,
     }
     testLogger.test('Faber sends credential offer to Alice')
     await faberAgent.credentials.acceptProposal(options)
@@ -179,15 +182,18 @@ describe('credentials, BBS+ signature', () => {
       '~timing': undefined,
       '~transport': undefined,
       '~l10n': undefined,
-      credential_preview: undefined,
+      credential_preview: expect.any(Object),
       replacement_id: undefined,
     })
     expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
+    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
 
     if (aliceCredentialRecord.connectionId) {
       const acceptOfferOptions: ServiceAcceptOfferOptions = {
         credentialRecordId: aliceCredentialRecord.id,
+        credentialFormats: {
+          jsonld: undefined,
+        },
       }
       const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
         acceptOfferOptions
@@ -219,7 +225,7 @@ describe('credentials, BBS+ signature', () => {
       })
 
       testLogger.test('Alice sends credential ack to Faber')
-      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id, CredentialProtocolVersion.V2)
+      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
       testLogger.test('Faber waits for credential ack from Alice')
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
@@ -227,7 +233,7 @@ describe('credentials, BBS+ signature', () => {
         state: CredentialState.Done,
       })
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         threadId: expect.any(String),

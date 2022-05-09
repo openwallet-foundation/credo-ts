@@ -11,7 +11,8 @@ import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { Key, KeyType } from '../../../../../../src/crypto'
+import { KeyType } from '../../../../../../src/crypto'
+import { Key } from '../../../../../../src/crypto/Key'
 import { DidKey } from '../../../../../../src/modules/dids'
 import { JsonTransformer } from '../../../../../../src/utils'
 import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
@@ -33,7 +34,6 @@ const aliceConfig = getBaseConfig('Alice LD connection-less Credentials V2', {
 })
 
 let wallet: IndyWallet
-let issuerDidKey: DidKey
 let credential: W3cCredential
 let signCredentialOptions: SignCredentialOptions
 
@@ -42,6 +42,8 @@ describe('credentials', () => {
   let aliceAgent: Agent
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
+  let issuerDidKey: DidKey
+  const seed = 'testseed000000000000000000000001'
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -53,12 +55,12 @@ describe('credentials', () => {
     }
     faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     await prepareForIssuance(faberAgent, ['name', 'age'])
@@ -74,11 +76,15 @@ describe('credentials', () => {
       .subscribe(aliceReplay)
 
     wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-    await wallet.initPublicDid({})
-    const pubDid = wallet.publicDid
+    // await wallet.initPublicDid({})
+    // const pubDid = wallet.publicDid
+    // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
+    // issuerDidKey = new DidKey(key)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-    issuerDidKey = new DidKey(key)
+    const issuerDidInfo = await wallet.createDid({ seed })
+    const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+    issuerDidKey = new DidKey(issuerKey)
 
     const inputDoc = {
       '@context': [
@@ -177,10 +183,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(
-      aliceCredentialRecord.id,
-      CredentialProtocolVersion.V2
-    )
+    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -189,7 +192,7 @@ describe('credentials', () => {
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       state: CredentialState.Done,
@@ -197,7 +200,7 @@ describe('credentials', () => {
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.name,
+      type: CredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       state: CredentialState.Done,

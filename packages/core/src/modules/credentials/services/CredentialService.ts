@@ -24,7 +24,7 @@ import type {
   ProposeCredentialOptions,
 } from './../CredentialsModuleOptions'
 import type { CredentialFormatService } from './../formats/CredentialFormatService'
-import type { CredentialFormats } from './../formats/models/CredentialFormatServiceOptions'
+import type { CredentialFormats, HandlerAutoAcceptOptions } from './../formats/models/CredentialFormatServiceOptions'
 import type {
   V1CredentialProblemReportMessage,
   V1IssueCredentialMessage,
@@ -169,11 +169,7 @@ export abstract class CredentialService {
     await this.update(credentialRecord)
     return credentialRecord
   }
-  abstract shouldAutoRespondToProposal(
-    credentialRecord: CredentialExchangeRecord,
-    proposeMessage: V1ProposeCredentialMessage | V2ProposeCredentialMessage,
-    offerMessage?: V1OfferCredentialMessage | V2OfferCredentialMessage
-  ): boolean
+  abstract shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): Promise<boolean>
 
   abstract shouldAutoRespondToOffer(
     credentialRecord: CredentialExchangeRecord,
@@ -251,18 +247,18 @@ export abstract class CredentialService {
     return this.credentialRepository.findById(connectionId)
   }
 
-  /**
-   * Delete a credential record by id
-   *
-   * @param credentialId the credential record id
-   */
-  public async deleteByIdOLD(credentialId: string) {
+  public async deleteById(credentialId: string, options?: DeleteCredentialOptions): Promise<void> {
     const credentialRecord = await this.getById(credentialId)
-    return this.credentialRepository.delete(credentialRecord)
+
+    await this.credentialRepository.delete(credentialRecord)
+
+    if (options?.deleteAssociatedCredentials) {
+      for (const credential of credentialRecord.credentials) {
+        const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
+        await formatService.deleteCredentialById(credentialRecord, options)
+      }
+    }
   }
-
-  abstract deleteById(credentialId: string, options?: DeleteCredentialOptions): Promise<void>
-
   /**
    * Retrieve a credential record by connection id and thread id
    *

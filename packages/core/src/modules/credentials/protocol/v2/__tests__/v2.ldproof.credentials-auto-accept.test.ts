@@ -9,9 +9,9 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
 } from '../../../CredentialsModuleOptions'
-import type { Schema } from 'indy-sdk'
 
-import { Key, KeyType } from '../../../../../../src/crypto'
+import { KeyType } from '../../../../../../src/crypto'
+import { Key } from '../../../../../../src/crypto/Key'
 import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { DidKey } from '../../../../../../src/modules/dids'
 import { W3cCredential } from '../../../../../../src/modules/vc/models'
@@ -19,7 +19,6 @@ import { JsonTransformer } from '../../../../../../src/utils'
 import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
-import { sleep } from '../../../../../utils/sleep'
 import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
@@ -39,19 +38,24 @@ describe('credentials', () => {
   let signCredentialOptions: SignCredentialOptions
 
   describe('Auto accept on `always`', () => {
+    const seed = 'testseed000000000000000000000001'
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
         'faber agent: always v2 jsonld',
         'alice agent: always v2 jsonld',
         AutoAcceptCredential.Always
       ))
-
       wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-      await wallet.initPublicDid({})
-      const pubDid = wallet.publicDid
+      // await wallet.initPublicDid({})
+      // const pubDid = wallet.publicDid
+      // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
+      // issuerDidKey = new DidKey(key)
+
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-      issuerDidKey = new DidKey(key)
+      const issuerDidInfo = await wallet.createDid({ seed })
+      const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+      issuerDidKey = new DidKey(issuerKey)
 
       const inputDoc = {
         '@context': [
@@ -108,7 +112,7 @@ describe('credentials', () => {
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
-        comment: 'v propose credential test',
+        comment: 'v2 propose credential test',
       }
       const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential(proposeOptions)
       testLogger.test('Alice waits for credential from Faber')
@@ -122,7 +126,7 @@ describe('credentials', () => {
         state: CredentialState.Done,
       })
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {},
@@ -167,14 +171,14 @@ describe('credentials', () => {
         state: CredentialState.Done,
       })
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {},
         state: CredentialState.Done,
       })
       expect(faberCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         state: CredentialState.Done,
@@ -183,6 +187,8 @@ describe('credentials', () => {
   })
 
   describe('Auto accept on `contentApproved`', () => {
+    const seed = 'testseed000000000000000000000001'
+
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
         'faber agent: content-approved v2 jsonld',
@@ -190,11 +196,16 @@ describe('credentials', () => {
         AutoAcceptCredential.ContentApproved
       ))
       wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-      await wallet.initPublicDid({})
-      const pubDid = wallet.publicDid
+      // await wallet.initPublicDid({})
+      // const pubDid = wallet.publicDid
+      // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
+      // issuerDidKey = new DidKey(key)
+
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-      issuerDidKey = new DidKey(key)
+      const issuerDidInfo = await wallet.createDid({ seed })
+      const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+      issuerDidKey = new DidKey(issuerKey)
 
       const inputDoc = {
         '@context': [
@@ -268,6 +279,7 @@ describe('credentials', () => {
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
+        protocolVersion: CredentialProtocolVersion.V2,
       }
       const faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal(options)
 
@@ -286,7 +298,7 @@ describe('credentials', () => {
       })
 
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {},
@@ -294,7 +306,7 @@ describe('credentials', () => {
       })
 
       expect(faberCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.name,
+        type: CredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {},
@@ -327,7 +339,7 @@ describe('credentials', () => {
         connectionId: aliceConnection.id,
         credentialIds: [],
       })
-      expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
+      expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
 
       if (aliceCredentialRecord.connectionId) {
         // we do not need to specify connection id in this object
@@ -356,7 +368,7 @@ describe('credentials', () => {
         })
 
         expect(aliceCredentialRecord).toMatchObject({
-          type: CredentialExchangeRecord.name,
+          type: CredentialExchangeRecord.type,
           id: expect.any(String),
           createdAt: expect.any(Date),
           metadata: {},
@@ -364,7 +376,7 @@ describe('credentials', () => {
         })
 
         expect(faberCredentialRecord).toMatchObject({
-          type: CredentialExchangeRecord.name,
+          type: CredentialExchangeRecord.type,
           id: expect.any(String),
           createdAt: expect.any(Date),
           state: CredentialState.Done,
@@ -396,6 +408,7 @@ describe('credentials', () => {
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
+        protocolVersion: CredentialProtocolVersion.V2,
       }
 
       // await sleep(5000)
@@ -417,7 +430,7 @@ describe('credentials', () => {
         connectionId: aliceConnection.id,
         credentialIds: [],
       })
-      expect(record.type).toBe(CredentialExchangeRecord.name)
+      expect(record.type).toBe(CredentialExchangeRecord.type)
 
       // Check if the state of the credential records did not change
       faberCredentialRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)
@@ -452,7 +465,7 @@ describe('credentials', () => {
         connectionId: aliceConnection.id,
         credentialIds: [],
       })
-      expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.name)
+      expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
 
       testLogger.test('Alice sends credential request to Faber')
       const proposeOptions: NegotiateOfferOptions = {

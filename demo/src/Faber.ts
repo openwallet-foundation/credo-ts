@@ -4,15 +4,15 @@
 import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import type { ConnectionRecord } from '@aries-framework/core'
-import { CredentialProtocolVersion } from '@aries-framework/core'
-
 import {
   AttributeFilter,
-  V1CredentialPreview,
   ProofAttributeInfo,
-  utils,
   ProofProtocolVersion,
+  utils,
+  V1CredentialPreview,
 } from '@aries-framework/core'
+import { CredentialProtocolVersion } from '@aries-framework/core'
+
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'

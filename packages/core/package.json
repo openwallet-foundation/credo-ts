@@ -23,6 +23,7 @@
     "prepublishOnly": "yarn run build"
   },
   "dependencies": {
+    "@digitalbazaar/ed25519-verification-key-2020": "^3.2.0",
     "@digitalcredentials/jsonld": "^5.2.1",
     "@digitalcredentials/jsonld-signatures": "^9.3.1",
     "@digitalcredentials/vc": "^1.1.2",
