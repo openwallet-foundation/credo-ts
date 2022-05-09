@@ -138,7 +138,7 @@ describe('Present Proof', () => {
     faberProofRecord = await waitForProofRecordSubject(faberReplay, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      timeoutMs: 200000,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
     // assert presentation is valid
@@ -222,13 +222,13 @@ describe('Present Proof', () => {
     await waitForProofRecordSubject(aliceReplay, {
       threadId: faberProofRecord.threadId,
       state: ProofState.Done,
-      timeoutMs: 200000,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
     await waitForProofRecordSubject(faberReplay, {
       threadId: faberProofRecord.threadId,
       state: ProofState.Done,
-      timeoutMs: 200000,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
   })
 
@@ -465,13 +465,13 @@ describe('Present Proof', () => {
     await waitForProofRecordSubject(aliceReplay, {
       threadId: faberProofRecord.threadId,
       state: ProofState.Done,
-      timeoutMs: 200000,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
     await waitForProofRecordSubject(faberReplay, {
       threadId: faberProofRecord.threadId,
       state: ProofState.Done,
-      timeoutMs: 200000,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
   })
 })

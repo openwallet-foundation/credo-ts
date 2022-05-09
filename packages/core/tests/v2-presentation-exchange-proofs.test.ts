@@ -237,7 +237,7 @@ describe('Present Proof', () => {
     faberProofRecord = await waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      timeoutMs: 200000,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
     const presentation = await didCommMessageRepository.findAgentMessage({
@@ -373,8 +373,6 @@ describe('Present Proof', () => {
       messageClass: V2RequestPresentationMessage,
     })
 
-    // console.log('request', JSON.stringify(request, null, 2))
-
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/request-presentation',
       id: expect.any(String),
@@ -458,7 +456,7 @@ describe('Present Proof', () => {
     faberProofRecord = await waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      timeoutMs: 200000,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
     const presentation = await didCommMessageRepository.findAgentMessage({

@@ -75,14 +75,14 @@ describe('Auto accept present proof', () => {
       await waitForProofRecord(faberAgent, {
         threadId: aliceProofRecord.threadId,
         state: ProofState.Done,
-        timeoutMs: 200000,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
       testLogger.test('Alice waits till it receives presentation ack')
       await waitForProofRecord(aliceAgent, {
         threadId: aliceProofRecord.threadId,
         state: ProofState.Done,
-        timeoutMs: 200000,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
     })
 
@@ -141,13 +141,13 @@ describe('Auto accept present proof', () => {
       await waitForProofRecord(faberAgent, {
         threadId: faberProofRecord.threadId,
         state: ProofState.Done,
-        timeoutMs: 200000,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
       // Alice waits till it receives presentation ack
       await waitForProofRecord(aliceAgent, {
         threadId: faberProofRecord.threadId,
         state: ProofState.Done,
-        timeoutMs: 200000,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
     })
   })
@@ -231,13 +231,13 @@ describe('Auto accept present proof', () => {
       await waitForProofRecord(faberAgent, {
         threadId: aliceProofRecord.threadId,
         state: ProofState.Done,
-        timeoutMs: 200000,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
       // Alice waits till it receives presentation ack
       await waitForProofRecord(aliceAgent, {
         threadId: aliceProofRecord.threadId,
         state: ProofState.Done,
-        timeoutMs: 200000,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
     })
 
@@ -297,14 +297,14 @@ describe('Auto accept present proof', () => {
       await waitForProofRecord(faberAgent, {
         threadId: faberProofRecord.threadId,
         state: ProofState.Done,
-        timeoutMs: 200000,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
       // Alice waits till it receives presentation ack
       await waitForProofRecord(aliceAgent, {
         threadId: faberProofRecord.threadId,
         state: ProofState.Done,
-        timeoutMs: 200000,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
     })
   })

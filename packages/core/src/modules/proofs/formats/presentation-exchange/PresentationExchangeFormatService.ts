@@ -19,7 +19,6 @@ import type {
 } from '../models/ProofFormatServiceOptions'
 import type { InputDescriptorsSchemaOptions, SchemaOptions } from './models'
 
-import { BbsBlsSignature2020 } from '@mattrglobal/jsonld-signatures-bbs'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
@@ -43,7 +42,7 @@ import {
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
 import { InputDescriptorsSchema } from './models'
-import { ClaimFormatSchema, PresentationDefinition, RequestPresentation } from './models/RequestPresentation'
+import { PresentationDefinition, RequestPresentation } from './models/RequestPresentation'
 
 @scoped(Lifecycle.ContainerScoped)
 export class PresentationExchangeFormatService extends ProofFormatService {
@@ -99,9 +98,10 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
   public async createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats> {
     const inputDescriptorsJson = options.presentationAttachment.getDataAsJson<InputDescriptorsSchema>() ?? null
+    const inputDescriptors = JsonTransformer.fromJSON(inputDescriptorsJson, InputDescriptorsSchema)
 
     const presentationDefinition: PresentationDefinition = new PresentationDefinition({
-      inputDescriptors: inputDescriptorsJson['input_descriptors'],
+      inputDescriptors: inputDescriptors.inputDescriptors,
       format: {
         ldpVc: {
           proofType: ['Ed25519Signature2018'],
@@ -269,8 +269,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       throw Error('Presentation  missing while processing presentation in presentation exchange service.')
     }
 
-    // console.log('options in process presentations:\n', JSON.stringify(options.presentation, null, 2))
-
     const requestFormat = options.presentation.request.find(
       (x) => x.format.format === V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST
     )
@@ -283,7 +281,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const requestMessage = JsonTransformer.fromJSON(proofRequestJson, RequestPresentation)
 
-    // console.log('proofRequestJson', proofRequestJson)
     const proofPresentationRequestJson = proofFormat?.attachment.getDataAsJson<Attachment>() ?? null
 
     const w3cVerifiablePresentation = JsonTransformer.fromJSON(proofPresentationRequestJson, W3cVerifiablePresentation)
@@ -312,43 +309,16 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       PresentationDefinition
     )
 
-    const claimFormat = JsonTransformer.fromJSON(presentationDefinition.format, ClaimFormatSchema)
-
     let credentialsList: W3cCredential[] = []
-    // const claimFormat = presentationDefinition.format
-    let difHandlerProofType
     for (const inputDescriptor of presentationDefinition.inputDescriptors) {
-      let proofType: string[] = []
-      const limitDisclosure = inputDescriptor.constraints.limitDisclosure
-
       const uriList = []
-      // const oneOfUriGroups = []
 
-      // if (inputDescriptor.schema['oneOf_filter']) {
-      //   oneOfUriGroups.push(await this.retrieveUriListFromSchemaFilter(inputDescriptor.schema['uri_groups']))
-      // } else {
       const schemaUris = inputDescriptor.schema[0]
       uriList.push(schemaUris.uri)
-      // }
 
       if (uriList.length === 0) {
         uriList.splice(0)
       }
-      // if (oneOfUriGroups.length === 0) {
-      //   oneOfUriGroups.splice(0)
-      // }
-      if (limitDisclosure) {
-        proofType = BbsBlsSignature2020.proofType
-        difHandlerProofType = BbsBlsSignature2020.proofType
-      }
-
-      // if (claimFormat) {
-      //   if (claimFormat.ldpVp) {
-      //     if (proofType.includes()) {
-
-      //     }
-      //   }
-      // }
 
       const searched = await this.w3cCredentialService.findCredentialByQuery({ contexts: uriList })
 
