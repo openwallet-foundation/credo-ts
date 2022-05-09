@@ -28,9 +28,7 @@ import jsonld from 'jsonld'
 
 import { AriesFrameworkError } from '../../../error'
 import { SECURITY_CONTEXT_BBS_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
-import { TypedArrayEncoder } from '../../../utils'
-
-import { w3cDate } from './bbs-utils'
+import { w3cDate, TypedArrayEncoder } from '../../../utils'
 
 /**
  * A BBS+ signature suite for use with BLS12-381 key pairs

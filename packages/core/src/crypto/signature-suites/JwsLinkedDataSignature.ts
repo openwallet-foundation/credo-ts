@@ -6,6 +6,7 @@ import type { LdKeyPair } from '../LdKeyPair'
 
 import jsigs from '@digitalcredentials/jsonld-signatures'
 
+import { AriesFrameworkError } from '../../error'
 import { TypedArrayEncoder, JsonEncoder } from '../../utils'
 
 const LinkedDataSignature = jsigs.suites.LinkedDataSignature
@@ -180,6 +181,12 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
 
     if (!verificationMethod) {
       throw new Error('No "verificationMethod" found in proof.')
+    }
+
+    if (!options.documentLoader) {
+      throw new AriesFrameworkError(
+        'Missing custom document loader. This is required for resolving verification methods.'
+      )
     }
 
     const { document } = await options.documentLoader(verificationMethod)

@@ -14,10 +14,10 @@
 import type { JsonObject } from '../../../types'
 import type { Proof } from '../../../utils'
 
-import { constants } from '@digitalcredentials/jsonld-signatures'
 import jsonld from 'jsonld'
 
-import { getProofs, getTypeInfo } from './bbs-utils'
+import { SECURITY_PROOF_URL } from '../../../modules/vc/constants'
+import { getProofs, getTypeInfo } from '../../../utils'
 
 /**
  * Derives a proof from a document featuring a supported linked data proof
@@ -85,7 +85,7 @@ export const deriveProof = async (
   if (!skipProofCompaction) {
     /* eslint-disable prefer-const */
     let expandedProof: Record<string, unknown> = {
-      [constants.SECURITY_PROOF_URL]: {
+      [SECURITY_PROOF_URL]: {
         '@graph': derivedProof.proof,
       },
     }
