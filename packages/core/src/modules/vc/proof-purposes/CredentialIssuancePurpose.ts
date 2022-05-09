@@ -1,11 +1,11 @@
-import type { JwsLinkedDataSignature } from '../../../crypto/signature-suites/JwsLinkedDataSignature'
-import type { Proof, DocumentLoader } from '../../../utils'
+import type { JsonObject } from '../../../types'
+import type { DocumentLoader, Proof } from '../../../utils'
 
 import jsonld from '@digitalcredentials/jsonld'
 import jsigs from '@digitalcredentials/jsonld-signatures'
 
 const AssertionProofPurpose = jsigs.purposes.AssertionProofPurpose
-
+const LinkedDataProof = jsigs.suites.LinkedDataProof
 /**
  * Creates a proof purpose that will validate whether or not the verification
  * method in a proof was authorized by its declared controller for the
@@ -50,14 +50,15 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
    */
   public async validate(
     proof: Proof,
-    options: {
-      document: Record<string, unknown>
-      suite: JwsLinkedDataSignature
+    options?: {
+      document: JsonObject
+      suite: typeof LinkedDataProof
       verificationMethod: string
       documentLoader?: DocumentLoader
       expansionMap?: () => void
     }
-  ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<{ valid: boolean; error?: any }> {
     try {
       const result = await super.validate(proof, options)
 

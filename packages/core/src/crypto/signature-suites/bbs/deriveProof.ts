@@ -29,7 +29,7 @@ import { getProofs, getTypeInfo } from './bbs-utils'
  * @param options Options for proof derivation
  */
 export const deriveProof = async (
-  proofDocument: Proof,
+  proofDocument: JsonObject,
   revealDocument: JsonObject,
   { suite, skipProofCompaction, documentLoader, expansionMap, nonce }: any
 ): Promise<Proof> => {

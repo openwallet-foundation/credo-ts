@@ -1,5 +1,4 @@
-/* eslint-disable */
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare module '@digitalcredentials/jsonld-signatures' {
   export const suites: {
     LinkedDataSignature: any

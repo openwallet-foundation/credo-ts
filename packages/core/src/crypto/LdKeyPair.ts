@@ -1,3 +1,5 @@
+import type { VerificationMethod } from '../modules/dids'
+
 export interface LdKeyPairOptions {
   id: string
   controller: string
@@ -18,7 +20,7 @@ export abstract class LdKeyPair {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public static async from(verificationMethod: Record<string, any>): Promise<LdKeyPair> {
+  public static async from(verificationMethod: VerificationMethod): Promise<LdKeyPair> {
     throw new Error('Abstract method from() must be implemented in subclass.')
   }
 

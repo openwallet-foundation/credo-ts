@@ -9,9 +9,6 @@ import jsigs from '@digitalcredentials/jsonld-signatures'
 import { TypedArrayEncoder, JsonEncoder } from '../../utils'
 
 const LinkedDataSignature = jsigs.suites.LinkedDataSignature
-
-export type ProofPurpose = any
-
 export interface JwsLinkedDataSignatureOptions {
   type: string
   algorithm: string
@@ -216,7 +213,8 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
   public async matchProof(options: {
     proof: Proof
     document: VerificationMethod
-    purpose: ProofPurpose
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    purpose: any
     documentLoader?: DocumentLoader
     expansionMap?: () => void
   }) {

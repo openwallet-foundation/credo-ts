@@ -1,5 +1,6 @@
 import type { Key } from '../../crypto/Key'
-import type { DocumentLoaderResult } from '../../utils'
+import type { JsonObject } from '../../types'
+import type { DocumentLoaderResult, Proof } from '../../utils'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
   CreatePresentationOptions,
@@ -25,11 +26,11 @@ import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/n
 // eslint-disable-next-line import/no-extraneous-dependencies
 import documentLoaderXhr from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
 import vc from '@digitalcredentials/vc'
-import { deriveProof } from '@mattrglobal/jsonld-signatures-bbs'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
+import { deriveProof } from '../../crypto/signature-suites/bbs'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { JsonTransformer, orArrayToArray } from '../../utils'
@@ -272,7 +273,7 @@ export class W3cCredentialService {
     return result as unknown as VerifyPresentationResult
   }
 
-  public async deriveProof(options: DeriveProofOptions): Promise<W3cVerifiableCredential> {
+  public async deriveProof(options: DeriveProofOptions): Promise<Proof> {
     const suiteInfo = this.suiteRegistry.getByProofType('BbsBlsSignatureProof2020')
     const SuiteClass = suiteInfo.suiteClass
 

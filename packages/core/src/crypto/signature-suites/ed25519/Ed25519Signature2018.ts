@@ -1,12 +1,10 @@
 import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../../utils'
-import type { JwsLinkedDataSignatureOptions, ProofPurpose } from '../JwsLinkedDataSignature'
+import type { JwsLinkedDataSignatureOptions } from '../JwsLinkedDataSignature'
 
-// @ts-ignore
 import jsonld from '@digitalcredentials/jsonld'
 
 import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
 import { TypedArrayEncoder, MultiBaseEncoder, _includesContext } from '../../../utils'
-import { encodeToBase58 } from '../../../utils/base58'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 
 import { ED25519_SUITE_CONTEXT_URL_2018, ED25519_SUITE_CONTEXT_URL_2020 } from './constants'
@@ -155,7 +153,8 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
   public async matchProof(options: {
     proof: Proof
     document: VerificationMethod
-    purpose: ProofPurpose
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    purpose: any
     documentLoader?: DocumentLoader
     expansionMap?: () => void
   }) {
