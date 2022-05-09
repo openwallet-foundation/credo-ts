@@ -1,8 +1,7 @@
 import { Agent } from '../src/agent/Agent'
+import { JsonTransformer } from '../src/utils/JsonTransformer'
 
 import { getBaseConfig } from './helpers'
-
-import { JsonTransformer } from '@aries-framework/core'
 
 const { config, agentDependencies } = getBaseConfig('Faber Dids', {})
 
@@ -30,8 +29,8 @@ describe('dids', () => {
           'https://w3id.org/security/suites/x25519-2019/v1',
         ],
         id: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
-        alsoKnownAs: [],
-        controller: [],
+        alsoKnownAs: undefined,
+        controller: undefined,
         verificationMethod: [
           {
             type: 'Ed25519VerificationKey2018',
@@ -46,12 +45,12 @@ describe('dids', () => {
             publicKeyBase58: '6oKfyWDYRpbutQWDUu8ots6GoqAZJ9HYRzPuuEiqfyM',
           },
         ],
-        capabilityDelegation: [],
-        capabilityInvocation: [],
+        capabilityDelegation: undefined,
+        capabilityInvocation: undefined,
         authentication: ['did:sov:TL1EaPFCZ8Si5aUrqScBDt#key-1'],
         assertionMethod: ['did:sov:TL1EaPFCZ8Si5aUrqScBDt#key-1'],
         keyAgreement: ['did:sov:TL1EaPFCZ8Si5aUrqScBDt#key-agreement-1'],
-        service: [],
+        service: undefined,
       },
       didDocumentMetadata: {},
       didResolutionMetadata: {
@@ -71,8 +70,8 @@ describe('dids', () => {
           'https://w3id.org/security/suites/x25519-2019/v1',
         ],
         id: 'did:key:z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL',
-        alsoKnownAs: [],
-        controller: [],
+        alsoKnownAs: undefined,
+        controller: undefined,
         verificationMethod: [
           {
             id: 'did:key:z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL#z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL',
@@ -101,7 +100,7 @@ describe('dids', () => {
             publicKeyBase58: 'FxfdY3DCQxVZddKGAtSjZdFW9bCCW7oRwZn1NFJ2Tbg2',
           },
         ],
-        service: [],
+        service: undefined,
       },
       didDocumentMetadata: {},
       didResolutionMetadata: {
@@ -121,8 +120,8 @@ describe('dids', () => {
           'https://w3id.org/security/suites/x25519-2019/v1',
         ],
         id: 'did:peer:0z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL',
-        alsoKnownAs: [],
-        controller: [],
+        alsoKnownAs: undefined,
+        controller: undefined,
         verificationMethod: [
           {
             id: 'did:peer:0z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL#z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL',
@@ -151,7 +150,7 @@ describe('dids', () => {
             publicKeyBase58: 'FxfdY3DCQxVZddKGAtSjZdFW9bCCW7oRwZn1NFJ2Tbg2',
           },
         ],
-        service: [],
+        service: undefined,
       },
       didDocumentMetadata: {},
       didResolutionMetadata: {

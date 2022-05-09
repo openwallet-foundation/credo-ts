@@ -68,8 +68,11 @@ jobs:
       - name: Prettier
         run: yarn check-format
 
-      - name: Compile
+      - name: Check Types
         run: yarn check-types
+
+      - name: Compile
+        run: yarn build
 
   integration-test:
     runs-on: ubuntu-20.04
