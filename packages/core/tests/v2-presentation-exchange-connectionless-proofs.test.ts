@@ -370,10 +370,6 @@ describe('Present Proof', () => {
       connectionId: faberConnection.id,
       protocolVersion: CredentialProtocolVersion.V2,
       credentialFormats: {
-        indy: {
-          attributes: credentialPreview.attributes,
-          credentialDefinitionId: definition.id,
-        },
         jsonld: signCredentialOptions,
       },
     }

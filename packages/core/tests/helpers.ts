@@ -797,23 +797,22 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
     ],
   })
 
-  const wallet: IndyWallet = faberAgent.injectionContainer.resolve(IndyWallet)
+  const issuerSeed = 'testseed0000000000000000000000I1'
+  const holderSeed = 'testseed0000000000000000000000H1'
 
-  await wallet.initPublicDid({})
+  //  create issuer did for test
 
-  const pubDid = wallet.publicDid
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-  const issuerDidKey: DidKey = new DidKey(key)
+  const faberWallet: IndyWallet = faberAgent.injectionContainer.resolve(IndyWallet)
 
+  const issuerDidInfo = await faberWallet.createDid({ seed: issuerSeed })
+  const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+  const issuerDidKey: DidKey = new DidKey(issuerKey)
+
+  //  create holder did for test
   const aliceWallet: IndyWallet = aliceAgent.injectionContainer.resolve(IndyWallet)
-
-  await aliceWallet.initPublicDid({})
-
-  const alicePubDid = aliceWallet.publicDid
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const aliceKey = Key.fromPublicKeyBase58(alicePubDid!.verkey, KeyType.Ed25519)
-  const aliceDidKey: DidKey = new DidKey(aliceKey)
+  const holderDidInfo = await aliceWallet.createDid({ seed: holderSeed })
+  const holderKey = Key.fromPublicKeyBase58(holderDidInfo.verkey, KeyType.Ed25519)
+  const holderDidKey: DidKey = new DidKey(holderKey)
 
   const inputDoc = {
     '@context': [
@@ -830,7 +829,7 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
     issuanceDate: '2019-12-03T12:19:52Z',
     expirationDate: '2029-12-03T12:19:52Z',
     credentialSubject: {
-      id: aliceDidKey.did,
+      id: holderDidKey.did,
       type: ['PermanentResident', 'Person'],
       givenName: 'JOHN',
       familyName: 'SMITH',
@@ -866,15 +865,12 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
   const offerOptions: OfferCredentialOptions = {
     comment: 'some comment about credential',
     connectionId: faberConnection.id,
-    protocolVersion: CredentialProtocolVersion.V2,
     credentialFormats: {
-      indy: {
-        attributes: credentialPreview.attributes,
-        credentialDefinitionId: definition.id,
-      },
       jsonld: signCredentialOptions,
     },
+    protocolVersion: CredentialProtocolVersion.V2,
   }
+
   let issuerCredentialRecord = await faberAgent.credentials.offerCredential(offerOptions)
 
   // Because we use auto-accept it can take a while to have the whole credential flow finished
