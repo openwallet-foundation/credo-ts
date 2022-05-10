@@ -176,9 +176,6 @@ export class ConnectionService {
       did,
       mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
-      tags: {
-        invitationKey: Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58,
-      },
     })
 
     const { did: peerDid } = await this.createDid({
