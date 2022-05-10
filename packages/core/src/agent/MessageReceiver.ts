@@ -68,9 +68,9 @@ export class MessageReceiver {
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
     this.logger.debug(`Agent ${this.config.label} received message`)
     if (this.isEncryptedMessage(inboundMessage)) {
-      await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
+      return await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
     } else if (this.isPlaintextMessage(inboundMessage)) {
-      await this.receivePlaintextMessage(inboundMessage)
+      return await this.receivePlaintextMessage(inboundMessage)
     } else {
       throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
     }
@@ -80,6 +80,7 @@ export class MessageReceiver {
     const message = await this.transformAndValidate(plaintextMessage)
     const messageContext = new InboundMessageContext(message, {})
     await this.dispatcher.dispatch(messageContext)
+    return messageContext
   }
 
   private async receiveEncryptedMessage(encryptedMessage: EncryptedMessage, session?: TransportSession) {
@@ -128,6 +129,7 @@ export class MessageReceiver {
     }
 
     await this.dispatcher.dispatch(messageContext)
+    return messageContext
   }
 
   /**
