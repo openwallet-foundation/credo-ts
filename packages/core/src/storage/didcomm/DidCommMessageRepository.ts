@@ -25,25 +25,6 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
 
     await this.save(didCommMessageRecord)
   }
-  public async getAll(): Promise<DidCommMessageRecord[]> {
-    return await this.getAll()
-  }
-
-  public async saveOrUpdateAgentMessage(options: SaveAgentMessageOptions) {
-    const record = await this.findSingleByQuery({
-      associatedRecordId: options.associatedRecordId,
-      messageType: options.agentMessage.type,
-    })
-
-    if (record) {
-      record.message = options.agentMessage.toJSON() as JsonObject
-      record.role = options.role
-      await this.update(record)
-      return
-    }
-
-    await this.saveAgentMessage(options)
-  }
 
   public async saveOrUpdateAgentMessage(options: SaveAgentMessageOptions) {
     const record = await this.findSingleByQuery({

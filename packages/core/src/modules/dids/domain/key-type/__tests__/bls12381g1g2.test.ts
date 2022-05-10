@@ -1,7 +1,7 @@
 import { KeyType } from '../../../../../crypto'
-import { JsonTransformer, BufferEncoder, Buffer } from '../../../../../utils'
+import { Key } from '../../../../../crypto/Key'
+import { Buffer, JsonTransformer, TypedArrayEncoder } from '../../../../../utils'
 import keyBls12381g1g2Fixture from '../../../__tests__/__fixtures__/didKeyBls12381g1g2.json'
-import { Key } from '../../Key'
 import { VerificationMethod } from '../../verificationMethod'
 import { keyDidBls12381g1g2 } from '../bls12381g1g2'
 
@@ -21,12 +21,12 @@ const TEST_BLS12381G2_FINGERPRINT =
 
 const TEST_BLS12381G1G2_PREFIX_BYTES = Buffer.concat([
   new Uint8Array([238, 1]),
-  BufferEncoder.fromBase58(TEST_BLS12381G1G2_BASE58_KEY),
+  TypedArrayEncoder.fromBase58(TEST_BLS12381G1G2_BASE58_KEY),
 ])
 
 describe('bls12381g1g2', () => {
   it('creates a Key instance from public key bytes and bls12381g1g2 key type', async () => {
-    const publicKeyBytes = BufferEncoder.fromBase58(TEST_BLS12381G1G2_BASE58_KEY)
+    const publicKeyBytes = TypedArrayEncoder.fromBase58(TEST_BLS12381G1G2_BASE58_KEY)
 
     const key = Key.fromPublicKey(publicKeyBytes, KeyType.Bls12381g1g2)
 
@@ -50,7 +50,7 @@ describe('bls12381g1g2', () => {
 
     expect(key.fingerprint).toBe(TEST_BLS12381G1G2_FINGERPRINT)
     expect(key.publicKeyBase58).toBe(TEST_BLS12381G1G2_BASE58_KEY)
-    expect(key.publicKey).toEqual(BufferEncoder.fromBase58(TEST_BLS12381G1G2_BASE58_KEY))
+    expect(key.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_BLS12381G1G2_BASE58_KEY))
     expect(key.keyType).toBe(KeyType.Bls12381g1g2)
     expect(key.prefixedPublicKey.equals(TEST_BLS12381G1G2_PREFIX_BYTES)).toBe(true)
   })
@@ -93,7 +93,7 @@ describe('bls12381g1g2', () => {
 
     expect(g1DidKey.fingerprint).toBe(TEST_BLS12381G1_FINGERPRINT)
     expect(g1DidKey.publicKeyBase58).toBe(TEST_BLS12381G1_BASE58_KEY)
-    expect(g1DidKey.publicKey).toEqual(BufferEncoder.fromBase58(TEST_BLS12381G1_BASE58_KEY))
+    expect(g1DidKey.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_BLS12381G1_BASE58_KEY))
     expect(g1DidKey.keyType).toBe(KeyType.Bls12381g1)
   })
 
@@ -105,7 +105,7 @@ describe('bls12381g1g2', () => {
 
     expect(g2DidKey.fingerprint).toBe(TEST_BLS12381G2_FINGERPRINT)
     expect(g2DidKey.publicKeyBase58).toBe(TEST_BLS12381G2_BASE58_KEY)
-    expect(g2DidKey.publicKey).toEqual(BufferEncoder.fromBase58(TEST_BLS12381G2_BASE58_KEY))
+    expect(g2DidKey.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_BLS12381G2_BASE58_KEY))
     expect(g2DidKey.keyType).toBe(KeyType.Bls12381g2)
   })
 })

@@ -2,6 +2,7 @@
 
 import { BaseLogger } from './BaseLogger'
 import { LogLevel } from './Logger'
+
 /*
  * The replacer parameter allows you to specify a function that replaces values with your own. We can use it to control what gets stringified.
  */
@@ -77,11 +78,4 @@ export class ConsoleLogger extends BaseLogger {
   public fatal(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.fatal, message, data)
   }
-}
-
-// import this with whatever log level required for testing
-const defaultTestLogger: ConsoleLogger = new ConsoleLogger(LogLevel.debug)
-
-export const unitTestLogger = (message: string, data?: Record<string, any>): void => {
-  defaultTestLogger.debug(message, data)
 }

@@ -1,4 +1,4 @@
-import { CredentialInfo } from '../v1/models/CredentialInfo'
+import { CredentialInfo } from '../models/CredentialInfo'
 
 describe('CredentialInfo', () => {
   it('should return the correct property values', () => {

@@ -2,10 +2,11 @@ import type { IndyLedgerService } from '../../ledger'
 
 import { getAgentConfig } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
+import { Key } from '../../../crypto/Key'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { DidCommService, DidDocument, DidDocumentBuilder, Key } from '../domain'
+import { DidCommService, DidDocument, DidDocumentBuilder } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../domain/key-type/x25519'
@@ -26,7 +27,7 @@ describe('peer dids', () => {
   beforeEach(async () => {
     wallet = new IndyWallet(config)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(config.walletConfig!)
+    await wallet.createAndOpen(config.walletConfig!)
 
     const storageService = new IndyStorageService<DidRecord>(wallet, config)
     didRepository = new DidRepository(storageService)

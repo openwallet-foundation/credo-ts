@@ -13,7 +13,6 @@ import type {
   ProofStateChangedEvent,
   SchemaTemplate,
 } from '../src'
-import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/interfaces'
 import type { Schema, CredDef } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -34,18 +33,19 @@ import {
   ConnectionRole,
   ConnectionState,
   CredentialEventTypes,
+  CredentialPreview,
   CredentialState,
   DidDoc,
   PredicateType,
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
   ProofEventTypes,
   ProofState,
   Agent,
 } from '../src'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
-import { CredentialProtocolVersion } from '../src/modules/credentials/CredentialProtocolVersion'
-import { CredentialRecordType } from '../src/modules/credentials/interfaces'
-import { V1CredentialPreview } from '../src/modules/credentials/v1/V1CredentialPreview'
 import { DidCommService } from '../src/modules/dids'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
@@ -57,6 +57,7 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
+export { agentDependencies }
 
 export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
@@ -150,7 +151,6 @@ export function waitForCredentialRecordSubject(
   }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-
   return firstValueFrom(
     observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
@@ -179,6 +179,7 @@ export async function waitForCredentialRecord(
   }
 ) {
   const observable = agent.events.observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+
   return waitForCredentialRecordSubject(observable, options)
 }
 
@@ -323,8 +324,7 @@ export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: string)
   try {
     testLogger.test(`Ensure test DID ${publicDid} is written to ledger`)
     await agent.ledger.getPublicDid(publicDid)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     // Unfortunately, this won't prevent from the test suite running because of Jest runner runs all tests
     // regardless of thrown errors. We're more explicit about the problem with this error handling.
     throw new Error(`Test DID ${publicDid} is not written on ledger or ledger is not available: ${error.message}`)
@@ -355,33 +355,19 @@ export async function issueCredential({
     .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
     .subscribe(holderReplay)
 
-  const offerOptions: OfferCredentialOptions = {
-    comment: 'some comment about credential',
-    connectionId: issuerConnectionId,
-    credentialFormats: {
-      indy: {
-        attributes: credentialTemplate.preview.attributes,
-        credentialDefinitionId: credentialTemplate.credentialDefinitionId,
-      },
-    },
-    protocolVersion: CredentialProtocolVersion.V1_0,
+  let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(issuerConnectionId, {
+    ...credentialTemplate,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-  }
-  let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(offerOptions)
+  })
 
   let holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.OfferReceived,
   })
 
-  const acceptOfferOptions: AcceptOfferOptions = {
-    credentialRecordId: holderCredentialRecord.id,
-    credentialRecordType: CredentialRecordType.Indy,
-    protocolVersion: CredentialProtocolVersion.V1_0,
+  await holderAgent.credentials.acceptOffer(holderCredentialRecord.id, {
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-  }
-
-  await holderAgent.credentials.acceptOffer(acceptOfferOptions)
+  })
 
   // Because we use auto-accept it can take a while to have the whole credential flow finished
   // Both parties need to interact with the ledger and sign/verify the credential
@@ -389,6 +375,7 @@ export async function issueCredential({
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
+
   issuerCredentialRecord = await waitForCredentialRecordSubject(issuerReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
@@ -419,36 +406,22 @@ export async function issueConnectionLessCredential({
     .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
     .subscribe(holderReplay)
 
-  const offerOptions: OfferCredentialOptions = {
-    comment: 'V1 Out of Band offer',
-    credentialFormats: {
-      indy: {
-        attributes: credentialTemplate.preview.attributes,
-        credentialDefinitionId: credentialTemplate.credentialDefinitionId,
-      },
-    },
-    protocolVersion: CredentialProtocolVersion.V2_0,
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-  }
   // eslint-disable-next-line prefer-const
-  let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOutOfBandOffer(
-    offerOptions
-  )
+  let { credentialRecord: issuerCredentialRecord, offerMessage } = await issuerAgent.credentials.createOutOfBandOffer({
+    ...credentialTemplate,
+    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+  })
 
-  await holderAgent.receiveMessage(message.toJSON())
+  await holderAgent.receiveMessage(offerMessage.toJSON())
 
   let holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.OfferReceived,
   })
-  const acceptOfferOptions: AcceptOfferOptions = {
-    credentialRecordId: holderCredentialRecord.id,
-    credentialRecordType: CredentialRecordType.Indy,
-    protocolVersion: CredentialProtocolVersion.V1_0,
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-  }
 
-  await holderAgent.credentials.acceptOffer(acceptOfferOptions)
+  holderCredentialRecord = await holderAgent.credentials.acceptOffer(holderCredentialRecord.id, {
+    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+  })
 
   holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
@@ -497,10 +470,7 @@ export async function presentProof({
     state: ProofState.RequestReceived,
   })
 
-  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(
-    ProofProtocolVersion.V1_0,
-    holderRecord.id
-  )
+  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(holderRecord.id)
   const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
   await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
 
@@ -575,17 +545,17 @@ export async function setupCredentialTests(
   await aliceAgent.initialize()
 
   const {
-    schema,
+    schema: { id: schemaId },
     definition: { id: credDefId },
   } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
 
   const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
 
-  return { faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection }
+  return { faberAgent, aliceAgent, credDefId, schemaId, faberConnection, aliceConnection }
 }
 
 export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
-  const credentialPreview = V1CredentialPreview.fromRecord({
+  const credentialPreview = CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
   })
@@ -677,6 +647,7 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
       ],
     },
   })
+
   const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
   const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
 
