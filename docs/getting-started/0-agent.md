@@ -224,7 +224,7 @@ The agent currently supports the following configuration options. Fields marked 
 
 - `label`\*: The label to use for invitations.
 - `walletConfig`: The wallet config to use for creating and unlocking the wallet. Not required, but requires extra setup if not passed in constructor
-- `endpoint`: The endpoint (schema + host + port) to use for invitations.
+- `endpoints`: The endpoints (schema + host + port) to use for invitations.
 - `publicDidSeed`: The seed to use for initializing the public did of the agent. This does not register the DID on the ledger.
 - `genesisPath`: The path to the genesis file to use for connecting to an Indy ledger.
 - `genesisTransactions`: String of genesis transactions to use for connecting to an Indy ledger.
@@ -250,3 +250,10 @@ The agent currently supports the following configuration options. Fields marked 
   - `AutoAcceptCredential.Always`: Always auto accepts the credential no matter if it changed in subsequent steps
   - `AutoAcceptCredential.ContentApproved`: Needs one acceptation and the rest will be automated if nothing changes
   - `AutoAcceptCredential.Never`: Default. Never auto accept a credential
+- `mediatorRecordId`: Mediator record id
+- `connectToIndyLedgersOnStartup`: Whether to connect to indy ledgers on startup. Default is false
+- `mediatorPollingInterval`: The interval to use for polling the mediator. Default is 5 seconds.
+- `maximumMessagePickup`: The maximum number of messages to pick up. Default is 10.
+- `useLegacyDidSovPrefix`: Whether to use the legacy Sovrin DID prefix. Default is false.
+- `connectionImageUrl`: The url to use for the connection image.
+- `autoUpdateStorageOnStartup`: Whether to auto update the storage on startup. Default is false.
