@@ -1,5 +1,5 @@
 import type { ConnectionRecord } from '@aries-framework/core'
-import type { CredDef, Schema } from 'indy-sdk-react-native'
+import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import { AttributeFilter, CredentialPreview, ProofAttributeInfo, utils } from '@aries-framework/core'
@@ -43,7 +43,6 @@ export class Faber extends BaseAgent {
 
   public async acceptConnection(invitation_url: string) {
     const connectionRecord = await this.receiveConnectionRequest(invitation_url)
-
     this.connectionRecordAliceId = await this.waitForConnection(connectionRecord)
   }
 

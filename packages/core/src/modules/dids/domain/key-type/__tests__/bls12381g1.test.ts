@@ -1,7 +1,7 @@
 import { KeyType } from '../../../../../crypto'
-import { JsonTransformer, BufferEncoder, Buffer } from '../../../../../utils'
+import { Key } from '../../../../../crypto/Key'
+import { Buffer, JsonTransformer, TypedArrayEncoder } from '../../../../../utils'
 import keyBls12381g1Fixture from '../../../__tests__/__fixtures__/didKeyBls12381g1.json'
-import { Key } from '../../Key'
 import { VerificationMethod } from '../../verificationMethod'
 import { keyDidBls12381g1 } from '../bls12381g1'
 
@@ -10,12 +10,12 @@ const TEST_BLS12381G1_FINGERPRINT = 'z3tEFALUKUzzCAvytMHX8X4SnsNsq6T5tC5Zb18oQEt
 const TEST_BLS12381G1_DID = `did:key:${TEST_BLS12381G1_FINGERPRINT}`
 const TEST_BLS12381G1_PREFIX_BYTES = Buffer.concat([
   new Uint8Array([234, 1]),
-  BufferEncoder.fromBase58(TEST_BLS12381G1_BASE58_KEY),
+  TypedArrayEncoder.fromBase58(TEST_BLS12381G1_BASE58_KEY),
 ])
 
 describe('bls12381g1', () => {
   it('creates a Key instance from public key bytes and bls12381g1 key type', async () => {
-    const publicKeyBytes = BufferEncoder.fromBase58(TEST_BLS12381G1_BASE58_KEY)
+    const publicKeyBytes = TypedArrayEncoder.fromBase58(TEST_BLS12381G1_BASE58_KEY)
 
     const key = Key.fromPublicKey(publicKeyBytes, KeyType.Bls12381g1)
 
@@ -39,7 +39,7 @@ describe('bls12381g1', () => {
 
     expect(key.fingerprint).toBe(TEST_BLS12381G1_FINGERPRINT)
     expect(key.publicKeyBase58).toBe(TEST_BLS12381G1_BASE58_KEY)
-    expect(key.publicKey).toEqual(BufferEncoder.fromBase58(TEST_BLS12381G1_BASE58_KEY))
+    expect(key.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_BLS12381G1_BASE58_KEY))
     expect(key.keyType).toBe(KeyType.Bls12381g1)
     expect(key.prefixedPublicKey.equals(TEST_BLS12381G1_PREFIX_BYTES)).toBe(true)
   })

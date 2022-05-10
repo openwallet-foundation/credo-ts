@@ -1,15 +1,8 @@
-import type {
-  IssueCredentialMessage,
-  OfferCredentialMessage,
-  ProposeCredentialMessage,
-  RequestCredentialMessage,
-} from '.'
-import type { CredentialExchangeRecord } from './repository'
+import type { CredentialRecord } from './repository'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
-import { DidCommMessageRepository } from '../../storage'
 
 import { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import { CredentialUtils } from './CredentialUtils'
@@ -21,11 +14,9 @@ import { CredentialUtils } from './CredentialUtils'
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialResponseCoordinator {
   private agentConfig: AgentConfig
-  private didCommMessageRepository: DidCommMessageRepository
 
-  public constructor(agentConfig: AgentConfig, didCommMessageRepository: DidCommMessageRepository) {
+  public constructor(agentConfig: AgentConfig) {
     this.agentConfig = agentConfig
-    this.didCommMessageRepository = didCommMessageRepository
   }
 
   /**
@@ -34,7 +25,7 @@ export class CredentialResponseCoordinator {
    *	- Otherwise the agent config
    *	- Otherwise {@link AutoAcceptCredential.Never} is returned
    */
-  public static composeAutoAccept(
+  private static composeAutoAccept(
     recordConfig: AutoAcceptCredential | undefined,
     agentConfig: AutoAcceptCredential | undefined
   ) {
@@ -44,11 +35,7 @@ export class CredentialResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a proposal
    */
-  public shouldAutoRespondToProposal(
-    credentialRecord: CredentialExchangeRecord,
-    proposeMessage?: ProposeCredentialMessage,
-    offerMessage?: OfferCredentialMessage
-  ) {
+  public shouldAutoRespondToProposal(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
       credentialRecord.autoAcceptCredential,
       this.agentConfig.autoAcceptCredentials
@@ -58,8 +45,7 @@ export class CredentialResponseCoordinator {
       return true
     } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
       return (
-        this.areProposalValuesValid(credentialRecord, proposeMessage) &&
-        this.areProposalAndOfferDefinitionIdEqual(credentialRecord, proposeMessage, offerMessage)
+        this.areProposalValuesValid(credentialRecord) && this.areProposalAndOfferDefinitionIdEqual(credentialRecord)
       )
     }
     return false
@@ -68,23 +54,16 @@ export class CredentialResponseCoordinator {
   /**
    * Checks whether it should automatically respond to an offer
    */
-  public shouldAutoRespondToOffer(
-    credentialRecord: CredentialExchangeRecord,
-    proposeMessage?: ProposeCredentialMessage,
-    offerMessage?: OfferCredentialMessage
-  ) {
+  public shouldAutoRespondToOffer(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
       credentialRecord.autoAcceptCredential,
       this.agentConfig.autoAcceptCredentials
     )
-    this.areProposalAndOfferDefinitionIdEqual(credentialRecord, proposeMessage, offerMessage)
+
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
     } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      return (
-        this.areOfferValuesValid(credentialRecord, offerMessage) &&
-        this.areProposalAndOfferDefinitionIdEqual(credentialRecord, proposeMessage, offerMessage)
-      )
+      return this.areOfferValuesValid(credentialRecord) && this.areProposalAndOfferDefinitionIdEqual(credentialRecord)
     }
     return false
   }
@@ -92,12 +71,7 @@ export class CredentialResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a request
    */
-  public shouldAutoRespondToRequest(
-    credentialRecord: CredentialExchangeRecord,
-    proposeMessage?: ProposeCredentialMessage,
-    offerMessage?: OfferCredentialMessage,
-    requestMessage?: RequestCredentialMessage
-  ) {
+  public shouldAutoRespondToRequest(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
       credentialRecord.autoAcceptCredential,
       this.agentConfig.autoAcceptCredentials
@@ -106,7 +80,7 @@ export class CredentialResponseCoordinator {
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
     } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      return this.isRequestDefinitionIdValid(credentialRecord, proposeMessage, offerMessage, requestMessage)
+      return this.isRequestDefinitionIdValid(credentialRecord)
     }
     return false
   }
@@ -114,10 +88,7 @@ export class CredentialResponseCoordinator {
   /**
    * Checks whether it should automatically respond to the issuance of a credential
    */
-  public shouldAutoRespondToIssue(
-    credentialRecord: CredentialExchangeRecord,
-    credentialMessage: IssueCredentialMessage
-  ) {
+  public shouldAutoRespondToIssue(credentialRecord: CredentialRecord) {
     const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
       credentialRecord.autoAcceptCredential,
       this.agentConfig.autoAcceptCredentials
@@ -126,16 +97,13 @@ export class CredentialResponseCoordinator {
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
     } else if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      return this.areCredentialValuesValid(credentialRecord, credentialMessage)
+      return this.areCredentialValuesValid(credentialRecord)
     }
     return false
   }
 
-  private areProposalValuesValid(
-    credentialRecord: CredentialExchangeRecord,
-    proposalMessage?: ProposeCredentialMessage
-  ) {
-    const { credentialAttributes } = credentialRecord
+  private areProposalValuesValid(credentialRecord: CredentialRecord) {
+    const { proposalMessage, credentialAttributes } = credentialRecord
 
     if (proposalMessage && proposalMessage.credentialProposal && credentialAttributes) {
       const proposalValues = CredentialUtils.convertAttributesToValues(proposalMessage.credentialProposal.attributes)
@@ -147,9 +115,10 @@ export class CredentialResponseCoordinator {
     return false
   }
 
-  private areOfferValuesValid(credentialRecord: CredentialExchangeRecord, offerMessage?: OfferCredentialMessage) {
-    const { credentialAttributes } = credentialRecord
-    if (offerMessage && credentialAttributes && offerMessage.credentialPreview) {
+  private areOfferValuesValid(credentialRecord: CredentialRecord) {
+    const { offerMessage, credentialAttributes } = credentialRecord
+
+    if (offerMessage && credentialAttributes) {
       const offerValues = CredentialUtils.convertAttributesToValues(offerMessage.credentialPreview.attributes)
       const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
       if (CredentialUtils.checkValuesMatch(offerValues, defaultValues)) {
@@ -159,17 +128,12 @@ export class CredentialResponseCoordinator {
     return false
   }
 
-  private areCredentialValuesValid(
-    credentialRecord: CredentialExchangeRecord,
-    credentialMessage: IssueCredentialMessage
-  ) {
-    const msg: IssueCredentialMessage | undefined = credentialMessage as IssueCredentialMessage
-
-    if (credentialRecord.credentialAttributes && credentialMessage) {
-      const indyCredential = msg.indyCredential
+  private areCredentialValuesValid(credentialRecord: CredentialRecord) {
+    if (credentialRecord.credentialAttributes && credentialRecord.credentialMessage) {
+      const indyCredential = credentialRecord.credentialMessage.indyCredential
 
       if (!indyCredential) {
-        this.agentConfig.logger.error(`Missing required base64 encoded attachment data for credential`)
+        this.agentConfig.logger.error(`Missing required base64 or json encoded attachment data for credential`)
         return false
       }
 
@@ -183,28 +147,19 @@ export class CredentialResponseCoordinator {
     return false
   }
 
-  private areProposalAndOfferDefinitionIdEqual(
-    credentialRecord: CredentialExchangeRecord,
-    proposalMessage?: ProposeCredentialMessage,
-    offerMessage?: OfferCredentialMessage
-  ) {
-    const proposeMessage: ProposeCredentialMessage | undefined = proposalMessage as ProposeCredentialMessage
-    const proposalCredentialDefinitionId = proposeMessage?.credentialDefinitionId
-    const offerCredentialDefinitionId = offerMessage?.indyCredentialOffer?.cred_def_id
+  private areProposalAndOfferDefinitionIdEqual(credentialRecord: CredentialRecord) {
+    const proposalCredentialDefinitionId = credentialRecord.proposalMessage?.credentialDefinitionId
+    const offerCredentialDefinitionId = credentialRecord.offerMessage?.indyCredentialOffer?.cred_def_id
     return proposalCredentialDefinitionId === offerCredentialDefinitionId
   }
 
-  private async isRequestDefinitionIdValid(
-    credentialRecord: CredentialExchangeRecord,
-    proposeMessage?: ProposeCredentialMessage,
-    offerMessage?: OfferCredentialMessage,
-    requestMessage?: RequestCredentialMessage
-  ) {
-    if (proposeMessage || offerMessage) {
+  private isRequestDefinitionIdValid(credentialRecord: CredentialRecord) {
+    if (credentialRecord.proposalMessage || credentialRecord.offerMessage) {
       const previousCredentialDefinitionId =
-        offerMessage?.indyCredentialOffer?.cred_def_id ?? proposeMessage?.credentialDefinitionId
+        credentialRecord.offerMessage?.indyCredentialOffer?.cred_def_id ??
+        credentialRecord.proposalMessage?.credentialDefinitionId
 
-      if (previousCredentialDefinitionId === requestMessage?.indyCredentialRequest?.cred_def_id) {
+      if (previousCredentialDefinitionId === credentialRecord.requestMessage?.indyCredentialRequest?.cred_def_id) {
         return true
       }
     }

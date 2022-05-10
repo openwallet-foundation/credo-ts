@@ -1,7 +1,7 @@
 import type { ProblemReportErrorOptions } from '../../problem-reports'
 import type { CredentialProblemReportReason } from './CredentialProblemReportReason'
 
-import { CredentialProblemReportMessage } from '../v1/messages'
+import { CredentialProblemReportMessage } from '../messages'
 
 import { ProblemReportError } from './../../problem-reports/errors/ProblemReportError'
 

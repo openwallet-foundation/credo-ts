@@ -9,8 +9,7 @@ import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
 import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
-import { AutoAcceptProof } from '../modules/proofs/models/ProofAutoAcceptType'
-import { MediatorPickupStrategy } from '../modules/routing/MediatorPickupStrategy'
+import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
 import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
@@ -26,7 +25,7 @@ export class AgentConfig {
   public constructor(initConfig: InitConfig, agentDependencies: AgentDependencies) {
     this.initConfig = initConfig
     this.label = initConfig.label
-    this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.info)
+    this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
     this.agentDependencies = agentDependencies
     this.fileSystem = new agentDependencies.FileSystem()
 
@@ -77,7 +76,7 @@ export class AgentConfig {
   }
 
   public get mediatorPickupStrategy() {
-    return this.initConfig.mediatorPickupStrategy ?? MediatorPickupStrategy.Explicit
+    return this.initConfig.mediatorPickupStrategy
   }
 
   public get endpoints(): [string, ...string[]] {
@@ -112,5 +111,9 @@ export class AgentConfig {
 
   public get connectionImageUrl() {
     return this.initConfig.connectionImageUrl
+  }
+
+  public get autoUpdateStorageOnStartup() {
+    return this.initConfig.autoUpdateStorageOnStartup ?? false
   }
 }

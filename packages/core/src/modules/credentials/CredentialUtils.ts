@@ -1,16 +1,15 @@
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
-import type { V1CredentialPreview } from './v1/V1CredentialPreview'
-import type { V2CredentialPreview } from './v2/V2CredentialPreview'
-import type { CredValues } from 'indy-sdk'
+import type { CredValues, Schema } from 'indy-sdk'
 
-import { hash as sha256 } from '@stablelib/sha256'
 import BigNumber from 'bn.js'
 
+import { AriesFrameworkError } from '../../error/AriesFrameworkError'
+import { Hasher } from '../../utils'
 import { encodeAttachment } from '../../utils/attachment'
 import { Buffer } from '../../utils/buffer'
 import { isBoolean, isNumber, isString } from '../../utils/type'
 
-import { CredentialPreviewAttribute } from './CredentialPreviewAttributes'
+import { CredentialPreview, CredentialPreviewAttribute } from './messages/CredentialPreview'
 
 export class CredentialUtils {
   /**
@@ -21,29 +20,26 @@ export class CredentialUtils {
    *
    * @returns a modified version of the credential preview with the linked credentials
    * */
-  public static createAndLinkAttachmentsToPreview(
-    attachments: LinkedAttachment[],
-    credentialPreview: V1CredentialPreview | V2CredentialPreview
-  ) {
+  public static createAndLinkAttachmentsToPreview(attachments: LinkedAttachment[], preview: CredentialPreview) {
+    const credentialPreview = new CredentialPreview({ attributes: [...preview.attributes] })
     const credentialPreviewAttributeNames = credentialPreview.attributes.map((attribute) => attribute.name)
     attachments.forEach((linkedAttachment) => {
       if (credentialPreviewAttributeNames.includes(linkedAttachment.attributeName)) {
-        // MJR -> This is causing an issue remove for now
-        // throw new AriesFrameworkError(
-        //   `linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`
-        // )
-      } else {
-        const credentialPreviewAttribute = new CredentialPreviewAttribute({
-          name: linkedAttachment.attributeName,
-          mimeType: linkedAttachment.attachment.mimeType,
-          value: encodeAttachment(linkedAttachment.attachment),
-        })
-        credentialPreview.attributes.push(credentialPreviewAttribute)
+        throw new AriesFrameworkError(
+          `linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`
+        )
       }
+      const credentialPreviewAttribute = new CredentialPreviewAttribute({
+        name: linkedAttachment.attributeName,
+        mimeType: linkedAttachment.attachment.mimeType,
+        value: encodeAttachment(linkedAttachment.attachment),
+      })
+      credentialPreview.attributes.push(credentialPreviewAttribute)
     })
 
     return credentialPreview
   }
+
   /**
    * Converts int value to string
    * Converts string value:
@@ -169,7 +165,7 @@ export class CredentialUtils {
       value = 'None'
     }
 
-    return new BigNumber(sha256(Buffer.from(value as string))).toString()
+    return new BigNumber(Hasher.hash(Buffer.from(value as string), 'sha2-256')).toString()
   }
 
   private static isInt32(number: number) {
