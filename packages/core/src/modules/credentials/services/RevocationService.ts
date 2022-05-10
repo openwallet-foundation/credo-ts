@@ -2,8 +2,8 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { ConnectionRecord } from '../../connections'
 import type { RevocationNotificationReceivedEvent } from '../CredentialEvents'
-import type { V1RevocationNotificationMessage } from '../protocol/v1/messages/V1RevocationNotificationMessage'
-import type { V2RevocationNotificationMessage } from '../protocol/v2/messages/V2RevocationNotificationMessage'
+import type { V1RevocationNotificationMessage } from '../protocol/revocation-notification/messages/V1RevocationNotificationMessage'
+import type { V2RevocationNotificationMessage } from '../protocol/revocation-notification/messages/V2RevocationNotificationMessage'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
