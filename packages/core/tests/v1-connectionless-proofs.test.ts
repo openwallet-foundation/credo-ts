@@ -243,7 +243,6 @@ describe('Present Proof', () => {
 
     const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      // logger: new TestLogger(LogLevel.test),
       mediatorConnectionsInvite: aliceMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
