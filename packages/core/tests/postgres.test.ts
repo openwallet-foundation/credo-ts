@@ -55,7 +55,7 @@ describe('postgres agents', () => {
     }
 
     // loading the postgres wallet plugin
-    await loadPostgresPlugin(storageConfig.config, storageConfig.credentials)
+    loadPostgresPlugin(storageConfig.config, storageConfig.credentials)
 
     aliceAgent = new Agent(alicePostgresConfig.config, alicePostgresConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
