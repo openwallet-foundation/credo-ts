@@ -2,7 +2,7 @@ import type { VerificationMethod } from '../verificationMethod'
 import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto'
-import { Key } from '../../../../crypto/Key'
+import { Key } from '../Key'
 
 import { getSignatureKeyBase } from './getSignatureKeyBase'
 
@@ -24,9 +24,7 @@ export function getBls12381g2DidDoc(did: string, key: Key) {
     did,
     key,
     verificationMethod,
-  })
-    .addContext('https://w3id.org/security/bbs/v1')
-    .build()
+  }).build()
 }
 
 export const keyDidBls12381g2: KeyDidMapping = {

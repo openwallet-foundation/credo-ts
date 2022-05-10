@@ -81,23 +81,3 @@ try {
   console.log(error)
 }
 ```
-
-## Using BBS Signatures
-
-When using AFJ inside the React Native environment, temporarily, a dependency for creating keys, sigining and verifying
-with bbs keys must be swapped. Inside your package.json the following must be added:
-
-```diff
-+   "resolutions": {
-+     "@mattrglobal/bbs-signatures": "react-native-bbs-signatures@0.1.0",
-+   },
-    "dependencies": {
-      ...
-+     "react-native-bbs-signatures": "0.1.0",
-    }
-```
-
-The resolution field says that any instance of `@mattrglobal/bbs-signatures` in any child dependency must be swapped
-with `react-native-bbs-signatures`.
-
-The added dependency is required for autolinking and should be the same as the one used in the resolution.

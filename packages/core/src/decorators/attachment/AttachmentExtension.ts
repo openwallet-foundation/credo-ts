@@ -15,17 +15,17 @@ export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {
     @ValidateNested()
     @IsInstance(Attachment, { each: true })
     @IsOptional()
-    public attachments?: Attachment[]
+    public appendedAttachments?: Attachment[]
 
-    public getAttachmentById(id: string): Attachment | undefined {
-      return this.attachments?.find((attachment) => attachment.id === id)
+    public getAppendedAttachmentById(id: string): Attachment | undefined {
+      return this.appendedAttachments?.find((attachment) => attachment.id === id)
     }
 
-    public addAttachment(attachment: Attachment): void {
-      if (this.attachments) {
-        this.attachments?.push(attachment)
+    public addAppendedAttachment(attachment: Attachment): void {
+      if (this.appendedAttachments) {
+        this.appendedAttachments.push(attachment)
       } else {
-        this.attachments = [attachment]
+        this.appendedAttachments = [attachment]
       }
     }
   }

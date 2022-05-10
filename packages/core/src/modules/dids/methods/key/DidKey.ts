@@ -1,4 +1,4 @@
-import { Key } from '../../../../crypto/Key'
+import { Key } from '../../domain/Key'
 import { getKeyDidMappingByKeyType } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
 
@@ -18,10 +18,6 @@ export class DidKey {
 
   public get did() {
     return `did:key:${this.key.fingerprint}`
-  }
-
-  public get keyId(): string {
-    return `${this.did}#${this.key.fingerprint}`
   }
 
   public get didDocument() {

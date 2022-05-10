@@ -9,7 +9,7 @@ import { ConsoleLogger, LogLevel } from '@aries-framework/core'
 
 const agentConfig = {
   // ... other config properties ...
-  logger: new ConsoleLogger(LogLevel.debug),
+  logger: new ConsoleLogger(LogLevel.info),
 }
 ```
 

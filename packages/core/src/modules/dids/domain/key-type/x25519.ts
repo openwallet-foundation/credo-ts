@@ -2,8 +2,8 @@ import type { VerificationMethod } from '../verificationMethod'
 import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto'
-import { Key } from '../../../../crypto/Key'
 import { DidDocumentBuilder } from '../DidDocumentBuilder'
+import { Key } from '../Key'
 
 const VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019 = 'X25519KeyAgreementKey2019'
 
