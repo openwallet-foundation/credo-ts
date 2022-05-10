@@ -25,7 +25,7 @@ import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { agentDependencies } from '../../node/src'
+import { agentDependencies, WalletScheme } from '../../node/src'
 import {
   JsonTransformer,
   LogLevel,
@@ -78,6 +78,42 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     walletConfig: {
       id: `Wallet: ${name}`,
       key: `Key: ${name}`,
+    },
+    publicDidSeed,
+    autoAcceptConnections: true,
+    indyLedgers: [
+      {
+        id: `pool-${name}`,
+        isProduction: false,
+        genesisPath,
+      },
+    ],
+    logger: new TestLogger(LogLevel.error, name),
+    ...extraConfig,
+  }
+
+  return { config, agentDependencies } as const
+}
+
+export function getBasePostgresConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
+  const config: InitConfig = {
+    label: `Agent: ${name}`,
+    walletConfig: {
+      id: `Wallet${name}`,
+      key: `Key${name}`,
+      storage: {
+        type: 'postgres_storage',
+        config: {
+          url: 'localhost:5432',
+          wallet_scheme: WalletScheme.DatabasePerWallet,
+        },
+        credentials: {
+          account: 'postgres',
+          password: 'postgres',
+          admin_account: 'postgres',
+          admin_password: 'postgres',
+        },
+      },
     },
     publicDidSeed,
     autoAcceptConnections: true,

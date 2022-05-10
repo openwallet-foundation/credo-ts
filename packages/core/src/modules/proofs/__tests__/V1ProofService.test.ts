@@ -90,7 +90,7 @@ const mockProofRecord = ({
   return proofRecord
 }
 
-describe('ProofService', () => {
+describe('V1ProofService', () => {
   let proofRepository: ProofRepository
   let proofService: V1ProofService
   let ledgerService: IndyLedgerService

@@ -32,12 +32,6 @@ import type { ProofRecord, ProofRepository } from './repository'
 
 import { ProofEventTypes } from './ProofEvents'
 
-/**
- * - creates records & messages
- * - stores records
- * - returns records & messages
- */
-
 export abstract class ProofService {
   protected proofRepository: ProofRepository
   protected didCommMessageRepository: DidCommMessageRepository
