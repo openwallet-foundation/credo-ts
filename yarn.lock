@@ -754,6 +754,16 @@
   dependencies:
     "@cspotcode/source-map-consumer" "0.8.0"
 
+"@digitalbazaar/ed25519-verification-key-2018@^3.1.2":
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@digitalbazaar/ed25519-verification-key-2018/-/ed25519-verification-key-2018-3.2.0.tgz#813df8f9fd06236ebf8c191af88107fe0f210314"
+  integrity sha512-j/jTA6SFXpiMofoCnhC4iD6NPBeT9b4/JiC8uM+1sVMb2dqGQjTxv7Ld5oZqLsLf6idvd5V42X3zrezRJ9J8AA==
+  dependencies:
+    "@noble/ed25519" "^1.6.0"
+    base58-universal "^1.0.0"
+    crypto-ld "^5.0.0"
+    esm "^3.2.25"
+
 "@digitalbazaar/ed25519-verification-key-2020@^3.2.0":
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/@digitalbazaar/ed25519-verification-key-2020/-/ed25519-verification-key-2020-3.3.0.tgz#226b2aac6ec5a3b53a11b280bfc8695512aeedf0"

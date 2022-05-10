@@ -12,7 +12,6 @@ import {
   CredentialProtocolVersion,
   ProofProtocolVersion,
 } from '@aries-framework/core'
-
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
