@@ -47,6 +47,7 @@ import { CredentialProblemReportError, CredentialProblemReportReason } from '../
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord } from '../../repository'
 import { CredentialService, RevocationService } from '../../services'
+import { V1RevocationNotificationHandler } from '../revocation-notification/handlers/V1RevocationNotificationHandler'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
 import {
@@ -56,7 +57,6 @@ import {
   V1OfferCredentialHandler,
   V1ProposeCredentialHandler,
   V1RequestCredentialHandler,
-  V1RevocationNotificationHandler,
 } from './handlers'
 import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
