@@ -68,8 +68,6 @@ type NativeIndyPostgres = {
   init_storagetype: (arg0: string, arg1: string) => number
 }
 
-export const indyPostgresStorage = getLibrary() as NativeIndyPostgres
-
 export interface WalletStorageConfig {
   url: string
   wallet_scheme: WalletScheme
@@ -96,6 +94,7 @@ export interface IndyPostgresStorageConfig {
 }
 
 export function loadPostgresPlugin(config: WalletStorageConfig, credentials: WalletStorageCredentials) {
+  const indyPostgresStorage = getLibrary() as NativeIndyPostgres
   indyPostgresStorage.postgresstorage_init()
   indyPostgresStorage.init_storagetype(JSON.stringify(config), JSON.stringify(credentials))
   return true
