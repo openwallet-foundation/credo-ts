@@ -7,7 +7,7 @@ import { container } from 'tsyringe'
 import { getBaseConfig } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { AriesFrameworkError } from '../../../error'
-import { CredentialRecord, CredentialRepository } from '../../../modules/credentials'
+import { CredentialExchangeRecord, CredentialRepository } from '../../../modules/credentials'
 import { JsonTransformer } from '../../../utils'
 import { StorageUpdateService } from '../StorageUpdateService'
 import { UpdateAssistant } from '../UpdateAssistant'
@@ -54,7 +54,7 @@ describe('UpdateAssistant | Backup', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
-      const record = JsonTransformer.fromJSON(data.value, CredentialRecord)
+      const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
 
       record.setTags(data.tags)
       return record
@@ -90,7 +90,7 @@ describe('UpdateAssistant | Backup', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
-      const record = JsonTransformer.fromJSON(data.value, CredentialRecord)
+      const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
 
       record.setTags(data.tags)
       return record

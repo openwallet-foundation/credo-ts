@@ -2,7 +2,8 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { ConnectionRecord } from '../../connections'
 import type { RevocationNotificationReceivedEvent } from '../CredentialEvents'
-import type { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../messages'
+import type { V1RevocationNotificationMessage } from '../protocol/v1/messages/V1RevocationNotificationMessage'
+import type { V2RevocationNotificationMessage } from '../protocol/v2/messages/V2RevocationNotificationMessage'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
@@ -10,7 +11,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { CredentialEventTypes } from '../CredentialEvents'
-import { RevocationNotification } from '../models'
+import { RevocationNotification } from '../models/RevocationNotification'
 import { CredentialRepository } from '../repository'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -32,6 +33,7 @@ export class RevocationService {
     comment?: string
   ) {
     const query = { indyRevocationRegistryId, indyCredentialRevocationId }
+
     this.logger.trace(`Getting record by query for revocation notification:`, query)
     const credentialRecord = await this.credentialRepository.getSingleByQuery(query)
 
@@ -50,7 +52,7 @@ export class RevocationService {
   }
 
   /**
-   * Process a recieved {@link V1RevocationNotificationMessage}. This will create a
+   * Process a received {@link V1RevocationNotificationMessage}. This will create a
    * {@link RevocationNotification} and store it in the corresponding {@link CredentialRecord}
    *
    * @param messageContext message context of RevocationNotificationMessageV1
@@ -69,6 +71,7 @@ export class RevocationService {
         const [, , indyRevocationRegistryId, indyCredentialRevocationId] = threadIdGroups
         const comment = messageContext.message.comment
         const connection = messageContext.assertReadyConnection()
+
         await this.processRevocationNotification(
           indyRevocationRegistryId,
           indyCredentialRevocationId,
@@ -86,7 +89,7 @@ export class RevocationService {
   }
 
   /**
-   * Process a recieved {@link V2RevocationNotificationMessage}. This will create a
+   * Process a received {@link V2RevocationNotificationMessage}. This will create a
    * {@link RevocationNotification} and store it in the corresponding {@link CredentialRecord}
    *
    * @param messageContext message context of RevocationNotificationMessageV2
@@ -95,6 +98,7 @@ export class RevocationService {
     messageContext: InboundMessageContext<V2RevocationNotificationMessage>
   ): Promise<void> {
     this.logger.info('Processing revocation notification v2', { message: messageContext.message })
+
     // CredentialId = <revocation_registry_id>::<credential_revocation_id>
     const credentialIdRegex =
       /((?:[\dA-z]{21,22}):4:(?:[\dA-z]{21,22}):3:[Cc][Ll]:(?:(?:[1-9][0-9]*)|(?:[\dA-z]{21,22}:2:.+:[0-9.]+))(?::[\dA-z]+)?:CL_ACCUM:(?:[\dA-z-]+))::(\d+)$/

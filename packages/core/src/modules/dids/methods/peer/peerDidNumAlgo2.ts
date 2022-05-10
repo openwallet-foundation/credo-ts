@@ -1,9 +1,8 @@
 import type { JsonObject } from '../../../../types'
 import type { DidDocument, VerificationMethod } from '../../domain'
 
-import { Key } from '../../../../crypto/Key'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
-import { DidDocumentService } from '../../domain'
+import { DidDocumentService, Key } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { getKeyDidMappingByKeyType, getKeyDidMappingByVerificationMethod } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
@@ -104,6 +103,9 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
   let did = 'did:peer:2'
 
   for (const [purpose, entries] of Object.entries(purposeMapping)) {
+    // Not all entries are required to be defined
+    if (entries === undefined) continue
+
     // Dereference all entries to full verification methods
     const dereferenced = entries.map((entry) => (typeof entry === 'string' ? didDocument.dereferenceKey(entry) : entry))
 
@@ -122,7 +124,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     did += encoded.join('')
   }
 
-  if (didDocument.service.length > 0) {
+  if (didDocument.service && didDocument.service.length > 0) {
     const abbreviatedServices = didDocument.service.map((service) => {
       // Transform to JSON, remove id property
       const serviceJson = JsonTransformer.toJSON(service)

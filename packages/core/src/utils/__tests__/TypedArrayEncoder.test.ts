@@ -26,23 +26,6 @@ describe('TypedArrayEncoder', () => {
     })
   )
 
-  describe('isTypedArray', () => {
-    test('is array of type typedArray', () => {
-      const mockArray = [0, 1, 2]
-      expect(TypedArrayEncoder.isTypedArray(mockArray)).toStrictEqual(false)
-    })
-
-    test('is Uint8Array of type typedArray', () => {
-      const mockArray = new Uint8Array([0, 1, 2])
-      expect(TypedArrayEncoder.isTypedArray(mockArray)).toStrictEqual(true)
-    })
-
-    test('is Buffer of type typedArray', () => {
-      const mockArray = new Buffer([0, 1, 2])
-      expect(TypedArrayEncoder.isTypedArray(mockArray)).toStrictEqual(true)
-    })
-  })
-
   describe('toBase64', () => {
     test('encodes buffer to Base64 string', () => {
       expect(TypedArrayEncoder.toBase64(mockCredentialRequestBuffer)).toEqual(
