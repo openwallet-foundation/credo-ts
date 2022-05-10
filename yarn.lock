@@ -5928,10 +5928,10 @@ indent-string@^4.0.0:
   resolved "https://registry.yarnpkg.com/indent-string/-/indent-string-4.0.0.tgz#624f8f4497d619b2d9768531d58f4122854d7251"
   integrity sha512-EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg==
 
-indy-sdk-react-native@^0.1.21:
-  version "0.1.21"
-  resolved "https://registry.yarnpkg.com/indy-sdk-react-native/-/indy-sdk-react-native-0.1.21.tgz#19f8cfd2afbe10775cef4f48682499dd963b9e02"
-  integrity sha512-AvOle3xfY3xWfwQe4fit2Pxmx0dKAuamm1L+nOoLRMVzNQNvdMdH8oxXs8eSUWh/7F6raL+ghAG3B4OEEeH3DA==
+indy-sdk-react-native@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/indy-sdk-react-native/-/indy-sdk-react-native-0.2.0.tgz#9f02dc29726b22b5f90aa602b6a0d15cbd26b48b"
+  integrity sha512-eipyH5GzQFjTf89sMCSMy5axbl3uVDln79LOH2rpqN2cb+80Pzb3tMFYWb9TaU4jMKYzlaEE0RsuQoS151g2jQ==
   dependencies:
     buffer "^6.0.2"
 
