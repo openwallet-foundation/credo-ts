@@ -1,7 +1,7 @@
 import { Exclude, Expose } from 'class-transformer'
 import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator'
 
-import { IndyCredentialInfo } from '../../../../credentials'
+import { IndyCredentialInfo } from '../../../../credentials/protocol/v1/models'
 
 /**
  * Requested Attribute for Indy proof creation

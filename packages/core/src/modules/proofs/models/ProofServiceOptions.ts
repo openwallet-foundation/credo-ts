@@ -7,7 +7,6 @@ import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
 import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
 
-// ----- Create Proposal ----- //
 export interface CreateProposalOptions {
   connectionRecord: ConnectionRecord
   protocolVersion: ProofProtocolVersion
@@ -37,7 +36,6 @@ export interface CreateOutOfBandRequestOptions {
   autoAcceptProof?: AutoAcceptProof
 }
 
-// ----- Request Proof ----- //
 export interface CreateRequestOptions {
   connectionRecord?: ConnectionRecord
   protocolVersion: ProofProtocolVersion
@@ -50,7 +48,6 @@ export interface CreateRequestOptions {
 
 export interface CreateRequestAsResponseOptions {
   proofRecord: ProofRecord
-  protocolVersion: ProofProtocolVersion
   proofFormats: RequestProofFormats
   willConfirm?: boolean
   goalCode?: string
@@ -58,7 +55,6 @@ export interface CreateRequestAsResponseOptions {
   autoAcceptProof?: AutoAcceptProof
 }
 
-// ----- Create Presentation ----- //
 export interface CreatePresentationOptions {
   proofRecord: ProofRecord
   proofFormats: CreatePresentationFormats

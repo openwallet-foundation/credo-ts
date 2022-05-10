@@ -40,6 +40,7 @@ import { ConnectionService } from '../../../connections'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { ProofsUtils } from '../../ProofsUtil'
+import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { V2_INDY_PRESENTATION_PROPOSAL } from '../../formats/ProofFormats'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { PresentationExchangeFormatService } from '../../formats/presentation-exchange/PresentationExchangeFormatService'
@@ -48,7 +49,6 @@ import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
 
 import { V2PresentationProblemReportError } from './errors'
-import { V2PresentationProblemReportReason } from './errors/V2PresentationProblemReportReason'
 import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
 import { V2PresentationHandler } from './handlers/V2PresentationHandler'
 import { V2PresentationProblemReportHandler } from './handlers/V2PresentationProblemReportHandler'
@@ -377,7 +377,7 @@ export class V2ProofService extends ProofService {
     if (proofRequestMessage.requestPresentationsAttach.length === 0) {
       throw new V2PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${proofRequestMessage.threadId}`,
-        { problemCode: V2PresentationProblemReportReason.Abandoned }
+        { problemCode: PresentationProblemReportReason.Abandoned }
       )
     }
 
@@ -470,7 +470,7 @@ export class V2ProofService extends ProofService {
         } catch (e) {
           if (e instanceof AriesFrameworkError) {
             throw new V2PresentationProblemReportError(e.message, {
-              problemCode: V2PresentationProblemReportReason.Abandoned,
+              problemCode: PresentationProblemReportReason.Abandoned,
             })
           }
           throw e
@@ -543,7 +543,7 @@ export class V2ProofService extends ProofService {
         } catch (e) {
           if (e instanceof AriesFrameworkError) {
             throw new V2PresentationProblemReportError(e.message, {
-              problemCode: V2PresentationProblemReportReason.Abandoned,
+              problemCode: PresentationProblemReportReason.Abandoned,
             })
           }
           throw e
@@ -552,7 +552,7 @@ export class V2ProofService extends ProofService {
     }
     if (formatVerificationResults.length === 0) {
       throw new V2PresentationProblemReportError('None of the received formats are supported.', {
-        problemCode: V2PresentationProblemReportReason.Abandoned,
+        problemCode: PresentationProblemReportReason.Abandoned,
       })
     }
 
@@ -635,7 +635,7 @@ export class V2ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const msg = new V2PresentationProblemReportMessage({
       description: {
-        code: V2PresentationProblemReportReason.Abandoned,
+        code: PresentationProblemReportReason.Abandoned,
         en: options.description,
       },
     })

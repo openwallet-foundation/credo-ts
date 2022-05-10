@@ -8,7 +8,8 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { CredentialProtocolVersion, V1CredentialPreview } from '../src/modules/credentials'
+import { CredentialProtocolVersion } from '../src/modules/credentials'
+import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/V1CredentialPreview'
 import {
   ProofProtocolVersion,
   PredicateType,

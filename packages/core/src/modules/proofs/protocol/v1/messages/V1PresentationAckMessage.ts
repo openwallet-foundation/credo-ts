@@ -4,13 +4,11 @@ import { Equals } from 'class-validator'
 
 import { AckMessage } from '../../../../common'
 
-export type PresentationAckMessageOptions = AckMessageOptions
-
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
  */
 export class V1PresentationAckMessage extends AckMessage {
-  public constructor(options: PresentationAckMessageOptions) {
+  public constructor(options: AckMessageOptions) {
     super(options)
   }
 

@@ -4,8 +4,12 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { PresentationPreviewAttribute } from '../../protocol/v1/models/V1PresentationPreview'
-import type { CreateRequestAsResponseOptions, GetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
+import type { ProofAttributeInfo, ProofPredicateInfo } from '../../protocol/v1/models'
+import type {
+  CreateRequestAsResponseOptions,
+  GetRequestedCredentialsFormat,
+  IndyProposeProofFormat,
+} from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
@@ -31,17 +35,13 @@ import { checkProofRequestForDuplicates } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { uuid } from '../../../../utils/uuid'
-import { Credential, CredentialUtils, IndyCredentialInfo } from '../../../credentials'
+import { IndyWallet } from '../../../../wallet/IndyWallet'
+import { CredentialUtils } from '../../../credentials'
+import { Credential, IndyCredentialInfo } from '../../../credentials/protocol/v1/models'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
-import {
-  PartialProof,
-  RequestedPredicate,
-  RequestedAttribute,
-  ProofAttributeInfo,
-  AttributeFilter,
-  ProofPredicateInfo,
-} from '../../protocol/v1/models'
+import { ProofsUtils } from '../../ProofsUtil'
+import { PartialProof, RequestedPredicate, RequestedAttribute } from '../../protocol/v1/models'
 import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import { ProofFormatService } from '../ProofFormatService'
 import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../ProofFormats'
@@ -55,15 +55,12 @@ import { RetrievedCredentials } from './models/RetrievedCredentials'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyProofFormatService extends ProofFormatService {
-  public processProposal(options: ProcessProposalOptions): void {
-    throw new Error('Method not implemented.')
-  }
-
   private indyHolderService: IndyHolderService
   private indyVerifierService: IndyVerifierService
   private indyRevocationService: IndyRevocationService
   private ledgerService: IndyLedgerService
   private logger: Logger
+  private wallet: IndyWallet
 
   public constructor(
     agentConfig: AgentConfig,
@@ -71,19 +68,21 @@ export class IndyProofFormatService extends ProofFormatService {
     indyVerifierService: IndyVerifierService,
     indyRevocationService: IndyRevocationService,
     ledgerService: IndyLedgerService,
-    didCommMessageRepository: DidCommMessageRepository
+    didCommMessageRepository: DidCommMessageRepository,
+    wallet: IndyWallet
   ) {
     super(didCommMessageRepository, agentConfig)
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
     this.indyRevocationService = indyRevocationService
     this.ledgerService = ledgerService
+    this.wallet = wallet
     this.logger = new ConsoleLogger(LogLevel.off)
   }
 
   private createRequestAttachment(options: CreateRequestAttachmentOptions): ProofAttachmentFormat {
     const format = new ProofFormatSpec({
-      attachmentId: options.attachId,
+      attachmentId: options.id,
       format: V2_INDY_PRESENTATION_REQUEST,
     })
 
@@ -93,7 +92,7 @@ export class IndyProofFormatService extends ProofFormatService {
     checkProofRequestForDuplicates(request)
 
     const attachment = new Attachment({
-      id: options.attachId,
+      id: options.id,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(request),
@@ -104,12 +103,12 @@ export class IndyProofFormatService extends ProofFormatService {
 
   private createProofAttachment(options: CreateProofAttachmentOptions): ProofAttachmentFormat {
     const format = new ProofFormatSpec({
-      attachmentId: options.attachId,
+      attachmentId: options.id,
       format: V2_INDY_PRESENTATION_PROPOSAL,
     })
 
     const attachment = new Attachment({
-      id: options.attachId,
+      id: options.id,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(options.proofProposalOptions),
@@ -134,9 +133,13 @@ export class IndyProofFormatService extends ProofFormatService {
     }
 
     return this.createProofAttachment({
-      attachId: options.attachId ?? uuid(),
+      id: options.id ?? uuid(),
       proofProposalOptions: preview,
     })
+  }
+
+  public processProposal(options: ProcessProposalOptions): void {
+    throw new Error('Method not implemented.')
   }
 
   public async createRequestAsResponse(options: CreateRequestAsResponseOptions): Promise<ProofAttachmentFormat> {
@@ -144,15 +147,15 @@ export class IndyProofFormatService extends ProofFormatService {
       throw Error('Missing indy format to create proposal attachment format')
     }
 
-    const attachId = options.attachId ?? uuid()
+    const id = options.id ?? uuid()
 
     const format = new ProofFormatSpec({
-      attachmentId: attachId,
+      attachmentId: id,
       format: V2_INDY_PRESENTATION_REQUEST,
     })
 
     const attachment = new Attachment({
-      id: attachId,
+      id: id,
       mimeType: 'application/json',
       data: new AttachmentData({
         base64: JsonEncoder.toBase64(options.formats.indy),
@@ -167,7 +170,7 @@ export class IndyProofFormatService extends ProofFormatService {
     }
 
     return this.createRequestAttachment({
-      attachId: options.attachId ?? uuid(),
+      id: options.id ?? uuid(),
       proofRequestOptions: options.formats.indy,
     })
   }
@@ -190,7 +193,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
     const proof = await this.createProof(proofRequest, requestedCredentials)
 
-    const attachmentId = options.attachId ?? uuid()
+    const attachmentId = options.id ?? uuid()
 
     const format = new ProofFormatSpec({
       attachmentId,
@@ -333,7 +336,6 @@ export class IndyProofFormatService extends ProofFormatService {
     options: GetRequestedCredentialsFormat
   ): Promise<RetrievedCredentialOptions> {
     const retrievedCredentials = new RetrievedCredentials({})
-
     const { attachment, presentationProposal } = options
     const filterByNonRevocationRequirements = options.config?.filterByNonRevocationRequirements
 
@@ -547,74 +549,15 @@ export class IndyProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError(`Presentation Preview is missing`)
     }
 
-    const nonce = indyConfig?.nonce ?? (await uuid())
+    const nonce = indyConfig?.nonce ?? (await this.wallet.generateNonce())
 
-    const proofRequest = new ProofRequest({
+    const indyProposeProofFormat: IndyProposeProofFormat = {
       name: indyConfig?.name ?? 'Proof Request',
       version: indyConfig?.version ?? '1.0',
       nonce: nonce,
-    })
-
-    /**
-     * Create mapping of attributes by referent. This required the
-     * attributes to come from the same credential.
-     * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#referent
-     *
-     * {
-     *  "referent1": [Attribute1, Attribute2],
-     *  "referent2": [Attribute3]
-     * }
-     */
-    const attributesByReferent: Record<string, PresentationPreviewAttribute[]> = {}
-    for (const proposedAttributes of proposalJson.attributes) {
-      if (!proposedAttributes.referent) proposedAttributes.referent = uuid()
-
-      const referentAttributes = attributesByReferent[proposedAttributes.referent]
-
-      // Referent key already exist, add to list
-      if (referentAttributes) {
-        referentAttributes.push(proposedAttributes)
-      }
-      // Referent key does not exist yet, create new entry
-      else {
-        attributesByReferent[proposedAttributes.referent] = [proposedAttributes]
-      }
     }
 
-    // Transform attributes by referent to requested attributes
-    for (const [referent, proposedAttributes] of Object.entries(attributesByReferent)) {
-      // Either attributeName or attributeNames will be undefined
-      const attributeName = proposedAttributes.length == 1 ? proposedAttributes[0].name : undefined
-      const attributeNames = proposedAttributes.length > 1 ? proposedAttributes.map((a) => a.name) : undefined
-
-      const requestedAttribute = new ProofAttributeInfo({
-        name: attributeName,
-        names: attributeNames,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: proposedAttributes[0].credentialDefinitionId,
-          }),
-        ],
-      })
-
-      proofRequest.requestedAttributes.set(referent, requestedAttribute)
-    }
-
-    // Transform proposed predicates to requested predicates
-    for (const proposedPredicate of proposalJson.predicates) {
-      const requestedPredicate = new ProofPredicateInfo({
-        name: proposedPredicate.name,
-        predicateType: proposedPredicate.predicate,
-        predicateValue: proposedPredicate.threshold,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: proposedPredicate.credentialDefinitionId,
-          }),
-        ],
-      })
-
-      proofRequest.requestedPredicates.set(uuid(), requestedPredicate)
-    }
+    const proofRequest = ProofsUtils.createReferentForProofRequest(indyProposeProofFormat, proposalJson)
 
     return {
       indy: proofRequest,

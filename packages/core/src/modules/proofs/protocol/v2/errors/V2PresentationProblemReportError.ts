@@ -1,11 +1,11 @@
 import type { ProblemReportErrorOptions } from '../../../../problem-reports'
-import type { V2PresentationProblemReportReason } from './V2PresentationProblemReportReason'
+import type { PresentationProblemReportReason } from '../../../errors/PresentationProblemReportReason'
 
 import { ProblemReportError } from '../../../../problem-reports/errors/ProblemReportError'
 import { V2PresentationProblemReportMessage } from '../messages'
 
 interface V2PresentationProblemReportErrorOptions extends ProblemReportErrorOptions {
-  problemCode: V2PresentationProblemReportReason
+  problemCode: PresentationProblemReportReason
 }
 
 export class V2PresentationProblemReportError extends ProblemReportError {

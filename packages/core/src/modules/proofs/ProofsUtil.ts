@@ -1,3 +1,4 @@
+import type { IndyProposeProofFormat } from './formats/IndyProofFormatsServiceOptions'
 import type { CreateProposalOptions } from './models/ProofServiceOptions'
 import type { ProofRequestFormats } from './models/SharedOptions'
 import type { PresentationPreviewAttribute } from './protocol/v1/models/V1PresentationPreview'
@@ -28,6 +29,14 @@ export class ProofsUtils {
       throw new AriesFrameworkError(`No preview found`)
     }
 
+    const proofRequest = ProofsUtils.createReferentForProofRequest(indyFormat, preview)
+
+    return {
+      indy: proofRequest,
+    }
+  }
+
+  public static createReferentForProofRequest(indyFormat: IndyProposeProofFormat, preview: PresentationPreview) {
     const proofRequest = new ProofRequest({
       name: indyFormat.name,
       version: indyFormat.version,
@@ -96,8 +105,6 @@ export class ProofsUtils {
       proofRequest.requestedPredicates.set(uuid(), requestedPredicate)
     }
 
-    return {
-      indy: proofRequest,
-    }
+    return proofRequest
   }
 }

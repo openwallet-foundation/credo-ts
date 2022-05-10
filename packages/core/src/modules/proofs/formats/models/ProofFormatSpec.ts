@@ -17,6 +17,7 @@ export class ProofFormatSpec {
   }
 
   @Expose({ name: 'attach_id' })
+  @IsString()
   public attachmentId!: string
 
   @IsString()

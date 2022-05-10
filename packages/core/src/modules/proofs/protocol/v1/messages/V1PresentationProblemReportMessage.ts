@@ -12,7 +12,7 @@ export type V1PresentationProblemReportMessageOptions = ProblemReportMessageOpti
 export class V1PresentationProblemReportMessage extends ProblemReportMessage {
   /**
    * Create new PresentationProblemReportMessage instance.
-   * @param options
+   * @param options description of error and multiple optional fields for reporting problem
    */
   public constructor(options: V1PresentationProblemReportMessageOptions) {
     super(options)

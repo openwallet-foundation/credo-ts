@@ -42,18 +42,13 @@ export interface IndyPresentationProofFormat {
   selfAttestedAttributes?: Record<string, string>
 }
 
-export interface IndyGetRequestedCredentialsFormat {
-  proofRequest: ProofRequest
-  presentationProposal?: PresentationPreview
-  config?: GetRequestedCredentialsConfig
-}
-
 export interface GetRequestedCredentialsFormat {
   attachment: Attachment
   presentationProposal?: PresentationPreview
   config?: GetRequestedCredentialsConfig
 }
+
 export interface CreateRequestAsResponseOptions {
-  attachId?: string
+  id?: string
   formats: RequestProofFormats
 }

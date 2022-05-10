@@ -11,13 +11,8 @@ import type {
   SchemaTemplate,
   ProofPredicateInfo,
   ProofAttributeInfo,
-  CredentialExchangeRecord,
 } from '../src'
-import type {
-  AcceptOfferOptions,
-  OfferCredentialOptions,
-  ProposeCredentialOptions,
-} from '../src/modules/credentials/CredentialsModuleOptions'
+import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
 import type { CredentialOfferTemplate } from '../src/modules/credentials/protocol'
 import type { AcceptPresentationOptions, RequestProofOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { SignCredentialOptions } from '../src/modules/vc/models/W3cCredentialServiceOptions'

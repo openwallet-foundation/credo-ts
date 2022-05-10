@@ -7,11 +7,11 @@ import type { ConnectionRecord } from '@aries-framework/core'
 import {
   AttributeFilter,
   ProofAttributeInfo,
-  ProofProtocolVersion,
   utils,
   V1CredentialPreview,
+  CredentialProtocolVersion,
+  ProofProtocolVersion,
 } from '@aries-framework/core'
-import { CredentialProtocolVersion } from '@aries-framework/core'
 
 import { ui } from 'inquirer'
 
