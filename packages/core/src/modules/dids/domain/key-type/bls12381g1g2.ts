@@ -2,6 +2,7 @@ import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
+import { SECURITY_CONTEXT_BLS_G1_2020, SECURITY_CONTEXT_BLS_G2_2020 } from '../../../vc/constants'
 import { DidDocumentBuilder } from '../DidDocumentBuilder'
 
 import { getBls12381g1VerificationMethod } from './bls12381g1'
@@ -34,7 +35,7 @@ export function getBls12381g1g2DidDoc(did: string, key: Key) {
       .addCapabilityInvocation(verificationMethod.id)
   }
 
-  return didDocumentBuilder.build()
+  return didDocumentBuilder.addContext(SECURITY_CONTEXT_BLS_G1_2020).addContext(SECURITY_CONTEXT_BLS_G2_2020).build()
 }
 
 export const keyDidBls12381g1g2: KeyDidMapping = {
