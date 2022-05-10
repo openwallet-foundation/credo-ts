@@ -395,6 +395,15 @@ describe('CredentialService', () => {
         threadId: 'somethreadid',
         connectionId: connection.id,
       })
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: CredentialState.RequestReceived,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.CredentialIssued,
+          }),
+        },
+      })
       expect(returnedCredentialRecord.state).toEqual(CredentialState.RequestReceived)
     })
 
