@@ -398,9 +398,9 @@ describe('CredentialService', () => {
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
         payload: {
-          previousState: CredentialState.RequestReceived,
+          previousState: CredentialState.OfferSent,
           credentialRecord: expect.objectContaining({
-            state: CredentialState.CredentialIssued,
+            state: CredentialState.RequestReceived,
           }),
         },
       })
