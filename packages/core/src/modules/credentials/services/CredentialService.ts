@@ -261,7 +261,7 @@ export abstract class CredentialService {
 
     await this.credentialRepository.delete(credentialRecord)
 
-    const deleteOptions = options ? options : { deleteAssociatedCredentials: true }
+    const deleteOptions = options ?? { deleteAssociatedCredentials: true }
 
     for (const credential of credentialRecord.credentials) {
       const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
