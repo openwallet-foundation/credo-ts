@@ -12,10 +12,11 @@ import type {
 } from '../../../CredentialsModuleOptions'
 import type { CredPropose } from '../../../formats/models/CredPropose'
 
-import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
-import { DidCommMessageRepository } from '../../../../../../src/storage'
-import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
+import { issueCredential, setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
+import { IndyHolderService } from '../../../../../modules/indy/services/IndyHolderService'
+import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
@@ -379,6 +380,38 @@ describe('credentials', () => {
     } else {
       throw new AriesFrameworkError('Missing Connection Id')
     }
+  })
+
+  test('Faber Issues Credential which is then deleted from Alice`s wallet', async () => {
+    const credentialPreview = V2CredentialPreview.fromRecord({
+      name: 'John',
+      age: '99',
+      'x-ray': 'some x-ray',
+      profile_picture: 'profile picture',
+    })
+
+    const { holderCredential } = await issueCredential({
+      issuerAgent: faberAgent,
+      issuerConnectionId: faberConnection.id,
+      holderAgent: aliceAgent,
+      credentialTemplate: {
+        credentialDefinitionId: credDefId,
+        comment: 'some comment about credential',
+        preview: credentialPreview,
+      },
+    })
+    // test that delete credential removes from both repository and wallet
+    // latter is tested by spying on holder service (Indy) to
+    // see if deleteCredential is called
+    const holderService = aliceAgent.injectionContainer.resolve(IndyHolderService)
+
+    const deleteCredentialSpy = jest.spyOn(holderService, 'deleteCredential')
+    await aliceAgent.credentials.deleteById(holderCredential.id, { deleteAssociatedCredentials: true })
+    expect(deleteCredentialSpy).toHaveBeenCalledTimes(1)
+
+    return expect(aliceAgent.credentials.getById(holderCredential.id)).rejects.toThrowError(
+      `CredentialRecord: record with id ${holderCredential.id} not found.`
+    )
   })
 
   test('Alice starts with propose - Faber counter offer - Alice second proposal- Faber sends second offer', async () => {
