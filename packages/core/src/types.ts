@@ -20,6 +20,10 @@ export interface WalletConfig {
   id: string
   key: string
   keyDerivationMethod?: KeyDerivationMethod
+  storage?: {
+    type: string
+    [key: string]: unknown
+  }
 }
 
 export interface WalletConfigRekey {
@@ -68,6 +72,7 @@ export interface InitConfig {
   clearDefaultMediator?: boolean
   mediatorPollingInterval?: number
   mediatorPickupStrategy?: MediatorPickupStrategy
+  maximumMessagePickup?: number
 
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string

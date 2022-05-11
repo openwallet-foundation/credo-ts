@@ -6,6 +6,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
+import { MessageReceiver } from '../../agent/MessageReceiver'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ConnectionService } from '../connections/services'
@@ -29,6 +30,7 @@ export class MediatorModule {
     mediationService: MediatorService,
     messagePickupService: MessagePickupService,
     messageSender: MessageSender,
+    messageReceiver: MessageReceiver,
     eventEmitter: EventEmitter,
     agentConfig: AgentConfig,
     connectionService: ConnectionService

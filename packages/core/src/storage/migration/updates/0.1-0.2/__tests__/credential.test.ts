@@ -1,6 +1,6 @@
+import { CredentialExchangeRecord } from '../../../../../../src/modules/credentials'
 import { getAgentConfig, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
-import { CredentialRecord } from '../../../../../modules/credentials'
 import { CredentialRepository } from '../../../../../modules/credentials/repository/CredentialRepository'
 import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../credential'
@@ -34,7 +34,7 @@ describe('0.1-0.2 | Credential', () => {
 
   describe('migrateCredentialRecordToV0_2()', () => {
     it('should fetch all records and apply the needed updates ', async () => {
-      const records: CredentialRecord[] = [
+      const records: CredentialExchangeRecord[] = [
         getCredentialWithMetadata({
           schemaId: 'schemaId',
           credentialDefinitionId: 'schemaId',
@@ -174,6 +174,6 @@ function getCredentialWithMetadata(metadata: Record<string, unknown>) {
     {
       metadata,
     },
-    CredentialRecord
+    CredentialExchangeRecord
   )
 }
