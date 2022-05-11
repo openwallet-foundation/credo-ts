@@ -8,7 +8,7 @@ import { ConnectionsModule } from '../../modules/connections/ConnectionsModule'
 import { ConnectionRepository } from '../../modules/connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../modules/connections/services/ConnectionService'
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
-import { CredentialRepository, CredentialService } from '../../modules/credentials'
+import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
 import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerModule } from '../../modules/ledger/LedgerModule'
@@ -123,7 +123,6 @@ describe('Agent', () => {
       expect(container.resolve(ProofRepository)).toBeInstanceOf(ProofRepository)
 
       expect(container.resolve(CredentialsModule)).toBeInstanceOf(CredentialsModule)
-      expect(container.resolve(CredentialService)).toBeInstanceOf(CredentialService)
       expect(container.resolve(CredentialRepository)).toBeInstanceOf(CredentialRepository)
 
       expect(container.resolve(BasicMessagesModule)).toBeInstanceOf(BasicMessagesModule)
@@ -167,7 +166,6 @@ describe('Agent', () => {
       expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
 
       expect(container.resolve(CredentialsModule)).toBe(container.resolve(CredentialsModule))
-      expect(container.resolve(CredentialService)).toBe(container.resolve(CredentialService))
       expect(container.resolve(CredentialRepository)).toBe(container.resolve(CredentialRepository))
 
       expect(container.resolve(BasicMessagesModule)).toBe(container.resolve(BasicMessagesModule))

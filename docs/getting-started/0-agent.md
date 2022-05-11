@@ -137,7 +137,7 @@ const agentConfig: InitConfig = {
       isProduction: false,
     },
   ],
-  logger: new ConsoleLogger(LogLevel.debug),
+  logger: new ConsoleLogger(LogLevel.info),
 }
 
 const agent = new Agent(agentConfig, agentDependencies)

@@ -7,7 +7,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { CredentialPreview } from '../src/modules/credentials'
+import { V1CredentialPreview } from '../src/modules/credentials'
 import {
   PredicateType,
   ProofState,
@@ -178,7 +178,7 @@ describe('Present Proof', () => {
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const credentialPreview = CredentialPreview.fromRecord({
+    const credentialPreview = V1CredentialPreview.fromRecord({
       name: 'John',
       age: '99',
     })
@@ -215,7 +215,6 @@ describe('Present Proof', () => {
 
     const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      // logger: new TestLogger(LogLevel.test),
       mediatorConnectionsInvite: aliceMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
