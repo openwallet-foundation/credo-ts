@@ -1,5 +1,5 @@
 {
-  "@context": ["https://w3id.org/did/v1", "https://w3id.org/security#Bls12381G2Key2020"],
+  "@context": ["https://w3id.org/did/v1", "https://w3id.org/security/bbs/v1"],
   "id": "did:key:zUC71nmwvy83x1UzNKbZbS7N9QZx8rqpQx3Ee3jGfKiEkZngTKzsRoqobX6wZdZF5F93pSGYYco3gpK9tc53ruWUo2tkBB9bxPCFBUjq2th8FbtT4xih6y6Q1K9EL4Th86NiCGT",
   "verificationMethod": [
     {

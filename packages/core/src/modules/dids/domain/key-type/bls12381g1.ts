@@ -3,7 +3,7 @@ import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
-import { SECURITY_CONTEXT_BLS_G1_2020 } from '../../../vc/constants'
+import { SECURITY_CONTEXT_BBS_URL } from '../../../vc/constants'
 
 import { getSignatureKeyBase } from './getSignatureKeyBase'
 
@@ -26,7 +26,7 @@ export function getBls12381g1DidDoc(did: string, key: Key) {
     key,
     verificationMethod,
   })
-    .addContext(SECURITY_CONTEXT_BLS_G1_2020)
+    .addContext(SECURITY_CONTEXT_BBS_URL)
     .build()
 }
 
