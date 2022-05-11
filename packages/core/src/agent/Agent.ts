@@ -25,7 +25,7 @@ import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
-import { ValueTransferModule } from '../modules/value-transfer'
+import { ValueTransferModule, ValueTransferService } from '../modules/value-transfer'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -50,6 +50,7 @@ export class Agent {
   private _isInitialized = false
   public messageSubscription: Subscription
   private walletService: Wallet
+  private valueTransferService: ValueTransferService
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
@@ -102,6 +103,7 @@ export class Agent {
     this.messageReceiver = this.container.resolve(MessageReceiver)
     this.transportService = this.container.resolve(TransportService)
     this.walletService = this.container.resolve(InjectionSymbols.Wallet)
+    this.valueTransferService = this.container.resolve(ValueTransferService)
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
@@ -206,7 +208,7 @@ export class Agent {
     await this.mediationRecipient.initialize()
 
     if (valueTransferConfig) {
-      await this.valueTransfer.initState(valueTransferConfig)
+      await this.valueTransferService.initState(valueTransferConfig)
     }
 
     this._isInitialized = true

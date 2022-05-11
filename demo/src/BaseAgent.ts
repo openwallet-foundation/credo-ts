@@ -27,14 +27,15 @@ export class BaseAgent {
         id: name,
         key: name,
       },
-      // publicDidSeed: '6b8b882e2618fa5d45ee7229ca880083',
-      // indyLedgers: [
-      //   {
-      //     genesisTransactions: bcovrin,
-      //     id: 'greenlights' + name,
-      //     isProduction: false,
-      //   },
-      // ],
+      publicDidSeed: '6b8b882e2618fa5d45ee7229ca880083',
+      indyLedgers: [
+        {
+          genesisTransactions: bcovrin,
+          id: 'greenlights' + name,
+          isProduction: false,
+        },
+      ],
+      connectToIndyLedgersOnStartup: false,
       endpoints: [`http://localhost:${this.port}`],
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,

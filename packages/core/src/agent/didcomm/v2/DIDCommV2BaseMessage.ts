@@ -1,4 +1,4 @@
-import type { Attachment } from 'didcomm-node'
+import type { Attachment } from 'didcomm'
 
 import { Expose } from 'class-transformer'
 import { IsArray, IsNumber, IsOptional, IsString, Matches } from 'class-validator'

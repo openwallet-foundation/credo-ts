@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@aries-framework/core": "0.1.0",
+    "didcomm-node": "/Users/artem/didcomm-rust/wasm/pkg",
     "express": "^4.17.1",
     "indy-sdk": "^1.16.0-dev-1636",
     "node-fetch": "^2.6.1",

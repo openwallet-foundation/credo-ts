@@ -1,4 +1,4 @@
-import type { Secret, SecretsResolver } from 'didcomm-node'
+import type { Secret, SecretsResolver } from 'didcomm'
 
 import { Lifecycle, scoped } from 'tsyringe'
 

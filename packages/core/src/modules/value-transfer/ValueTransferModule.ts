@@ -48,10 +48,6 @@ export class ValueTransferModule {
     this.registerHandlers(dispatcher)
   }
 
-  public async initState(config: ValueTransferConfig) {
-    await this.valueTransferService.initState(config)
-  }
-
   /**
    * Initiate a new value transfer exchange as Getter by sending a payment request message
    * to the known Witness which transfers record later to Giver.

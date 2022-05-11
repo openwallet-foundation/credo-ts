@@ -1,8 +1,8 @@
 import type { Logger } from '../../../logger'
 import type { EncryptedMessage } from '../types'
-import type { DIDCommV2Message } from '../v2/DIDCommV2Message'
+import type { DIDCommV2Message } from './DIDCommV2Message'
+import type { default as didcomm } from 'didcomm'
 
-import { Message } from 'didcomm-node'
 import { scoped, Lifecycle } from 'tsyringe'
 
 import { JsonEncoder } from '../../../utils'
@@ -34,6 +34,7 @@ export class DIDCommV2EnvelopeService {
   private logger: Logger
   private didResolverService: DIDResolverService
   private secretResolverService: SecretResolverService
+  private didcomm: typeof didcomm
 
   public constructor(
     agentConfig: AgentConfig,
@@ -41,12 +42,13 @@ export class DIDCommV2EnvelopeService {
     secretResolverService: SecretResolverService
   ) {
     this.logger = agentConfig.logger
+    this.didcomm = agentConfig.agentDependencies.didcomm
     this.didResolverService = didResolverService
     this.secretResolverService = secretResolverService
   }
 
   public async packMessage(payload: DIDCommV2Message, params: PackMessageParams): Promise<EncryptedMessage> {
-    const message = new Message(payload)
+    const message = new this.didcomm.Message(payload)
 
     const [encryptedMsg] = await message.pack_encrypted(
       params.toDID,
@@ -60,7 +62,7 @@ export class DIDCommV2EnvelopeService {
   }
 
   public async unpackMessage(encryptedMessage: EncryptedMessage): Promise<DecryptedMessageContext> {
-    const [unpackedMsg, unpackMetadata] = await Message.unpack(
+    const [unpackedMsg, unpackMetadata] = await this.didcomm.Message.unpack(
       JsonEncoder.toString(encryptedMessage),
       this.didResolverService,
       this.secretResolverService,
@@ -68,7 +70,7 @@ export class DIDCommV2EnvelopeService {
     )
 
     // find actual key decrypted message
-    // TODO: it will be great of `didcomm` package return this data
+    // TODO: it will be better if `didcomm` package return this information
     let recipient: string | undefined
     for (const recipientKid of unpackMetadata.encrypted_to_kids || []) {
       const secret = await this.secretResolverService.get_secret(recipientKid)

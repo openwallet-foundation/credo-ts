@@ -26,6 +26,7 @@
   "dependencies": {
     "@aries-framework/core": "0.1.0",
     "@azure/core-asynciterator-polyfill": "^1.0.0",
+    "didcomm": "/Users/artem/didcomm-rust/wasm/pkg",
     "events": "^3.3.0"
   },
   "devDependencies": {
