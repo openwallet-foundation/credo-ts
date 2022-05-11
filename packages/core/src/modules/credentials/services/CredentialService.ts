@@ -267,10 +267,15 @@ export abstract class CredentialService {
       deleteOptions = { ...options, deleteAssociatedCredentials: true }
     }
 
-    for (const credential of credentialRecord.credentials) {
-      const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
-      await formatService.deleteCredentialById(credentialRecord, deleteOptions)
+    const deleteAssociatedCredentials = options?.deleteAssociatedCredentials ?? true
+
+    if (deleteAssociatedCredentials) {
+      for (const credential of credentialRecord.credentials) {
+        const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
+        await formatService.deleteCredentialById(credentialRecord)
+      }
     }
+ 
   }
   /**
    * Retrieve a credential record by connection id and thread id
