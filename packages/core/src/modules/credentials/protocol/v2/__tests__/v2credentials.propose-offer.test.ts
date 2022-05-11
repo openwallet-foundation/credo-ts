@@ -382,7 +382,7 @@ describe('credentials', () => {
     }
   })
 
-  test('Faber Issues Credential which is the deleted from Alice`s wallet', async () => {
+  test('Faber Issues Credential which is then deleted from Alice`s wallet', async () => {
     const credentialPreview = V2CredentialPreview.fromRecord({
       name: 'John',
       age: '99',
