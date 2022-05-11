@@ -250,6 +250,8 @@ export abstract class CredentialService {
   /**
    * Delete a credential exchange record from the repository and (optionally) 
    * not bound to any connection. The offer must be delivered out-of-band to the holder
+   * Note that the default is now to delete from the wallet
+   * 
    * @param credentialRecordId The id of the credential record
    * @param options The credential options to use for the delete
 
