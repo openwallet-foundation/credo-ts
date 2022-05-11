@@ -12,12 +12,12 @@
  */
 
 import type { JsonObject } from '../../../types'
-import type { Proof } from '../../../utils'
 
 import jsonld from 'jsonld'
 
 import { SECURITY_PROOF_URL } from '../../../modules/vc/constants'
-import { getProofs, getTypeInfo } from '../../../utils'
+import { W3cVerifiableCredential } from '../../../modules/vc/models'
+import { JsonTransformer, getProofs, getTypeInfo } from '../../../utils'
 
 /**
  * Derives a proof from a document featuring a supported linked data proof
@@ -32,7 +32,7 @@ export const deriveProof = async (
   proofDocument: JsonObject,
   revealDocument: JsonObject,
   { suite, skipProofCompaction, documentLoader, expansionMap, nonce }: any
-): Promise<Proof> => {
+): Promise<W3cVerifiableCredential> => {
   if (!suite) {
     throw new TypeError('"options.suite" is required.')
   }
@@ -126,5 +126,5 @@ export const deriveProof = async (
     jsonld.addValue(derivedProof.document, 'proof', derivedProof.proof)
   }
 
-  return derivedProof.document
+  return JsonTransformer.fromJSON(derivedProof.document, W3cVerifiableCredential)
 }

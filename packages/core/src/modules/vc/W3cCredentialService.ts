@@ -1,7 +1,8 @@
 import type { Key } from '../../crypto/Key'
 import type { JsonObject } from '../../types'
-import { DocumentLoaderResult, Proof, w3cDate } from '../../utils'
+import type { DocumentLoaderResult } from '../../utils'
 import type { W3cVerifyCredentialResult } from './models'
+import type { LinkedDataProof } from './models/LinkedDataProof'
 import type {
   CreatePresentationOptions,
   DeriveProofOptions,
@@ -33,7 +34,7 @@ import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { deriveProof } from '../../crypto/signature-suites/bbs'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
-import { JsonTransformer, orArrayToArray } from '../../utils'
+import { Proof, w3cDate, JsonTransformer, orArrayToArray } from '../../utils'
 import { isNodeJS, isReactNative } from '../../utils/environment'
 import { Wallet } from '../../wallet'
 import { DidResolverService, VerificationMethod } from '../dids'
@@ -273,7 +274,7 @@ export class W3cCredentialService {
     return result as unknown as VerifyPresentationResult
   }
 
-  public async deriveProof(options: DeriveProofOptions): Promise<Proof> {
+  public async deriveProof(options: DeriveProofOptions): Promise<W3cVerifiableCredential> {
     const suiteInfo = this.suiteRegistry.getByProofType('BbsBlsSignatureProof2020')
     const SuiteClass = suiteInfo.suiteClass
 

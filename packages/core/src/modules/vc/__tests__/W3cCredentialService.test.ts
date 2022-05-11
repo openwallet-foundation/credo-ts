@@ -1,14 +1,13 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 
 import { purposes } from '@digitalcredentials/jsonld-signatures'
-import { inspect } from 'util'
 
 import { getAgentConfig } from '../../../../tests/helpers'
 import { TestLogger } from '../../../../tests/logger'
 import { KeyType } from '../../../crypto'
 import { Key } from '../../../crypto/Key'
 import { LogLevel } from '../../../logger'
-import { JsonTransformer } from '../../../utils'
+import { JsonTransformer, orArrayToArray } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { WalletError } from '../../../wallet/error'
 import { DidKey, DidResolverService } from '../../dids'
@@ -66,11 +65,13 @@ describe('W3cCredentialService', () => {
 
   describe('Ed25519Signature2018', () => {
     let issuerDidKey: DidKey
+    let verificationMethod: string
     beforeAll(async () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const issuerDidInfo = await wallet.createDid({ seed })
       const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
       issuerDidKey = new DidKey(issuerKey)
+      verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
     })
     describe('signCredential', () => {
       it('should return a successfully signed credential', async () => {
@@ -81,7 +82,7 @@ describe('W3cCredentialService', () => {
         const vc = await w3cCredentialService.signCredential({
           credential,
           proofType: 'Ed25519Signature2018',
-          verificationMethod: issuerDidKey.keyId,
+          verificationMethod: verificationMethod,
         })
 
         expect(vc).toBeInstanceOf(W3cVerifiableCredential)
@@ -90,7 +91,7 @@ describe('W3cCredentialService', () => {
         expect(vc.proof).toBeInstanceOf(LinkedDataProof)
 
         // @ts-ignore
-        expect(vc.proof.verificationMethod).toEqual(issuerDidKey.keyId)
+        expect(vc.proof.verificationMethod).toEqual(verificationMethod)
       })
 
       it('should throw because of verificationMethod does not belong to this wallet', async () => {
@@ -234,7 +235,7 @@ describe('W3cCredentialService', () => {
           purpose: purpose,
           signatureType: 'Ed25519Signature2018',
           challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
-          verificationMethod: issuerDidKey.keyId,
+          verificationMethod: verificationMethod,
         })
 
         expect(verifiablePresentation).toBeInstanceOf(W3cVerifiablePresentation)
@@ -286,9 +287,11 @@ describe('W3cCredentialService', () => {
 
   describe('BbsBlsSignature2020', () => {
     let issuerDidKey: DidKey
+    let verificationMethod: string
     beforeAll(async () => {
       const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
       issuerDidKey = new DidKey(key)
+      verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
     })
     describe('signCredential', () => {
       it('should return a successfully signed credential bbs', async () => {
@@ -300,7 +303,7 @@ describe('W3cCredentialService', () => {
         const vc = await w3cCredentialService.signCredential({
           credential,
           proofType: 'BbsBlsSignature2020',
-          verificationMethod: issuerDidKey.keyId,
+          verificationMethod: verificationMethod,
         })
 
         expect(vc).toBeInstanceOf(W3cVerifiableCredential)
@@ -309,7 +312,7 @@ describe('W3cCredentialService', () => {
         expect(vc.proof).toBeInstanceOf(LinkedDataProof)
 
         vc.proof = vc.proof as LinkedDataProof
-        expect(vc.proof.verificationMethod).toEqual(issuerDidKey.keyId)
+        expect(vc.proof.verificationMethod).toEqual(verificationMethod)
       })
     })
     describe('verifyCredential', () => {
@@ -350,11 +353,11 @@ describe('W3cCredentialService', () => {
         const result = await w3cCredentialService.deriveProof({
           credential: vc,
           revealDocument: revealDocument,
-          verificationMethod: issuerDidKey.keyId,
+          verificationMethod: verificationMethod,
         })
 
-        result.proof = result.proof as LinkedDataProof
-        expect(result.proof['verificationMethod']).toBe(
+        // result.proof = result.proof as LinkedDataProof
+        expect(orArrayToArray(result.proof)[0].verificationMethod).toBe(
           'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN#zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN'
         )
       })
@@ -385,7 +388,7 @@ describe('W3cCredentialService', () => {
       it('should sign the presentation successfully', async () => {
         const signingKey = Key.fromPublicKeyBase58((await wallet.createDid({ seed })).verkey, KeyType.Ed25519)
         const signingDidKey = new DidKey(signingKey)
-
+        const verificationMethod = `${signingDidKey.did}#${signingDidKey.key.fingerprint}`
         const presentation = JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VP_DOCUMENT, W3cPresentation)
 
         const purpose = new CredentialIssuancePurpose({
@@ -400,7 +403,7 @@ describe('W3cCredentialService', () => {
           purpose: purpose,
           signatureType: 'Ed25519Signature2018',
           challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
-          verificationMethod: signingDidKey.keyId,
+          verificationMethod: verificationMethod,
         })
 
         expect(verifiablePresentation).toBeInstanceOf(W3cVerifiablePresentation)

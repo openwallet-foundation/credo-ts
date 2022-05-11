@@ -25,8 +25,8 @@ export interface DocumentLoaderResult {
 
 export type DocumentLoader = (url: string) => Promise<DocumentLoaderResult>
 
-export const orArrayToArray = <T>(val?: SingleOrArray<T>): Array<T> | undefined => {
-  if (!val) return undefined
+export const orArrayToArray = <T>(val?: SingleOrArray<T>): Array<T> => {
+  if (!val) return []
   if (Array.isArray(val)) return val
   return [val]
 }
