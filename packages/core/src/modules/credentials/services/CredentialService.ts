@@ -247,16 +247,23 @@ export abstract class CredentialService {
     return this.credentialRepository.findById(connectionId)
   }
 
-  public async deleteById(credentialId: string, options?: DeleteCredentialOptions): Promise<void> {
-    const credentialRecord = await this.getById(credentialId)
+  /**
+   * Delete a credential exchange record from the repository and (optionally) 
+   * not bound to any connection. The offer must be delivered out-of-band to the holder
+   * @param credentialRecordId The id of the credential record
+   * @param options The credential options to use for the delete
+
+   */
+  public async deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void> {
+    const credentialRecord = await this.getById(credentialRecordId)
 
     await this.credentialRepository.delete(credentialRecord)
 
-    if (options?.deleteAssociatedCredentials) {
-      for (const credential of credentialRecord.credentials) {
-        const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
-        await formatService.deleteCredentialById(credentialRecord, options)
-      }
+    const deleteOptions = options ? options : { deleteAssociatedCredentials: true }
+
+    for (const credential of credentialRecord.credentials) {
+      const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
+      await formatService.deleteCredentialById(credentialRecord, deleteOptions)
     }
   }
   /**
