@@ -16,7 +16,7 @@ describe('IndyWallet', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    const { config, agentDependencies } = getBaseConfig('IndyWallettest')
+    const { config, agentDependencies } = getBaseConfig('IndyWallettest', { indyLedgers: [] })
     agent = new Agent(config, agentDependencies)
     indyWallet = agent.injectionContainer.resolve(IndyWallet)
     await agent.initialize()
