@@ -20,12 +20,11 @@ export class GenericRecordModule {
     this.logger = agentConfig.logger
   }
 
-  public async save({ message, tags, connectionRecord }: SaveGenericRecordOption) {
+  public async save({ message, tags }: SaveGenericRecordOption) {
     try {
       const record = await this.genericRecordsService.save({
         message: message,
         tags: tags,
-        connectionRecord: connectionRecord,
       })
       return record
     } catch (error) {
