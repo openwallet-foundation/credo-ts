@@ -46,7 +46,6 @@ export class DIDCommV2EnvelopeService {
   }
 
   public async packMessage(payload: DIDCommV2Message, params: PackMessageParams): Promise<EncryptedMessage> {
-    // @ts-ignore FIXME
     const message = new Message(payload)
 
     const [encryptedMsg] = await message.pack_encrypted(

@@ -4,7 +4,7 @@ import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
 import type { KeylistUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
 import type { KeylistUpdateResponseMessage, MediationDenyMessage, MediationGrantMessage } from '../messages'
-import type { GetRoutingOptions } from '@aries-framework/core'
+import type { GetRoutingOptions } from '../types'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
@@ -201,7 +201,7 @@ export class MediationRecipientService {
     let verkey = ''
 
     if (acceptProfiles?.includes(DIDCommV2Profile)) {
-      const { id, didDocument } = await this.didService.createDID(DidType.KeyDid, undefined, seed)
+      const { id, didDocument } = await this.didService.createDID(DidType.PeerDid, undefined, seed)
       if (!didDocument?.verificationMethod.length) {
         throw new AriesFrameworkError(`Unable to create DIDDoc`)
       }

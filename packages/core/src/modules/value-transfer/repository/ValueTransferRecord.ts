@@ -4,7 +4,6 @@ import type { ValueTransferRole } from '../ValueTransferRole'
 import type { ValueTransferState } from '../ValueTransferState'
 import type { Payment } from '@value-transfer/value-transfer-lib'
 
-import { ValueTransferMessage } from '@value-transfer/value-transfer-lib'
 import { Type } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'

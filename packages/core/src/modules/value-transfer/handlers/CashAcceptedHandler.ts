@@ -45,7 +45,7 @@ export class CashAcceptedHandler implements HandlerV2 {
         return
       }
       const connection = await this.connectionService.getById(record.witnessConnectionId)
-      const { message } = await this.valueTransferService.removeCash(record)
+      const { message } = await this.valueTransferService.removeCash(connection, record)
       return createOutboundMessage(connection, message)
     }
   }

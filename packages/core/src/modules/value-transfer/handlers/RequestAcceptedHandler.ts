@@ -39,12 +39,12 @@ export class RequestAcceptedHandler implements HandlerV2 {
     }
 
     if (record.role === ValueTransferRole.Getter) {
-      const { message } = await this.valueTransferService.acceptCash(record)
       if (!record.witnessConnectionId) {
         this.agentConfig.logger.error(`Connection to Witness not found for value transfer protocol: ${record.id}.`)
         return
       }
       const connection = await this.connectionService.getById(record.witnessConnectionId)
+      const { message } = await this.valueTransferService.acceptCash(connection, record)
       return createOutboundMessage(connection, message)
     }
   }

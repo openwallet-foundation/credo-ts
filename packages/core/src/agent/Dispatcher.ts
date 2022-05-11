@@ -9,6 +9,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { RejectMessage } from '../modules/value-transfer/messages/RejectMessage'
 
 import { ProblemReportMessage } from './../modules/problem-reports/messages/ProblemReportMessage'
 import { EventEmitter } from './EventEmitter'
@@ -53,7 +54,10 @@ class Dispatcher {
     } catch (error) {
       const problemReportMessage = error.problemReport
 
-      if (problemReportMessage instanceof ProblemReportMessage && messageContext.connection) {
+      if (
+        (problemReportMessage instanceof ProblemReportMessage || problemReportMessage instanceof RejectMessage) &&
+        messageContext.connection
+      ) {
         problemReportMessage.setThread({
           threadId: messageContext.message.threadId,
         })

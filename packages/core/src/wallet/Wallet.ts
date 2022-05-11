@@ -1,6 +1,6 @@
+import type { EncryptedMessage } from '../agent/didcomm'
 import type { DecryptedMessageContext, WalletConfig, WalletExportImportConfig, WalletConfigRekey } from '../types'
 import type { Buffer } from '../utils/buffer'
-import type { EncryptedMessage } from '@aries-framework/core'
 
 export interface Wallet {
   publicDid: DidInfo | undefined

@@ -1,5 +1,5 @@
+import type { EncryptedMessage } from '../../agent/didcomm/types'
 import type { MediationRecord } from './repository'
-import type { EncryptedMessage } from '@aries-framework/core'
 
 import { Lifecycle, scoped } from 'tsyringe'
 

@@ -22,4 +22,6 @@ export interface DIDCommMessage {
   hasReturnRouting(threadId?: string): boolean
 
   setReturnRouting(type: ReturnRouteTypes, thread?: string): void
+
+  setThread(options: { threadId: string | undefined }): void
 }

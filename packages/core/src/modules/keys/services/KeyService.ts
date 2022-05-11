@@ -144,7 +144,7 @@ export class KeyService {
   private static getKeysRepresentation(
     keyPair: KeyPair,
     keyRepresentationType: KeyFormat
-  ): { publicKey: any; privateKey: any } {
+  ): { publicKey: string; privateKey: string } {
     switch (keyRepresentationType) {
       case KeyFormat.Base58: {
         return {

@@ -1,3 +1,4 @@
+import type { EncryptedMessage } from '../agent/didcomm'
 import type { Logger } from '../logger'
 import type {
   DecryptedMessageContext,
@@ -7,7 +8,6 @@ import type {
   KeyDerivationMethod,
 } from '../types'
 import type { Wallet, DidInfo, DidConfig } from './Wallet'
-import type { EncryptedMessage } from '@aries-framework/core'
 import type { default as Indy } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'

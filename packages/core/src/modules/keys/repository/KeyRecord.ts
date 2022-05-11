@@ -1,6 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 
-import assert from 'assert'
 import { IsEnum, IsString } from 'class-validator'
 
 import { KeyFormat, KeyType } from '../../../crypto'
@@ -16,55 +15,13 @@ export type DefaultKeyTags = {
   keyType: string
 }
 
-export type JWKKeyRepresentation = {
-  JWK: Record<string, unknown>
-}
-
-export type MultibaseKeyRepresentation = {
-  Multibase: string
-}
-
-export type Base58KeyRepresentation = {
-  Base58: string
-}
-
-export type Base64KeyRepresentation = {
-  Base64: string
-}
-
-export type HexKeyRepresentation = {
-  Hex: string
-}
-
-export type PemKeyRepresentation = {
-  Pem: string
-}
-
-export type BlockchainAccountId = {
-  BlockchainAccountId: string
-}
-
-export type EthereumAddress = {
-  EthereumAddress: string
-}
-
-export type KeyRepresentation =
-  | JWKKeyRepresentation
-  | MultibaseKeyRepresentation
-  | Base58KeyRepresentation
-  | Base64KeyRepresentation
-  | HexKeyRepresentation
-  | PemKeyRepresentation
-  | BlockchainAccountId
-  | EthereumAddress
-
 export interface KeyRecordProps {
   kid: string
   controller?: string
   keyType: KeyType
   format: KeyFormat
-  privateKey: KeyRepresentation
-  publicKey: KeyRepresentation
+  privateKey: string
+  publicKey: string
 }
 
 export class KeyRecord extends BaseRecord<DefaultKeyTags, CustomKeyTags> {
@@ -81,10 +38,10 @@ export class KeyRecord extends BaseRecord<DefaultKeyTags, CustomKeyTags> {
   public format!: KeyFormat
 
   @IsString()
-  public privateKey!: any
+  public privateKey!: string
 
   @IsString()
-  public publicKey!: any
+  public publicKey!: string
 
   public constructor(props: KeyRecordProps) {
     super()
@@ -117,10 +74,9 @@ export class KeyRecord extends BaseRecord<DefaultKeyTags, CustomKeyTags> {
     return this.keyBytes(this.privateKey)
   }
 
-  private keyBytes(key: any): Buffer {
+  private keyBytes(key: string): Buffer {
     switch (this.format) {
       case KeyFormat.Base58: {
-        assert(key as Base58KeyRepresentation)
         return TypedArrayEncoder.fromBase58(key)
       }
       case KeyFormat.Base64: {

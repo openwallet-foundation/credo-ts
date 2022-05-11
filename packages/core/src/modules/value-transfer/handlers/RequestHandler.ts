@@ -31,6 +31,7 @@ export class RequestHandler implements HandlerV2 {
   public async handle(messageContext: HandlerV2InboundMessage<RequestHandler>) {
     const { record, message } = await this.valueTransferService.processRequest(messageContext)
     if (record.role === ValueTransferRole.Witness) {
+      // Find connection with giver
       if (!record.giverConnectionId) {
         this.agentConfig.logger.error(`Connection to Giver not found for value transfer protocol: ${record.id}.`)
         return
@@ -43,13 +44,14 @@ export class RequestHandler implements HandlerV2 {
       record.role === ValueTransferRole.Giver &&
       this.valueTransferResponseCoordinator.shouldAutoRespondToRequest(record)
     ) {
+      // Find connection with witness
       if (!record.witnessConnectionId) {
         this.agentConfig.logger.error(`Connection to Witness not found for value transfer protocol: ${record.id}.`)
         return
       }
-      const connection = await this.connectionService.getById(record.witnessConnectionId)
-      const { message } = await this.valueTransferService.acceptRequest(record)
-      return createOutboundMessage(connection, message)
+      const witnessConnection = await this.connectionService.getById(record.witnessConnectionId)
+      const { message } = await this.valueTransferService.acceptRequest(witnessConnection, record)
+      return createOutboundMessage(witnessConnection, message)
     }
   }
 }

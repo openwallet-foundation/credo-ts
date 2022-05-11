@@ -2,7 +2,7 @@ import type { ConnectionRecord } from '../../modules/connections'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
 import type { OutboundMessage } from '../../types'
-import type { EncryptedMessage } from '@aries-framework/core'
+import type { EncryptedMessage } from '../didcomm'
 
 import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'

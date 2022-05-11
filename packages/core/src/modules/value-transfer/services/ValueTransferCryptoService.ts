@@ -17,6 +17,7 @@ export class ValueTransferCryptoService implements CryptoInterface {
     this.keysService = keysService
   }
 
+  // FIXME: realize how to avoid @ts-ignore annotation
   // @ts-ignore
   public async sign(payload: Buffer, did: string): Promise<Buffer> {
     const kid = await this.didService.resolveLocalKey(did, KeyType.Ed25519)

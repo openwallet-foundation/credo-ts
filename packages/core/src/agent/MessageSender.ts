@@ -1,11 +1,11 @@
 import type { ConnectionRecord } from '../modules/connections'
 import type { DidCommService, IndyAgentService } from '../modules/dids/domain/service'
+import type { AcceptProtocol } from '../modules/routing/types'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, SendMessageOptions } from '../types'
 import type { TransportSession } from './TransportService'
 import type { DIDCommMessage, EncryptedMessage } from './didcomm'
 import type { PackMessageParams } from './didcomm/EnvelopeService'
-import type { AcceptProtocol } from '@aries-framework/core'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 

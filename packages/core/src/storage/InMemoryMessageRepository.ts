@@ -1,6 +1,6 @@
+import type { EncryptedMessage } from '../agent/didcomm'
 import type { Logger } from '../logger'
 import type { MessageRepository } from './MessageRepository'
-import type { EncryptedMessage } from '@aries-framework/core'
 
 import { Lifecycle, scoped } from 'tsyringe'
 

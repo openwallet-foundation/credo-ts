@@ -1,4 +1,4 @@
-import type { EncryptedMessage } from '@aries-framework/core'
+import type { EncryptedMessage } from '../agent/didcomm'
 
 export interface MessageRepository {
   takeFromQueue(connectionId: string, limit?: number): EncryptedMessage[]

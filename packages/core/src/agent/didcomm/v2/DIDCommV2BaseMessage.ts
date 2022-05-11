@@ -63,8 +63,7 @@ export class DIDCommV2BaseMessage {
   @IsOptional()
   public from_prior?: string
 
-  @IsOptional()
-  public body?: any
+  public body: any // FIXME: Avoid using any
 
   @IsOptional()
   public attachments?: Array<Attachment>

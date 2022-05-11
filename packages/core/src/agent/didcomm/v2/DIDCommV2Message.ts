@@ -1,5 +1,4 @@
 import type { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
-import type { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import type { DIDCommMessage } from '../DIDCommMessage'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -8,7 +7,7 @@ import { DIDCommVersion } from '../DIDCommMessage'
 import { DIDCommV2BaseMessage } from './DIDCommV2BaseMessage'
 
 export class DIDCommV2Message extends DIDCommV2BaseMessage implements DIDCommMessage {
-  public toJSON(params?: { useLegacyDidSovPrefix?: boolean }): Record<string, unknown> {
+  public toJSON(): Record<string, unknown> {
     return JsonTransformer.toJSON(this)
   }
 
@@ -28,12 +27,16 @@ export class DIDCommV2Message extends DIDCommV2BaseMessage implements DIDCommMes
     return false
   }
 
-  public hasReturnRouting(threadId?: string) {
+  public hasReturnRouting() {
     return false
   }
 
-  public setReturnRouting(type: ReturnRouteTypes, thread?: string): void {
+  public setReturnRouting(): void {
     return
+  }
+
+  public setThread(options: { threadId: string | undefined }) {
+    this.thid = options.threadId
   }
 
   public is<C extends typeof DIDCommV2Message>(Class: C): this is InstanceType<C> {
