@@ -222,32 +222,16 @@ export class ConnectionService {
       throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
     }
 
-    let didDocRouting = routing
-    if (!didDocRouting) {
-      didDocRouting = {
-        did,
-        endpoints: Array.from(
-          new Set(
-            outOfBandRecord.outOfBandInvitation.services
-              .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
-              .map((s) => s.serviceEndpoint)
+    const didDoc = routing
+      ? this.createDidDoc(routing)
+      : this.createDidDocFromServices(
+          did,
+          Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58,
+          outOfBandRecord.outOfBandInvitation.services.filter(
+            (s): s is OutOfBandDidCommService => typeof s !== 'string'
           )
-        ),
-        verkey: Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58,
-        routingKeys: Array.from(
-          new Set(
-            outOfBandRecord.outOfBandInvitation.services
-              .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
-              .map((s) => s.routingKeys)
-              .filter((r): r is string[] => r !== undefined)
-              .reduce((acc, curr) => acc.concat(curr), [])
-              .map(didKeyToVerkey)
-          )
-        ),
-      }
-    }
+        )
 
-    const didDoc = this.createDidDoc(didDocRouting)
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Created,
       didDocument: convertToNewDidDocument(didDoc),
@@ -696,6 +680,10 @@ export class ConnectionService {
       publicKeyBase58: verkey,
     })
 
+    // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
+    // inferred from the publicKey class instance
+    const auth = new EmbeddedAuthentication(publicKey)
+
     // IndyAgentService is old service type
     const services = endpoints.map(
       (endpoint, index) =>
@@ -709,18 +697,43 @@ export class ConnectionService {
         })
     )
 
-    // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
-    // inferred from the publicKey class instance
-    const auth = new EmbeddedAuthentication(publicKey)
-
-    const didDoc = new DidDoc({
+    return new DidDoc({
       id: did,
       authentication: [auth],
       service: services,
       publicKey: [publicKey],
     })
+  }
 
-    return didDoc
+  private createDidDocFromServices(did: string, recipientKey: string, services: OutOfBandDidCommService[]) {
+    const publicKey = new Ed25119Sig2018({
+      id: `${did}#1`,
+      controller: did,
+      publicKeyBase58: recipientKey,
+    })
+
+    // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
+    // inferred from the publicKey class instance
+    const auth = new EmbeddedAuthentication(publicKey)
+
+    // IndyAgentService is old service type
+    const service = services.map(
+      (service, index) =>
+        new IndyAgentService({
+          id: `${did}#IndyAgentService`,
+          serviceEndpoint: service.serviceEndpoint,
+          recipientKeys: [recipientKey],
+          routingKeys: service.routingKeys?.map(didKeyToVerkey),
+          priority: index,
+        })
+    )
+
+    return new DidDoc({
+      id: did,
+      authentication: [auth],
+      service,
+      publicKey: [publicKey],
+    })
   }
 
   public async returnWhenIsConnected(connectionId: string, timeoutMs = 20000): Promise<ConnectionRecord> {
