@@ -46,7 +46,7 @@ describe('multi version protocols', () => {
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
 
     // Register the test handler with the v1.3 version of the message
     const dispatcher = aliceAgent.injectionContainer.resolve(Dispatcher)
@@ -56,7 +56,7 @@ describe('multi version protocols', () => {
 
     bobAgent = new Agent(bobConfig.config, bobConfig.agentDependencies)
     bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(bobMessages, subjectMap))
+    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
     const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()

@@ -1,5 +1,5 @@
-import type { BaseMessage } from '../../agent/BaseMessage'
 import type { AgentMessageProcessedEvent } from '../../agent/Events'
+import type { ParsedMessageType } from '../../utils/messageType'
 
 import { firstValueFrom, of, ReplaySubject } from 'rxjs'
 import { filter, takeUntil, timeout, catchError, map } from 'rxjs/operators'
@@ -42,8 +42,8 @@ export class DiscoverFeaturesModule {
     this.agentConfig = agentConfig
   }
 
-  public async isProtocolSupported(connectionId: string, message: BaseMessage) {
-    const { protocolUri } = parseMessageType(message.type)
+  public async isProtocolSupported(connectionId: string, message: { type: ParsedMessageType }) {
+    const { protocolUri } = message.type
 
     // Listen for response to our feature query
     const replaySubject = new ReplaySubject(1)
