@@ -275,7 +275,6 @@ export abstract class CredentialService {
         await formatService.deleteCredentialById(credentialRecord)
       }
     }
- 
   }
   /**
    * Retrieve a credential record by connection id and thread id
