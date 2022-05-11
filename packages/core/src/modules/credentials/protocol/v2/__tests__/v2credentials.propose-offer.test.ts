@@ -409,9 +409,9 @@ describe('credentials', () => {
     await aliceAgent.credentials.deleteById(holderCredential.id, { deleteAssociatedCredentials: true })
     expect(deleteCredentialSpy).toHaveBeenCalledTimes(1)
 
-    // return expect(aliceAgent.credentials.getById(holderCredential.id)).rejects.toThrowError(
-    //   `CredentialRecord: record with id ${holderCredential.id} not found.`
-    // )
+    return expect(aliceAgent.credentials.getById(holderCredential.id)).rejects.toThrowError(
+      `CredentialRecord: record with id ${holderCredential.id} not found.`
+    )
   })
 
   test('Alice starts with propose - Faber counter offer - Alice second proposal- Faber sends second offer', async () => {
