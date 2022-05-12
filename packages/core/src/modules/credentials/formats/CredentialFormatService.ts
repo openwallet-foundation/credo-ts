@@ -1,6 +1,5 @@
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type {
-  DeleteCredentialOptions,
   ServiceAcceptCredentialOptions,
   ServiceAcceptProposalOptions,
   ServiceOfferCredentialOptions,

@@ -8,7 +8,6 @@ import type {
 } from '../../CredentialsModuleOptions'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
 import type {
-  DeleteCredentialOptions,
   ServiceAcceptCredentialOptions,
   ServiceAcceptOfferOptions as ServiceOfferOptions,
   ServiceAcceptProposalOptions,
