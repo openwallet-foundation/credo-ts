@@ -17,8 +17,10 @@ import type {
   ProcessProposalOptions,
   ProcessRequestOptions,
 } from '../models/ProofFormatServiceOptions'
-import type { InputDescriptorsSchemaOptions, SchemaOptions } from './models'
+import type { InputDescriptorsSchemaOptions, SchemaOptions, InputDescriptorsSchema } from './models'
+import type { Validated } from '@sphereon/pex'
 
+import { Status, PEXv1 } from '@sphereon/pex'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
@@ -41,7 +43,6 @@ import {
 } from '../ProofFormats'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
-import { InputDescriptorsSchema } from './models'
 import { PresentationDefinition, RequestPresentation } from './models/RequestPresentation'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -65,16 +66,22 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       throw Error('Presentation Exchange format missing while creating proof proposal.')
     }
 
-    if (!options.formats.presentationExchange.inputDescriptors) {
-      throw Error('Input Descriptor missing while creating proof proposal.')
+    const presentationExchangeFormat = options.formats.presentationExchange
+
+    if (!presentationExchangeFormat.presentationDefinition) {
+      throw Error('Presentation definition with Input Descriptor is missing while creating proof proposal.')
     }
 
-    const inputDescriptorsSchemaOptions: InputDescriptorsSchemaOptions = {
-      inputDescriptors: options.formats.presentationExchange.inputDescriptors,
+    const presentationDefinition = presentationExchangeFormat.presentationDefinition
+
+    const pex: PEXv1 = new PEXv1()
+    const result: Validated = pex.validateDefinition(presentationDefinition)
+
+    if (Array.isArray(result) && result[0].status !== Status.INFO) {
+      throw new AriesFrameworkError(`Error in creating presentation definition: ${result[0].message} `)
     }
 
-    const proposalInputDescriptor = new InputDescriptorsSchema(inputDescriptorsSchemaOptions)
-    const attachId = options.attachId ?? uuid()
+    const attachId = options.id ?? uuid()
 
     const format = new ProofFormatSpec({
       attachmentId: attachId,
@@ -85,7 +92,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       id: attachId,
       mimeType: 'application/json',
       data: new AttachmentData({
-        json: proposalInputDescriptor.toJSON(),
+        json: JsonTransformer.toJSON(presentationDefinition),
       }),
     })
 

@@ -1,5 +1,5 @@
-import type { InputDescriptors } from './presentation-exchange/models/InputDescriptors'
+import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 
 export interface PresentationExchangeProposalFormat {
-  inputDescriptors?: InputDescriptors[]
+  presentationDefinition: PresentationDefinitionV1
 }
