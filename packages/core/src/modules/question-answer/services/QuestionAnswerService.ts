@@ -41,15 +41,17 @@ export class QuestionAnswerService {
    */
   public async createQuestion(
     connectionId: string,
-    question: string,
-    validResponses: ValidResponse[],
-    details?: string
+    config: {
+      question: string
+      validResponses: ValidResponse[]
+      detail?: string
+    }
   ) {
     const questionMessage = new QuestionMessage({
-      questionText: question,
-      questionDetail: details,
+      questionText: config.question,
+      questionDetail: config?.detail,
       signatureRequired: false,
-      validResponses: validResponses,
+      validResponses: config.validResponses,
     })
 
     const questionAnswerRecord = await this.createRecord({
@@ -79,18 +81,12 @@ export class QuestionAnswerService {
    * @param messageContext the message context containing a question message
    * @returns QuestionAnswer record
    */
-  public async receiveQuestion(messageContext: InboundMessageContext<QuestionMessage>): Promise<QuestionAnswerRecord> {
-    const { message: questionMessage, connection } = messageContext
+  public async processReceiveQuestion(messageContext: InboundMessageContext<QuestionMessage>): Promise<QuestionAnswerRecord> {
+    const { message: questionMessage } = messageContext
 
     this.logger.debug(`Receiving question message with id ${questionMessage.id}`)
 
-    if (!connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
-    }
-
-    if (!connection.theirKey) {
-      throw new AriesFrameworkError(`Connection with verkey ${connection.verkey} has no recipient keys.`)
-    }
+    const connection = messageContext.assertReadyConnection()
 
     const questionAnswerRecord = await this.createRecord({
       questionText: questionMessage.questionText,
@@ -128,7 +124,7 @@ export class QuestionAnswerService {
     if (questionAnswerRecord.validResponses.some((e) => e.text === response)) {
       await this.updateState(questionAnswerRecord, QuestionAnswerState.AnswerSent)
     } else {
-      this.logger.error(`Response does not match valid responses`)
+      throw new AriesFrameworkError(`Response does not match valid responses`)
     }
     return { answerMessage, questionAnswerRecord }
   }
@@ -152,22 +148,14 @@ export class QuestionAnswerService {
       throw new AriesFrameworkError(`Connection with verkey ${connection.verkey} has no recipient keys.`)
     }
 
-    try {
-      const questionAnswerRecord: QuestionAnswerRecord = await this.getByThreadAndConnectionId(
-        answerMessage.threadId,
-        connection?.id
-      )
+    const questionAnswerRecord: QuestionAnswerRecord = await this.getByThreadAndConnectionId(
+      answerMessage.threadId,
+      connection?.id
+    )
 
-      await this.updateState(questionAnswerRecord, QuestionAnswerState.AnswerReceived)
+    await this.updateState(questionAnswerRecord, QuestionAnswerState.AnswerReceived)
 
-      return questionAnswerRecord
-    } catch (error) {
-      this.logger.error(
-        `Unable to get question answer record by threadId "${answerMessage.threadId}" and connection id "${connection?.id}" and unable to update state`,
-        { error }
-      )
-      throw error
-    }
+    return questionAnswerRecord
   }
 
   /**
@@ -230,6 +218,18 @@ export class QuestionAnswerService {
       connectionId,
       threadId,
     })
+  }
+
+  /**
+   * Retrieve a connection record by id
+   *
+   * @param questionAnswerId The questionAnswer record id
+   * @throws {RecordNotFoundError} If no record is found
+   * @return The connection record
+   *
+   */
+   public getById(questionAnswerId: string): Promise<QuestionAnswerRecord> {
+    return this.questionAnswerRepository.getById(questionAnswerId)
   }
 
   /**

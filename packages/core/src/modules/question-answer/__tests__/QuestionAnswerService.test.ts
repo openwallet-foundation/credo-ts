@@ -82,11 +82,10 @@ describe('QuestionAnswerService', () => {
         validResponses: [{ text: 'Yes' }, { text: 'No' }],
       })
 
-      await questionAnswerService.createQuestion(
-        mockConnectionRecord.id,
-        questionMessage.questionText,
-        questionMessage.validResponses
-      )
+      await questionAnswerService.createQuestion(mockConnectionRecord.id, {
+        question: questionMessage.questionText,
+        validResponses: questionMessage.validResponses,
+      })
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'QuestionAnswerStateChanged',
@@ -118,16 +117,10 @@ describe('QuestionAnswerService', () => {
       })
     })
 
-    it(`uses invalid response, state is not changed`, async () => {
-      const eventListenerMock = jest.fn()
-      eventEmitter.on<QuestionAnswerStateChangedEvent>(
-        QuestionAnswerEventTypes.QuestionAnswerStateChanged,
-        eventListenerMock
+    it(`throws an error when invalid response is provided`, async () => {
+      expect(questionAnswerService.createAnswer(mockRecord, 'Maybe')).rejects.toThrowError(
+        `Response does not match valid responses`
       )
-
-      await questionAnswerService.createAnswer(mockRecord, 'Maybe')
-
-      expect(eventListenerMock).not.toHaveBeenCalled()
     })
 
     it(`emits an answer with a valid response and question answer record`, async () => {

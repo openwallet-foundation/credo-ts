@@ -35,20 +35,24 @@ export class QuestionAnswerModule {
    * holder
    *
    * @param connectionId connection to send the question message to
-   * @param question question text included in message
-   * @param validResponses array of possible responses to question
-   * @param detail optional details for question
+   * @param config config for creating question message
    * @returns QuestionAnswer record
    */
-  public async sendQuestion(connectionId: string, question: string, validResponses: ValidResponse[], detail?: string) {
+  public async sendQuestion(
+    connectionId: string,
+    config: {
+      question: string
+      validResponses: ValidResponse[]
+      detail?: string
+    }
+  ) {
     const connection = await this.connectionService.getById(connectionId)
 
-    const { questionMessage, questionAnswerRecord } = await this.questionAnswerService.createQuestion(
-      connectionId,
-      question,
-      validResponses,
-      detail
-    )
+    const { questionMessage, questionAnswerRecord } = await this.questionAnswerService.createQuestion(connectionId, {
+      question: config.question,
+      validResponses: config.validResponses,
+      detail: config?.detail,
+    })
     const outboundMessage = createOutboundMessage(connection, questionMessage)
     await this.messageSender.sendMessage(outboundMessage)
 
@@ -58,27 +62,22 @@ export class QuestionAnswerModule {
   /**
    * Create an answer message as the holder and send it in response to a question message
    *
-   * @param connectionId connection to send the answer message to
-   * @param threadId thread id for the QuestionAnswer record
+   * @param questionRecordId the id of the questionAnswer record
    * @param response response included in the answer message
    * @returns QuestionAnswer record
    */
-  public async sendAnswer(connectionId: string, threadId: string, response: string) {
-    const connection = await this.connectionService.getById(connectionId)
-
-    const questionRecord = await this.questionAnswerService.getByThreadAndConnectionId(connectionId, threadId)
+  public async sendAnswer(questionRecordId: string, response: string) {
+    const questionRecord = await this.questionAnswerService.getById(questionRecordId)
 
     const { answerMessage, questionAnswerRecord } = await this.questionAnswerService.createAnswer(
       questionRecord,
       response
     )
 
-    if (questionAnswerRecord.state === QuestionAnswerState.AnswerSent) {
-      const outboundMessage = createOutboundMessage(connection, answerMessage)
-      await this.messageSender.sendMessage(outboundMessage)
-    } else {
-      throw new AriesFrameworkError(`Unable to send message without valid response`)
-    }
+    const connection = await this.connectionService.getById(questionRecord.connectionId)
+
+    const outboundMessage = createOutboundMessage(connection, answerMessage)
+    await this.messageSender.sendMessage(outboundMessage)
 
     return questionAnswerRecord
   }
