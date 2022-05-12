@@ -9,7 +9,7 @@ export class Alice extends BaseAgent {
   public connected: boolean
 
   public constructor(port: number, name: string) {
-    super(port, name)
+    super(name, port)
     this.connected = false
   }
 

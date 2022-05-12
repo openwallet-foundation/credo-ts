@@ -22,7 +22,7 @@ import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
 import { DidCommService, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
-import { offlineTransports } from '../../routing/types'
+import { defaultAcceptProfiles, offlineTransports } from '../../routing/types'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import {
@@ -84,6 +84,7 @@ export class ConnectionService {
     multiUseInvitation?: boolean
     myLabel?: string
     myImageUrl?: string
+    transport?: Transport
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did
     const connectionRecord = await this.createConnection({
@@ -91,6 +92,7 @@ export class ConnectionService {
       state: ConnectionState.Invited,
       alias: config?.alias,
       routing: config.routing,
+      transport: config.transport,
       autoAcceptConnection: config?.autoAcceptConnection,
       multiUseInvitation: config.multiUseInvitation ?? false,
     })
@@ -149,6 +151,7 @@ export class ConnectionService {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
       multiUseInvitation: false,
+      transport: invitation.serviceEndpoint?.split(':')[0] as Transport,
     })
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
@@ -491,7 +494,6 @@ export class ConnectionService {
     multiUseInvitation?: boolean
     routing: Routing
     transport?: Transport
-    accept?: AcceptProtocol[]
   }): Promise<{ connectionRecord: ConnectionRecord; message: OutOfBandInvitationMessage }> {
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Inviter,
@@ -501,16 +503,17 @@ export class ConnectionService {
       autoAcceptConnection: config?.autoAcceptConnection,
       multiUseInvitation: config.multiUseInvitation ?? false,
       transport: config?.transport,
-      accept: config?.accept,
     })
+    const { didDoc } = connectionRecord
+    const [service] = didDoc.didCommServices
     const invitation = new OutOfBandInvitationMessage({
       from: connectionRecord.didDoc.id,
       body: {
         label: config?.myLabel ?? this.config.label,
         goalCode: config?.goalCode,
-        accept: connectionRecord?.accept,
+        accept: defaultAcceptProfiles,
         imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
-        service: connectionRecord.didDoc.didCommServices[0],
+        service,
       },
     })
 
@@ -546,7 +549,6 @@ export class ConnectionService {
     if (!invitation.from) {
       throw new AriesFrameworkError(`Invalid Out-Of-Band invitation: 'from' field is missing`)
     }
-
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Invitee,
       state: ConnectionState.Complete,
@@ -556,8 +558,7 @@ export class ConnectionService {
       routing: config.routing,
       imageUrl: invitation.body?.imageUrl,
       multiUseInvitation: false,
-      accept: invitation.body?.accept,
-      transport: invitation.body.service.serviceEndpoint as Transport,
+      transport: invitation.body.service.protocolScheme as Transport,
     })
 
     const { didDocument: theirDidDocument } = await this.didResolverService.resolve(invitation.from)
@@ -788,10 +789,9 @@ export class ConnectionService {
     multiUseInvitation: boolean
     tags?: CustomConnectionTags
     imageUrl?: string
-    accept?: AcceptProtocol[]
     transport?: Transport
   }): Promise<ConnectionRecord> {
-    const { endpoints, did, verkey, routingKeys, mediatorId, accept } = options.routing
+    const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
@@ -807,7 +807,7 @@ export class ConnectionService {
           serviceEndpoint: options.transport,
           recipientKeys: [verkey],
           routingKeys: routingKeys,
-          accept: accept,
+          accept: defaultAcceptProfiles,
         }),
       ]
     } else {
@@ -851,8 +851,6 @@ export class ConnectionService {
       imageUrl: options.imageUrl,
       multiUseInvitation: options.multiUseInvitation,
       mediatorId,
-      accept,
-      transport: options.transport,
     })
 
     await this.connectionRepository.save(connectionRecord)
@@ -892,7 +890,6 @@ export interface Routing {
   did: string
   routingKeys: string[]
   mediatorId?: string
-  accept?: AcceptProtocol[]
 }
 
 export interface ConnectionProtocolMsgReturnType<MessageType extends DIDCommV1Message> {

@@ -1,5 +1,5 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { ConnectionRecord } from '@aries-framework/core'
+import type { ConnectionRecord, Transport } from '@aries-framework/core'
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
@@ -10,16 +10,22 @@ import { greenText, Output } from './OutputClass'
 export class Witness extends BaseAgent {
   public connectionRecordGetterId?: string
   public connectionRecordGiverId?: string
+  public static transports: Transport[] = ['nfc', 'ipc']
 
-  public constructor(port: number, name: string, valueTransferConfig: ValueTransferConfig) {
-    super(port, name, valueTransferConfig)
+  public constructor(
+    name: string,
+    port?: number,
+    offlineTransports?: string[],
+    valueTransferConfig?: ValueTransferConfig
+  ) {
+    super(name, port, offlineTransports, valueTransferConfig)
   }
 
   public static async build(): Promise<Witness> {
     const valueTransferConfig: ValueTransferConfig = {
       role: ValueTransferRole.Witness,
     }
-    const witness = new Witness(9002, 'witness', valueTransferConfig)
+    const witness = new Witness('witness', undefined, Witness.transports, valueTransferConfig)
     await witness.initializeAgent()
     return witness
   }

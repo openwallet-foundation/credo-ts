@@ -1,4 +1,5 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
+import type { Transport } from '@aries-framework/core'
 import type { ValueTransferRecord } from '@aries-framework/core/src/modules/value-transfer'
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
@@ -12,9 +13,15 @@ export class Giver extends BaseAgent {
   public valueTransferRecordId?: string
   public connectionRecordWitnessId?: string
   public connected: boolean
+  public static transport: Transport = 'nfc'
 
-  public constructor(port: number, name: string, valueTransferConfig: ValueTransferConfig) {
-    super(port, name, valueTransferConfig)
+  public constructor(
+    name: string,
+    port?: number,
+    offlineTransports?: string[],
+    valueTransferConfig?: ValueTransferConfig
+  ) {
+    super(name, port, offlineTransports, valueTransferConfig)
     this.connected = false
   }
 
@@ -23,7 +30,7 @@ export class Giver extends BaseAgent {
       role: ValueTransferRole.Giver,
       verifiableNotes: createVerifiableNotes(10),
     }
-    const giver = new Giver(9001, 'giver', valueTransferConfig)
+    const giver = new Giver('giver', undefined, [Giver.transport], valueTransferConfig)
     await giver.initializeAgent()
     return giver
   }
@@ -43,7 +50,9 @@ export class Giver extends BaseAgent {
   }
 
   private async printConnectionInvite() {
-    const invite = await this.agent.connections.createConnection()
+    const invite = await this.agent.connections.createConnection({
+      transport: Giver.transport,
+    })
     this.connectionRecordWitnessId = invite.connectionRecord.id
 
     console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')

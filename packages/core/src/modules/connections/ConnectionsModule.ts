@@ -52,6 +52,7 @@ export class ConnectionsModule {
     multiUseInvitation?: boolean
     myLabel?: string
     myImageUrl?: string
+    transport?: Transport
   }): Promise<{
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
@@ -68,6 +69,7 @@ export class ConnectionsModule {
       multiUseInvitation: config?.multiUseInvitation,
       myLabel: config?.myLabel,
       myImageUrl: config?.myImageUrl,
+      transport: config?.transport,
     })
 
     return { connectionRecord, invitation }
@@ -194,7 +196,6 @@ export class ConnectionsModule {
     myLabel?: string
     myImageUrl?: string
     goalCode?: string
-    accept?: AcceptProtocol[]
     transport?: Transport
     autoAcceptConnection?: boolean
     mediatorId?: string
@@ -207,7 +208,6 @@ export class ConnectionsModule {
     const myRouting = await this.mediationRecipientService.getRouting({
       mediatorId: config?.mediatorId,
       useDefaultMediator: config?.useDefaultMediator,
-      accept: config?.accept,
     })
 
     const { connectionRecord, message: invitation } = await this.connectionService.createOutOfBandConnection({
@@ -219,7 +219,6 @@ export class ConnectionsModule {
       myImageUrl: config?.myImageUrl,
       goalCode: config?.goalCode,
       transport: config?.transport,
-      accept: config?.accept,
     })
     return { connectionRecord, invitation }
   }
@@ -241,7 +240,6 @@ export class ConnectionsModule {
   }> {
     const routing = await this.mediationRecipientService.getRouting({
       useDefaultMediator: true,
-      accept: invitation.body?.accept,
     })
 
     const { connectionRecord } = await this.connectionService.acceptOutOfBandInvitation(invitation, {

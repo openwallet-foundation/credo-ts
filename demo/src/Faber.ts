@@ -14,7 +14,7 @@ export class Faber extends BaseAgent {
   public ui: BottomBar
 
   public constructor(port: number, name: string) {
-    super(port, name)
+    super(name, port)
     this.ui = new ui.BottomBar()
   }
 

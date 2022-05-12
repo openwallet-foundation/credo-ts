@@ -1,12 +1,11 @@
 export const DIDCommAip1Profile: AcceptProtocol = 'didcomm/aip1'
 export const DIDCommV2Profile: AcceptProtocol = 'didcomm/v2'
-export const defaultProfiles = [DIDCommAip1Profile, DIDCommV2Profile]
+export const defaultAcceptProfiles = [DIDCommAip1Profile, DIDCommV2Profile]
 
-export const nfcTransport = 'didcomm://nfc'
-export const offlineTransports = ['didcomm://nfc']
-export const onlineTransports = ['didcomm://http', 'didcomm://https', 'didcomm://ws', 'didcomm://wss']
+export const offlineTransports = ['nfc', 'ipc']
+export const onlineTransports = ['http', 'https', 'ws', 'wss']
 
-export type Transport = 'didcomm://http' | 'didcomm://https' | 'didcomm://ws' | 'didcomm://wss' | 'didcomm://nfc'
+export type Transport = 'http' | 'https' | 'ws' | 'wss' | 'nfc' | 'ipc'
 export type AcceptProtocol = 'didcomm/aip1' | 'didcomm/v2'
 
 export interface GetRoutingOptions {
@@ -25,9 +24,4 @@ export interface GetRoutingOptions {
    * @default true
    */
   useDefaultMediator?: boolean
-
-  /**
-   * Identifier of the DIDComm protocol to use
-   */
-  accept?: AcceptProtocol[]
 }

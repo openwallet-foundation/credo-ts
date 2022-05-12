@@ -26,7 +26,6 @@ import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMe
 import { MediationRole, MediationState } from '../models'
 import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
-import { defaultProfiles, DIDCommAip1Profile, DIDCommV2Profile } from '../types'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MediationRecipientService {
@@ -176,7 +175,7 @@ export class MediationRecipientService {
     return keylistUpdateMessage
   }
 
-  public async getRouting({ mediatorId, useDefaultMediator = true, accept }: GetRoutingOptions = {}): Promise<Routing> {
+  public async getRouting({ mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}): Promise<Routing> {
     let mediationRecord: MediationRecord | null = null
 
     if (mediatorId) {
@@ -190,31 +189,19 @@ export class MediationRecipientService {
     let endpoints = this.config.endpoints
     let routingKeys: string[] = []
 
-    const acceptProfiles = accept || defaultProfiles
-
     // FIXME: Temp solution
     // Creates keys with sane random Seed in Indy Key wallet and our custom wallet layer.
     // It's a quick way to get DIDComm V1 and V2 packing to work together
     const seed = await this.crypto.randomSeed()
 
-    let did = ''
-    let verkey = ''
+    const { id, didDocument } = await this.didService.createDID(DidType.PeerDid, undefined, seed)
+    if (!didDocument?.verificationMethod.length) {
+      throw new AriesFrameworkError(`Unable to create DIDDoc`)
+    }
+    await this.wallet.createDid({ seed })
 
-    if (acceptProfiles?.includes(DIDCommV2Profile)) {
-      const { id, didDocument } = await this.didService.createDID(DidType.PeerDid, undefined, seed)
-      if (!didDocument?.verificationMethod.length) {
-        throw new AriesFrameworkError(`Unable to create DIDDoc`)
-      }
-      did = id
-      verkey = didDocument.verificationKey
-    }
-    if (acceptProfiles?.includes(DIDCommAip1Profile)) {
-      const result = await this.wallet.createDid({ seed })
-      if (!did) {
-        did = result.did
-        verkey = result.verkey
-      }
-    }
+    const did = id
+    const verkey = didDocument.verificationKey
 
     // Create and store new key
     if (mediationRecord) {
@@ -225,7 +212,7 @@ export class MediationRecipientService {
     } else {
       // TODO: check that recipient keys are in wallet
     }
-    return { endpoints, routingKeys, did, verkey, mediatorId: mediationRecord?.id, accept: acceptProfiles }
+    return { endpoints, routingKeys, did, verkey, mediatorId: mediationRecord?.id }
   }
 
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {

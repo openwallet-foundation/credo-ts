@@ -1,4 +1,5 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
+import type { Transport } from '@aries-framework/core'
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
@@ -10,9 +11,15 @@ export class Getter extends BaseAgent {
   public valueTransferRecordId?: string
   public connectionRecordWitnessId?: string
   public connected: boolean
+  public static transport: Transport = 'ipc'
 
-  public constructor(port: number, name: string, valueTransferConfig: ValueTransferConfig) {
-    super(port, name, valueTransferConfig)
+  public constructor(
+    name: string,
+    port?: number,
+    offlineTransports?: string[],
+    valueTransferConfig?: ValueTransferConfig
+  ) {
+    super(name, port, offlineTransports, valueTransferConfig)
     this.connected = false
   }
 
@@ -20,7 +27,7 @@ export class Getter extends BaseAgent {
     const valueTransferConfig: ValueTransferConfig = {
       role: ValueTransferRole.Getter,
     }
-    const getter = new Getter(9000, 'getter', valueTransferConfig)
+    const getter = new Getter('getter', undefined, [Getter.transport], valueTransferConfig)
     await getter.initializeAgent()
     return getter
   }
@@ -40,7 +47,9 @@ export class Getter extends BaseAgent {
   }
 
   private async printConnectionInvite() {
-    const invite = await this.agent.connections.createConnection()
+    const invite = await this.agent.connections.createConnection({
+      transport: Getter.transport,
+    })
     this.connectionRecordWitnessId = invite.connectionRecord.id
 
     console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')

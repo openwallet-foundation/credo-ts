@@ -14,7 +14,6 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
-import { offlineTransports } from '../modules/routing/types'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 
@@ -69,8 +68,6 @@ export class MessageSender {
   }): Promise<OutboundPackage> {
     let params: PackMessageParams
 
-    // TODO: restore
-    // if (connection?.accept?.includes('didcomm/v2')) {
     if (message.version === DIDCommVersion.V2) {
       if (!connection || !connection.theirDid) {
         throw new AriesFrameworkError(`There are no connection passed to pack message`)
@@ -135,59 +132,35 @@ export class MessageSender {
     }
 
     // Retrieve DIDComm services
-    const { services, queueService, offlineTransport } = await this.retrieveServicesByConnection(
-      connection,
-      options?.transportPriority
-    )
+    const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
 
     if (this.outboundTransports.length === 0 && !queueService) {
       throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
-    if (offlineTransport) {
-      const transport = this.outboundTransports.find((transport) =>
-        transport.supportedSchemes.includes(offlineTransport.split(':')[1])
-      )
-      if (!transport) {
-        this.logger.error(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`, {
-          message: encryptedMessage,
-          errors,
-          connection,
-        })
-        return
-      }
-      await transport.sendMessage({
-        payload: encryptedMessage,
-        connectionId: connection.id,
-      })
-      return
-    }
-
-    if (services) {
-      // Loop through all available services and try to send the message
-      for await (const service of services) {
-        this.logger.debug(`Sending outbound message to service:`, { service })
-        try {
-          for (const transport of this.outboundTransports) {
-            if (transport.supportedSchemes.includes(service.protocolScheme)) {
-              await transport.sendMessage({
-                payload: encryptedMessage,
-                endpoint: service.serviceEndpoint,
-                connectionId: connection.id,
-              })
-              break
-            }
+    // Loop through all available services and try to send the message
+    for await (const service of services) {
+      this.logger.debug(`Sending outbound message to service:`, { service })
+      try {
+        for (const transport of this.outboundTransports) {
+          if (transport.supportedSchemes.includes(service.protocolScheme)) {
+            await transport.sendMessage({
+              payload: encryptedMessage,
+              endpoint: service.serviceEndpoint,
+              connectionId: connection.id,
+            })
+            break
           }
-          return
-        } catch (error) {
-          this.logger.debug(
-            `Sending outbound message to service with id ${service.id} failed with the following error:`,
-            {
-              message: error.message,
-              error: error,
-            }
-          )
         }
+        return
+      } catch (error) {
+        this.logger.debug(
+          `Sending outbound message to service with id ${service.id} failed with the following error:`,
+          {
+            message: error.message,
+            error: error,
+          }
+        )
       }
     }
 
@@ -231,55 +204,31 @@ export class MessageSender {
     }
 
     // Retrieve DIDComm services
-    const { services, queueService, offlineTransport } = await this.retrieveServicesByConnection(
-      connection,
-      options?.transportPriority
-    )
+    const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
 
-    if (offlineTransport) {
+    // Loop trough all available services and try to send the message
+    for await (const service of services) {
       try {
+        // Enable return routing if the
+        const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(connection.didDoc)
+
         await this.packAndSendMessage({
           message: payload,
+          service,
+          senderKey: connection.verkey,
+          returnRoute: shouldUseReturnRoute,
           connection,
         })
         return
       } catch (error) {
         errors.push(error)
         this.logger.debug(
-          `Sending outbound message to connection with id ${connection.id} failed with the following error:`,
+          `Sending outbound message to service with id ${service.id} failed with the following error:`,
           {
             message: error.message,
             error: error,
           }
         )
-      }
-    }
-
-    if (services) {
-      // Loop trough all available services and try to send the message
-      for await (const service of services) {
-        try {
-          // Enable return routing if the
-          const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(connection.didDoc)
-
-          await this.packAndSendMessage({
-            message: payload,
-            service,
-            senderKey: connection.verkey,
-            returnRoute: shouldUseReturnRoute,
-            connection,
-          })
-          return
-        } catch (error) {
-          errors.push(error)
-          this.logger.debug(
-            `Sending outbound message to service with id ${service.id} failed with the following error:`,
-            {
-              message: error.message,
-              error: error,
-            }
-          )
-        }
       }
     }
     // We didn't succeed to send the message over open session, or directly to serviceEndpoint
@@ -326,14 +275,12 @@ export class MessageSender {
     if (!service && !connection) {
       throw new AriesFrameworkError('Either Connection or Service must be passed!')
     }
-    const transport = connection?.transport || service?.protocolScheme
+    const transport = service?.protocolScheme
     if (!transport) {
       throw new AriesFrameworkError('Either Connection or Service must define transport!')
     }
 
-    const endpoint = service?.serviceEndpoint || connection?.transport
-
-    this.logger.debug(`Sending outbound message to service:`, { messageId: message.id, service })
+    const endpoint = service?.serviceEndpoint
 
     // Set return routing for message if requested
     if (returnRoute) {
@@ -377,10 +324,6 @@ export class MessageSender {
     })
 
     let didCommServices: Array<IndyAgentService | DidCommService> = []
-
-    if (connection.transport && offlineTransports.includes(connection?.transport)) {
-      return { services: null, queueService: null, offlineTransport: connection.transport }
-    }
 
     // If theirDid starts with a did: prefix it means we're using the new did syntax
     // and we should use the did resolver
