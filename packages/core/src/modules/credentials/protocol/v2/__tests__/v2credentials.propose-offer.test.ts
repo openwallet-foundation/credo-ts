@@ -407,7 +407,7 @@ describe('credentials', () => {
 
     const deleteCredentialSpy = jest.spyOn(holderService, 'deleteCredential')
     await aliceAgent.credentials.deleteById(holderCredential.id, { deleteAssociatedCredentials: true })
-    expect(deleteCredentialSpy).toHaveBeenCalledTimes(1)
+    expect(deleteCredentialSpy).toHaveBeenNthCalledWith(1, holderCredential.credentials[0].credentialRecordId)
 
     return expect(aliceAgent.credentials.getById(holderCredential.id)).rejects.toThrowError(
       `CredentialRecord: record with id ${holderCredential.id} not found.`

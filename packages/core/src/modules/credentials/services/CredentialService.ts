@@ -255,7 +255,7 @@ export abstract class CredentialService {
     if (options?.deleteAssociatedCredentials) {
       for (const credential of credentialRecord.credentials) {
         const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
-        await formatService.deleteCredentialById(credentialRecordId)
+        await formatService.deleteCredentialById(credential.credentialRecordId)
       }
     }
   }
