@@ -1,4 +1,3 @@
-import type { ValueTransferConfig } from '../../types'
 import type { RequestAcceptedMessage, RequestMessage } from './messages'
 import type { ValueTransferTags, ValueTransferRecord } from './repository'
 

@@ -1,15 +1,14 @@
 import type { Logger } from '../../../logger'
-import type { DidDocument, VerificationMethod } from '../domain'
+import type { DidDocument } from '../domain'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { defaultKeyType, KeyType } from '../../../crypto'
+import { KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { KeyService } from '../../keys'
 import { DidType, Key } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
-import { keyTypeToVerificationKeyTypeMapping } from '../domain/verificationMethod/VerificationMethod'
 import { DidKey } from '../methods/key'
 import { DidPeer } from '../methods/peer/DidPeer'
 import { DidRecord, DidRepository } from '../repository'
@@ -36,89 +35,63 @@ export class DidService {
   }
 
   public async createDID(didType?: DidType, keyType?: KeyType, seed?: string): Promise<DidRecord> {
-    const type = didType || DidType.KeyDid
-    this.logger.debug(`creating DID with type ${type}`)
+    const didType_ = didType || DidType.KeyDid
+    const keyType_ = keyType || KeyType.Ed25519
 
-    // FIXME: We need properly generate keys
-    // `.didDocument` method creates x25519 key from the ed25519
-    // x25519 also need to be stored in the wallet
-    //drop the workaround below
-    const keyRecord = await this.keysService.createKey({ keyType: KeyType.Ed25519, seed })
-    const keyRecord2 = await this.keysService.createKey({ keyType: KeyType.X25519, seed })
+    this.logger.debug(`creating DID with type ${didType_}`)
 
-    let did: string
-    let didDocument: DidDocument
+    const keyPair = await this.keysService.createKey({ keyType: keyType_, seed })
+    const key = Key.fromPublicKey(keyPair.publicKey, keyType_)
 
-    const key = Key.fromPublicKey(keyRecord.publicKeyBytes, keyRecord.keyType)
-    const key2 = Key.fromPublicKey(keyRecord2.publicKeyBytes, keyRecord2.keyType)
-
-    switch (type) {
-      case DidType.KeyDid: {
-        const didKey = new DidKey(key)
-        did = didKey.did
-        didDocument = didKey.didDocument
-        break
-      }
-      case DidType.PeerDid: {
-        const didKey = DidPeer.fromKey(key)
-        did = didKey.did
-        didDocument = didKey.didDocument
-        break
-      }
-      case DidType.Indy:
-      case DidType.WebDid: {
-        throw new AriesFrameworkError(`DID type(s) are not implemented: ${type}`)
-      }
-    }
+    const didDocument = this.getDIDDocumentFromKey(didType_, key)
+    const did = didDocument.id
 
     const didRecord = new DidRecord({
+      id: didDocument.id,
       didDocument,
-      id: did,
       role: DidDocumentRole.Created,
     })
     await this.didRepository.save(didRecord)
 
-    keyRecord.kid = `${did}#${key.fingerprint}`
-    keyRecord.controller = did
-    await this.keysService.update(keyRecord)
+    // store key into wallet
+    await this.keysService.storeKey({
+      keyPair: keyPair,
+      controller: did,
+      kid: key.buildKeyId(did),
+      keyType: keyType_,
+    })
 
-    keyRecord2.kid = `${did}#${key2.fingerprint}`
-    keyRecord2.controller = did
-    await this.keysService.update(keyRecord2)
-
-    await this.keysService.getByKid(keyRecord.kid)
-    await this.keysService.getByKid(keyRecord2.kid)
+    // For keys of Ed25519
+    // Ed25519 keys are used for messages signing only. When we use `pack/unpack` we use X25519
+    // `.didDocument` method does conversion internally and appends x25519 into the DIDDoc
+    // So we need to store x25519 in the wallet as well
+    // TODO: Think of better way to do it
+    if (keyType_ === KeyType.Ed25519) {
+      const x25519KeyPair = await this.keysService.convertEd25519ToX25519Key({ keyPair: keyPair })
+      const x25519Key = Key.fromPublicKey(x25519KeyPair.publicKey, KeyType.X25519)
+      await this.keysService.storeKey({
+        keyPair: x25519KeyPair,
+        controller: did,
+        kid: x25519Key.buildKeyId(did),
+        keyType: KeyType.X25519,
+      })
+    }
 
     return didRecord
   }
 
-  public async resolveLocalKey(did: string, keyType?: KeyType): Promise<string> {
-    // TODO: implement proper steps of selecting a key to use
-    const didRecord = await this.didRepository.getById(did)
-    if (!didRecord.didDocument) {
-      throw new AriesFrameworkError(`Unable to get DIDDoc for did: ${did}`)
+  public async getDIDDoc(did: string): Promise<DidDocument> {
+    // find in the Wallet
+    const didRecord = await this.didRepository.findById(did)
+    if (didRecord?.didDocument) {
+      return didRecord?.didDocument
     }
-    return this.getVerificationMethod(didRecord.didDocument, keyType).id
-  }
-
-  public async resolveRemoteKey(did: string, keyType?: KeyType): Promise<VerificationMethod> {
-    // TODO: implement proper steps of selecting a key to use
+    // resolve according to DID type
     const didDoc = await this.didResolverService.resolve(did)
     if (!didDoc.didDocument) {
       throw new AriesFrameworkError(`Unable to get DIDDoc for did: ${did}`)
     }
-    return this.getVerificationMethod(didDoc.didDocument, keyType)
-  }
-
-  private getVerificationMethod(didDocument: DidDocument, keyType?: KeyType): VerificationMethod {
-    const verificationKeyType = keyTypeToVerificationKeyTypeMapping[keyType || defaultKeyType]
-    const verificationMethod = didDocument?.verificationMethod.find(
-      (verificationMethod) => verificationMethod.type === verificationKeyType
-    )
-    if (!verificationMethod) {
-      throw new AriesFrameworkError(`Unable to find verification method with required key type: ${keyType}`)
-    }
-    return verificationMethod
+    return didDoc.didDocument
   }
 
   public getById(recordId: string): Promise<DidRecord> {
@@ -127,5 +100,20 @@ export class DidService {
 
   public findById(recordId: string): Promise<DidRecord | null> {
     return this.didRepository.findById(recordId)
+  }
+
+  private getDIDDocumentFromKey(didType: DidType, key: Key) {
+    switch (didType) {
+      case DidType.KeyDid: {
+        return new DidKey(key).didDocument
+      }
+      case DidType.PeerDid: {
+        return DidPeer.fromKey(key).didDocument
+      }
+      case DidType.Indy:
+      case DidType.WebDid: {
+        throw new AriesFrameworkError(`DID type(s) are not implemented: ${didType}`)
+      }
+    }
   }
 }

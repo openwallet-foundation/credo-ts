@@ -15,9 +15,6 @@ type RejectMessageParams = DIDCommV2MessageParams & {
 export class RejectMessage extends DIDCommV2Message {
   public constructor(options?: RejectMessageParams) {
     super(options)
-    if (options) {
-      this.body = options.body
-    }
   }
 
   @Equals(RejectMessage.type)

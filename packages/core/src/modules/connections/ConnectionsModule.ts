@@ -1,4 +1,4 @@
-import type { AcceptProtocol, Transport } from '../routing/types'
+import type { Transport } from '../routing/types'
 import type { OutOfBandInvitationMessage } from './messages/OutOfBandInvitationMessage'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 

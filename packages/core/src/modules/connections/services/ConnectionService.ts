@@ -3,7 +3,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
 import type { IndyAgentService } from '../../dids/domain/service'
-import type { AcceptProtocol, Transport } from '../../routing/types'
+import type { Transport } from '../../routing/types'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'

@@ -1,5 +1,3 @@
-import type { KeyType } from '../../crypto'
-
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { KeyService } from './services/KeyService'
@@ -10,9 +8,5 @@ export class KeysModule {
 
   public constructor(keyService: KeyService) {
     this.keyService = keyService
-  }
-
-  public createKey(controller: string, kid?: string, keyType?: KeyType) {
-    return this.keyService.createKey({ controller, kid, keyType })
   }
 }

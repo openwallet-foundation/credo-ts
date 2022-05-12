@@ -151,6 +151,48 @@ export class DidDocument {
     return TypedArrayEncoder.toBase58(this.verificationMethod[0].keyBytes)
   }
 
+  public getVerificationMethod(): VerificationMethod {
+    // get first available verification method
+    return this.verificationMethod[0]
+  }
+
+  public get verificationKeyId(): string {
+    // get id of first available verification key
+    return this.verificationMethod[0].id
+  }
+
+  public getKeyAgreement(): VerificationMethod {
+    const keyAgreement = this.keyAgreement[0]
+    if (keyAgreement) {
+      if (typeof keyAgreement === 'string') {
+        const verificationMethod = this.verificationMethod.find(
+          (verificationMethod) => keyAgreement === verificationMethod.id
+        )
+        if (!verificationMethod) {
+          throw new Error(`Unable to locate verification with id '${keyAgreement}'`)
+        }
+        return verificationMethod
+      } else {
+        return keyAgreement
+      }
+    }
+    return this.getVerificationMethod()
+  }
+
+  public get agreementKeyId(): string {
+    // get id of first available agreement key
+    const keyAgreement = this.keyAgreement[0]
+    if (keyAgreement) {
+      if (typeof keyAgreement === 'string') {
+        return keyAgreement
+      } else {
+        return keyAgreement.id
+      }
+    }
+    // else return id of verification key
+    return this.verificationKeyId
+  }
+
   public toJSON() {
     return JsonTransformer.toJSON(this)
   }

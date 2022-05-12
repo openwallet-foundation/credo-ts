@@ -3,6 +3,7 @@ import type { KeyPair } from './types'
 
 import * as aes from '@stablelib/aes'
 import * as ed25519 from '@stablelib/ed25519'
+import * as random from '@stablelib/random'
 import * as x25518 from '@stablelib/x25519'
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -97,8 +98,14 @@ export class StablelibCrypto implements Crypto {
   }
 
   public async randomSeed(): Promise<string> {
-    // TODO: provide better implementation
-    return Array.from(Array(32), () => Math.floor(Math.random() * 36).toString(36)).join('')
+    return random.randomString(32)
+  }
+
+  public async convertEd25519ToX25519Key(keyPair: KeyPair): Promise<KeyPair> {
+    return {
+      privateKey: ed25519.convertSecretKeyToX25519(keyPair.privateKey),
+      publicKey: ed25519.convertPublicKeyToX25519(keyPair.publicKey),
+    }
   }
 
   private async createEd25519Key(seed?: string): Promise<KeyPair> {

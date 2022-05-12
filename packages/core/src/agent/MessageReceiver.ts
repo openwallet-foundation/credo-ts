@@ -199,7 +199,14 @@ export class MessageReceiver {
       })
       // Throw error if the recipient key (ourKey) does not match the key of the connection record
       // FIXME: check that key matches to connection. Problem: x25519 is used for sending   Ed25519 is stored in connection
-      // if (connection && connection.theirKey !== null && connection.theirKey !== sender) {
+      // if (
+      //   connection &&
+      //   connection.theirKey !== null &&
+      //   connection.theirKey !== sender
+      // ) {
+      //   console.log(connection.theirKey)
+      //   console.log(connection.theirDid)
+      //   console.log(sender)
       //   throw new AriesFrameworkError(
       //     `Inbound message senderKey '${sender}' is different from connection.theirKey '${connection.theirKey}'`
       //   )

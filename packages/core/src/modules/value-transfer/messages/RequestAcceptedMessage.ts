@@ -13,9 +13,6 @@ type RequestAcceptedMessageParams = DIDCommV2MessageParams & {
 export class RequestAcceptedMessage extends DIDCommV2Message {
   public constructor(options?: RequestAcceptedMessageParams) {
     super(options)
-    if (options) {
-      this.body = options.body
-    }
   }
 
   @Equals(RequestAcceptedMessage.type)

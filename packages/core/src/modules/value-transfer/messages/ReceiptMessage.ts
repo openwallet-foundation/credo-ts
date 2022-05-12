@@ -13,9 +13,6 @@ type ReceiptMessageParams = DIDCommV2MessageParams & {
 export class ReceiptMessage extends DIDCommV2Message {
   public constructor(options?: ReceiptMessageParams) {
     super(options)
-    if (options) {
-      this.body = options.body
-    }
   }
 
   @Equals(ReceiptMessage.type)

@@ -10,7 +10,6 @@ import { InjectionSymbols } from '../../../constants'
 import { Crypto, KeyFormat, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { TypedArrayEncoder } from '../../../utils'
-import { Key } from '../../dids/domain/Key'
 import { verificationKeyTypeToKeyTypeMapping } from '../../dids/domain/verificationMethod/VerificationMethod'
 import { KeyRecord, KeyRepository } from '../repository'
 
@@ -30,27 +29,31 @@ export class KeyService {
     this.keyRepository = ketRepository
   }
 
-  public async createKey(params: {
-    controller?: string
-    kid?: string
+  public async createKey(params: { keyType?: KeyType; seed?: string }): Promise<KeyPair> {
+    return await this.crypto.createKey({
+      keyType: params.keyType || KeyType.Ed25519,
+      seed: params.seed,
+    })
+  }
+
+  public async convertEd25519ToX25519Key(params: { keyPair: KeyPair }): Promise<KeyPair> {
+    return await this.crypto.convertEd25519ToX25519Key(params.keyPair)
+  }
+
+  public async storeKey(params: {
+    keyPair: KeyPair
+    controller: string
+    kid: string
     keyType?: KeyType
     keyFormat?: KeyFormat
-    seed?: string
   }): Promise<KeyRecord> {
     const type = params.keyType || KeyType.Ed25519
     const format = params.keyFormat || KeyFormat.Base58
-    const keyPair = await this.crypto.createKey({ keyType: type, seed: params.seed })
 
-    const kid = params.kid
-      ? params.kid
-      : params.controller
-      ? `${params.controller}#${Key.fromPublicKey(keyPair.publicKey, type).fingerprint}`
-      : TypedArrayEncoder.toBase58(keyPair.publicKey)
-
-    const { privateKey, publicKey } = KeyService.getKeysRepresentation(keyPair, format)
+    const { privateKey, publicKey } = KeyService.getKeysRepresentation(params.keyPair, format)
 
     const keyRecord = new KeyRecord({
-      kid,
+      kid: params.kid,
       controller: params.controller,
       keyType: type,
       format,

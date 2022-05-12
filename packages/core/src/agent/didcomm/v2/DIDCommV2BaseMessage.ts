@@ -16,7 +16,7 @@ export type DIDCommV2MessageParams = {
   expires_time?: number
   from_prior?: string
   attachments?: Array<Attachment>
-  body?: any
+  body: any
 }
 
 export class DIDCommV2BaseMessage {
@@ -63,7 +63,7 @@ export class DIDCommV2BaseMessage {
   @IsOptional()
   public from_prior?: string
 
-  public body: any // FIXME: Avoid using any
+  public body!: any
 
   @IsOptional()
   public attachments?: Array<Attachment>

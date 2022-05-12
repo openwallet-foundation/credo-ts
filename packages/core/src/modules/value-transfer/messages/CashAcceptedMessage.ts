@@ -13,9 +13,6 @@ type CashAcceptedMessageParams = DIDCommV2MessageParams & {
 export class CashAcceptedMessage extends DIDCommV2Message {
   public constructor(options?: CashAcceptedMessageParams) {
     super(options)
-    if (options) {
-      this.body = options.body
-    }
   }
 
   @Equals(CashAcceptedMessage.type)

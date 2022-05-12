@@ -189,7 +189,7 @@ export class MediationRecipientService {
     let endpoints = this.config.endpoints
     let routingKeys: string[] = []
 
-    // FIXME: Temp solution
+    // FIXME: Find package that can be used for DIDComm V1 message encryption instead Indy
     // Creates keys with sane random Seed in Indy Key wallet and our custom wallet layer.
     // It's a quick way to get DIDComm V1 and V2 packing to work together
     const seed = await this.crypto.randomSeed()

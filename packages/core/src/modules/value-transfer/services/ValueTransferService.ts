@@ -14,6 +14,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
+import { JsonEncoder } from '../../../utils'
 import { Wallet } from '../../../wallet'
 import { DidDoc } from '../../connections/models/did/DidDoc'
 import { ConnectionService } from '../../connections/services/ConnectionService'
@@ -236,7 +237,7 @@ export class ValueTransferService {
       }
 
       // If connection doesn't contain remote info -> fill it
-      // TODO: Think about more appropriate place
+      // TODO: Think about more appropriate place for populating connection -> middleware?
       if (!witnessConnection.theirDid && messageContext.sender) {
         const { didDocument } = await this.didResolverService.resolve(messageContext.sender)
         if (!didDocument) {
@@ -619,7 +620,6 @@ export class ValueTransferService {
       type: ValueTransferEventTypes.ValueTransferStateChanged,
       payload: { record, previousState },
     })
-
     return { record, message: cashRemovedMessage }
   }
 
@@ -681,7 +681,6 @@ export class ValueTransferService {
       type: ValueTransferEventTypes.ValueTransferStateChanged,
       payload: { record, previousState },
     })
-
     return { record, getterMessage, giverMessage }
   }
 

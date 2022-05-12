@@ -40,4 +40,5 @@ export interface Crypto {
   aesEncrypt(params: AesEncryptParams): Promise<Buffer>
   aesDecrypt(params: AesDecryptParams): Promise<Buffer>
   randomSeed(): Promise<string>
+  convertEd25519ToX25519Key(keyPair: KeyPair): Promise<KeyPair>
 }
