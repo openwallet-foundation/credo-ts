@@ -117,11 +117,7 @@ describe('peer dids', () => {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-<<<<<<< HEAD
-        recipientKeys: didDocument.recipientKeys,
-=======
-        recipientKeyFingerprints: peerDid.didDocument.recipientKeys.map((key) => key.fingerprint),
->>>>>>> 73d296f6 (fix: always encode keys according to RFCs (#733))
+        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
       },
     })
 
@@ -158,11 +154,7 @@ describe('peer dids', () => {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-<<<<<<< HEAD
-        recipientKeys: didDocument.recipientKeys,
-=======
-        recipientKeyFingerprints: didPeer.didDocument.recipientKeys.map((key) => key.fingerprint),
->>>>>>> 73d296f6 (fix: always encode keys according to RFCs (#733))
+        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
       },
     })
 

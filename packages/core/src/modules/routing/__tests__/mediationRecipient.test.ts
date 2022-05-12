@@ -8,13 +8,13 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { ConnectionRepository, ConnectionState } from '../../connections'
+import { ConnectionRepository, DidExchangeState } from '../../connections'
 import { ConnectionService } from '../../connections/services/ConnectionService'
+import { DidRepository } from '../../dids/repository'
 import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../messages'
 import { MediationRole, MediationState } from '../models'
 import { MediationRecord, MediationRepository } from '../repository'
 import { MediationRecipientService } from '../services'
-import { DidRepository } from '../../dids/repository'
 
 jest.mock('../repository/MediationRepository')
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
@@ -34,7 +34,7 @@ const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 const connectionImageUrl = 'https://example.com/image.png'
 
 const mockConnection = getMockConnection({
-  state: ConnectionState.Complete,
+  state: DidExchangeState.Completed,
 })
 
 describe('MediationRecipientService', () => {

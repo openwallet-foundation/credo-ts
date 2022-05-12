@@ -47,13 +47,9 @@ import {
 import { KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
-<<<<<<< HEAD
 import { CredentialProtocolVersion } from '../src/modules/credentials/CredentialProtocolVersion'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/V1CredentialPreview'
-import { DidCommService } from '../src/modules/dids'
-=======
 import { DidCommV1Service, DidKey, Key } from '../src/modules/dids'
->>>>>>> 73d296f6 (fix: always encode keys according to RFCs (#733))
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'

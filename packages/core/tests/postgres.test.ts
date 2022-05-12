@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { IndyPostgresStorageConfig } from '../../node/src'
 import type { ConnectionRecord } from '../src/modules/connections'
@@ -21,8 +22,7 @@ const bobPostgresConfig = getBasePostgresConfig('AgentsBob', {
 describe('postgres agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
-  let aliceConnection: ConnectionRecord
-  let bobConnection: ConnectionRecord
+  let aliceConnectionAtAliceBob: ConnectionRecord
 
   afterAll(async () => {
     await bobAgent.shutdown()
@@ -67,19 +67,32 @@ describe('postgres agents', () => {
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()
-    const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(aliceConnectionAtAliceBob.invitation)
+    const aliceOutOfBandRecord = await aliceAgent.oob.createInvitation()
 
-    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob.connectionRecord.id)
-    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id)
+    const invitation = aliceOutOfBandRecord.outOfBandInvitation
+    const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
-    expect(aliceConnection).toBeConnectedWith(bobConnection)
-    expect(bobConnection).toBeConnectedWith(aliceConnection)
+    // Receive invitation first time with alice agent
+    let { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    bobConnectionAtBobAlice = await aliceAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
+
+    let aliceConnectionAtAliceBob = await aliceAgent.connections.getByThreadId(bobConnectionAtBobAlice.threadId!)
+    aliceConnectionAtAliceBob = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob.id)
+    // ===========================================================================
+
+    // const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()
+    // const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(aliceConnectionAtAliceBob.invitation)
+
+    // aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob.connectionRecord.id)
+    // bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id)
+
+    expect(aliceConnectionAtAliceBob).toBeConnectedWith(bobConnectionAtBobAlice)
+    expect(bobConnectionAtBobAlice).toBeConnectedWith(aliceConnectionAtAliceBob)
   })
 
   test('send a message to connection', async () => {
     const message = 'hello, world'
-    await aliceAgent.basicMessages.sendMessage(aliceConnection.id, message)
+    await aliceAgent.basicMessages.sendMessage(aliceConnectionAtAliceBob.id, message)
 
     const basicMessage = await waitForBasicMessage(bobAgent, {
       content: message,

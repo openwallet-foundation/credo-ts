@@ -115,16 +115,10 @@ describe('Did | DidDocument', () => {
     expect(verificationMethods[2]).toBeInstanceOf(VerificationMethod)
 
     // Check Service
-<<<<<<< HEAD
     const services = didDocument.service ?? []
     expect(services[0]).toBeInstanceOf(DidDocumentService)
     expect(services[1]).toBeInstanceOf(IndyAgentService)
-    expect(services[2]).toBeInstanceOf(DidCommService)
-=======
-    expect(didDocument.service[0]).toBeInstanceOf(DidDocumentService)
-    expect(didDocument.service[1]).toBeInstanceOf(IndyAgentService)
-    expect(didDocument.service[2]).toBeInstanceOf(DidCommV1Service)
->>>>>>> 73d296f6 (fix: always encode keys according to RFCs (#733))
+    expect(services[2]).toBeInstanceOf(DidCommV1Service)
 
     // Check Authentication
     const authentication = didDocument.authentication ?? []
