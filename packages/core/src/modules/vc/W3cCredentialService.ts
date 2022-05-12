@@ -1,8 +1,6 @@
 import type { Key } from '../../crypto/Key'
-import type { JsonObject } from '../../types'
 import type { DocumentLoaderResult } from '../../utils'
 import type { W3cVerifyCredentialResult } from './models'
-import type { LinkedDataProof } from './models/LinkedDataProof'
 import type {
   CreatePresentationOptions,
   DeriveProofOptions,
@@ -14,17 +12,8 @@ import type {
 } from './models/W3cCredentialServiceOptions'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-// eslint-disable-next-line import/no-extraneous-dependencies
 import jsonld, { expand, frame } from '@digitalcredentials/jsonld'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-// eslint-disable-next-line import/no-extraneous-dependencies
 import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-// eslint-disable-next-line import/no-extraneous-dependencies
 import documentLoaderXhr from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
 import vc from '@digitalcredentials/vc'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -34,7 +23,7 @@ import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { deriveProof } from '../../crypto/signature-suites/bbs'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
-import { Proof, w3cDate, JsonTransformer, orArrayToArray } from '../../utils'
+import { JsonTransformer, orArrayToArray, w3cDate } from '../../utils'
 import { isNodeJS, isReactNative } from '../../utils/environment'
 import { Wallet } from '../../wallet'
 import { DidResolverService, VerificationMethod } from '../dids'
