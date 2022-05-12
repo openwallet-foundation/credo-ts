@@ -81,7 +81,9 @@ export class QuestionAnswerService {
    * @param messageContext the message context containing a question message
    * @returns QuestionAnswer record
    */
-  public async processReceiveQuestion(messageContext: InboundMessageContext<QuestionMessage>): Promise<QuestionAnswerRecord> {
+  public async processReceiveQuestion(
+    messageContext: InboundMessageContext<QuestionMessage>
+  ): Promise<QuestionAnswerRecord> {
     const { message: questionMessage } = messageContext
 
     this.logger.debug(`Receiving question message with id ${questionMessage.id}`)
@@ -228,7 +230,7 @@ export class QuestionAnswerService {
    * @return The connection record
    *
    */
-   public getById(questionAnswerId: string): Promise<QuestionAnswerRecord> {
+  public getById(questionAnswerId: string): Promise<QuestionAnswerRecord> {
     return this.questionAnswerRepository.getById(questionAnswerId)
   }
 

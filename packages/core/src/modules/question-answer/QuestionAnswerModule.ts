@@ -5,11 +5,9 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { AriesFrameworkError } from '../../error'
 import { ConnectionService } from '../connections'
 
 import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
-import { QuestionAnswerState } from './models'
 import { QuestionAnswerService } from './services'
 
 @scoped(Lifecycle.ContainerScoped)
