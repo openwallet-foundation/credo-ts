@@ -27,7 +27,7 @@ export class V1CredentialPreview {
     toClassOnly: true,
   })
   public type = V1CredentialPreview.type
-  public static type = `https://didcomm.org/issue-credential/1.0/credential-preview`
+  public static type = 'https://didcomm.org/issue-credential/1.0/credential-preview'
 
   @Type(() => CredentialPreviewAttribute)
   @ValidateNested({ each: true })

@@ -116,13 +116,16 @@ export class V1CredentialService extends CredentialService {
 
     const credPropose = proposal.credentialFormats.indy?.payload
 
+    if (!credPropose) {
+      throw new AriesFrameworkError('Missing credPropose data payload in createProposal')
+    }
     if (proposal.credentialFormats.indy?.attributes) {
       credentialProposal = new V1CredentialPreview({ attributes: proposal.credentialFormats.indy?.attributes })
     }
 
     const config: CredentialProposeOptions = {
       credentialProposal: credentialProposal,
-      credentialDefinitionId: credPropose?.credentialDefinitionId,
+      credentialDefinitionId: credPropose.credentialDefinitionId,
       linkedAttachments: proposal.credentialFormats.indy?.linkedAttachments,
       schemaId: credPropose?.schemaId,
     }

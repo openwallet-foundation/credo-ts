@@ -130,7 +130,7 @@ export class CredentialExchangeRecord extends BaseRecord<
     })
   }
 
-  public assertVersion(version: string) {
+  public assertProtocolVersion(version: string) {
     if (this.protocolVersion != version) {
       throw new AriesFrameworkError(
         `Credential record has invalid protocol version ${this.protocolVersion}. Expected version ${version}`
