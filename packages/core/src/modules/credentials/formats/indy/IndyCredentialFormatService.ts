@@ -18,7 +18,6 @@ import type {
 } from '../../protocol'
 import type { V1CredentialPreview } from '../../protocol/v1/V1CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
-import type { CredPropose } from '../models/CredPropose'
 import type {
   FormatServiceCredentialAttachmentFormats,
   HandlerAutoAcceptOptions,
@@ -33,6 +32,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../../error'
+import { JsonTransformer } from '../../../../utils'
 import { MessageValidator } from '../../../../utils/MessageValidator'
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
@@ -46,6 +46,7 @@ import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialMetadataKeys } from '../../repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
+import { CredPropose } from '../models/CredPropose'
 import { CredentialFormatSpec } from '../models/CredentialFormatServiceOptions'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -100,24 +101,25 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     options: ServiceAcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<void> {
-    const credPropose = options.proposalAttachment?.getDataAsJson<CredPropose>()
-    if (!credPropose) {
+    const credProposalJson = options.proposalAttachment?.getDataAsJson<CredPropose>()
+    if (!credProposalJson) {
       throw new AriesFrameworkError('Missing indy credential proposal data payload')
     }
-    await MessageValidator.validate(credPropose)
+    const credProposal = JsonTransformer.fromJSON(credProposalJson, CredPropose)
+    await MessageValidator.validate(credProposal)
 
-    if (credPropose.credentialDefinitionId) {
+    if (credProposal.credentialDefinitionId) {
       options.credentialFormats = {
         indy: {
-          credentialDefinitionId: credPropose?.credentialDefinitionId,
+          credentialDefinitionId: credProposal?.credentialDefinitionId,
           attributes: [],
         },
       }
     }
 
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-      schemaId: credPropose.schemaId,
-      credentialDefinitionId: credPropose.credentialDefinitionId,
+      schemaId: credProposal.schemaId,
+      credentialDefinitionId: credProposal.credentialDefinitionId,
     })
   }
 
