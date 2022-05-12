@@ -240,8 +240,9 @@ export class CredentialsModule implements CredentialsModule {
       const requestOptions: RequestCredentialOptions = {
         comment: options.comment,
         autoAcceptCredential: options.autoAcceptCredential,
+        holderDid: connection.did,
       }
-      const { message, credentialRecord } = await service.createRequest(record, requestOptions, connection.did)
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       await this.didCommMessageRepo.saveAgentMessage({
         agentMessage: message,
@@ -271,12 +272,9 @@ export class CredentialsModule implements CredentialsModule {
       const requestOptions: RequestCredentialOptions = {
         comment: options.comment,
         autoAcceptCredential: options.autoAcceptCredential,
+        holderDid: ourService.recipientKeys[0],
       }
-      const { message, credentialRecord } = await service.createRequest(
-        record,
-        requestOptions,
-        ourService.recipientKeys[0]
-      )
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService

@@ -745,8 +745,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions,
-    holderDid: string
+    options: ServiceRequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
     record.assertState(CredentialState.OfferReceived)
@@ -770,7 +769,7 @@ export class V1CredentialService extends CredentialService {
       throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
     }
     options.attachId = INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
-    const { attachment: requestAttach } = await this.formatService.createRequest(options, record, holderDid)
+    const { attachment: requestAttach } = await this.formatService.createRequest(options, record)
     if (!requestAttach) {
       throw new AriesFrameworkError(`Failed to create attachment for request; credential record = ${record.id}`)
     }

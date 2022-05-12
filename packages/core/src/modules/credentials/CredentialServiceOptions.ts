@@ -71,6 +71,7 @@ export interface ServiceRequestCredentialOptions extends RequestCredentialOption
   attachId?: string
   offerAttachment?: Attachment
   requestAttachment?: Attachment
+  holderDid?: string
 }
 
 export interface ServiceAcceptCredentialOptions {

@@ -182,18 +182,23 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   public async createRequest(
     options: ServiceRequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord,
-    holderDid: string
+    credentialRecord: CredentialExchangeRecord
   ): Promise<FormatServiceCredentialAttachmentFormats> {
     if (!options.offerAttachment) {
       throw new AriesFrameworkError(
         `Missing attachment from offer message, credential record id = ${credentialRecord.id}`
       )
     }
+
+    if (!options.holderDid) {
+      throw new AriesFrameworkError(
+        `Missing holder DID from offer message, credential record id = ${credentialRecord.id}`
+      )
+    }
     const offer = options.offerAttachment.getDataAsJson<CredOffer>()
     const credDef = await this.getCredentialDefinition(offer)
 
-    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(offer, credDef, holderDid)
+    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(offer, credDef, options.holderDid)
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
 
     const formats = new CredentialFormatSpec({

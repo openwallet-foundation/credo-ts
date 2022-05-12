@@ -57,6 +57,7 @@ interface NegotiateOfferOptions extends ProposeCredentialOptions {
 interface RequestCredentialOptions extends BaseOptions {
   connectionId?: string
   credentialFormats?: FormatServiceRequestCredentialFormats
+  holderDid?: string
 }
 
 interface AcceptRequestOptions extends BaseOptions {
