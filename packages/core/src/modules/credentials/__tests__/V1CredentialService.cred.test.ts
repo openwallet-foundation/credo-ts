@@ -820,7 +820,7 @@ describe('CredentialService', () => {
       await credentialService.deleteById(credential.id, {
         deleteAssociatedCredentials: true,
       })
-      expect(storeCredentialMock).toHaveBeenNthCalledWith(1, credential.credentials[0].credentialRecordId)
+      expect(storeCredentialMock).toHaveBeenNthCalledWith(1, credential.id)
     })
   })
 
