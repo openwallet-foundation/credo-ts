@@ -1,6 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { ConnectionRole } from '../models/ConnectionRole'
 import type { Transport } from '../../routing'
+import type { ConnectionRole } from '../models/ConnectionRole'
 
 import { Type } from 'class-transformer'
 
