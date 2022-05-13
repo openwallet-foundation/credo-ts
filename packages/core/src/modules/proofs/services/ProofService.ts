@@ -16,9 +16,9 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
-import { checkProofRequestForDuplicates } from '../../../utils'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { checkProofRequestForDuplicates } from '../../../utils/indyProofRequest'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
@@ -166,7 +166,7 @@ export class ProofService {
 
     // Update record
     proofRecord.proposalMessage = proposalMessage
-    this.updateState(proofRecord, ProofState.ProposalSent)
+    await this.updateState(proofRecord, ProofState.ProposalSent)
 
     return { message: proposalMessage, proofRecord }
   }
@@ -730,7 +730,7 @@ export class ProofService {
     for (const credentialId of credentialIds) {
       // Get the credentialRecord that matches the ID
 
-      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
+      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialIds: [credentialId] })
 
       if (credentialRecord.linkedAttachments) {
         // Get the credentials that have a hashlink as value and are requested
