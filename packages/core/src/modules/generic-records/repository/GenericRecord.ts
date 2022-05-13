@@ -23,7 +23,7 @@ export interface SaveGenericRecordOption {
 export class GenericRecord extends BaseRecord<GenericRecordTags> {
   public content!: Record<string, unknown>
 
-  public static readonly type = 'NonSecretRecord'
+  public static readonly type = 'GenericRecord'
   public readonly type = GenericRecord.type
 
   public constructor(props: GenericRecordStorageProps) {
