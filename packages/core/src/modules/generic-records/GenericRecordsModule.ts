@@ -20,17 +20,17 @@ export class GenericRecordsModule {
     this.logger = agentConfig.logger
   }
 
-  public async save({ message, tags }: SaveGenericRecordOption) {
+  public async save({ content, tags }: SaveGenericRecordOption) {
     try {
       const record = await this.genericRecordsService.save({
-        message: message,
+        content: content,
         tags: tags,
       })
       return record
     } catch (error) {
       this.logger.error('Error while saving generic-record', {
         error,
-        encryptedMessage: message,
+        encryptedMessage: content,
         errorMessage: error instanceof Error ? error.message : error,
       })
       throw error

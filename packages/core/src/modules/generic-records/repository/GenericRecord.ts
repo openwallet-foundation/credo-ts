@@ -15,7 +15,7 @@ export interface GenericRecordStorageProps {
 }
 
 export interface SaveGenericRecordOption {
-  message: Record<string, unknown>
+  content: Record<string, unknown>
   id?: string
   tags?: GenericRecordTags
 }

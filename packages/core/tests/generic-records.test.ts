@@ -29,18 +29,18 @@ describe('genericRecords', () => {
 
     //Save genericRecord message (Minimal)
 
-    const savedRecord1: GenericRecord = await aliceAgent.genericRecords.save({ message: barString })
+    const savedRecord1: GenericRecord = await aliceAgent.genericRecords.save({ content: barString })
 
     //Save genericRecord message with tag
     const tags1 = { myTag: 'foobar1' }
     const tags2 = { myTag: 'foobar2' }
 
-    const savedRecord2: GenericRecord = await aliceAgent.genericRecords.save({ message: barNumber, tags: tags1 })
+    const savedRecord2: GenericRecord = await aliceAgent.genericRecords.save({ content: barNumber, tags: tags1 })
 
     expect(savedRecord1).toBeDefined()
     expect(savedRecord2).toBeDefined()
 
-    const savedRecord3: GenericRecord = await aliceAgent.genericRecords.save({ message: barString, tags: tags2 })
+    const savedRecord3: GenericRecord = await aliceAgent.genericRecords.save({ content: barString, tags: tags2 })
     expect(savedRecord3).toBeDefined()
   })
 
@@ -63,7 +63,7 @@ describe('genericRecords', () => {
 
   test('find generic record using id', async () => {
     const myId = '100'
-    const savedRecord1: GenericRecord = await aliceAgent.genericRecords.save({ message: barString, id: myId })
+    const savedRecord1: GenericRecord = await aliceAgent.genericRecords.save({ content: barString, id: myId })
     expect(savedRecord1).toBeDefined()
 
     const retrievedRecord: GenericRecord | null = await aliceAgent.genericRecords.findById(savedRecord1.id)
@@ -77,7 +77,7 @@ describe('genericRecords', () => {
 
   test('delete generic record', async () => {
     const myId = '100'
-    const savedRecord1: GenericRecord = await aliceAgent.genericRecords.save({ message: barString, id: myId })
+    const savedRecord1: GenericRecord = await aliceAgent.genericRecords.save({ content: barString, id: myId })
     expect(savedRecord1).toBeDefined()
 
     await aliceAgent.genericRecords.delete(savedRecord1)
@@ -88,7 +88,7 @@ describe('genericRecords', () => {
 
   test('update generic record', async () => {
     const myId = '100'
-    const savedRecord1: GenericRecord = await aliceAgent.genericRecords.save({ message: barString, id: myId })
+    const savedRecord1: GenericRecord = await aliceAgent.genericRecords.save({ content: barString, id: myId })
     expect(savedRecord1).toBeDefined()
 
     let retrievedRecord: GenericRecord | null = await aliceAgent.genericRecords.findById(savedRecord1.id)
