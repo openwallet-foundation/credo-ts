@@ -1,5 +1,6 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Logger } from '../../logger'
+import type { DeleteCredentialOptions } from './CredentialServiceOptions'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -62,7 +63,7 @@ export interface CredentialsModule {
   getAll(): Promise<CredentialExchangeRecord[]>
   getById(credentialRecordId: string): Promise<CredentialExchangeRecord>
   findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
-  deleteById(credentialRecordId: string): Promise<void>
+  deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void>
 }
 
 @scoped(Lifecycle.ContainerScoped)
@@ -499,14 +500,17 @@ export class CredentialsModule implements CredentialsModule {
   public findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null> {
     return this.credentialRepository.findById(credentialRecordId)
   }
+
   /**
-   * Delete a credential record by id
+   * Delete a credential record by id, also calls service to delete from wallet
    *
    * @param credentialId the credential record id
+   * @param options the delete credential options for the delete operation
    */
-  public async deleteById(credentialId: string) {
+  public async deleteById(credentialId: string, options?: DeleteCredentialOptions) {
     const credentialRecord = await this.getById(credentialId)
-    return this.credentialRepository.delete(credentialRecord)
+    const service = this.getService(credentialRecord.protocolVersion)
+    return service.deleteById(credentialId, options)
   }
 
   /**
