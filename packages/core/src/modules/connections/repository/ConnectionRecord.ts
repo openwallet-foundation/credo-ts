@@ -29,8 +29,8 @@ export interface ConnectionRecordProps {
 
 export type CustomConnectionTags = TagsBase
 export type DefaultConnectionTags = {
-  state?: DidExchangeState
-  role?: DidExchangeRole
+  state: DidExchangeState
+  role: DidExchangeRole
   threadId?: string
   mediatorId?: string
   did: string

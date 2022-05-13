@@ -204,7 +204,7 @@ export class DidExchangeProtocol {
     })
     connectionRecord.theirDid = message.did
     connectionRecord.theirLabel = message.label
-    connectionRecord.threadId = message.threadId || message.id
+    connectionRecord.threadId = message.threadId
 
     await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type} end`, connectionRecord)
@@ -379,7 +379,7 @@ export class DidExchangeProtocol {
 
     DidExchangeStateMachine.assertProcessMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
-    if (!message.thread?.threadId || message.thread?.threadId !== connectionRecord.threadId) {
+    if (message.threadId !== connectionRecord.threadId) {
       throw new DidExchangeProblemReportError('Invalid or missing thread ID.', {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })
