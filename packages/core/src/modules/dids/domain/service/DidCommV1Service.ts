@@ -2,7 +2,7 @@ import { ArrayNotEmpty, IsOptional, IsString } from 'class-validator'
 
 import { DidDocumentService } from './DidDocumentService'
 
-export class DidCommService extends DidDocumentService {
+export class DidCommV1Service extends DidDocumentService {
   public constructor(options: {
     id: string
     serviceEndpoint: string
@@ -11,7 +11,7 @@ export class DidCommService extends DidDocumentService {
     accept?: string[]
     priority?: number
   }) {
-    super({ ...options, type: DidCommService.type })
+    super({ ...options, type: DidCommV1Service.type })
 
     if (options) {
       this.recipientKeys = options.recipientKeys

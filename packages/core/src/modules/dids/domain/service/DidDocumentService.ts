@@ -1,5 +1,7 @@
 import { IsString } from 'class-validator'
 
+import { getProtocolScheme } from '../../../../utils/uri'
+
 export class DidDocumentService {
   public constructor(options: { id: string; serviceEndpoint: string; type: string }) {
     if (options) {
@@ -10,7 +12,7 @@ export class DidDocumentService {
   }
 
   public get protocolScheme(): string {
-    return this.serviceEndpoint.split(':')[0]
+    return getProtocolScheme(this.serviceEndpoint)
   }
 
   @IsString()

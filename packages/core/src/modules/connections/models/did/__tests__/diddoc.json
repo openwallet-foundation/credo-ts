@@ -3,7 +3,7 @@
   "id": "did:sov:LjgpST2rjsoxYegQDRm7EL",
   "publicKey": [
     {
-      "id": "3",
+      "id": "#3",
       "type": "RsaVerificationKey2018",
       "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
       "publicKeyPem": "-----BEGIN PUBLIC X..."
@@ -15,7 +15,7 @@
       "publicKeyBase58": "-----BEGIN PUBLIC 9..."
     },
     {
-      "id": "6",
+      "id": "#6",
       "type": "Secp256k1VerificationKey2018",
       "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
       "publicKeyHex": "-----BEGIN PUBLIC A..."
@@ -28,7 +28,7 @@
       "serviceEndpoint": "did:sov:Q4zqM7aXqm7gDQkUVLng9h"
     },
     {
-      "id": "6",
+      "id": "#6",
       "type": "IndyAgent",
       "serviceEndpoint": "did:sov:Q4zqM7aXqm7gDQkUVLng9h",
       "recipientKeys": ["Q4zqM7aXqm7gDQkUVLng9h"],
@@ -36,7 +36,7 @@
       "priority": 5
     },
     {
-      "id": "7",
+      "id": "#7",
       "type": "did-communication",
       "serviceEndpoint": "https://agent.com/did-comm",
       "recipientKeys": ["DADEajsDSaksLng9h"],
@@ -47,10 +47,10 @@
   "authentication": [
     {
       "type": "RsaSignatureAuthentication2018",
-      "publicKey": "3"
+      "publicKey": "#3"
     },
     {
-      "id": "6",
+      "id": "#6",
       "type": "RsaVerificationKey2018",
       "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
       "publicKeyPem": "-----BEGIN PUBLIC A..."

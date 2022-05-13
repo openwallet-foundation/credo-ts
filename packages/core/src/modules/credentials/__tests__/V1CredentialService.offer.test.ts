@@ -11,7 +11,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { ConnectionState } from '../../connections'
+import { DidExchangeState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
@@ -48,7 +48,7 @@ const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<Med
 
 const connection = getMockConnection({
   id: '123',
-  state: ConnectionState.Complete,
+  state: DidExchangeState.Completed,
 })
 
 const credentialPreview = V1CredentialPreview.fromRecord({

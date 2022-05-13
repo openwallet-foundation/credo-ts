@@ -1,6 +1,8 @@
+import type { ResolvedDidCommService } from '../../agent/MessageSender'
+
 import { IsArray, IsOptional, IsString } from 'class-validator'
 
-import { DidCommService } from '../../modules/dids/domain/service/DidCommService'
+import { verkeyToInstanceOfKey } from '../../modules/dids/helpers'
 import { uuid } from '../../utils/uuid'
 
 export interface ServiceDecoratorOptions {
@@ -36,12 +38,12 @@ export class ServiceDecorator {
   @IsString()
   public serviceEndpoint!: string
 
-  public toDidCommService(id?: string) {
-    return new DidCommService({
-      id: id ?? uuid(),
-      recipientKeys: this.recipientKeys,
-      routingKeys: this.routingKeys,
+  public get resolvedDidCommService(): ResolvedDidCommService {
+    return {
+      id: uuid(),
+      recipientKeys: this.recipientKeys.map(verkeyToInstanceOfKey),
+      routingKeys: this.routingKeys?.map(verkeyToInstanceOfKey) ?? [],
       serviceEndpoint: this.serviceEndpoint,
-    })
+    }
   }
 }

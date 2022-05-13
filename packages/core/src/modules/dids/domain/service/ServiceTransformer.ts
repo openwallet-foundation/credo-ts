@@ -2,14 +2,14 @@ import type { ClassConstructor } from 'class-transformer'
 
 import { Transform, plainToInstance } from 'class-transformer'
 
-import { DidCommService } from './DidCommService'
+import { DidCommV1Service } from './DidCommV1Service'
 import { DidCommV2Service } from './DidCommV2Service'
 import { DidDocumentService } from './DidDocumentService'
 import { IndyAgentService } from './IndyAgentService'
 
 export const serviceTypes: { [key: string]: unknown | undefined } = {
   [IndyAgentService.type]: IndyAgentService,
-  [DidCommService.type]: DidCommService,
+  [DidCommV1Service.type]: DidCommV1Service,
   [DidCommV2Service.type]: DidCommV2Service,
 }
 
