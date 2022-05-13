@@ -11,7 +11,6 @@ const aliceConfig = getBaseConfig('Agents Alice', {
 describe('genericRecords', () => {
   let aliceAgent: Agent
 
-  // const fooString: FooString = { foo: 'Some data saved' }
   const fooString = { foo: 'Some data saved' }
   const fooNumber = { foo: 42 }
 
