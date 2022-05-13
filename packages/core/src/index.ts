@@ -2,7 +2,6 @@
 import 'reflect-metadata'
 
 export { Agent } from './agent/Agent'
-export { BaseEvent } from './agent/Events'
 export { EventEmitter } from './agent/EventEmitter'
 export { Handler, HandlerInboundMessage } from './agent/Handler'
 export { InboundMessageContext } from './agent/models/InboundMessageContext'
@@ -37,6 +36,8 @@ export * from './utils/JsonTransformer'
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
+
+export * from './agent/Events'
 
 const utils = {
   uuid,
