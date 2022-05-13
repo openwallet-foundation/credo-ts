@@ -803,24 +803,24 @@ describe('CredentialService', () => {
 
   describe('deleteCredential', () => {
     it('should call delete from repository', async () => {
-      const credential = mockCredentialRecord()
-      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
+      const credentialRecord = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialRecord))
 
       const repositoryDeleteSpy = jest.spyOn(credentialRepository, 'delete')
-      await credentialService.deleteById(credential.id)
-      expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, credential)
+      await credentialService.deleteById(credentialRecord)
+      expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, credentialRecord)
     })
 
     it('deleteAssociatedCredential parameter should call deleteCredential in indyHolderService with credentialId', async () => {
       const deleteCredentialMock = indyHolderService.deleteCredential as jest.Mock<Promise<void>, [string]>
 
-      const credential = mockCredentialRecord()
-      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
+      const credentialRecord = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialRecord))
 
-      await credentialService.deleteById(credential.credentials[0].credentialRecordId, {
+      await credentialService.deleteById(credentialRecord, {
         deleteAssociatedCredentials: true,
       })
-      expect(deleteCredentialMock).toHaveBeenNthCalledWith(1, credential.credentials[0].credentialRecordId)
+      expect(deleteCredentialMock).toHaveBeenNthCalledWith(1, credentialRecord.credentials[0].credentialRecordId)
     })
   })
 
