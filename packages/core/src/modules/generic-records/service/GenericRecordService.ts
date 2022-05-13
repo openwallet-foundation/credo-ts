@@ -4,13 +4,13 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../../../error'
 import { GenericRecord } from '../repository/GenericRecord'
-import { GenericRecordRepository } from '../repository/GenericRecordRepository'
+import { GenericRecordsRepository } from '../repository/GenericRecordsRepository'
 
 @scoped(Lifecycle.ContainerScoped)
 export class GenericRecordService {
-  private genericRecordsRepository: GenericRecordRepository
+  private genericRecordsRepository: GenericRecordsRepository
 
-  public constructor(genericRecordsRepository: GenericRecordRepository) {
+  public constructor(genericRecordsRepository: GenericRecordsRepository) {
     this.genericRecordsRepository = genericRecordsRepository
   }
 

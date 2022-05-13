@@ -1,5 +1,4 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
-import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'

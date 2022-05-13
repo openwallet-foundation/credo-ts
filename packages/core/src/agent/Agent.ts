@@ -19,7 +19,7 @@ import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
-import { GenericRecordModule } from '../modules/generic-record/GenericRecordModule'
+import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsModule'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
@@ -55,7 +55,7 @@ export class Agent {
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
   public readonly basicMessages: BasicMessagesModule
-  public readonly genericRecords: GenericRecordModule
+  public readonly genericRecords: GenericRecordsModule
   public readonly ledger: LedgerModule
   public readonly credentials: CredentialsModule
   public readonly mediationRecipient: RecipientModule
@@ -121,7 +121,7 @@ export class Agent {
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
     this.basicMessages = this.container.resolve(BasicMessagesModule)
-    this.genericRecords = this.container.resolve(GenericRecordModule)
+    this.genericRecords = this.container.resolve(GenericRecordsModule)
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
     this.dids = this.container.resolve(DidsModule)

@@ -12,7 +12,7 @@ export type ContentType = {
 }
 
 @scoped(Lifecycle.ContainerScoped)
-export class GenericRecordModule {
+export class GenericRecordsModule {
   private genericRecordsService: GenericRecordService
   private logger: Logger
   public constructor(agentConfig: AgentConfig, genericRecordsService: GenericRecordService) {

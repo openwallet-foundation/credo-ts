@@ -1,4 +1,4 @@
-import type { GenericRecord } from '../src/modules/generic-record/repository/GenericRecord'
+import type { GenericRecord } from '../src/modules/generic-records/repository/GenericRecord'
 
 import { Agent } from '../src/agent/Agent'
 
