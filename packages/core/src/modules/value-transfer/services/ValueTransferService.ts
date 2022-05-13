@@ -417,8 +417,8 @@ export class ValueTransferService {
     const previousState = record.state
 
     // Call VTP to accept cash
-    const giver = await this.valueTransfer.getter()
-    const { error, message } = await giver.acceptCash(requestMessage.body, requestAcceptedMessage.body)
+    const getter = await this.valueTransfer.getter()
+    const { error, message } = await getter.acceptCash(requestMessage.body, requestAcceptedMessage.body)
     if (error || !message) {
       throw new AriesFrameworkError(`Failed to accept Payment Request: ${error?.message}`)
     }
