@@ -1,6 +1,5 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AgentMessageProcessedEvent } from '../src/agent/Events'
-import type { ConnectionRecord } from '../src/modules/connections'
 
 import { filter, firstValueFrom, Subject, timeout } from 'rxjs'
 
@@ -23,8 +22,6 @@ const bobConfig = getBaseConfig('Multi Protocol Versions - Bob', {
 describe('multi version protocols', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
-  let aliceConnection: ConnectionRecord
-  let bobConnection: ConnectionRecord
 
   afterAll(async () => {
     await bobAgent.shutdown()
@@ -59,11 +56,20 @@ describe('multi version protocols', () => {
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()
-    const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(aliceConnectionAtAliceBob.invitation)
+    const { outOfBandInvitation, id } = await aliceAgent.oob.createInvitation()
+    let { connectionRecord: bobConnection } = await bobAgent.oob.receiveInvitation(outOfBandInvitation, {
+      autoAcceptConnection: true,
+      autoAcceptInvitation: true,
+    })
 
-    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob.connectionRecord.id)
-    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id)
+    if (!bobConnection) {
+      throw new Error('No connection for bob')
+    }
+
+    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnection.id)
+
+    let [aliceConnection] = await aliceAgent.connections.findAllByOutOfBandId(id)
+    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnection.id)
 
     expect(aliceConnection).toBeConnectedWith(bobConnection)
     expect(bobConnection).toBeConnectedWith(aliceConnection)
