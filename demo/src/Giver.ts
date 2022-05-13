@@ -35,13 +35,6 @@ export class Giver extends BaseAgent {
     return giver
   }
 
-  private async getConnectionRecord() {
-    if (!this.connectionRecordWitnessId) {
-      throw Error(redText(Output.MissingConnectionRecord))
-    }
-    return await this.agent.connections.getById(this.connectionRecordWitnessId)
-  }
-
   private async getValueTransferRecord() {
     if (!this.valueTransferRecordId) {
       throw Error(redText(Output.MissingValueTransferRecord))
@@ -50,29 +43,15 @@ export class Giver extends BaseAgent {
   }
 
   private async printConnectionInvite() {
-    const invite = await this.agent.connections.createConnection({
+    const invite = await this.agent.connections.createOutOfBandConnection({
       transport: Giver.transport,
+      goalCode: 'pay.cash.vtp',
     })
     this.connectionRecordWitnessId = invite.connectionRecord.id
 
-    console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')
+    console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost` }), '\n')
+    console.log(greenText('DID: ' + invite.connectionRecord.did))
     return invite.connectionRecord
-  }
-
-  private async waitForConnection() {
-    const connectionRecord = await this.getConnectionRecord()
-
-    console.log('Waiting for Witness to finish connection...')
-    try {
-      await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
-      const giverConnectionRecord = await this.getConnectionRecord()
-      console.log('Giver DID: ' + giverConnectionRecord.did)
-    } catch (e) {
-      console.log(redText(`\nTimeout of 20 seconds reached.. Returning to home screen.\n`))
-      return
-    }
-    console.log(greenText(Output.ConnectionEstablished))
-    this.connected = true
   }
 
   private async waitForPayment() {
@@ -94,7 +73,6 @@ export class Giver extends BaseAgent {
 
   public async setupConnection() {
     await this.printConnectionInvite()
-    await this.waitForConnection()
   }
 
   // private async printConnectionInvite() {

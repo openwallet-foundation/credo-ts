@@ -1,5 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { ConnectionRole } from '../models/ConnectionRole'
+import type { Transport } from '../../routing'
 
 import { Type } from 'class-transformer'
 
@@ -32,6 +33,7 @@ export interface ConnectionRecordProps {
   multiUseInvitation: boolean
   mediatorId?: string
   errorMessage?: string
+  transport?: Transport
 }
 
 export type CustomConnectionTags = TagsBase
@@ -78,6 +80,7 @@ export class ConnectionRecord
   public threadId?: string
   public mediatorId?: string
   public errorMessage?: string
+  public transport?: Transport
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
@@ -106,6 +109,7 @@ export class ConnectionRecord
       this.multiUseInvitation = props.multiUseInvitation
       this.mediatorId = props.mediatorId
       this.errorMessage = props.errorMessage
+      this.transport = props.transport
     }
   }
 
@@ -174,5 +178,9 @@ export class ConnectionRecord
     if (this.role !== expectedRole) {
       throw new AriesFrameworkError(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }
+  }
+
+  public get isOutOfBandConnection() {
+    return !!this.outOfBandInvitation
   }
 }

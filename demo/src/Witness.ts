@@ -30,10 +30,6 @@ export class Witness extends BaseAgent {
     return witness
   }
 
-  private async receiveConnectionRequest(invitationUrl: string) {
-    return await this.agent.connections.receiveInvitationFromUrl(invitationUrl)
-  }
-
   private async waitForConnection(connectionRecord: ConnectionRecord) {
     connectionRecord = await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
     console.log(greenText(Output.ConnectionEstablished))
@@ -41,13 +37,13 @@ export class Witness extends BaseAgent {
   }
 
   public async acceptGetterConnection(invitation_url: string) {
-    const connectionRecord = await this.receiveConnectionRequest(invitation_url)
+    const connectionRecord = await this.agent.connections.receiveInvitationFromUrl(invitation_url)
     this.connectionRecordGetterId = await this.waitForConnection(connectionRecord)
   }
 
   public async acceptGiverConnection(invitation_url: string) {
-    const connectionRecord = await this.receiveConnectionRequest(invitation_url)
-    this.connectionRecordGiverId = await this.waitForConnection(connectionRecord)
+    const { connectionRecord } = await this.agent.connections.acceptOutOfBandInvitationFromUrl(invitation_url)
+    this.connectionRecordGiverId = connectionRecord.id
   }
 
   public async exit() {

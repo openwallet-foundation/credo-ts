@@ -202,7 +202,6 @@ export class MessageSender {
         this.logger.debug(`Sending an outbound message via session failed with error: ${error.message}.`, error)
       }
     }
-
     // Retrieve DIDComm services
     const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
 

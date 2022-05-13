@@ -196,4 +196,8 @@ export class DidDocument {
   public toJSON() {
     return JsonTransformer.toJSON(this)
   }
+
+  public static extractDidFromKid(kid: string): string {
+    return kid.includes('#') ? kid.split('#')[0] : kid
+  }
 }

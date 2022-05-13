@@ -1,5 +1,4 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
-import type { DidCommService } from '../../dids'
 import type { AcceptProtocol } from '../../routing/types'
 
 import { Expose } from 'class-transformer'
@@ -16,7 +15,7 @@ export interface OutOfBandInvitationBody {
   imageUrl?: string
   goalCode?: string
   accept?: AcceptProtocol[]
-  service: DidCommService
+  serviceEndpoint?: string
 }
 
 type OutOfBandInvitationOptions = DIDCommV2MessageParams & {
@@ -39,6 +38,15 @@ export class OutOfBandInvitationMessage extends DIDCommV2Message {
   @ValidateNested()
   public body!: OutOfBandInvitationBody
 
+  public toUrl({ domain }: { domain: string }) {
+    const invitationJson = this.toJSON()
+
+    const encodedInvitation = JsonEncoder.toBase64URL(invitationJson)
+    const invitationUrl = `${domain}?oob=${encodedInvitation}`
+
+    return invitationUrl
+  }
+
   public static async fromUrl(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl['oob'] ?? parsedUrl['d_m']
@@ -52,7 +60,7 @@ export class OutOfBandInvitationMessage extends DIDCommV2Message {
       return invitation
     } else {
       throw new AriesFrameworkError(
-        'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `oob` or `d_m`'
+        'OutOfBand InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `oob` or `d_m`'
       )
     }
   }

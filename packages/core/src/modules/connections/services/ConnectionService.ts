@@ -20,7 +20,7 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
-import { DidCommService, DidResolverService } from '../../dids'
+import { DidCommService, DidDocument, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { defaultAcceptProfiles, offlineTransports } from '../../routing/types'
 import { ConnectionEventTypes } from '../ConnectionEvents'
@@ -151,7 +151,6 @@ export class ConnectionService {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
       multiUseInvitation: false,
-      transport: invitation.serviceEndpoint?.split(':')[0] as Transport,
     })
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
@@ -504,8 +503,6 @@ export class ConnectionService {
       multiUseInvitation: config.multiUseInvitation ?? false,
       transport: config?.transport,
     })
-    const { didDoc } = connectionRecord
-    const [service] = didDoc.didCommServices
     const invitation = new OutOfBandInvitationMessage({
       from: connectionRecord.didDoc.id,
       body: {
@@ -513,7 +510,7 @@ export class ConnectionService {
         goalCode: config?.goalCode,
         accept: defaultAcceptProfiles,
         imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
-        service,
+        serviceEndpoint: config?.transport,
       },
     })
 
@@ -549,6 +546,7 @@ export class ConnectionService {
     if (!invitation.from) {
       throw new AriesFrameworkError(`Invalid Out-Of-Band invitation: 'from' field is missing`)
     }
+
     const connectionRecord = await this.createConnection({
       role: ConnectionRole.Invitee,
       state: ConnectionState.Complete,
@@ -558,15 +556,11 @@ export class ConnectionService {
       routing: config.routing,
       imageUrl: invitation.body?.imageUrl,
       multiUseInvitation: false,
-      transport: invitation.body.service.protocolScheme as Transport,
     })
+    const theirDIDDoc = await this.buildConnectionDIDDoc(invitation.from, connectionRecord.transport)
 
-    const { didDocument: theirDidDocument } = await this.didResolverService.resolve(invitation.from)
-    if (!theirDidDocument) {
-      throw new AriesFrameworkError(`Invalid Out-Of-Band invitation: 'from' field is missing`)
-    }
-    connectionRecord.theirDidDoc = DidDoc.convertDIDDocToConnectionDIDDoc(theirDidDocument)
-    connectionRecord.theirDid = invitation.from
+    connectionRecord.theirDid = theirDIDDoc.id
+    connectionRecord.theirDidDoc = theirDIDDoc
 
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
@@ -578,6 +572,50 @@ export class ConnectionService {
     })
 
     return { connectionRecord, message: invitation }
+  }
+
+  public async setOutOfBandConnectionTheirInfo(connectionRecord: ConnectionRecord, theirDid_: string): Promise<void> {
+    if (!connectionRecord.isOutOfBandConnection) {
+      throw new AriesFrameworkError(`Function can be used for Out-Of-Band connections only`)
+    }
+
+    const theirDid = DidDocument.extractDidFromKid(theirDid_)
+    const theirDIDDoc = await this.buildConnectionDIDDoc(theirDid, connectionRecord.transport)
+
+    connectionRecord.theirDid = theirDid
+    connectionRecord.theirDidDoc = theirDIDDoc
+
+    await this.update(connectionRecord)
+  }
+
+  public async buildConnectionDIDDoc(did: string, transport: Transport = 'nfc'): Promise<DidDoc> {
+    const { didDocument: theirDidDocument } = await this.didResolverService.resolve(did)
+    if (!theirDidDocument) {
+      throw new AriesFrameworkError(`Invalid Out-Of-Band invitation: 'from' field is missing`)
+    }
+
+    const theirDidDoc = DidDoc.convertDIDDocToConnectionDIDDoc(theirDidDocument)
+    const publicKey = theirDidDoc.publicKey[0]
+    if (!publicKey.value) {
+      throw new AriesFrameworkError(`Unable to resolve valid DIDDoc for DID: ${did}`)
+    }
+
+    const service = theirDidDoc.service.length
+      ? theirDidDoc.service
+      : [
+          new DidCommService({
+            id: `${did}#${transport}`,
+            serviceEndpoint: transport,
+            recipientKeys: [publicKey.value],
+          }),
+        ]
+
+    return new DidDoc({
+      id: did,
+      authentication: theirDidDoc.authentication,
+      service: service,
+      publicKey: [publicKey],
+    })
   }
 
   /**
@@ -799,15 +837,16 @@ export class ConnectionService {
       publicKeyBase58: verkey,
     })
 
+    const serviceEndpoint = options.invitation?.serviceEndpoint || options.outOfBandInvitation?.body.serviceEndpoint
+    const transport = options.transport || (serviceEndpoint?.split(':')[0] as Transport)
+
     let services: IndyAgentService[] | DidCommService[]
-    if (options?.transport && offlineTransports.includes(options.transport)) {
+    if (transport && offlineTransports.includes(transport)) {
       services = [
         new DidCommService({
-          id: `${did}#OffilineTransport`,
-          serviceEndpoint: options.transport,
+          id: `${did}#${transport}`,
+          serviceEndpoint: transport,
           recipientKeys: [verkey],
-          routingKeys: routingKeys,
-          accept: defaultAcceptProfiles,
         }),
       ]
     } else {
@@ -851,6 +890,7 @@ export class ConnectionService {
       imageUrl: options.imageUrl,
       multiUseInvitation: options.multiUseInvitation,
       mediatorId,
+      transport,
     })
 
     await this.connectionRepository.save(connectionRecord)

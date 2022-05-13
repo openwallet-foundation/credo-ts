@@ -10,6 +10,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionRepository } from '../modules/connections'
+import { DidDocument } from '../modules/dids'
 import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { KeyRepository } from '../modules/keys/repository'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
@@ -198,19 +199,16 @@ export class MessageReceiver {
         did: ourKeyRecord.controller,
       })
       // Throw error if the recipient key (ourKey) does not match the key of the connection record
-      // FIXME: check that key matches to connection. Problem: x25519 is used for sending   Ed25519 is stored in connection
-      // if (
-      //   connection &&
-      //   connection.theirKey !== null &&
-      //   connection.theirKey !== sender
-      // ) {
-      //   console.log(connection.theirKey)
-      //   console.log(connection.theirDid)
-      //   console.log(sender)
-      //   throw new AriesFrameworkError(
-      //     `Inbound message senderKey '${sender}' is different from connection.theirKey '${connection.theirKey}'`
-      //   )
-      // }
+      if (
+        connection &&
+        connection.theirDid &&
+        connection.theirDid !== sender &&
+        connection.theirDid !== DidDocument.extractDidFromKid(sender)
+      ) {
+        throw new AriesFrameworkError(
+          `Inbound message senderKey '${sender}' is different from connection.theirKey '${connection.theirKey}'`
+        )
+      }
       if (connection) return connection
     }
 

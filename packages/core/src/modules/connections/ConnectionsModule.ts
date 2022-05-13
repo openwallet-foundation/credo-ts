@@ -1,5 +1,4 @@
 import type { Transport } from '../routing/types'
-import type { OutOfBandInvitationMessage } from './messages/OutOfBandInvitationMessage'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -18,6 +17,7 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ConnectionInvitationMessage } from './messages'
+import { OutOfBandInvitationMessage } from './messages/OutOfBandInvitationMessage'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -223,6 +223,18 @@ export class ConnectionsModule {
     return { connectionRecord, invitation }
   }
 
+  public async acceptOutOfBandInvitationFromUrl(
+    invitationUrl: string,
+    config?: {
+      autoAcceptConnection?: boolean
+      alias?: string
+      mediatorId?: string
+    }
+  ): Promise<{ connectionRecord: ConnectionRecord }> {
+    const invitation = await OutOfBandInvitationMessage.fromUrl(invitationUrl)
+    return this.acceptOutOfBandInvitation(invitation, { alias: config?.alias, mediatorId: config?.mediatorId })
+  }
+
   /**
    * Create connection from received Out-of-Band invitation.
    *
@@ -234,12 +246,13 @@ export class ConnectionsModule {
     invitation: OutOfBandInvitationMessage,
     config?: {
       alias?: string
+      mediatorId?: string
     }
   ): Promise<{
     connectionRecord: ConnectionRecord
   }> {
     const routing = await this.mediationRecipientService.getRouting({
-      useDefaultMediator: true,
+      mediatorId: config?.mediatorId,
     })
 
     const { connectionRecord } = await this.connectionService.acceptOutOfBandInvitation(invitation, {

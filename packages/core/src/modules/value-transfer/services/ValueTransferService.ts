@@ -14,9 +14,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
-import { JsonEncoder } from '../../../utils'
 import { Wallet } from '../../../wallet'
-import { DidDoc } from '../../connections/models/did/DidDoc'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { DidResolverService, DidType } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
@@ -238,15 +236,8 @@ export class ValueTransferService {
 
       // If connection doesn't contain remote info -> fill it
       // TODO: Think about more appropriate place for populating connection -> middleware?
-      if (!witnessConnection.theirDid && messageContext.sender) {
-        const { didDocument } = await this.didResolverService.resolve(messageContext.sender)
-        if (!didDocument) {
-          throw new AriesFrameworkError(`Unable to resolve DIDDoc for witness ${messageContext.sender}`)
-        }
-
-        witnessConnection.theirDid = requestMessage.body.payment.witness
-        witnessConnection.theirDidDoc = DidDoc.convertDIDDocToConnectionDIDDoc(didDocument)
-        await this.connectionService.update(witnessConnection)
+      if (!witnessConnection.theirDid && messageContext.sender && witnessConnection.isOutOfBandConnection) {
+        await this.connectionService.setOutOfBandConnectionTheirInfo(witnessConnection, messageContext.sender)
       }
 
       connectionData = {
