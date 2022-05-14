@@ -240,7 +240,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
         }
       }
     } catch (error) {
-      throw new IndySdkError(error)
+      throw new IndySdkError(error, `Searching '${type}' records for query '${JSON.stringify(query)}' failed`)
     }
   }
 }
