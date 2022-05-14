@@ -30,6 +30,15 @@ describe('UpdateAssistant | Backup', () => {
 
   beforeEach(async () => {
     agent = new Agent(config, agentDependencies, container)
+    backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+
+    // If tests fail it's possible the cleanup has been skipped. So remove before running tests
+    if (await agent.config.fileSystem.exists(backupPath)) {
+      unlinkSync(backupPath)
+    }
+    if (await agent.config.fileSystem.exists(`${backupPath}-error`)) {
+      unlinkSync(`${backupPath}-error`)
+    }
 
     updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -38,13 +47,9 @@ describe('UpdateAssistant | Backup', () => {
     })
 
     await updateAssistant.initialize()
-
-    backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
   })
 
   afterEach(async () => {
-    unlinkSync(backupPath)
-
     await agent.shutdown()
     await agent.wallet.delete()
   })
@@ -85,7 +90,7 @@ describe('UpdateAssistant | Backup', () => {
     expect((await credentialRepository.getAll()).sort((a, b) => a.id.localeCompare(b.id))).toMatchSnapshot()
   })
 
-  it('should restore the backup if an error occurs backup', async () => {
+  it('should restore the backup if an error occurs during the update', async () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -134,7 +139,6 @@ describe('UpdateAssistant | Backup', () => {
     // Backup should exist after update
     expect(await fileSystem.exists(backupPath)).toBe(true)
     expect(await fileSystem.exists(`${backupPath}-error`)).toBe(true)
-    unlinkSync(`${backupPath}-error`)
 
     // Wallet should be same as when we started because of backup
     expect((await credentialRepository.getAll()).sort((a, b) => a.id.localeCompare(b.id))).toEqual(
