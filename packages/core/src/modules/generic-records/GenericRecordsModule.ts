@@ -30,7 +30,7 @@ export class GenericRecordsModule {
     } catch (error) {
       this.logger.error('Error while saving generic-record', {
         error,
-        encryptedMessage: content,
+        content,
         errorMessage: error instanceof Error ? error.message : error,
       })
       throw error
