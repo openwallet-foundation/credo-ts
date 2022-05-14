@@ -89,28 +89,19 @@ export async function updateConnectionRoleAndState(agent: Agent, connectionRecor
   )
 
   const oldState = connectionRecord.state
-  connectionRecord.state = didExchangeStateFromConnectionRoleAndState(
-    connectionRecord.role as ConnectionRole,
-    connectionRecord.state as ConnectionState
+  const oldRole = connectionRecord.role
+
+  const [didExchangeRole, didExchangeState] = didExchangeStateAndRoleFromRoleAndState(
+    connectionRecord.role,
+    connectionRecord.state
   )
 
-  agent.config.logger.debug(`Updated connection record state from ${oldState} to ${connectionRecord.state}`)
+  connectionRecord.role = didExchangeRole
+  connectionRecord.state = didExchangeState
 
-  if (connectionRecord.role === ConnectionRole.Inviter) {
-    connectionRecord.role = DidExchangeRole.Responder
-    agent.config.logger.debug(
-      `Updated connection record role from ${ConnectionRole.Inviter} to ${DidExchangeRole.Responder}`
-    )
-  } else if (connectionRecord.role === ConnectionRole.Invitee) {
-    connectionRecord.role = DidExchangeRole.Requester
-    agent.config.logger.debug(
-      `Updated connection record role from ${ConnectionRole.Invitee} to ${DidExchangeRole.Requester}`
-    )
-  } else {
-    agent.config.logger.debug(
-      `Connection record role is not ${ConnectionRole.Invitee} or ${ConnectionRole.Inviter}, not updating role.`
-    )
-  }
+  agent.config.logger.debug(
+    `Updated connection record state from ${oldState} to ${connectionRecord.state} and role from ${oldRole} to ${connectionRecord.role}`
+  )
 }
 
 /**
@@ -175,7 +166,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
         didDocument: newDidDocument,
         createdAt: connectionRecord.createdAt,
         tags: {
-          recipientKeys: newDidDocument.recipientKeys,
+          recipientKeyFingerprints: newDidDocument.recipientKeys.map((key) => key.fingerprint),
         },
       })
 
@@ -222,7 +213,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
         didDocument: newTheirDidDocument,
         createdAt: connectionRecord.createdAt,
         tags: {
-          recipientKeys: newTheirDidDocument.recipientKeys,
+          recipientKeyFingerprints: newTheirDidDocument.recipientKeys.map((key) => key.fingerprint),
         },
       })
 
@@ -262,6 +253,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
  *
  * ```json
  * {
+ *   "multiUseInvitation": true
  *   "invitation": {
  *     "@type": "https://didcomm.org/connections/1.0/invitation",
  *     "@id": "04a2c382-999e-4de9-a1d2-9dec0b2fa5e4",
@@ -297,7 +289,7 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
 
     agent.config.logger.debug(`Found a legacy invitation in connection record. Migrating it to an out of band record.`)
 
-    const oobRecords = await oobRepository.findByQuery({ messageId: oldInvitation.id })
+    const oobRecords = await oobRepository.findByQuery({ invitationId: oldInvitation.id })
     let oobRecord: OutOfBandRecord | undefined = oobRecords[0]
 
     // If there already exists an oob record with the same invitation @id, we check whether the did
@@ -332,7 +324,7 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
         state: oobState,
         autoAcceptConnection: connectionRecord.autoAcceptConnection,
         did: connectionRecord.did,
-        outOfBandMessage: outOfBandInvitation,
+        outOfBandInvitation,
         reusable: connectionRecord.multiUseInvitation,
         mediatorId: connectionRecord.mediatorId,
         createdAt: connectionRecord.createdAt,
@@ -349,13 +341,16 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
     agent.config.logger.debug(`Setting invitationDid and outOfBand Id, and removing invitation from connection record`)
     // All connections have been made using the connection protocol, which means we can be certain
     // that there was only one service, thus we can use the first oob message service
-    const [invitationDid] = oobRecord.outOfBandMessage.invitationDids
+    const [invitationDid] = oobRecord.outOfBandInvitation.invitationDids
     connectionRecord.invitationDid = invitationDid
 
     // Remove invitation and assign the oob id to the connection record
     delete untypedConnectionRecord.invitation
     connectionRecord.outOfBandId = oobRecord.id
   }
+
+  // multiUseInvitation is now stored as reusable in the out of band record
+  // delete untypedConnectionRecord.multiUseInvitation
 }
 
 /**
@@ -384,34 +379,58 @@ export function oobStateFromDidExchangeRoleAndState(role: DidExchangeRole, state
 }
 
 /**
- * Determine the did exchange state based on the connection role and state.
+ * Determine the did exchange state based on the connection/did-exchange role and state.
  */
-export function didExchangeStateFromConnectionRoleAndState(role: ConnectionRole, state: ConnectionState) {
+export function didExchangeStateAndRoleFromRoleAndState(
+  role: ConnectionRole | DidExchangeRole,
+  state: ConnectionState | DidExchangeState
+): [DidExchangeRole, DidExchangeState] {
+  const roleMapping = {
+    // Responder / Inviter
+    [DidExchangeRole.Responder]: DidExchangeRole.Responder,
+    [ConnectionRole.Inviter]: DidExchangeRole.Responder,
+
+    // Request / Invitee
+    [DidExchangeRole.Requester]: DidExchangeRole.Requester,
+    [ConnectionRole.Invitee]: DidExchangeRole.Requester,
+  }
+
   const roleStateMapping = {
-    [ConnectionRole.Invitee]: {
+    [DidExchangeRole.Requester]: {
       // DidExchangeRole.Requester
       [ConnectionState.Invited]: DidExchangeState.InvitationReceived,
       [ConnectionState.Requested]: DidExchangeState.RequestSent,
       [ConnectionState.Responded]: DidExchangeState.ResponseReceived,
       [ConnectionState.Complete]: DidExchangeState.Completed,
+      [ConnectionState.Null]: DidExchangeState.Start,
     },
-    [ConnectionRole.Inviter]: {
+    [DidExchangeRole.Responder]: {
       // DidExchangeRole.Responder
       [ConnectionState.Invited]: DidExchangeState.InvitationSent,
       [ConnectionState.Requested]: DidExchangeState.RequestReceived,
       [ConnectionState.Responded]: DidExchangeState.ResponseSent,
       [ConnectionState.Complete]: DidExchangeState.Completed,
+      [ConnectionState.Null]: DidExchangeState.Start,
     },
   }
+
+  // Map the role to did exchange role. Can handle did exchange roles to make the function re-runnable
+  const didExchangeRole = roleMapping[role]
 
   // Take into account possibility that the record state was already updated to
   // didExchange state and roles. This makes the script re-runnable and
   // adds some resiliency to the script.
-  const stateMapping = roleStateMapping[role]
-  if (!stateMapping) return state
+  const stateMapping = roleStateMapping[didExchangeRole]
 
-  const newState = stateMapping[state]
-  if (!newState) return state
+  // Check if state is a valid connection state
+  if (isConnectionState(state)) {
+    return [didExchangeRole, stateMapping[state]]
+  }
 
-  return newState
+  // If state is not a valid state we assume the state is already a did exchange state
+  return [didExchangeRole, state]
+}
+
+function isConnectionState(state: string): state is ConnectionState {
+  return Object.values(ConnectionState).includes(state as ConnectionState)
 }

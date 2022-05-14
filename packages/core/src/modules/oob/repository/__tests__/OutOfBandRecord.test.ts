@@ -1,21 +1,21 @@
-import { DidCommService } from '../../../dids'
+import { OutOfBandDidCommService } from '../../domain/OutOfBandDidCommService'
 import { OutOfBandRole } from '../../domain/OutOfBandRole'
 import { OutOfBandState } from '../../domain/OutOfBandState'
-import { OutOfBandMessage } from '../../messages'
+import { OutOfBandInvitation } from '../../messages'
 import { OutOfBandRecord } from '../OutOfBandRecord'
 
 describe('OutOfBandRecord', () => {
   describe('getTags', () => {
     it('should return default tags', () => {
-      const didRecord = new OutOfBandRecord({
+      const outOfBandRecord = new OutOfBandRecord({
         state: OutOfBandState.Done,
         role: OutOfBandRole.Receiver,
-        outOfBandMessage: new OutOfBandMessage({
+        outOfBandInvitation: new OutOfBandInvitation({
           label: 'label',
           services: [
-            new DidCommService({
+            new OutOfBandDidCommService({
               id: 'id',
-              recipientKeys: ['a-recpipient-key'],
+              recipientKeys: ['did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
               serviceEndpoint: 'service-endpoint',
             }),
           ],
@@ -23,11 +23,11 @@ describe('OutOfBandRecord', () => {
         }),
       })
 
-      expect(didRecord.getTags()).toEqual({
+      expect(outOfBandRecord.getTags()).toEqual({
         state: OutOfBandState.Done,
         role: OutOfBandRole.Receiver,
-        messageId: 'a-message-id',
-        recipientKey: 'a-recpipient-key',
+        invitationId: 'a-message-id',
+        recipientKeyFingerprints: ['z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
       })
     })
   })

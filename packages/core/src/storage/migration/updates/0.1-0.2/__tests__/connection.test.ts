@@ -136,7 +136,7 @@ describe('0.1-0.2 | Connection', () => {
         state: 'invitation-sent',
         did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
         invitationDid:
-          'did:peer:2.Ez6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSJ9',
+          'did:peer:2.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3NZVTRNSHRmbU5oTm0xdUdNdkFOcjlqNENCdjJGeW1qaUp0UmdBMzZiU1ZII3o2TWtzWVU0TUh0Zm1OaE5tMXVHTXZBTnI5ajRDQnYyRnltamlKdFJnQTM2YlNWSCJdfQ',
         theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
         outOfBandId: expect.any(String),
       })
@@ -190,7 +190,6 @@ describe('0.1-0.2 | Connection', () => {
         state: 'invited',
         did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
         theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
-
         invitation: {
           '@type': 'https://didcomm.org/connections/1.0/invitation',
           '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
@@ -225,7 +224,10 @@ describe('0.1-0.2 | Connection', () => {
           },
         },
         _tags: {
-          recipientKeys: ['R1xKJw17sUoXhejEpugMYJ#4', 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'],
+          recipientKeyFingerprints: [
+            'z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH',
+            'z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH',
+          ],
         },
       })
 
@@ -241,7 +243,10 @@ describe('0.1-0.2 | Connection', () => {
           },
         },
         _tags: {
-          recipientKeys: ['4kgVt6CidfKgo1MoWMqsQX#4', '5sD8ttxn9Bd9a1HmueLirJ4HNhs4Q8qzAqDd1UCR9iqD'],
+          recipientKeyFingerprints: [
+            'z6MkjKUBV9DDUj7cgW8UbDJZhPcHCH8up26Lrr8YqkAS4wcb',
+            'z6MkjKUBV9DDUj7cgW8UbDJZhPcHCH8up26Lrr8YqkAS4wcb',
+          ],
         },
       })
     })
@@ -356,7 +361,7 @@ describe('0.1-0.2 | Connection', () => {
         did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
         theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
         invitationDid:
-          'did:peer:2.Ez6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSJ9',
+          'did:peer:2.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3NZVTRNSHRmbU5oTm0xdUdNdkFOcjlqNENCdjJGeW1qaUp0UmdBMzZiU1ZII3o2TWtzWVU0TUh0Zm1OaE5tMXVHTXZBTnI5ajRDQnYyRnltamlKdFJnQTM2YlNWSCJdfQ',
         outOfBandId: expect.any(String),
         autoAcceptConnection: true,
         mediatorId: 'a-mediator-id',
@@ -382,16 +387,14 @@ describe('0.1-0.2 | Connection', () => {
         _tags: {},
         metadata: {},
         // Checked below
-        outOfBandMessage: {
+        outOfBandInvitation: {
           '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
           services: [
             {
               id: '#inline',
               serviceEndpoint: 'https://example.com',
               type: 'did-communication',
-              priority: 0,
-              recipientKeys: ['E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'],
-              routingKeys: [],
+              recipientKeys: ['did:key:z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
             },
           ],
           '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
@@ -418,7 +421,7 @@ describe('0.1-0.2 | Connection', () => {
           _tags: {},
           metadata: {},
           // Checked below
-          outOfBandMessage: {
+          outOfBandInvitation: {
             '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
             services: [
               {
@@ -453,7 +456,7 @@ describe('0.1-0.2 | Connection', () => {
 
       expect(outOfBandRepository.findByQuery).toHaveBeenCalledTimes(1)
       expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, {
-        messageId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+        invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
       // Expect the out of band record to be created
@@ -469,16 +472,14 @@ describe('0.1-0.2 | Connection', () => {
           _tags: {},
           metadata: {},
           // Checked below
-          outOfBandMessage: {
+          outOfBandInvitation: {
             '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
             services: [
               {
                 id: '#inline',
                 serviceEndpoint: 'https://example.com',
                 type: 'did-communication',
-                priority: 0,
-                recipientKeys: ['E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'],
-                routingKeys: [],
+                recipientKeys: ['did:key:z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
               },
             ],
             '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
@@ -504,7 +505,7 @@ describe('0.1-0.2 | Connection', () => {
 
       expect(outOfBandRepository.findByQuery).toHaveBeenCalledTimes(1)
       expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, {
-        messageId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+        invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
       expect(outOfBandRepository.save).not.toHaveBeenCalled()
 
@@ -517,7 +518,7 @@ describe('0.1-0.2 | Connection', () => {
         did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
         theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
         invitationDid:
-          'did:peer:2.Ez6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSJ9',
+          'did:peer:2.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3NZVTRNSHRmbU5oTm0xdUdNdkFOcjlqNENCdjJGeW1qaUp0UmdBMzZiU1ZII3o2TWtzWVU0TUh0Zm1OaE5tMXVHTXZBTnI5ajRDQnYyRnltamlKdFJnQTM2YlNWSCJdfQ',
         autoAcceptConnection: true,
         multiUseInvitation: false,
         mediatorId: 'a-mediator-id',
@@ -568,43 +569,52 @@ describe('0.1-0.2 | Connection', () => {
     })
   })
 
-  describe('didExchangeStateFromConnectionRoleAndState', () => {
+  describe('didExchangeStateAndRoleFromRoleAndState', () => {
     it('should return the correct state for all connection role and state combinations', () => {
       expect(
-        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Invited)
-      ).toEqual(DidExchangeState.InvitationSent)
+        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Inviter, ConnectionState.Invited)
+      ).toEqual([DidExchangeRole.Responder, DidExchangeState.InvitationSent])
       expect(
-        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Requested)
-      ).toEqual(DidExchangeState.RequestReceived)
+        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Inviter, ConnectionState.Requested)
+      ).toEqual([DidExchangeRole.Responder, DidExchangeState.RequestReceived])
       expect(
-        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Responded)
-      ).toEqual(DidExchangeState.ResponseSent)
+        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Inviter, ConnectionState.Responded)
+      ).toEqual([DidExchangeRole.Responder, DidExchangeState.ResponseSent])
       expect(
-        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Inviter, ConnectionState.Complete)
-      ).toEqual(DidExchangeState.Completed)
+        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Inviter, ConnectionState.Complete)
+      ).toEqual([DidExchangeRole.Responder, DidExchangeState.Completed])
 
       expect(
-        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Invited)
-      ).toEqual(DidExchangeState.InvitationReceived)
+        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Invitee, ConnectionState.Invited)
+      ).toEqual([DidExchangeRole.Requester, DidExchangeState.InvitationReceived])
       expect(
-        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Requested)
-      ).toEqual(DidExchangeState.RequestSent)
+        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Invitee, ConnectionState.Requested)
+      ).toEqual([DidExchangeRole.Requester, DidExchangeState.RequestSent])
       expect(
-        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Responded)
-      ).toEqual(DidExchangeState.ResponseReceived)
+        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Invitee, ConnectionState.Responded)
+      ).toEqual([DidExchangeRole.Requester, DidExchangeState.ResponseReceived])
       expect(
-        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Invitee, ConnectionState.Complete)
-      ).toEqual(DidExchangeState.Completed)
+        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Invitee, ConnectionState.Complete)
+      ).toEqual([DidExchangeRole.Requester, DidExchangeState.Completed])
     })
 
-    it('should return the passed state value if the state or role is not a valid connection role or state', () => {
+    it('should return did exchange role if role is already did exchange role', () => {
       expect(
-        testModule.didExchangeStateFromConnectionRoleAndState(ConnectionRole.Inviter, 'request-sent' as ConnectionState)
-      ).toEqual('request-sent')
+        testModule.didExchangeStateAndRoleFromRoleAndState(DidExchangeRole.Responder, DidExchangeState.RequestSent)
+      ).toEqual([DidExchangeRole.Responder, expect.anything()])
 
       expect(
-        testModule.didExchangeStateFromConnectionRoleAndState('responder' as ConnectionRole, ConnectionState.Requested)
-      ).toEqual('requested')
+        testModule.didExchangeStateAndRoleFromRoleAndState(DidExchangeRole.Requester, ConnectionState.Requested)
+      ).toEqual([DidExchangeRole.Requester, expect.anything()])
+    })
+
+    it('should return the input state if state is not a valid connection state', () => {
+      expect(
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidExchangeRole.Responder,
+          'something-weird' as ConnectionState
+        )
+      ).toEqual([DidExchangeRole.Responder, 'something-weird'])
     })
   })
 })

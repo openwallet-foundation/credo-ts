@@ -32,12 +32,18 @@
       "priority": 10
     }
   ],
-  "authentication": [
+  "keyAgreement": [
     {
       "id": "R1xKJw17sUoXhejEpugMYJ#key-agreement-1",
       "type": "X25519KeyAgreementKey2019",
       "controller": "R1xKJw17sUoXhejEpugMYJ",
       "publicKeyBase58": "Fbv17ZbnUSbafsiUBJbdGeC62M8v8GEscVMMcE59mRPt"
+    }
+  ],
+  "authentication": [
+    {
+      "type": "Ed25519SignatureAuthentication2018",
+      "publicKey": "R1xKJw17sUoXhejEpugMYJ#4"
     }
   ]
 }

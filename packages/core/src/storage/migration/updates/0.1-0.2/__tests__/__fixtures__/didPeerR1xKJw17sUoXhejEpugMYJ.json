@@ -1,26 +1,24 @@
 {
   "@context": ["https://w3id.org/did/v1"],
-  "alsoKnownAs": [],
-  "controller": [],
   "verificationMethod": [
     {
-      "id": "R1xKJw17sUoXhejEpugMYJ#4",
+      "id": "#E6D1m3eE",
       "type": "Ed25519VerificationKey2018",
-      "controller": "R1xKJw17sUoXhejEpugMYJ",
+      "controller": "#id",
       "publicKeyBase58": "E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu"
     }
   ],
   "service": [
     {
-      "id": "7",
+      "id": "#7",
       "serviceEndpoint": "https://agent.com/did-comm",
       "type": "did-communication",
       "priority": 10,
-      "recipientKeys": ["R1xKJw17sUoXhejEpugMYJ#4"],
+      "recipientKeys": ["#E6D1m3eE"],
       "routingKeys": []
     },
     {
-      "id": "6",
+      "id": "#6",
       "serviceEndpoint": "did:sov:Q4zqM7aXqm7gDQkUVLng9h",
       "type": "IndyAgent",
       "priority": 5,
@@ -28,10 +26,5 @@
       "routingKeys": []
     }
   ],
-  "authentication": [],
-  "assertionMethod": [],
-  "keyAgreement": [],
-  "capabilityInvocation": [],
-  "capabilityDelegation": [],
-  "id": "did:peer:1zQmcyP5MHdr5y8gcH2Vwj79VKkaJH1EEW7RY49ZHPq48Ei8"
+  "id": "did:peer:1zQmU1AYVxXvPeQujvUxnSVGUMsqvFNQHN2TMMMQz6TbXor8"
 }

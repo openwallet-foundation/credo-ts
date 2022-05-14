@@ -1,14 +1,6 @@
 {
   "@context": "https://w3id.org/did/v1",
   "id": "4kgVt6CidfKgo1MoWMqsQX",
-  "publicKey": [
-    {
-      "id": "4kgVt6CidfKgo1MoWMqsQX#4",
-      "type": "Ed25519VerificationKey2018",
-      "controller": "4kgVt6CidfKgo1MoWMqsQX",
-      "publicKeyBase58": "5sD8ttxn9Bd9a1HmueLirJ4HNhs4Q8qzAqDd1UCR9iqD"
-    }
-  ],
   "service": [
     {
       "id": "0",
@@ -32,5 +24,12 @@
       "priority": 10
     }
   ],
-  "authentication": []
+  "authentication": [
+    {
+      "id": "4kgVt6CidfKgo1MoWMqsQX#4",
+      "type": "Ed25519VerificationKey2018",
+      "controller": "4kgVt6CidfKgo1MoWMqsQX",
+      "publicKeyBase58": "5sD8ttxn9Bd9a1HmueLirJ4HNhs4Q8qzAqDd1UCR9iqD"
+    }
+  ]
 }

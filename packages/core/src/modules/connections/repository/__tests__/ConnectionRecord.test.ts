@@ -1,12 +1,12 @@
-import { ConnectionRole, ConnectionState } from '../../models'
+import { DidExchangeRole, DidExchangeState } from '../../models'
 import { ConnectionRecord } from '../ConnectionRecord'
 
 describe('ConnectionRecord', () => {
   describe('getTags', () => {
     it('should return default tags', () => {
-      const didRecord = new ConnectionRecord({
-        state: ConnectionState.Complete,
-        role: ConnectionRole.Invitee,
+      const connectionRecord = new ConnectionRecord({
+        state: DidExchangeState.Completed,
+        role: DidExchangeRole.Requester,
         threadId: 'a-thread-id',
         mediatorId: 'a-mediator-id',
         did: 'a-did',
@@ -15,9 +15,9 @@ describe('ConnectionRecord', () => {
         invitationDid: 'a-invitation-did',
       })
 
-      expect(didRecord.getTags()).toEqual({
-        state: ConnectionState.Complete,
-        role: ConnectionRole.Invitee,
+      expect(connectionRecord.getTags()).toEqual({
+        state: DidExchangeState.Completed,
+        role: DidExchangeRole.Requester,
         threadId: 'a-thread-id',
         mediatorId: 'a-mediator-id',
         did: 'a-did',
