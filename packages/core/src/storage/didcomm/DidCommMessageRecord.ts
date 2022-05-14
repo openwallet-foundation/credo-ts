@@ -1,10 +1,10 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
+import type { ConstructableAgentMessage } from '../../agent/AgentMessage'
 import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
 import { AriesFrameworkError } from '../../error'
 import { JsonTransformer } from '../../utils/JsonTransformer'
-import { parseMessageType } from '../../utils/messageType'
+import { canHandleMessageType, parseMessageType } from '../../utils/messageType'
 import { isJsonObject } from '../../utils/type'
 import { uuid } from '../../utils/uuid'
 import { BaseRecord } from '../BaseRecord'
@@ -16,8 +16,8 @@ export type DefaultDidCommMessageTags = {
   // Computed
   protocolName: string
   messageName: string
-  versionMajor: string
-  versionMinor: string
+  protocolMajorVersion: string
+  protocolMinorVersion: string
   messageType: string
   messageId: string
   threadId: string
@@ -62,8 +62,7 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
     const messageId = this.message['@id'] as string
     const messageType = this.message['@type'] as string
 
-    const { protocolName, protocolVersion, messageName } = parseMessageType(messageType)
-    const [versionMajor, versionMinor] = protocolVersion.split('.')
+    const { protocolName, protocolMajorVersion, protocolMinorVersion, messageName } = parseMessageType(messageType)
 
     const thread = this.message['~thread']
     let threadId = messageId
@@ -81,17 +80,19 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
       threadId,
       protocolName,
       messageName,
-      versionMajor,
-      versionMinor,
+      protocolMajorVersion: protocolMajorVersion.toString(),
+      protocolMinorVersion: protocolMinorVersion.toString(),
       messageType,
       messageId,
     }
   }
 
-  public getMessageInstance<MessageClass extends typeof AgentMessage = typeof AgentMessage>(
+  public getMessageInstance<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>(
     messageClass: MessageClass
   ): InstanceType<MessageClass> {
-    if (messageClass.type !== this.message['@type']) {
+    const messageType = parseMessageType(this.message['@type'] as string)
+
+    if (!canHandleMessageType(messageClass, messageType)) {
       throw new AriesFrameworkError('Provided message class type does not match type of stored message')
     }
 

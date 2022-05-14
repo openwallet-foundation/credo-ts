@@ -1,6 +1,8 @@
+import type { ParsedMessageType } from '../../utils/messageType'
 import type { ConnectionRecord } from './repository'
 
 import { AriesFrameworkError } from '../../error'
+import { canHandleMessageType } from '../../utils/messageType'
 
 import { DidExchangeRequestMessage, DidExchangeResponseMessage, DidExchangeCompleteMessage } from './messages'
 import { DidExchangeState, DidExchangeRole } from './models'
@@ -8,19 +10,19 @@ import { DidExchangeState, DidExchangeRole } from './models'
 export class DidExchangeStateMachine {
   private static createMessageStateRules = [
     {
-      message: DidExchangeRequestMessage.type,
+      message: DidExchangeRequestMessage,
       state: DidExchangeState.InvitationReceived,
       role: DidExchangeRole.Requester,
       nextState: DidExchangeState.RequestSent,
     },
     {
-      message: DidExchangeResponseMessage.type,
+      message: DidExchangeResponseMessage,
       state: DidExchangeState.RequestReceived,
       role: DidExchangeRole.Responder,
       nextState: DidExchangeState.ResponseSent,
     },
     {
-      message: DidExchangeCompleteMessage.type,
+      message: DidExchangeCompleteMessage,
       state: DidExchangeState.ResponseReceived,
       role: DidExchangeRole.Requester,
       nextState: DidExchangeState.Completed,
@@ -29,27 +31,27 @@ export class DidExchangeStateMachine {
 
   private static processMessageStateRules = [
     {
-      message: DidExchangeRequestMessage.type,
+      message: DidExchangeRequestMessage,
       state: DidExchangeState.InvitationSent,
       role: DidExchangeRole.Responder,
       nextState: DidExchangeState.RequestReceived,
     },
     {
-      message: DidExchangeResponseMessage.type,
+      message: DidExchangeResponseMessage,
       state: DidExchangeState.RequestSent,
       role: DidExchangeRole.Requester,
       nextState: DidExchangeState.ResponseReceived,
     },
     {
-      message: DidExchangeCompleteMessage.type,
+      message: DidExchangeCompleteMessage,
       state: DidExchangeState.ResponseSent,
       role: DidExchangeRole.Responder,
       nextState: DidExchangeState.Completed,
     },
   ]
 
-  public static assertCreateMessageState(messageType: string, record: ConnectionRecord) {
-    const rule = this.createMessageStateRules.find((r) => r.message === messageType)
+  public static assertCreateMessageState(messageType: ParsedMessageType, record: ConnectionRecord) {
+    const rule = this.createMessageStateRules.find((r) => canHandleMessageType(r.message, messageType))
     if (!rule) {
       throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
     }
@@ -60,8 +62,8 @@ export class DidExchangeStateMachine {
     }
   }
 
-  public static assertProcessMessageState(messageType: string, record: ConnectionRecord) {
-    const rule = this.processMessageStateRules.find((r) => r.message === messageType)
+  public static assertProcessMessageState(messageType: ParsedMessageType, record: ConnectionRecord) {
+    const rule = this.processMessageStateRules.find((r) => canHandleMessageType(r.message, messageType))
     if (!rule) {
       throw new AriesFrameworkError(`Could not find create message rule for ${messageType}`)
     }
@@ -72,10 +74,10 @@ export class DidExchangeStateMachine {
     }
   }
 
-  public static nextState(messageType: string, record: ConnectionRecord) {
+  public static nextState(messageType: ParsedMessageType, record: ConnectionRecord) {
     const rule = this.createMessageStateRules
       .concat(this.processMessageStateRules)
-      .find((r) => r.message === messageType && r.role === record.role)
+      .find((r) => canHandleMessageType(r.message, messageType) && r.role === record.role)
     if (!rule) {
       throw new AriesFrameworkError(
         `Could not find create message rule for messageType ${messageType}, state ${record.state} and role ${record.role}`

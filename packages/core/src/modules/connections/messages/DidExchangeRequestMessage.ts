@@ -1,8 +1,9 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { Attachment } from '../../../decorators/attachment/Attachment'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface DidExchangeRequestMessageOptions {
   id?: string
@@ -40,9 +41,9 @@ export class DidExchangeRequestMessage extends AgentMessage {
     }
   }
 
-  @Equals(DidExchangeRequestMessage.type)
-  public readonly type = DidExchangeRequestMessage.type
-  public static readonly type = 'https://didcomm.org/didexchange/1.0/request'
+  @IsValidMessageType(DidExchangeRequestMessage.type)
+  public readonly type = DidExchangeRequestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/didexchange/1.0/request')
 
   @IsString()
   public readonly label?: string

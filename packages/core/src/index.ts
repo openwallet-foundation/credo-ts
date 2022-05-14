@@ -36,6 +36,7 @@ export * from './utils/JsonTransformer'
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
+export { parseMessageType, IsValidMessageType } from './utils/messageType'
 
 export * from './agent/Events'
 

@@ -2,7 +2,7 @@ import type { PlaintextMessage } from '../../../types'
 import type { HandshakeProtocol } from '../../connections'
 
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
-import { ArrayNotEmpty, Equals, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
+import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -11,6 +11,7 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { IsStringOrInstance } from '../../../utils/validators'
 import { outOfBandServiceToNumAlgo2Did } from '../../dids/methods/peer/peerDidNumAlgo2'
 import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
@@ -97,9 +98,9 @@ export class OutOfBandInvitation extends AgentMessage {
     return dids
   }
 
-  @Equals(OutOfBandInvitation.type)
-  public readonly type = OutOfBandInvitation.type
-  public static readonly type = `https://didcomm.org/out-of-band/1.1/invitation`
+  @IsValidMessageType(OutOfBandInvitation.type)
+  public readonly type = OutOfBandInvitation.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/out-of-band/1.1/invitation')
 
   public readonly label!: string
 
