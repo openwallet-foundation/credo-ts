@@ -1,6 +1,7 @@
 import type { ResolvedDidCommService } from '../../agent/MessageSender'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Logger } from '../../logger'
+import type { ParsedMessageType } from '../../utils/messageType'
 import type { OutOfBandDidCommService } from '../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
@@ -396,7 +397,7 @@ export class DidExchangeProtocol {
     return connectionRecord
   }
 
-  private async updateState(messageType: string, connectionRecord: ConnectionRecord) {
+  private async updateState(messageType: ParsedMessageType, connectionRecord: ConnectionRecord) {
     this.logger.debug(`Updating state`, { connectionRecord })
     const nextState = DidExchangeStateMachine.nextState(messageType, connectionRecord)
     return this.connectionService.updateState(connectionRecord, nextState)
@@ -472,7 +473,7 @@ export class DidExchangeProtocol {
   ): Promise<DidDocument> {
     if (!message.didDoc) {
       const problemCode =
-        message.type === DidExchangeRequestMessage.type
+        message instanceof DidExchangeRequestMessage
           ? DidExchangeProblemReportReason.RequestNotAccepted
           : DidExchangeProblemReportReason.ResponseNotAccepted
       throw new DidExchangeProblemReportError('DID Document attachment is missing.', { problemCode })
@@ -482,7 +483,7 @@ export class DidExchangeProtocol {
 
     if (!jws) {
       const problemCode =
-        message.type === DidExchangeRequestMessage.type
+        message instanceof DidExchangeRequestMessage
           ? DidExchangeProblemReportReason.RequestNotAccepted
           : DidExchangeProblemReportReason.ResponseNotAccepted
       throw new DidExchangeProblemReportError('DID Document signature is missing.', { problemCode })
@@ -511,7 +512,7 @@ export class DidExchangeProtocol {
 
     if (!isValid || !signerVerkeys.every((verkey) => didDocumentKeysBase58?.includes(verkey))) {
       const problemCode =
-        message.type === DidExchangeRequestMessage.type
+        message instanceof DidExchangeRequestMessage
           ? DidExchangeProblemReportReason.RequestNotAccepted
           : DidExchangeProblemReportReason.ResponseNotAccepted
       throw new DidExchangeProblemReportError('DID Document signature is invalid.', { problemCode })

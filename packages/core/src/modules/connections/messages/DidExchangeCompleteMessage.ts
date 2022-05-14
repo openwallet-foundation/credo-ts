@@ -1,6 +1,5 @@
-import { Equals } from 'class-validator'
-
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface DidExchangeCompleteMessageOptions {
   id?: string
@@ -25,7 +24,7 @@ export class DidExchangeCompleteMessage extends AgentMessage {
     }
   }
 
-  @Equals(DidExchangeCompleteMessage.type)
-  public readonly type = DidExchangeCompleteMessage.type
-  public static readonly type = 'https://didcomm.org/didexchange/1.0/complete'
+  @IsValidMessageType(DidExchangeCompleteMessage.type)
+  public readonly type = DidExchangeCompleteMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/didexchange/1.0/complete')
 }

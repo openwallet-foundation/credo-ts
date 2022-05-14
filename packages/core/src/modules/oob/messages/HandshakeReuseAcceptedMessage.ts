@@ -1,6 +1,5 @@
-import { Equals } from 'class-validator'
-
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface HandshakeReuseAcceptedMessageOptions {
   id?: string
@@ -21,7 +20,7 @@ export class HandshakeReuseAcceptedMessage extends AgentMessage {
     }
   }
 
-  @Equals(HandshakeReuseAcceptedMessage.type)
-  public readonly type = HandshakeReuseAcceptedMessage.type
-  public static readonly type = 'https://didcomm.org/out-of-band/1.1/handshake-reuse-accepted'
+  @IsValidMessageType(HandshakeReuseAcceptedMessage.type)
+  public readonly type = HandshakeReuseAcceptedMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/out-of-band/1.1/handshake-reuse-accepted')
 }

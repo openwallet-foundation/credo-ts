@@ -1,8 +1,9 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, ValidateNested, IsString, IsEnum, IsInstance } from 'class-validator'
+import { IsArray, ValidateNested, IsString, IsEnum, IsInstance } from 'class-validator'
 import { Verkey } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export enum KeylistUpdateAction {
   add = 'add',
@@ -45,9 +46,9 @@ export class KeylistUpdateMessage extends AgentMessage {
     }
   }
 
-  @Equals(KeylistUpdateMessage.type)
-  public readonly type = KeylistUpdateMessage.type
-  public static readonly type = 'https://didcomm.org/coordinate-mediation/1.0/keylist-update'
+  @IsValidMessageType(KeylistUpdateMessage.type)
+  public readonly type = KeylistUpdateMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/1.0/keylist-update')
 
   @Type(() => KeylistUpdate)
   @IsArray()
