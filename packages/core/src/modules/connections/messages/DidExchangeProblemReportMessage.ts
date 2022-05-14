@@ -1,7 +1,6 @@
 import type { ProblemReportMessageOptions } from '../../problem-reports/messages/ProblemReportMessage'
 
-import { Equals } from 'class-validator'
-
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { ProblemReportMessage } from '../../problem-reports/messages/ProblemReportMessage'
 
 export type DidExchangeProblemReportMessageOptions = ProblemReportMessageOptions
@@ -14,7 +13,7 @@ export class DidExchangeProblemReportMessage extends ProblemReportMessage {
     super(options)
   }
 
-  @Equals(DidExchangeProblemReportMessage.type)
-  public readonly type = DidExchangeProblemReportMessage.type
-  public static readonly type = 'https://didcomm.org/didexchange/1.0/problem-report'
+  @IsValidMessageType(DidExchangeProblemReportMessage.type)
+  public readonly type = DidExchangeProblemReportMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/didexchange/1.0/problem-report')
 }

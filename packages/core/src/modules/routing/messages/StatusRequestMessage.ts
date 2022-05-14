@@ -1,7 +1,8 @@
 import { Expose } from 'class-transformer'
-import { Equals, IsOptional, IsString } from 'class-validator'
+import { IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface StatusRequestMessageOptions {
   id?: string
@@ -18,9 +19,9 @@ export class StatusRequestMessage extends AgentMessage {
     }
   }
 
-  @Equals(StatusRequestMessage.type)
-  public readonly type = StatusRequestMessage.type
-  public static readonly type = 'https://didcomm.org/messagepickup/2.0/status-request'
+  @IsValidMessageType(StatusRequestMessage.type)
+  public readonly type = StatusRequestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/2.0/status-request')
 
   @IsString()
   @IsOptional()

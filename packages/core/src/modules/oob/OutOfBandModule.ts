@@ -25,6 +25,7 @@ import {
   ConnectionsModule,
 } from '../../modules/connections'
 import { JsonTransformer } from '../../utils'
+import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
 import { DidsModule } from '../dids'
 import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
@@ -583,8 +584,9 @@ export class OutOfBandModule {
   }
 
   private async emitWithConnection(connectionRecord: ConnectionRecord, messages: PlaintextMessage[]) {
+    const supportedMessageTypes = this.dispatcher.supportedMessageTypes
     const plaintextMessage = messages.find((message) =>
-      this.dispatcher.supportedMessageTypes.find((type) => type === message['@type'])
+      supportedMessageTypes.find((type) => supportsIncomingMessageType(parseMessageType(message['@type']), type))
     )
 
     if (!plaintextMessage) {
@@ -607,8 +609,9 @@ export class OutOfBandModule {
       throw new AriesFrameworkError(`There are no services. We can not emit messages`)
     }
 
+    const supportedMessageTypes = this.dispatcher.supportedMessageTypes
     const plaintextMessage = messages.find((message) =>
-      this.dispatcher.supportedMessageTypes.find((type) => type === message['@type'])
+      supportedMessageTypes.find((type) => supportsIncomingMessageType(parseMessageType(message['@type']), type))
     )
 
     if (!plaintextMessage) {
