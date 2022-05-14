@@ -56,7 +56,7 @@ export class GenericRecordsModule {
     } catch (error) {
       this.logger.error('Error while update generic-record', {
         error,
-        encryptedMessage: record.content,
+        content: record.content,
         errorMessage: error instanceof Error ? error.message : error,
       })
       throw error
