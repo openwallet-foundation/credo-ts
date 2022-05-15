@@ -257,20 +257,23 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
  * This migration method extracts the invitation and other relevant data into a separate {@link OutOfBandRecord}. By doing so it converts the old connection protocol invitation into the new
  * Out of band invitation message. Based on the service or did of the invitation, the `invitationDid` is populated.
  *
- * If the connection record is a multiUseInvitation, the connection is deleted.
+ * Previously when creating a multi use invitation, a connection record would be created with the `multiUseInvitation` set to true. The connection record would always be in state `invited`.
+ * If a request for the multi use invitation came in, a new connection record would be created. With the addition of the out of band module, no connection records are created until a request
+ * is received. So for multi use invitation this means that the connection record with multiUseInvitation=true will be deleted, and instead all connections created using that out of band invitation
+ * will contain the `outOfBandId` of the multi use invitation.
  *
  * The following 0.1.0 connection record structure (unrelated keys omitted):
  *
  * ```json
  * {
- *   "multiUseInvitation": true
  *   "invitation": {
  *     "@type": "https://didcomm.org/connections/1.0/invitation",
  *     "@id": "04a2c382-999e-4de9-a1d2-9dec0b2fa5e4",
  *     "recipientKeys": ["E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu"],
  *     "serviceEndpoint": "https://example.com",
  *     "label": "test",
- *   }
+ *   },
+ *   "multiUseInvitation": false
  * }
  * ```
  *
