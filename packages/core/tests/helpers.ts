@@ -486,11 +486,15 @@ export async function issueConnectionLessCredential({
     connectionId: '',
   }
   // eslint-disable-next-line prefer-const
-  let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOutOfBandOffer(
-    offerOptions
-  )
+  let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOffer(offerOptions)
 
-  await holderAgent.receiveMessage(message.toJSON())
+  const { message: offerMessage } = await issuerAgent.oob.createLegacyConnectionlessInvitation({
+    recordId: issuerCredentialRecord.id,
+    domain: 'https://example.org',
+    message,
+  })
+
+  await holderAgent.receiveMessage(offerMessage.toJSON())
 
   let holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,

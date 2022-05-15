@@ -24,9 +24,9 @@ import {
   ConnectionInvitationMessage,
   ConnectionsModule,
 } from '../../modules/connections'
-import { JsonTransformer } from '../../utils'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
+import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
-import { DidsModule } from '../dids'
 import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { MediationRecipientService } from '../routing'
@@ -73,7 +73,7 @@ export class OutOfBandModule {
   private outOfBandService: OutOfBandService
   private mediationRecipientService: MediationRecipientService
   private connectionsModule: ConnectionsModule
-  private dids: DidsModule
+  private didCommMessageRepository: DidCommMessageRepository
   private dispatcher: Dispatcher
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
@@ -86,7 +86,7 @@ export class OutOfBandModule {
     outOfBandService: OutOfBandService,
     mediationRecipientService: MediationRecipientService,
     connectionsModule: ConnectionsModule,
-    dids: DidsModule,
+    didCommMessageRepository: DidCommMessageRepository,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
@@ -96,7 +96,7 @@ export class OutOfBandModule {
     this.outOfBandService = outOfBandService
     this.mediationRecipientService = mediationRecipientService
     this.connectionsModule = connectionsModule
-    this.dids = dids
+    this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
@@ -238,6 +238,35 @@ export class OutOfBandModule {
     throw new AriesFrameworkError(
       `Invalid value of handshakeProtocols in config. Value is ${config.handshakeProtocols}, but this method supports only ${HandshakeProtocol.Connections}.`
     )
+  }
+
+  public async createLegacyConnectionlessInvitation<Message extends AgentMessage>(config: {
+    recordId: string
+    message: Message
+    domain: string
+  }): Promise<{ message: Message; invitationUrl: string }> {
+    // Create keys (and optionally register them at the mediator)
+    const routing = await this.mediationRecipientService.getRouting()
+
+    // Set the service on the message
+    config.message.service = new ServiceDecorator({
+      serviceEndpoint: routing.endpoints[0],
+      recipientKeys: [routing.verkey],
+      routingKeys: routing.routingKeys,
+    })
+
+    // We need to update the message with the new service, so we can
+    // retrieve it from storage later on.
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: config.message,
+      associatedRecordId: config.recordId,
+      role: DidCommMessageRole.Sender,
+    })
+
+    return {
+      message: config.message,
+      invitationUrl: `${config.domain}?d_m=${JsonEncoder.toBase64URL(JsonTransformer.toJSON(config.message))}`,
+    }
   }
 
   /**
