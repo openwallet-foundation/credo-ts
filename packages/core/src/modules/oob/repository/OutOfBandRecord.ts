@@ -1,6 +1,4 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { Key } from '../../dids'
-import type { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 import type { OutOfBandRole } from '../domain/OutOfBandRole'
 import type { OutOfBandState } from '../domain/OutOfBandState'
 
@@ -9,7 +7,6 @@ import { Type } from 'class-transformer'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { DidKey } from '../../dids'
 import { OutOfBandInvitation } from '../messages'
 
 export interface OutOfBandRecordProps {
