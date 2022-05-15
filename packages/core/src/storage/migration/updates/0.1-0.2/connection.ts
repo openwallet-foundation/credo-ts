@@ -48,9 +48,13 @@ export async function migrateConnectionRecordToV0_2(agent: Agent) {
     // migration of oob record MUST run after extracting the did document as it relies on the updated did
     // it also MUST run after update the connection role and state as it assumes the values are
     // did exchange roles and states
-    await migrateToOobRecord(agent, connectionRecord)
+    const _connectionRecord = await migrateToOobRecord(agent, connectionRecord)
 
-    await connectionRepository.update(connectionRecord)
+    // migrateToOobRecord will return the connection record if it has not been deleted. When using multiUseInvitation the connection record
+    // will be removed after processing, in which case the update method will throw an error.
+    if (_connectionRecord) {
+      await connectionRepository.update(connectionRecord)
+    }
 
     agent.config.logger.debug(
       `Successfully migrated connection record with id ${connectionRecord.id} to storage version 0.2`
@@ -123,6 +127,7 @@ export async function updateConnectionRoleAndState(agent: Agent, connectionRecor
  *   "theirDid": "N8NQHLtCKfPmWMgCSdfa7h",
  *   "didDoc": <legacyDidDoc>,
  *   "theirDidDoc": <legacyTheirDidDoc>,
+ *   "verkey": "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
  * }
  * ```
  *
@@ -240,6 +245,9 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
       `Did not find a did document in connection record theirDidDoc. Not converting it to a peer did document.`
     )
   }
+
+  // Delete legacy verkey property
+  delete untypedConnectionRecord.verkey
 }
 
 /**
@@ -248,6 +256,8 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
  *
  * This migration method extracts the invitation and other relevant data into a separate {@link OutOfBandRecord}. By doing so it converts the old connection protocol invitation into the new
  * Out of band invitation message. Based on the service or did of the invitation, the `invitationDid` is populated.
+ *
+ * If the connection record is a multiUseInvitation, the connection is deleted.
  *
  * The following 0.1.0 connection record structure (unrelated keys omitted):
  *
@@ -273,15 +283,20 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
  * }
  * ```
  */
-export async function migrateToOobRecord(agent: Agent, connectionRecord: ConnectionRecord) {
+export async function migrateToOobRecord(
+  agent: Agent,
+  connectionRecord: ConnectionRecord
+): Promise<ConnectionRecord | undefined> {
   agent.config.logger.debug(
     `Migrating properties from connection record with id ${connectionRecord.id} to out of band record`
   )
 
   const oobRepository = agent.injectionContainer.resolve(OutOfBandRepository)
+  const connectionRepository = agent.injectionContainer.resolve(ConnectionRepository)
 
   const untypedConnectionRecord = connectionRecord as unknown as JsonObject
   const oldInvitationJson = untypedConnectionRecord.invitation as JsonObject | undefined
+  const oldMultiUseInvitation = untypedConnectionRecord.multiUseInvitation as boolean | undefined
 
   // Only migrate if there is an invitation stored
   if (oldInvitationJson) {
@@ -289,28 +304,18 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
 
     agent.config.logger.debug(`Found a legacy invitation in connection record. Migrating it to an out of band record.`)
 
-    const oobRecords = await oobRepository.findByQuery({ invitationId: oldInvitation.id })
+    const outOfBandInvitation = convertToNewInvitation(oldInvitation)
+
+    // If both the recipientKeys and the @id match we assume the connection was created using the same invitation.
+    const oobRecords = await oobRepository.findByQuery({
+      invitationId: oldInvitation.id,
+      recipientKeyFingerprints: outOfBandInvitation.getRecipientKeys().map((key) => key.fingerprint),
+    })
+
     let oobRecord: OutOfBandRecord | undefined = oobRecords[0]
-
-    // If there already exists an oob record with the same invitation @id, we check whether the did
-    // is the same. As the @id is something generated outside of the framework, we can't assume it's globally
-    // unique. In addition, with multiUseInvitations all connections will use the same invitation. However,
-    // we always create a new did for each connection, so this allows us to determine whether the oob record was
-    // already created beforehand.
-    // FIXME: As I understand now, with reusable oob records we only create a single oob record for all connections,
-    // which means the assumption made above is not correct. We should only reuse the oob record if the invitation
-    // 100% matches, but the did can be different
-    if (oobRecord && oobRecord.did !== connectionRecord.did) {
-      agent.config.logger.debug(
-        `Found an out of band record with the same invitation @id but a different did value. Not using the existing out of band record.`
-      )
-
-      oobRecord = undefined
-    }
 
     if (!oobRecord) {
       agent.config.logger.debug(`Create out of band record.`)
-      const outOfBandInvitation = convertToNewInvitation(oldInvitation)
 
       const oobRole =
         connectionRecord.role === DidExchangeRole.Responder ? OutOfBandRole.Sender : OutOfBandRole.Receiver
@@ -325,7 +330,7 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
         autoAcceptConnection: connectionRecord.autoAcceptConnection,
         did: connectionRecord.did,
         outOfBandInvitation,
-        reusable: connectionRecord.multiUseInvitation,
+        reusable: oldMultiUseInvitation,
         mediatorId: connectionRecord.mediatorId,
         createdAt: connectionRecord.createdAt,
       })
@@ -336,6 +341,24 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
       agent.config.logger.debug(
         `Found existing out of band record for invitation @id ${oldInvitation.id} and did ${connectionRecord.did}, not creating a new out of band record.`
       )
+    }
+
+    // We need to update the oob record with the reusable data. We don't know initially if an oob record is reusable or not, as there can be 1..n connections for each invitation
+    // only when we find the multiUseInvitation we can update it.
+    if (oldMultiUseInvitation) {
+      oobRecord.reusable = true
+      oobRecord.state = OutOfBandState.AwaitResponse
+      oobRecord.did = connectionRecord.did
+      oobRecord.mediatorId = connectionRecord.mediatorId
+      oobRecord.autoAcceptConnection = connectionRecord.autoAcceptConnection
+
+      await oobRepository.update(oobRecord)
+      await connectionRepository.delete(connectionRecord)
+      agent.config.logger.debug(
+        `Set reusable=true for out of band record with invitation @id ${oobRecord.outOfBandInvitation.id}.`
+      )
+
+      return
     }
 
     agent.config.logger.debug(`Setting invitationDid and outOfBand Id, and removing invitation from connection record`)
@@ -349,8 +372,11 @@ export async function migrateToOobRecord(agent: Agent, connectionRecord: Connect
     connectionRecord.outOfBandId = oobRecord.id
   }
 
+  agent.config.logger.debug('Removing multiUseInvitation property from connection record')
   // multiUseInvitation is now stored as reusable in the out of band record
-  // delete untypedConnectionRecord.multiUseInvitation
+  delete untypedConnectionRecord.multiUseInvitation
+
+  return connectionRecord
 }
 
 /**

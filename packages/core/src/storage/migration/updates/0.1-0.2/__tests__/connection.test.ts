@@ -365,7 +365,6 @@ describe('0.1-0.2 | Connection', () => {
         outOfBandId: expect.any(String),
         autoAcceptConnection: true,
         mediatorId: 'a-mediator-id',
-        multiUseInvitation: false,
       })
     })
 
@@ -412,7 +411,25 @@ describe('0.1-0.2 | Connection', () => {
       })
     })
 
-    it('should create an OutOfBandRecord if an OutOfBandRecord with the invitation id already exists, but the connection did is different', async () => {
+    it('should create an OutOfBandRecord if an OutOfBandRecord with the invitation id already exists, but the recipientKeys are different', async () => {
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
+
+      // Out of band record does not exist yet
+      mockFunction(outOfBandRepository.findByQuery).mockResolvedValueOnce([])
+
+      await testModule.migrateToOobRecord(agent, connectionRecord)
+
+      expect(outOfBandRepository.findByQuery).toHaveBeenCalledTimes(1)
+      expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, {
+        invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+        recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
+      })
+
+      // Expect the out of band record to be created
+      expect(outOfBandRepository.save).toHaveBeenCalled()
+    })
+
+    it('should not create an OutOfBandRecord if an OutOfBandRecord with the invitation id and recipientKeys already exists', async () => {
       const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
 
       const outOfBandRecord = JsonTransformer.fromJSON(
@@ -428,9 +445,7 @@ describe('0.1-0.2 | Connection', () => {
                 id: '#inline',
                 serviceEndpoint: 'https://example.com',
                 type: 'did-communication',
-                priority: 0,
-                recipientKeys: ['E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'],
-                routingKeys: [],
+                recipientKeys: ['did:key:z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
               },
             ],
             '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
@@ -441,7 +456,7 @@ describe('0.1-0.2 | Connection', () => {
           role: OutOfBandRole.Sender,
           state: OutOfBandState.AwaitResponse,
           autoAcceptConnection: true,
-          did: 'some-random-did',
+          did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
           reusable: false,
           mediatorId: 'a-mediator-id',
           createdAt: connectionRecord.createdAt.toISOString(),
@@ -449,7 +464,7 @@ describe('0.1-0.2 | Connection', () => {
         OutOfBandRecord
       )
 
-      // Out of band record already exists, but not the correct one
+      // Out of band record does not exist yet
       mockFunction(outOfBandRepository.findByQuery).mockResolvedValueOnce([outOfBandRecord])
 
       await testModule.migrateToOobRecord(agent, connectionRecord)
@@ -457,14 +472,31 @@ describe('0.1-0.2 | Connection', () => {
       expect(outOfBandRepository.findByQuery).toHaveBeenCalledTimes(1)
       expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, {
         invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+        recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
       })
+      expect(outOfBandRepository.save).not.toHaveBeenCalled()
 
-      // Expect the out of band record to be created
-      expect(outOfBandRepository.save).toHaveBeenCalled()
+      expect(connectionRecord.toJSON()).toEqual({
+        _tags: {},
+        metadata: {},
+        createdAt: '2020-04-08T15:51:43.819Z',
+        role: 'responder',
+        state: 'invitation-sent',
+        did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
+        theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
+        invitationDid:
+          'did:peer:2.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3NZVTRNSHRmbU5oTm0xdUdNdkFOcjlqNENCdjJGeW1qaUp0UmdBMzZiU1ZII3o2TWtzWVU0TUh0Zm1OaE5tMXVHTXZBTnI5ajRDQnYyRnltamlKdFJnQTM2YlNWSCJdfQ',
+        autoAcceptConnection: true,
+        mediatorId: 'a-mediator-id',
+        outOfBandId: outOfBandRecord.id,
+      })
     })
 
-    it('should not create an OutOfBandRecord if an OutOfBandRecord with the invitation id and connection did already exists', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
+    it('should update the existing out of band record to reusable and state await response if the connection record is a multiUseInvitation', async () => {
+      const connectionRecord = JsonTransformer.fromJSON(
+        { ...connectionJsonNewDidStateRole, multiUseInvitation: true },
+        ConnectionRecord
+      )
 
       const outOfBandRecord = JsonTransformer.fromJSON(
         {
@@ -506,23 +538,38 @@ describe('0.1-0.2 | Connection', () => {
       expect(outOfBandRepository.findByQuery).toHaveBeenCalledTimes(1)
       expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, {
         invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+        recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
       })
       expect(outOfBandRepository.save).not.toHaveBeenCalled()
+      expect(outOfBandRepository.update).toHaveBeenCalledWith(outOfBandRecord)
+      expect(connectionRepository.delete).toHaveBeenCalledWith(connectionRecord)
 
-      expect(connectionRecord.toJSON()).toEqual({
+      expect(outOfBandRecord.toJSON()).toEqual({
+        id: '3c52cc26-577d-4200-8753-05f1f425c342',
         _tags: {},
         metadata: {},
-        createdAt: '2020-04-08T15:51:43.819Z',
-        role: 'responder',
-        state: 'invitation-sent',
-        did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
-        theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
-        invitationDid:
-          'did:peer:2.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3NZVTRNSHRmbU5oTm0xdUdNdkFOcjlqNENCdjJGeW1qaUp0UmdBMzZiU1ZII3o2TWtzWVU0TUh0Zm1OaE5tMXVHTXZBTnI5ajRDQnYyRnltamlKdFJnQTM2YlNWSCJdfQ',
+        outOfBandInvitation: {
+          '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
+          services: [
+            {
+              id: '#inline',
+              serviceEndpoint: 'https://example.com',
+              type: 'did-communication',
+              recipientKeys: ['did:key:z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
+            },
+          ],
+          '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+          label: 'test',
+          accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
+          handshake_protocols: ['https://didcomm.org/connections/1.0'],
+        },
+        role: OutOfBandRole.Sender,
+        state: OutOfBandState.AwaitResponse,
         autoAcceptConnection: true,
-        multiUseInvitation: false,
+        did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
+        reusable: true,
         mediatorId: 'a-mediator-id',
-        outOfBandId: outOfBandRecord.id,
+        createdAt: connectionRecord.createdAt.toISOString(),
       })
     })
   })

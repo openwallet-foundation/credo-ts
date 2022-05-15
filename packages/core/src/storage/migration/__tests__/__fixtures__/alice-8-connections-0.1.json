@@ -515,6 +515,64 @@
       "theirDid": "YKc7qhYN1TckZAMUf7jgwc"
     }
   },
+  "98260a2d-33df-450d-bc7c-c4305677978e": {
+    "value": {
+      "metadata": {},
+      "id": "98260a2d-33df-450d-bc7c-c4305677978e",
+      "createdAt": "2022-04-20T13:02:21.646Z",
+      "did": "WSwJQMBHGZbQsq9LDBTWjX",
+      "didDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "WSwJQMBHGZbQsq9LDBTWjX#1",
+            "controller": "WSwJQMBHGZbQsq9LDBTWjX",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3"
+          }
+        ],
+        "service": [
+          {
+            "id": "WSwJQMBHGZbQsq9LDBTWjX#IndyAgentService",
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "WSwJQMBHGZbQsq9LDBTWjX#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "WSwJQMBHGZbQsq9LDBTWjX"
+      },
+      "verkey": "H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3",
+      "state": "invited",
+      "role": "inviter",
+      "autoAcceptConnection": true,
+      "invitation": {
+        "@type": "https://didcomm.org/connections/1.0/invitation",
+        "@id": "f0ca03d8-2e11-4ff2-a5fc-e0137a434b7e",
+        "label": "Agent: PopulateWallet",
+        "recipientKeys": ["9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS"],
+        "serviceEndpoint": "rxjs:alice",
+        "routingKeys": []
+      },
+      "multiUseInvitation": true
+    },
+    "id": "98260a2d-33df-450d-bc7c-c4305677978e",
+    "type": "ConnectionRecord",
+    "tags": {
+      "state": "invited",
+      "role": "inviter",
+      "invitationKey": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
+      "verkey": "H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3",
+      "did": "WSwJQMBHGZbQsq9LDBTWjX"
+    }
+  },
   "b65c2ccd-277c-4140-9d87-c8dd30e7a98c": {
     "value": {
       "metadata": {},

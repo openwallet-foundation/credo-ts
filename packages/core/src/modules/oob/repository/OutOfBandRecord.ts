@@ -72,17 +72,8 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
       role: this.role,
       state: this.state,
       invitationId: this.outOfBandInvitation.id,
-      recipientKeyFingerprints: this.getRecipientKeys().map((key) => key.fingerprint),
+      recipientKeyFingerprints: this.outOfBandInvitation.getRecipientKeys().map((key) => key.fingerprint),
     }
-  }
-
-  // TODO: this only takes into account inline didcomm services, won't work for public dids
-  public getRecipientKeys(): Key[] {
-    return this.outOfBandInvitation.services
-      .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
-      .map((s) => s.recipientKeys)
-      .reduce((acc, curr) => [...acc, ...curr], [])
-      .map((didKey) => DidKey.fromDid(didKey).key)
   }
 
   public assertRole(expectedRole: OutOfBandRole) {

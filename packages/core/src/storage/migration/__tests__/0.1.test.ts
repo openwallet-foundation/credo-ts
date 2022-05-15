@@ -187,7 +187,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
     const aliceConnectionRecordsString = readFileSync(
-      path.join(__dirname, '__fixtures__/alice-7-connections-0.1.json'),
+      path.join(__dirname, '__fixtures__/alice-8-connections-0.1.json'),
       'utf8'
     )
 

@@ -85,7 +85,6 @@ export class DidExchangeProtocol {
       alias,
       state: DidExchangeState.InvitationReceived,
       theirLabel: outOfBandInvitation.label,
-      multiUseInvitation: false,
       did,
       mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
@@ -197,7 +196,6 @@ export class DidExchangeProtocol {
       protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Responder,
       state: DidExchangeState.RequestReceived,
-      multiUseInvitation: false,
       did,
       mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
@@ -311,7 +309,7 @@ export class DidExchangeProtocol {
 
     const didDocument = await this.extractDidDocument(
       message,
-      outOfBandRecord.getRecipientKeys().map((key) => key.publicKeyBase58)
+      outOfBandRecord.outOfBandInvitation.getRecipientKeys().map((key) => key.publicKeyBase58)
     )
     const didRecord = new DidRecord({
       id: message.did,

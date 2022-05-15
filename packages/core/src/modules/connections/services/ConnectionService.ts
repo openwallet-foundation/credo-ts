@@ -112,7 +112,6 @@ export class ConnectionService {
       did,
       mediatorId,
       autoAcceptConnection: config?.autoAcceptConnection,
-      multiUseInvitation: false,
       outOfBandId: outOfBandRecord.id,
       invitationDid,
     })
@@ -172,7 +171,6 @@ export class ConnectionService {
       protocol: HandshakeProtocol.Connections,
       role: DidExchangeRole.Responder,
       state: DidExchangeState.RequestReceived,
-      multiUseInvitation: false,
       did,
       mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
@@ -619,7 +617,6 @@ export class ConnectionService {
     mediatorId?: string
     theirLabel?: string
     autoAcceptConnection?: boolean
-    multiUseInvitation: boolean
     tags?: CustomConnectionTags
     imageUrl?: string
     protocol?: HandshakeProtocol
@@ -635,7 +632,6 @@ export class ConnectionService {
       theirLabel: options.theirLabel,
       autoAcceptConnection: options.autoAcceptConnection,
       imageUrl: options.imageUrl,
-      multiUseInvitation: options.multiUseInvitation,
       mediatorId: options.mediatorId,
       protocol: options.protocol,
       outOfBandId: options.outOfBandId,
