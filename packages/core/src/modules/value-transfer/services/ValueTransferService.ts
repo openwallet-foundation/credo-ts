@@ -418,7 +418,7 @@ export class ValueTransferService {
 
     // Call VTP to accept cash
     const getter = await this.valueTransfer.getter()
-    const { error, message } = await getter.acceptCash(requestMessage.body, requestAcceptedMessage.body)
+    const { error, message } = await getter.acceptCash(requestAcceptedMessage.body)
     if (error || !message) {
       throw new AriesFrameworkError(`Failed to accept Payment Request: ${error?.message}`)
     }
@@ -537,9 +537,7 @@ export class ValueTransferService {
     const previousState = record.state
 
     // Call VTP package to remove cash
-    const { error, message } = await this.valueTransfer
-      .giver()
-      .removeCash(requestAcceptedMessage.body, cashAcceptedMessage.body)
+    const { error, message } = await this.valueTransfer.giver().removeCash(cashAcceptedMessage.body)
     if (error || !message) {
       throw new AriesFrameworkError(`Failed to accept Payment Request: ${error?.message}`)
     }
@@ -637,13 +635,7 @@ export class ValueTransferService {
     const previousState = record.state
 
     // Call VTP package to create receipt
-    const { error, message } = await this.valueTransfer
-      .witness()
-      .createReceipt(
-        record.requestAcceptedMessage.body,
-        record.cashAcceptedMessage.body,
-        record.cashRemovedMessage.body
-      )
+    const { error, message } = await this.valueTransfer.witness().createReceipt(record.cashRemovedMessage.body)
     if (error || !message) {
       throw new AriesFrameworkError(`Witness: Failed to create Payment Receipt: ${error?.message}`)
     }
@@ -701,9 +693,7 @@ export class ValueTransferService {
 
     // Call VTP to process Receipt
     if (record.role === ValueTransferRole.Getter) {
-      const { error, message } = await this.valueTransfer
-        .getter()
-        .processReceipt(record.cashAcceptedMessage.body, receiptMessage.body)
+      const { error, message } = await this.valueTransfer.getter().processReceipt(receiptMessage.body)
       if (error || !message) {
         throw new AriesFrameworkError(`Getter: Failed to store Receipt: ${error?.message}`)
       }
@@ -711,9 +701,7 @@ export class ValueTransferService {
     }
 
     if (record.role === ValueTransferRole.Giver) {
-      const { error, message } = await this.valueTransfer
-        .giver()
-        .processReceipt(record.requestAcceptedMessage.body, receiptMessage.body)
+      const { error, message } = await this.valueTransfer.giver().processReceipt(receiptMessage.body)
       if (error || !message) {
         throw new AriesFrameworkError(`Giver: Failed to store Receipt: ${error?.message}`)
       }

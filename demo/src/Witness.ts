@@ -37,12 +37,14 @@ export class Witness extends BaseAgent {
   }
 
   public async acceptGetterConnection(invitation_url: string) {
-    const connectionRecord = await this.agent.connections.receiveInvitationFromUrl(invitation_url)
+    const connectionRecord = await this.agent.connections.receiveInvitationFromUrl(invitation_url, { transport: 'ipc' })
     this.connectionRecordGetterId = await this.waitForConnection(connectionRecord)
   }
 
   public async acceptGiverConnection(invitation_url: string) {
-    const { connectionRecord } = await this.agent.connections.acceptOutOfBandInvitationFromUrl(invitation_url)
+    const { connectionRecord } = await this.agent.connections.acceptOutOfBandInvitationFromUrl(invitation_url, {
+      transport: 'nfc',
+    })
     this.connectionRecordGiverId = connectionRecord.id
   }
 

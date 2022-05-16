@@ -136,6 +136,7 @@ export class ConnectionService {
       routing: Routing
       autoAcceptConnection?: boolean
       alias?: string
+      transport?: Transport
     }
   ): Promise<ConnectionRecord> {
     const connectionRecord = await this.createConnection({
@@ -151,6 +152,7 @@ export class ConnectionService {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
       multiUseInvitation: false,
+      transport: config.transport,
     })
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
@@ -510,7 +512,6 @@ export class ConnectionService {
         goalCode: config?.goalCode,
         accept: defaultAcceptProfiles,
         imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
-        serviceEndpoint: config?.transport,
       },
     })
 
@@ -541,6 +542,7 @@ export class ConnectionService {
     config: {
       alias?: string
       routing: Routing
+      transport?: Transport
     }
   ): Promise<{ connectionRecord: ConnectionRecord; message: OutOfBandInvitationMessage }> {
     if (!invitation.from) {
@@ -556,6 +558,7 @@ export class ConnectionService {
       routing: config.routing,
       imageUrl: invitation.body?.imageUrl,
       multiUseInvitation: false,
+      transport: config.transport,
     })
     const theirDIDDoc = await this.buildConnectionDIDDoc(invitation.from, connectionRecord.transport)
 
@@ -837,8 +840,7 @@ export class ConnectionService {
       publicKeyBase58: verkey,
     })
 
-    const serviceEndpoint = options.invitation?.serviceEndpoint || options.outOfBandInvitation?.body.serviceEndpoint
-    const transport = options.transport || (serviceEndpoint?.split(':')[0] as Transport)
+    const transport = options.transport || 'http'
 
     let services: IndyAgentService[] | DidCommService[]
     if (transport && offlineTransports.includes(transport)) {

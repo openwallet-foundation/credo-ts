@@ -15,7 +15,6 @@ export interface OutOfBandInvitationBody {
   imageUrl?: string
   goalCode?: string
   accept?: AcceptProtocol[]
-  serviceEndpoint?: string
 }
 
 type OutOfBandInvitationOptions = DIDCommV2MessageParams & {

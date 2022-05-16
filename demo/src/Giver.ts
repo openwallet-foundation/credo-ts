@@ -4,6 +4,7 @@ import type { ValueTransferRecord } from '@aries-framework/core/src/modules/valu
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
+import { JsonEncoder } from '@aries-framework/core/src/utils'
 import { createVerifiableNotes } from '@value-transfer/value-transfer-lib'
 
 import { BaseAgent } from './BaseAgent'
@@ -50,6 +51,7 @@ export class Giver extends BaseAgent {
     this.connectionRecordWitnessId = invite.connectionRecord.id
 
     console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost` }), '\n')
+    console.log(greenText('Invitation: ' + JsonEncoder.toString(invite.invitation)))
     console.log(greenText('DID: ' + invite.connectionRecord.did))
     return invite.connectionRecord
   }

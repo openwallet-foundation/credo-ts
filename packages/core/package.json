@@ -47,9 +47,7 @@
     "varint": "^6.0.0",
     "web-did-resolver": "^2.0.8",
     "@noble/ed25519": "^1.6.0",
-    "bloom-filters": "^3.0.0",
-    "lodash.isequal": "^4.5.0",
-    "lodash.omit": "^4.5.0"
+    "bloom-filters": "^3.0.0"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.0",
