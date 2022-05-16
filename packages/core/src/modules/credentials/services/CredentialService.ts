@@ -168,6 +168,7 @@ export abstract class CredentialService {
     await this.update(credentialRecord)
     return credentialRecord
   }
+
   abstract shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): Promise<boolean>
 
   abstract shouldAutoRespondToOffer(

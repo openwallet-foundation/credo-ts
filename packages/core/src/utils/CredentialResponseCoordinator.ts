@@ -1,9 +1,6 @@
 import { scoped, Lifecycle } from 'tsyringe'
 
-import { AgentConfig } from '../../agent/AgentConfig'
-import { DidCommMessageRepository } from '../../storage'
-
-import { AutoAcceptCredential } from './CredentialAutoAcceptType'
+import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
 
 /**
  * This class handles all the automation with all the messages in the issue credential protocol
@@ -11,14 +8,6 @@ import { AutoAcceptCredential } from './CredentialAutoAcceptType'
  */
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialResponseCoordinator {
-  private agentConfig: AgentConfig
-  private didCommMessageRepository: DidCommMessageRepository
-
-  public constructor(agentConfig: AgentConfig, didCommMessageRepository: DidCommMessageRepository) {
-    this.agentConfig = agentConfig
-    this.didCommMessageRepository = didCommMessageRepository
-  }
-
   /**
    * Returns the credential auto accept config based on priority:
    *	- The record config takes first priority
