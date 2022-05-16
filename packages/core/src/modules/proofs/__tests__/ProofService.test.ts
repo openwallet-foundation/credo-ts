@@ -7,7 +7,7 @@ import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tes
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { ConnectionService, ConnectionState } from '../../connections'
+import { ConnectionService, DidExchangeState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyRevocationService } from '../../indy/services/IndyRevocationService'
 import { IndyLedgerService } from '../../ledger/services'
@@ -43,7 +43,7 @@ const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 
 const connection = getMockConnection({
   id: '123',
-  state: ConnectionState.Complete,
+  state: DidExchangeState.Completed,
 })
 
 const requestAttachment = new Attachment({

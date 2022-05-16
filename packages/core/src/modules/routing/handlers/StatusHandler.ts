@@ -15,7 +15,7 @@ export class StatusHandler implements Handler {
 
   public async handle(messageContext: InboundMessageContext<StatusMessage>) {
     const connection = messageContext.assertReadyConnection()
-    const deliveryRequestMessage = this.mediatorRecipientService.processStatus(messageContext.message)
+    const deliveryRequestMessage = await this.mediatorRecipientService.processStatus(messageContext)
 
     if (deliveryRequestMessage) {
       return createOutboundMessage(connection, deliveryRequestMessage)

@@ -8,7 +8,7 @@ import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMes
 describe('ConnectionInvitationMessage', () => {
   it('should allow routingKeys to be left out of inline invitation', async () => {
     const json = {
-      '@type': ConnectionInvitationMessage.type,
+      '@type': ConnectionInvitationMessage.type.messageTypeUri,
       '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       recipientKeys: ['recipientKeyOne', 'recipientKeyTwo'],
       serviceEndpoint: 'https://example.com',
@@ -20,7 +20,7 @@ describe('ConnectionInvitationMessage', () => {
 
   it('should throw error if both did and inline keys / endpoint are missing', async () => {
     const json = {
-      '@type': ConnectionInvitationMessage.type,
+      '@type': ConnectionInvitationMessage.type.messageTypeUri,
       '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       label: 'test',
     }

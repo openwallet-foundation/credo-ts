@@ -15,7 +15,7 @@ export class MessageDeliveryHandler implements Handler {
 
   public async handle(messageContext: InboundMessageContext<MessageDeliveryMessage>) {
     const connection = messageContext.assertReadyConnection()
-    const deliveryReceivedMessage = await this.mediationRecipientService.processDelivery(messageContext.message)
+    const deliveryReceivedMessage = await this.mediationRecipientService.processDelivery(messageContext)
 
     if (deliveryReceivedMessage) {
       return createOutboundMessage(connection, deliveryReceivedMessage)

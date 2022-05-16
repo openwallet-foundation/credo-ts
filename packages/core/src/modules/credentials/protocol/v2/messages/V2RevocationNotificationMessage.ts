@@ -1,9 +1,10 @@
 import type { AckDecorator } from '../../../../../decorators/ack/AckDecorator'
 
 import { Expose } from 'class-transformer'
-import { Equals, IsOptional, IsString } from 'class-validator'
+import { IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 export interface RevocationNotificationMessageV2Options {
   revocationFormat: string
@@ -25,9 +26,9 @@ export class V2RevocationNotificationMessage extends AgentMessage {
     }
   }
 
-  @Equals(V2RevocationNotificationMessage.type)
-  public readonly type = V2RevocationNotificationMessage.type
-  public static readonly type = 'https://didcomm.org/revocation_notification/2.0/revoke'
+  @IsValidMessageType(V2RevocationNotificationMessage.type)
+  public readonly type = V2RevocationNotificationMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/revocation_notification/2.0/revoke')
 
   @IsString()
   @IsOptional()
