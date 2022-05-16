@@ -1,8 +1,9 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
 
 export interface V2IssueCredentialMessageProps {
@@ -29,9 +30,9 @@ export class V2IssueCredentialMessage extends AgentMessage {
   @IsInstance(CredentialFormatSpec, { each: true })
   public formats!: CredentialFormatSpec[]
 
-  @Equals(V2IssueCredentialMessage.type)
-  public readonly type = V2IssueCredentialMessage.type
-  public static readonly type = 'https://didcomm.org/issue-credential/2.0/issue-credential'
+  @IsValidMessageType(V2IssueCredentialMessage.type)
+  public readonly type = V2IssueCredentialMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/2.0/issue-credential')
 
   @IsString()
   @IsOptional()

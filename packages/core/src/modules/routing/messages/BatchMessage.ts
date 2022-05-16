@@ -1,9 +1,10 @@
 import { Type, Expose } from 'class-transformer'
-import { Equals, Matches, IsArray, ValidateNested, IsObject, IsInstance } from 'class-validator'
+import { Matches, IsArray, ValidateNested, IsObject, IsInstance } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { MessageIdRegExp } from '../../../agent/BaseMessage'
 import { EncryptedMessage } from '../../../types'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { uuid } from '../../../utils/uuid'
 
 export class BatchMessageMessage {
@@ -41,9 +42,9 @@ export class BatchMessage extends AgentMessage {
     }
   }
 
-  @Equals(BatchMessage.type)
-  public readonly type = BatchMessage.type
-  public static readonly type = 'https://didcomm.org/messagepickup/1.0/batch'
+  @IsValidMessageType(BatchMessage.type)
+  public readonly type = BatchMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/1.0/batch')
 
   @Type(() => BatchMessageMessage)
   @IsArray()

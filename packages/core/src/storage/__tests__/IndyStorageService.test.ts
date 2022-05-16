@@ -45,6 +45,10 @@ describe('IndyStorageService', () => {
           someBoolean: true,
           someOtherBoolean: false,
           someStringValue: 'string',
+          anArrayValue: ['foo', 'bar'],
+          // booleans are stored as '1' and '0' so we store the string values '1' and '0' as 'n__1' and 'n__0'
+          someStringNumberValue: '1',
+          anotherStringNumberValue: '0',
         },
       })
 
@@ -57,6 +61,10 @@ describe('IndyStorageService', () => {
         someBoolean: '1',
         someOtherBoolean: '0',
         someStringValue: 'string',
+        'anArrayValue:foo': '1',
+        'anArrayValue:bar': '1',
+        someStringNumberValue: 'n__1',
+        anotherStringNumberValue: 'n__0',
       })
     })
 
@@ -65,6 +73,11 @@ describe('IndyStorageService', () => {
         someBoolean: '1',
         someOtherBoolean: '0',
         someStringValue: 'string',
+        'anArrayValue:foo': '1',
+        'anArrayValue:bar': '1',
+        // booleans are stored as '1' and '0' so we store the string values '1' and '0' as 'n__1' and 'n__0'
+        someStringNumberValue: 'n__1',
+        anotherStringNumberValue: 'n__0',
       })
 
       const record = await storageService.getById(TestRecord, 'some-id')
@@ -73,6 +86,9 @@ describe('IndyStorageService', () => {
         someBoolean: true,
         someOtherBoolean: false,
         someStringValue: 'string',
+        anArrayValue: expect.arrayContaining(['bar', 'foo']),
+        someStringNumberValue: '1',
+        anotherStringNumberValue: '0',
       })
     })
   })
