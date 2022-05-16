@@ -8,16 +8,71 @@ Before initializing your agent, make sure you have followed the setup guide for 
 - [NodeJS](../setup-nodejs.md)
 - [React Native](../setup-react-native.md)
 
-## Setting Up Your Agent
-
-> Note: This setup is assumed for a react native mobile agent
-> Other platforms: To do
+## Setting Up Your Agent for NodeJS with default storage
 
 You can set up an agent by importing the `Agent` class. It requires you to pass in a JSON object to configure the agent. The following is an example with only the required configuration options specified. The agent by itself can't do much yet, we need [transports](1-transports.md) to be able to interact with other agents.
 
 ```ts
 import { Agent, InitConfig } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
+
+const agentConfig: InitConfig = {
+  // The label is used for communication with other agents
+  label: 'My Agent',
+  walletConfig: {
+    id: 'walletId',
+    key: 'testKey0000000000000000000000000',
+  },
+}
+
+const agent = new Agent(agentConfig, agentDependencies)
+```
+
+## Setting Up Your Agent for NodeJS with postgres storage
+
+You can set up an agent by importing the `Agent` class. It requires you to pass in a JSON object to configure the agent. The following is an example with only the required configuration options specified. The agent by itself can't do much yet, we need [transports](1-transports.md) to be able to interact with other agents.
+
+```ts
+import { Agent, InitConfig } from '@aries-framework/core'
+import { agentDependencies, IndyPostgresStorageConfig, loadPostgresPlugin, WalletScheme } from '@aries-framework/node'
+
+const storageConfig: IndyPostgresStorageConfig = {
+  type: 'postgres_storage',
+  config: {
+    url: 'localhost:5432',
+    wallet_scheme: WalletScheme.DatabasePerWallet,
+  },
+  credentials: {
+    account: 'postgres',
+    password: 'postgres',
+    admin_account: 'postgres',
+    admin_password: 'postgres',
+  },
+}
+
+// load the postgres wallet plugin before agent initialization
+loadPostgresPlugin(storageConfig.config, storageConfig.credentials)
+
+const agentConfig: InitConfig = {
+  // The label is used for communication with other agents
+  label: 'My Agent',
+  walletConfig: {
+    id: 'walletId',
+    key: 'testKey0000000000000000000000000',
+    storage: storageConfig,
+  },
+}
+
+const agent = new Agent(agentConfig, agentDependencies)
+```
+
+## Setting Up Your Agent for React Native
+
+You can set up an agent by importing the `Agent` class. It requires you to pass in a JSON object to configure the agent. The following is an example with only the required configuration options specified. The agent by itself can't do much yet, we need [transports](1-transports.md) to be able to interact with other agents.
+
+```ts
+import { Agent, InitConfig } from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/react-native'
 
 const agentConfig: InitConfig = {
   // The label is used for communication with other agents
