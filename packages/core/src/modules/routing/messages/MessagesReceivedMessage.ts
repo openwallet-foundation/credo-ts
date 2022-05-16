@@ -1,8 +1,9 @@
 import { Expose } from 'class-transformer'
-import { Equals, IsArray, IsOptional } from 'class-validator'
+import { IsArray, IsOptional } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface MessagesReceivedMessageOptions {
   id?: string
@@ -20,9 +21,9 @@ export class MessagesReceivedMessage extends AgentMessage {
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @Equals(MessagesReceivedMessage.type)
-  public readonly type = MessagesReceivedMessage.type
-  public static readonly type = 'https://didcomm.org/messagepickup/2.0/messages-received'
+  @IsValidMessageType(MessagesReceivedMessage.type)
+  public readonly type = MessagesReceivedMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/2.0/messages-received')
 
   @IsArray()
   @IsOptional()

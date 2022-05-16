@@ -1,6 +1,7 @@
-import { Equals, IsEnum } from 'class-validator'
+import { IsEnum } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 /**
  * Ack message status types
@@ -38,9 +39,9 @@ export class AckMessage extends AgentMessage {
     }
   }
 
-  @Equals(AckMessage.type)
-  public readonly type: string = AckMessage.type
-  public static readonly type: string = 'https://didcomm.org/notification/1.0/ack'
+  @IsValidMessageType(AckMessage.type)
+  public readonly type: string = AckMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/notification/1.0/ack')
 
   @IsEnum(AckStatus)
   public status!: AckStatus
