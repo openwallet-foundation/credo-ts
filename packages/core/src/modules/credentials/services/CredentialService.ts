@@ -247,10 +247,7 @@ export abstract class CredentialService {
     return this.credentialRepository.findById(connectionId)
   }
 
-  public async deleteById(
-    credentialRecord: CredentialExchangeRecord,
-    options?: DeleteCredentialOptions
-  ): Promise<void> {
+  public async delete(credentialRecord: CredentialExchangeRecord, options?: DeleteCredentialOptions): Promise<void> {
     await this.credentialRepository.delete(credentialRecord)
 
     if (options?.deleteAssociatedCredentials) {

@@ -807,7 +807,7 @@ describe('CredentialService', () => {
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialRecord))
 
       const repositoryDeleteSpy = jest.spyOn(credentialRepository, 'delete')
-      await credentialService.deleteById(credentialRecord)
+      await credentialService.delete(credentialRecord)
       expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, credentialRecord)
     })
 
@@ -817,7 +817,7 @@ describe('CredentialService', () => {
       const credentialRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialRecord))
 
-      await credentialService.deleteById(credentialRecord, {
+      await credentialService.delete(credentialRecord, {
         deleteAssociatedCredentials: true,
       })
       expect(deleteCredentialMock).toHaveBeenNthCalledWith(1, credentialRecord.credentials[0].credentialRecordId)
