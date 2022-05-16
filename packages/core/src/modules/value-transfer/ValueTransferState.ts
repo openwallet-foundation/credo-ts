@@ -15,7 +15,7 @@ export enum ValueTransferState {
   CashRemovalSent = 'cash-removal-sent',
   CashRemovalReceived = 'cash-removal-received',
 
-  ReceiptSent = 'receipt-created',
+  ReceiptSent = 'receipt-sent',
 
   Failed = 'failed',
   Completed = 'completed',

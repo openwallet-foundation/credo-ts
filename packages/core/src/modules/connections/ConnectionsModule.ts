@@ -90,6 +90,7 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean
       alias?: string
       mediatorId?: string
+      transport?: Transport
     }
   ): Promise<ConnectionRecord> {
     const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
@@ -97,6 +98,7 @@ export class ConnectionsModule {
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
+      transport: config?.transport,
       routing,
     })
     // if auto accept is enabled (either on the record or the global agent config)
@@ -122,6 +124,7 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean
       alias?: string
       mediatorId?: string
+      transport?: Transport
     }
   ): Promise<ConnectionRecord> {
     const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
@@ -229,10 +232,15 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean
       alias?: string
       mediatorId?: string
+      transport?: Transport
     }
   ): Promise<{ connectionRecord: ConnectionRecord }> {
     const invitation = await OutOfBandInvitationMessage.fromUrl(invitationUrl)
-    return this.acceptOutOfBandInvitation(invitation, { alias: config?.alias, mediatorId: config?.mediatorId })
+    return this.acceptOutOfBandInvitation(invitation, {
+      alias: config?.alias,
+      mediatorId: config?.mediatorId,
+      transport: config?.transport,
+    })
   }
 
   /**
@@ -247,6 +255,7 @@ export class ConnectionsModule {
     config?: {
       alias?: string
       mediatorId?: string
+      transport?: Transport
     }
   ): Promise<{
     connectionRecord: ConnectionRecord
