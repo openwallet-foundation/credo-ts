@@ -258,8 +258,26 @@ export class MediationRecipientService {
     mediationRecord.assertRole(MediationRole.Recipient)
 
     //No messages to be sent
-    if (messageCount === 0) return null
+    if (messageCount === 0) {
+      const { message, connectionRecord } = await this.connectionService.createTrustPing(connection, {
+        responseRequested: false,
+      })
+      const websocketSchemes = ['ws', 'wss']
 
+      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message), {
+        transportPriority: {
+          schemes: websocketSchemes,
+          restrictive: true,
+          // TODO: add keepAlive: true to enforce through the public api
+          // we need to keep the socket alive. It already works this way, but would
+          // be good to make more explicit from the public facing API.
+          // This would also make it easier to change the internal API later on.
+          // keepAlive: true,
+        },
+      })
+
+      return null
+    }
     const { maximumMessagePickup } = this.config
     const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
 
