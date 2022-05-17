@@ -1,4 +1,3 @@
-import type { W3cCredential } from '../../vc/models'
 import type {
   IndyProposeProofFormat,
   IndyRequestProofFormat,
@@ -8,11 +7,9 @@ import type { PresentationExchangeProposalFormat } from '../formats/Presentation
 import type { ProofRequest } from '../formats/indy/models/ProofRequest'
 import type { RequestedCredentials, IndyRequestedCredentialsOptions } from '../formats/indy/models/RequestedCredentials'
 import type { RetrievedCredentials } from '../formats/indy/models/RetrievedCredentials'
-import type {
-  RequestPresentation,
-  RequestPresentationOptions,
-} from '../formats/presentation-exchange/models/RequestPresentation'
+import type { RequestPresentationOptions } from '../formats/presentation-exchange/models/RequestPresentation'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
+import type { IVerifiableCredential, SelectResults } from '@sphereon/pex'
 
 export interface ProposeProofFormats {
   // If you want to propose an indy proof without attributes or
@@ -32,7 +29,7 @@ export interface CreatePresentationFormats {
   // If you want to propose an indy proof without attributes or
   // any of the other properties you should pass an empty object
   indy?: IndyRequestedCredentialsOptions
-  presentationExchange?: W3cCredential
+  presentationExchange?: IVerifiableCredential
 }
 
 export interface AcceptProposalFormats {
@@ -54,17 +51,17 @@ export interface RequestedCredentialConfigOptions {
 
 export interface RetrievedCredentialOptions {
   indy?: RetrievedCredentials | undefined
-  presentationExchange?: W3cCredential[] | undefined
+  presentationExchange?: SelectResults | undefined
 }
 
 export interface ProofRequestFormats {
   indy?: ProofRequest | undefined
-  presentationExchange?: RequestPresentation | undefined
+  presentationExchange?: RequestPresentationOptions | undefined
 }
 
 export interface RequestedCredentialsFormats {
   indy?: RequestedCredentials | undefined
-  presentationExchange?: W3cCredential | undefined
+  presentationExchange?: IVerifiableCredential | undefined
 }
 
 interface IndyAcceptProposalOptions {
@@ -73,5 +70,5 @@ interface IndyAcceptProposalOptions {
 
 export interface AutoSelectCredentialOptions {
   indy?: RetrievedCredentials | undefined
-  presentationExchange?: W3cCredential[] | undefined
+  presentationExchange?: SelectResults | undefined
 }

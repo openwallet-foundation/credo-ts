@@ -1,3 +1,4 @@
+import type { PresentationExchangeProposalFormat } from '../../PresentationExchangeFormatsServiceOptions'
 import type { InputDescriptors } from './InputDescriptors'
 
 import { Expose } from 'class-transformer'
@@ -92,31 +93,10 @@ export class PresentationDefinition {
 }
 
 export interface PresentationOptions {
-  challenge: string
-  domain: string
+  challenge?: string
+  domain?: string
 }
 
-export interface RequestPresentationOptions {
-  options: PresentationOptions
-  presentationDefinition: PresentationDefinition
-}
-
-export class RequestPresentation {
-  public constructor(options: RequestPresentationOptions) {
-    if (options) {
-      this.options = options.options
-      this.presentationDefinition = options.presentationDefinition
-    }
-  }
-
-  @Expose({ name: 'presentation_definition' })
-  @ValidateNested({ each: true })
-  public presentationDefinition!: PresentationDefinition
-
-  @IsString()
-  public options!: PresentationOptions
-
-  public toJSON() {
-    return JsonTransformer.toJSON(this)
-  }
+export interface RequestPresentationOptions extends PresentationExchangeProposalFormat {
+  options?: PresentationOptions
 }

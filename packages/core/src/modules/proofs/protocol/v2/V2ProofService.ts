@@ -210,8 +210,19 @@ export class V2ProofService extends ProofService {
   }
 
   public async processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
-    const { message: proposalMessage, connection: connectionRecord } = messageContext
+    const { message: _proposalMessage, connection: connectionRecord } = messageContext
     let proofRecord: ProofRecord
+
+    const proposalMessage = _proposalMessage as V2ProposalPresentationMessage
+
+    const proposalAttachments = proposalMessage.getAttachmentFormats()
+
+    for (const attachmentFormat of proposalAttachments) {
+      const service = this.getFormatServiceForFormat(attachmentFormat.format)
+      service?.processProposal({
+        proposal: attachmentFormat,
+      })
+    }
 
     try {
       proofRecord = await this.proofRepository.getSingleByQuery({
@@ -242,7 +253,7 @@ export class V2ProofService extends ProofService {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
         connectionId: connectionRecord?.id,
-        threadId: proposalMessage.threadId,
+        threadId: _proposalMessage.threadId,
         state: ProofState.ProposalReceived,
         protocolVersion: ProofProtocolVersion.V2,
       })
@@ -252,7 +263,7 @@ export class V2ProofService extends ProofService {
 
       // Save record
       await this.didCommMessageRepository.saveOrUpdateAgentMessage({
-        agentMessage: proposalMessage,
+        agentMessage: _proposalMessage,
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Receiver,
       })
