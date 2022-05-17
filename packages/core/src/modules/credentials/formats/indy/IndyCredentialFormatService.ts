@@ -90,6 +90,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       throw new AriesFrameworkError('Missing payload in createProposal')
     }
 
+    // Use class instance instead of interface, otherwise this causes interoperability problems
     let proposal: CredPropose = new CredPropose(options.credentialFormats.indy?.payload)
     proposal = JsonTransformer.toJSON(proposal)
 
