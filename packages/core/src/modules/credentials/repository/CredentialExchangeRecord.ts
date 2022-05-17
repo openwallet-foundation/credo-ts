@@ -89,7 +89,7 @@ export class CredentialExchangeRecord extends BaseRecord<
       this.linkedAttachments = props.linkedAttachments
       this.revocationNotification = props.revocationNotification
       this.errorMessage = props.errorMessage
-      this.credentials = props.credentials ?? []
+      this.credentials = props.credentials || []
     }
   }
 
