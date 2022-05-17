@@ -22,7 +22,7 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../storage'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { AckStatus } from '../../common/messages/AckMessage'
-import { ConnectionState } from '../../connections'
+import { DidExchangeState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
@@ -72,7 +72,7 @@ const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCo
 
 const connection = getMockConnection({
   id: '123',
-  state: ConnectionState.Complete,
+  state: DidExchangeState.Completed,
 })
 
 const credentialPreview = V1CredentialPreview.fromRecord({

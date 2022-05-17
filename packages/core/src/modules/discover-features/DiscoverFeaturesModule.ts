@@ -1,5 +1,5 @@
-import type { BaseMessage } from '../../agent/BaseMessage'
 import type { AgentMessageProcessedEvent } from '../../agent/Events'
+import type { ParsedMessageType } from '../../utils/messageType'
 
 import { firstValueFrom, of, ReplaySubject } from 'rxjs'
 import { filter, takeUntil, timeout, catchError, map } from 'rxjs/operators'
@@ -11,7 +11,7 @@ import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { parseMessageType } from '../../utils/messageType'
+import { canHandleMessageType, parseMessageType } from '../../utils/messageType'
 import { ConnectionService } from '../connections/services'
 
 import { DiscloseMessageHandler, QueryMessageHandler } from './handlers'
@@ -42,8 +42,8 @@ export class DiscoverFeaturesModule {
     this.agentConfig = agentConfig
   }
 
-  public async isProtocolSupported(connectionId: string, message: BaseMessage) {
-    const { protocolUri } = parseMessageType(message.type)
+  public async isProtocolSupported(connectionId: string, message: { type: ParsedMessageType }) {
+    const { protocolUri } = message.type
 
     // Listen for response to our feature query
     const replaySubject = new ReplaySubject(1)
@@ -53,7 +53,11 @@ export class DiscoverFeaturesModule {
         // Stop when the agent shuts down
         takeUntil(this.agentConfig.stop$),
         // filter by connection id and query disclose message type
-        filter((e) => e.payload.connection?.id === connectionId && e.payload.message.type === DiscloseMessage.type),
+        filter(
+          (e) =>
+            e.payload.connection?.id === connectionId &&
+            canHandleMessageType(DiscloseMessage, parseMessageType(e.payload.message.type))
+        ),
         // Return whether the protocol is supported
         map((e) => {
           const message = e.payload.message as DiscloseMessage

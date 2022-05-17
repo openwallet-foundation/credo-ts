@@ -1,7 +1,6 @@
 import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto'
-import { DidDocumentBuilder } from '../DidDocumentBuilder'
 import { Key } from '../Key'
 
 import { getBls12381g1VerificationMethod } from './bls12381g1'
@@ -20,26 +19,8 @@ export function getBls12381g1g2VerificationMethod(did: string, key: Key) {
   return [bls12381g1VerificationMethod, bls12381g2VerificationMethod]
 }
 
-export function getBls12381g1g2DidDoc(did: string, key: Key) {
-  const verificationMethods = getBls12381g1g2VerificationMethod(did, key)
-
-  const didDocumentBuilder = new DidDocumentBuilder(did)
-
-  for (const verificationMethod of verificationMethods) {
-    didDocumentBuilder
-      .addVerificationMethod(verificationMethod)
-      .addAuthentication(verificationMethod.id)
-      .addAssertionMethod(verificationMethod.id)
-      .addCapabilityDelegation(verificationMethod.id)
-      .addCapabilityInvocation(verificationMethod.id)
-  }
-
-  return didDocumentBuilder.build()
-}
-
 export const keyDidBls12381g1g2: KeyDidMapping = {
   supportedVerificationMethodTypes: [],
-  getDidDocument: getBls12381g1g2DidDoc,
   getVerificationMethods: getBls12381g1g2VerificationMethod,
 
   getKeyFromVerificationMethod: () => {

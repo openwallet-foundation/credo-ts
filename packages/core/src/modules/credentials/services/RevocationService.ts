@@ -63,7 +63,7 @@ export class RevocationService {
     this.logger.info('Processing revocation notification v1', { message: messageContext.message })
     // ThreadID = indy::<revocation_registry_id>::<credential_revocation_id>
     const threadRegex =
-      /(indy)::((?:[\dA-z]{21,22}):4:(?:[\dA-z]{21,22}):3:[Cc][Ll]:(?:(?:[1-9][0-9]*)|(?:[\dA-z]{21,22}:2:.+:[0-9.]+))(?::[\dA-z]+)?:CL_ACCUM:(?:[\dA-z-]+))::(\d+)$/
+      /(indy)::((?:[\dA-z]{21,22}):4:(?:[\dA-z]{21,22}):3:[Cc][Ll]:(?:(?:[1-9][0-9]*)|(?:[\dA-z]{21,22}:2:.+:[0-9.]+))(:.+)?:CL_ACCUM:(?:[\dA-z-]+))::(\d+)$/
     const threadId = messageContext.message.issueThread
     try {
       const threadIdGroups = threadId.match(threadRegex)
@@ -101,7 +101,7 @@ export class RevocationService {
 
     // CredentialId = <revocation_registry_id>::<credential_revocation_id>
     const credentialIdRegex =
-      /((?:[\dA-z]{21,22}):4:(?:[\dA-z]{21,22}):3:[Cc][Ll]:(?:(?:[1-9][0-9]*)|(?:[\dA-z]{21,22}:2:.+:[0-9.]+))(?::[\dA-z]+)?:CL_ACCUM:(?:[\dA-z-]+))::(\d+)$/
+      /((?:[\dA-z]{21,22}):4:(?:[\dA-z]{21,22}):3:[Cc][Ll]:(?:(?:[1-9][0-9]*)|(?:[\dA-z]{21,22}:2:.+:[0-9.]+))(:.+)?:CL_ACCUM:(?:[\dA-z-]+))::(\d+)$/
     const credentialId = messageContext.message.credentialId
     try {
       const credentialIdGroups = credentialId.match(credentialIdRegex)

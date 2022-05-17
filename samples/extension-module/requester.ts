@@ -1,6 +1,6 @@
 import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 
-import { Agent, ConsoleLogger, LogLevel, WsOutboundTransport } from '@aries-framework/core'
+import { Agent, AriesFrameworkError, ConsoleLogger, LogLevel, WsOutboundTransport } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
@@ -38,7 +38,10 @@ const run = async () => {
 
   // Connect to responder using its invitation endpoint
   const invitationUrl = await (await agentDependencies.fetch(`http://localhost:${port}/invitation`)).text()
-  const connection = await agent.connections.receiveInvitationFromUrl(invitationUrl)
+  const { connectionRecord: connection } = await agent.oob.receiveInvitationFromUrl(invitationUrl)
+  if (!connection) {
+    throw new AriesFrameworkError('Connection record for out-of-band invitation was not created.')
+  }
   await agent.connections.returnWhenIsConnected(connection.id)
 
   // Create observable for Response Received event

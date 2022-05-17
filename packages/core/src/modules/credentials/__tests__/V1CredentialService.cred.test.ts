@@ -20,7 +20,7 @@ import { AriesFrameworkError, RecordNotFoundError } from '../../../error'
 import { DidCommMessageRepository } from '../../../storage'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { AckStatus } from '../../common'
-import { ConnectionState } from '../../connections'
+import { DidExchangeState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
@@ -72,7 +72,7 @@ const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<Med
 
 const connection = getMockConnection({
   id: '123',
-  state: ConnectionState.Complete,
+  state: DidExchangeState.Completed,
 })
 
 const credentialPreview = V1CredentialPreview.fromRecord({
@@ -1130,6 +1130,58 @@ describe('CredentialService', () => {
       })
 
       spy.mockRestore()
+    })
+
+    describe('revocation registry id validation', () => {
+      const revocationRegistryId =
+        'ABC12D3EFgHIjKL4mnOPQ5:4:AsB27X6KRrJFsqZ3unNAH6:3:cl:48187:N4s7y-5hema_tag ;:CL_ACCUM:3b24a9b0-a979-41e0-9964-2292f2b1b7e9'
+      test('V1 allows any character in tag part of RevRegId', async () => {
+        const loggerSpy = jest.spyOn(logger, 'warn')
+        mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
+
+        const revocationNotificationThreadId = `indy::${revocationRegistryId}::2`
+
+        const invalidThreadFormatError = new AriesFrameworkError(
+          `Incorrect revocation notification threadId format: \n${revocationNotificationThreadId}\ndoes not match\n"indy::<revocation_registry_id>::<credential_revocation_id>"`
+        )
+
+        const revocationNotificationMessage = new V1RevocationNotificationMessage({
+          issueThread: revocationNotificationThreadId,
+          comment: 'Credential has been revoked',
+        })
+        const messageContext = new InboundMessageContext(revocationNotificationMessage)
+
+        await revocationService.v1ProcessRevocationNotification(messageContext)
+
+        expect(loggerSpy).not.toBeCalledWith('Failed to process revocation notification message', {
+          error: invalidThreadFormatError,
+          threadId: revocationNotificationThreadId,
+        })
+      })
+
+      test('V2 allows any character in tag part of credential id', async () => {
+        const loggerSpy = jest.spyOn(logger, 'warn')
+        mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
+
+        const credentialId = `${revocationRegistryId}::2`
+        const invalidFormatError = new AriesFrameworkError(
+          `Incorrect revocation notification credentialId format: \n${credentialId}\ndoes not match\n"<revocation_registry_id>::<credential_revocation_id>"`
+        )
+
+        const revocationNotificationMessage = new V2RevocationNotificationMessage({
+          credentialId: credentialId,
+          revocationFormat: 'indy',
+          comment: 'Credenti1al has been revoked',
+        })
+        const messageContext = new InboundMessageContext(revocationNotificationMessage)
+
+        await revocationService.v2ProcessRevocationNotification(messageContext)
+
+        expect(loggerSpy).not.toBeCalledWith('Failed to process revocation notification message', {
+          error: invalidFormatError,
+          credentialId: credentialId,
+        })
+      })
     })
   })
 })
