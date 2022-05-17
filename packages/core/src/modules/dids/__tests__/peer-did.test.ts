@@ -2,11 +2,10 @@ import type { IndyLedgerService } from '../../ledger'
 
 import { getAgentConfig } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
-import { Key } from '../../../crypto/Key'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { DidCommService, DidDocument, DidDocumentBuilder } from '../domain'
+import { DidCommV1Service, DidDocument, DidDocumentBuilder, Key } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../domain/key-type/x25519'
@@ -76,7 +75,7 @@ describe('peer dids', () => {
     // Use ed25519 did:key, which also includes the x25519 key used for didcomm
     const mediatorRoutingKey = `${mediatorEd25519DidKey.did}#${mediatorX25519Key.fingerprint}`
 
-    const service = new DidCommService({
+    const service = new DidCommV1Service({
       id: '#service-0',
       // Fixme: can we use relative reference (#id) instead of absolute reference here (did:example:123#id)?
       // We don't know the did yet
@@ -118,7 +117,7 @@ describe('peer dids', () => {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys: didDocument.recipientKeys,
+        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
       },
     })
 
@@ -155,7 +154,7 @@ describe('peer dids', () => {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeys: didDocument.recipientKeys,
+        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
       },
     })
 

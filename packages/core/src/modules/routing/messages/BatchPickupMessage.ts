@@ -1,7 +1,8 @@
 import { Expose } from 'class-transformer'
-import { Equals, IsInt } from 'class-validator'
+import { IsInt } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface BatchPickupMessageOptions {
   id?: string
@@ -28,9 +29,9 @@ export class BatchPickupMessage extends AgentMessage {
     }
   }
 
-  @Equals(BatchPickupMessage.type)
-  public readonly type = BatchPickupMessage.type
-  public static readonly type = 'https://didcomm.org/messagepickup/1.0/batch-pickup'
+  @IsValidMessageType(BatchPickupMessage.type)
+  public readonly type = BatchPickupMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/1.0/batch-pickup')
 
   @IsInt()
   @Expose({ name: 'batch_size' })

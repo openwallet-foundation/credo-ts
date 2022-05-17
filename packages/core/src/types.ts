@@ -1,9 +1,11 @@
 import type { AgentMessage } from './agent/AgentMessage'
+import type { ResolvedDidCommService } from './agent/MessageSender'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
-import type { DidCommService } from './modules/dids/domain/service/DidCommService'
+import type { Key } from './modules/dids/domain/Key'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
+import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 
@@ -20,6 +22,10 @@ export interface WalletConfig {
   id: string
   key: string
   keyDerivationMethod?: KeyDerivationMethod
+  storage?: {
+    type: string
+    [key: string]: unknown
+  }
 }
 
 export interface WalletConfigRekey {
@@ -82,22 +88,17 @@ export interface PlaintextMessage {
   [key: string]: unknown
 }
 
-export interface DecryptedMessageContext {
-  plaintextMessage: PlaintextMessage
-  senderKey?: string
-  recipientKey?: string
-}
-
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   payload: T
   connection: ConnectionRecord
   sessionId?: string
+  outOfBand?: OutOfBandRecord
 }
 
 export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {
   payload: T
-  service: DidCommService
-  senderKey: string
+  service: ResolvedDidCommService
+  senderKey: Key
 }
 
 export interface OutboundPackage {

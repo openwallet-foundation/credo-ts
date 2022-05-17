@@ -1,7 +1,7 @@
 import { KeyType } from '../../../../../crypto'
-import { Key } from '../../../../../crypto/Key'
-import { Buffer, JsonTransformer, TypedArrayEncoder } from '../../../../../utils'
+import { JsonTransformer, TypedArrayEncoder, Buffer } from '../../../../../utils'
 import keyBls12381g1g2Fixture from '../../../__tests__/__fixtures__/didKeyBls12381g1g2.json'
+import { Key } from '../../Key'
 import { VerificationMethod } from '../../verificationMethod'
 import { keyDidBls12381g1g2 } from '../bls12381g1g2'
 
@@ -53,13 +53,6 @@ describe('bls12381g1g2', () => {
     expect(key.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_BLS12381G1G2_BASE58_KEY))
     expect(key.keyType).toBe(KeyType.Bls12381g1g2)
     expect(key.prefixedPublicKey.equals(TEST_BLS12381G1G2_PREFIX_BYTES)).toBe(true)
-  })
-
-  it('should return a valid did:key did document for the did', async () => {
-    const key = Key.fromFingerprint(TEST_BLS12381G1G2_FINGERPRINT)
-    const didDocument = keyDidBls12381g1g2.getDidDocument(TEST_BLS12381G1G2_DID, key)
-
-    expect(JsonTransformer.toJSON(didDocument)).toMatchObject(keyBls12381g1g2Fixture)
   })
 
   it('should return a valid verification method', async () => {

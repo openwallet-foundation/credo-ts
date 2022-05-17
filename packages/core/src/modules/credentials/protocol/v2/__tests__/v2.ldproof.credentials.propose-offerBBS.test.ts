@@ -9,6 +9,8 @@ import type {
   ProposeCredentialOptions,
 } from '../../../CredentialsModuleOptions'
 
+import { AnonymousSubject } from 'rxjs/internal/Subject'
+
 import { DidKey } from '../../../../../../src/modules/dids'
 import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
@@ -20,10 +22,9 @@ import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
+import { V2CredentialPreview } from '../V2CredentialPreview'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
-import { AnonymousSubject } from 'rxjs/internal/Subject'
-import { V2CredentialPreview } from '../V2CredentialPreview'
 
 let faberAgent: Agent
 let aliceAgent: Agent
