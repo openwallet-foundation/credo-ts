@@ -78,13 +78,13 @@ describe('credentials', () => {
 
     const testAttributes = {
       attributes: credentialPreview.attributes,
-      credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
       payload: {
         schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
         schemaName: 'ahoy',
         schemaVersion: '1.0',
         schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
         issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+        credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
       },
     }
     testLogger.test('Alice sends (v1) credential proposal to Faber')
@@ -227,18 +227,13 @@ describe('credentials', () => {
     })
     const testAttributes = {
       attributes: credentialPreview.attributes,
-      schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-      schemaName: 'ahoy',
-      schemaVersion: '1.0',
-      schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
-      issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-      credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
       payload: {
         schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
         schemaName: 'ahoy',
         schemaVersion: '1.0',
         schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
         issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+        credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
       },
     }
     testLogger.test('Alice sends (v2) credential proposal to Faber')

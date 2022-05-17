@@ -18,7 +18,6 @@ import type {
 } from '../../protocol'
 import type { V1CredentialPreview } from '../../protocol/v1/V1CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
-import type { CredPropose } from '../models/CredPropose'
 import type {
   FormatServiceCredentialAttachmentFormats,
   CredentialFormatSpec,
@@ -34,6 +33,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../../error'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
@@ -47,6 +47,7 @@ import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialMetadataKeys } from '../../repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
+import { CredPropose } from '../models/CredPropose'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyCredentialFormatService extends CredentialFormatService {
@@ -89,7 +90,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       throw new AriesFrameworkError('Missing payload in createProposal')
     }
 
-    const attachment: Attachment = this.getFormatData(options.credentialFormats.indy?.payload, formats.attachId)
+    let proposal: CredPropose = new CredPropose(options.credentialFormats.indy?.payload)
+    proposal = JsonTransformer.toJSON(proposal)
+
+    const attachment: Attachment = this.getFormatData(proposal, formats.attachId)
+
     const { previewWithAttachments } = this.getCredentialLinkedAttachments(options)
 
     return { format: formats, attachment, preview: previewWithAttachments }
@@ -99,7 +104,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     options: ServiceAcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<void> {
-    const credPropose = options.proposalAttachment?.getDataAsJson<CredPropose>()
+    let credPropose = options.proposalAttachment?.getDataAsJson<CredPropose>()
+    credPropose = JsonTransformer.fromJSON(credPropose, CredPropose)
+
     if (!credPropose) {
       throw new AriesFrameworkError('Missing indy credential proposal data payload')
     }
@@ -502,11 +509,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
 
   private areProposalAndOfferDefinitionIdEqual(proposalAttachment?: Attachment, offerAttachment?: Attachment) {
     const credOffer = offerAttachment?.getDataAsJson<CredOffer>()
-    const credPropose = proposalAttachment?.getDataAsJson<CredPropose>()
+    let credPropose = proposalAttachment?.getDataAsJson<CredPropose>()
+    credPropose = JsonTransformer.fromJSON(credPropose, CredPropose)
 
     const proposalCredentialDefinitionId = credPropose?.credentialDefinitionId
     const offerCredentialDefinitionId = credOffer?.cred_def_id
-
     return proposalCredentialDefinitionId === offerCredentialDefinitionId
   }
 
@@ -561,7 +568,8 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     proposeAttachment?: Attachment
   ) {
     const indyCredentialRequest = requestAttachment?.getDataAsJson<CredReq>()
-    const indyCredentialProposal = proposeAttachment?.getDataAsJson<CredPropose>()
+    let indyCredentialProposal = proposeAttachment?.getDataAsJson<CredPropose>()
+    indyCredentialProposal = JsonTransformer.fromJSON(indyCredentialProposal, CredPropose)
 
     const indyCredentialOffer = offerAttachment?.getDataAsJson<CredOffer>()
 

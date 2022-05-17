@@ -1078,7 +1078,6 @@ export class V2CredentialService extends CredentialService {
    */
   public getFormatsFromMessage(messageFormats: CredentialFormatSpec[]): CredentialFormatService[] {
     const formats: CredentialFormatService[] = []
-
     for (const msg of messageFormats) {
       if (msg.format.includes('indy')) {
         formats.push(this.getFormatService(CredentialFormatType.Indy))
