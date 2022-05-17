@@ -115,7 +115,7 @@ export class V2CredentialService extends CredentialService {
     if (!formats || formats.length === 0) {
       throw new AriesFrameworkError(`Unable to create proposal. No supported formats`)
     }
-    const { message: proposalMessage, credentialRecord } = this.credentialMessageBuilder.createProposal(
+    const { message: proposalMessage, credentialRecord } = await this.credentialMessageBuilder.createProposal(
       formats,
       proposal
     )
@@ -316,7 +316,7 @@ export class V2CredentialService extends CredentialService {
     if (!formats || formats.length === 0) {
       throw new AriesFrameworkError(`Unable to negotiate offer. No supported formats`)
     }
-    const { message: credentialProposalMessage } = this.credentialMessageBuilder.createProposal(formats, options)
+    const { message: credentialProposalMessage } = await this.credentialMessageBuilder.createProposal(formats, options)
     credentialProposalMessage.setThread({ threadId: credentialRecord.threadId })
 
     // Update record

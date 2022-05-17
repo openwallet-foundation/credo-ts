@@ -81,7 +81,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns object containing associated attachment, formats and filtersAttach elements
    *
    */
-  public createProposal(options: ProposeCredentialOptions): FormatServiceProposeAttachmentFormats {
+  public async createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats> {
     const formats: CredentialFormatSpec = {
       attachId: this.generateId(),
       format: 'hlindy/cred-filter@v2.0',
@@ -92,9 +92,16 @@ export class IndyCredentialFormatService extends CredentialFormatService {
 
     // Use class instance instead of interface, otherwise this causes interoperability problems
     let proposal = new CredPropose(options.credentialFormats.indy?.payload)
+
+    try {
+      await MessageValidator.validate(proposal)
+    } catch (error) {
+      throw new AriesFrameworkError(`Invalid credPropose class instance: ${proposal} in Indy Format Service`)
+    }
+
     proposal = JsonTransformer.toJSON(proposal)
 
-    const attachment: Attachment = this.getFormatData(proposal, formats.attachId)
+    const attachment = this.getFormatData(proposal, formats.attachId)
 
     const { previewWithAttachments } = this.getCredentialLinkedAttachments(options)
 
@@ -254,17 +261,20 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       })
     }
 
+    if (!options.credentialFormats.indy.attributes) {
+      throw new AriesFrameworkError('Missing attributes from credential proposal')
+    }
+
     if (options.credentialFormats.indy && options.credentialFormats.indy.linkedAttachments) {
       // there are linked attachments so transform into the attribute field of the CredentialPreview object for
       // this proposal
-      if (options.credentialFormats.indy.attributes) {
-        previewWithAttachments = CredentialUtils.createAndLinkAttachmentsToPreview(
-          options.credentialFormats.indy.linkedAttachments,
-          new V2CredentialPreview({
-            attributes: options.credentialFormats.indy.attributes,
-          })
-        )
-      }
+      previewWithAttachments = CredentialUtils.createAndLinkAttachmentsToPreview(
+        options.credentialFormats.indy.linkedAttachments,
+        new V2CredentialPreview({
+          attributes: options.credentialFormats.indy.attributes,
+        })
+      )
+
       attachments = options.credentialFormats.indy.linkedAttachments.map(
         (linkedAttachment) => linkedAttachment.attachment
       )
@@ -372,7 +382,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
 
     const attachmentId = options.attachId ? options.attachId : formats.attachId
-    const issueAttachment: Attachment = this.getFormatData(credential, attachmentId)
+    const issueAttachment = this.getFormatData(credential, attachmentId)
     return { format: formats, attachment: issueAttachment }
   }
   /**
