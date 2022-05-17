@@ -91,7 +91,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
 
     // Use class instance instead of interface, otherwise this causes interoperability problems
-    let proposal: CredPropose = new CredPropose(options.credentialFormats.indy?.payload)
+    let proposal = new CredPropose(options.credentialFormats.indy?.payload)
     proposal = JsonTransformer.toJSON(proposal)
 
     const attachment: Attachment = this.getFormatData(proposal, formats.attachId)
