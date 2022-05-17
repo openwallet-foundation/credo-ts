@@ -36,6 +36,7 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../../error'
 import { MessageValidator } from '../../../../utils/MessageValidator'
 import { uuid } from '../../../../utils/uuid'
+import { ConnectionsModule } from '../../../connections'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
@@ -47,7 +48,6 @@ import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialMetadataKeys } from '../../repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
-import { ConnectionsModule } from '../../../connections'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyCredentialFormatService extends CredentialFormatService {
@@ -494,7 +494,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (proposeMessageAttributes && credentialAttributes) {
       const proposeValues = CredentialUtils.convertAttributesToValues(proposeMessageAttributes)
       const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
-
 
       if (CredentialUtils.checkValuesMatch(proposeValues, defaultValues)) {
         return true

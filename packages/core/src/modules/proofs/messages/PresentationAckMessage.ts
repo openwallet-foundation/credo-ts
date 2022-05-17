@@ -1,7 +1,6 @@
 import type { AckMessageOptions } from '../../common'
 
-import { Equals } from 'class-validator'
-
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { AckMessage } from '../../common'
 
 export type PresentationAckMessageOptions = AckMessageOptions
@@ -14,7 +13,7 @@ export class PresentationAckMessage extends AckMessage {
     super(options)
   }
 
-  @Equals(PresentationAckMessage.type)
-  public readonly type = PresentationAckMessage.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/ack'
+  @IsValidMessageType(PresentationAckMessage.type)
+  public readonly type = PresentationAckMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/ack')
 }

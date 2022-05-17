@@ -1,10 +1,11 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 
 import { Expose } from 'class-transformer'
-import { Equals, IsOptional, IsString } from 'class-validator'
+import { IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface MessageDeliveryMessageOptions {
   id?: string
@@ -24,9 +25,9 @@ export class MessageDeliveryMessage extends AgentMessage {
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @Equals(MessageDeliveryMessage.type)
-  public readonly type = MessageDeliveryMessage.type
-  public static readonly type = 'https://didcomm.org/messagepickup/2.0/delivery'
+  @IsValidMessageType(MessageDeliveryMessage.type)
+  public readonly type = MessageDeliveryMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/2.0/delivery')
 
   @IsString()
   @IsOptional()

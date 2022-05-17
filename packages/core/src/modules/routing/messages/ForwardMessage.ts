@@ -1,8 +1,9 @@
 import { Expose } from 'class-transformer'
-import { Equals, IsObject, IsString } from 'class-validator'
+import { IsObject, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { EncryptedMessage } from '../../../types'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface ForwardMessageOptions {
   id?: string
@@ -29,9 +30,9 @@ export class ForwardMessage extends AgentMessage {
     }
   }
 
-  @Equals(ForwardMessage.type)
-  public readonly type = ForwardMessage.type
-  public static readonly type = 'https://didcomm.org/routing/1.0/forward'
+  @IsValidMessageType(ForwardMessage.type)
+  public readonly type = ForwardMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/routing/1.0/forward')
 
   @IsString()
   public to!: string

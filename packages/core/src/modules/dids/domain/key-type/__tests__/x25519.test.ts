@@ -1,7 +1,7 @@
 import { KeyType } from '../../../../../crypto'
-import { Key } from '../../../../../crypto/Key'
-import { Buffer, JsonTransformer, TypedArrayEncoder } from '../../../../../utils'
+import { JsonTransformer, TypedArrayEncoder, Buffer } from '../../../../../utils'
 import didKeyX25519Fixture from '../../../__tests__/__fixtures__/didKeyX25519.json'
+import { Key } from '../../Key'
 import { VerificationMethod } from '../../verificationMethod'
 import { keyDidX25519 } from '../x25519'
 
@@ -42,13 +42,6 @@ describe('x25519', () => {
     expect(didKey.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_X25519_BASE58_KEY))
     expect(didKey.keyType).toBe(KeyType.X25519)
     expect(didKey.prefixedPublicKey.equals(TEST_X25519_PREFIX_BYTES)).toBe(true)
-  })
-
-  it('should return a valid did:key did document for the did', async () => {
-    const key = Key.fromFingerprint(TEST_X25519_FINGERPRINT)
-    const didDocument = keyDidX25519.getDidDocument(TEST_X25519_DID, key)
-
-    expect(JsonTransformer.toJSON(didDocument)).toMatchObject(didKeyX25519Fixture)
   })
 
   it('should return a valid verification method', async () => {

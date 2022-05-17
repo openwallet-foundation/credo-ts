@@ -1,38 +1,48 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { ConnectionState } from '../src'
+import { DidExchangeState, HandshakeProtocol } from '../src'
 import { Agent } from '../src/agent/Agent'
+import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 
 import { getBaseConfig } from './helpers'
 
 describe('connections', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
+  let acmeAgent: Agent
 
   afterEach(async () => {
     await faberAgent.shutdown()
     await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
     await aliceAgent.wallet.delete()
+    await acmeAgent.shutdown()
+    await acmeAgent.wallet.delete()
   })
 
-  it('should be able to make multiple connections using a multi use invite', async () => {
+  it('one should be able to make multiple connections using a multi use invite', async () => {
     const faberConfig = getBaseConfig('Faber Agent Connections', {
       endpoints: ['rxjs:faber'],
     })
     const aliceConfig = getBaseConfig('Alice Agent Connections', {
       endpoints: ['rxjs:alice'],
     })
+    const acmeConfig = getBaseConfig('Acme Agent Connections', {
+      endpoints: ['rxjs:acme'],
+    })
 
     const faberMessages = new Subject<SubjectMessage>()
     const aliceMessages = new Subject<SubjectMessage>()
+    const acmeMessages = new Subject<SubjectMessage>()
     const subjectMap = {
       'rxjs:faber': faberMessages,
       'rxjs:alice': aliceMessages,
+      'rxjs:acme': acmeMessages,
     }
 
     faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
@@ -45,42 +55,46 @@ describe('connections', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const {
-      invitation,
-      connectionRecord: { id: faberConnectionId },
-    } = await faberAgent.connections.createConnection({
+    acmeAgent = new Agent(acmeConfig.config, acmeConfig.agentDependencies)
+    acmeAgent.registerInboundTransport(new SubjectInboundTransport(acmeMessages))
+    acmeAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    await acmeAgent.initialize()
+
+    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
+      handshakeProtocols: [HandshakeProtocol.Connections],
       multiUseInvitation: true,
     })
 
+    const invitation = faberOutOfBandRecord.outOfBandInvitation
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
-    // Create first connection
-    let aliceFaberConnection1 = await aliceAgent.connections.receiveInvitationFromUrl(invitationUrl)
-    aliceFaberConnection1 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection1.id)
-    expect(aliceFaberConnection1.state).toBe(ConnectionState.Complete)
+    // Receive invitation first time with alice agent
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
-    // Create second connection
-    let aliceFaberConnection2 = await aliceAgent.connections.receiveInvitationFromUrl(invitationUrl)
-    aliceFaberConnection2 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection2.id)
-    expect(aliceFaberConnection2.state).toBe(ConnectionState.Complete)
+    // Receive invitation second time with acme agent
+    let { connectionRecord: acmeFaberConnection } = await acmeAgent.oob.receiveInvitationFromUrl(invitationUrl, {
+      reuseConnection: false,
+    })
+    acmeFaberConnection = await acmeAgent.connections.returnWhenIsConnected(acmeFaberConnection!.id)
+    expect(acmeFaberConnection.state).toBe(DidExchangeState.Completed)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    let faberAliceConnection1 = await faberAgent.connections.getByThreadId(aliceFaberConnection1.threadId!)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    let faberAliceConnection2 = await faberAgent.connections.getByThreadId(aliceFaberConnection2.threadId!)
+    let faberAliceConnection = await faberAgent.connections.getByThreadId(aliceFaberConnection.threadId!)
+    let faberAcmeConnection = await faberAgent.connections.getByThreadId(acmeFaberConnection.threadId!)
 
-    faberAliceConnection1 = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection1.id)
-    faberAliceConnection2 = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection2.id)
+    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection.id)
+    faberAcmeConnection = await faberAgent.connections.returnWhenIsConnected(faberAcmeConnection.id)
 
-    expect(faberAliceConnection1).toBeConnectedWith(aliceFaberConnection1)
-    expect(faberAliceConnection2).toBeConnectedWith(aliceFaberConnection2)
+    expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+    expect(faberAcmeConnection).toBeConnectedWith(acmeFaberConnection)
 
-    const faberConnection = await faberAgent.connections.getById(faberConnectionId)
-    // Expect initial connection to still be in state invited
-    return expect(faberConnection.state).toBe(ConnectionState.Invited)
+    expect(faberAliceConnection.id).not.toBe(faberAcmeConnection.id)
+
+    return expect(faberOutOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
   })
 
-  it('create multiple connections with multi use invite without inbound transport', async () => {
+  xit('should be able to make multiple connections using a multi use invite', async () => {
     const faberMessages = new Subject<SubjectMessage>()
     const subjectMap = {
       'rxjs:faber': faberMessages,
@@ -102,28 +116,27 @@ describe('connections', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const {
-      invitation,
-      connectionRecord: { id: faberConnectionId },
-    } = await faberAgent.connections.createConnection({
+    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
+      handshakeProtocols: [HandshakeProtocol.Connections],
       multiUseInvitation: true,
     })
 
+    const invitation = faberOutOfBandRecord.outOfBandInvitation
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Create first connection
-    let aliceFaberConnection1 = await aliceAgent.connections.receiveInvitationFromUrl(invitationUrl)
-    aliceFaberConnection1 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection1.id)
-    expect(aliceFaberConnection1.state).toBe(ConnectionState.Complete)
+    let { connectionRecord: aliceFaberConnection1 } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    aliceFaberConnection1 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection1!.id)
+    expect(aliceFaberConnection1.state).toBe(DidExchangeState.Completed)
 
     // Create second connection
-    let aliceFaberConnection2 = await aliceAgent.connections.receiveInvitationFromUrl(invitationUrl)
-    aliceFaberConnection2 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection2.id)
-    expect(aliceFaberConnection2.state).toBe(ConnectionState.Complete)
+    let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl, {
+      reuseConnection: false,
+    })
+    aliceFaberConnection2 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection2!.id)
+    expect(aliceFaberConnection2.state).toBe(DidExchangeState.Completed)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     let faberAliceConnection1 = await faberAgent.connections.getByThreadId(aliceFaberConnection1.threadId!)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     let faberAliceConnection2 = await faberAgent.connections.getByThreadId(aliceFaberConnection2.threadId!)
 
     faberAliceConnection1 = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection1.id)
@@ -132,8 +145,8 @@ describe('connections', () => {
     expect(faberAliceConnection1).toBeConnectedWith(aliceFaberConnection1)
     expect(faberAliceConnection2).toBeConnectedWith(aliceFaberConnection2)
 
-    const faberConnection = await faberAgent.connections.getById(faberConnectionId)
-    // Expect initial connection to still be in state invited
-    return expect(faberConnection.state).toBe(ConnectionState.Invited)
+    expect(faberAliceConnection1.id).not.toBe(faberAliceConnection2.id)
+
+    return expect(faberOutOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
   })
 })

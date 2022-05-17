@@ -1,10 +1,11 @@
 import type { Attachment } from '../../../../../decorators/attachment/Attachment'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
-import { credDefIdRegex, indyDidRegex, schemaIdRegex, schemaVersionRegex } from '../../../../../utils'
+import { indyDidRegex, schemaIdRegex, schemaVersionRegex, credDefIdRegex } from '../../../../../utils'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { V1CredentialPreview } from '../V1CredentialPreview'
 
 export interface ProposeCredentialMessageOptions {
@@ -43,9 +44,9 @@ export class V1ProposeCredentialMessage extends AgentMessage {
     }
   }
 
-  @Equals(V1ProposeCredentialMessage.type)
-  public readonly type = V1ProposeCredentialMessage.type
-  public static readonly type = 'https://didcomm.org/issue-credential/1.0/propose-credential'
+  @IsValidMessageType(V1ProposeCredentialMessage.type)
+  public readonly type = V1ProposeCredentialMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/propose-credential')
 
   /**
    * Human readable information about this Credential Proposal,

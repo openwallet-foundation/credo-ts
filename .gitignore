@@ -10,6 +10,3 @@ logs.txt
 logs/
 packages/core/src/__tests__/genesis-von.txn
 lerna-debug.log
-runcredtests.sh
-runtests.sh
-runpktests.sh
