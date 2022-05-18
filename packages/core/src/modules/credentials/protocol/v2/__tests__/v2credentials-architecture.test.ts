@@ -111,7 +111,7 @@ describe('V2 Credential Architecture', () => {
       expect(formats.length).toBe(1) // for now will be added to with jsonld
       const messageBuilder: CredentialMessageBuilder = new CredentialMessageBuilder()
 
-      const v2Proposal = messageBuilder.createProposal(formats, multiFormatProposal)
+      const v2Proposal = await messageBuilder.createProposal(formats, multiFormatProposal)
 
       expect((await v2Proposal).message.formats.length).toBe(1)
       expect((await v2Proposal).message.formats[0].format).toEqual('hlindy/cred-filter@v2.0')
