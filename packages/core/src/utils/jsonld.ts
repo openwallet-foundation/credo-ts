@@ -20,7 +20,7 @@ export interface Proof extends JsonObject {
 export interface DocumentLoaderResult {
   contextUrl?: string | null
   documentUrl: string
-  document: JsonObject
+  document: Record<string, unknown>
 }
 
 export type DocumentLoader = (url: string) => Promise<DocumentLoaderResult>
