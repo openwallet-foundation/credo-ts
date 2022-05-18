@@ -6,6 +6,8 @@ declare module '@digitalcredentials/jsonld' {
   export const frame: (document: any, revealDocument: any, options?: any) => any
   export const canonize: (document: any, options?: any) => any
   export const expand: (document: any, options?: any) => any
+  export const getValues: (document: any, key: string) => any
+  export const addValue: (document: any, key: string, value: any) => void
 
   export interface DocumentLoaderResult {
     contextUrl?: string | null

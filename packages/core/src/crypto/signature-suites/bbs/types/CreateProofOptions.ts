@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
+import type { ProofPurpose } from '../../../../modules/vc/proof-purposes/ProofPurpose'
 import type { JsonObject } from '../../../../types'
 import type { DocumentLoader } from '../../../../utils'
-import type { ProofPurpose } from '../../JwsLinkedDataSignature'
 
 /**
  * Options for creating a proof
