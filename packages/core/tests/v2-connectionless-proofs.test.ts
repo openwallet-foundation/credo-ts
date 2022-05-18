@@ -32,6 +32,7 @@ import {
   waitForProofRecordSubject,
 } from './helpers'
 import testLogger from './logger'
+import { HandshakeProtocol } from '../src/modules/connections/models/HandshakeProtocol'
 
 describe('Present Proof', () => {
   let agents: Agent[]
@@ -233,19 +234,26 @@ describe('Present Proof', () => {
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const faberMediationInvitation = await mediatorAgent.connections.createConnection()
-    const aliceMediationInvitation = await mediatorAgent.connections.createConnection()
+    const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+      label: 'faber invitation',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
+
+    const aliceMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+      label: 'alice invitation',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
 
     const faberConfig = getBaseConfig(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: faberMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
     const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       // logger: new TestLogger(LogLevel.test),
-      mediatorConnectionsInvite: aliceMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 

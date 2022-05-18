@@ -1,11 +1,12 @@
 import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { uuid } from '../../../../../utils/uuid'
 import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
 
@@ -80,9 +81,9 @@ export class V2RequestPresentationMessage extends AgentMessage {
     return attachmentFormats
   }
 
-  @Equals(V2RequestPresentationMessage.type)
-  public readonly type = V2RequestPresentationMessage.type
-  public static readonly type = 'https://didcomm.org/present-proof/2.0/request-presentation'
+  @IsValidMessageType(V2RequestPresentationMessage.type)
+  public readonly type = V2RequestPresentationMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/2.0/request-presentation')
 
   @IsString()
   @IsOptional()

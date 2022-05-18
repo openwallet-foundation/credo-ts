@@ -1,15 +1,16 @@
 import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
+import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { V2_INDY_PRESENTATION_REQUEST } from '../../../formats/ProofFormats'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { ProofRequest } from '../../../formats/indy/models/ProofRequest'
 import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
+import { V2_INDY_PRESENTATION_REQUEST } from '../../../formats/ProofFormats'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 
 export interface RequestPresentationOptions {
   id?: string
@@ -35,9 +36,9 @@ export class V1RequestPresentationMessage extends AgentMessage {
     }
   }
 
-  @Equals(V1RequestPresentationMessage.type)
-  public readonly type = V1RequestPresentationMessage.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/request-presentation'
+  @IsValidMessageType(V1RequestPresentationMessage.type)
+  public readonly type = V1RequestPresentationMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/request-presentation')
 
   /**
    *  Provides some human readable information about this request for a presentation.

@@ -297,8 +297,8 @@ export class ProofsModule {
 
       await this.messageSender.sendMessageToService({
         message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
 
@@ -344,6 +344,10 @@ export class ProofsModule {
       proofRecord: record,
     })
 
+    const requestMessage = await service.findRequestMessage(record.id)
+
+    const presentationMessage = await service.findPresentationMessage(record.id)
+
     // Use connection if present
     if (proofRecord.connectionId) {
       const connection = await this.connectionService.getById(proofRecord.connectionId)
@@ -355,29 +359,25 @@ export class ProofsModule {
       await this.messageSender.sendMessage(outboundMessage)
     }
     // Use ~service decorator otherwise
-    else {
-      const requestMessage = await service.findRequestMessage(record.id)
+    else if (requestMessage?.service && presentationMessage?.service) {
+      const recipientService = presentationMessage?.service
+      const ourService =requestMessage.service
 
-      const presentationMessage = await service.findPresentationMessage(record.id)
-
-      if (requestMessage?.service && presentationMessage?.service) {
-        const recipientService = presentationMessage.service
-        const ourService = requestMessage.service
-
-        await this.messageSender.sendMessageToService({
-          message,
-          service: recipientService.toDidCommService(),
-          senderKey: ourService.recipientKeys[0],
-          returnRoute: true,
-        })
-      }
-      // Cannot send message without credentialId or ~service decorator
-      else {
-        throw new AriesFrameworkError(
-          `Cannot accept presentation without connectionId or ~service decorator on presentation message.`
-        )
-      }
+      await this.messageSender.sendMessageToService({
+        message,
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        returnRoute: true,
+      })
+    
     }
+    // Cannot send message without credentialId or ~service decorator
+    else {
+      throw new AriesFrameworkError(
+        `Cannot accept presentation without connectionId or ~service decorator on presentation message.`
+      )
+    }
+    
     return record
   }
 

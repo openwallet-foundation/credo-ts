@@ -8,7 +8,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { DidCommMessageRepository } from '../../../storage'
-import { ConnectionService, ConnectionState } from '../../connections'
+import { ConnectionService, DidExchangeState } from '../../connections'
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
@@ -39,7 +39,7 @@ const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCo
 
 const connection = getMockConnection({
   id: '123',
-  state: ConnectionState.Complete,
+  state: DidExchangeState.Completed,
 })
 
 const requestAttachment = new Attachment({

@@ -8,8 +8,9 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { ConnectionRepository, ConnectionState } from '../../connections'
+import { ConnectionRepository, DidExchangeState } from '../../connections'
 import { ConnectionService } from '../../connections/services/ConnectionService'
+import { DidRepository } from '../../dids/repository'
 import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../messages'
 import { MediationRole, MediationState } from '../models'
 import { MediationRecord, MediationRepository } from '../repository'
@@ -21,6 +22,9 @@ const MediationRepositoryMock = MediationRepository as jest.Mock<MediationReposi
 jest.mock('../../connections/repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 
+jest.mock('../../dids/repository/DidRepository')
+const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+
 jest.mock('../../../agent/EventEmitter')
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 
@@ -30,7 +34,7 @@ const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 const connectionImageUrl = 'https://example.com/image.png'
 
 const mockConnection = getMockConnection({
-  state: ConnectionState.Complete,
+  state: DidExchangeState.Completed,
 })
 
 describe('MediationRecipientService', () => {
@@ -41,6 +45,7 @@ describe('MediationRecipientService', () => {
 
   let wallet: Wallet
   let mediationRepository: MediationRepository
+  let didRepository: DidRepository
   let eventEmitter: EventEmitter
   let connectionService: ConnectionService
   let connectionRepository: ConnectionRepository
@@ -61,7 +66,8 @@ describe('MediationRecipientService', () => {
   beforeEach(async () => {
     eventEmitter = new EventEmitterMock()
     connectionRepository = new ConnectionRepositoryMock()
-    connectionService = new ConnectionService(wallet, config, connectionRepository, eventEmitter)
+    didRepository = new DidRepositoryMock()
+    connectionService = new ConnectionService(wallet, config, connectionRepository, didRepository, eventEmitter)
     mediationRepository = new MediationRepositoryMock()
     messageSender = new MessageSenderMock()
 

@@ -2,11 +2,12 @@ import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachm
 import type { IndyProof } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
+import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { V2_INDY_PRESENTATION } from '../../../formats/ProofFormats'
 import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
 
@@ -37,9 +38,9 @@ export class V1PresentationMessage extends AgentMessage {
     }
   }
 
-  @Equals(V1PresentationMessage.type)
-  public readonly type = V1PresentationMessage.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/presentation'
+  @IsValidMessageType(V1PresentationMessage.type)
+  public readonly type = V1PresentationMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/presentation')
 
   /**
    *  Provides some human readable information about this request for a presentation.

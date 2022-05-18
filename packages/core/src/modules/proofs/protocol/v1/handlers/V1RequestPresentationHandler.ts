@@ -110,8 +110,8 @@ export class V1RequestPresentationHandler implements Handler {
 
       return createOutboundServiceMessage({
         payload: message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
       })
     }
 
