@@ -132,9 +132,6 @@ export class CredentialMessageBuilder {
 
     for (const formatService of formatServices) {
       const { attachment: offersAttach, preview, format } = await formatService.createOffer(options)
-      if (offersAttach === undefined) {
-        throw new AriesFrameworkError('offersAttach not initialized for credential offer')
-      }
       if (offersAttach) {
         offersAttachArray.push(offersAttach)
       } else {

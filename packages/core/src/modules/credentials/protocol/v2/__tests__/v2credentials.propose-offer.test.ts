@@ -119,7 +119,6 @@ describe('credentials', () => {
           attributes: credentialPreview.attributes,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V2,
     }
 
     testLogger.test('Faber sends credential offer to Alice')
@@ -278,7 +277,6 @@ describe('credentials', () => {
           attributes: credentialPreview.attributes,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V2,
     }
     testLogger.test('Faber sends credential offer to Alice')
     await faberAgent.credentials.acceptProposal(options)
@@ -645,7 +643,6 @@ describe('credentials', () => {
           attributes: credentialPreview.attributes,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V2,
     }
 
     testLogger.test('Faber sends credential offer to Alice')
