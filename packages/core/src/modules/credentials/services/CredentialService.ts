@@ -6,6 +6,7 @@ import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { DidCommMessageRepository } from '../../../storage'
+import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import type { MediationRecipientService } from '../../routing'
 import type { CredentialStateChangedEvent } from './../CredentialEvents'
 import type { CredentialProtocolVersion } from './../CredentialProtocolVersion'
@@ -91,7 +92,10 @@ export abstract class CredentialService {
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for offer
-  abstract createOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract createOffer(
+    options: OfferCredentialOptions,
+    connection?: ConnectionRecord
+  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
 
   abstract createOutOfBandOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>

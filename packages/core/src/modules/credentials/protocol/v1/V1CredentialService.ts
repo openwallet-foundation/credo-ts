@@ -487,13 +487,9 @@ export class V1CredentialService extends CredentialService {
    *
    */
   public async createOffer(
-    credentialOptions: OfferCredentialOptions
+    credentialOptions: OfferCredentialOptions,
+    connection?: ConnectionRecord
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
-    if (!credentialOptions.connectionId) {
-      throw new AriesFrameworkError('Connection id missing from offer credential options')
-    }
-    const connection = await this.connectionService.getById(credentialOptions.connectionId)
-
     if (
       !credentialOptions?.credentialFormats.indy?.attributes ||
       !credentialOptions?.credentialFormats.indy?.credentialDefinitionId

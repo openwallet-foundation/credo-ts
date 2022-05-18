@@ -143,13 +143,9 @@ describe('CredentialService', () => {
     })
 
     test(`creates credential record in ${CredentialState.OfferSent} state with offer, thread ID`, async () => {
-      // given
-      // agent = new Agent(config, dependencies)
-      // await agent.initialize()
-      // expect(agent.isInitialized).toBe(true)
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
 
-      await credentialService.createOffer(offerOptions)
+      await credentialService.createOffer(offerOptions, connection)
 
       // then
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1)
@@ -169,7 +165,7 @@ describe('CredentialService', () => {
       const eventListenerMock = jest.fn()
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
-      await credentialService.createOffer(offerOptions)
+      await credentialService.createOffer(offerOptions, connection)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
@@ -183,7 +179,7 @@ describe('CredentialService', () => {
     })
 
     test('returns credential offer message', async () => {
-      const { message: credentialOffer } = await credentialService.createOffer(offerOptions)
+      const { message: credentialOffer } = await credentialService.createOffer(offerOptions, connection)
 
       expect(credentialOffer.toJSON()).toMatchObject({
         '@id': expect.any(String),
@@ -231,7 +227,7 @@ describe('CredentialService', () => {
           },
         },
       }
-      expect(credentialService.createOffer(offerOptions)).rejects.toThrowError(
+      expect(credentialService.createOffer(offerOptions, connection)).rejects.toThrowError(
         `The credential preview attributes do not match the schema attributes (difference is: test,error,name,age, needs: name,age)`
       )
       const credentialPreviewWithExtra = V2CredentialPreview.fromRecord({
@@ -250,7 +246,7 @@ describe('CredentialService', () => {
           },
         },
       }
-      expect(credentialService.createOffer(offerOptions)).rejects.toThrowError(
+      expect(credentialService.createOffer(offerOptions, connection)).rejects.toThrowError(
         `The credential preview attributes do not match the schema attributes (difference is: test,error, needs: name,age)`
       )
     })

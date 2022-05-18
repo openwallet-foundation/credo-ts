@@ -2,6 +2,7 @@ import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { ConnectionRecord } from '../../../connections/repository/ConnectionRecord'
 import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
   ServiceAcceptCredentialOptions,
@@ -339,13 +340,9 @@ export class V2CredentialService extends CredentialService {
    *
    */
   public async createOffer(
-    options: OfferCredentialOptions
+    options: OfferCredentialOptions,
+    connection?: ConnectionRecord
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
-    if (!options.connectionId) {
-      throw new AriesFrameworkError('Connection id missing from offer credential options')
-    }
-    const connection = await this.connectionService.getById(options.connectionId)
-
     connection?.assertReady()
 
     const formats: CredentialFormatService[] = this.getFormats(options.credentialFormats)

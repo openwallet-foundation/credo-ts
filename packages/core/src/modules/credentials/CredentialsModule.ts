@@ -354,7 +354,8 @@ export class CredentialsModule implements CredentialsModule {
     const service = this.getService(options.protocolVersion)
 
     this.logger.debug(`Got a CredentialService object for version ${options.protocolVersion}`)
-    const { message, credentialRecord } = await service.createOffer(options)
+
+    const { message, credentialRecord } = await service.createOffer(options, connection)
 
     this.logger.debug('Offer Message successfully created; message= ', message)
     const outboundMessage = createOutboundMessage(connection, message)
