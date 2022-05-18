@@ -78,13 +78,13 @@ describe('credentials', () => {
 
     const testAttributes = {
       attributes: credentialPreview.attributes,
-      credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
       payload: {
         schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
         schemaName: 'ahoy',
         schemaVersion: '1.0',
         schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
         issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+        credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
       },
     }
     testLogger.test('Alice sends (v1) credential proposal to Faber')
@@ -227,18 +227,13 @@ describe('credentials', () => {
     })
     const testAttributes = {
       attributes: credentialPreview.attributes,
-      schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-      schemaName: 'ahoy',
-      schemaVersion: '1.0',
-      schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
-      issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-      credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
       payload: {
         schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
         schemaName: 'ahoy',
         schemaVersion: '1.0',
         schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
         issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+        credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
       },
     }
     testLogger.test('Alice sends (v2) credential proposal to Faber')
@@ -380,6 +375,36 @@ describe('credentials', () => {
     } else {
       throw new AriesFrameworkError('Missing Connection Id')
     }
+  })
+
+  test('Ensure missing attributes are caught if absent from in V2 (Indy) Proposal Message', async () => {
+    // Note missing attributes...
+    const testAttributes = {
+      payload: {
+        schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+        schemaName: 'ahoy',
+        schemaVersion: '1.0',
+        schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
+        issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+        credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
+      },
+    }
+    testLogger.test('Alice sends (v2) credential proposal to Faber')
+    // set the propose options
+    // we should set the version to V1.0 and V2.0 in separate tests, one as a regression test
+    const proposeOptions: ProposeCredentialOptions = {
+      connectionId: aliceConnection.id,
+      protocolVersion: CredentialProtocolVersion.V2,
+      credentialFormats: {
+        indy: testAttributes,
+      },
+      comment: 'v2 propose credential test',
+    }
+    testLogger.test('Alice sends (v2, Indy) credential proposal to Faber')
+
+    await expect(aliceAgent.credentials.proposeCredential(proposeOptions)).rejects.toThrow(
+      'Missing attributes from credential proposal'
+    )
   })
 
   test('Faber Issues Credential which is then deleted from Alice`s wallet', async () => {
