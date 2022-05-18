@@ -8,6 +8,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
+import { HandshakeProtocol } from '../src/modules/connections/models/HandshakeProtocol'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/V1CredentialPreview'
 import {
   PredicateType,
@@ -32,7 +33,6 @@ import {
   waitForProofRecordSubject,
 } from './helpers'
 import testLogger from './logger'
-import { HandshakeProtocol } from '../src/modules/connections/models/HandshakeProtocol'
 
 describe('Present Proof', () => {
   let agents: Agent[]
@@ -246,14 +246,18 @@ describe('Present Proof', () => {
 
     const faberConfig = getBaseConfig(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+        domain: 'https://example.com',
+      }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
     const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       // logger: new TestLogger(LogLevel.test),
-      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+        domain: 'https://example.com',
+      }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import {
+import type {
   AutoAcceptProof,
   BasicMessage,
   BasicMessageStateChangedEvent,
@@ -12,7 +12,6 @@ import {
   SchemaTemplate,
   ProofPredicateInfo,
   ProofAttributeInfo,
-  ProofProtocolVersion,
 } from '../src'
 import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
 import type { CredentialOfferTemplate } from '../src/modules/credentials/protocol'
@@ -28,6 +27,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
+  ProofProtocolVersion,
   HandshakeProtocol,
   DidExchangeState,
   DidExchangeRole,
@@ -53,11 +53,15 @@ import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
+import {
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
+} from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
-import { PresentationPreview, PresentationPreviewAttribute, PresentationPreviewPredicate } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)

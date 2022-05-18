@@ -361,7 +361,7 @@ export class ProofsModule {
     // Use ~service decorator otherwise
     else if (requestMessage?.service && presentationMessage?.service) {
       const recipientService = presentationMessage?.service
-      const ourService =requestMessage.service
+      const ourService = requestMessage.service
 
       await this.messageSender.sendMessageToService({
         message,
@@ -369,7 +369,6 @@ export class ProofsModule {
         senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
-    
     }
     // Cannot send message without credentialId or ~service decorator
     else {
@@ -377,7 +376,7 @@ export class ProofsModule {
         `Cannot accept presentation without connectionId or ~service decorator on presentation message.`
       )
     }
-    
+
     return record
   }
 
