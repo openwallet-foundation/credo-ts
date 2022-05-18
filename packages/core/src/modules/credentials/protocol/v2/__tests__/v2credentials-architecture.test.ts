@@ -113,8 +113,8 @@ describe('V2 Credential Architecture', () => {
 
       const v2Proposal = await messageBuilder.createProposal(formats, multiFormatProposal)
 
-      expect((await v2Proposal).message.formats.length).toBe(1)
-      expect((await v2Proposal).message.formats[0].format).toEqual('hlindy/cred-filter@v2.0')
+      expect(v2Proposal.message.formats.length).toBe(1)
+      expect(v2Proposal.message.formats[0].format).toEqual('hlindy/cred-filter@v2.0')
       // expect(v2Proposal.message.formats[1].format).toEqual('aries/ld-proof-vc-detail@v1.0')
     })
   })
