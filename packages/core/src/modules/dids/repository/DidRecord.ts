@@ -17,7 +17,7 @@ export interface DidRecordProps {
 }
 
 interface CustomDidTags extends TagsBase {
-  recipientKeys?: string[]
+  recipientKeyFingerprints?: string[]
 }
 
 type DefaultDidTags = {

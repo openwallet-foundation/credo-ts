@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { IndyPostgresStorageConfig } from '../../node/src'
 import type { ConnectionRecord } from '../src/modules/connections'
@@ -8,6 +9,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { loadPostgresPlugin, WalletScheme } from '../../node/src'
 import { Agent } from '../src/agent/Agent'
+import { HandshakeProtocol } from '../src/modules/connections'
 
 import { waitForBasicMessage, getBasePostgresConfig } from './helpers'
 
@@ -67,11 +69,17 @@ describe('postgres agents', () => {
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()
-    const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(aliceConnectionAtAliceBob.invitation)
+    const aliceBobOutOfBandRecord = await aliceAgent.oob.createInvitation({
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
 
-    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob.connectionRecord.id)
-    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id)
+    const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveInvitation(
+      aliceBobOutOfBandRecord.outOfBandInvitation
+    )
+    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
+
+    const [aliceConnectionAtAliceBob] = await aliceAgent.connections.findAllByOutOfBandId(aliceBobOutOfBandRecord.id)
+    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob!.id)
 
     expect(aliceConnection).toBeConnectedWith(bobConnection)
     expect(bobConnection).toBeConnectedWith(aliceConnection)
