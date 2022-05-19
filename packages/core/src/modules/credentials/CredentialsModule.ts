@@ -356,7 +356,7 @@ export class CredentialsModule implements CredentialsModule {
     this.logger.debug(`Got a CredentialService object for version ${options.protocolVersion}`)
 
     // pass the connection in rather than leave it to the service layer to get the connection
-    const { message, credentialRecord } = await service.createOffer(options, connection)
+    const { message, credentialRecord } = await service.createOffer({ ...options, connection })
 
     this.logger.debug('Offer Message successfully created; message= ', message)
     const outboundMessage = createOutboundMessage(connection, message)
