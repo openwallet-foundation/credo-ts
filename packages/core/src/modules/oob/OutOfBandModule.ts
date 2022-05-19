@@ -283,15 +283,19 @@ export class OutOfBandModule {
    *
    * Agent role: receiver (invitee)
    *
-   * @param outOfBandInvitation
+   * @param invitation either OutOfBandInvitation or ConnectionInvitationMessage
    * @param config config for handling of invitation
    *
    * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveInvitation(
-    outOfBandInvitation: OutOfBandInvitation,
+    invitation: OutOfBandInvitation | ConnectionInvitationMessage,
     config: ReceiveOutOfBandInvitationConfig = {}
   ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
+    // Convert to out of band invitation if needed
+    const outOfBandInvitation =
+      invitation instanceof OutOfBandInvitation ? invitation : convertToNewInvitation(invitation)
+
     const { handshakeProtocols } = outOfBandInvitation
     const { routing } = config
 
