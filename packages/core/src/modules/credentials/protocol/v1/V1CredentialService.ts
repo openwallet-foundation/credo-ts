@@ -42,6 +42,7 @@ import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialState } from '../../CredentialState'
 import { CredentialUtils } from '../../CredentialUtils'
+import { composeAutoAccept } from '../../composeAutoAccept'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord } from '../../repository'
@@ -67,7 +68,6 @@ import {
   V1OfferCredentialMessage,
   V1CredentialAckMessage,
 } from './messages'
-import { composeAutoAccept } from '../../composeAutoAccept'
 
 @scoped(Lifecycle.ContainerScoped)
 export class V1CredentialService extends CredentialService {
