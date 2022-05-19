@@ -33,13 +33,13 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
-import { composeAutoAccept } from '../../../../utils/composeAutoAccept'
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialUtils } from '../../CredentialUtils'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
+import { composeAutoAccept } from '../../composeAutoAccept'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialMetadataKeys } from '../../repository/CredentialMetadataTypes'
@@ -145,7 +145,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   public async createOffer(options: ServiceOfferCredentialOptions): Promise<FormatServiceOfferAttachmentFormats> {
     const formats = new CredentialFormatSpec({
       attachId: this.generateId(),
-      format: 'hlindy/cred-filter@v2.0',
+      format: 'hlindy/cred-abstract@v2.0',
     })
     const offer = await this.createCredentialOffer(options)
 
@@ -216,7 +216,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
 
     const formats = new CredentialFormatSpec({
       attachId: this.generateId(),
-      format: 'hlindy/cred-filter@v2.0',
+      format: 'hlindy/cred-req@v2.0',
     })
 
     const attachmentId = options.attachId ?? formats.attachId
@@ -382,7 +382,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
 
     const formats = new CredentialFormatSpec({
       attachId: this.generateId(),
-      format: 'hlindy/cred-filter@v2.0',
+      format: 'hlindy/cred-abstract@v2.0',
     })
 
     const attachmentId = options.attachId ? options.attachId : formats.attachId

@@ -34,7 +34,6 @@ import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorato
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 import { isLinkedAttachment } from '../../../../utils/attachment'
-import { composeAutoAccept } from '../../../../utils/composeAutoAccept'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services'
 import { MediationRecipientService } from '../../../routing'
@@ -68,6 +67,7 @@ import {
   V1OfferCredentialMessage,
   V1CredentialAckMessage,
 } from './messages'
+import { composeAutoAccept } from '../../composeAutoAccept'
 
 @scoped(Lifecycle.ContainerScoped)
 export class V1CredentialService extends CredentialService {
