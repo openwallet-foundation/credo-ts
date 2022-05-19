@@ -312,10 +312,7 @@ describe('out of band', () => {
     })
 
     test('make a connection based on old connection invitation encoded in URL', async () => {
-      const { outOfBandRecord, invitation } = await faberAgent.oob.createLegacyInvitation({
-        ...makeConnectionConfig,
-        handshakeProtocols: [HandshakeProtocol.Connections],
-      })
+      const { outOfBandRecord, invitation } = await faberAgent.oob.createLegacyInvitation(makeConnectionConfig)
       const urlMessage = invitation.toUrl({ domain: 'http://example.com' })
 
       let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)

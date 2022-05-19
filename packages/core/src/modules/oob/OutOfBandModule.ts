@@ -58,6 +58,15 @@ export interface CreateOutOfBandInvitationConfig {
   routing?: Routing
 }
 
+export interface CreateLegacyInvitationConfig {
+  label?: string
+  alias?: string
+  imageUrl?: string
+  multiUseInvitation?: boolean
+  autoAcceptConnection?: boolean
+  routing?: Routing
+}
+
 export interface ReceiveOutOfBandInvitationConfig {
   label?: string
   alias?: string
@@ -216,28 +225,15 @@ export class OutOfBandModule {
    *
    * Agent role: sender (inviter)
    *
-   * @param config configuration of how out-of-band invitation should be created
+   * @param config configuration of how connection invitation should be created
    * @returns out-of-band record and connection invitation
    */
-  public async createLegacyInvitation(config: CreateOutOfBandInvitationConfig = {}) {
-    if (config.handshake === false) {
-      throw new AriesFrameworkError(
-        `Invalid value of handshake in config. Value is ${config.handshake}, but this method supports only 'true' or 'undefined'.`
-      )
-    }
-    if (
-      !config.handshakeProtocols ||
-      (config.handshakeProtocols?.length === 1 && config.handshakeProtocols.includes(HandshakeProtocol.Connections))
-    ) {
-      const outOfBandRecord = await this.createInvitation({
-        ...config,
-        handshakeProtocols: [HandshakeProtocol.Connections],
-      })
-      return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
-    }
-    throw new AriesFrameworkError(
-      `Invalid value of handshakeProtocols in config. Value is ${config.handshakeProtocols}, but this method supports only ${HandshakeProtocol.Connections}.`
-    )
+  public async createLegacyInvitation(config: CreateLegacyInvitationConfig = {}) {
+    const outOfBandRecord = await this.createInvitation({
+      ...config,
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
+    return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
   }
 
   /**
