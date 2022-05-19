@@ -29,16 +29,15 @@ describe('Present Proof', () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
       await setupProofsTest('Faber agent', 'Alice agent'))
+    testLogger.test('Issuing second credential')
   })
 
   afterAll(async () => {
     testLogger.test('Shutting down both agents')
-    await aliceAgent.shutdown({
-      deleteWallet: true,
-    })
-    await faberAgent.shutdown({
-      deleteWallet: true,
-    })
+    await faberAgent.shutdown()
+    await faberAgent.wallet.delete()
+    await aliceAgent.shutdown()
+    await aliceAgent.wallet.delete()
   })
 
   test('Alice starts with proof proposal to Faber', async () => {
@@ -54,7 +53,7 @@ describe('Present Proof', () => {
     })
 
     expect(JsonTransformer.toJSON(aliceProofRecord)).toMatchObject({
-      createdAt: expect.any(Date),
+      createdAt: expect.any(String),
       id: expect.any(String),
       proposalMessage: {
         '@type': 'https://didcomm.org/present-proof/1.0/propose-presentation',
@@ -107,9 +106,8 @@ describe('Present Proof', () => {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
     })
-
     expect(JsonTransformer.toJSON(faberProofRecord)).toMatchObject({
-      createdAt: expect.any(Date),
+      createdAt: expect.any(String),
       state: ProofState.PresentationReceived,
       isVerified: true,
       presentationMessage: {
@@ -237,7 +235,7 @@ describe('Present Proof', () => {
 
     expect(JsonTransformer.toJSON(aliceProofRecord)).toMatchObject({
       id: expect.any(String),
-      createdAt: expect.any(Date),
+      createdAt: expect.any(String),
       requestMessage: {
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/present-proof/1.0/request-presentation',
@@ -280,7 +278,7 @@ describe('Present Proof', () => {
             mimeType: 'application/json',
           },
         ],
-        attachments: [
+        appendedAttachments: [
           {
             id: 'zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
             filename: 'picture-of-a-cat.png',
@@ -332,5 +330,41 @@ describe('Present Proof', () => {
       requestMessage: expect.any(RequestPresentationMessage),
       presentationMessage: expect.any(PresentationMessage),
     })
+  })
+
+  test('an attribute group name matches with a predicate group name so an error is thrown', async () => {
+    // Age attribute
+    const attributes = {
+      age: new ProofAttributeInfo({
+        name: 'age',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    // Age predicate
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    await expect(
+      faberAgent.proofs.requestProof(faberConnection.id, {
+        name: 'test-proof-request',
+        requestedAttributes: attributes,
+        requestedPredicates: predicates,
+      })
+    ).rejects.toThrowError(`The proof request contains duplicate items: age`)
   })
 })

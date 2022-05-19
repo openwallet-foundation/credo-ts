@@ -11,4 +11,15 @@ export class ConnectionRepository extends Repository<ConnectionRecord> {
   public constructor(@inject(InjectionSymbols.StorageService) storageService: StorageService<ConnectionRecord>) {
     super(ConnectionRecord, storageService)
   }
+
+  public async findByDids({ ourDid, theirDid }: { ourDid: string; theirDid: string }) {
+    return this.findSingleByQuery({
+      did: ourDid,
+      theirDid,
+    })
+  }
+
+  public getByThreadId(threadId: string): Promise<ConnectionRecord> {
+    return this.getSingleByQuery({ threadId })
+  }
 }

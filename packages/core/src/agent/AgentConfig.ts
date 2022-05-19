@@ -10,7 +10,6 @@ import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
 import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
 import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
-import { MediatorPickupStrategy } from '../modules/routing/MediatorPickupStrategy'
 import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
@@ -38,6 +37,10 @@ export class AgentConfig {
         `Only one of 'mediatorConnectionsInvite', 'clearDefaultMediator' and 'defaultMediatorId' can be set as they negate each other`
       )
     }
+  }
+
+  public get connectToIndyLedgersOnStartup() {
+    return this.initConfig.connectToIndyLedgersOnStartup ?? true
   }
 
   public get publicDidSeed() {
@@ -73,7 +76,11 @@ export class AgentConfig {
   }
 
   public get mediatorPickupStrategy() {
-    return this.initConfig.mediatorPickupStrategy ?? MediatorPickupStrategy.Explicit
+    return this.initConfig.mediatorPickupStrategy
+  }
+
+  public get maximumMessagePickup() {
+    return this.initConfig.maximumMessagePickup ?? 10
   }
 
   public get endpoints(): [string, ...string[]] {
@@ -108,5 +115,9 @@ export class AgentConfig {
 
   public get connectionImageUrl() {
     return this.initConfig.connectionImageUrl
+  }
+
+  public get autoUpdateStorageOnStartup() {
+    return this.initConfig.autoUpdateStorageOnStartup ?? false
   }
 }

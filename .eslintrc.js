@@ -31,7 +31,9 @@ module.exports = {
     'no-console': 'error',
     '@typescript-eslint/ban-ts-comment': 'warn',
     '@typescript-eslint/consistent-type-imports': 'error',
+    '@typescript-eslint/no-floating-promises': 'error',
     'import/no-cycle': 'error',
+    'import/newline-after-import': ['error', { count: 1 }],
     'import/order': [
       'error',
       {
@@ -42,14 +44,38 @@ module.exports = {
         'newlines-between': 'always',
       },
     ],
+    '@typescript-eslint/no-non-null-assertion': 'error',
     'import/no-extraneous-dependencies': [
       'error',
       {
         devDependencies: false,
       },
     ],
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: ['packages/*'],
+      },
+    ],
   },
   overrides: [
+    {
+      files: ['packages/core/**'],
+      rules: {
+        'no-restricted-globals': [
+          'error',
+          {
+            name: 'Buffer',
+            message: 'Global buffer is not supported on all platforms. Import buffer from `src/utils/buffer`',
+          },
+          {
+            name: 'AbortController',
+            message:
+              "Global AbortController is not supported on all platforms. Use `import { AbortController } from 'abort-controller'`",
+          },
+        ],
+      },
+    },
     {
       files: ['jest.config.ts', '.eslintrc.js'],
       env: {
@@ -57,7 +83,13 @@ module.exports = {
       },
     },
     {
-      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts', 'samples/**'],
+      files: ['demo/**'],
+      rules: {
+        'no-console': 'off',
+      },
+    },
+    {
+      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts', 'samples/**', 'demo/**'],
       env: {
         jest: true,
         node: false,

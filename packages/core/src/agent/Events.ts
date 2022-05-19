@@ -15,6 +15,7 @@ export interface AgentMessageReceivedEvent extends BaseEvent {
   type: typeof AgentEventTypes.AgentMessageReceived
   payload: {
     message: unknown
+    connection?: ConnectionRecord
   }
 }
 

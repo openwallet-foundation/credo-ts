@@ -43,7 +43,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
     const config = getAgentConfig('SignatureDecoratorUtilsTest')
     wallet = new IndyWallet(config)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(config.walletConfig!)
+    await wallet.createAndOpen(config.walletConfig!)
   })
 
   afterAll(async () => {
@@ -76,7 +76,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
     try {
       await unpackAndVerifySignatureDecorator(wronglySignedData, wallet)
     } catch (error) {
-      expect(error.message).toEqual('Signature is not valid!')
+      expect(error.message).toEqual('Signature is not valid')
     }
   })
 })

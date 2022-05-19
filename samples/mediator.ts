@@ -13,6 +13,7 @@
  */
 
 import type { InitConfig } from '@aries-framework/core'
+import type { Socket } from 'net'
 
 import express from 'express'
 import { Server } from 'ws'
@@ -74,10 +75,9 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
     const invitation = await ConnectionInvitationMessage.fromUrl(req.url)
     res.send(invitation.toJSON())
   } else {
-    const { invitation } = await agent.connections.createConnection()
-
+    const { outOfBandInvitation } = await agent.oob.createInvitation()
     const httpEndpoint = config.endpoints.find((e) => e.startsWith('http'))
-    res.send(invitation.toUrl({ domain: httpEndpoint + '/invitation' }))
+    res.send(outOfBandInvitation.toUrl({ domain: httpEndpoint + '/invitation' }))
   }
 })
 
@@ -87,10 +87,10 @@ const run = async () => {
   // When an 'upgrade' to WS is made on our http server, we forward the
   // request to the WS server
   httpInboundTransport.server?.on('upgrade', (request, socket, head) => {
-    socketServer.handleUpgrade(request, socket, head, (socket) => {
+    socketServer.handleUpgrade(request, socket as Socket, head, (socket) => {
       socketServer.emit('connection', socket, request)
     })
   })
 }
 
-run()
+void run()

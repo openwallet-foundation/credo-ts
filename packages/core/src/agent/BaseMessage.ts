@@ -1,3 +1,4 @@
+import type { ParsedMessageType } from '../utils/messageType'
 import type { Constructor } from '../utils/mixins'
 
 import { Expose } from 'class-transformer'
@@ -18,7 +19,7 @@ export class BaseMessage {
   @Expose({ name: '@type' })
   @Matches(MessageTypeRegExp)
   public readonly type!: string
-  public static readonly type: string
+  public static readonly type: ParsedMessageType
 
   public generateId() {
     return uuid()

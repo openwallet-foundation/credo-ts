@@ -2,6 +2,11 @@
 
 This file is intended for developers working on the internals of the framework. If you're just looking how to get started with the framework, see the [docs](./docs)
 
+## Installing dependencies
+
+Right now, as a patch that will later be changed, some platforms will have an "error" when installing the dependencies with yarn. This is because the BBS signatures library that we use is built for Linux x86 and MacOS x86 (and not Windows and MacOS arm). This means that it will show that it could not download the binary.
+This is not an error for developers, the library that fails is `node-bbs-signaturs` and is an optional dependency for perfomance improvements. It will fallback to a, slower, wasm build.
+
 ## Running tests
 
 Test are executed using jest. Some test require either the **mediator agents** or the **ledger** to be running. When running tests that require a connection to the ledger pool, you need to set the `TEST_AGENT_PUBLIC_DID_SEED` and `GENESIS_TXN_PATH` environment variables.
@@ -25,6 +30,9 @@ For testing we've added a setup to this repo that allows you to quickly setup an
 ```sh
 # Build indy pool
 docker build -f network/indy-pool.dockerfile -t indy-pool . --platform linux/amd64
+
+# NOTE: If you are on an ARM (M1) mac use the `network/indy-pool-arm.dockerfile` instead
+# docker build -f network/indy-pool-arm.dockerfile -t indy-pool . --platform linux/arm64/v8
 
 # Start indy pool
 docker run -d --rm --name indy-pool -p 9701-9708:9701-9708 indy-pool

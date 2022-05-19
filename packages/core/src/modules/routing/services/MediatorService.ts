@@ -1,5 +1,5 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { WireMessage } from '../../../types'
+import type { EncryptedMessage } from '../../../types'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
 import type { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage } from '../messages'
 
@@ -80,7 +80,7 @@ export class MediatorService {
 
   public async processForwardMessage(
     messageContext: InboundMessageContext<ForwardMessage>
-  ): Promise<{ mediationRecord: MediationRecord; packedMessage: WireMessage }> {
+  ): Promise<{ mediationRecord: MediationRecord; encryptedMessage: EncryptedMessage }> {
     const { message } = messageContext
 
     // TODO: update to class-validator validation
@@ -92,9 +92,10 @@ export class MediatorService {
 
     // Assert mediation record is ready to be used
     mediationRecord.assertReady()
+    mediationRecord.assertRole(MediationRole.Mediator)
 
     return {
-      packedMessage: message.message,
+      encryptedMessage: message.message,
       mediationRecord,
     }
   }
@@ -108,6 +109,9 @@ export class MediatorService {
 
     const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
 
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(MediationRole.Mediator)
+
     for (const update of message.updates) {
       const updated = new KeylistUpdated({
         action: update.action,
@@ -115,47 +119,20 @@ export class MediatorService {
         result: KeylistUpdateResult.NoChange,
       })
       if (update.action === KeylistUpdateAction.add) {
-        updated.result = await this.saveRoute(update.recipientKey, mediationRecord)
+        mediationRecord.addRecipientKey(update.recipientKey)
+        updated.result = KeylistUpdateResult.Success
+
         keylist.push(updated)
       } else if (update.action === KeylistUpdateAction.remove) {
-        updated.result = await this.removeRoute(update.recipientKey, mediationRecord)
+        const success = mediationRecord.removeRecipientKey(update.recipientKey)
+        updated.result = success ? KeylistUpdateResult.Success : KeylistUpdateResult.NoChange
         keylist.push(updated)
       }
     }
 
+    await this.mediationRepository.update(mediationRecord)
+
     return new KeylistUpdateResponseMessage({ keylist, threadId: message.threadId })
-  }
-
-  public async saveRoute(recipientKey: string, mediationRecord: MediationRecord) {
-    try {
-      mediationRecord.recipientKeys.push(recipientKey)
-      this.mediationRepository.update(mediationRecord)
-      return KeylistUpdateResult.Success
-    } catch (error) {
-      this.agentConfig.logger.error(
-        `Error processing keylist update action for verkey '${recipientKey}' and mediation record '${mediationRecord.id}'`
-      )
-      return KeylistUpdateResult.ServerError
-    }
-  }
-
-  public async removeRoute(recipientKey: string, mediationRecord: MediationRecord) {
-    try {
-      const index = mediationRecord.recipientKeys.indexOf(recipientKey, 0)
-      if (index > -1) {
-        mediationRecord.recipientKeys.splice(index, 1)
-
-        await this.mediationRepository.update(mediationRecord)
-        return KeylistUpdateResult.Success
-      }
-
-      return KeylistUpdateResult.ServerError
-    } catch (error) {
-      this.agentConfig.logger.error(
-        `Error processing keylist remove action for verkey '${recipientKey}' and mediation record '${mediationRecord.id}'`
-      )
-      return KeylistUpdateResult.ServerError
-    }
   }
 
   public async createGrantMediationMessage(mediationRecord: MediationRecord) {
@@ -163,8 +140,7 @@ export class MediatorService {
     mediationRecord.assertState(MediationState.Requested)
     mediationRecord.assertRole(MediationRole.Mediator)
 
-    mediationRecord.state = MediationState.Granted
-    await this.mediationRepository.update(mediationRecord)
+    await this.updateState(mediationRecord, MediationState.Granted)
 
     const message = new MediationGrantMessage({
       endpoint: this.agentConfig.endpoints[0],

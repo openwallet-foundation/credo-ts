@@ -17,7 +17,6 @@ import { BasicMessageService } from '../services'
 describe('BasicMessageService', () => {
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
-    verkey: '71X9Y1aSPK11ariWUYQCYMjSewf2Kw2JFGeygEf9uZd9',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
   })
 
@@ -29,7 +28,7 @@ describe('BasicMessageService', () => {
     agentConfig = getAgentConfig('BasicMessageServiceTest')
     wallet = new IndyWallet(agentConfig)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(agentConfig.walletConfig!)
+    await wallet.createAndOpen(agentConfig.walletConfig!)
     storageService = new IndyStorageService(wallet, agentConfig)
   })
 
@@ -57,10 +56,7 @@ describe('BasicMessageService', () => {
         content: 'message',
       })
 
-      const messageContext = new InboundMessageContext(basicMessage, {
-        senderVerkey: 'senderKey',
-        recipientVerkey: 'recipientKey',
-      })
+      const messageContext = new InboundMessageContext(basicMessage)
 
       await basicMessageService.save(messageContext, mockConnectionRecord)
 
@@ -69,7 +65,7 @@ describe('BasicMessageService', () => {
         payload: {
           basicMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
-            id: basicMessage.id,
+            id: expect.any(String),
             sentTime: basicMessage.sentTime.toISOString(),
             content: basicMessage.content,
             role: BasicMessageRole.Receiver,
