@@ -248,18 +248,17 @@ export abstract class CredentialService {
     return this.credentialRepository.findById(connectionId)
   }
 
-  public async deleteById(credentialId: string, options?: DeleteCredentialOptions): Promise<void> {
-    const credentialRecord = await this.getById(credentialId)
-
+  public async delete(credentialRecord: CredentialExchangeRecord, options?: DeleteCredentialOptions): Promise<void> {
     await this.credentialRepository.delete(credentialRecord)
 
     if (options?.deleteAssociatedCredentials) {
       for (const credential of credentialRecord.credentials) {
         const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
-        await formatService.deleteCredentialById(credentialRecord, options)
+        await formatService.deleteCredentialById(credential.credentialRecordId)
       }
     }
   }
+
   /**
    * Retrieve a credential record by connection id and thread id
    *
