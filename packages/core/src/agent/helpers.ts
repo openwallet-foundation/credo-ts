@@ -1,23 +1,26 @@
+import type { Key } from '../crypto'
 import type { ConnectionRecord } from '../modules/connections'
+import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
-
-import { DidCommService } from '../modules/connections/models/did/service/DidCommService'
+import type { ResolvedDidCommService } from './MessageSender'
 
 export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
   connection: ConnectionRecord,
-  payload: T
+  payload: T,
+  outOfBand?: OutOfBandRecord
 ): OutboundMessage<T> {
   return {
     connection,
+    outOfBand,
     payload,
   }
 }
 
 export function createOutboundServiceMessage<T extends AgentMessage = AgentMessage>(options: {
   payload: T
-  service: DidCommService
-  senderKey: string
+  service: ResolvedDidCommService
+  senderKey: Key
 }): OutboundServiceMessage<T> {
   return options
 }
@@ -25,5 +28,7 @@ export function createOutboundServiceMessage<T extends AgentMessage = AgentMessa
 export function isOutboundServiceMessage(
   message: OutboundMessage | OutboundServiceMessage
 ): message is OutboundServiceMessage {
-  return (message as OutboundServiceMessage).service instanceof DidCommService
+  const service = (message as OutboundServiceMessage).service
+
+  return service !== undefined
 }

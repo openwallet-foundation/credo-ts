@@ -1,0 +1,27 @@
+{
+  "@context": ["https://w3id.org/did/v1", "https://w3id.org/did/v2"],
+  "id": "did:peer:1zQmZdT2jawCX5T1RKUB7ro83gQuiKbuHwuHi8G1NypB8BTr",
+  "authentication": [
+    {
+      "id": "did:example:123456789abcdefghs#key3",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:example:123456789abcdefghs",
+      "publicKeyHex": "02b97c30de767f084ce3080168ee293053ba33b235d7116a3263d29f1450936b71"
+    }
+  ],
+  "verificationMethod": [
+    {
+      "id": "did:example:123456789abcdefghi#keys-1",
+      "type": "Secp256k1VerificationKey2018",
+      "controller": "did:example:123456789abcdefghi",
+      "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
+    },
+    {
+      "id": "did:example:123456789abcdefghw#key2",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:example:123456789abcdefghw",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAryQICCl6NZ5gDKrnSztO\n3Hy8PEUcuyvg/ikC+VcIo2SFFSf18a3IMYldIugqqqZCs4/4uVW3sbdLs/6PfgdX\n7O9D22ZiFWHPYA2k2N744MNiCD1UE+tJyllUhSblK48bn+v1oZHCM0nYQ2NqUkvS\nj+hwUU3RiWl7x3D2s9wSdNt7XUtW05a/FXehsPSiJfKvHJJnGOX0BgTvkLnkAOTd\nOrUZ/wK69Dzu4IvrN4vs9Nes8vbwPa/ddZEzGR0cQMt0JBkhk9kU/qwqUseP1QRJ\n5I1jR4g8aYPL/ke9K35PxZWuDp3U0UPAZ3PjFAh+5T+fc7gzCs9dPzSHloruU+gl\nFQIDAQAB\n-----END PUBLIC KEY-----"
+    }
+  ],
+  "created": "0001-01-01 00:00:00 +0000 UTC"
+}

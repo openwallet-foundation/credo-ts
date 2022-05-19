@@ -2,7 +2,7 @@
   "name": "@aries-framework/react-native",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "files": [
     "build"
   ],
@@ -24,14 +24,15 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "*",
+    "@aries-framework/core": "0.1.0",
     "@azure/core-asynciterator-polyfill": "^1.0.0",
     "events": "^3.3.0"
   },
   "devDependencies": {
-    "@types/indy-sdk-react-native": "npm:@types/indy-sdk@^1.16.6",
+    "@animo-id/react-native-bbs-signatures": "^0.1.0",
+    "@types/indy-sdk-react-native": "npm:@types/indy-sdk@^1.16.16",
     "@types/react-native": "^0.64.10",
-    "indy-sdk-react-native": "^0.1.13",
+    "indy-sdk-react-native": "^0.2.0",
     "react": "17.0.1",
     "react-native": "0.64.2",
     "react-native-fs": "^2.18.0",
@@ -40,8 +41,9 @@
     "typescript": "~4.3.0"
   },
   "peerDependencies": {
-    "indy-sdk-react-native": "^0.1.13",
+    "indy-sdk-react-native": "^0.2.0",
     "react-native-fs": "^2.18.0",
-    "react-native-get-random-values": "^1.7.0"
+    "react-native-get-random-values": "^1.7.0",
+    "react-native-bbs-signatures": "0.1.0"
   }
 }

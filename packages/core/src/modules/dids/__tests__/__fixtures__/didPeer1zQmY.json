@@ -1,0 +1,33 @@
+{
+  "@context": ["https://w3id.org/did/v1"],
+  "id": "did:peer:1zQmchWGXSsHohSMrgts5oxG76zAfG49RkMZbhrYqPJeVXc1",
+  "service": [
+    {
+      "id": "#service-0",
+      "serviceEndpoint": "https://example.com",
+      "type": "did-communication",
+      "priority": 0,
+      "recipientKeys": ["#d0d32199-851f-48e3-b178-6122bd4216a4"],
+      "routingKeys": [
+        "did:key:z6Mkh66d8nyf6EGUaeN2oWFAxv4qxppwUwnmy9crnZoseN7h#z6LSdgnNCDyjAvZHRHfA9rUfrcEk2vndbPsBo85BuZpc1hFC"
+      ],
+      "accept": ["didcomm/aip2;env=rfc19"]
+    }
+  ],
+  "authentication": [
+    {
+      "id": "#d0d32199-851f-48e3-b178-6122bd4216a4",
+      "type": "Ed25519VerificationKey2018",
+      "controller": "#id",
+      "publicKeyBase58": "CQZzRfoJMRzoESU2VtWrgx3rTsk9yjrjqXL2UdxWjX2q"
+    }
+  ],
+  "keyAgreement": [
+    {
+      "id": "#08673492-3c44-47fe-baa4-a1780c585d75",
+      "type": "X25519KeyAgreementKey2019",
+      "controller": "#id",
+      "publicKeyBase58": "7SbWSgJgjSvSTc7ZAKHJiaZbTBwNM9TdFUAU1UyZfJn8"
+    }
+  ]
+}

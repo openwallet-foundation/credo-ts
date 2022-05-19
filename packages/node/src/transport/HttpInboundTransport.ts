@@ -1,4 +1,4 @@
-import type { InboundTransport, Agent, TransportSession, WireMessage } from '@aries-framework/core'
+import type { InboundTransport, Agent, TransportSession, EncryptedMessage } from '@aries-framework/core'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
@@ -40,8 +40,8 @@ export class HttpInboundTransport implements InboundTransport {
       const session = new HttpTransportSession(utils.uuid(), req, res)
       try {
         const message = req.body
-        const packedMessage = JSON.parse(message)
-        await agent.receiveMessage(packedMessage, session)
+        const encryptedMessage = JSON.parse(message)
+        await agent.receiveMessage(encryptedMessage, session)
 
         // If agent did not use session when processing message we need to send response here.
         if (!res.headersSent) {
@@ -75,13 +75,19 @@ export class HttpTransportSession implements TransportSession {
     this.res = res
   }
 
-  public async send(wireMessage: WireMessage): Promise<void> {
+  public async close(): Promise<void> {
+    if (!this.res.headersSent) {
+      this.res.status(200).end()
+    }
+  }
+
+  public async send(encryptedMessage: EncryptedMessage): Promise<void> {
     if (this.res.headersSent) {
       throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
     }
 
     // FIXME: we should not use json(), but rather the correct
     // DIDComm content-type based on the req and agent config
-    this.res.status(200).json(wireMessage).end()
+    this.res.status(200).json(encryptedMessage).end()
   }
 }

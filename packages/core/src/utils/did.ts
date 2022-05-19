@@ -15,7 +15,8 @@
  *  https://github.com/hyperledger/aries-framework-dotnet/blob/f90eaf9db8548f6fc831abea917e906201755763/src/Hyperledger.Aries/Ledger/DefaultLedgerService.cs#L139-L147
  */
 
-import { BufferEncoder } from './BufferEncoder'
+import { TypedArrayEncoder } from './TypedArrayEncoder'
+import { Buffer } from './buffer'
 
 export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/
 export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{21,22}$/
@@ -37,15 +38,43 @@ export function isSelfCertifiedDid(did: string, verkey: string): boolean {
     return true
   }
 
-  const buffer = BufferEncoder.fromBase58(verkey)
+  const buffer = TypedArrayEncoder.fromBase58(verkey)
 
-  const didFromVerkey = BufferEncoder.toBase58(buffer.slice(0, 16))
+  const didFromVerkey = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
 
   if (didFromVerkey === did) {
     return true
   }
 
   return false
+}
+
+export function getFullVerkey(did: string, verkey: string) {
+  if (isFullVerkey(verkey)) return verkey
+
+  // Did could have did:xxx prefix, only take the last item after :
+  const id = did.split(':').pop() ?? did
+  // Verkey is prefixed with ~ if abbreviated
+  const verkeyWithoutTilde = verkey.slice(1)
+
+  // Create base58 encoded public key (32 bytes)
+  return TypedArrayEncoder.toBase58(
+    Buffer.concat([
+      // Take did identifier (16 bytes)
+      TypedArrayEncoder.fromBase58(id),
+      // Concat the abbreviated verkey (16 bytes)
+      TypedArrayEncoder.fromBase58(verkeyWithoutTilde),
+    ])
+  )
+}
+
+/**
+ * Extract did from schema id
+ */
+export function didFromSchemaId(schemaId: string) {
+  const [did] = schemaId.split(':')
+
+  return did
 }
 
 /**
@@ -58,10 +87,10 @@ export function didFromCredentialDefinitionId(credentialDefinitionId: string) {
 }
 
 /**
- * Extract did from schema id
+ * Extract did from revocation registry definition id
  */
-export function didFromSchemaId(schemaId: string) {
-  const [did] = schemaId.split(':')
+export function didFromRevocationRegistryDefinitionId(revocationRegistryId: string) {
+  const [did] = revocationRegistryId.split(':')
 
   return did
 }

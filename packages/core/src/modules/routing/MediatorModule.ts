@@ -1,4 +1,4 @@
-import type { WireMessage } from '../../types'
+import type { EncryptedMessage } from '../../types'
 import type { MediationRecord } from './repository'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -6,6 +6,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
+import { MessageReceiver } from '../../agent/MessageReceiver'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ConnectionService } from '../connections/services'
@@ -29,6 +30,7 @@ export class MediatorModule {
     mediationService: MediatorService,
     messagePickupService: MessagePickupService,
     messageSender: MessageSender,
+    messageReceiver: MessageReceiver,
     eventEmitter: EventEmitter,
     agentConfig: AgentConfig,
     connectionService: ConnectionService
@@ -54,7 +56,7 @@ export class MediatorModule {
     return mediationRecord
   }
 
-  public queueMessage(connectionId: string, message: WireMessage) {
+  public queueMessage(connectionId: string, message: EncryptedMessage) {
     return this.messagePickupService.queueMessage(connectionId, message)
   }
 

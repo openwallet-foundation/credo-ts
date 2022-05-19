@@ -8,10 +8,11 @@ import { e2eTest } from './e2e-test'
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
-import { Agent, AutoAcceptCredential } from '@aries-framework/core'
+import { Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 
 const recipientConfig = getBaseConfig('E2E Subject Recipient', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
 const mediatorConfig = getBaseConfig('E2E Subject Mediator', {
   endpoints: ['rxjs:mediator'],
@@ -21,6 +22,7 @@ const senderConfig = getBaseConfig('E2E Subject Sender', {
   endpoints: ['rxjs:sender'],
   mediatorPollingInterval: 1000,
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
 
 describe('E2E Subject tests', () => {
@@ -35,14 +37,16 @@ describe('E2E Subject tests', () => {
   })
 
   afterEach(async () => {
-    await recipientAgent.shutdown({ deleteWallet: true })
-    await mediatorAgent.shutdown({ deleteWallet: true })
-    await senderAgent.shutdown({ deleteWallet: true })
+    await recipientAgent.shutdown()
+    await recipientAgent.wallet.delete()
+    await mediatorAgent.shutdown()
+    await mediatorAgent.wallet.delete()
+    await senderAgent.shutdown()
+    await senderAgent.wallet.delete()
   })
 
   test('Full Subject flow (connect, request mediation, issue, verify)', async () => {
     const mediatorMessages = new Subject<SubjectMessage>()
-    const recipientMessages = new Subject<SubjectMessage>()
     const senderMessages = new Subject<SubjectMessage>()
 
     const subjectMap = {
@@ -51,17 +55,16 @@ describe('E2E Subject tests', () => {
     }
 
     // Recipient Setup
-    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(recipientMessages, subjectMap))
-    recipientAgent.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
+    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(mediatorMessages, subjectMap))
+    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.registerOutboundTransport(new SubjectOutboundTransport(senderMessages, subjectMap))
+    senderAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     senderAgent.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 
