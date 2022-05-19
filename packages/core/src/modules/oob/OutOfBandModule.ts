@@ -26,7 +26,7 @@ import {
 } from '../../modules/connections'
 import { JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
-import { DidKey, DidsModule } from '../dids'
+import { DidKey } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
 import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { MediationRecipientService } from '../routing'
@@ -82,7 +82,6 @@ export class OutOfBandModule {
   private outOfBandService: OutOfBandService
   private mediationRecipientService: MediationRecipientService
   private connectionsModule: ConnectionsModule
-  private dids: DidsModule
   private dispatcher: Dispatcher
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
@@ -95,7 +94,6 @@ export class OutOfBandModule {
     outOfBandService: OutOfBandService,
     mediationRecipientService: MediationRecipientService,
     connectionsModule: ConnectionsModule,
-    dids: DidsModule,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
@@ -105,7 +103,6 @@ export class OutOfBandModule {
     this.outOfBandService = outOfBandService
     this.mediationRecipientService = mediationRecipientService
     this.connectionsModule = connectionsModule
-    this.dids = dids
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
