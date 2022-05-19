@@ -803,24 +803,24 @@ describe('CredentialService', () => {
 
   describe('deleteCredential', () => {
     it('should call delete from repository', async () => {
-      const credential = mockCredentialRecord()
-      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
+      const credentialRecord = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialRecord))
 
       const repositoryDeleteSpy = jest.spyOn(credentialRepository, 'delete')
-      await credentialService.deleteById(credential.id)
-      expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, credential)
+      await credentialService.delete(credentialRecord)
+      expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, credentialRecord)
     })
 
     it('deleteAssociatedCredential parameter should call deleteCredential in indyHolderService with credentialId', async () => {
-      const storeCredentialMock = indyHolderService.deleteCredential as jest.Mock<Promise<void>, [string]>
+      const deleteCredentialMock = indyHolderService.deleteCredential as jest.Mock<Promise<void>, [string]>
 
-      const credential = mockCredentialRecord()
-      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
+      const credentialRecord = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialRecord))
 
-      await credentialService.deleteById(credential.id, {
+      await credentialService.delete(credentialRecord, {
         deleteAssociatedCredentials: true,
       })
-      expect(storeCredentialMock).toHaveBeenNthCalledWith(1, credential.credentials[0].credentialRecordId)
+      expect(deleteCredentialMock).toHaveBeenNthCalledWith(1, credentialRecord.credentials[0].credentialRecordId)
     })
   })
 
@@ -1130,6 +1130,58 @@ describe('CredentialService', () => {
       })
 
       spy.mockRestore()
+    })
+
+    describe('revocation registry id validation', () => {
+      const revocationRegistryId =
+        'ABC12D3EFgHIjKL4mnOPQ5:4:AsB27X6KRrJFsqZ3unNAH6:3:cl:48187:N4s7y-5hema_tag ;:CL_ACCUM:3b24a9b0-a979-41e0-9964-2292f2b1b7e9'
+      test('V1 allows any character in tag part of RevRegId', async () => {
+        const loggerSpy = jest.spyOn(logger, 'warn')
+        mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
+
+        const revocationNotificationThreadId = `indy::${revocationRegistryId}::2`
+
+        const invalidThreadFormatError = new AriesFrameworkError(
+          `Incorrect revocation notification threadId format: \n${revocationNotificationThreadId}\ndoes not match\n"indy::<revocation_registry_id>::<credential_revocation_id>"`
+        )
+
+        const revocationNotificationMessage = new V1RevocationNotificationMessage({
+          issueThread: revocationNotificationThreadId,
+          comment: 'Credential has been revoked',
+        })
+        const messageContext = new InboundMessageContext(revocationNotificationMessage)
+
+        await revocationService.v1ProcessRevocationNotification(messageContext)
+
+        expect(loggerSpy).not.toBeCalledWith('Failed to process revocation notification message', {
+          error: invalidThreadFormatError,
+          threadId: revocationNotificationThreadId,
+        })
+      })
+
+      test('V2 allows any character in tag part of credential id', async () => {
+        const loggerSpy = jest.spyOn(logger, 'warn')
+        mockFunction(credentialRepository.getSingleByQuery).mockReturnValueOnce(Promise.resolve(credential))
+
+        const credentialId = `${revocationRegistryId}::2`
+        const invalidFormatError = new AriesFrameworkError(
+          `Incorrect revocation notification credentialId format: \n${credentialId}\ndoes not match\n"<revocation_registry_id>::<credential_revocation_id>"`
+        )
+
+        const revocationNotificationMessage = new V2RevocationNotificationMessage({
+          credentialId: credentialId,
+          revocationFormat: 'indy',
+          comment: 'Credenti1al has been revoked',
+        })
+        const messageContext = new InboundMessageContext(revocationNotificationMessage)
+
+        await revocationService.v2ProcessRevocationNotification(messageContext)
+
+        expect(loggerSpy).not.toBeCalledWith('Failed to process revocation notification message', {
+          error: invalidFormatError,
+          credentialId: credentialId,
+        })
+      })
     })
   })
 })
