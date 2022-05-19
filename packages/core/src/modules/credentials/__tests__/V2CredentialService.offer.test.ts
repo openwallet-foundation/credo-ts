@@ -2,7 +2,6 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ServiceOfferCredentialOptions } from '../CredentialServiceOptions'
-import type { OfferCredentialOptions } from '../CredentialsModuleOptions'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -132,7 +131,6 @@ describe('CredentialService', () => {
     beforeEach(async () => {
       offerOptions = {
         comment: 'some comment',
-        // connectionId: connection.id,
         connection,
         credentialFormats: {
           indy: {

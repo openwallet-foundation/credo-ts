@@ -2,7 +2,6 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ServiceOfferCredentialOptions } from '../CredentialServiceOptions'
-import type { OfferCredentialOptions } from '../CredentialsModuleOptions'
 
 import { Agent } from '../../../../src/agent/Agent'
 import { Dispatcher } from '../../../../src/agent/Dispatcher'
