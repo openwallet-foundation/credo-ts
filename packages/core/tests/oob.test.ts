@@ -17,7 +17,7 @@ import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { sleep } from '../src/utils/sleep'
 
 import { TestMessage } from './TestMessage'
-import { getBaseConfig, prepareForIssuance } from './helpers'
+import { getBaseConfig, prepareForIssuance, waitForCredentialRecord } from './helpers'
 
 import {
   AgentEventTypes,
@@ -340,17 +340,14 @@ describe('out of band', () => {
 
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+        threadId: message.threadId,
+      })
       await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, receiveInvitationConfig)
 
-      let credentials: CredentialExchangeRecord[] = []
-      while (credentials.length < 1) {
-        credentials = await aliceAgent.credentials.getAll()
-        await sleep(100)
-      }
-
-      expect(credentials).toHaveLength(1)
-      const [credential] = credentials
-      expect(credential.state).toBe(CredentialState.OfferReceived)
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
     })
 
     test('do not process requests when a connection is not ready', async () => {
@@ -389,6 +386,13 @@ describe('out of band', () => {
         }
       )
 
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+        threadId: message.threadId,
+        // We need to create the connection beforehand so it can take a while to complete
+        timeoutMs: 20000,
+      })
+
       // Accept connection invitation
       let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.acceptInvitation(
         aliceFaberOutOfBandRecord.id,
@@ -406,16 +410,8 @@ describe('out of band', () => {
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
 
-      // The credential should be processed when connection is made. It asynchronous so it can take a moment.
-      let credentials: CredentialExchangeRecord[] = []
-      while (credentials.length < 1) {
-        credentials = await aliceAgent.credentials.getAll()
-        await sleep(100)
-      }
-
-      expect(credentials).toHaveLength(1)
-      const [credential] = credentials
-      expect(credential.state).toBe(CredentialState.OfferReceived)
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
     })
 
     test('do not create a new connection when no messages and handshake reuse succeeds', async () => {
