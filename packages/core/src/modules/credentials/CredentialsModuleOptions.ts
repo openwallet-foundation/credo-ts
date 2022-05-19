@@ -39,7 +39,7 @@ interface NegotiateProposalOptions extends BaseOptions {
 interface OfferCredentialOptions extends BaseOptions {
   credentialRecordId?: string
   connectionId?: string
-  protocolVersion: CredentialProtocolVersion
+  protocolVersion?: CredentialProtocolVersion
   credentialFormats: FormatServiceAcceptProposeCredentialFormats
 }
 

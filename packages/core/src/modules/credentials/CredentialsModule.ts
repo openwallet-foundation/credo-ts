@@ -347,6 +347,9 @@ export class CredentialsModule implements CredentialsModule {
     if (!options.connectionId) {
       throw new AriesFrameworkError('Missing connectionId on offerCredential')
     }
+    if (!options.protocolVersion) {
+      throw new AriesFrameworkError('Missing protocol version in offerCredential')
+    }
     const connection = await this.connectionService.getById(options.connectionId)
 
     const service = this.getService(options.protocolVersion)

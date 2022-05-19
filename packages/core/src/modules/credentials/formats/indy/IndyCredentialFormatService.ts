@@ -33,8 +33,8 @@ import { AgentConfig } from '../../../../agent/AgentConfig'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
-import { CredentialResponseCoordinator } from '../../../../utils/CredentialResponseCoordinator'
 import { MessageValidator } from '../../../../utils/MessageValidator'
+import { composeAutoAccept } from '../../../../utils/composeAutoAccept'
 import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
@@ -430,7 +430,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
 
   public shouldAutoRespondToProposal(handlerOptions: HandlerAutoAcceptOptions): boolean {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+    const autoAccept = composeAutoAccept(
       handlerOptions.credentialRecord.autoAcceptCredential,
       handlerOptions.autoAcceptType
     )
@@ -454,10 +454,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
  */
 
   public shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
-      options.credentialRecord.autoAcceptCredential,
-      options.autoAcceptType
-    )
+    const autoAccept = composeAutoAccept(options.credentialRecord.autoAcceptCredential, options.autoAcceptType)
 
     if (!options.requestAttachment) {
       throw new AriesFrameworkError(`Missing Request Attachment for Credential Record ${options.credentialRecord.id}`)
@@ -480,10 +477,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
 
   public shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
-      options.credentialRecord.autoAcceptCredential,
-      options.autoAcceptType
-    )
+    const autoAccept = composeAutoAccept(options.credentialRecord.autoAcceptCredential, options.autoAcceptType)
 
     if (autoAccept === AutoAcceptCredential.ContentApproved) {
       if (options.credentialAttachment) {

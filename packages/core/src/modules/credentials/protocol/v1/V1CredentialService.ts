@@ -33,8 +33,8 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
-import { CredentialResponseCoordinator } from '../../../../utils/CredentialResponseCoordinator'
 import { isLinkedAttachment } from '../../../../utils/attachment'
+import { composeAutoAccept } from '../../../../utils/composeAutoAccept'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services'
 import { MediationRecipientService } from '../../../routing'
@@ -1143,7 +1143,7 @@ export class V1CredentialService extends CredentialService {
   }
 
   public async shouldAutoRespondToProposal(handlerOptions: HandlerAutoAcceptOptions): Promise<boolean> {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+    const autoAccept = composeAutoAccept(
       handlerOptions.credentialRecord.autoAcceptCredential,
       handlerOptions.autoAcceptType
     )

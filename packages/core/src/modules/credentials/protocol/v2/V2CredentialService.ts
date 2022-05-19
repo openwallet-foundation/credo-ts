@@ -219,7 +219,6 @@ export class V2CredentialService extends CredentialService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     const options: ServiceOfferCredentialOptions = {
-      protocolVersion: credentialRecord.protocolVersion,
       credentialFormats: proposal.credentialFormats,
       comment: proposal.comment,
     }
