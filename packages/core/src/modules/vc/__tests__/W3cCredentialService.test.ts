@@ -1,9 +1,8 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 
-import { purposes } from '@digitalcredentials/jsonld-signatures'
-
 import { getAgentConfig } from '../../../../tests/helpers'
 import { TestLogger } from '../../../../tests/logger'
+import { purposes } from '../../../../types/jsonld-signatures'
 import { KeyType } from '../../../crypto'
 import { Key } from '../../../crypto/Key'
 import { LogLevel } from '../../../logger'

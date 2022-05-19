@@ -23,9 +23,8 @@ import type {
   SuiteSignOptions,
 } from './types'
 
-import jsonld from '@digitalcredentials/jsonld'
-import { suites } from '@digitalcredentials/jsonld-signatures'
-
+import jsonld from '../../../../types/jsonld'
+import { suites } from '../../../../types/jsonld-signatures'
 import { AriesFrameworkError } from '../../../error'
 import { SECURITY_CONTEXT_BBS_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
 import { w3cDate, TypedArrayEncoder } from '../../../utils'

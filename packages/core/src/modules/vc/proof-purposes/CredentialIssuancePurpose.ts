@@ -1,11 +1,11 @@
 import type { JsonObject } from '../../../types'
 import type { DocumentLoader, Proof } from '../../../utils'
 
-import jsonld from '@digitalcredentials/jsonld'
-import jsigs from '@digitalcredentials/jsonld-signatures'
+import jsonld from '../../../../types/jsonld'
+import { suites, purposes } from '../../../../types/jsonld-signatures'
 
-const AssertionProofPurpose = jsigs.purposes.AssertionProofPurpose
-const LinkedDataProof = jsigs.suites.LinkedDataProof
+const AssertionProofPurpose = purposes.AssertionProofPurpose
+const LinkedDataProof = suites.LinkedDataProof
 /**
  * Creates a proof purpose that will validate whether or not the verification
  * method in a proof was authorized by its declared controller for the

@@ -2,8 +2,7 @@ import type { GetProofsOptions, GetProofsResult, GetTypeOptions } from '../crypt
 import type { JsonObject, JsonValue } from '../types'
 import type { SingleOrArray } from './type'
 
-import jsonld from '@digitalcredentials/jsonld'
-
+import jsonld from '../../types/jsonld'
 import { SECURITY_CONTEXT_URL } from '../modules/vc/constants'
 
 export type JsonLdDoc = Record<string, unknown>

@@ -13,8 +13,7 @@
 
 import type { JsonObject } from '../../../types'
 
-import jsonld from '@digitalcredentials/jsonld'
-
+import jsonld from '../../../../types/jsonld'
 import { SECURITY_PROOF_URL } from '../../../modules/vc/constants'
 import { W3cVerifiableCredential } from '../../../modules/vc/models'
 import { JsonTransformer, getProofs, getTypeInfo } from '../../../utils'

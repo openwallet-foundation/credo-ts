@@ -5,7 +5,7 @@
 import type { JsonObject } from '../../../types'
 import type { DocumentLoaderResult } from '../../../utils'
 
-import { frame } from '@digitalcredentials/jsonld'
+import jsonld from '../../../../types/jsonld'
 
 import { BBS_V1, EXAMPLES_V1, ODRL, SCHEMA_ORG, VACCINATION_V1 } from './contexts'
 import { X25519_V1 } from './contexts/X25519_v1'
@@ -98,7 +98,7 @@ export const customDocumentLoader = async (url: string): Promise<DocumentLoaderR
   }
 
   if (url.startsWith('did:')) {
-    result = await frame(result, {
+    result = await jsonld.frame(result, {
       '@context': result['@context'],
       '@embed': '@never',
       id: url,

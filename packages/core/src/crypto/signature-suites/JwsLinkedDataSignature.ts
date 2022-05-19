@@ -4,12 +4,11 @@
 import type { DocumentLoader, Proof, VerificationMethod } from '../../utils'
 import type { LdKeyPair } from '../LdKeyPair'
 
-import jsigs from '@digitalcredentials/jsonld-signatures'
-
+import { suites } from '../../../types/jsonld-signatures'
 import { AriesFrameworkError } from '../../error'
 import { TypedArrayEncoder, JsonEncoder } from '../../utils'
 
-const LinkedDataSignature = jsigs.suites.LinkedDataSignature
+const LinkedDataSignature = suites.LinkedDataSignature
 export interface JwsLinkedDataSignatureOptions {
   type: string
   algorithm: string

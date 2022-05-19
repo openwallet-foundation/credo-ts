@@ -12,12 +12,10 @@ import type {
 } from './models/W3cCredentialServiceOptions'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
 
-import jsonld, { expand, frame } from '@digitalcredentials/jsonld'
-import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
-import documentLoaderXhr from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
-import vc from '@digitalcredentials/vc'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
+import jsonld, { documentLoaderNode, documentLoaderXhr } from '../../../types/jsonld'
+import vc from '../../../types/vc'
 import { AgentConfig } from '../../agent/AgentConfig'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { deriveProof } from '../../crypto/signature-suites/bbs'
@@ -285,7 +283,7 @@ export class W3cCredentialService {
         throw new AriesFrameworkError(`Unable to resolve DID: ${url}`)
       }
 
-      const framed = await frame(result.didDocument.toJSON(), {
+      const framed = await jsonld.frame(result.didDocument.toJSON(), {
         '@context': result.didDocument.context,
         '@embed': '@never',
         id: url,
@@ -329,7 +327,7 @@ export class W3cCredentialService {
   public async storeCredential(options: StoreCredentialOptions): Promise<W3cCredentialRecord> {
     // Get the expanded types
     const expandedTypes = (
-      await expand(JsonTransformer.toJSON(options.record), { documentLoader: this.documentLoader })
+      await jsonld.expand(JsonTransformer.toJSON(options.record), { documentLoader: this.documentLoader })
     )[0]['@type']
 
     // Create an instance of the w3cCredentialRecord
