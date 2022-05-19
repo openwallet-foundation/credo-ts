@@ -43,6 +43,7 @@
   "peerDependencies": {
     "indy-sdk-react-native": "^0.2.0",
     "react-native-fs": "^2.18.0",
-    "react-native-get-random-values": "^1.7.0"
+    "react-native-get-random-values": "^1.7.0",
+    "react-native-bbs-signatures": "0.1.0"
   }
 }
