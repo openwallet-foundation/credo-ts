@@ -514,7 +514,7 @@ export class CredentialsModule implements CredentialsModule {
   public async deleteById(credentialId: string, options?: DeleteCredentialOptions) {
     const credentialRecord = await this.getById(credentialId)
     const service = this.getService(credentialRecord.protocolVersion)
-    return service.deleteById(credentialId, options)
+    return service.delete(credentialRecord, options)
   }
 
   /**
