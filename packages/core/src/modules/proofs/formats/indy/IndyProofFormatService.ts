@@ -19,10 +19,13 @@ import type {
   CreateRequestAttachmentOptions,
   CreateRequestOptions,
   ProcessPresentationOptions,
+  ProcessProposalOptions,
+  ProcessRequestOptions,
   VerifyProofOptions,
 } from '../models/ProofFormatServiceOptions'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
+import { validateOrReject } from 'class-validator'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
@@ -137,6 +140,29 @@ export class IndyProofFormatService extends ProofFormatService {
     })
   }
 
+  public async processProposal(options: ProcessProposalOptions): Promise<void> {
+    const proofProposalJson = options.proposal.attachment.getDataAsJson<PresentationPreview | ProofRequest>()
+
+    let proposalMessage
+
+    // Assert attachment
+    if (!proofProposalJson) {
+      throw new AriesFrameworkError(
+        `Missing required base64 or json encoded attachment data for presentation proposal with thread id ${options.record?.threadId}`
+      )
+    }
+
+    if (typeof proofProposalJson === typeof PresentationPreview) {
+      proposalMessage = JsonTransformer.fromJSON(proofProposalJson, PresentationPreview)
+
+      await validateOrReject(proposalMessage)
+    } else {
+      proposalMessage = JsonTransformer.fromJSON(proofProposalJson, ProofRequest)
+
+      await validateOrReject(proposalMessage)
+    }
+  }
+
   public async createRequestAsResponse(options: CreateRequestAsResponseOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.indy) {
       throw Error('Missing indy format to create proposal attachment format')
@@ -168,6 +194,20 @@ export class IndyProofFormatService extends ProofFormatService {
       id: options.id ?? uuid(),
       proofRequestOptions: options.formats.indy,
     })
+  }
+
+  public async processRequest(options: ProcessRequestOptions): Promise<void> {
+    const proofRequestJson = options.request.attachment.getDataAsJson<PresentationPreview | ProofRequest>()
+
+    const proofRequestMessage = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
+
+    // Assert attachment
+    if (!proofRequestMessage) {
+      throw new AriesFrameworkError(
+        `Missing required base64 or json encoded attachment data for presentation request with thread id ${options.record?.threadId}`
+      )
+    }
+    await validateOrReject(proofRequestMessage)
   }
 
   public async createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat> {

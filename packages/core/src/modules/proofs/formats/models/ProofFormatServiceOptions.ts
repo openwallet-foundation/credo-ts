@@ -21,8 +21,8 @@ export interface CreateProposalOptions {
 }
 
 export interface ProcessProposalOptions {
-  record: ProofRecord
   proposal: ProofAttachmentFormat
+  record?: ProofRecord
 }
 
 export interface CreateRequestOptions {
@@ -31,8 +31,8 @@ export interface CreateRequestOptions {
 }
 
 export interface ProcessRequestOptions {
-  record: ProofRecord
   request: ProofAttachmentFormat
+  record?: ProofRecord
 }
 
 export interface CreatePresentationOptions {

@@ -193,8 +193,19 @@ export class V2ProofService extends ProofService {
   }
 
   public async processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
-    const { message: proposalMessage, connection: connectionRecord } = messageContext
+    const { message: _proposalMessage, connection: connectionRecord } = messageContext
     let proofRecord: ProofRecord
+
+    const proposalMessage = _proposalMessage as V2ProposalPresentationMessage
+
+    const proposalAttachments = proposalMessage.getAttachmentFormats()
+
+    for (const attachmentFormat of proposalAttachments) {
+      const service = this.getFormatServiceForFormat(attachmentFormat.format)
+      service?.processProposal({
+        proposal: attachmentFormat,
+      })
+    }
 
     try {
       proofRecord = await this.proofRepository.getSingleByQuery({
@@ -355,6 +366,15 @@ export class V2ProofService extends ProofService {
     const { message: _proofRequestMessage, connection: connectionRecord } = messageContext
 
     const proofRequestMessage = _proofRequestMessage as V2RequestPresentationMessage
+
+    const requestAttachments = proofRequestMessage.getAttachmentFormats()
+
+    for (const attachmentFormat of requestAttachments) {
+      const service = this.getFormatServiceForFormat(attachmentFormat.format)
+      service?.processRequest({
+        request: attachmentFormat,
+      })
+    }
 
     // assert
     if (proofRequestMessage.requestPresentationsAttach.length === 0) {

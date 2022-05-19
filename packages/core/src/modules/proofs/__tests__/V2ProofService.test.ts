@@ -1,6 +1,5 @@
 import type { Wallet } from '../../../wallet/Wallet'
 import type { ProofStateChangedEvent } from '../ProofEvents'
-import type { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
 import type { CustomProofTags } from '../repository/ProofRecord'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -9,10 +8,11 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { DidCommMessageRepository } from '../../../storage'
 import { ConnectionService, DidExchangeState } from '../../connections'
-import { IndyLedgerService } from '../../ledger/services'
+import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
-import { V2_INDY_PRESENTATION } from '../formats/ProofFormats'
+import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_REQUEST } from '../formats/ProofFormats'
+import { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
 import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import { ProofState } from '../models/ProofState'
 import { V2ProofService } from '../protocol/v2/V2ProofService'
@@ -36,6 +36,7 @@ const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
+const indyProofFormatServiceMock = IndyProofFormatService as jest.Mock<IndyProofFormatService>
 
 const connection = getMockConnection({
   id: '123',
@@ -43,7 +44,7 @@ const connection = getMockConnection({
 })
 
 const requestAttachment = new Attachment({
-  id: '123',
+  id: 'abdc8b63-29c6-49ad-9e10-98f9d85db9a2',
   mimeType: 'application/json',
   data: new AttachmentData({
     base64:
@@ -71,7 +72,7 @@ const mockProofRecord = ({
     attachmentInfo: [
       {
         format: {
-          attachmentId: '123',
+          attachmentId: 'abdc8b63-29c6-49ad-9e10-98f9d85db9a2',
           format: V2_INDY_PRESENTATION,
         },
         attachment: requestAttachment,
@@ -109,6 +110,7 @@ describe('V2ProofService', () => {
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()
     didCommMessageRepository = new didCommMessageRepositoryMock()
+    indyProofFormatService = new indyProofFormatServiceMock()
 
     proofService = new V2ProofService(
       agentConfig,
@@ -132,13 +134,13 @@ describe('V2ProofService', () => {
         attachmentInfo: [
           {
             format: {
-              attachmentId: '123',
-              format: V2_INDY_PRESENTATION,
+              attachmentId: 'abdc8b63-29c6-49ad-9e10-98f9d85db9a2',
+              format: V2_INDY_PRESENTATION_REQUEST,
             },
             attachment: requestAttachment,
           },
         ],
-        comment: 'abcd',
+        comment: 'Proof Request',
       })
       messageContext = new InboundMessageContext(presentationRequest, {
         connection,

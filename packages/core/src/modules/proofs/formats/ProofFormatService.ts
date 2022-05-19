@@ -13,6 +13,8 @@ import type {
   CreateProposalOptions,
   CreateRequestOptions,
   ProcessPresentationOptions,
+  ProcessProposalOptions,
+  ProcessRequestOptions,
 } from './models/ProofFormatServiceOptions'
 
 /**
@@ -34,7 +36,11 @@ export abstract class ProofFormatService {
 
   abstract createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat>
 
+  abstract processProposal(options: ProcessProposalOptions): Promise<void>
+
   abstract createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat>
+
+  abstract processRequest(options: ProcessRequestOptions): Promise<void>
 
   abstract createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat>
 
