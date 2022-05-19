@@ -4,8 +4,10 @@ import type { ParsedDid, DidResolutionResult } from '../../types'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
+import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../../../crypto/signature-suites/ed25519/constants'
 import { TypedArrayEncoder } from '../../../../utils/TypedArrayEncoder'
 import { getFullVerkey } from '../../../../utils/did'
+import { SECURITY_X25519_CONTEXT_URL } from '../../../vc/constants'
 import { DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { DidCommV1Service } from '../../domain/service/DidCommV1Service'
@@ -36,8 +38,9 @@ export class SovDidResolver implements DidResolver {
       )
 
       const builder = new DidDocumentBuilder(parsed.did)
-        .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
-        .addContext('https://w3id.org/security/suites/x25519-2019/v1')
+
+        .addContext(ED25519_SUITE_CONTEXT_URL_2018)
+        .addContext(SECURITY_X25519_CONTEXT_URL)
         .addVerificationMethod({
           controller: parsed.did,
           id: verificationMethodId,
