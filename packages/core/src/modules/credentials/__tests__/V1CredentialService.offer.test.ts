@@ -1,6 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
+import type { ServiceOfferCredentialOptions } from '../CredentialServiceOptions'
 import type { OfferCredentialOptions } from '../CredentialsModuleOptions'
 
 import { Agent } from '../../../../src/agent/Agent'
@@ -127,11 +128,12 @@ describe('CredentialService', () => {
   })
 
   describe('createCredentialOffer', () => {
-    let offerOptions: OfferCredentialOptions
+    let offerOptions: ServiceOfferCredentialOptions
 
     beforeEach(async () => {
       offerOptions = {
         comment: 'some comment',
+        connection,
         connectionId: connection.id,
         credentialFormats: {
           indy: {
@@ -146,7 +148,7 @@ describe('CredentialService', () => {
     test(`creates credential record in ${CredentialState.OfferSent} state with offer, thread ID`, async () => {
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
 
-      await credentialService.createOffer(offerOptions, connection)
+      await credentialService.createOffer(offerOptions)
 
       // then
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1)
@@ -166,7 +168,7 @@ describe('CredentialService', () => {
       const eventListenerMock = jest.fn()
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
-      await credentialService.createOffer(offerOptions, connection)
+      await credentialService.createOffer(offerOptions)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
@@ -180,7 +182,7 @@ describe('CredentialService', () => {
     })
 
     test('returns credential offer message', async () => {
-      const { message: credentialOffer } = await credentialService.createOffer(offerOptions, connection)
+      const { message: credentialOffer } = await credentialService.createOffer(offerOptions)
       expect(credentialOffer.toJSON()).toMatchObject({
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
@@ -241,7 +243,7 @@ describe('CredentialService', () => {
           },
         },
       }
-      expect(credentialService.createOffer(offerOptions, connection)).rejects.toThrowError(
+      expect(credentialService.createOffer(offerOptions)).rejects.toThrowError(
         `The credential preview attributes do not match the schema attributes (difference is: test,error, needs: name,age)`
       )
     })

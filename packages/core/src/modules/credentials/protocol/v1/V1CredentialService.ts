@@ -487,7 +487,7 @@ export class V1CredentialService extends CredentialService {
    *
    */
   public async createOffer(
-    credentialOptions: OfferCredentialOptions,
+    credentialOptions: ServiceOfferCredentialOptions,
     connection?: ConnectionRecord
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     if (
@@ -509,7 +509,10 @@ export class V1CredentialService extends CredentialService {
       linkedAttachments,
     }
 
-    const { credentialRecord, message } = await this.createOfferProcessing(template, connection)
+    const { credentialRecord, message } = await this.createOfferProcessing(
+      template,
+      connection ?? credentialOptions.connection
+    )
 
     await this.credentialRepository.save(credentialRecord)
     this.eventEmitter.emit<CredentialStateChangedEvent>({

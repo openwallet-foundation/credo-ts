@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
+import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type {
   AcceptOfferOptions,
@@ -46,9 +47,8 @@ export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
 }
 
 export interface ServiceOfferCredentialOptions extends OfferCredentialOptions {
-  connectionId?: string
+  connection?: ConnectionRecord
   attachId?: string
-  // offerAttachment?: Attachment
 }
 
 export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {
