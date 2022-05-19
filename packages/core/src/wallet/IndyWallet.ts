@@ -20,12 +20,13 @@ import type {
 import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
 
 import { AgentConfig } from '../agent/AgentConfig'
-import { KeyType } from '../crypto'
 import { BbsService } from '../crypto/BbsService'
 import { Key } from '../crypto/Key'
+import { KeyType } from '../crypto/KeyType'
 import { AriesFrameworkError, IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
 import { injectable } from '../plugins'
 import { JsonEncoder, TypedArrayEncoder } from '../utils'
+import { isError } from '../utils/error'
 import { isIndyError } from '../utils/indyError'
 
 import { WalletDuplicateError, WalletError, WalletNotFoundError } from './error'
@@ -150,6 +151,9 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
+        if (!isError(error)) {
+          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+        }
         const errorMessage = `Error creating wallet '${walletConfig.id}'`
         this.logger.error(errorMessage, {
           error,
@@ -232,6 +236,9 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
+        if (!isError(error)) {
+          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+        }
         const errorMessage = `Error opening wallet '${walletConfig.id}': ${error.message}`
         this.logger.error(errorMessage, {
           error,
@@ -277,6 +284,9 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
+        if (!isError(error)) {
+          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+        }
         const errorMessage = `Error deleting wallet '${this.walletConfig.id}': ${error.message}`
         this.logger.error(errorMessage, {
           error,
@@ -293,6 +303,9 @@ export class IndyWallet implements Wallet {
       this.logger.debug(`Exporting wallet ${this.walletConfig?.id} to path ${exportConfig.path}`)
       await this.indy.exportWallet(this.handle, exportConfig)
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       const errorMessage = `Error exporting wallet: ${error.message}`
       this.logger.error(errorMessage, {
         error,
@@ -311,6 +324,9 @@ export class IndyWallet implements Wallet {
         importConfig
       )
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       const errorMessage = `Error importing wallet': ${error.message}`
       this.logger.error(errorMessage, {
         error,
@@ -341,6 +357,9 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
+        if (!isError(error)) {
+          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+        }
         const errorMessage = `Error closing wallet': ${error.message}`
         this.logger.error(errorMessage, {
           error,
@@ -380,6 +399,10 @@ export class IndyWallet implements Wallet {
 
         return masterSecretId
       } else {
+        if (!isIndyError(error)) {
+          throw new AriesFrameworkError('Attempted to throw Indy error, but it was not an Indy error')
+        }
+
         this.logger.error(`Error creating master secret with id ${masterSecretId}`, {
           indyError: error.indyName,
           error,
@@ -407,6 +430,9 @@ export class IndyWallet implements Wallet {
 
       return { did, verkey }
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       throw new WalletError('Error creating Did', { cause: error })
     }
   }
@@ -440,6 +466,9 @@ export class IndyWallet implements Wallet {
         return Key.fromPublicKeyBase58(blsKeyPair.publicKeyBase58, keyType)
       }
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       throw new WalletError(`Error creating key with key type '${keyType}': ${error.message}`, { cause: error })
     }
 
@@ -475,6 +504,9 @@ export class IndyWallet implements Wallet {
         })
       }
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}`, { cause: error })
     }
     throw new WalletError(`Unsupported keyType: ${key.keyType}`)
@@ -508,6 +540,9 @@ export class IndyWallet implements Wallet {
         return await BbsService.verify({ signature, publicKey: key.publicKey, messages: data })
       }
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       throw new WalletError(`Error verifying signature of data signed with verkey ${key.publicKeyBase58}`, {
         cause: error,
       })
@@ -525,6 +560,9 @@ export class IndyWallet implements Wallet {
       const packedMessage = await this.indy.packMessage(this.handle, messageRaw, recipientKeys, senderVerkey ?? null)
       return JsonEncoder.fromBuffer(packedMessage)
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       throw new WalletError('Error packing message', { cause: error })
     }
   }
@@ -539,6 +577,9 @@ export class IndyWallet implements Wallet {
         plaintextMessage: JsonEncoder.fromString(unpackedMessage.message),
       }
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       throw new WalletError('Error unpacking message', { cause: error })
     }
   }
@@ -547,6 +588,9 @@ export class IndyWallet implements Wallet {
     try {
       return await this.indy.generateNonce()
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       throw new WalletError('Error generating nonce', { cause: error })
     }
   }

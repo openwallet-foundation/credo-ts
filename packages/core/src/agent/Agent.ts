@@ -30,6 +30,7 @@ import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerM
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { RoutingService } from '../modules/routing/services/RoutingService'
+import { W3cVcModule } from '../modules/vc/module'
 import { DependencyManager } from '../plugins'
 import { StorageUpdateService, DidCommMessageRepository, StorageVersionRepository } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
@@ -348,7 +349,8 @@ export class Agent {
       DidsModule,
       WalletModule,
       OutOfBandModule,
-      IndyModule
+      IndyModule,
+      W3cVcModule
     )
   }
 }
