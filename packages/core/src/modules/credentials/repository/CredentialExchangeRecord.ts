@@ -40,6 +40,8 @@ export type DefaultCredentialTags = {
   connectionId?: string
   state: CredentialState
   credentialIds: string[]
+  indyRevocationRegistryId?: string
+  indyCredentialRevocationId?: string
 }
 
 export interface CredentialRecordBinding {

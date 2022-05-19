@@ -134,7 +134,7 @@ export class V1CredentialService extends CredentialService {
 
     const options = { ...config }
 
-    const { attachment: filtersAttach } = this.formatService.createProposal(proposal)
+    const { attachment: filtersAttach } = await this.formatService.createProposal(proposal)
 
     if (!filtersAttach) {
       throw new AriesFrameworkError('Missing filters attach in Proposal')
