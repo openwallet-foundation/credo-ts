@@ -4,7 +4,8 @@ import { scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 
-import { AutoAcceptProof } from './ProofAutoAcceptType'
+import { ProofService } from './ProofService'
+import { AutoAcceptProof } from './models/ProofAutoAcceptType'
 
 /**
  * This class handles all the automation with all the messages in the present proof protocol
@@ -13,9 +14,11 @@ import { AutoAcceptProof } from './ProofAutoAcceptType'
 @scoped(Lifecycle.ContainerScoped)
 export class ProofResponseCoordinator {
   private agentConfig: AgentConfig
+  private proofService: ProofService
 
-  public constructor(agentConfig: AgentConfig) {
+  public constructor(agentConfig: AgentConfig, proofService: ProofService) {
     this.agentConfig = agentConfig
+    this.proofService = proofService
   }
 
   /**
@@ -35,50 +38,46 @@ export class ProofResponseCoordinator {
    * Checks whether it should automatically respond to a proposal
    */
   public shouldAutoRespondToProposal(proofRecord: ProofRecord) {
-    const autoAccept = ProofResponseCoordinator.composeAutoAccept(
-      proofRecord.autoAcceptProof,
-      this.agentConfig.autoAcceptProofs
-    )
-
-    if (autoAccept === AutoAcceptProof.Always) {
-      return true
-    }
-    return false
+    return this.isAutoAcceptProofAlways(proofRecord)
   }
 
   /**
    * Checks whether it should automatically respond to a request
    */
   public shouldAutoRespondToRequest(proofRecord: ProofRecord) {
-    const autoAccept = ProofResponseCoordinator.composeAutoAccept(
-      proofRecord.autoAcceptProof,
-      this.agentConfig.autoAcceptProofs
-    )
-
-    if (
-      autoAccept === AutoAcceptProof.Always ||
-      (autoAccept === AutoAcceptProof.ContentApproved && proofRecord.proposalMessage)
-    ) {
-      return true
-    }
-
-    return false
+    return this.isAutoAcceptProofAlways(proofRecord)
+      ? this.isAutoAcceptProofAlways(proofRecord)
+      : this.isAutoAcceptProofContentApproved(proofRecord)
   }
 
   /**
    * Checks whether it should automatically respond to a presentation of proof
    */
   public shouldAutoRespondToPresentation(proofRecord: ProofRecord) {
-    const autoAccept = ProofResponseCoordinator.composeAutoAccept(
-      proofRecord.autoAcceptProof,
-      this.agentConfig.autoAcceptProofs
-    )
+    return this.isAutoAcceptProofAlways(proofRecord)
+      ? this.isAutoAcceptProofAlways(proofRecord)
+      : this.isAutoAcceptProofContentApproved(proofRecord)
+  }
 
-    if (
-      autoAccept === AutoAcceptProof.Always ||
-      (autoAccept === AutoAcceptProof.ContentApproved && proofRecord.requestMessage)
-    ) {
+  private checkAutoRespond(proofRecord: ProofRecord) {
+    return ProofResponseCoordinator.composeAutoAccept(proofRecord.autoAcceptProof, this.agentConfig.autoAcceptProofs)
+  }
+
+  private isAutoAcceptProofAlways(proofRecord: ProofRecord) {
+    const autoAccept = this.checkAutoRespond(proofRecord)
+
+    if (autoAccept === AutoAcceptProof.Always) {
       return true
+    }
+
+    return false
+  }
+
+  private isAutoAcceptProofContentApproved(proofRecord: ProofRecord) {
+    const autoAccept = this.checkAutoRespond(proofRecord)
+
+    if (autoAccept === AutoAcceptProof.ContentApproved) {
+      return this.proofService.shouldAutoRespondToRequest(proofRecord)
     }
 
     return false

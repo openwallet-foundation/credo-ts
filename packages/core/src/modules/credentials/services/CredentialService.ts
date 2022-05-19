@@ -7,6 +7,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { DidCommMessageRepository } from '../../../storage'
 import type { MediationRecipientService } from '../../routing'
+import type { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import type { CredentialStateChangedEvent } from './../CredentialEvents'
 import type { CredentialProtocolVersion } from './../CredentialProtocolVersion'
 import type {
@@ -37,7 +38,7 @@ import type { V2IssueCredentialMessage } from './../protocol/v2/messages/V2Issue
 import type { V2OfferCredentialMessage } from './../protocol/v2/messages/V2OfferCredentialMessage'
 import type { V2ProposeCredentialMessage } from './../protocol/v2/messages/V2ProposeCredentialMessage'
 import type { V2RequestCredentialMessage } from './../protocol/v2/messages/V2RequestCredentialMessage'
-import type { CredentialExchangeRecord, CredentialRepository } from './../repository'
+import type { CredentialRepository } from './../repository'
 import type { RevocationService } from './RevocationService'
 
 import { CredentialEventTypes } from './../CredentialEvents'

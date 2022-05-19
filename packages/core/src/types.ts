@@ -82,6 +82,7 @@ export interface InitConfig {
   autoUpdateStorageOnStartup?: boolean
 }
 
+export type ProtocolVersion = `${number}.${number}`
 export interface PlaintextMessage {
   '@type': string
   '@id': string

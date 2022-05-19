@@ -1,6 +1,6 @@
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
-import { ProofRequest } from '../models'
+import { ProofRequest } from '../formats/indy/models/ProofRequest'
 
 describe('ProofRequest', () => {
   it('should successfully validate if the proof request json contains a valid structure', async () => {
@@ -8,7 +8,7 @@ describe('ProofRequest', () => {
       {
         name: 'ProofRequest',
         version: '1.0',
-        nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+        nonce: '947121108704767252195123',
         requested_attributes: {
           First: {
             name: 'Timo',
@@ -43,7 +43,7 @@ describe('ProofRequest', () => {
       {
         name: 'ProofRequest',
         version: '1.0',
-        nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+        nonce: '947121108704767252195123',
         requested_attributes: {
           First: {
             names: [],

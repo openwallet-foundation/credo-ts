@@ -12,8 +12,10 @@ import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
 import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerModule } from '../../modules/ledger/LedgerModule'
-import { ProofRepository, ProofService } from '../../modules/proofs'
+import { ProofRepository } from '../../modules/proofs'
 import { ProofsModule } from '../../modules/proofs/ProofsModule'
+import { V1ProofService } from '../../modules/proofs/protocol/v1'
+import { V2ProofService } from '../../modules/proofs/protocol/v2'
 import {
   MediatorModule,
   RecipientModule,
@@ -119,7 +121,8 @@ describe('Agent', () => {
       expect(container.resolve(TrustPingService)).toBeInstanceOf(TrustPingService)
 
       expect(container.resolve(ProofsModule)).toBeInstanceOf(ProofsModule)
-      expect(container.resolve(ProofService)).toBeInstanceOf(ProofService)
+      expect(container.resolve(V1ProofService)).toBeInstanceOf(V1ProofService)
+      expect(container.resolve(V2ProofService)).toBeInstanceOf(V2ProofService)
       expect(container.resolve(ProofRepository)).toBeInstanceOf(ProofRepository)
 
       expect(container.resolve(CredentialsModule)).toBeInstanceOf(CredentialsModule)
@@ -162,7 +165,8 @@ describe('Agent', () => {
       expect(container.resolve(TrustPingService)).toBe(container.resolve(TrustPingService))
 
       expect(container.resolve(ProofsModule)).toBe(container.resolve(ProofsModule))
-      expect(container.resolve(ProofService)).toBe(container.resolve(ProofService))
+      expect(container.resolve(V1ProofService)).toBe(container.resolve(V1ProofService))
+      expect(container.resolve(V2ProofService)).toBe(container.resolve(V2ProofService))
       expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
 
       expect(container.resolve(CredentialsModule)).toBe(container.resolve(CredentialsModule))

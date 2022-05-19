@@ -8,13 +8,14 @@ import type {
   CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
   InitConfig,
-  ProofAttributeInfo,
-  ProofPredicateInfo,
   ProofStateChangedEvent,
   SchemaTemplate,
+  ProofPredicateInfo,
+  ProofAttributeInfo,
 } from '../src'
 import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
 import type { CredentialOfferTemplate } from '../src/modules/credentials/protocol'
+import type { AcceptPresentationOptions, RequestProofOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { Schema, CredDef } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -26,9 +27,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
+  ProofProtocolVersion,
   HandshakeProtocol,
   DidExchangeState,
   DidExchangeRole,
@@ -54,6 +53,11 @@ import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
+import {
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
+} from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -539,20 +543,39 @@ export async function presentProof({
   verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
   holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
 
-  let verifierRecord = await verifierAgent.proofs.requestProof(verifierConnectionId, {
-    name: 'test-proof-request',
-    requestedAttributes: attributes,
-    requestedPredicates: predicates,
-  })
+  const requestProofsOptions: RequestProofOptions = {
+    protocolVersion: ProofProtocolVersion.V1,
+    connectionId: verifierConnectionId,
+    proofFormats: {
+      indy: {
+        name: 'test-proof-request',
+        requestedAttributes: attributes,
+        requestedPredicates: predicates,
+        version: '1.0',
+        nonce: '947121108704767252195123',
+      },
+    },
+  }
+
+  let verifierRecord = await verifierAgent.proofs.requestProof(requestProofsOptions)
 
   let holderRecord = await waitForProofRecordSubject(holderReplay, {
     threadId: verifierRecord.threadId,
     state: ProofState.RequestReceived,
   })
 
-  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(holderRecord.id)
-  const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
-  await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
+  const requestedCredentials = await holderAgent.proofs.autoSelectCredentialsForProofRequest({
+    proofRecordId: holderRecord.id,
+    config: {
+      filterByPresentationPreview: true,
+    },
+  })
+
+  const acceptPresentationOptions: AcceptPresentationOptions = {
+    proofRecordId: holderRecord.id,
+    proofFormats: { indy: requestedCredentials.indy },
+  }
+  await holderAgent.proofs.acceptRequest(acceptPresentationOptions)
 
   verifierRecord = await waitForProofRecordSubject(verifierReplay, {
     threadId: holderRecord.threadId,
