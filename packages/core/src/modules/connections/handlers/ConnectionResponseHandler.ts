@@ -40,6 +40,10 @@ export class ConnectionResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }
 
+    if (!connectionRecord.did) {
+      throw new AriesFrameworkError(`Connection record ${connectionRecord.id} has no 'did'`)
+    }
+
     const ourDidDocument = await this.didResolverService.resolveDidDocument(connectionRecord.did)
     if (!ourDidDocument) {
       throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved!`)

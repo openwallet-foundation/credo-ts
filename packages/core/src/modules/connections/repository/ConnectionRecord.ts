@@ -9,7 +9,7 @@ import { rfc0160StateFromDidExchangeState, DidExchangeRole, DidExchangeState } f
 export interface ConnectionRecordProps {
   id?: string
   createdAt?: Date
-  did: string
+  did?: string
   theirDid?: string
   theirLabel?: string
   state: DidExchangeState
@@ -33,7 +33,7 @@ export type DefaultConnectionTags = {
   role: DidExchangeRole
   threadId?: string
   mediatorId?: string
-  did: string
+  did?: string
   theirDid?: string
   outOfBandId?: string
 }
@@ -45,7 +45,7 @@ export class ConnectionRecord
   public state!: DidExchangeState
   public role!: DidExchangeRole
 
-  public did!: string
+  public did?: string
 
   public theirDid?: string
   public theirLabel?: string

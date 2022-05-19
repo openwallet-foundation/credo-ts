@@ -26,8 +26,8 @@ import {
 } from '../../modules/connections'
 import { JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
-import { DidsModule } from '../dids'
-import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
+import { DidKey, DidsModule } from '../dids'
+import { didKeyToVerkey } from '../dids/helpers'
 import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { MediationRecipientService } from '../routing'
 
@@ -115,9 +115,9 @@ export class OutOfBandModule {
    * Creates an outbound out-of-band record containing out-of-band invitation message defined in
    * Aries RFC 0434: Out-of-Band Protocol 1.1.
    *
-   * It automatically adds all supported handshake protocols by agent to `hanshake_protocols`. You
+   * It automatically adds all supported handshake protocols by agent to `handshake_protocols`. You
    * can modify this by setting `handshakeProtocols` in `config` parameter. If you want to create
-   * invitation without handhsake, you can set `handshake` to `false`.
+   * invitation without handshake, you can set `handshake` to `false`.
    *
    * If `config` parameter contains `messages` it adds them to `requests~attach` attribute.
    *
@@ -170,8 +170,8 @@ export class OutOfBandModule {
       return new OutOfBandDidCommService({
         id: `#inline-${index}`,
         serviceEndpoint: endpoint,
-        recipientKeys: [routing.verkey].map(verkeyToDidKey),
-        routingKeys: routing.routingKeys.map(verkeyToDidKey),
+        recipientKeys: [routing.recipientKey].map((key) => new DidKey(key).did),
+        routingKeys: routing.routingKeys.map((key) => new DidKey(key).did),
       })
     })
 
@@ -197,7 +197,6 @@ export class OutOfBandModule {
     }
 
     const outOfBandRecord = new OutOfBandRecord({
-      did: routing.did,
       mediatorId: routing.mediatorId,
       role: OutOfBandRole.Sender,
       state: OutOfBandState.AwaitResponse,

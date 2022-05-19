@@ -264,8 +264,8 @@ export class CredentialsModule implements CredentialsModule {
       const routing = await this.mediatorRecipientService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
       const recipientService = offerMessage.service
 

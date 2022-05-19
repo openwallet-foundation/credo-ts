@@ -38,15 +38,21 @@ export function isSelfCertifiedDid(did: string, verkey: string): boolean {
     return true
   }
 
-  const buffer = TypedArrayEncoder.fromBase58(verkey)
-
-  const didFromVerkey = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
+  const didFromVerkey = indyDidFromPublicKeyBase58(verkey)
 
   if (didFromVerkey === did) {
     return true
   }
 
   return false
+}
+
+export function indyDidFromPublicKeyBase58(publicKeyBase58: string): string {
+  const buffer = TypedArrayEncoder.fromBase58(publicKeyBase58)
+
+  const did = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
+
+  return did
 }
 
 export function getFullVerkey(did: string, verkey: string) {

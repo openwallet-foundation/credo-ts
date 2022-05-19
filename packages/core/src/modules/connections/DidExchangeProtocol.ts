@@ -20,7 +20,7 @@ import { DidDocument, Key } from '../dids'
 import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
 import { createDidDocumentFromServices } from '../dids/domain/createPeerDidFromServices'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
-import { didKeyToInstanceOfKey, didKeyToVerkey } from '../dids/helpers'
+import { didKeyToInstanceOfKey } from '../dids/helpers'
 import { DidKey } from '../dids/methods/key/DidKey'
 import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../dids/methods/peer/didPeer'
 import { didDocumentJsonToNumAlgo1Did } from '../dids/methods/peer/peerDidNumAlgo1'
@@ -73,8 +73,6 @@ export class DidExchangeProtocol {
     const { outOfBandInvitation } = outOfBandRecord
     const { alias, goal, goalCode, routing, autoAcceptConnection } = params
 
-    const { did, mediatorId } = routing
-
     // TODO: We should store only one did that we'll use to send the request message with success.
     // We take just the first one for now.
     const [invitationDid] = outOfBandInvitation.invitationDids
@@ -86,8 +84,7 @@ export class DidExchangeProtocol {
       state: DidExchangeState.InvitationReceived,
       theirLabel: outOfBandInvitation.label,
       multiUseInvitation: false,
-      did,
-      mediatorId,
+      mediatorId: routing.mediatorId ?? outOfBandRecord.mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
       invitationDid,
@@ -97,7 +94,6 @@ export class DidExchangeProtocol {
 
     // Create message
     const label = params.label ?? this.config.label
-    const { verkey } = routing
     const didDocument = await this.createPeerDidDoc(this.routingToServices(routing))
     const parentThreadId = outOfBandInvitation.id
 
@@ -105,7 +101,7 @@ export class DidExchangeProtocol {
 
     // Create sign attachment containing didDoc
     if (getNumAlgoFromPeerDid(didDocument.id) === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(didDocument, [verkey].map(didKeyToVerkey))
+      const didDocAttach = await this.createSignedAttachment(didDocument, [routing.recipientKey.publicKeyBase58])
       message.didDoc = didDocAttach
     }
 
@@ -126,19 +122,13 @@ export class DidExchangeProtocol {
 
   public async processRequest(
     messageContext: InboundMessageContext<DidExchangeRequestMessage>,
-    outOfBandRecord: OutOfBandRecord,
-    routing?: Routing
+    outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type} start`, messageContext)
 
     // TODO check oob role is sender
     // TODO check oob state is await-response
     // TODO check there is no connection record for particular oob record
-
-    const { did, mediatorId } = routing ? routing : outOfBandRecord
-    if (!did) {
-      throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
-    }
 
     const { message } = messageContext
 
@@ -151,7 +141,6 @@ export class DidExchangeProtocol {
     }
 
     // If the responder wishes to continue the exchange, they will persist the received information in their wallet.
-
     if (!message.did.startsWith('did:peer:')) {
       throw new DidExchangeProblemReportError(
         `Message contains unsupported did ${message.did}. Supported dids are [did:peer]`,
@@ -198,14 +187,13 @@ export class DidExchangeProtocol {
       role: DidExchangeRole.Responder,
       state: DidExchangeState.RequestReceived,
       multiUseInvitation: false,
-      did,
-      mediatorId,
+      theirDid: message.did,
+      theirLabel: message.label,
+      threadId: message.threadId,
+      mediatorId: outOfBandRecord.mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
     })
-    connectionRecord.theirDid = message.did
-    connectionRecord.theirLabel = message.label
-    connectionRecord.threadId = message.threadId
 
     await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type} end`, connectionRecord)
@@ -219,11 +207,6 @@ export class DidExchangeProtocol {
   ): Promise<DidExchangeResponseMessage> {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeResponseMessage.type, connectionRecord)
-
-    const { did } = routing ? routing : outOfBandRecord
-    if (!did) {
-      throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
-    }
 
     const { threadId } = connectionRecord
 
@@ -525,8 +508,8 @@ export class DidExchangeProtocol {
     return routing.endpoints.map((endpoint, index) => ({
       id: `#inline-${index}`,
       serviceEndpoint: endpoint,
-      recipientKeys: [Key.fromPublicKeyBase58(routing.verkey, KeyType.Ed25519)],
-      routingKeys: routing.routingKeys.map((routingKey) => Key.fromPublicKeyBase58(routingKey, KeyType.Ed25519)) || [],
+      recipientKeys: [routing.recipientKey],
+      routingKeys: routing.routingKeys,
     }))
   }
 }
