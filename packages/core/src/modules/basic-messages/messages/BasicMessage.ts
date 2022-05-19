@@ -1,7 +1,8 @@
 import { Expose, Transform } from 'class-transformer'
-import { Equals, IsDate, IsString } from 'class-validator'
+import { IsDate, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { DateParser } from '../../../utils/transformers'
 
 export class BasicMessage extends AgentMessage {
@@ -21,9 +22,9 @@ export class BasicMessage extends AgentMessage {
     }
   }
 
-  @Equals(BasicMessage.type)
-  public readonly type = BasicMessage.type
-  public static readonly type = 'https://didcomm.org/basicmessage/1.0/message'
+  @IsValidMessageType(BasicMessage.type)
+  public readonly type = BasicMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/basicmessage/1.0/message')
 
   @Expose({ name: 'sent_time' })
   @Transform(({ value }) => DateParser(value))

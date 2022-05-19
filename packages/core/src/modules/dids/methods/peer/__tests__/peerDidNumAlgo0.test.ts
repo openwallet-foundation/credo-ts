@@ -1,4 +1,4 @@
-import { Key } from '../../../../../crypto/Key'
+import { Key } from '../../../../../crypto'
 import didKeyBls12381g1 from '../../../__tests__/__fixtures__/didKeyBls12381g1.json'
 import didKeyBls12381g1g2 from '../../../__tests__/__fixtures__/didKeyBls12381g1g2.json'
 import didKeyBls12381g2 from '../../../__tests__/__fixtures__/didKeyBls12381g2.json'

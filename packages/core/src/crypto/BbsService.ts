@@ -9,7 +9,7 @@ import {
   verify,
 } from '@mattrglobal/bbs-signatures'
 
-import { TypedArrayEncoder } from '../utils'
+import { TypedArrayEncoder } from '../utils/TypedArrayEncoder'
 import { Buffer } from '../utils/buffer'
 import { WalletError } from '../wallet/error'
 
@@ -22,7 +22,7 @@ export interface BlsKeyPair {
 }
 
 interface BbsCreateKeyOptions extends CreateKeyOptions {
-  keyType: KeyType.Bls12381g1 | KeyType.Bls12381g2
+  keyType: Extract<KeyType, KeyType.Bls12381g1 | KeyType.Bls12381g2>
 }
 
 interface BbsSignOptions {
@@ -120,13 +120,13 @@ export class BbsService {
    * @param messages Buffer[] The messages that have to be verified if they are signed
    * @param signature Buffer The signature that has to be verified if it was created with the messages and public key
    *
-   * @returns A boolean whether the signature is created with the public key over the messages
+   * @returns A boolean whether the signature is create with the public key over the messages
    *
    * @throws {WalletError} When the message list is empty
    * @throws {WalletError} When the verification process failed
    */
   public static async verify({ signature, messages, publicKey }: BbsVerifyOptions): Promise<boolean> {
-    if (messages.length === 0) throw new WalletError('Unable to verify a signature without any messages')
+    if (messages.length === 0) throw new WalletError('Unable to create a signature without any messages')
     // Check if it is a single message or list and if it is a single message convert it to a list
     const normalizedMessages = (TypedArrayEncoder.isTypedArray(messages) ? [messages as Buffer] : messages) as Buffer[]
 

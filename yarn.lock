@@ -10,6 +10,11 @@
     "@jridgewell/gen-mapping" "^0.1.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
+"@animo-id/react-native-bbs-signatures@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@animo-id/react-native-bbs-signatures/-/react-native-bbs-signatures-0.1.0.tgz#f62bc16b867c9f690977982d66f0a03566b21ad2"
+  integrity sha512-7qvsiWhGfUev8ngE8YzF6ON9PtCID5LiYVYM4EC5eyj80gCdhx3R46CI7K1qbqIlGsoTYQ/Xx5Ubo5Ji9eaUEA==
+
 "@azure/core-asynciterator-polyfill@^1.0.0":
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/@azure/core-asynciterator-polyfill/-/core-asynciterator-polyfill-1.0.2.tgz#0dd3849fb8d97f062a39db0e5cadc9ffaf861fec"
@@ -2003,11 +2008,11 @@
     "@octokit/openapi-types" "^11.2.0"
 
 "@peculiar/asn1-schema@^2.1.6":
-  version "2.1.7"
-  resolved "https://registry.yarnpkg.com/@peculiar/asn1-schema/-/asn1-schema-2.1.7.tgz#17d9b79f7df748ef84158ea61a24fc11d9f3f4d9"
-  integrity sha512-RxnHrl7WgNxWPsGeSw7YUGTS3s5En7JwhdOilRpEShQJQ9TH8v1nZtslyZGX5GxgUJ1P4dnRsCnt7R5EYmvtUg==
+  version "2.1.8"
+  resolved "https://registry.yarnpkg.com/@peculiar/asn1-schema/-/asn1-schema-2.1.8.tgz#552300a1ed7991b22c9abf789a3920a3cb94c26b"
+  integrity sha512-u34H/bpqCdDuqrCVZvH0vpwFBT/dNEdNY+eE8u4IuC26yYnhDkXF4+Hliqca88Avbb7hyN2EF/eokyDdyS7G/A==
   dependencies:
-    asn1js "^3.0.3"
+    asn1js "^3.0.4"
     pvtsutils "^1.3.2"
     tslib "^2.4.0"
 
@@ -3067,10 +3072,10 @@ asn1@~0.2.3:
   dependencies:
     safer-buffer "~2.1.0"
 
-asn1js@^3.0.1, asn1js@^3.0.3:
-  version "3.0.3"
-  resolved "https://registry.yarnpkg.com/asn1js/-/asn1js-3.0.3.tgz#fbecdcced2c046552db0c63af284eccc494e0e74"
-  integrity sha512-Oz62ld3K3n6KlRUr4iZSMbSFDDPCW84G1yX7b/gWK5a0Ka7ZYOmCxFpu91lFdQygkBi2Hgoft1/WxRqFrONqLA==
+asn1js@^3.0.1, asn1js@^3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/asn1js/-/asn1js-3.0.4.tgz#65fece61bd30d0ef1e31b39fcd383810f44c9fb5"
+  integrity sha512-ZibuNYyfODvHiVyRFs80xLAUjCwBSkLbE+r1TasjlRKwdodENGT4AlLdaN12Pl/EcK3lFMDYXU6lE2g7Sq9VVQ==
   dependencies:
     pvtsutils "^1.3.2"
     pvutils "^1.1.3"
@@ -7165,9 +7170,9 @@ libnpmpublish@^4.0.0:
     ssri "^8.0.1"
 
 libphonenumber-js@^1.9.7:
-  version "1.10.3"
-  resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.10.3.tgz#f4f360c348e1fd3ca9380cfafd2896f44d3db3a9"
-  integrity sha512-wRZyH4gAcFGnyfLImnZq5Qga2BxSEBfczs0xE8L6KmtE5BolI3utujMtS9sCmWFN/F0OGiHeNsfx8x4WLOAmKQ==
+  version "1.10.4"
+  resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.10.4.tgz#90397f0ed620262570a32244c9fbc389cc417ce4"
+  integrity sha512-9QWxEk4GW5RDnFzt8UtyRENfFpAN8u7Sbf9wf32tcXY9tdtnz1dKHIBwW2Wnfx8ypXJb9zUnTpK9aQJ/B8AlnA==
 
 lines-and-columns@^1.1.6:
   version "1.2.4"
@@ -10491,9 +10496,9 @@ trim-newlines@^3.0.0:
   integrity sha512-c1PTsA3tYrIsLGkJkzHF+w9F2EyxfXGo4UyJc4pFL++FMjnq0HJS69T3M7d//gKrFKwy429bouPescbjecU+Zw==
 
 ts-jest@^27.0.3:
-  version "27.1.4"
-  resolved "https://registry.yarnpkg.com/ts-jest/-/ts-jest-27.1.4.tgz#84d42cf0f4e7157a52e7c64b1492c46330943e00"
-  integrity sha512-qjkZlVPWVctAezwsOD1OPzbZ+k7zA5z3oxII4dGdZo5ggX/PL7kvwTM0pXTr10fAtbiVpJaL3bWd502zAhpgSQ==
+  version "27.1.5"
+  resolved "https://registry.yarnpkg.com/ts-jest/-/ts-jest-27.1.5.tgz#0ddf1b163fbaae3d5b7504a1e65c914a95cff297"
+  integrity sha512-Xv6jBQPoBEvBq/5i2TeSG9tt/nqkbpcurrEG1b+2yfBrcJelOZF9Ml6dmyMh7bcW9JyFbRYpR5rxROSlBLTZHA==
   dependencies:
     bs-logger "0.x"
     fast-json-stable-stringify "2.x"

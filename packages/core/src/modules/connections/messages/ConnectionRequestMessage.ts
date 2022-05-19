@@ -1,9 +1,10 @@
 import type { DidDoc } from '../models'
 
 import { Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { Connection } from '../models'
 
 export interface ConnectionRequestMessageOptions {
@@ -39,9 +40,9 @@ export class ConnectionRequestMessage extends AgentMessage {
     }
   }
 
-  @Equals(ConnectionRequestMessage.type)
-  public readonly type = ConnectionRequestMessage.type
-  public static readonly type = 'https://didcomm.org/connections/1.0/request'
+  @IsValidMessageType(ConnectionRequestMessage.type)
+  public readonly type = ConnectionRequestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/request')
 
   @IsString()
   public label!: string

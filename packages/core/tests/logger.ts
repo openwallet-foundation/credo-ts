@@ -7,6 +7,7 @@ import { Logger } from 'tslog'
 
 import { LogLevel } from '../src/logger'
 import { BaseLogger } from '../src/logger/BaseLogger'
+import { replaceError } from '../src/logger/replaceError'
 
 function logToTransport(logObject: ILogObject) {
   appendFileSync('logs.txt', JSON.stringify(logObject) + '\n')
@@ -55,7 +56,7 @@ export class TestLogger extends BaseLogger {
     const tsLogLevel = this.tsLogLevelMap[level]
 
     if (data) {
-      this.logger[tsLogLevel](message, data)
+      this.logger[tsLogLevel](message, JSON.parse(JSON.stringify(data, replaceError, 2)))
     } else {
       this.logger[tsLogLevel](message)
     }

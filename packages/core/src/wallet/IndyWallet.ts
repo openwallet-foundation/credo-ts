@@ -2,14 +2,21 @@ import type { BlsKeyPair } from '../crypto/BbsService'
 import type { Logger } from '../logger'
 import type {
   EncryptedMessage,
-  DecryptedMessageContext,
   WalletConfig,
   WalletExportImportConfig,
   WalletConfigRekey,
   KeyDerivationMethod,
 } from '../types'
 import type { Buffer } from '../utils/buffer'
-import type { Wallet, DidInfo, DidConfig, CreateKeyOptions, VerifyOptions, SignOptions } from './Wallet'
+import type {
+  Wallet,
+  DidInfo,
+  DidConfig,
+  CreateKeyOptions,
+  VerifyOptions,
+  SignOptions,
+  UnpackedMessageContext,
+} from './Wallet'
 import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -561,7 +568,7 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  public async unpack(messagePackage: EncryptedMessage): Promise<DecryptedMessageContext> {
+  public async unpack(messagePackage: EncryptedMessage): Promise<UnpackedMessageContext> {
     try {
       const unpackedMessageBuffer = await this.indy.unpackMessage(this.handle, JsonEncoder.toBuffer(messagePackage))
       const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)

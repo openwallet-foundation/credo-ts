@@ -3,9 +3,6 @@ import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
-import { SECURITY_CONTEXT_BBS_URL } from '../../../vc/constants'
-
-import { getSignatureKeyBase } from './getSignatureKeyBase'
 
 const VERIFICATION_METHOD_TYPE_BLS12381G1_KEY_2020 = 'Bls12381G1Key2020'
 
@@ -18,22 +15,9 @@ export function getBls12381g1VerificationMethod(did: string, key: Key) {
   }
 }
 
-export function getBls12381g1DidDoc(did: string, key: Key) {
-  const verificationMethod = getBls12381g1VerificationMethod(did, key)
-
-  return getSignatureKeyBase({
-    did,
-    key,
-    verificationMethod,
-  })
-    .addContext(SECURITY_CONTEXT_BBS_URL)
-    .build()
-}
-
 export const keyDidBls12381g1: KeyDidMapping = {
   supportedVerificationMethodTypes: [VERIFICATION_METHOD_TYPE_BLS12381G1_KEY_2020],
 
-  getDidDocument: getBls12381g1DidDoc,
   getVerificationMethods: (did, key) => [getBls12381g1VerificationMethod(did, key)],
   getKeyFromVerificationMethod: (verificationMethod: VerificationMethod) => {
     if (

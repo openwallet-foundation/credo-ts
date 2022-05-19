@@ -1,3 +1,5 @@
+import type { Key } from '../../../crypto'
+
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../../../constants'
@@ -12,7 +14,11 @@ export class DidRepository extends Repository<DidRecord> {
     super(DidRecord, storageService)
   }
 
-  public findByVerkey(verkey: string) {
-    return this.findSingleByQuery({ recipientKeys: [verkey] })
+  public findByRecipientKey(recipientKey: Key) {
+    return this.findSingleByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
+  }
+
+  public findAllByRecipientKey(recipientKey: Key) {
+    return this.findByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
   }
 }

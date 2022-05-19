@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
   AutoAcceptProof,
@@ -28,27 +29,31 @@ import {
   PresentationPreview,
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
+  HandshakeProtocol,
+  DidExchangeState,
+  DidExchangeRole,
   LogLevel,
   AgentConfig,
   AriesFrameworkError,
   BasicMessageEventTypes,
-  ConnectionInvitationMessage,
   ConnectionRecord,
-  ConnectionRole,
-  ConnectionState,
   CredentialEventTypes,
   CredentialState,
-  DidDoc,
   PredicateType,
   ProofEventTypes,
   ProofState,
   Agent,
 } from '../src'
+import { Key, KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../src/modules/credentials/CredentialProtocolVersion'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/V1CredentialPreview'
-import { DidCommService } from '../src/modules/dids'
+import { DidCommV1Service, DidKey } from '../src/modules/dids'
+import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
+import { OutOfBandInvitation } from '../src/modules/oob/messages'
+import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -238,78 +243,89 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
 }
 
 export function getMockConnection({
-  state = ConnectionState.Invited,
-  role = ConnectionRole.Invitee,
+  state = DidExchangeState.InvitationReceived,
+  role = DidExchangeRole.Requester,
   id = 'test',
   did = 'test-did',
   threadId = 'threadId',
-  verkey = 'key-1',
-  didDoc = new DidDoc({
-    id: did,
-    publicKey: [],
-    authentication: [],
-    service: [
-      new DidCommService({
-        id: `${did};indy`,
-        serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [verkey],
-      }),
-    ],
-  }),
   tags = {},
   theirLabel,
-  invitation = new ConnectionInvitationMessage({
-    label: 'test',
-    recipientKeys: [verkey],
-    serviceEndpoint: 'https:endpoint.com/msg',
-  }),
   theirDid = 'their-did',
-  theirDidDoc = new DidDoc({
-    id: theirDid,
-    publicKey: [],
-    authentication: [],
-    service: [
-      new DidCommService({
-        id: `${did};indy`,
-        serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [verkey],
-      }),
-    ],
-  }),
   multiUseInvitation = false,
 }: Partial<ConnectionRecordProps> = {}) {
   return new ConnectionRecord({
     did,
-    didDoc,
     threadId,
     theirDid,
-    theirDidDoc,
     id,
     role,
     state,
     tags,
-    verkey,
-    invitation,
     theirLabel,
     multiUseInvitation,
   })
 }
 
-export async function makeConnection(
-  agentA: Agent,
-  agentB: Agent,
-  config?: {
-    autoAcceptConnection?: boolean
-    alias?: string
-    mediatorId?: string
+export function getMockOutOfBand({
+  label,
+  serviceEndpoint,
+  recipientKeys,
+  did,
+  mediatorId,
+  role,
+  state,
+  reusable,
+  reuseConnectionId,
+}: {
+  label?: string
+  serviceEndpoint?: string
+  did?: string
+  mediatorId?: string
+  recipientKeys?: string[]
+  role?: OutOfBandRole
+  state?: OutOfBandState
+  reusable?: boolean
+  reuseConnectionId?: string
+} = {}) {
+  const options = {
+    label: label ?? 'label',
+    accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
+    handshakeProtocols: [HandshakeProtocol.DidExchange],
+    services: [
+      new DidCommV1Service({
+        id: `#inline-0`,
+        priority: 0,
+        serviceEndpoint: serviceEndpoint ?? 'http://example.com',
+        recipientKeys: recipientKeys || [
+          new DidKey(Key.fromPublicKeyBase58('ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7', KeyType.Ed25519)).did,
+        ],
+        routingKeys: [],
+      }),
+    ],
   }
-) {
-  // eslint-disable-next-line prefer-const
-  let { invitation, connectionRecord: agentAConnection } = await agentA.connections.createConnection(config)
-  let agentBConnection = await agentB.connections.receiveInvitation(invitation)
+  const outOfBandInvitation = new OutOfBandInvitation(options)
+  const outOfBandRecord = new OutOfBandRecord({
+    did: did || 'test-did',
+    mediatorId,
+    role: role || OutOfBandRole.Receiver,
+    state: state || OutOfBandState.Initial,
+    outOfBandInvitation: outOfBandInvitation,
+    reusable,
+    reuseConnectionId,
+  })
+  return outOfBandRecord
+}
 
-  agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection.id)
-  agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection.id)
+export async function makeConnection(agentA: Agent, agentB: Agent) {
+  const agentAOutOfBand = await agentA.oob.createInvitation({
+    handshakeProtocols: [HandshakeProtocol.Connections],
+  })
+
+  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand.outOfBandInvitation)
+
+  agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
+  let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand.id)
+  agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection!.id)
 
   return [agentAConnection, agentBConnection]
 }
