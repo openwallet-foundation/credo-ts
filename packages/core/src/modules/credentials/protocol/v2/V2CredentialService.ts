@@ -221,6 +221,7 @@ export class V2CredentialService extends CredentialService {
     const options: ServiceOfferCredentialOptions = {
       credentialFormats: proposal.credentialFormats,
       comment: proposal.comment,
+      protocolVersion: credentialRecord.protocolVersion,
     }
     const message = await this.createOfferAsResponse(credentialRecord, options)
 
