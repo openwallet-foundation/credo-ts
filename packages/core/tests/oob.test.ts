@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
-import type { AgentMessage, AgentMessageReceivedEvent, CredentialExchangeRecord } from '@aries-framework/core'
+import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
 
@@ -14,7 +14,6 @@ import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
-import { sleep } from '../src/utils/sleep'
 
 import { TestMessage } from './TestMessage'
 import { getBaseConfig, prepareForIssuance, waitForCredentialRecord } from './helpers'
