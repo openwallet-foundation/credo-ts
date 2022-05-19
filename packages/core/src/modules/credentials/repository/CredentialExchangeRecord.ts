@@ -96,8 +96,10 @@ export class CredentialExchangeRecord extends BaseRecord<
 
   public getTags() {
     const metadata = this.metadata.get(CredentialMetadataKeys.IndyCredential)
-    const ids = this.credentials.map((c) => c.credentialRecordId)
-
+    let ids: string[] = []
+    if (this.credentials) {
+      ids = this.credentials.map((c) => c.credentialRecordId)
+    }
     return {
       ...this._tags,
       threadId: this.threadId,
