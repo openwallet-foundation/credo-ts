@@ -1,4 +1,4 @@
-import type { KeyType } from '.'
+import type { KeyType } from './KeyType'
 
 import { Buffer, MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 

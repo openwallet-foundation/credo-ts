@@ -43,6 +43,7 @@ describe('credentials', () => {
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
   let issuerDidKey: DidKey
+  let verificationMethod: string
   const seed = 'testseed000000000000000000000001'
 
   beforeEach(async () => {
@@ -76,15 +77,10 @@ describe('credentials', () => {
       .subscribe(aliceReplay)
 
     wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-    // await wallet.initPublicDid({})
-    // const pubDid = wallet.publicDid
-    // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-    // issuerDidKey = new DidKey(key)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const issuerDidInfo = await wallet.createDid({ seed })
     const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
     issuerDidKey = new DidKey(issuerKey)
+    verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
 
     const inputDoc = {
       '@context': [
@@ -121,7 +117,7 @@ describe('credentials', () => {
     signCredentialOptions = {
       credential,
       proofType: 'Ed25519Signature2018',
-      verificationMethod: issuerDidKey.keyId,
+      verificationMethod,
     }
   })
 

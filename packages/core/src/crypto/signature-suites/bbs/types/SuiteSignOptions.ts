@@ -11,9 +11,9 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '../../JwsLinkedDataSignature'
+import type { JsonObject } from '../../../../types'
+import type { DocumentLoader } from '../../../../utils'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Options for signing using a signature suite
  */
@@ -21,7 +21,7 @@ export interface SuiteSignOptions {
   /**
    * Input document to sign
    */
-  readonly document: any
+  readonly document: JsonObject
   /**
    * Optional custom document loader
    */
@@ -37,5 +37,5 @@ export interface SuiteSignOptions {
   /**
    * The proof
    */
-  readonly proof: any
+  readonly proof: JsonObject
 }

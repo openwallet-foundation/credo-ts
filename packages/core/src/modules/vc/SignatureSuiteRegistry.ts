@@ -1,11 +1,10 @@
-import jsigs from '@digitalcredentials/jsonld-signatures'
-
+import { suites } from '../../../types/jsonld-signatures'
 import { KeyType } from '../../crypto'
 import { Ed25519Signature2018 } from '../../crypto/signature-suites'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020 } from '../../crypto/signature-suites/bbs'
 import { AriesFrameworkError } from '../../error'
 
-const LinkedDataSignature = jsigs.suites.LinkedDataSignature
+const LinkedDataSignature = suites.LinkedDataSignature
 
 export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature

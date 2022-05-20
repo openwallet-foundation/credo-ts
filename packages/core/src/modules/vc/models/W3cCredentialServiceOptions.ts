@@ -1,5 +1,6 @@
-import type { ProofPurpose } from '../../../crypto/signature-suites'
+import type { JsonObject } from '../../../types'
 import type { SingleOrArray } from '../../../utils/type'
+import type { ProofPurpose } from '../proof-purposes/ProofPurpose'
 import type { W3cCredential } from './credential/W3cCredential'
 import type { W3cVerifiableCredential } from './credential/W3cVerifiableCredential'
 import type { W3cPresentation } from './presentation/W3Presentation'
@@ -7,7 +8,7 @@ import type { W3cVerifiablePresentation } from './presentation/W3cVerifiablePres
 
 export interface SignCredentialOptions {
   credential: W3cCredential
-  proofType: string // TODO replace with enum
+  proofType: string
   verificationMethod: string
   proofPurpose?: ProofPurpose
   created?: string
@@ -38,6 +39,7 @@ export interface SignPresentationOptions {
   signatureType: string
   purpose: ProofPurpose
   verificationMethod: string
+  challenge: string
 }
 
 export interface VerifyPresentationOptions {
@@ -50,6 +52,6 @@ export interface VerifyPresentationOptions {
 
 export interface DeriveProofOptions {
   credential: W3cVerifiableCredential
-  revealDocument: Record<string, any>
+  revealDocument: JsonObject
   verificationMethod: string
 }

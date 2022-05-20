@@ -11,7 +11,9 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { JsonObject } from '../../../../types'
+import type { DocumentLoader } from '../../../../utils'
+
 /**
  * Options for getting a proof from a JSON-LD document
  */
@@ -19,7 +21,7 @@ export interface GetProofsOptions {
   /**
    * The JSON-LD document to extract the proofs from.
    */
-  readonly document: any
+  readonly document: JsonObject
   /**
    * Optional the proof type(s) to filter the returned proofs by
    */
@@ -27,11 +29,11 @@ export interface GetProofsOptions {
   /**
    * Optional custom document loader
    */
-  documentLoader?(): any
+  documentLoader?(): DocumentLoader
   /**
    * Optional expansion map
    */
-  expansionMap?(): any
+  expansionMap?(): () => void
   /**
    * Optional property to indicate whether to skip compacting the resulting proof
    */

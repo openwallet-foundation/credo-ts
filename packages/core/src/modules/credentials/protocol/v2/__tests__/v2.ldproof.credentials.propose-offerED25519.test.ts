@@ -1,6 +1,8 @@
 import type { W3cVerifiableCredential } from '../../../../../../src/modules/vc/models'
 import type { Agent } from '../../../../../agent/Agent'
+import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { ConnectionRecord } from '../../../../connections'
+import type { SignCredentialOptions } from '../../../../vc/models/W3cCredentialServiceOptions'
 import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
@@ -13,7 +15,7 @@ import { Attachment, AttachmentData } from '../../../../../../src/decorators/att
 import { DidKey } from '../../../../../../src/modules/dids'
 import { LinkedAttachment } from '../../../../../../src/utils/LinkedAttachment'
 import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
-import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
+import { getAgentConfig, setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { KeyType } from '../../../../../crypto/KeyType'
 import { DidCommMessageRepository } from '../../../../../storage'
@@ -34,7 +36,9 @@ describe('credentials', () => {
   let aliceCredentialRecord: CredentialExchangeRecord
   let faberCredentialRecord: CredentialExchangeRecord
   let wallet: IndyWallet
+  let agentConfig: AgentConfig
   let issuerDidKey: DidKey
+  let verificationMethod: string
   let didCommMessageRepository: DidCommMessageRepository
 
   const inputDoc = {
@@ -69,27 +73,37 @@ describe('credentials', () => {
 
   const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
 
-  const signCredentialOptions = {
-    credential,
-    proofType: 'Ed25519Signature2018',
-    verificationMethod: '',
-  }
+  let signCredentialOptions: SignCredentialOptions
+
   const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
-    ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
-      'Faber Agent Credentials LD',
-      'Alice Agent Credentials LD'
+    // // wallet = new IndyWallet(agentConfig)
+    // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
+    //   'Faber Agent Credentials LD',
+    //   'Alice Agent Credentials LD'
+    // ))
+    // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // // await wallet.createAndOpen(agentConfig.walletConfig!)
+    // wallet = faberAgent.injectionContainer.resolve(IndyWallet)
+
+    // const issuerDidInfo = await wallet.createDid({ seed })
+    // const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+    // issuerDidKey = new DidKey(issuerKey)
+    // verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
+    // signCredentialOptions = {
+    //   credential,
+    //   proofType: 'Ed25519Signature2018',
+    //   verificationMethod,
+    // }
+
+    ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
+      'Faber Agent Credentials LD BBS+',
+      'Alice Agent Credentials LD BBS+'
     ))
     wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const issuerDidInfo = await wallet.createDid({ seed })
-    const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
-    issuerDidKey = new DidKey(issuerKey)
-
-    credential.issuer = issuerDidKey.did
-    signCredentialOptions.verificationMethod = issuerDidKey.keyId
+    await wallet.initPublicDid({})
   })
 
   afterAll(async () => {

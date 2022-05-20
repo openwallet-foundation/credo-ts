@@ -1,15 +1,11 @@
-import type {
-  DocumentLoader,
-  JwsLinkedDataSignature,
-  Proof,
-} from '../../../crypto/signature-suites/JwsLinkedDataSignature'
+import type { JsonObject } from '../../../types'
+import type { DocumentLoader, Proof } from '../../../utils'
 
-// @ts-ignore
-import jsonld from '@digitalcredentials/jsonld'
-import jsigs from '@digitalcredentials/jsonld-signatures'
+import jsonld from '../../../../types/jsonld'
+import { suites, purposes } from '../../../../types/jsonld-signatures'
 
-const AssertionProofPurpose = jsigs.purposes.AssertionProofPurpose
-
+const AssertionProofPurpose = purposes.AssertionProofPurpose
+const LinkedDataProof = suites.LinkedDataProof
 /**
  * Creates a proof purpose that will validate whether or not the verification
  * method in a proof was authorized by its declared controller for the
@@ -54,14 +50,15 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
    */
   public async validate(
     proof: Proof,
-    options: {
-      document: Record<string, unknown>
-      suite: JwsLinkedDataSignature
+    options?: {
+      document: JsonObject
+      suite: typeof LinkedDataProof
       verificationMethod: string
-      documentLoader: DocumentLoader
-      expansionMap: () => void
+      documentLoader?: DocumentLoader
+      expansionMap?: () => void
     }
-  ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<{ valid: boolean; error?: any }> {
     try {
       const result = await super.validate(proof, options)
 
@@ -69,6 +66,8 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
         throw result.error
       }
 
+      // This @ts-ignore is necessary because the .getValues() method is not part of the public API.
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
       const issuer = jsonld.util.getValues(options.document, 'issuer')
 

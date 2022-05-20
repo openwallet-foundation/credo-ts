@@ -1,9 +1,8 @@
 import type { VerificationMethod } from './verificationMethod/VerificationMethod'
 
-import { KeyType } from '../../../crypto'
+import { KeyType, Key } from '../../../crypto'
 
 import { DidDocumentBuilder } from './DidDocumentBuilder'
-import { Key } from './Key'
 import { getBls12381g1VerificationMethod } from './key-type/bls12381g1'
 import { getBls12381g1g2VerificationMethod } from './key-type/bls12381g1g2'
 import { getBls12381g2VerificationMethod } from './key-type/bls12381g2'

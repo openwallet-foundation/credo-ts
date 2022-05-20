@@ -1,6 +1,5 @@
-import { KeyType } from '../../crypto'
+import { KeyType, Key } from '../../crypto'
 
-import { Key } from './domain/Key'
 import { DidKey } from './methods/key'
 
 export function didKeyToVerkey(key: string) {

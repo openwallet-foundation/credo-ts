@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { DocumentLoader } from '../../../../utils'
+
 /**
  * Options for getting the type from a JSON-LD document
  */
@@ -20,10 +21,10 @@ export interface GetTypeOptions {
    * Optional custom document loader
    */
   // eslint-disable-next-line
-  documentLoader?: Function
+  documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
   // eslint-disable-next-line
-  expansionMap?: Function
+  expansionMap?: () => void
 }

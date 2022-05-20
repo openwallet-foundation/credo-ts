@@ -1,6 +1,6 @@
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
+import type { Key } from '../../crypto'
 import type { ConnectionRecord } from '../connections'
-import type { Key } from '../dids/domain/Key'
 import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
 import type { OutOfBandRecord } from './repository'
 

@@ -11,7 +11,9 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { JsonObject } from '../../../../types'
+import type { DocumentLoader, Proof } from '../../../../utils'
+
 /**
  * Options for creating a proof
  */
@@ -19,25 +21,25 @@ export interface DeriveProofOptions {
   /**
    * Document outlining what statements to reveal
    */
-  readonly revealDocument: any
+  readonly revealDocument: JsonObject
   /**
    * The document featuring the proof to derive from
    */
-  readonly document: any
+  readonly document: JsonObject
   /**
    * The proof for the document
    */
-  readonly proof: any
+  readonly proof: Proof
   /**
    * Optional custom document loader
    */
   // eslint-disable-next-line
-  documentLoader?: Function
+  documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
   // eslint-disable-next-line
-  expansionMap?: Function
+  expansionMap?: () => void
   /**
    * Nonce to include in the derived proof
    */

@@ -1,31 +1,14 @@
 /*!
  * Copyright (c) 2020-2021 Digital Bazaar, Inc. All rights reserved.
  */
+import type { DocumentLoader, Proof, VerificationMethod } from '../../utils'
 import type { LdKeyPair } from '../LdKeyPair'
 
-import jsigs from '@digitalcredentials/jsonld-signatures'
-
+import { suites } from '../../../types/jsonld-signatures'
+import { AriesFrameworkError } from '../../error'
 import { TypedArrayEncoder, JsonEncoder } from '../../utils'
 
-const LinkedDataSignature = jsigs.suites.LinkedDataSignature
-
-export type JsonLdDoc = Record<string, unknown>
-export interface VerificationMethod {
-  id: string
-  [key: string]: unknown
-}
-
-export interface Proof {
-  verificationMethod: string | VerificationMethod
-  [key: string]: unknown
-}
-
-export type DocumentLoaderResult = Promise<Record<string, unknown>>
-
-export type DocumentLoader = (url: string) => DocumentLoaderResult
-
-export type ProofPurpose = any
-
+const LinkedDataSignature = suites.LinkedDataSignature
 export interface JwsLinkedDataSignatureOptions {
   type: string
   algorithm: string
@@ -39,37 +22,30 @@ export interface JwsLinkedDataSignatureOptions {
 
 export class JwsLinkedDataSignature extends LinkedDataSignature {
   /**
-   * @param {object} options - Options hashmap.
-   * @param {string} options.type - Provided by subclass.
-   * @param {string} options.alg - JWS alg provided by subclass.
-   * @param {object} [options.LDKeyClass] - Provided by subclass or subclass
+   * @param options - Options hashmap.
+   * @param options.type - Provided by subclass.
+   * @param options.alg - JWS alg provided by subclass.
+   * @param [options.LDKeyClass] - Provided by subclass or subclass
    *   overrides `getVerificationMethod`.
    *
    * Either a `key` OR at least one of `signer`/`verifier` is required.
    *
-   * @param {object} [options.key] - An optional key object (containing an
+   * @param [options.key] - An optional key object (containing an
    *   `id` property, and either `signer` or `verifier`, depending on the
    *   intended operation. Useful for when the application is managing keys
    *   itself (when using a KMS, you never have access to the private key,
    *   and so should use the `signer` param instead).
-   * @param {Function} [options.signer] - Signer function that returns an
-   *   object with an async sign() method. This is useful when interfacing
-   *   with a KMS (since you don't get access to the private key and its
-   *   `signer()`, the KMS client gives you only the signer function to use).
-   * @param {Function} [options.verifier] - Verifier function that returns
-   *   an object with an async `verify()` method. Useful when working with a
-   *   KMS-provided verifier function.
    *
    * Advanced optional parameters and overrides.
    *
-   * @param {object} [options.proof] - A JSON-LD document with options to use
+   * @param [options.proof] - A JSON-LD document with options to use
    *   for the `proof` node. Any other custom fields can be provided here
    *   using a context different from `security-v2`.
-   * @param {string|Date} [options.date] - Signing date to use if not passed.
-   * @param {string} options.contextUrl - JSON-LD context url that corresponds
+   * @param [options.date] - Signing date to use if not passed.
+   * @param options.contextUrl - JSON-LD context url that corresponds
    *   to this signature suite. Used for enforcing suite context during the
    *   `sign()` operation.
-   * @param {boolean} [options.useNativeCanonize] - Whether to use a native
+   * @param [options.useNativeCanonize] - Whether to use a native
    *   canonize algorithm.
    */
   public constructor(options: JwsLinkedDataSignatureOptions) {
@@ -88,13 +64,13 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
   }
 
   /**
-   * @param {object} options - Options hashmap.
-   * @param {Uint8Array} options.verifyData - The data to sign.
-   * @param {object} options.proof - A JSON-LD document with options to use
+   * @param options - Options hashmap.
+   * @param options.verifyData - The data to sign.
+   * @param options.proof - A JSON-LD document with options to use
    *   for the `proof` node. Any other custom fields can be provided here
    *   using a context different from `security-v2`.
    *
-   * @returns {Promise<{object}>} The proof containing the signature value.
+   * @returns The proof containing the signature value.
    */
   public async sign(options: { verifyData: Uint8Array; proof: Proof }) {
     if (!(this.signer && typeof this.signer.sign === 'function')) {
@@ -133,12 +109,12 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
   }
 
   /**
-   * @param {object} options - Options hashmap.
-   * @param {Uint8Array} options.verifyData - The data to verify.
-   * @param {object} options.verificationMethod - A verification method.
-   * @param {object} options.proof - The proof to be verified.
+   * @param options - Options hashmap.
+   * @param options.verifyData - The data to verify.
+   * @param options.verificationMethod - A verification method.
+   * @param options.proof - The proof to be verified.
    *
-   * @returns {Promise<{boolean}>} Resolves with the verification result.
+   * @returns Resolves with the verification result.
    */
   public async verifySignature(options: {
     verifyData: Uint8Array
@@ -153,7 +129,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
 
     let header
     try {
-      header = JsonEncoder.fromBase64(encodedHeader) // VERIFY if this is correct
+      header = JsonEncoder.fromBase64(encodedHeader)
     } catch (e) {
       throw new Error('Could not parse JWS header; ' + e)
     }
@@ -188,7 +164,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     return verifier.verify({ data, signature })
   }
 
-  public async getVerificationMethod(options: { proof: Proof; documentLoader: DocumentLoader }) {
+  public async getVerificationMethod(options: { proof: Proof; documentLoader?: DocumentLoader }) {
     if (this.key) {
       // This happens most often during sign() operations. For verify(),
       // the expectation is that the verification method will be fetched
@@ -206,6 +182,12 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
       throw new Error('No "verificationMethod" found in proof.')
     }
 
+    if (!options.documentLoader) {
+      throw new AriesFrameworkError(
+        'Missing custom document loader. This is required for resolving verification methods.'
+      )
+    }
+
     const { document } = await options.documentLoader(verificationMethod)
 
     verificationMethod = typeof document === 'string' ? JSON.parse(document) : document
@@ -217,39 +199,39 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
   /**
    * Checks whether a given proof exists in the document.
    *
-   * @param {object} options - Options hashmap.
-   * @param {object} options.proof - A proof.
-   * @param {object} options.document - A JSON-LD document.
-   * @param {object} options.purpose - A jsonld-signatures ProofPurpose
+   * @param options - Options hashmap.
+   * @param options.proof - A proof.
+   * @param options.document - A JSON-LD document.
+   * @param options.purpose - A jsonld-signatures ProofPurpose
    *  instance (e.g. AssertionProofPurpose, AuthenticationProofPurpose, etc).
-   * @param {Function} options.documentLoader  - A secure document loader (it is
+   * @param options.documentLoader  - A secure document loader (it is
    *   recommended to use one that provides static known documents, instead of
    *   fetching from the web) for returning contexts, controller documents,
    *   keys, and other relevant URLs needed for the proof.
-   * @param {Function} [options.expansionMap] - A custom expansion map that is
+   * @param [options.expansionMap] - A custom expansion map that is
    *   passed to the JSON-LD processor; by default a function that will throw
    *   an error when unmapped properties are detected in the input, use `false`
    *   to turn this off and allow unmapped properties to be dropped or use a
    *   custom function.
    *
-   * @returns {Promise<boolean>} Whether a match for the proof was found.
+   * @returns Whether a match for the proof was found.
    */
   public async matchProof(options: {
     proof: Proof
     document: VerificationMethod
-    purpose: ProofPurpose
-    documentLoader: DocumentLoader
-    expansionMap: () => void
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    purpose: any
+    documentLoader?: DocumentLoader
+    expansionMap?: () => void
   }) {
-    if (
-      !(await super.matchProof({
-        proof: options.proof,
-        document: options.document,
-        purpose: options.purpose,
-        documentLoader: options.documentLoader,
-        expansionMap: options.expansionMap,
-      }))
-    ) {
+    const proofMatches = await super.matchProof({
+      proof: options.proof,
+      document: options.document,
+      purpose: options.purpose,
+      documentLoader: options.documentLoader,
+      expansionMap: options.expansionMap,
+    })
+    if (!proofMatches) {
       return false
     }
     // NOTE: When subclassing this suite: Extending suites will need to check

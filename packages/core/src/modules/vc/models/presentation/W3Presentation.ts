@@ -1,3 +1,5 @@
+/* eslint-disable import/no-extraneous-dependencies */
+import type { JsonObject } from '../../../../types'
 import type { W3cVerifiableCredentialOptions } from '../credential/W3cVerifiableCredential'
 import type { ValidationOptions } from 'class-validator'
 
@@ -12,7 +14,7 @@ import { VerifiableCredentialTransformer, W3cVerifiableCredential } from '../cre
 
 export interface W3cPresentationOptions {
   id?: string
-  context: Array<string> | Record<string, any>
+  context: Array<string> | JsonObject
   verifiableCredential: SingleOrArray<W3cVerifiableCredentialOptions>
   type: Array<string>
   holder?: string
@@ -33,7 +35,7 @@ export class W3cPresentation {
 
   @Expose({ name: '@context' })
   @IsJsonLdContext()
-  public context!: Array<string> | Record<string, any>
+  public context!: Array<string> | JsonObject
 
   @IsOptional()
   @IsUri()

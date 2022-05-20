@@ -34,6 +34,7 @@ describe('credentials', () => {
   let aliceCredentialRecord: CredentialExchangeRecord
   let wallet: IndyWallet
   let issuerDidKey: DidKey
+  let verificationMethod: string
   let credential: W3cCredential
   let signCredentialOptions: SignCredentialOptions
 
@@ -46,17 +47,10 @@ describe('credentials', () => {
         AutoAcceptCredential.Always
       ))
       wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-      // await wallet.initPublicDid({})
-      // const pubDid = wallet.publicDid
-      // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-      // issuerDidKey = new DidKey(key)
-
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const issuerDidInfo = await wallet.createDid({ seed })
       const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
       issuerDidKey = new DidKey(issuerKey)
-
+      verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
       const inputDoc = {
         '@context': [
           'https://www.w3.org/2018/credentials/v1',
@@ -92,7 +86,7 @@ describe('credentials', () => {
       signCredentialOptions = {
         credential,
         proofType: 'Ed25519Signature2018',
-        verificationMethod: issuerDidKey.keyId,
+        verificationMethod,
       }
     })
     afterAll(async () => {
@@ -242,7 +236,7 @@ describe('credentials', () => {
       signCredentialOptions = {
         credential,
         proofType: 'Ed25519Signature2018',
-        verificationMethod: issuerDidKey.keyId,
+        verificationMethod,
       }
     })
 

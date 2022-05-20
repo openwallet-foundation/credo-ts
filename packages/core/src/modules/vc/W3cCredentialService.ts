@@ -1,4 +1,5 @@
 import type { Key } from '../../crypto/Key'
+import type { DocumentLoaderResult } from '../../utils'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
   CreatePresentationOptions,
@@ -11,30 +12,18 @@ import type {
 } from './models/W3cCredentialServiceOptions'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 // eslint-disable-next-line import/no-extraneous-dependencies
-import jsonld, { expand, frame } from '@digitalcredentials/jsonld'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-// eslint-disable-next-line import/no-extraneous-dependencies
-import documentLoaderNode from '@digitalcredentials/jsonld/lib/documentLoaders/node'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-// eslint-disable-next-line import/no-extraneous-dependencies
-import documentLoaderXhr from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
-import vc from '@digitalcredentials/vc'
-import { deriveProof } from '@mattrglobal/jsonld-signatures-bbs'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
+import jsonld, { documentLoaderNode, documentLoaderXhr } from '../../../types/jsonld'
+import vc from '../../../types/vc'
 import { AgentConfig } from '../../agent/AgentConfig'
-import { InjectionSymbols } from '../../constants'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
+import { deriveProof } from '../../crypto/signature-suites/bbs'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
-import { JsonTransformer, orArrayToArray } from '../../utils'
+import { JsonTransformer, orArrayToArray, w3cDate } from '../../utils'
 import { isNodeJS, isReactNative } from '../../utils/environment'
-import { uuid } from '../../utils/uuid'
 import { Wallet } from '../../wallet'
 import { DidResolverService, VerificationMethod } from '../dids'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
@@ -52,21 +41,21 @@ export class W3cCredentialService {
   private w3cCredentialRepository: W3cCredentialRepository
   private didResolver: DidResolverService
   private agentConfig: AgentConfig
-  // private logger: Logger
+  private logger: Logger
   private suiteRegistry: SignatureSuiteRegistry
 
   public constructor(
-    @inject(InjectionSymbols.Wallet) wallet: Wallet,
+    @inject('Wallet') wallet: Wallet,
     w3cCredentialRepository: W3cCredentialRepository,
     didResolver: DidResolverService,
-    agentConfig: AgentConfig
-    // logger: Logger
+    agentConfig: AgentConfig,
+    logger: Logger
   ) {
     this.wallet = wallet
     this.w3cCredentialRepository = w3cCredentialRepository
     this.didResolver = didResolver
     this.agentConfig = agentConfig
-    // this.logger = logger
+    this.logger = logger
     this.suiteRegistry = new SignatureSuiteRegistry()
   }
 
@@ -102,7 +91,7 @@ export class W3cCredentialService {
         verificationMethod: options.verificationMethod,
       },
       useNativeCanonize: false,
-      date: options.created ?? new Date().toISOString(),
+      date: options.created ?? w3cDate(),
     })
 
     const result = await vc.issue({
@@ -122,30 +111,9 @@ export class W3cCredentialService {
    * @returns the verification result
    */
   public async verifyCredential(options: VerifyCredentialOptions): Promise<W3cVerifyCredentialResult> {
-    // create keyPair
-    const WalletKeyPair = createWalletKeyPairClass(this.wallet)
+    const suites = this.getSignatureSuitesForCredential(options.credential)
 
-    let proofs = options.credential.proof
-
-    if (!Array.isArray(proofs)) {
-      proofs = [proofs]
-    }
-
-    const suites = proofs.map((x) => {
-      const SuiteClass = this.suiteRegistry.getByProofType(x.type)?.suiteClass
-      if (SuiteClass) {
-        return new SuiteClass({
-          LDKeyClass: WalletKeyPair,
-          proof: {
-            verificationMethod: x.verificationMethod,
-          },
-          date: x.created,
-          useNativeCanonize: false,
-        })
-      }
-    })
-
-    const verifyOptions: Record<string, any> = {
+    const verifyOptions: Record<string, unknown> = {
       credential: JsonTransformer.toJSON(options.credential),
       suite: suites,
       documentLoader: this.documentLoader,
@@ -177,7 +145,7 @@ export class W3cCredentialService {
     }
 
     const presentationJson = vc.createPresentation({
-      verifiableCredential: options.credentials.map((x) => JsonTransformer.toJSON(x)),
+      verifiableCredential: options.credentials.map((credential) => JsonTransformer.toJSON(credential)),
       id: options.id,
       holder: options.holderUrl,
     })
@@ -209,11 +177,11 @@ export class W3cCredentialService {
 
     const verificationMethodObject = (await this.documentLoader(options.verificationMethod)).document as Record<
       string,
-      any
+      unknown
     >
 
     const keyPair = new WalletKeyPair({
-      controller: verificationMethodObject['controller'],
+      controller: verificationMethodObject['controller'] as string,
       id: options.verificationMethod,
       key: signingKey,
       wallet: this.wallet,
@@ -232,7 +200,7 @@ export class W3cCredentialService {
     const result = await vc.signPresentation({
       presentation: JsonTransformer.toJSON(options.presentation),
       suite: suite,
-      challenge: uuid(),
+      challenge: options.challenge,
       documentLoader: this.documentLoader,
     })
 
@@ -255,24 +223,31 @@ export class W3cCredentialService {
       proofs = [proofs]
     }
     if (options.purpose) {
-      proofs = proofs.filter((x) => x.proofPurpose === options.purpose.term)
+      proofs = proofs.filter((proof) => proof.proofPurpose === options.purpose.term)
     }
 
-    const suites = proofs.map((x) => {
-      const SuiteClass = this.suiteRegistry.getByProofType(x.type).suiteClass
+    const presentationSuites = proofs.map((proof) => {
+      const SuiteClass = this.suiteRegistry.getByProofType(proof.type).suiteClass
       return new SuiteClass({
         LDKeyClass: WalletKeyPair,
         proof: {
-          verificationMethod: x.verificationMethod,
+          verificationMethod: proof.verificationMethod,
         },
-        date: x.created,
+        date: proof.created,
         useNativeCanonize: false,
       })
     })
 
-    const verifyOptions: Record<string, any> = {
+    const credentials = Array.isArray(options.presentation.verifiableCredential)
+      ? options.presentation.verifiableCredential
+      : [options.presentation.verifiableCredential]
+
+    const credentialSuites = credentials.map((credential) => this.getSignatureSuitesForCredential(credential))
+    const allSuites = presentationSuites.concat(...credentialSuites)
+
+    const verifyOptions: Record<string, unknown> = {
       presentation: JsonTransformer.toJSON(options.presentation),
-      suite: suites,
+      suite: allSuites,
       challenge: options.challenge,
       documentLoader: this.documentLoader,
     }
@@ -301,16 +276,15 @@ export class W3cCredentialService {
     return proof
   }
 
-  public documentLoader = async (url: string): Promise<Record<string, any>> => {
+  public documentLoader = async (url: string): Promise<DocumentLoaderResult> => {
     if (url.startsWith('did:')) {
       const result = await this.didResolver.resolve(url)
 
       if (result.didResolutionMetadata.error || !result.didDocument) {
-        // TODO: we should probably handle this more gracefully
         throw new AriesFrameworkError(`Unable to resolve DID: ${url}`)
       }
 
-      const framed = await frame(result.didDocument.toJSON(), {
+      const framed = await jsonld.frame(result.didDocument.toJSON(), {
         '@context': result.didDocument.context,
         '@embed': '@never',
         id: url,
@@ -354,12 +328,12 @@ export class W3cCredentialService {
   public async storeCredential(options: StoreCredentialOptions): Promise<W3cCredentialRecord> {
     // Get the expanded types
     const expandedTypes = (
-      await expand(JsonTransformer.toJSON(options.record), { documentLoader: this.documentLoader })
+      await jsonld.expand(JsonTransformer.toJSON(options.record), { documentLoader: this.documentLoader })
     )[0]['@type']
 
     // Create an instance of the w3cCredentialRecord
     const w3cCredentialRecord = new W3cCredentialRecord({
-      tags: { expandedTypes: orArrayToArray(expandedTypes) },
+      tags: { expandedTypes: orArrayToArray<string>(expandedTypes) },
       credential: options.record,
     })
 
@@ -370,22 +344,49 @@ export class W3cCredentialService {
   }
 
   public async getAllCredentials(): Promise<W3cVerifiableCredential[]> {
-    return (await this.w3cCredentialRepository.getAll()).map((x) => x.credential)
+    const allRecords = await this.w3cCredentialRepository.getAll()
+    return allRecords.map((record) => record.credential)
   }
 
   public async getCredentialById(id: string): Promise<W3cVerifiableCredential> {
     return (await this.w3cCredentialRepository.getById(id)).credential
   }
 
-  public async findCredentialByQuery(
+  public async findCredentialsByQuery(
     query: Parameters<typeof W3cCredentialRepository.prototype.findByQuery>[0]
   ): Promise<W3cVerifiableCredential[]> {
-    return (await this.w3cCredentialRepository.findByQuery(query)).map((x) => x.credential)
+    const result = await this.w3cCredentialRepository.findByQuery(query)
+    return result.map((record) => record.credential)
   }
 
   public async findSingleCredentialByQuery(
     query: Parameters<typeof W3cCredentialRepository.prototype.findSingleByQuery>[0]
   ): Promise<W3cVerifiableCredential | undefined> {
-    return (await this.w3cCredentialRepository.findSingleByQuery(query))?.credential
+    const result = await this.w3cCredentialRepository.findSingleByQuery(query)
+    return result?.credential
+  }
+
+  private getSignatureSuitesForCredential(credential: W3cVerifiableCredential) {
+    const WalletKeyPair = createWalletKeyPairClass(this.wallet)
+
+    let proofs = credential.proof
+
+    if (!Array.isArray(proofs)) {
+      proofs = [proofs]
+    }
+
+    return proofs.map((proof) => {
+      const SuiteClass = this.suiteRegistry.getByProofType(proof.type)?.suiteClass
+      if (SuiteClass) {
+        return new SuiteClass({
+          LDKeyClass: WalletKeyPair,
+          proof: {
+            verificationMethod: proof.verificationMethod,
+          },
+          date: proof.created,
+          useNativeCanonize: false,
+        })
+      }
+    })
   }
 }
