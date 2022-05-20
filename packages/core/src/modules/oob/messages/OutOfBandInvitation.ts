@@ -86,7 +86,7 @@ export class OutOfBandInvitation extends AgentMessage {
       return await this.fromShortUrl(invitationUrl)
     }
   }
-
+  //This currently does not follow the RFC because of issues with fetch, currently uses a janky work around
   public static async fromShortUrl(invitationUrl: string) {
     // eslint-disable-next-line no-restricted-globals
     const abortController = new AbortController()
