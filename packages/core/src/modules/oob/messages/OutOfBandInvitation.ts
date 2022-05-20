@@ -113,7 +113,7 @@ export class OutOfBandInvitation extends AgentMessage {
         return invitation
       } else if (response['url']) {
         const parsedUrl = parseUrl(response['url']).query
-        const encodedInvitation = parsedUrl['c_i'] ?? parsedUrl['d_m']
+        const encodedInvitation = parsedUrl['oob']
 
         if (typeof encodedInvitation === 'string') {
           const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
@@ -124,7 +124,7 @@ export class OutOfBandInvitation extends AgentMessage {
           return invitation
         } else {
           throw new AriesFrameworkError(
-            'InvitationUrl is invalid. Needs to be encrypted with either c_i or d_m or must be valid shortened URL'
+            'InvitationUrl is invalid. Needs to be encrypted with either c_i, d_m, or oob or must be valid shortened URL'
           )
         }
       }
