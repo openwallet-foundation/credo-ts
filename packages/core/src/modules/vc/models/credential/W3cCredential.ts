@@ -1,7 +1,6 @@
 import type { CredentialSubjectOptions } from './CredentialSubject'
 import type { IssuerOptions } from './Issuer'
 import type { ValidationOptions } from 'class-validator'
-import type { ContextDefinition } from 'jsonld'
 
 import { Expose } from 'class-transformer'
 import { buildMessage, IsOptional, IsString, ValidateBy } from 'class-validator'
