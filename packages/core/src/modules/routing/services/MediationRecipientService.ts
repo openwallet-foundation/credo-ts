@@ -1,6 +1,6 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { AgentMessageReceivedEvent } from '../../../agent/Events'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { Logger } from '../../../logger'
 import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
@@ -10,8 +10,8 @@ import type {
   MediationDenyMessage,
   MediationGrantMessage,
   MessageDeliveryMessage,
-  StatusMessage,
 } from '../messages'
+import type { StatusMessage } from '../messages/StatusMessage'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
@@ -19,7 +19,7 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { MessageReceiver } from '../../../agent/MessageReceiver'
+import { AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
@@ -44,7 +44,7 @@ import { MediationRepository } from '../repository/MediationRepository'
 @scoped(Lifecycle.ContainerScoped)
 export class MediationRecipientService {
   private wallet: Wallet
-  private mediatorRepository: MediationRepository
+  private mediationRepository: MediationRepository
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
   private messageSender: MessageSender
@@ -63,7 +63,7 @@ export class MediationRecipientService {
   ) {
     this.config = config
     this.wallet = wallet
-    this.mediatorRepository = mediatorRepository
+    this.mediationRepository = mediatorRepository
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
@@ -96,6 +96,23 @@ export class MediationRecipientService {
     return this.messageSender.sendMessage(createOutboundMessage(mediator, statusRequest))
   }
 
+  public async createStatusRequest(
+    mediationRecord: MediationRecord,
+    config: {
+      recipientKey?: string
+    } = {}
+  ) {
+    mediationRecord.assertRole(MediationRole.Recipient)
+    mediationRecord.assertReady()
+
+    const { recipientKey } = config
+    const statusRequest = new StatusRequestMessage({
+      recipientKey,
+    })
+
+    return statusRequest
+  }
+
   public async createRequest(
     connection: ConnectionRecord
   ): Promise<MediationProtocolMsgReturnType<MediationRequestMessage>> {
@@ -107,7 +124,7 @@ export class MediationRecipientService {
       role: MediationRole.Recipient,
       connectionId: connection.id,
     })
-    await this.mediatorRepository.save(mediationRecord)
+    await this.mediationRepository.save(mediationRecord)
     this.eventEmitter.emit<MediationStateChangedEvent>({
       type: RoutingEventTypes.MediationStateChanged,
       payload: {
@@ -124,7 +141,7 @@ export class MediationRecipientService {
     const connection = messageContext.assertReadyConnection()
 
     // Mediation record must already exists to be updated to granted status
-    const mediationRecord = await this.mediatorRepository.getByConnectionId(connection.id)
+    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
 
     // Assert
     mediationRecord.assertState(MediationState.Requested)
@@ -140,7 +157,7 @@ export class MediationRecipientService {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
-    const mediationRecord = await this.mediatorRepository.getByConnectionId(connection.id)
+    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
 
     // Assert
     mediationRecord.assertReady()
@@ -157,7 +174,7 @@ export class MediationRecipientService {
       }
     }
 
-    await this.mediatorRepository.update(mediationRecord)
+    await this.mediationRepository.update(mediationRecord)
     this.eventEmitter.emit<KeylistUpdatedEvent>({
       type: RoutingEventTypes.RecipientKeylistUpdated,
       payload: {
@@ -260,8 +277,15 @@ export class MediationRecipientService {
     return mediationRecord
   }
 
-  public processStatus(statusMessage: StatusMessage) {
+  public async processStatus(messageContext: InboundMessageContext<StatusMessage>) {
+    const connection = messageContext.assertReadyConnection()
+    const { message: statusMessage } = messageContext
     const { messageCount, recipientKey } = statusMessage
+
+    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
+
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(MediationRole.Recipient)
 
     //No messages to be sent
     if (messageCount === 0) return null
@@ -277,22 +301,31 @@ export class MediationRecipientService {
     return deliveryRequestMessage
   }
 
-  public async processDelivery(messageDeliveryMessage: MessageDeliveryMessage) {
-    const { attachments } = messageDeliveryMessage
+  public async processDelivery(messageContext: InboundMessageContext<MessageDeliveryMessage>) {
+    const connection = messageContext.assertReadyConnection()
 
-    if (!attachments)
+    const { appendedAttachments } = messageContext.message
+
+    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
+
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(MediationRole.Recipient)
+
+    if (!appendedAttachments)
       throw new ProblemReportError('Error processing attachments', {
         problemCode: RoutingProblemReportReason.ErrorProcessingAttachments,
       })
 
     const ids: string[] = []
-    for (const attachment of attachments) {
+    for (const attachment of appendedAttachments) {
       ids.push(attachment.id)
-      try {
-        await this.messageReceiver.receiveMessage(attachment.getDataAsJson<EncryptedMessage>())
-      } catch (error) {
-        this.logger.error(`Failed to process message id: ${attachment.id}`, { error, attachment })
-      }
+
+      this.eventEmitter.emit<AgentMessageReceivedEvent>({
+        type: AgentEventTypes.AgentMessageReceived,
+        payload: {
+          message: attachment.getDataAsJson<EncryptedMessage>(),
+        },
+      })
     }
 
     return new MessagesReceivedMessage({
@@ -311,7 +344,7 @@ export class MediationRecipientService {
   private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
     const previousState = mediationRecord.state
     mediationRecord.state = newState
-    await this.mediatorRepository.update(mediationRecord)
+    await this.mediationRepository.update(mediationRecord)
 
     this.eventEmitter.emit<MediationStateChangedEvent>({
       type: RoutingEventTypes.MediationStateChanged,
@@ -324,25 +357,25 @@ export class MediationRecipientService {
   }
 
   public async getById(id: string): Promise<MediationRecord> {
-    return this.mediatorRepository.getById(id)
+    return this.mediationRepository.getById(id)
   }
 
   public async findByConnectionId(connectionId: string): Promise<MediationRecord | null> {
-    return this.mediatorRepository.findSingleByQuery({ connectionId })
+    return this.mediationRepository.findSingleByQuery({ connectionId })
   }
 
   public async getMediators(): Promise<MediationRecord[]> {
-    return this.mediatorRepository.getAll()
+    return this.mediationRepository.getAll()
   }
 
   public async findDefaultMediator(): Promise<MediationRecord | null> {
-    return this.mediatorRepository.findSingleByQuery({ default: true })
+    return this.mediationRepository.findSingleByQuery({ default: true })
   }
 
   public async discoverMediation(mediatorId?: string): Promise<MediationRecord | undefined> {
     // If mediatorId is passed, always use it (and error if it is not found)
     if (mediatorId) {
-      return this.mediatorRepository.getById(mediatorId)
+      return this.mediationRepository.getById(mediatorId)
     }
 
     const defaultMediator = await this.findDefaultMediator()
@@ -358,16 +391,16 @@ export class MediationRecipientService {
   }
 
   public async setDefaultMediator(mediator: MediationRecord) {
-    const mediationRecords = await this.mediatorRepository.findByQuery({ default: true })
+    const mediationRecords = await this.mediationRepository.findByQuery({ default: true })
 
     for (const record of mediationRecords) {
       record.setTag('default', false)
-      await this.mediatorRepository.update(record)
+      await this.mediationRepository.update(record)
     }
 
     // Set record coming in tag to true and then update.
     mediator.setTag('default', true)
-    await this.mediatorRepository.update(mediator)
+    await this.mediationRepository.update(mediator)
   }
 
   public async clearDefaultMediator() {
@@ -375,7 +408,7 @@ export class MediationRecipientService {
 
     if (mediationRecord) {
       mediationRecord.setTag('default', false)
-      await this.mediatorRepository.update(mediationRecord)
+      await this.mediationRepository.update(mediationRecord)
     }
   }
 }

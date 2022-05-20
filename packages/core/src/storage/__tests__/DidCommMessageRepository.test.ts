@@ -39,14 +39,16 @@ describe('Repository', () => {
       const record = getRecord({ id: 'test-id' })
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
 
-      const invitation = await repository.getAgentMessage({
+      const invitation = await repository.findAgentMessage({
         messageClass: ConnectionInvitationMessage,
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
       expect(storageMock.findByQuery).toBeCalledWith(DidCommMessageRecord, {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-        messageType: 'https://didcomm.org/connections/1.0/invitation',
+        messageName: 'invitation',
+        protocolName: 'connections',
+        protocolMajorVersion: '1',
       })
       expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
     })
@@ -63,7 +65,9 @@ describe('Repository', () => {
 
       expect(storageMock.findByQuery).toBeCalledWith(DidCommMessageRecord, {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-        messageType: 'https://didcomm.org/connections/1.0/invitation',
+        messageName: 'invitation',
+        protocolName: 'connections',
+        protocolMajorVersion: '1',
       })
       expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
     })
@@ -77,7 +81,9 @@ describe('Repository', () => {
 
       expect(storageMock.findByQuery).toBeCalledWith(DidCommMessageRecord, {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-        messageType: 'https://didcomm.org/connections/1.0/invitation',
+        messageName: 'invitation',
+        protocolName: 'connections',
+        protocolMajorVersion: '1',
       })
       expect(invitation).toBeNull()
     })

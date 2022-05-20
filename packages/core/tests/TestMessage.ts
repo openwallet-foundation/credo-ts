@@ -7,5 +7,5 @@ export class TestMessage extends AgentMessage {
     this.id = this.generateId()
   }
 
-  public readonly type = 'https://didcomm.org/connections/1.0/invitation'
+  public type = 'https://didcomm.org/connections/1.0/invitation'
 }

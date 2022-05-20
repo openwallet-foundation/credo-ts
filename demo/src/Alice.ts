@@ -1,5 +1,5 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
+import type { CredentialExchangeRecord, ProofRecord } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
@@ -27,11 +27,20 @@ export class Alice extends BaseAgent {
   }
 
   private async printConnectionInvite() {
-    const invite = await this.agent.connections.createConnection()
-    this.connectionRecordFaberId = invite.connectionRecord.id
+    const outOfBand = await this.agent.oob.createInvitation()
+    // FIXME: this won't work as oob doesn't create a connection immediately
+    const [connectionRecord] = await this.agent.connections.findAllByOutOfBandId(outOfBand.id)
+    if (!connectionRecord) {
+      throw new Error(redText(Output.NoConnectionRecordFromOutOfBand))
+    }
+    this.connectionRecordFaberId = connectionRecord.id
 
-    console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')
-    return invite.connectionRecord
+    console.log(
+      Output.ConnectionLink,
+      outOfBand.outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }),
+      '\n'
+    )
+    return connectionRecord
   }
 
   private async waitForConnection() {
@@ -53,9 +62,10 @@ export class Alice extends BaseAgent {
     await this.waitForConnection()
   }
 
-  public async acceptCredentialOffer(credentialRecord: CredentialRecord) {
-    await this.agent.credentials.acceptOffer(credentialRecord.id)
-    console.log(greenText('\nCredential offer accepted!\n'))
+  public async acceptCredentialOffer(credentialRecord: CredentialExchangeRecord) {
+    await this.agent.credentials.acceptOffer({
+      credentialRecordId: credentialRecord.id,
+    })
   }
 
   public async acceptProofRequest(proofRecord: ProofRecord) {

@@ -1,16 +1,19 @@
 import type { Wallet } from '../../../wallet/Wallet'
 
-import { getAgentConfig } from '../../../../tests/helpers'
+import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { MessageReceiver } from '../../../agent/MessageReceiver'
+import { AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { ConnectionRepository } from '../../connections'
+import { ConnectionRepository, DidExchangeState } from '../../connections'
 import { ConnectionService } from '../../connections/services/ConnectionService'
+import { DidRepository } from '../../dids/repository'
 import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../messages'
-import { MediationRepository } from '../repository'
+import { MediationRole, MediationState } from '../models'
+import { MediationRecord, MediationRepository } from '../repository'
 import { MediationRecipientService } from '../services'
 
 jest.mock('../repository/MediationRepository')
@@ -19,13 +22,20 @@ const MediationRepositoryMock = MediationRepository as jest.Mock<MediationReposi
 jest.mock('../../connections/repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 
+jest.mock('../../dids/repository/DidRepository')
+const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+
+jest.mock('../../../agent/EventEmitter')
+const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
+
 jest.mock('../../../agent/MessageSender')
 const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 
-jest.mock('../../../agent/MessageReceiver')
-const MessageReceiverMock = MessageReceiver as jest.Mock<MessageReceiver>
-
 const connectionImageUrl = 'https://example.com/image.png'
+
+const mockConnection = getMockConnection({
+  state: DidExchangeState.Completed,
+})
 
 describe('MediationRecipientService', () => {
   const config = getAgentConfig('MediationRecipientServiceTest', {
@@ -35,12 +45,13 @@ describe('MediationRecipientService', () => {
 
   let wallet: Wallet
   let mediationRepository: MediationRepository
+  let didRepository: DidRepository
   let eventEmitter: EventEmitter
   let connectionService: ConnectionService
   let connectionRepository: ConnectionRepository
   let messageSender: MessageSender
   let mediationRecipientService: MediationRecipientService
-  let messageReceiver: MessageReceiver
+  let mediationRecord: MediationRecord
 
   beforeAll(async () => {
     wallet = new IndyWallet(config)
@@ -53,21 +64,57 @@ describe('MediationRecipientService', () => {
   })
 
   beforeEach(async () => {
-    eventEmitter = new EventEmitter(config)
+    eventEmitter = new EventEmitterMock()
     connectionRepository = new ConnectionRepositoryMock()
-    connectionService = new ConnectionService(wallet, config, connectionRepository, eventEmitter)
+    didRepository = new DidRepositoryMock()
+    connectionService = new ConnectionService(wallet, config, connectionRepository, didRepository, eventEmitter)
     mediationRepository = new MediationRepositoryMock()
     messageSender = new MessageSenderMock()
-    messageReceiver = new MessageReceiverMock()
+
+    // Mock default return value
+    mediationRecord = new MediationRecord({
+      connectionId: 'connectionId',
+      role: MediationRole.Recipient,
+      state: MediationState.Granted,
+      threadId: 'threadId',
+    })
+    mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
+
     mediationRecipientService = new MediationRecipientService(
       wallet,
       connectionService,
       messageSender,
       config,
       mediationRepository,
-      eventEmitter,
-      messageReceiver
+      eventEmitter
     )
+  })
+
+  describe('createStatusRequest', () => {
+    it('creates a status request message', async () => {
+      const statusRequestMessage = await mediationRecipientService.createStatusRequest(mediationRecord, {
+        recipientKey: 'a-key',
+      })
+
+      expect(statusRequestMessage).toMatchObject({
+        id: expect.any(String),
+        recipientKey: 'a-key',
+      })
+    })
+
+    it('it throws an error when the mediation record has incorrect role or state', async () => {
+      mediationRecord.role = MediationRole.Mediator
+      await expect(mediationRecipientService.createStatusRequest(mediationRecord)).rejects.toThrowError(
+        'Mediation record has invalid role MEDIATOR. Expected role RECIPIENT.'
+      )
+
+      mediationRecord.role = MediationRole.Recipient
+      mediationRecord.state = MediationState.Requested
+
+      await expect(mediationRecipientService.createStatusRequest(mediationRecord)).rejects.toThrowError(
+        'Mediation record is not ready to be used. Expected granted, found invalid state requested'
+      )
+    })
   })
 
   describe('processStatus', () => {
@@ -75,7 +122,9 @@ describe('MediationRecipientService', () => {
       const status = new StatusMessage({
         messageCount: 0,
       })
-      const deliveryRequestMessage = await mediationRecipientService.processStatus(status)
+
+      const messageContext = new InboundMessageContext(status, { connection: mockConnection })
+      const deliveryRequestMessage = await mediationRecipientService.processStatus(messageContext)
       expect(deliveryRequestMessage).toBeNull()
     })
 
@@ -83,33 +132,132 @@ describe('MediationRecipientService', () => {
       const status = new StatusMessage({
         messageCount: 1,
       })
-      const deliveryRequestMessage = await mediationRecipientService.processStatus(status)
+      const messageContext = new InboundMessageContext(status, { connection: mockConnection })
+
+      const deliveryRequestMessage = await mediationRecipientService.processStatus(messageContext)
       expect(deliveryRequestMessage)
       expect(deliveryRequestMessage).toEqual(new DeliveryRequestMessage({ id: deliveryRequestMessage?.id, limit: 1 }))
+    })
+
+    it('it throws an error when the mediation record has incorrect role or state', async () => {
+      const status = new StatusMessage({
+        messageCount: 1,
+      })
+      const messageContext = new InboundMessageContext(status, { connection: mockConnection })
+
+      mediationRecord.role = MediationRole.Mediator
+      await expect(mediationRecipientService.processStatus(messageContext)).rejects.toThrowError(
+        'Mediation record has invalid role MEDIATOR. Expected role RECIPIENT.'
+      )
+
+      mediationRecord.role = MediationRole.Recipient
+      mediationRecord.state = MediationState.Requested
+
+      await expect(mediationRecipientService.processStatus(messageContext)).rejects.toThrowError(
+        'Mediation record is not ready to be used. Expected granted, found invalid state requested'
+      )
     })
   })
 
   describe('processDelivery', () => {
     it('if the delivery has no attachments expect an error', async () => {
-      expect(mediationRecipientService.processDelivery({} as MessageDeliveryMessage)).rejects.toThrowError(
-        new AriesFrameworkError('No attachments found')
+      const messageContext = new InboundMessageContext({} as MessageDeliveryMessage, { connection: mockConnection })
+
+      await expect(mediationRecipientService.processDelivery(messageContext)).rejects.toThrowError(
+        new AriesFrameworkError('Error processing attachments')
       )
     })
-    it('other we should expect a message recieved with an message id list in it', async () => {
+
+    it('should return a message received with an message id list in it', async () => {
       const messageDeliveryMessage = new MessageDeliveryMessage({
         attachments: [
           new Attachment({
             id: '1',
-            data: {},
+            data: {
+              json: {
+                a: 'value',
+              },
+            },
           }),
         ],
       })
-      const messagesReceivedMessage = await mediationRecipientService.processDelivery(messageDeliveryMessage)
+      const messageContext = new InboundMessageContext(messageDeliveryMessage, { connection: mockConnection })
+
+      const messagesReceivedMessage = await mediationRecipientService.processDelivery(messageContext)
+
       expect(messagesReceivedMessage).toEqual(
         new MessagesReceivedMessage({
           id: messagesReceivedMessage.id,
           messageIdList: ['1'],
         })
+      )
+    })
+
+    it('calls the event emitter for each message', async () => {
+      const messageDeliveryMessage = new MessageDeliveryMessage({
+        attachments: [
+          new Attachment({
+            id: '1',
+            data: {
+              json: {
+                first: 'value',
+              },
+            },
+          }),
+          new Attachment({
+            id: '2',
+            data: {
+              json: {
+                second: 'value',
+              },
+            },
+          }),
+        ],
+      })
+      const messageContext = new InboundMessageContext(messageDeliveryMessage, { connection: mockConnection })
+
+      await mediationRecipientService.processDelivery(messageContext)
+
+      expect(eventEmitter.emit).toHaveBeenCalledTimes(2)
+      expect(eventEmitter.emit).toHaveBeenNthCalledWith(1, {
+        type: AgentEventTypes.AgentMessageReceived,
+        payload: {
+          message: { first: 'value' },
+        },
+      })
+      expect(eventEmitter.emit).toHaveBeenNthCalledWith(2, {
+        type: AgentEventTypes.AgentMessageReceived,
+        payload: {
+          message: { second: 'value' },
+        },
+      })
+    })
+
+    it('it throws an error when the mediation record has incorrect role or state', async () => {
+      const messageDeliveryMessage = new MessageDeliveryMessage({
+        attachments: [
+          new Attachment({
+            id: '1',
+            data: {
+              json: {
+                a: 'value',
+              },
+            },
+          }),
+        ],
+      })
+      const messageContext = new InboundMessageContext(messageDeliveryMessage, { connection: mockConnection })
+
+      mediationRecord.role = MediationRole.Mediator
+      await expect(mediationRecipientService.processDelivery(messageContext)).rejects.toThrowError(
+        'Mediation record has invalid role MEDIATOR. Expected role RECIPIENT.'
+      )
+
+      mediationRecord.role = MediationRole.Recipient
+      mediationRecord.state = MediationState.Requested
+
+      await expect(mediationRecipientService.processDelivery(messageContext)).rejects.toThrowError(
+        'Mediation record is not ready to be used. Expected granted, found invalid state requested'
       )
     })
   })
