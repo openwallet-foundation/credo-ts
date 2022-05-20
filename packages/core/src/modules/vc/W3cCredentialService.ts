@@ -14,6 +14,7 @@ import type { VerifyPresentationResult } from './models/presentation/VerifyPrese
 
 import jsonld, { documentLoaderNode, documentLoaderXhr } from '../../../types/jsonld'
 import vc from '../../../types/vc'
+import { InjectionSymbols } from '../../constants'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { deriveProof } from '../../crypto/signature-suites/bbs'
 import { AriesFrameworkError } from '../../error'
@@ -38,7 +39,7 @@ export class W3cCredentialService {
   private suiteRegistry: SignatureSuiteRegistry
 
   public constructor(
-    @inject('Wallet') wallet: Wallet,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     w3cCredentialRepository: W3cCredentialRepository,
     didResolver: DidResolverService
   ) {
