@@ -1,6 +1,5 @@
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type {
-  DeleteCredentialOptions,
   ServiceAcceptCredentialOptions,
   ServiceAcceptProposalOptions,
   ServiceOfferCredentialOptions,
@@ -31,7 +30,7 @@ export abstract class CredentialFormatService {
     this.eventEmitter = eventEmitter
   }
 
-  abstract createProposal(options: ProposeCredentialOptions): FormatServiceProposeAttachmentFormats
+  abstract createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats>
 
   abstract processProposal(
     options: ServiceAcceptProposalOptions,

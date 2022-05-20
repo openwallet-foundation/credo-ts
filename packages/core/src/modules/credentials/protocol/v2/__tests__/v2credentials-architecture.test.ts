@@ -81,27 +81,27 @@ describe('V2 Credential Architecture', () => {
       expect(type).toEqual('IndyCredentialFormatService')
     })
 
-    test('propose credential format service returns correct format and filters~attach', () => {
+    test('propose credential format service returns correct format and filters~attach', async () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
-      const { format: formats, attachment: filtersAttach } = formatService.createProposal(proposal)
+      const { format: formats, attachment: filtersAttach } = await formatService.createProposal(proposal)
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-filter@v2.0')
       expect(filtersAttach).toBeTruthy()
     })
-    test('propose credential format service transforms and validates CredPropose payload correctly', () => {
+    test('propose credential format service transforms and validates CredPropose payload correctly', async () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
-      const { format: formats, attachment: filtersAttach } = formatService.createProposal(proposal)
+      const { format: formats, attachment: filtersAttach } = await formatService.createProposal(proposal)
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-filter@v2.0')
       expect(filtersAttach).toBeTruthy()
     })
-    test('propose credential format service creates message with multiple formats', () => {
+    test('propose credential format service creates message with multiple formats', async () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
 
@@ -111,7 +111,7 @@ describe('V2 Credential Architecture', () => {
       expect(formats.length).toBe(1) // for now will be added to with jsonld
       const messageBuilder: CredentialMessageBuilder = new CredentialMessageBuilder()
 
-      const v2Proposal = messageBuilder.createProposal(formats, multiFormatProposal)
+      const v2Proposal = await messageBuilder.createProposal(formats, multiFormatProposal)
 
       expect(v2Proposal.message.formats.length).toBe(1)
       expect(v2Proposal.message.formats[0].format).toEqual('hlindy/cred-filter@v2.0')

@@ -7,6 +7,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { DidCommMessageRepository } from '../../../storage'
 import type { MediationRecipientService } from '../../routing'
+import type { CredentialFormatService } from '../formats/CredentialFormatService'
 import type { CredentialStateChangedEvent } from './../CredentialEvents'
 import type { CredentialProtocolVersion } from './../CredentialProtocolVersion'
 import type {
@@ -23,7 +24,6 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
 } from './../CredentialsModuleOptions'
-import type { CredentialFormatService } from './../formats/CredentialFormatService'
 import type { CredentialFormats, HandlerAutoAcceptOptions } from './../formats/models/CredentialFormatServiceOptions'
 import type {
   V1CredentialProblemReportMessage,
@@ -247,18 +247,7 @@ export abstract class CredentialService {
     return this.credentialRepository.findById(connectionId)
   }
 
-  /**
-   * Delete a credential exchange record from the repository and (optionally) 
-   * the wallet.
-   * Note that the default is now to delete from the wallet
-   * 
-   * @param credentialRecordId The id of the credential record
-   * @param options contains flag for determining whether to delete from wallet as well as repository
-
-   */
-  public async deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void> {
-    const credentialRecord = await this.getById(credentialRecordId)
-
+  public async delete(credentialRecord: CredentialExchangeRecord, options?: DeleteCredentialOptions): Promise<void> {
     await this.credentialRepository.delete(credentialRecord)
 
     let deleteOptions = options
@@ -276,6 +265,7 @@ export abstract class CredentialService {
       }
     }
   }
+
   /**
    * Retrieve a credential record by connection id and thread id
    *
