@@ -17,6 +17,7 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 import jsonld, { documentLoaderNode, documentLoaderXhr } from '../../../types/jsonld'
 import vc from '../../../types/vc'
 import { AgentConfig } from '../../agent/AgentConfig'
+import { InjectionSymbols } from '../../constants'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { deriveProof } from '../../crypto/signature-suites/bbs'
 import { AriesFrameworkError } from '../../error'
@@ -44,11 +45,11 @@ export class W3cCredentialService {
   private suiteRegistry: SignatureSuiteRegistry
 
   public constructor(
-    @inject('Wallet') wallet: Wallet,
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     w3cCredentialRepository: W3cCredentialRepository,
     didResolver: DidResolverService,
     agentConfig: AgentConfig,
-    logger: Logger
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.wallet = wallet
     this.w3cCredentialRepository = w3cCredentialRepository
