@@ -35,20 +35,21 @@ export function createWalletKeyPairClass(wallet: Wallet) {
     public fingerprint(): string {
       throw new Error('Method not implemented.')
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public verifyFingerprint(fingerprint: string): boolean {
       throw new Error('Method not implemented.')
     }
 
-    public static async from(verificationMethod: Record<string, any>): Promise<WalletKeyPair> {
+    public static async from(verificationMethod: VerificationMethod): Promise<WalletKeyPair> {
       const vMethod = JsonTransformer.fromJSON(verificationMethod, VerificationMethod)
       await MessageValidator.validate(vMethod)
       const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(vMethod)
       const key = getKeyFromVerificationMethod(vMethod)
 
       return new WalletKeyPair({
-        id: verificationMethod.id,
-        controller: verificationMethod.controller,
-        revoked: verificationMethod.revoked ?? undefined,
+        id: vMethod.id,
+        controller: vMethod.controller,
         wallet: wallet,
         key: key,
       })
@@ -115,7 +116,6 @@ export function createWalletKeyPairClass(wallet: Wallet) {
       }
     }
 
-    // EXPERIMENTAL
     public get publicKeyBuffer(): Uint8Array {
       return new Uint8Array(this.key.publicKey)
     }

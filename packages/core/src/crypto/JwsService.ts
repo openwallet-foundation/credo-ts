@@ -69,7 +69,6 @@ export class JwsService {
 
       const verkey = TypedArrayEncoder.toBase58(TypedArrayEncoder.fromBase64(protectedJson?.jwk?.x))
       const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
-
       signerVerkeys.push(verkey)
 
       try {

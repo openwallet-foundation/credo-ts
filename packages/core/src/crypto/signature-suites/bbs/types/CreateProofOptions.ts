@@ -11,7 +11,10 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { ProofPurpose } from '../../../../modules/vc/proof-purposes/ProofPurpose'
+import type { JsonObject } from '../../../../types'
+import type { DocumentLoader } from '../../../../utils'
+
 /**
  * Options for creating a proof
  */
@@ -19,19 +22,19 @@ export interface CreateProofOptions {
   /**
    * Document to create the proof for
    */
-  readonly document: any
+  readonly document: JsonObject
   /**
    * The proof purpose to specify for the generated proof
    */
-  readonly purpose: any
+  readonly purpose: ProofPurpose
   /**
    * Optional custom document loader
    */
-  documentLoader?: any
+  documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
-  expansionMap?: any
+  expansionMap?: () => void
   /**
    * Indicates whether to compact the resulting proof
    */

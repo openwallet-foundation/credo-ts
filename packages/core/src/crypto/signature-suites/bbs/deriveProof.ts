@@ -11,11 +11,12 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { constants } from '@digitalcredentials/jsonld-signatures'
-import jsonld from 'jsonld'
+import type { JsonObject } from '../../../types'
 
-import { getProofs, getTypeInfo } from './utilities'
+import jsonld from '../../../../types/jsonld'
+import { SECURITY_PROOF_URL } from '../../../modules/vc/constants'
+import { W3cVerifiableCredential } from '../../../modules/vc/models'
+import { JsonTransformer, getProofs, getTypeInfo } from '../../../utils'
 
 /**
  * Derives a proof from a document featuring a supported linked data proof
@@ -27,10 +28,10 @@ import { getProofs, getTypeInfo } from './utilities'
  * @param options Options for proof derivation
  */
 export const deriveProof = async (
-  proofDocument: any,
-  revealDocument: any,
-  { suite, documentLoader, expansionMap, skipProofCompaction, nonce }: any
-): Promise<any> => {
+  proofDocument: JsonObject,
+  revealDocument: JsonObject,
+  { suite, skipProofCompaction, documentLoader, expansionMap, nonce }: any
+): Promise<W3cVerifiableCredential> => {
   if (!suite) {
     throw new TypeError('"options.suite" is required.')
   }
@@ -82,8 +83,8 @@ export const deriveProof = async (
 
   if (!skipProofCompaction) {
     /* eslint-disable prefer-const */
-    let expandedProof: any = {
-      [constants.SECURITY_PROOF_URL]: {
+    let expandedProof: Record<string, unknown> = {
+      [SECURITY_PROOF_URL]: {
         '@graph': derivedProof.proof,
       },
     }
@@ -124,5 +125,5 @@ export const deriveProof = async (
     jsonld.addValue(derivedProof.document, 'proof', derivedProof.proof)
   }
 
-  return derivedProof.document
+  return JsonTransformer.fromJSON(derivedProof.document, W3cVerifiableCredential)
 }

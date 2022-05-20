@@ -11,23 +11,25 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import type { DocumentLoader, Proof } from '../JwsLinkedDataSignature'
+import type { JsonObject } from '../../../types'
+import type { DocumentLoader, Proof } from '../../../utils'
 import type { DeriveProofOptions, VerifyProofOptions, CreateVerifyDataOptions, CanonizeOptions } from './types'
 import type { VerifyProofResult } from './types/VerifyProofResult'
 
-import jsonld from '@digitalcredentials/jsonld'
-import { suites, SECURITY_CONTEXT_URL } from '@digitalcredentials/jsonld-signatures'
 import { blsCreateProof, blsVerifyProof } from '@mattrglobal/bbs-signatures'
 import { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 import { randomBytes } from '@stablelib/random'
 
+import jsonld from '../../../../types/jsonld'
+import { suites } from '../../../../types/jsonld-signatures'
+import { AriesFrameworkError } from '../../../error'
+import { SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
 import { TypedArrayEncoder } from '../../../utils'
 
 import { BbsBlsSignature2020 } from './BbsBlsSignature2020'
 
 export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
-  public constructor({ useNativeCanonize, key, LDKeyClass }: any = {}) {
+  public constructor({ useNativeCanonize, key, LDKeyClass }: Record<string, unknown> = {}) {
     super({
       type: 'BbsBlsSignatureProof2020',
     })
@@ -62,12 +64,18 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
    *
    * @returns {Promise<object>} Resolves with the derived proof object.
    */
-  public async deriveProof(options: DeriveProofOptions): Promise<Record<string, any>> {
-    const { document, proof, revealDocument, documentLoader, expansionMap, skipProofCompaction } = options
+  public async deriveProof(options: DeriveProofOptions): Promise<Record<string, unknown>> {
+    const { document, proof, revealDocument, documentLoader, expansionMap } = options
     let { nonce } = options
 
+    const proofType = proof.type
+
+    if (typeof proofType !== 'string') {
+      throw new TypeError(`Expected proof.type to be of type 'string', got ${typeof proofType} instead.`)
+    }
+
     // Validate that the input proof document has a proof compatible with this suite
-    if (!BbsBlsSignatureProof2020.supportedDerivedProofType.includes(proof.type)) {
+    if (!BbsBlsSignatureProof2020.supportedDerivedProofType.includes(proofType)) {
       throw new TypeError(
         `proof document proof incompatible, expected proof types of ${JSON.stringify(
           BbsBlsSignatureProof2020.supportedDerivedProofType
@@ -75,8 +83,14 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
       )
     }
 
+    const signatureBase58 = proof[this.proofSignatureKey]
+
+    if (typeof signatureBase58 !== 'string') {
+      throw new TypeError(`Expected signature to be a base58 encoded string, got ${typeof signatureBase58} instead.`)
+    }
+
     //Extract the BBS signature from the input proof
-    const signature = TypedArrayEncoder.fromBase64(proof[this.proofSignatureKey])
+    const signature = TypedArrayEncoder.fromBase64(signatureBase58)
 
     //Initialize the BBS signature suite
     const suite = new BbsBlsSignature2020()
@@ -102,14 +116,12 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     const documentStatements = await suite.createVerifyDocumentData(document, {
       documentLoader,
       expansionMap,
-      compactProof: !skipProofCompaction,
     })
 
     // Get the proof statements
     const proofStatements = await suite.createVerifyProofData(proof, {
       documentLoader,
       expansionMap,
-      compactProof: !skipProofCompaction,
     })
 
     // Transform any blank node identifiers for the input
@@ -213,10 +225,10 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     try {
       proof.type = this.mappedDerivedProofType
 
-      const proof2 = { ...proof, '@context': document['@context'] }
+      const proofIncludingDocumentContext = { ...proof, '@context': document['@context'] }
 
       // Get the proof statements
-      const proofStatements = await this.createVerifyProofData(proof2, {
+      const proofStatements = await this.createVerifyProofData(proofIncludingDocumentContext, {
         documentLoader,
         expansionMap,
       })
@@ -249,9 +261,15 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
         ? await this.LDKeyClass.fromJwk(verificationMethod)
         : await this.LDKeyClass.from(verificationMethod)
 
+      const proofValue = proof.proofValue
+
+      if (typeof proofValue !== 'string') {
+        throw new AriesFrameworkError(`Expected proof.proofValue to be of type 'string', got ${typeof proof}`)
+      }
+
       // Verify the proof
       const verified = await blsVerifyProof({
-        proof: TypedArrayEncoder.fromBase64(proof.proofValue),
+        proof: TypedArrayEncoder.fromBase64(proofValue),
         publicKey: key.publicKeyBuffer,
         messages: statementsToVerify,
         nonce: TypedArrayEncoder.fromBase64(proof.nonce as string),
@@ -275,7 +293,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     }
   }
 
-  public async canonize(input: any, options: CanonizeOptions): Promise<string> {
+  public async canonize(input: JsonObject, options: CanonizeOptions): Promise<string> {
     const { documentLoader, expansionMap, skipExpansion } = options
     return jsonld.canonize(input, {
       algorithm: 'URDNA2015',
@@ -287,7 +305,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     })
   }
 
-  public async canonizeProof(proof: any, options: CanonizeOptions): Promise<string> {
+  public async canonizeProof(proof: JsonObject, options: CanonizeOptions): Promise<string> {
     const { documentLoader, expansionMap } = options
     proof = { ...proof }
 
@@ -328,7 +346,10 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
    *
    * @returns {Promise<{string[]>}.
    */
-  public async createVerifyProofData(proof: any, { documentLoader, expansionMap }: any): Promise<string[]> {
+  public async createVerifyProofData(
+    proof: JsonObject,
+    { documentLoader, expansionMap }: { documentLoader?: DocumentLoader; expansionMap?: () => void }
+  ): Promise<string[]> {
     const c14nProofOptions = await this.canonizeProof(proof, {
       documentLoader,
       expansionMap,
@@ -343,7 +364,10 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
    *
    * @returns {Promise<{string[]>}.
    */
-  public async createVerifyDocumentData(document: any, { documentLoader, expansionMap }: any): Promise<string[]> {
+  public async createVerifyDocumentData(
+    document: JsonObject,
+    { documentLoader, expansionMap }: { documentLoader?: DocumentLoader; expansionMap?: () => void }
+  ): Promise<string[]> {
     const c14nDocument = await this.canonize(document, {
       documentLoader,
       expansionMap,
@@ -352,7 +376,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     return c14nDocument.split('\n').filter((_) => _.length > 0)
   }
 
-  public async getVerificationMethod(options: { proof: Proof; documentLoader: any }) {
+  public async getVerificationMethod(options: { proof: Proof; documentLoader?: DocumentLoader }) {
     if (this.key) {
       // This happens most often during sign() operations. For verify(),
       // the expectation is that the verification method will be fetched
@@ -368,6 +392,12 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
 
     if (!verificationMethod) {
       throw new Error('No "verificationMethod" found in proof.')
+    }
+
+    if (!options.documentLoader) {
+      throw new AriesFrameworkError(
+        'Missing custom document loader. This is required for resolving verification methods.'
+      )
     }
 
     const { document } = await options.documentLoader(verificationMethod)

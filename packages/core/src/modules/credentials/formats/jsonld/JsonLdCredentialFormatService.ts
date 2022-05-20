@@ -10,7 +10,6 @@ import type {
 } from '../../CredentialServiceOptions'
 import type { ProposeCredentialOptions, RequestCredentialOptions } from '../../CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from '../../repository'
-import type { CredPropose } from '../models/CredPropose'
 import type {
   CredentialFormatSpec,
   FormatServiceCredentialAttachmentFormats,
@@ -18,7 +17,6 @@ import type {
   FormatServiceProposeAttachmentFormats,
   FormatServiceRequestCredentialOptions,
   HandlerAutoAcceptOptions,
-  RevocationRegistry,
 } from '../models/CredentialFormatServiceOptions'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -32,17 +30,13 @@ import { W3cVerifiableCredential, W3cCredential } from '../../../vc/models'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
-import { CredentialPreviewAttribute } from '../../models'
 import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class JsonLdCredentialFormatService extends CredentialFormatService {
-  public deleteCredentialById(
-    _credentialRecord: CredentialExchangeRecord,
-    _options: DeleteCredentialOptions
-  ): Promise<void> {
+  public async deleteCredentialById(credentialRecordId: string): Promise<void> {
     throw new Error('Method not implemented.')
   }
   protected credentialRepository: CredentialRepository // protected as in base class
@@ -283,7 +277,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     throw new Error('Method not implemented.')
   }
 
-  public createProposal(options: ProposeCredentialOptions): FormatServiceProposeAttachmentFormats {
+  public async createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats> {
     const format: CredentialFormatSpec = {
       attachId: 'ld_proof',
       format: 'aries/ld-proof-vc-detail@v1.0',

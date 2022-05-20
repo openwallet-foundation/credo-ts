@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { JsonArray } from '../../../../types'
+import type { LdKeyPair } from '../../../LdKeyPair'
 import type { KeyPairSigner } from './KeyPairSigner'
 import type { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 
@@ -43,9 +44,9 @@ export interface SignatureSuiteOptions {
   /**
    * Additional proof elements
    */
-  readonly proof?: any
+  readonly proof?: JsonArray
   /**
    * Linked Data Key class implementation
    */
-  readonly LDKeyClass?: any
+  readonly LDKeyClass?: LdKeyPair
 }

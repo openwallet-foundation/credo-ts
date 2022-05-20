@@ -1,9 +1,9 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
+import type { Key } from '../../crypto'
 import type { Logger } from '../../logger'
 import type { ConnectionRecord, Routing } from '../../modules/connections'
 import type { PlaintextMessage } from '../../types'
-import type { Key } from '../dids'
 import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
 
 import { parseUrl } from 'query-string'

@@ -40,14 +40,14 @@ export type DefaultCredentialTags = {
   connectionId?: string
   state: CredentialState
   credentialIds: string[]
+  indyRevocationRegistryId?: string
+  indyCredentialRevocationId?: string
 }
 
 export interface CredentialRecordBinding {
   credentialRecordType: CredentialFormatType
   credentialRecordId: string
   credentialId?: string
-  indyRevocationRegistryId?: string
-  indyCredentialRevocationId?: string
 }
 
 export class CredentialExchangeRecord extends BaseRecord<
@@ -97,16 +97,18 @@ export class CredentialExchangeRecord extends BaseRecord<
 
   public getTags() {
     const metadata = this.metadata.get(CredentialMetadataKeys.IndyCredential)
-    let Ids: string[] = []
+    let credentialIds: string[] = []
+
     if (this.credentials) {
-      Ids = this.credentials.map((c) => c.credentialRecordId)
+      credentialIds = this.credentials.map((c) => c.credentialRecordId)
     }
+
     return {
       ...this._tags,
       threadId: this.threadId,
       connectionId: this.connectionId,
       state: this.state,
-      credentialIds: Ids,
+      credentialIds: credentialIds,
       indyRevocationRegistryId: metadata?.indyRevocationRegistryId,
       indyCredentialRevocationId: metadata?.indyCredentialRevocationId,
     }

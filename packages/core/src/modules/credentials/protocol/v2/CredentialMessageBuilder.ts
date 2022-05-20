@@ -44,10 +44,10 @@ export class CredentialMessageBuilder {
    * @param _threadId optional thread id for this message service
    * @return a version 2.0 credential propose message see {@link V2ProposeCredentialMessage}
    */
-  public createProposal(
+  public async createProposal(
     formatServices: CredentialFormatService[],
     proposal: ProposeCredentialOptions
-  ): CredentialProtocolMsgReturnType<V2ProposeCredentialMessage> {
+  ): Promise<CredentialProtocolMsgReturnType<V2ProposeCredentialMessage>> {
     if (formatServices.length === 0) {
       throw new AriesFrameworkError('no format services provided to createProposal')
     }
@@ -58,7 +58,7 @@ export class CredentialMessageBuilder {
     const filtersAttachArray: Attachment[] | undefined = []
     let previewAttachments: V2CredentialPreview | undefined
     for (const formatService of formatServices) {
-      const { format: formats, attachment, preview } = formatService.createProposal(proposal)
+      const { format: formats, attachment, preview } = await formatService.createProposal(proposal)
       if (attachment) {
         filtersAttachArray.push(attachment)
       } else {

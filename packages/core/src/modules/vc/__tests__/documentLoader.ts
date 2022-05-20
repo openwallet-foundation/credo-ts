@@ -1,7 +1,11 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { frame } from '@digitalcredentials/jsonld'
+
+import type { JsonObject } from '../../../types'
+import type { DocumentLoaderResult } from '../../../utils'
+
+import jsonld from '../../../../types/jsonld'
 
 import { BBS_V1, EXAMPLES_V1, ODRL, SCHEMA_ORG, VACCINATION_V1 } from './contexts'
 import { X25519_V1 } from './contexts/X25519_v1'
@@ -20,11 +24,11 @@ import { DID_zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqA
 import { DID_zUC72to2eJiFMrt8a89LoaEPHC76QcfAxQdFys3nFGCmDKAmLbdE4ByyQ54kh42XgECCyZfVKe3m41Kk35nzrBKYbk6s9K7EjyLJcGGPkA7N15tDNBQJaY7cHD4RRaTwF6qXpmD } from './dids/did_zUC72to2eJiFMrt8a89LoaEPHC76QcfAxQdFys3nFGCmDKAmLbdE4ByyQ54kh42XgECCyZfVKe3m41Kk35nzrBKYbk6s9K7EjyLJcGGPkA7N15tDNBQJaY7cHD4RRaTwF6qXpmD'
 import { DID_zUC73JKGpX1WG4CWbFM15ni3faANPet6m8WJ6vaF5xyFsM3MeoBVNgQ6jjVPCcUnTAnJy6RVKqsUXa4AvdRKwV5hhQhwhMWFT9so9jrPekKmqpikTjYBXa3RYWqRpCWHY4u4hxh } from './dids/did_zUC73JKGpX1WG4CWbFM15ni3faANPet6m8WJ6vaF5xyFsM3MeoBVNgQ6jjVPCcUnTAnJy6RVKqsUXa4AvdRKwV5hhQhwhMWFT9so9jrPekKmqpikTjYBXa3RYWqRpCWHY4u4hxh'
 import { DID_zUC73YqdRJ3t8bZsFUoxYFPNVruHzn4o7u78GSrMXVSkcb3xAYtUxRD2kSt2bDcmQpRjKfygwLJ1HEGfkosSN7gr4acjGkXLbLRXREueknFN4AU19m8BxEgWnLM84CAvsw6bhYn } from './dids/did_zUC73YqdRJ3t8bZsFUoxYFPNVruHzn4o7u78GSrMXVSkcb3xAYtUxRD2kSt2bDcmQpRjKfygwLJ1HEGfkosSN7gr4acjGkXLbLRXREueknFN4AU19m8BxEgWnLM84CAvsw6bhYn'
+import { DID_zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN } from './dids/did_zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN'
 import { DID_zUC76qMTDAaupy19pEk8JKH5LJwPwmscNQn24SYpqrgqEoYWPFgCSm4CnTfupADRfbB6CxdwYhVaTFjT4fmPvMh7gWY87LauhaLmNpPamCv4LAepcRfBDndSdtCpZKSTELMjzGJ } from './dids/did_zUC76qMTDAaupy19pEk8JKH5LJwPwmscNQn24SYpqrgqEoYWPFgCSm4CnTfupADRfbB6CxdwYhVaTFjT4fmPvMh7gWY87LauhaLmNpPamCv4LAepcRfBDndSdtCpZKSTELMjzGJ'
 import { DID_zUC7DMETzdZM6woUjvs2fieEyFTbHABXwBvLYPBs4NDWKut4H41h8V3KTqGNRUziXLYqa1sFYYw9Zjpt6pFUf7hra4Q1zXMA9JjXcXxDpxuDNpUKEpiDPSYYUztVchUJHQJJhox } from './dids/did_zUC7DMETzdZM6woUjvs2fieEyFTbHABXwBvLYPBs4NDWKut4H41h8V3KTqGNRUziXLYqa1sFYYw9Zjpt6pFUf7hra4Q1zXMA9JjXcXxDpxuDNpUKEpiDPSYYUztVchUJHQJJhox'
 import { DID_zUC7F9Jt6YzVW9fGhwYjVrjdS8Xzg7oQc2CeDcVNgEcEAaJXAtPz3eXu2sewq4xtwRK3DAhQRYwwoYiT3nNzLCPsrKoP72UGZKhh4cNuZD7RkmwzAa1Bye4C5a9DcyYBGKZrE5F } from './dids/did_zUC7F9Jt6YzVW9fGhwYjVrjdS8Xzg7oQc2CeDcVNgEcEAaJXAtPz3eXu2sewq4xtwRK3DAhQRYwwoYiT3nNzLCPsrKoP72UGZKhh4cNuZD7RkmwzAa1Bye4C5a9DcyYBGKZrE5F'
 import { DID_zUC7H7TxvhWmvfptpu2zSwo5EZ1kr3MPNsjovaD2ipbuzj6zi1vk4FHTiunCJrFvUYV77Mk3QcWUUAHojPZdU8oG476cvMK2ozP1gVq63x5ovj6e4oQ9qg9eF4YjPhWJs6FPuT4 } from './dids/did_zUC7H7TxvhWmvfptpu2zSwo5EZ1kr3MPNsjovaD2ipbuzj6zi1vk4FHTiunCJrFvUYV77Mk3QcWUUAHojPZdU8oG476cvMK2ozP1gVq63x5ovj6e4oQ9qg9eF4YjPhWJs6FPuT4'
-import { DID_zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN } from './dids/test'
 
 export const DOCUMENTS = {
   [DID_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL['id']]: DID_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL,
@@ -81,7 +85,7 @@ export const DOCUMENTS = {
   'https://w3id.org/vaccination/v1': VACCINATION_V1,
 }
 
-export const customDocumentLoader = async (url: string): Promise<Record<string, any>> => {
+export const customDocumentLoader = async (url: string): Promise<DocumentLoaderResult> => {
   let result = DOCUMENTS[url]
 
   if (!result) {
@@ -94,7 +98,7 @@ export const customDocumentLoader = async (url: string): Promise<Record<string, 
   }
 
   if (url.startsWith('did:')) {
-    result = await frame(result, {
+    result = await jsonld.frame(result, {
       '@context': result['@context'],
       '@embed': '@never',
       id: url,
@@ -104,6 +108,6 @@ export const customDocumentLoader = async (url: string): Promise<Record<string, 
   return {
     contextUrl: null,
     documentUrl: url,
-    document: result,
+    document: result as JsonObject,
   }
 }

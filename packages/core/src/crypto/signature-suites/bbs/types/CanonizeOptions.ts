@@ -11,9 +11,8 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '../../JwsLinkedDataSignature'
+import type { DocumentLoader } from '../../../../utils'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Options for canonizing a document
  */
@@ -26,7 +25,7 @@ export interface CanonizeOptions {
    * Optional expansion map
    */
   // eslint-disable-next-line
-  expansionMap?: Function
+  expansionMap?: () => void
   /**
    * Indicates whether to skip expansion during canonization
    */

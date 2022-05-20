@@ -11,9 +11,10 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '../../JwsLinkedDataSignature'
+import type { ProofPurpose } from '../../../../modules/vc/proof-purposes/ProofPurpose'
+import type { JsonObject } from '../../../../types'
+import type { DocumentLoader, Proof } from '../../../../utils'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Options for verifying a proof
  */
@@ -21,15 +22,15 @@ export interface VerifyProofOptions {
   /**
    * The proof
    */
-  readonly proof: any
+  readonly proof: Proof
   /**
    * The document
    */
-  readonly document: any
+  readonly document: JsonObject
   /**
    * The proof purpose to specify for the generated proof
    */
-  readonly purpose: any
+  readonly purpose: ProofPurpose
   /**
    * Optional custom document loader
    */
