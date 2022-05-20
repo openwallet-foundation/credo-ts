@@ -17,7 +17,7 @@ export class CashRemovedMessage extends DIDCommV2Message {
 
   @Equals(CashRemovedMessage.type)
   public readonly type = CashRemovedMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/remove-cash'
+  public static readonly type = 'https://didcomm.org/vtp/1.0/cash-removed'
 
   @Expose({ name: 'body' })
   @Type(() => ValueTransferMessage)

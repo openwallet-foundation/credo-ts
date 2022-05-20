@@ -10,13 +10,17 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import {
-  ReceiptMessage,
+  GiverReceiptMessage,
   CashAcceptedMessage,
   CashRemovedMessage,
   RequestAcceptedMessage,
   RequestMessage,
+  RequestWitnessedMessage,
+  RequestAcceptedWitnessedMessage,
+  CashAcceptedWitnessedMessage,
+  GetterReceiptMessage,
 } from '../messages'
-import { RejectMessage } from '../messages/RejectMessage'
+import { ProblemReportMessage } from '../messages/ProblemReportMessage'
 
 export type CustomValueTransferTags = TagsBase
 export type DefaultValueTransferTags = {
@@ -40,11 +44,15 @@ export interface ValueTransferStorageProps {
 
   tags?: CustomValueTransferTags
   requestMessage?: RequestMessage
+  requestWitnessedMessage?: RequestWitnessedMessage
   requestAcceptedMessage?: RequestAcceptedMessage
+  requestAcceptedWitnessedMessage?: RequestAcceptedWitnessedMessage
   cashAcceptedMessage?: CashAcceptedMessage
+  cashAcceptedWitnessedMessage?: CashAcceptedWitnessedMessage
   cashRemovedMessage?: CashRemovedMessage
-  receiptMessage?: ReceiptMessage
-  rejectMessage?: RejectMessage
+  getterReceiptMessage?: GetterReceiptMessage
+  giverReceiptMessage?: GiverReceiptMessage
+  rejectMessage?: ProblemReportMessage
 }
 
 export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, CustomValueTransferTags> {
@@ -63,20 +71,32 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   @Type(() => RequestMessage)
   public requestMessage?: RequestMessage
 
+  @Type(() => RequestWitnessedMessage)
+  public requestWitnessedMessage?: RequestWitnessedMessage
+
   @Type(() => RequestAcceptedMessage)
   public requestAcceptedMessage?: RequestAcceptedMessage
+
+  @Type(() => RequestAcceptedWitnessedMessage)
+  public requestAcceptedWitnessedMessage?: RequestAcceptedWitnessedMessage
 
   @Type(() => CashAcceptedMessage)
   public cashAcceptedMessage?: CashAcceptedMessage
 
+  @Type(() => CashAcceptedWitnessedMessage)
+  public cashAcceptedWitnessedMessage?: CashAcceptedWitnessedMessage
+
   @Type(() => CashRemovedMessage)
   public cashRemovedMessage?: CashRemovedMessage
 
-  @Type(() => ReceiptMessage)
-  public receiptMessage?: ReceiptMessage
+  @Type(() => GetterReceiptMessage)
+  public getterReceiptMessage?: GetterReceiptMessage
 
-  @Type(() => RejectMessage)
-  public rejectMessage?: RejectMessage
+  @Type(() => GiverReceiptMessage)
+  public giverReceiptMessage?: GiverReceiptMessage
+
+  @Type(() => ProblemReportMessage)
+  public problemReportMessage?: ProblemReportMessage
 
   public autoAcceptValueTransfer?: AutoAcceptValueTransfer
 
@@ -97,11 +117,15 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       this.payment = props.payment
       this.state = props.state
       this.requestMessage = props.requestMessage
+      this.requestWitnessedMessage = props.requestWitnessedMessage
       this.requestAcceptedMessage = props.requestAcceptedMessage
+      this.requestAcceptedWitnessedMessage = props.requestAcceptedWitnessedMessage
       this.cashAcceptedMessage = props.cashAcceptedMessage
+      this.cashAcceptedWitnessedMessage = props.cashAcceptedWitnessedMessage
       this.cashRemovedMessage = props.cashRemovedMessage
-      this.receiptMessage = props.receiptMessage
-      this.rejectMessage = props.rejectMessage
+      this.getterReceiptMessage = props.getterReceiptMessage
+      this.giverReceiptMessage = props.giverReceiptMessage
+      this.problemReportMessage = props.rejectMessage
       this.autoAcceptValueTransfer = props.autoAcceptValueTransfer
       this._tags = props.tags ?? {}
     }

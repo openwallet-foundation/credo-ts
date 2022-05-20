@@ -11,4 +11,8 @@ export class ValueTransferRepository extends Repository<ValueTransferRecord> {
   public constructor(@inject(InjectionSymbols.StorageService) storageService: StorageService<ValueTransferRecord>) {
     super(ValueTransferRecord, storageService)
   }
+
+  public async getByThread(threadId: string): Promise<ValueTransferRecord> {
+    return this.getSingleByQuery({ threadId })
+  }
 }

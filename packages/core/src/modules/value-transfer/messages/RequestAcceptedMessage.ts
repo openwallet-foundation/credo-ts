@@ -17,7 +17,7 @@ export class RequestAcceptedMessage extends DIDCommV2Message {
 
   @Equals(RequestAcceptedMessage.type)
   public readonly type = RequestAcceptedMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/accept-payment'
+  public static readonly type = 'https://didcomm.org/vtp/1.0/payment-accepted'
 
   @Expose({ name: 'body' })
   @Type(() => ValueTransferMessage)

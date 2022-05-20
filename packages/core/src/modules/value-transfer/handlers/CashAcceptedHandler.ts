@@ -1,52 +1,38 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { HandlerV2InboundMessage, HandlerV2 } from '../../../agent/Handler'
-import type { ConnectionService } from '../../connections'
-import type { ValueTransferResponseCoordinator } from '../ValueTransferResponseCoordinator'
-import type { ValueTransferService } from '../services'
+import type { HandlerV2, HandlerV2InboundMessage } from '../../../agent/Handler'
+import type { ValueTransferWitnessService } from '../services/ValueTransferWitnessService'
+import type { MessageSender } from '@aries-framework/core'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { ValueTransferRole } from '../ValueTransferRole'
-import { CashAcceptedMessage } from '../messages'
+import { CashAcceptedMessage, ProblemReportMessage } from '../messages'
 
 export class CashAcceptedHandler implements HandlerV2 {
   private agentConfig: AgentConfig
-  private valueTransferService: ValueTransferService
-  private valueTransferResponseCoordinator: ValueTransferResponseCoordinator
-  private connectionService: ConnectionService
+  private valueTransferWitnessService: ValueTransferWitnessService
+  private messageSender: MessageSender
   public readonly supportedMessages = [CashAcceptedMessage]
 
   public constructor(
     agentConfig: AgentConfig,
-    valueTransferService: ValueTransferService,
-    valueTransferResponseCoordinator: ValueTransferResponseCoordinator,
-    connectionService: ConnectionService
+    valueTransferWitnessService: ValueTransferWitnessService,
+    messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
-    this.valueTransferService = valueTransferService
-    this.valueTransferResponseCoordinator = valueTransferResponseCoordinator
-    this.connectionService = connectionService
+    this.valueTransferWitnessService = valueTransferWitnessService
+    this.messageSender = messageSender
   }
 
   public async handle(messageContext: HandlerV2InboundMessage<CashAcceptedHandler>) {
-    const { record, message } = await this.valueTransferService.processCashAcceptance(messageContext)
+    const { message, forward } = await this.valueTransferWitnessService.processCashAcceptance(messageContext)
 
-    if (record.role === ValueTransferRole.Witness) {
-      if (!record.giverConnectionId) {
-        this.agentConfig.logger.error(`Connection to Giver not found for value transfer protocol: ${record.id}.`)
-        return
-      }
-      const connection = await this.connectionService.getById(record.giverConnectionId)
-      return createOutboundMessage(connection, message)
-    }
+    // send message to Giver
+    const giverOutboundMessage = createOutboundMessage(forward.giverConnection, message)
+    await this.messageSender.sendMessage(giverOutboundMessage)
 
-    if (record.role === ValueTransferRole.Giver) {
-      if (!record.witnessConnectionId) {
-        this.agentConfig.logger.error(`Connection to Witness not found for value transfer protocol: ${record.id}.`)
-        return
-      }
-      const connection = await this.connectionService.getById(record.witnessConnectionId)
-      const { message } = await this.valueTransferService.removeCash(connection, record)
-      return createOutboundMessage(connection, message)
+    // if message is Problem Report -> also send it to Getter
+    if (message.type === ProblemReportMessage.type) {
+      const getterOutboundMessage = createOutboundMessage(forward.getterConnection, message)
+      await this.messageSender.sendMessage(getterOutboundMessage)
     }
   }
 }

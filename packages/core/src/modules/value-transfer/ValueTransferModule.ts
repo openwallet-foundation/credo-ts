@@ -14,11 +14,18 @@ import { DidResolverService } from '../dids'
 import { ValueTransferResponseCoordinator } from './ValueTransferResponseCoordinator'
 import { RequestHandler } from './handlers'
 import { CashAcceptedHandler } from './handlers/CashAcceptedHandler'
+import { CashAcceptedWitnessedHandler } from './handlers/CashAcceptedWitnessedHandler'
 import { CashRemovedHandler } from './handlers/CashRemovedHandler'
-import { ReceiptHandler } from './handlers/ReceiptHandler'
-import { RejectHandler } from './handlers/RejectHandler'
+import { GetterReceiptHandler } from './handlers/GetterReceiptHandler'
+import { GiverReceiptHandler } from './handlers/GiverReceiptHandler'
+import { ProblemReportHandler } from './handlers/ProblemReportHandler'
 import { RequestAcceptedHandler } from './handlers/RequestAcceptedHandler'
+import { RequestAcceptedWitnessedHandler } from './handlers/RequestAcceptedWitnessedHandler'
+import { RequestWitnessedHandler } from './handlers/RequestWitnessedHandler'
 import { ValueTransferService } from './services'
+import { ValueTransferGetterService } from './services/ValueTransferGetterService'
+import { ValueTransferGiverService } from './services/ValueTransferGiverService'
+import { ValueTransferWitnessService } from './services/ValueTransferWitnessService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferModule {
@@ -27,6 +34,9 @@ export class ValueTransferModule {
   private connectionService: ConnectionService
   private resolverService: DidResolverService
   private valueTransferService: ValueTransferService
+  private valueTransferGetterService: ValueTransferGetterService
+  private valueTransferGiverService: ValueTransferGiverService
+  private valueTransferWitnessService: ValueTransferWitnessService
   private valueTransferResponseCoordinator: ValueTransferResponseCoordinator
 
   public constructor(
@@ -36,6 +46,9 @@ export class ValueTransferModule {
     connectionService: ConnectionService,
     resolverService: DidResolverService,
     valueTransferService: ValueTransferService,
+    valueTransferGetterService: ValueTransferGetterService,
+    valueTransferGiverService: ValueTransferGiverService,
+    valueTransferWitnessService: ValueTransferWitnessService,
     valueTransferResponseCoordinator: ValueTransferResponseCoordinator
   ) {
     this.config = config
@@ -43,6 +56,9 @@ export class ValueTransferModule {
     this.connectionService = connectionService
     this.resolverService = resolverService
     this.valueTransferService = valueTransferService
+    this.valueTransferGetterService = valueTransferGetterService
+    this.valueTransferGiverService = valueTransferGiverService
+    this.valueTransferWitnessService = valueTransferWitnessService
     this.valueTransferResponseCoordinator = valueTransferResponseCoordinator
     this.registerHandlers(dispatcher)
   }
@@ -65,15 +81,9 @@ export class ValueTransferModule {
     witness?: string,
     usePublicDid?: boolean
   ): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
-    // Get witness connection record
-    const witnessConnection = await this.connectionService.findById(connectionId)
-    if (!witnessConnection) {
-      throw new AriesFrameworkError(`Connection not found for ID: ${connectionId}`)
-    }
-
     // Create Payment Request and Value Transfer record
-    const { message, record } = await this.valueTransferService.createRequest(
-      witnessConnection,
+    const { message, record, forward } = await this.valueTransferGetterService.createRequest(
+      connectionId,
       amount,
       giver,
       witness,
@@ -81,7 +91,7 @@ export class ValueTransferModule {
     )
 
     // Send Payment Request to Witness
-    const outboundMessage = createOutboundMessage(witnessConnection, message)
+    const outboundMessage = createOutboundMessage(forward.witnessConnection, message)
     await this.messageSender.sendMessage(outboundMessage)
     return { message, record }
   }
@@ -108,10 +118,10 @@ export class ValueTransferModule {
     }
 
     // Accept Payment Request
-    const { message, record: updatedRecord } = await this.valueTransferService.acceptRequest(witnessConnection, record)
-    if (!record.witnessConnectionId) {
-      throw new AriesFrameworkError(`No witness connectionId found for proof record '${record.id}'.`)
-    }
+    const { message, record: updatedRecord } = await this.valueTransferGiverService.acceptRequest(
+      witnessConnection,
+      record
+    )
 
     // Send Payment Request Acceptance to Witness
     const outboundMessage = createOutboundMessage(witnessConnection, message)
@@ -136,40 +146,25 @@ export class ValueTransferModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerDIDCommV2Handler(new RequestHandler(this.config, this.valueTransferWitnessService))
     dispatcher.registerDIDCommV2Handler(
-      new RequestHandler(
-        this.config,
-        this.valueTransferService,
-        this.valueTransferResponseCoordinator,
-        this.connectionService
-      )
+      new RequestWitnessedHandler(this.config, this.valueTransferGiverService, this.valueTransferResponseCoordinator)
     )
     dispatcher.registerDIDCommV2Handler(
-      new RequestAcceptedHandler(
-        this.config,
-        this.valueTransferService,
-        this.valueTransferResponseCoordinator,
-        this.connectionService
-      )
+      new RequestAcceptedHandler(this.config, this.valueTransferWitnessService, this.messageSender)
     )
     dispatcher.registerDIDCommV2Handler(
-      new CashAcceptedHandler(
-        this.config,
-        this.valueTransferService,
-        this.valueTransferResponseCoordinator,
-        this.connectionService
-      )
+      new RequestAcceptedWitnessedHandler(this.config, this.valueTransferGetterService)
     )
     dispatcher.registerDIDCommV2Handler(
-      new CashRemovedHandler(
-        this.config,
-        this.valueTransferService,
-        this.valueTransferResponseCoordinator,
-        this.connectionService,
-        this.messageSender
-      )
+      new CashAcceptedHandler(this.config, this.valueTransferWitnessService, this.messageSender)
     )
-    dispatcher.registerDIDCommV2Handler(new ReceiptHandler(this.valueTransferService))
-    dispatcher.registerDIDCommV2Handler(new RejectHandler(this.valueTransferService))
+    dispatcher.registerDIDCommV2Handler(new CashAcceptedWitnessedHandler(this.config, this.valueTransferGiverService))
+    dispatcher.registerDIDCommV2Handler(
+      new CashRemovedHandler(this.config, this.valueTransferWitnessService, this.messageSender)
+    )
+    dispatcher.registerDIDCommV2Handler(new GetterReceiptHandler(this.valueTransferGetterService))
+    dispatcher.registerDIDCommV2Handler(new GiverReceiptHandler(this.valueTransferGiverService))
+    dispatcher.registerDIDCommV2Handler(new ProblemReportHandler(this.valueTransferService))
   }
 }

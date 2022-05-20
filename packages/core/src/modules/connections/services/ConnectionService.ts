@@ -577,12 +577,12 @@ export class ConnectionService {
     return { connectionRecord, message: invitation }
   }
 
-  public async setOutOfBandConnectionTheirInfo(connectionRecord: ConnectionRecord, theirDid_: string): Promise<void> {
+  public async setOutOfBandConnectionTheirInfo(connectionRecord: ConnectionRecord, senderKid: string): Promise<void> {
     if (!connectionRecord.isOutOfBandConnection) {
       throw new AriesFrameworkError(`Function can be used for Out-Of-Band connections only`)
     }
 
-    const theirDid = DidDocument.extractDidFromKid(theirDid_)
+    const theirDid = DidDocument.extractDidFromKid(senderKid)
     const theirDIDDoc = await this.buildConnectionDIDDoc(theirDid, connectionRecord.transport)
 
     connectionRecord.theirDid = theirDid

@@ -6,18 +6,18 @@ import { Equals, IsInstance, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 
-type CashAcceptedMessageParams = DIDCommV2MessageParams & {
+type CashAcceptedWitnessedMessageParams = DIDCommV2MessageParams & {
   body: ValueTransferMessage
 }
 
-export class CashAcceptedMessage extends DIDCommV2Message {
-  public constructor(options?: CashAcceptedMessageParams) {
+export class CashAcceptedWitnessedMessage extends DIDCommV2Message {
+  public constructor(options?: CashAcceptedWitnessedMessageParams) {
     super(options)
   }
 
-  @Equals(CashAcceptedMessage.type)
-  public readonly type = CashAcceptedMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/cash-accepted'
+  @Equals(CashAcceptedWitnessedMessage.type)
+  public readonly type = CashAcceptedWitnessedMessage.type
+  public static readonly type = 'https://didcomm.org/vtp/1.0/cash-accepted-witnessed'
 
   @Expose({ name: 'body' })
   @Type(() => ValueTransferMessage)

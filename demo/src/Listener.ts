@@ -80,9 +80,9 @@ export class Listener {
   }
 
   private printRequest(valueTransferRecord: ValueTransferRecord) {
-    if (valueTransferRecord.requestMessage) {
+    if (valueTransferRecord.requestWitnessedMessage) {
       console.log('\n\nPayment Request:')
-      console.log(purpleText(JsonEncoder.toString(valueTransferRecord.requestMessage)))
+      console.log(purpleText(JsonEncoder.toString(valueTransferRecord.requestWitnessedMessage)))
     }
   }
 
