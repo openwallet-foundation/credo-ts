@@ -14,7 +14,7 @@ import { DidService } from '../../dids/services/DidService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
-import { CashAcceptedMessage, RequestMessage } from '../messages'
+import { CashAcceptedMessage, ProblemReportMessage, RequestMessage } from '../messages'
 import { ValueTransferRecord, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
@@ -65,11 +65,15 @@ export class ValueTransferGetterService {
    * Initiate a new value transfer exchange as Getter by sending a payment request message
    * to the known Witness which transfers record later to Giver.
    *
-   * @param witnessConnection Connection to witness
+   * @param connectionId ID of connection to witness
    * @param amount Amount to pay
    * @param giver DID of giver
-   * @param witness DID of witness
-   * @returns Value Transfer record and Payment Request Message
+   * @param witness (Optional) DID of witness if it's known in advance
+   * @param usePublicDid (Optional) Whether to use public DID of Getter in the request or create a new random one (True by default)
+   * @returns
+   *    * Value Transfer record
+   *    * Payment Request Message
+   *    * Connection Record to use for sending message
    */
   public async createRequest(
     connectionId: string,
@@ -90,7 +94,7 @@ export class ValueTransferGetterService {
       throw new AriesFrameworkError(`Connection not found for ID: ${connectionId}`)
     }
 
-    // Get permanent public DID from the storage or generate a new one
+    // Get payment public DID from the storage or generate a new one if requested
     const getter = usePublicDid
       ? (await this.valueTransferStateService.getState()).publicDid
       : (await this.didService.createDID(DidType.PeerDid)).id
@@ -133,15 +137,14 @@ export class ValueTransferGetterService {
   }
 
   /**
-   * Process a received {@link RequestAcceptedMessage}.
-   * For Witness:
-   *    Verify correctness of message
-   *    Update Value Transfer record with the information from the message.
-   * For Getter:
-   *   Update Value Transfer record with the information from the message.
+   * Process a received {@link RequestAcceptedWitnessedMessage}.
+   * Update Value Transfer record with the information from the received message.
    *
-   * @param messageContext The record context containing the request message.
-   * @returns Value Transfer record and Payment Request Acceptance Message
+   * @param messageContext The received message context.
+   * @returns
+   *    * Value Transfer record
+   *    * Witnessed Request Accepted Message
+   *    * Connection Record to use for sending message
    */
   public async processRequestAcceptanceWitnessed(
     messageContext: InboundMessageContext<RequestAcceptedWitnessedMessage>
@@ -155,9 +158,6 @@ export class ValueTransferGetterService {
     // Verify that we are in appropriate state to perform action
     const { message: requestAcceptedWitnessedMessage } = messageContext
 
-    if (!requestAcceptedWitnessedMessage.thid) {
-      throw new AriesFrameworkError(`Thread id not found in the Payment Request Acceptance message.`)
-    }
     const record = await this.valueTransferRepository.getByThread(requestAcceptedWitnessedMessage.thid)
 
     record.assertRole(ValueTransferRole.Getter)
@@ -192,17 +192,22 @@ export class ValueTransferGetterService {
   }
 
   /**
-   * Accept received {@link RequestAcceptedMessage} as Getter by adding cash and sending a cash accepted message.
-   * @param   witnessConnection Connection to Witness.
+   * Accept received {@link RequestAcceptedWitnessedMessage} as Getter by adding cash into the wallet uncommitted state and
+   *  sending a cash accepted message to Witness.
+   *
+   * @param witnessConnection Connection to Witness.
    * @param record Value Transfer record containing Payment Request Acceptance to handle.
-   * @returns Value Transfer record and Cash Accepted Message
+   * @returns
+   *    * Value Transfer record
+   *    * Cash Accepted Message
+   *    * Connection Record to use for sending message
    */
   public async acceptCash(
     witnessConnection: ConnectionRecord,
     record: ValueTransferRecord
   ): Promise<{
     record: ValueTransferRecord
-    message: CashAcceptedMessage
+    message: CashAcceptedMessage | ProblemReportMessage
     forward: {
       witnessConnection: ConnectionRecord
     }
@@ -216,25 +221,38 @@ export class ValueTransferGetterService {
       throw new AriesFrameworkError(`Request Acceptance not found for Value Transfer with thread id ${record.threadId}`)
     }
 
+    let resultMessage: CashAcceptedMessage | ProblemReportMessage
+
     const previousState = record.state
 
     // Call VTP to accept cash
-    const getter = await this.valueTransfer.getter()
-    const { error, message } = await getter.acceptCash(requestAcceptedWitnessedMessage.body)
+    const { error, message } = await this.valueTransfer.getter().acceptCash(requestAcceptedWitnessedMessage.body)
     if (error || !message) {
-      throw new AriesFrameworkError(`Failed to accept Payment Request: ${error?.message}`)
+      // VTP message verification failed
+      resultMessage = new ProblemReportMessage({
+        pthid: requestAcceptedWitnessedMessage.thid,
+        body: {
+          code: error?.code || 'invalid-request-acceptance',
+          comment: `Request Acceptance verification failed. Error: ${error}`,
+        },
+      })
+
+      // Update Value Transfer record
+      record.problemReportMessage = resultMessage
+      record.state = ValueTransferState.Failed
+    } else {
+      // VTP message verification succeed
+      resultMessage = new CashAcceptedMessage({
+        from: witnessConnection.did,
+        to: witnessConnection.theirDid,
+        body: message,
+        thid: record.threadId,
+      })
+
+      // Update Value Transfer record
+      record.cashAcceptedMessage = resultMessage
+      record.state = ValueTransferState.CashAcceptanceSent
     }
-
-    const cashAcceptedMessage = new CashAcceptedMessage({
-      from: witnessConnection.did,
-      to: witnessConnection.theirDid,
-      body: message,
-      thid: record.threadId,
-    })
-
-    // Update Value Transfer record and raise event
-    record.cashAcceptedMessage = cashAcceptedMessage
-    record.state = ValueTransferState.CashAcceptanceSent
 
     await this.valueTransferRepository.update(record)
 
@@ -245,7 +263,7 @@ export class ValueTransferGetterService {
 
     return {
       record,
-      message: cashAcceptedMessage,
+      message: resultMessage,
       forward: {
         witnessConnection,
       },
@@ -253,11 +271,13 @@ export class ValueTransferGetterService {
   }
 
   /**
-   * Process a received {@link GiverReceiptMessage} and finish Value Transfer.
+   * Process a received {@link GetterReceiptMessage} and finish Value Transfer.
    * Update Value Transfer record with the information from the message.
    *
-   * @param messageContext The record context containing the message.
-   * @returns Value Transfer record and Payment Receipt Message
+   * @param messageContext The context of the received message.
+   * @returns
+   *    * Value Transfer record
+   *    * Receipt Message
    */
   public async processReceipt(messageContext: InboundMessageContext<GetterReceiptMessage>): Promise<{
     record: ValueTransferRecord
@@ -265,9 +285,7 @@ export class ValueTransferGetterService {
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: getterReceiptMessage } = messageContext
-    if (!getterReceiptMessage.thid) {
-      throw new AriesFrameworkError(`Thread id not found in the Receipt message.`)
-    }
+
     const record = await this.valueTransferRepository.getByThread(getterReceiptMessage.thid)
 
     record.assertState(ValueTransferState.CashAcceptanceSent)
@@ -278,13 +296,23 @@ export class ValueTransferGetterService {
     // Call VTP to process Receipt
     const { error, message } = await this.valueTransfer.getter().processReceipt(getterReceiptMessage.body)
     if (error || !message) {
-      throw new AriesFrameworkError(`Getter: Failed to store Receipt: ${error?.message}`)
-    }
+      // VTP message verification failed
+      const problemReportMessage = new ProblemReportMessage({
+        pthid: getterReceiptMessage.thid,
+        body: {
+          code: error?.code || 'invalid-payment-receipt',
+          comment: `Receipt verification failed. Error: ${error}`,
+        },
+      })
 
-    // Update Value Transfer record and raise event
-    getterReceiptMessage.body = message
-    record.getterReceiptMessage = getterReceiptMessage
-    record.state = ValueTransferState.Completed
+      record.problemReportMessage = problemReportMessage
+      record.state = ValueTransferState.Failed
+    } else {
+      // VTP message verification succeed
+      getterReceiptMessage.body = message
+      record.getterReceiptMessage = getterReceiptMessage
+      record.state = ValueTransferState.Completed
+    }
 
     await this.valueTransferRepository.update(record)
 

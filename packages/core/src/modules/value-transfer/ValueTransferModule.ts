@@ -1,4 +1,4 @@
-import type { RequestAcceptedMessage, RequestMessage } from './messages'
+import type { RequestMessage, ProblemReportMessage, RequestAcceptedMessage } from './messages'
 import type { ValueTransferTags, ValueTransferRecord } from './repository'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -64,14 +64,15 @@ export class ValueTransferModule {
   }
 
   /**
-   * Initiate a new value transfer exchange as Getter by sending a payment request message
-   * to the known Witness which transfers record later to Giver.
+   * Initiate a new value transfer exchange as Getter by sending a Payment Request message
+   * to the Witness which transfers record later to the known Giver.
    *
    * @param connectionId Id of Connection to Witness
    * @param amount Amount to pay
-   * @param giver DID of giver
-   * @param witness DID of witness
-   * @param usePublicDid Whether to use public DID on a new one
+   * @param giver DID of Giver. Must be known in advance.
+   * @param witness (Optional) DID of Witness. Must be omitted and set by Witness later.
+   * @param usePublicDid (Optional) Whether to use public DID of Getter in the request or create a new random one (True by default)
+   *
    * @returns Value Transfer record and Payment Request Message
    */
   public async requestPayment(
@@ -97,14 +98,16 @@ export class ValueTransferModule {
   }
 
   /**
-   * Accept Payment Request as Getter.
+   * Accept received Payment Request as Giver.
    *
    * @param recordId Id of Value Transfer record
+   *
    * @returns Value Transfer record and Payment Request Acceptance Message
    */
-  public async acceptPaymentRequest(
-    recordId: string
-  ): Promise<{ record: ValueTransferRecord; message: RequestAcceptedMessage }> {
+  public async acceptPaymentRequest(recordId: string): Promise<{
+    record: ValueTransferRecord
+    message: RequestAcceptedMessage | ProblemReportMessage
+  }> {
     // Get Value Transfer record
     const record = await this.valueTransferService.getById(recordId)
 
@@ -126,13 +129,25 @@ export class ValueTransferModule {
     // Send Payment Request Acceptance to Witness
     const outboundMessage = createOutboundMessage(witnessConnection, message)
     await this.messageSender.sendMessage(outboundMessage)
-    return { message, record: updatedRecord }
+    return { record: updatedRecord, message }
   }
 
+  /**
+   * Wait until Value Transfer exchange complete.
+   *
+   * @param recordId Id of Value Transfer record
+   *
+   * @returns Value Transfer record
+   */
   public async returnWhenIsCompleted(recordId: string, options?: { timeoutMs: number }): Promise<ValueTransferRecord> {
     return this.valueTransferService.returnWhenIsCompleted(recordId, options?.timeoutMs)
   }
 
+  /**
+   * Get current wallet balance.
+   *
+   * @returns wallet balance
+   */
   public async getBalance(): Promise<number> {
     return this.valueTransferService.getBalance()
   }

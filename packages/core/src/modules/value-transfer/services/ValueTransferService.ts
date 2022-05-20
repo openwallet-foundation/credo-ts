@@ -202,7 +202,10 @@ export class ValueTransferService {
 
   public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {
     const isCompleted = (record: ValueTransferRecord) => {
-      return record.id === recordId && record.state === ValueTransferState.Completed
+      return (
+        record.id === recordId &&
+        (record.state === ValueTransferState.Completed || record.state === ValueTransferState.Failed)
+      )
     }
 
     const observable = this.eventEmitter.observable<ValueTransferStateChangedEvent>(

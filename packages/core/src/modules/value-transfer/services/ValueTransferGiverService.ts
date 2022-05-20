@@ -13,7 +13,7 @@ import { DidResolverService } from '../../dids'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
-import { CashRemovedMessage, RequestAcceptedMessage } from '../messages'
+import { CashRemovedMessage, ProblemReportMessage, RequestAcceptedMessage } from '../messages'
 import { ValueTransferRecord, ValueTransferRepository } from '../repository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
@@ -58,16 +58,14 @@ export class ValueTransferGiverService {
 
   /**
    * Process a received {@link RequestMessage}.
-   * For Witness:
-   *    The original Request message will be verified and populated with Witness specific data.
    *    Value transfer record with the information from the request message will be created.
-   *    The populated Request message will be forwarded to Giver afterwards.
-   * For Giver:
-   *    Value transfer record with the information from the request message will be created.
-   *    Use {@link ValueTransferService.acceptRequest} after calling this method to accept payment request
+   *    Use {@link ValueTransferGiverService.acceptRequest} after calling this method to accept payment request.
    *
-   * @param messageContext The record context containing the request message.
-   * @returns Value Transfer record and Payment Request Message
+   * @param messageContext The context of the received message.
+   * @returns
+   *    * Value Transfer record
+   *    * Witnessed Request Message
+   *    * Witness Connection record
    */
   public async processRequestWitnessed(messageContext: InboundMessageContext<RequestWitnessedMessage>): Promise<{
     record: ValueTransferRecord
@@ -97,7 +95,7 @@ export class ValueTransferGiverService {
       payment: requestWitnessedMessage.body.payment,
       role: ValueTransferRole.Giver,
       state: ValueTransferState.RequestReceived,
-      threadId: requestWitnessedMessage.thid || requestWitnessedMessage.id,
+      threadId: requestWitnessedMessage.thid,
       requestWitnessedMessage,
       witnessConnectionId: witnessConnection.id,
     })
@@ -114,16 +112,21 @@ export class ValueTransferGiverService {
 
   /**
    * Accept received {@link RequestMessage} as Giver by sending a payment request acceptance message.
+   *
    * @param witnessConnection Connection to Witness.
    * @param record Value Transfer record containing Payment Request to accept.
-   * @returns Value Transfer record and Payment Request Acceptance Message
+   *
+   * @returns
+   *    * Value Transfer record
+   *    * Witnessed Request Acceptance Message
+   *    * Witness Connection record
    */
   public async acceptRequest(
     witnessConnection: ConnectionRecord,
     record: ValueTransferRecord
   ): Promise<{
     record: ValueTransferRecord
-    message: RequestAcceptedMessage
+    message: RequestAcceptedMessage | ProblemReportMessage
     forward: {
       witnessConnection: ConnectionRecord
     }
@@ -137,6 +140,8 @@ export class ValueTransferGiverService {
       throw new AriesFrameworkError(`Payment Request not found for Value Transfer with thread id ${record.threadId}`)
     }
 
+    let resultMessage: RequestAcceptedMessage | ProblemReportMessage
+
     const previousState = record.state
 
     // Call VTP to accept payment request
@@ -147,20 +152,32 @@ export class ValueTransferGiverService {
       .giver()
       .acceptPaymentRequest(witnessConnection.did, requestWitnessedMessage.body, notesToSpend)
     if (error || !message) {
-      throw new AriesFrameworkError(`VTP: Failed to accept Payment Request: ${error?.message}`)
+      // VTP message verification failed
+      resultMessage = new ProblemReportMessage({
+        pthid: requestWitnessedMessage.thid,
+        body: {
+          code: error?.code || 'invalid-payment-request',
+          comment: `Request verification failed. Error: ${error}`,
+        },
+      })
+
+      // Update Value Transfer record
+      record.problemReportMessage = resultMessage
+      record.state = ValueTransferState.Failed
+    } else {
+      // VTP message verification succeed
+      resultMessage = new RequestAcceptedMessage({
+        from: witnessConnection.did,
+        to: witnessConnection.theirDid,
+        body: message,
+        thid: record.threadId,
+      })
+
+      // Update Value Transfer record
+      record.payment = resultMessage.body.payment
+      record.requestAcceptedMessage = resultMessage
+      record.state = ValueTransferState.RequestAcceptanceSent
     }
-
-    const requestAcceptedMessage = new RequestAcceptedMessage({
-      from: witnessConnection.did,
-      to: witnessConnection.theirDid,
-      body: message,
-      thid: record.threadId,
-    })
-
-    // Update Value Transfer record and raise event
-    record.payment = requestAcceptedMessage.body.payment
-    record.requestAcceptedMessage = requestAcceptedMessage
-    record.state = ValueTransferState.RequestAcceptanceSent
 
     await this.valueTransferRepository.update(record)
 
@@ -171,21 +188,20 @@ export class ValueTransferGiverService {
 
     return {
       record,
-      message: requestAcceptedMessage,
+      message: resultMessage,
       forward: { witnessConnection },
     }
   }
 
   /**
-   * Process a received {@link CashAcceptedMessage}.
-   * For Witness:
-   *    Verify correctness of message
-   *    Update Value Transfer record with the information from the message.
-   * For Giver:
+   * Process a received {@link CashAcceptedWitnessedMessage}.
    *   Update Value Transfer record with the information from the message.
    *
    * @param messageContext The record context containing the message.
-   * @returns Value Transfer record and Payment Cash Accepted Message
+   * @returns
+   *    * Value Transfer record
+   *    * Witnessed Cash Acceptance Message
+   *    * Witness Connection record
    */
   public async processCashAcceptanceWitnessed(
     messageContext: InboundMessageContext<CashAcceptedWitnessedMessage>
@@ -198,9 +214,7 @@ export class ValueTransferGiverService {
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: cashAcceptedWitnessedMessage } = messageContext
-    if (!cashAcceptedWitnessedMessage.thid) {
-      throw new AriesFrameworkError(`Thread id not found in the Cash Accepted message.`)
-    }
+
     const record = await this.valueTransferRepository.getByThread(cashAcceptedWitnessedMessage.thid)
 
     record.assertRole(ValueTransferRole.Giver)
@@ -235,16 +249,21 @@ export class ValueTransferGiverService {
 
   /**
    * Remove cash as Giver from the Wallet.
+   *
    * @param witnessConnection Connection to Witness.
    * @param record Value Transfer record containing Cash Acceptance message to handle.
-   * @returns Value Transfer record and Cash Removed Message
+   *
+   * @returns
+   *    * Value Transfer record
+   *    * Cash Removed Message
+   *    * Witness Connection record
    */
   public async removeCash(
     witnessConnection: ConnectionRecord,
     record: ValueTransferRecord
   ): Promise<{
     record: ValueTransferRecord
-    message: CashRemovedMessage
+    message: CashRemovedMessage | ProblemReportMessage
     forward: {
       witnessConnection: ConnectionRecord
     }
@@ -258,24 +277,38 @@ export class ValueTransferGiverService {
       throw new AriesFrameworkError(`Cash Acceptance not found for Value Transfer with thread id ${record.threadId}`)
     }
 
+    let resultMessage: CashRemovedMessage | ProblemReportMessage
+
     const previousState = record.state
 
     // Call VTP package to remove cash
     const { error, message } = await this.valueTransfer.giver().removeCash(cashAcceptedWitnessedMessage.body)
     if (error || !message) {
-      throw new AriesFrameworkError(`Failed to accept Payment Request: ${error?.message}`)
+      // VTP message verification failed
+      resultMessage = new ProblemReportMessage({
+        pthid: cashAcceptedWitnessedMessage.thid,
+        body: {
+          code: error?.code || 'invalid-cash-accepted',
+          comment: `Cash Acceptance verification failed. Error: ${error}`,
+        },
+      })
+
+      // Update Value Transfer record
+      record.problemReportMessage = resultMessage
+      record.state = ValueTransferState.Failed
+    } else {
+      // VTP message verification succeed
+      resultMessage = new CashRemovedMessage({
+        from: witnessConnection.did,
+        to: witnessConnection.theirDid,
+        body: message,
+        thid: record.threadId,
+      })
+
+      // Update Value Transfer record
+      record.cashRemovedMessage = resultMessage
+      record.state = ValueTransferState.CashRemovalSent
     }
-
-    const cashRemovedMessage = new CashRemovedMessage({
-      from: witnessConnection.did,
-      to: witnessConnection.theirDid,
-      body: message,
-      thid: record.threadId,
-    })
-
-    // Update Value Transfer record and raise event
-    record.cashRemovedMessage = cashRemovedMessage
-    record.state = ValueTransferState.CashRemovalSent
 
     await this.valueTransferRepository.update(record)
 
@@ -286,7 +319,7 @@ export class ValueTransferGiverService {
 
     return {
       record,
-      message: cashRemovedMessage,
+      message: resultMessage,
       forward: {
         witnessConnection,
       },
@@ -298,16 +331,16 @@ export class ValueTransferGiverService {
    * Update Value Transfer record with the information from the message.
    *
    * @param messageContext The record context containing the message.
-   * @returns Value Transfer record and Payment Receipt Message
+   *
+   * @returns
+   *    * Value Transfer record
+   *    * Cash Removed Message
    */
   public async processReceipt(
     messageContext: InboundMessageContext<GiverReceiptMessage>
   ): Promise<{ record: ValueTransferRecord; message: GiverReceiptMessage }> {
     // Verify that we are in appropriate state to perform action
     const { message: receiptMessage } = messageContext
-    if (!receiptMessage.thid) {
-      throw new AriesFrameworkError(`Thread id not found in the Receipt message.`)
-    }
 
     const record = await this.valueTransferRepository.getByThread(receiptMessage.thid)
 
@@ -319,13 +352,23 @@ export class ValueTransferGiverService {
     // Call VTP to process Receipt
     const { error, message } = await this.valueTransfer.giver().processReceipt(receiptMessage.body)
     if (error || !message) {
-      throw new AriesFrameworkError(`Giver: Failed to store Receipt: ${error?.message}`)
-    }
+      // VTP message verification failed
+      const problemReportMessage = new ProblemReportMessage({
+        pthid: receiptMessage.thid,
+        body: {
+          code: error?.code || 'invalid-payment-receipt',
+          comment: `Receipt verification failed. Error: ${error}`,
+        },
+      })
 
-    // Update Value Transfer record and raise event
-    receiptMessage.body = message
-    record.giverReceiptMessage = receiptMessage
-    record.state = ValueTransferState.Completed
+      record.problemReportMessage = problemReportMessage
+      record.state = ValueTransferState.Failed
+    } else {
+      // VTP message verification succeed
+      receiptMessage.body = message
+      record.giverReceiptMessage = receiptMessage
+      record.state = ValueTransferState.Completed
+    }
 
     await this.valueTransferRepository.update(record)
 

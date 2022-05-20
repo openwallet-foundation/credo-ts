@@ -86,16 +86,16 @@ export class ValueTransferWitnessService {
 
   /**
    * Process a received {@link RequestMessage}.
-   * For Witness:
    *    The original Request message will be verified and populated with Witness specific data.
    *    Value transfer record with the information from the request message will be created.
    *    The populated Request message will be forwarded to Giver afterwards.
-   * For Giver:
-   *    Value transfer record with the information from the request message will be created.
-   *    Use {@link ValueTransferService.acceptRequest} after calling this method to accept payment request
    *
    * @param messageContext The record context containing the request message.
-   * @returns Value Transfer record and Payment Request Message
+   *
+   * @returns
+   *    * Value Transfer record
+   *    * Witnessed Request message
+   *    * Connection to send message
    */
   public async processRequest(messageContext: InboundMessageContext<RequestMessage>): Promise<{
     record?: ValueTransferRecord
@@ -105,7 +105,7 @@ export class ValueTransferWitnessService {
     const { message: requestMessage, connection: getterConnection } = messageContext
 
     if (!getterConnection) {
-      throw new AriesFrameworkError(`Connection not found for Getter`)
+      throw new AriesFrameworkError(`Connection not found in the message context`)
     }
 
     const giver = requestMessage.body.payment.giver
@@ -164,14 +164,16 @@ export class ValueTransferWitnessService {
 
   /**
    * Process a received {@link RequestAcceptedMessage}.
-   * For Witness:
+   *
    *    Verify correctness of message
    *    Update Value Transfer record with the information from the message.
-   * For Getter:
-   *   Update Value Transfer record with the information from the message.
    *
    * @param messageContext The record context containing the request message.
-   * @returns Value Transfer record and Payment Request Acceptance Message
+   *
+   * @returns
+   *    * Value Transfer record
+   *    * Witnessed Request Acceptance message
+   *    * Connections to send message
    */
   public async processRequestAcceptance(messageContext: InboundMessageContext<RequestAcceptedMessage>): Promise<{
     record: ValueTransferRecord
@@ -185,14 +187,11 @@ export class ValueTransferWitnessService {
     const { message: requestAcceptedMessage, connection: giverConnection } = messageContext
 
     if (!giverConnection) {
-      throw new AriesFrameworkError(`Connection not found for Giver`)
+      throw new AriesFrameworkError(`Connection not found in the message context`)
     }
 
     let resultMessage: RequestAcceptedWitnessedMessage | ProblemReportMessage
 
-    if (!requestAcceptedMessage.thid) {
-      throw new AriesFrameworkError(`Thread id not found in the Payment Request Acceptance message.`)
-    }
     const record = await this.valueTransferRepository.getByThread(requestAcceptedMessage.thid)
 
     record.assertRole(ValueTransferRole.Witness)
@@ -211,7 +210,7 @@ export class ValueTransferWitnessService {
       resultMessage = new ProblemReportMessage({
         pthid: requestAcceptedMessage.thid,
         body: {
-          code: error?.code || 'invalid-payment-request',
+          code: error?.code || 'invalid-payment-request-acceptance',
           comment: `Request Acceptance verification failed. Error: ${error}`,
         },
       })
@@ -253,14 +252,15 @@ export class ValueTransferWitnessService {
 
   /**
    * Process a received {@link CashAcceptedMessage}.
-   * For Witness:
    *    Verify correctness of message
    *    Update Value Transfer record with the information from the message.
-   * For Giver:
-   *   Update Value Transfer record with the information from the message.
    *
    * @param messageContext The record context containing the message.
-   * @returns Value Transfer record and Payment Cash Accepted Message
+   *
+   * @returns
+   *    * Value Transfer record
+   *    * Witnessed Cash Acceptance message
+   *    * Connections to send message
    */
   public async processCashAcceptance(messageContext: InboundMessageContext<CashAcceptedMessage>): Promise<{
     record: ValueTransferRecord
@@ -274,10 +274,7 @@ export class ValueTransferWitnessService {
     const { message: cashAcceptedMessage, connection: getterConnection } = messageContext
 
     if (!getterConnection) {
-      throw new AriesFrameworkError(`Connection not found for Getter`)
-    }
-    if (!cashAcceptedMessage.thid) {
-      throw new AriesFrameworkError(`Thread id not found in the Cash Accepted message.`)
+      throw new AriesFrameworkError(`Connection not found in the message context`)
     }
 
     let resultMessage: CashAcceptedWitnessedMessage | ProblemReportMessage
@@ -299,7 +296,7 @@ export class ValueTransferWitnessService {
       resultMessage = new ProblemReportMessage({
         pthid: cashAcceptedMessage.thid,
         body: {
-          code: error?.code || 'invalid-payment-request',
+          code: error?.code || 'invalid-cash-acceptance',
           comment: `Cash Acceptance verification failed. Error: ${error}`,
         },
       })
@@ -340,12 +337,13 @@ export class ValueTransferWitnessService {
 
   /**
    * Process a received {@link CashRemovedMessage}.
-   * For Witness:
    *    Verify correctness of message
    *    Update Value Transfer record with the information from the message.
    *
-   * @param messageContext The record context containing the message.
-   * @returns Value Transfer record and Payment Cash Removed Message
+   * @param messageContext The record context containing the message.@returns
+   *    * Value Transfer record
+   *    * Witnessed Cash Removal message
+   *    * Connections to send message
    */
   public async processCashRemoved(messageContext: InboundMessageContext<CashRemovedMessage>): Promise<{
     record: ValueTransferRecord
@@ -359,10 +357,7 @@ export class ValueTransferWitnessService {
     const { message: cashRemovedMessage, connection: giverConnection } = messageContext
 
     if (!giverConnection) {
-      throw new AriesFrameworkError(`Connection to Giver not found.`)
-    }
-    if (!cashRemovedMessage.thid) {
-      throw new AriesFrameworkError(`Thread id not found in the Cash Removed message.`)
+      throw new AriesFrameworkError(`Connection not found in the message context`)
     }
 
     let resultMessage: CashRemovedMessage | ProblemReportMessage
@@ -382,7 +377,7 @@ export class ValueTransferWitnessService {
       resultMessage = new ProblemReportMessage({
         pthid: cashRemovedMessage.thid,
         body: {
-          code: error?.code || 'invalid-payment-request',
+          code: error?.code || 'invalid-cash-removal',
           comment: `Cash Removal verification failed. Error: ${error}`,
         },
       })
@@ -418,10 +413,14 @@ export class ValueTransferWitnessService {
 
   /**
    * Finish Value Transfer as Witness and create Payment Receipt
+   *
    * @param record Value Transfer record containing Cash Removal message to handle.
    * @param getterConnection Connection record representing communication channel with Getter.
    * @param giverConnection Connection record representing communication channel with Giver.
-   * @returns Value Transfer record and Receipt Message
+   *
+   * @returns
+   *    * Value Transfer record
+   *    * Getter and Giver Receipt messages
    */
   public async createReceipt(
     record: ValueTransferRecord,

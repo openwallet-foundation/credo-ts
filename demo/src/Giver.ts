@@ -4,6 +4,7 @@ import type { ValueTransferRecord } from '@aries-framework/core/src/modules/valu
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
+import { ValueTransferState } from '@aries-framework/core/src/modules/value-transfer/ValueTransferState'
 import { JsonEncoder } from '@aries-framework/core/src/utils'
 import { createVerifiableNotes } from '@value-transfer/value-transfer-lib'
 
@@ -62,11 +63,17 @@ export class Giver extends BaseAgent {
     console.log('Waiting for finishing payment...')
     try {
       const record = await this.agent.valueTransfer.returnWhenIsCompleted(valueTransferRecord.id)
-      console.log(greenText(Output.PaymentDone))
-      console.log(greenText('Receipt:'))
-      console.log(record.giverReceiptMessage)
-      const balance = await this.agent.valueTransfer.getBalance()
-      console.log(greenText('Balance: ' + balance))
+      if (record.state === ValueTransferState.Completed) {
+        console.log(greenText(Output.PaymentDone))
+        console.log(greenText('Receipt:'))
+        console.log(record.giverReceiptMessage)
+        const balance = await this.agent.valueTransfer.getBalance()
+        console.log(greenText('Balance: ' + balance))
+      }
+      if (record.state === ValueTransferState.Failed) {
+        console.log(redText('Payment Failed:'))
+        console.log(record.problemReportMessage)
+      }
     } catch (e) {
       console.log(redText(`\nTimeout of 120 seconds reached.. Returning to home screen.\n`))
       return

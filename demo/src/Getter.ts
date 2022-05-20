@@ -3,6 +3,7 @@ import type { Transport } from '@aries-framework/core'
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
+import { ValueTransferState } from '@aries-framework/core/src/modules/value-transfer/ValueTransferState'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
@@ -76,11 +77,17 @@ export class Getter extends BaseAgent {
     console.log('Waiting for Giver to pay...')
     try {
       const record = await this.agent.valueTransfer.returnWhenIsCompleted(valueTransferRecord.id)
-      console.log(greenText(Output.PaymentReceived))
-      console.log(greenText('Receipt:'))
-      console.log(record.giverReceiptMessage)
-      const balance = await this.agent.valueTransfer.getBalance()
-      console.log(greenText('Balance: ' + balance))
+      if (record.state === ValueTransferState.Completed) {
+        console.log(greenText(Output.PaymentDone))
+        console.log(greenText('Receipt:'))
+        console.log(record.getterReceiptMessage)
+        const balance = await this.agent.valueTransfer.getBalance()
+        console.log(greenText('Balance: ' + balance))
+      }
+      if (record.state === ValueTransferState.Failed) {
+        console.log(redText('Payment Failed:'))
+        console.log(record.problemReportMessage)
+      }
     } catch (e) {
       console.log(redText(`\nTimeout of 120 seconds reached.. Returning to home screen.\n`))
       return
