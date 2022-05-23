@@ -75,13 +75,11 @@ describe('credentials', () => {
     aliceAgent.events
       .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
       .subscribe(aliceReplay)
-
     wallet = faberAgent.injectionContainer.resolve(IndyWallet)
     const issuerDidInfo = await wallet.createDid({ seed })
     const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
     issuerDidKey = new DidKey(issuerKey)
     verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
-
     const inputDoc = {
       '@context': [
         'https://www.w3.org/2018/credentials/v1',

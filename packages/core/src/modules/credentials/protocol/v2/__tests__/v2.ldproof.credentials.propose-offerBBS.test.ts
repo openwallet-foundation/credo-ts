@@ -1,6 +1,6 @@
-import type { W3cVerifiableCredential } from '../../../../../../src/modules/vc/models'
-import type { SignCredentialOptions } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
 import type { Agent } from '../../../../../agent/Agent'
+import type { AgentConfig } from '../../../../../agent/AgentConfig'
+import type { SignCredentialOptions } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
 import type { ConnectionRecord } from '../../../../connections'
 import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
 import type {
@@ -9,20 +9,26 @@ import type {
   ProposeCredentialOptions,
 } from '../../../CredentialsModuleOptions'
 
-import { AnonymousSubject } from 'rxjs/internal/Subject'
-
-import { DidKey } from '../../../../../../src/modules/dids'
-import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
-import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
-import testLogger from '../../../../../../tests/logger'
+import { getAgentConfig, setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
+import testLogger, { TestLogger } from '../../../../../../tests/logger'
 import { KeyType } from '../../../../../crypto/KeyType'
+import { LogLevel } from '../../../../../logger'
+import { DidKey, DidResolverService } from '../../../../../modules/dids'
+import { DidRepository } from '../../../../../modules/dids/repository'
+import { IndyLedgerService } from '../../../../../modules/ledger/services/IndyLedgerService'
+import { W3cCredentialService } from '../../../../../modules/vc/W3cCredentialService'
+import { customDocumentLoader } from '../../../../../modules/vc/__tests__/documentLoader'
+import { BbsBlsSignature2020Fixtures } from '../../../../../modules/vc/__tests__/fixtures'
+import { W3cVerifiableCredential } from '../../../../../modules/vc/models'
+import { LinkedDataProof } from '../../../../../modules/vc/models/LinkedDataProof'
+import { W3cCredentialRepository } from '../../../../../modules/vc/models/credential/W3cCredentialRepository'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+import { IndyWallet } from '../../../../../wallet/IndyWallet'
 import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import { V2CredentialPreview } from '../V2CredentialPreview'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
@@ -34,62 +40,21 @@ let faberCredentialRecord: CredentialExchangeRecord
 let wallet: IndyWallet
 let issuerDidKey: DidKey
 let didCommMessageRepository: DidCommMessageRepository
-let credential: W3cCredential
 let signCredentialOptions: SignCredentialOptions
-
+let verificationMethod: string
+const seed = 'testseed000000000000000000000001'
 describe('credentials, BBS+ signature', () => {
-  const inputDoc = {
-    '@context': [
-      'https://www.w3.org/2018/credentials/v1',
-      'https://w3id.org/citizenship/v1',
-      'https://w3id.org/security/bbs/v1',
-    ],
-    id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
-    type: ['VerifiableCredential', 'PermanentResidentCard'],
-    // issuer: issuerDidKey.did,
-    identifier: '83627465',
-    name: 'Permanent Resident Card',
-    description: 'Government of Example Permanent Resident Card.',
-    issuanceDate: '2019-12-03T12:19:52Z',
-    expirationDate: '2029-12-03T12:19:52Z',
-    credentialSubject: {
-      id: 'did:example:b34ca6cd37bbf23',
-      type: ['PermanentResident', 'Person'],
-      givenName: 'JOHN',
-      familyName: 'SMITH',
-      gender: 'Male',
-      image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-      residentSince: '2015-01-01',
-      lprCategory: 'C09',
-      lprNumber: '999-999-999',
-      commuterClassification: 'C1',
-      birthCountry: 'Bahamas',
-      birthDate: '1958-07-17',
-    },
-  }
-
-  credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
-
-  signCredentialOptions = {
-    credential,
-    proofType: 'BbsBlsSignature2020',
-    verificationMethod: '',
-  }
-
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD BBS+',
       'Alice Agent Credentials LD BBS+'
     ))
     wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-    await wallet.initPublicDid({})
-    const pubDid = wallet.publicDid
+    const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
 
-    const key = await wallet.createKey({ keyType: KeyType.Bls12381g2 })
+    console.log(">>>>>>>>>>>>>>>> key = ", key.publicKeyBase58)
     issuerDidKey = new DidKey(key)
-
-    credential.issuer = issuerDidKey.did
-    signCredentialOptions.verificationMethod = issuerDidKey.keyId
+    verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
   })
 
   afterAll(async () => {
@@ -103,6 +68,15 @@ describe('credentials, BBS+ signature', () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
     // set the propose options
 
+    const credentialJson = BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT
+    credentialJson.issuer = issuerDidKey.did
+    const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
+
+    signCredentialOptions = {
+      credential,
+      proofType: 'BbsBlsSignature2020',
+      verificationMethod,
+    }
     const proposeOptions: ProposeCredentialOptions = {
       connectionId: aliceConnection.id,
       protocolVersion: CredentialProtocolVersion.V2,
@@ -246,8 +220,6 @@ describe('credentials, BBS+ signature', () => {
         associatedRecordId: faberCredentialRecord.id,
         messageClass: V2IssueCredentialMessage,
       })
-
-      const data = credentialMessage?.messageAttachment[0].getDataAsJson<W3cVerifiableCredential>()
 
       expect(JsonTransformer.toJSON(credentialMessage)).toMatchObject({
         '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',

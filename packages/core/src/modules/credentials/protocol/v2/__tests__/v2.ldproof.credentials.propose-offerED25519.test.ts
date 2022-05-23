@@ -15,7 +15,7 @@ import { Attachment, AttachmentData } from '../../../../../../src/decorators/att
 import { DidKey } from '../../../../../../src/modules/dids'
 import { LinkedAttachment } from '../../../../../../src/utils/LinkedAttachment'
 import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
-import { getAgentConfig, setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
+import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { KeyType } from '../../../../../crypto/KeyType'
 import { DidCommMessageRepository } from '../../../../../storage'
@@ -36,7 +36,6 @@ describe('credentials', () => {
   let aliceCredentialRecord: CredentialExchangeRecord
   let faberCredentialRecord: CredentialExchangeRecord
   let wallet: IndyWallet
-  let agentConfig: AgentConfig
   let issuerDidKey: DidKey
   let verificationMethod: string
   let didCommMessageRepository: DidCommMessageRepository
@@ -49,7 +48,7 @@ describe('credentials', () => {
     ],
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
     type: ['VerifiableCredential', 'PermanentResidentCard'],
-    // issuer: issuerDidKey.did,
+    issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
     identifier: '83627465',
     name: 'Permanent Resident Card',
     description: 'Government of Example Permanent Resident Card.',
@@ -78,32 +77,21 @@ describe('credentials', () => {
   const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
-    // // wallet = new IndyWallet(agentConfig)
-    // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    // ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
-    //   'Faber Agent Credentials LD',
-    //   'Alice Agent Credentials LD'
-    // ))
-    // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    // // await wallet.createAndOpen(agentConfig.walletConfig!)
-    // wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-
-    // const issuerDidInfo = await wallet.createDid({ seed })
-    // const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
-    // issuerDidKey = new DidKey(issuerKey)
-    // verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
-    // signCredentialOptions = {
-    //   credential,
-    //   proofType: 'Ed25519Signature2018',
-    //   verificationMethod,
-    // }
-
-    ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
-      'Faber Agent Credentials LD BBS+',
-      'Alice Agent Credentials LD BBS+'
+    ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
+      'Faber Agent Credentials LD',
+      'Alice Agent Credentials LD'
     ))
     wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-    await wallet.initPublicDid({})
+
+    const issuerDidInfo = await wallet.createDid({ seed })
+    const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+    issuerDidKey = new DidKey(issuerKey)
+    verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
+    signCredentialOptions = {
+      credential,
+      proofType: 'Ed25519Signature2018',
+      verificationMethod,
+    }
   })
 
   afterAll(async () => {
@@ -262,12 +250,6 @@ describe('credentials', () => {
         associatedRecordId: faberCredentialRecord.id,
         messageClass: V2IssueCredentialMessage,
       })
-
-      const data = credentialMessage?.messageAttachment[0].getDataAsJson<W3cVerifiableCredential>()
-
-      // console.log('====> V2 Credential (JsonLd) = ', credentialMessage)
-
-      // console.log('====> W3C VerifiableCredential = ', data)
 
       expect(JsonTransformer.toJSON(credentialMessage)).toMatchObject({
         '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',

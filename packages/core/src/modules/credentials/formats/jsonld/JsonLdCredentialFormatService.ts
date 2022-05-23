@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import type { SignCredentialOptions } from '../../../vc/models/W3cCredentialServiceOptions'
+import type { CredentialSubject } from '../../../vc/models/credential/CredentialSubject'
 import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
 import type {
   DeleteCredentialOptions,
@@ -26,6 +27,7 @@ import { JsonTransformer } from '../../../../../src/utils/JsonTransformer'
 import { uuid } from '../../../../../src/utils/uuid'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { W3cCredentialService } from '../../../vc'
+import { BbsBlsSignature2020Fixtures } from '../../../vc/__tests__/fixtures'
 import { W3cVerifiableCredential, W3cCredential } from '../../../vc/models'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
@@ -88,9 +90,9 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     const signCredentialOptions: SignCredentialOptions = {
       credential: JsonTransformer.fromJSON(credentialOptions.credential, W3cCredential),
       proofType: credentialOptions.proofType,
-      verificationMethod: credentialOptions.verificationMethod,
+      verificationMethod:
+        'did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa#zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa',
     }
-
     const verifiableCredential = await this.w3cCredentialService.signCredential(signCredentialOptions)
     const issueAttachment: Attachment = this.getFormatData(verifiableCredential, attachmentId)
 
