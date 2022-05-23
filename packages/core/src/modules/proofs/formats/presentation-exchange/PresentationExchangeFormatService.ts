@@ -247,6 +247,10 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const subject: ICredentialSubject = credential.credentialSubject as ICredentialSubject
 
+    // Credential is allowed to be presented without a subject id. In that case we can't prove ownerhsip of credential
+    // And it is more like a bearer token.
+    // In the future we can first check the holder key and if it exists we can use that as the one that should authenticate
+    // https://www.w3.org/TR/vc-data-model/#example-a-credential-issued-to-a-holder-who-is-not-the-only-subject-of-the-credential-who-has-no-relationship-with-the-subject-of-the-credential-but-who-has-a-relationship-with-the-issuer
     if (!subject?.id) {
       throw new AriesFrameworkError(
         'Credential subject missing from the selected credential for creating presentation.'
@@ -265,6 +269,58 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     if (!didResolutionResult.didDocument?.verificationMethod) {
       throw new AriesFrameworkError(`No did verification method found for did ${subject.id} in did document`)
+    }
+
+    const proofPurpose = ProofPurpose.assertionMethod
+
+    if (!didResolutionResult.didDocument[proofPurpose]) {
+      throw new AriesFrameworkError('')
+    }
+
+    // the signature suite to use for the presentation is dependant on the credentials we share.
+    // 1. loop over all credentials that will be included in the proof
+
+    const presentation = {
+      verifiableCredentials: [
+        {
+          credentialSubject: {
+            id: 'did:key:z456', // ed25519 did:key
+          },
+          proof: {
+            type: 'Ed25519Signature2018',
+          },
+        },
+        {
+          credentialSubject: {
+            another: 'key',
+            id: 'did:key:z123', // bls12381g2 did:key
+          },
+          proof: {
+            type: 'BbsBlsSignatureProof2020',
+          },
+        },
+
+        {
+          credentialSubject: {
+            a: 'key',
+            id: 'did:key:z123', // bls12381g2 did:key
+          },
+          proof: {
+            type: 'BbsBlsSignatureProof2020',
+          },
+        },
+      ],
+      // how do get multiple proofs on the object?
+      proof: [
+        {
+          type: 'BbsBlsSignature2020',
+          verificationMethod: 'did:key:z123#a-key-id',
+        },
+        {
+          type: 'Ed25519Signature2018',
+          verificationMethod: 'did:key:z456#a-key-id',
+        },
+      ],
     }
 
     const params: PresentationSignOptions = {
@@ -354,17 +410,9 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const presentationDefinition = requestMessageJson.presentationDefinition
 
-    const expandedTypes = await expand(JsonTransformer.toJSON(presentationDefinition), {
-      documentLoader: await this.w3cCredentialService.documentLoader,
-    })
-
     let uriList: string[] = []
     for (const inputDescriptor of presentationDefinition.input_descriptors) {
-      uriList = inputDescriptor.schema.map((s) => s.uri)
-
-      if (uriList.length === 0) {
-        uriList.splice(0)
-      }
+      uriList = [...uriList, ...inputDescriptor.schema.map((s) => s.uri)]
     }
 
     const credentialsByContext = await this.w3cCredentialService.findCredentialByQuery({
@@ -372,7 +420,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     })
 
     const credentialsByExpandedType = await this.w3cCredentialService.findCredentialByQuery({
-      expandedTypes,
+      expandedTypes: uriList,
     })
 
     const credentials = [...credentialsByContext, ...credentialsByExpandedType]
@@ -399,6 +447,21 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     if (!presentationExchange.verifiableCredential || presentationExchange.verifiableCredential.length === 0) {
       throw new AriesFrameworkError('')
     }
+
+    // check if this is INFO / (maybe WARNING. check when this is warning?)
+    presentationExchange.areRequiredCredentialsPresent
+
+    // 100 credentials in the credential list
+    // 4 groups in total that satisfy the proof request
+    //  for each group I need to know which credentials it needs
+
+    // How to auto select the credentials:
+    //  1. loop over all matches and find the first match for each submission requirement
+    //  2. then for each match we extract the associated credentials from the `presentationExchange.verifiableCredential` array
+    // We probably also need to return the selected matches we used so we can use those to create the presentation submission
+
+    // Check how to correlate it. I think we may need to do something with the count here?
+    presentationExchange.matches[0].count
 
     return {
       presentationExchange: presentationExchange.verifiableCredential[0],
