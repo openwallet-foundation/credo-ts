@@ -15,7 +15,7 @@ export interface ProblemReportV2 {
   code: string
   comment?: string
   escalate_to?: string
-  args?: any[]
+  args?: string[]
 }
 
 export class ProblemReportV2Message extends DIDCommV2Message {

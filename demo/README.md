@@ -1,8 +1,8 @@
 <h1 align="center"><b>DEMO</b></h1>
 
-This is the Aries Framework Javascript demo. Walk through the AFJ flow yourself together with agents Getter and Faber.
+This is the Aries Framework Javascript demo. Walk through the AFJ flow yourself together with agents Alice and Faber.
 
-Getter, a former student of Faber College, connects with the College, is issued a credential about her degree and then is asked by the College for a proof.
+Alice, a former student of Faber College, connects with the College, is issued a credential about her degree and then is asked by the College for a proof.
 
 ## Features
 
@@ -41,7 +41,7 @@ Install the project in one of the terminals:
 yarn install
 ```
 
-In the left terminal run Getter:
+In the left terminal run Alice:
 
 ```sh
 yarn alice
@@ -58,21 +58,21 @@ yarn faber
 To set up a connection:
 
 - Select 'setup connection' in both Agents
-- Getter will print a invitation link which you then copy and paste to Faber
+- Alice will print a invitation link which you then copy and paste to Faber
 - You have now set up a connection!
 
 To offer a credential:
 
 - Select 'offer credential' in Faber
 - Faber will start with registering a schema and the credential definition accordingly
-- You have now send a credential offer to Getter!
-- Go to Getter to accept the incoming credential offer
+- You have now send a credential offer to Alice!
+- Go to Alice to accept the incoming credential offer
 
 To request a proof:
 
 - Select 'request proof' in Faber
-- Faber will create a new proof attribute and will then send a proof request to Getter!
-- Go to Getter to accept the incoming proof request
+- Faber will create a new proof attribute and will then send a proof request to Alice!
+- Go to Alice to accept the incoming proof request
 
 To send a basic message:
 

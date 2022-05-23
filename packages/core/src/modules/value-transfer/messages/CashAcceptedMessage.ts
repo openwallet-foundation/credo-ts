@@ -2,7 +2,7 @@ import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { ValueTransferMessage } from '@value-transfer/value-transfer-lib'
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 

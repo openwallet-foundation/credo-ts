@@ -74,7 +74,6 @@ export class ValueTransferWitnessService {
 
     this.valueTransfer = new ValueTransfer(
       {
-        // @ts-ignore
         crypto: this.valueTransferCryptoService,
         storage: this.valueTransferStateService,
       },

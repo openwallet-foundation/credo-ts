@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { HandlerV2, HandlerV2InboundMessage } from '../../../agent/Handler'
+import type { MessageSender } from '../../../agent/MessageSender'
 import type { ValueTransferWitnessService } from '../services/ValueTransferWitnessService'
-import type { MessageSender } from '@aries-framework/core'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { ProblemReportMessage, RequestAcceptedMessage } from '../messages'

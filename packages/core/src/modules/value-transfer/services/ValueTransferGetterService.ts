@@ -51,7 +51,6 @@ export class ValueTransferGetterService {
 
     this.valueTransfer = new ValueTransfer(
       {
-        // @ts-ignore
         crypto: this.valueTransferCryptoService,
         storage: this.valueTransferStateService,
       },
