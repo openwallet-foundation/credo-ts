@@ -139,3 +139,14 @@ export function isDid(did: string): boolean {
 export function isDidIdentifier(identifier: string): boolean {
   return DID_IDENTIFIER_REGEX.test(identifier)
 }
+
+/**
+ * Convert publicKeyBase58 to indy did
+ * @param publicKeyBase58
+ * @returns
+ */
+export function indyDidFromPublicKeyBase58(publicKeyBase58: string): string {
+  const buffer = TypedArrayEncoder.fromBase58(publicKeyBase58)
+  const did = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
+  return did
+}

@@ -18,6 +18,7 @@ type DidPurpose =
   | 'assertionMethod'
   | 'capabilityInvocation'
   | 'capabilityDelegation'
+  | 'verificationMethod'
 
 interface DidDocumentOptions {
   context?: string | string[]
@@ -213,4 +214,39 @@ export function keyReferenceToKey(didDocument: DidDocument, keyId: string) {
   const key = getKeyFromVerificationMethod(verificationMethod)
 
   return key
+}
+
+/**
+ * Extracting the first publicKeyBase58 for signature type
+ * @param type Signature type
+ * @param didDocument DidDocument
+ * @returns publicKeyBase58
+ */
+export async function getPublicKeyBase58(type: string, didDocument: DidDocument): Promise<string> {
+  const allPurposes: DidPurpose[] = [
+    'verificationMethod',
+    'authentication',
+    'keyAgreement',
+    'assertionMethod',
+    'capabilityInvocation',
+    'capabilityDelegation',
+  ]
+
+  for await (const purpose of allPurposes) {
+    const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
+    if (key instanceof Array) {
+      for await (const method of key) {
+        if (typeof method !== 'string') {
+          if (method.type === type) {
+            if (!method?.publicKeyBase58) {
+              throw new Error(`Unable to get publicKeyBase58 for '${type}' in DidDocument`)
+            }
+            return method?.publicKeyBase58
+          }
+        }
+      }
+    }
+  }
+
+  throw new Error(`Unable to get publicKeyBase58 for '${type}' in DidDocument`)
 }
