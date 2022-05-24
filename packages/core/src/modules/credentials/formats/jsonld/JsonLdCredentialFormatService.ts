@@ -84,14 +84,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
 
     const attachmentId = options.attachId ? options.attachId : formats.attachId
 
-    // sign credential here. The credential subject is received as the request attachment
+    // sign credential here. credential to be signed is received as the request attachment
     // (attachment in the request message from holder to issuer)
     const credentialOptions = requestAttachment?.getDataAsJson<SignCredentialOptions>()
     const signCredentialOptions: SignCredentialOptions = {
       credential: JsonTransformer.fromJSON(credentialOptions.credential, W3cCredential),
       proofType: credentialOptions.proofType,
-      verificationMethod:
-        'did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa#zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa',
+      verificationMethod: credentialOptions.verificationMethod,
     }
     const verifiableCredential = await this.w3cCredentialService.signCredential(signCredentialOptions)
     const issueAttachment: Attachment = this.getFormatData(verifiableCredential, attachmentId)

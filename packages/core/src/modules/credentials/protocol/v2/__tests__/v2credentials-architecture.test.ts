@@ -82,15 +82,6 @@ const signCredentialOptions = {
   verificationMethod: 'weprih2ofueb',
 }
 
-const jsonProposal: ProposeCredentialOptions = {
-  connectionId: '',
-  protocolVersion: CredentialProtocolVersion.V2,
-  credentialFormats: {
-    jsonld: signCredentialOptions,
-  },
-  comment: 'v2 propose credential test',
-}
-
 const multiFormatProposal: ProposeCredentialOptions = {
   connectionId: '',
   protocolVersion: CredentialProtocolVersion.V2,

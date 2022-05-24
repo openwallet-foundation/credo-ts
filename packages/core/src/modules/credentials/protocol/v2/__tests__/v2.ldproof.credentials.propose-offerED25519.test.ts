@@ -1,6 +1,4 @@
-import type { W3cVerifiableCredential } from '../../../../../../src/modules/vc/models'
 import type { Agent } from '../../../../../agent/Agent'
-import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { ConnectionRecord } from '../../../../connections'
 import type { SignCredentialOptions } from '../../../../vc/models/W3cCredentialServiceOptions'
 import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'

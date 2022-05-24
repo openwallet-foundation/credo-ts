@@ -1,5 +1,4 @@
 import type { Agent } from '../../../../../agent/Agent'
-import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { SignCredentialOptions } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
 import type { ConnectionRecord } from '../../../../connections'
 import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
@@ -9,19 +8,11 @@ import type {
   ProposeCredentialOptions,
 } from '../../../CredentialsModuleOptions'
 
-import { getAgentConfig, setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
-import testLogger, { TestLogger } from '../../../../../../tests/logger'
+import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
+import testLogger from '../../../../../../tests/logger'
 import { KeyType } from '../../../../../crypto/KeyType'
-import { LogLevel } from '../../../../../logger'
-import { DidKey, DidResolverService } from '../../../../../modules/dids'
-import { DidRepository } from '../../../../../modules/dids/repository'
-import { IndyLedgerService } from '../../../../../modules/ledger/services/IndyLedgerService'
-import { W3cCredentialService } from '../../../../../modules/vc/W3cCredentialService'
-import { customDocumentLoader } from '../../../../../modules/vc/__tests__/documentLoader'
+import { DidKey } from '../../../../../modules/dids'
 import { BbsBlsSignature2020Fixtures } from '../../../../../modules/vc/__tests__/fixtures'
-import { W3cVerifiableCredential } from '../../../../../modules/vc/models'
-import { LinkedDataProof } from '../../../../../modules/vc/models/LinkedDataProof'
-import { W3cCredentialRepository } from '../../../../../modules/vc/models/credential/W3cCredentialRepository'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../../../wallet/IndyWallet'
@@ -43,7 +34,7 @@ let didCommMessageRepository: DidCommMessageRepository
 let signCredentialOptions: SignCredentialOptions
 let verificationMethod: string
 const seed = 'testseed000000000000000000000001'
-describe('credentials, BBS+ signature', () => {
+xdescribe('credentials, BBS+ signature', () => {
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD BBS+',
@@ -52,7 +43,6 @@ describe('credentials, BBS+ signature', () => {
     wallet = faberAgent.injectionContainer.resolve(IndyWallet)
     const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
 
-    console.log(">>>>>>>>>>>>>>>> key = ", key.publicKeyBase58)
     issuerDidKey = new DidKey(key)
     verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
   })
