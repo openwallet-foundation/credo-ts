@@ -34,7 +34,7 @@ let didCommMessageRepository: DidCommMessageRepository
 let signCredentialOptions: SignCredentialOptions
 let verificationMethod: string
 const seed = 'testseed000000000000000000000001'
-xdescribe('credentials, BBS+ signature', () => {
+describe('credentials, BBS+ signature', () => {
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD BBS+',
