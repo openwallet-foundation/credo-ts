@@ -221,7 +221,7 @@ export class OutOfBandModule {
    *
    * Agent role: sender (inviter)
    *
-   * @param config configuration of how connection invitation should be created
+   * @param config configuration of how a connection invitation should be created
    * @returns out-of-band record and connection invitation
    */
   public async createLegacyInvitation(config: CreateLegacyInvitationConfig = {}) {
