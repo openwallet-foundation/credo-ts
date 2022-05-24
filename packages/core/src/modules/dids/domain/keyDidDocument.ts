@@ -77,7 +77,10 @@ function getEd25519DidDoc(did: string, key: Key) {
 function getX25519DidDoc(did: string, key: Key) {
   const verificationMethod = getX25519VerificationMethod({ id: `${did}#${key.fingerprint}`, key, controller: did })
 
-  const document = new DidDocumentBuilder(did).addKeyAgreement(verificationMethod).build()
+  const document = new DidDocumentBuilder(did)
+    .addKeyAgreement(verificationMethod)
+    .addContext('https://w3id.org/security/suites/x25519-2019/v1')
+    .build()
 
   return document
 }
