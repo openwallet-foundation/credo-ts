@@ -4,7 +4,6 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { ProofAttributeInfo, ProofPredicateInfo } from '../../protocol/v1/models'
 import type {
   CreateRequestAsResponseOptions,
   GetRequestedCredentialsFormat,
@@ -23,6 +22,7 @@ import type {
   ProcessRequestOptions,
   VerifyProofOptions,
 } from '../models/ProofFormatServiceOptions'
+import type { ProofAttributeInfo, ProofPredicateInfo } from './models'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -42,8 +42,7 @@ import { CredentialUtils } from '../../../credentials'
 import { Credential, IndyCredentialInfo } from '../../../credentials/protocol/v1/models'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
-import { ProofsUtils } from '../../ProofsUtil'
-import { PartialProof, RequestedPredicate, RequestedAttribute } from '../../protocol/v1/models'
+import { PartialProof } from '../../protocol/v1/models'
 import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import { ProofFormatService } from '../ProofFormatService'
 import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../ProofFormats'
@@ -51,6 +50,8 @@ import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
+import { IndyProofUtils } from './IndyProofUtils'
+import { RequestedAttribute, RequestedPredicate } from './models'
 import { ProofRequest } from './models/ProofRequest'
 import { RequestedCredentials } from './models/RequestedCredentials'
 import { RetrievedCredentials } from './models/RetrievedCredentials'
@@ -588,7 +589,7 @@ export class IndyProofFormatService extends ProofFormatService {
       nonce: nonce,
     }
 
-    const proofRequest = ProofsUtils.createReferentForProofRequest(indyProposeProofFormat, proposalJson)
+    const proofRequest = IndyProofUtils.createReferentForProofRequest(indyProposeProofFormat, proposalJson)
 
     return {
       indy: proofRequest,

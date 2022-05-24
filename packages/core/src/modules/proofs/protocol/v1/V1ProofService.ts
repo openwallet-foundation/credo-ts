@@ -6,6 +6,7 @@ import type { MediationRecipientService } from '../../../routing/services/Mediat
 import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { IndyProposeProofFormat } from '../../formats/IndyProofFormatsServiceOptions'
+import type { ProofAttributeInfo } from '../../formats/indy/models'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type {
   CreateAckOptions,
@@ -22,7 +23,6 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { ProofAttributeInfo } from './models'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -44,9 +44,9 @@ import { IndyHolderService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
-import { ProofsUtils } from '../../ProofsUtil'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
+import { IndyProofUtils } from '../../formats/indy/IndyProofUtils'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
@@ -633,7 +633,7 @@ export class V1ProofService extends ProofService {
       nonce: options.nonce ?? (await this.generateProofRequestNonce()),
     }
 
-    const proofRequest = ProofsUtils.createReferentForProofRequest(
+    const proofRequest = IndyProofUtils.createReferentForProofRequest(
       indyProposeProofFormat,
       proposalMessage.presentationProposal
     )

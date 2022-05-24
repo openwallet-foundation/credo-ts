@@ -5,8 +5,9 @@ import { ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { RecordTransformer } from '../../../../../utils/transformers'
-import { RequestedAttribute } from '../../../protocol/v1/models/RequestedAttribute'
-import { RequestedPredicate } from '../../../protocol/v1/models/RequestedPredicate'
+
+import { RequestedAttribute } from './RequestedAttribute'
+import { RequestedPredicate } from './RequestedPredicate'
 
 export interface IndyRequestedCredentialsOptions {
   requestedAttributes?: Record<string, RequestedAttribute>

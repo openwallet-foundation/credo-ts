@@ -36,10 +36,10 @@ import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
 import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
-import { ProofsUtils } from '../../ProofsUtil'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormats'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
+import { IndyProofUtils } from '../../formats/indy/IndyProofUtils'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
@@ -92,7 +92,7 @@ export class V2ProofService extends ProofService {
         await service.createRequest({
           formats:
             key === PresentationRecordType.Indy
-              ? await ProofsUtils.createRequestFromPreview(options)
+              ? await IndyProofUtils.createRequestFromPreview(options)
               : options.proofFormats,
         })
       )
