@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import type { LinkedDataProofOptions } from '../LinkedDataProof'
 import type { W3cCredentialOptions } from './W3cCredential'
 

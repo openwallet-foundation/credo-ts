@@ -1,10 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import type { SignCredentialOptions } from '../../../vc/models/W3cCredentialServiceOptions'
-import type { CredentialSubject } from '../../../vc/models/credential/CredentialSubject'
 import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
 import type {
-  DeleteCredentialOptions,
   ServiceAcceptCredentialOptions,
   ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
@@ -27,7 +25,6 @@ import { JsonTransformer } from '../../../../../src/utils/JsonTransformer'
 import { uuid } from '../../../../../src/utils/uuid'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { W3cCredentialService } from '../../../vc'
-import { BbsBlsSignature2020Fixtures } from '../../../vc/__tests__/fixtures'
 import { W3cVerifiableCredential, W3cCredential } from '../../../vc/models'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
@@ -38,9 +35,6 @@ import { CredentialFormatService } from '../CredentialFormatService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class JsonLdCredentialFormatService extends CredentialFormatService {
-  public async deleteCredentialById(credentialRecordId: string): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
   protected credentialRepository: CredentialRepository // protected as in base class
   private w3cCredentialService: W3cCredentialService
 
@@ -54,6 +48,28 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     this.w3cCredentialService = w3cCredentialService
   }
 
+  /**
+   * Create a {@link AttachmentFormats} object dependent on the message type.
+   *
+   * @param options The object containing all the options for the proposed credential
+   * @returns object containing associated attachment, formats and filtersAttach elements
+   *
+   */
+  public async createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats> {
+    const format: CredentialFormatSpec = {
+      attachId: 'ld_proof',
+      format: 'aries/ld-proof-vc-detail@v1.0',
+    }
+
+    const attachment: Attachment = this.getFormatData(options.credentialFormats.jsonld, format.attachId)
+    return { format, attachment }
+  }
+
+  /**
+   * Method called on reception of a propose credential message
+   * We do the necessary processing here to accept the proposal and do the state change, emit event etc.
+   * @param options the options needed to accept the proposal
+   */
   public async processProposal(options: ServiceAcceptProposalOptions): Promise<void> {
     const credPropose = options.proposalAttachment?.getDataAsJson<SignCredentialOptions>()
 
@@ -66,44 +82,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     }
   }
 
-  public async createCredential(
-    options: ServiceAcceptRequestOptions,
-    credentialRecord: CredentialExchangeRecord,
-    requestAttachment: Attachment
-  ): Promise<FormatServiceCredentialAttachmentFormats> {
-    if (!requestAttachment || !requestAttachment?.data?.base64) {
-      throw new AriesFrameworkError(
-        `Missing request attachment from request message, credential record id = ${credentialRecord.id}`
-      )
-    }
-
-    const formats: CredentialFormatSpec = {
-      attachId: uuid(),
-      format: 'aries/ld-proof-vc@1.0',
-    }
-
-    const attachmentId = options.attachId ? options.attachId : formats.attachId
-
-    // sign credential here. credential to be signed is received as the request attachment
-    // (attachment in the request message from holder to issuer)
-    const credentialOptions = requestAttachment?.getDataAsJson<SignCredentialOptions>()
-    const signCredentialOptions: SignCredentialOptions = {
-      credential: JsonTransformer.fromJSON(credentialOptions.credential, W3cCredential),
-      proofType: credentialOptions.proofType,
-      verificationMethod: credentialOptions.verificationMethod,
-    }
-    const verifiableCredential = await this.w3cCredentialService.signCredential(signCredentialOptions)
-    const issueAttachment: Attachment = this.getFormatData(verifiableCredential, attachmentId)
-
-    return { format: formats, attachment: issueAttachment }
-  }
-
-  public getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
-    const formatId = formats.find((f) => f.format.includes('aries'))
-    const attachment = messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
-    return attachment
-  }
-
+  /**
+   * Create a {@link AttachmentFormats} object dependent on the message type.
+   *
+   * @param options The object containing all the options for the credential offer
+   * @returns object containing associated attachment, formats and offersAttach elements
+   *
+   */
   public async createOffer(options: ServiceAcceptProposalOptions): Promise<FormatServiceOfferAttachmentFormats> {
     const formats: CredentialFormatSpec = {
       attachId: uuid(),
@@ -121,6 +106,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
       }
       messageAttachment = options.credentialFormats.jsonld
     } else {
+      // there is a proposal - use that as the message attachment
       messageAttachment = options.proposalAttachment.getDataAsJson<SignCredentialOptions>()
     }
     const offersAttach: Attachment = this.getFormatData(messageAttachment, attachmentId)
@@ -133,10 +119,24 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     return { format: formats, preview, attachment: offersAttach }
   }
 
+  /**
+   * Process incoming offer message - not implemented for json ld
+   * @param attachment the attachment containing the offer
+   * @param credentialRecord the credential record for the message exchange
+   */
   public processOffer(_attachment: Attachment, _credentialRecord: CredentialExchangeRecord): Promise<void> {
     return Promise.resolve()
   }
 
+  /**
+   * Create a credential attachment format for a credential request.
+   *
+   * @param options The object containing all the options for the credential request
+   * @param credentialRecord the credential record containing the offer from which this request
+   * is derived
+   * @returns object containing associated attachment, formats and requestAttach elements
+   *
+   */
   public async createRequest(
     options: FormatServiceRequestCredentialOptions,
     credentialRecord: CredentialExchangeRecord
@@ -161,6 +161,99 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     const requestAttach: Attachment = this.getFormatData(attachment, formats.attachId)
 
     return { format: formats, attachment: requestAttach }
+  }
+
+  /**
+   * Create a {@link AttachmentFormats} object dependent on the message type.
+   *
+   * @param options The object containing all the options for the credential to be issued
+   * @param record the credential record containing the offer from which this request
+   * is derived
+   * @param requestAttachment the attachment containing the request
+   * @returns object containing associated attachment, formats and requestAttach elements
+   *
+   */
+  public async createCredential(
+    options: ServiceAcceptRequestOptions,
+    record: CredentialExchangeRecord,
+    requestAttachment: Attachment
+  ): Promise<FormatServiceCredentialAttachmentFormats> {
+    if (!requestAttachment || !requestAttachment?.data?.base64) {
+      throw new AriesFrameworkError(
+        `Missing request attachment from request message, credential record id = ${record.id}`
+      )
+    }
+
+    const formats: CredentialFormatSpec = {
+      attachId: uuid(),
+      format: 'aries/ld-proof-vc@1.0',
+    }
+
+    const attachmentId = options.attachId ? options.attachId : formats.attachId
+
+    // sign credential here. credential to be signed is received as the request attachment
+    // (attachment in the request message from holder to issuer)
+    const credentialOptions = requestAttachment?.getDataAsJson<SignCredentialOptions>()
+    const signCredentialOptions: SignCredentialOptions = {
+      credential: JsonTransformer.fromJSON(credentialOptions.credential, W3cCredential),
+      proofType: credentialOptions.proofType,
+      verificationMethod: credentialOptions.verificationMethod,
+    }
+    const verifiableCredential = await this.w3cCredentialService.signCredential(signCredentialOptions)
+    const issueAttachment: Attachment = this.getFormatData(verifiableCredential, attachmentId)
+
+    return { format: formats, attachment: issueAttachment }
+  }
+
+  /**
+   * Processes an incoming credential - retrieve metadata, retrieve payload and store it in the Indy wallet
+   * @param options the issue credential message wrapped inside this object
+   * @param credentialRecord the credential exchange record for this credential
+   */
+  public async processCredential(
+    options: ServiceAcceptCredentialOptions,
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<void> {
+    // 1. check credential attachment is present
+    // 2. Retrieve the credential attachment
+    // 3. save the credential (store using w3cCredentialService)
+    // 4. save the binding to credentials array in credential exchange record
+    if (!options.credentialAttachment) {
+      throw new AriesFrameworkError(
+        `JsonLd processCredential - Missing credential attachment for record id ${credentialRecord.id}`
+      )
+    }
+    const credentialAsJson = options.credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
+
+    const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
+
+    const verifiableCredential: W3cCredentialRecord = await this.w3cCredentialService.storeCredential({
+      record: credential,
+    })
+
+    // verifiableCredential.id = uu
+    if (!verifiableCredential.credential.id) {
+      throw new AriesFrameworkError(
+        `JsonLd processCredential - Missing credential id in verifiable credential for record id ${credentialRecord.id}`
+      )
+    }
+    credentialRecord.credentials.push({
+      credentialRecordType: CredentialFormatType.JsonLd,
+      credentialRecordId: verifiableCredential.id,
+    })
+  }
+
+  /**
+   * Gets the attachment object for a given attachId. We need to get out the correct attachId for
+   * JsonLd and then find the corresponding attachment (if there is one)
+   * @param formats the formats object containing the attachid
+   * @param messageAttachment the attachment containing the payload
+   * @returns The Attachment if found or undefined
+   */
+  public getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
+    const formatId = formats.find((f) => f.format.includes('aries'))
+    const attachment = messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
+    return attachment
   }
 
   public shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): boolean {
@@ -241,50 +334,11 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     return false
   }
 
-  public async processCredential(
-    options: ServiceAcceptCredentialOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<void> {
-    // 1. check credential attachment is present
-    // 2. Retrieve the credential attachment
-    // 3. save the credential (store using w3cCredentialService)
-    // 4. save the binding to credentials array in credential exchange record
-    if (!options.credentialAttachment) {
-      throw new AriesFrameworkError(
-        `JsonLd processCredential - Missing credential attachment for record id ${credentialRecord.id}`
-      )
-    }
-    const credentialAsJson = options.credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
-
-    const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
-
-    const verifiableCredential: W3cCredentialRecord = await this.w3cCredentialService.storeCredential({
-      record: credential,
-    })
-
-    // verifiableCredential.id = uu
-    if (!verifiableCredential.credential.id) {
-      throw new AriesFrameworkError(
-        `JsonLd processCredential - Missing credential id in verifiable credential for record id ${credentialRecord.id}`
-      )
-    }
-    credentialRecord.credentials.push({
-      credentialRecordType: CredentialFormatType.JsonLd,
-      credentialRecordId: verifiableCredential.id,
-    })
-  }
-
   public processRequest(_options: RequestCredentialOptions, _credentialRecord: CredentialExchangeRecord): void {
     throw new Error('Method not implemented.')
   }
 
-  public async createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats> {
-    const format: CredentialFormatSpec = {
-      attachId: 'ld_proof',
-      format: 'aries/ld-proof-vc-detail@v1.0',
-    }
-
-    const attachment: Attachment = this.getFormatData(options.credentialFormats.jsonld, format.attachId)
-    return { format, attachment }
+  public async deleteCredentialById(credentialRecordId: string): Promise<void> {
+    throw new Error('Method not implemented.')
   }
 }

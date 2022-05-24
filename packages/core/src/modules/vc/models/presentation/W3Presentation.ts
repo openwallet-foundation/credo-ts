@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import type { JsonObject } from '../../../../types'
 import type { W3cVerifiableCredentialOptions } from '../credential/W3cVerifiableCredential'
 import type { ValidationOptions } from 'class-validator'

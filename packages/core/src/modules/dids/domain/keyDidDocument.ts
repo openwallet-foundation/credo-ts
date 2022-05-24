@@ -1,6 +1,8 @@
 import type { VerificationMethod } from './verificationMethod/VerificationMethod'
 
 import { KeyType, Key } from '../../../crypto'
+import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../../crypto/signature-suites/ed25519/constants'
+import { SECURITY_CONTEXT_BBS_URL, SECURITY_X25519_CONTEXT_URL } from '../../vc/constants'
 
 import { DidDocumentBuilder } from './DidDocumentBuilder'
 import { getBls12381g1VerificationMethod } from './key-type/bls12381g1'
@@ -30,7 +32,9 @@ function getBls12381g1DidDoc(did: string, key: Key) {
     did,
     key,
     verificationMethod,
-  }).build()
+  })
+    .addContext(SECURITY_CONTEXT_BBS_URL)
+    .build()
 }
 
 function getBls12381g1g2DidDoc(did: string, key: Key) {
@@ -47,7 +51,7 @@ function getBls12381g1g2DidDoc(did: string, key: Key) {
       .addCapabilityInvocation(verificationMethod.id)
   }
 
-  return didDocumentBuilder.build()
+  return didDocumentBuilder.addContext(SECURITY_CONTEXT_BBS_URL).build()
 }
 
 function getEd25519DidDoc(did: string, key: Key) {
@@ -64,8 +68,8 @@ function getEd25519DidDoc(did: string, key: Key) {
   const didDocBuilder = getSignatureKeyBase({ did, key, verificationMethod })
 
   didDocBuilder
-    .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
-    .addContext('https://w3id.org/security/suites/x25519-2019/v1')
+    .addContext(ED25519_SUITE_CONTEXT_URL_2018)
+    .addContext(SECURITY_X25519_CONTEXT_URL)
     .addKeyAgreement(x25519VerificationMethod)
 
   return didDocBuilder.build()
@@ -74,7 +78,10 @@ function getEd25519DidDoc(did: string, key: Key) {
 function getX25519DidDoc(did: string, key: Key) {
   const verificationMethod = getX25519VerificationMethod({ id: `${did}#${key.fingerprint}`, key, controller: did })
 
-  const document = new DidDocumentBuilder(did).addKeyAgreement(verificationMethod).build()
+  const document = new DidDocumentBuilder(did)
+    .addKeyAgreement(verificationMethod)
+    .addContext(SECURITY_X25519_CONTEXT_URL)
+    .build()
 
   return document
 }
@@ -86,7 +93,9 @@ function getBls12381g2DidDoc(did: string, key: Key) {
     did,
     key,
     verificationMethod,
-  }).build()
+  })
+    .addContext(SECURITY_CONTEXT_BBS_URL)
+    .build()
 }
 
 function getSignatureKeyBase({

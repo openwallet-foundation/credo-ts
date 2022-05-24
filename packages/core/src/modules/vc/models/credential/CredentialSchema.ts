@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { IsString } from 'class-validator'
 
 import { IsUri } from '../../../../utils/validators'

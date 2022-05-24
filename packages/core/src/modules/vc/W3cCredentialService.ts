@@ -12,7 +12,6 @@ import type {
 } from './models/W3cCredentialServiceOptions'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import jsonld, { documentLoaderNode, documentLoaderXhr } from '../../../types/jsonld'
