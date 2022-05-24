@@ -19,7 +19,6 @@ export interface ConnectionRecordProps {
   threadId?: string
   tags?: CustomConnectionTags
   imageUrl?: string
-  multiUseInvitation?: boolean
   mediatorId?: string
   errorMessage?: string
   protocol?: HandshakeProtocol
@@ -36,6 +35,7 @@ export type DefaultConnectionTags = {
   did: string
   theirDid?: string
   outOfBandId?: string
+  invitationDid?: string
 }
 
 export class ConnectionRecord
@@ -53,7 +53,6 @@ export class ConnectionRecord
   public alias?: string
   public autoAcceptConnection?: boolean
   public imageUrl?: string
-  public multiUseInvitation!: boolean
 
   public threadId?: string
   public mediatorId?: string
@@ -82,7 +81,6 @@ export class ConnectionRecord
       this._tags = props.tags ?? {}
       this.threadId = props.threadId
       this.imageUrl = props.imageUrl
-      this.multiUseInvitation = props.multiUseInvitation || false
       this.mediatorId = props.mediatorId
       this.errorMessage = props.errorMessage
       this.protocol = props.protocol
