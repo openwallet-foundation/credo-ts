@@ -189,7 +189,7 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async processRequest(options: ProcessRequestOptions): Promise<void> {
-    const proofRequestJson = options.request.attachment.getDataAsJson<PresentationPreview | ProofRequest>()
+    const proofRequestJson = options.request.attachment.getDataAsJson<ProofRequest>()
 
     const proofRequestMessage = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 

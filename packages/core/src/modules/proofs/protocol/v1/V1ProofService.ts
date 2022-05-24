@@ -120,6 +120,10 @@ export class V1ProofService extends ProofService {
     // Assert
     connectionRecord.assertReady()
 
+    if (!proofFormats.indy || Object.keys(proofFormats).length !== 1) {
+      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
+    }
+
     const presentationProposal = new PresentationPreview({
       attributes: proofFormats.indy?.attributes,
       predicates: proofFormats.indy?.predicates,
@@ -163,20 +167,20 @@ export class V1ProofService extends ProofService {
     // Assert
     proofRecord.assertState(ProofState.RequestReceived)
 
+    if (!proofFormats.indy || Object.keys(proofFormats).length !== 1) {
+      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
+    }
+
     // Create message
     const presentationPreview = new PresentationPreview({
       attributes: proofFormats.indy?.attributes,
       predicates: proofFormats.indy?.predicates,
     })
-    let proposalMessage: V1ProposePresentationMessage
-    if (presentationPreview) {
-      proposalMessage = new V1ProposePresentationMessage({
-        comment,
-        presentationProposal: presentationPreview,
-      })
-    } else {
-      throw new AriesFrameworkError('Missing presentation preview.')
-    }
+
+    const proposalMessage: V1ProposePresentationMessage = new V1ProposePresentationMessage({
+      comment,
+      presentationProposal: presentationPreview,
+    })
 
     proposalMessage.setThread({ threadId: proofRecord.threadId })
 
@@ -187,12 +191,14 @@ export class V1ProofService extends ProofService {
     })
 
     // Update record
-    void this.updateState(proofRecord, ProofState.ProposalSent)
+    await this.updateState(proofRecord, ProofState.ProposalSent)
 
     return { proofRecord, message: proposalMessage }
   }
 
-  public async processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
+  public async processProposal(
+    messageContext: InboundMessageContext<V1ProposePresentationMessage>
+  ): Promise<ProofRecord> {
     let proofRecord: ProofRecord
     const { message: proposalMessage, connection } = messageContext
 
@@ -259,6 +265,10 @@ export class V1ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const { proofRecord, comment } = options
 
+    if (!options.proofFormats.indy || Object.keys(options.proofFormats).length !== 1) {
+      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
+    }
+
     // Assert
     proofRecord.assertState(ProofState.ProposalReceived)
 
@@ -293,8 +303,9 @@ export class V1ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     this.logger.debug(`Creating proof request`)
 
-    // Assert
-    options.connectionRecord?.assertReady()
+    if (!options.proofFormats.indy || Object.keys(options.proofFormats).length !== 1) {
+      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
+    }
 
     // Create message
     const { attachment } = await this.indyProofFormatService.createRequest({
@@ -331,11 +342,11 @@ export class V1ProofService extends ProofService {
     return { message: requestPresentationMessage, proofRecord }
   }
 
-  public async processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
+  public async processRequest(
+    messageContext: InboundMessageContext<V1RequestPresentationMessage>
+  ): Promise<ProofRecord> {
     let proofRecord: ProofRecord
-    const { message: proofRequestMsg, connection } = messageContext
-
-    const proofRequestMessage = proofRequestMsg as V1RequestPresentationMessage
+    const { message: proofRequestMessage, connection } = messageContext
 
     this.logger.debug(`Processing presentation request with id ${proofRequestMessage.id}`)
 
@@ -420,6 +431,10 @@ export class V1ProofService extends ProofService {
 
     this.logger.debug(`Creating presentation for proof record with id ${proofRecord.id}`)
 
+    if (!proofFormats.indy || Object.keys(proofFormats).length !== 1) {
+      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
+    }
+
     // Assert
     proofRecord.assertState(ProofState.RequestReceived)
 
@@ -440,13 +455,7 @@ export class V1ProofService extends ProofService {
     const proof = await this.indyProofFormatService.createPresentation({
       id: INDY_PROOF_ATTACHMENT_ID,
       attachment: requestAttachment,
-      formats: {
-        indy: {
-          requestedAttributes: proofFormats.indy?.requestedAttributes,
-          requestedPredicates: proofFormats.indy?.requestedPredicates,
-          selfAttestedAttributes: proofFormats.indy?.selfAttestedAttributes,
-        },
-      },
+      formats: proofFormats,
     })
 
     // Extract proof request from attachment
@@ -484,10 +493,9 @@ export class V1ProofService extends ProofService {
     return { message: presentationMessage, proofRecord }
   }
 
-  public async processPresentation(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
-    const { message: presentationMsg, connection } = messageContext
+  public async processPresentation(messageContext: InboundMessageContext<V1PresentationMessage>): Promise<ProofRecord> {
+    const { message: presentationMessage, connection } = messageContext
 
-    const presentationMessage = presentationMsg as V1PresentationMessage
     this.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
 
     const proofRecord = await this.getByThreadAndConnectionId(presentationMessage.threadId, connection?.id)
@@ -538,7 +546,7 @@ export class V1ProofService extends ProofService {
     return proofRecord
   }
 
-  public async processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
+  public async processAck(messageContext: InboundMessageContext<V1PresentationAckMessage>): Promise<ProofRecord> {
     const { message: presentationAckMessage, connection } = messageContext
 
     this.logger.debug(`Processing presentation ack with id ${presentationAckMessage.id}`)
@@ -588,10 +596,11 @@ export class V1ProofService extends ProofService {
     }
   }
 
-  public async processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord> {
-    const { message: presentationProblemReportMsg } = messageContext
+  public async processProblemReport(
+    messageContext: InboundMessageContext<V1PresentationProblemReportMessage>
+  ): Promise<ProofRecord> {
+    const { message: presentationProblemReportMessage } = messageContext
 
-    const presentationProblemReportMessage = presentationProblemReportMsg as V1PresentationProblemReportMessage
     const connection = messageContext.assertReadyConnection()
 
     this.logger.debug(`Processing problem report with id ${presentationProblemReportMessage.id}`)
@@ -846,7 +855,7 @@ export class V1ProofService extends ProofService {
     })
   }
 
-  public async findProposalMessage(proofRecordId: string): Promise<AgentMessage | null> {
+  public async findProposalMessage(proofRecordId: string): Promise<V1ProposePresentationMessage | null> {
     return await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: proofRecordId,
       messageClass: V1ProposePresentationMessage,
