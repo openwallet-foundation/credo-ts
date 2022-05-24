@@ -22,10 +22,9 @@ export class V2PresentationMessage extends AgentMessage {
   public constructor(options: V2PresentationMessageOptions) {
     super()
 
-    this.formats = []
-    this.presentationsAttach = []
-
     if (options) {
+      this.formats = []
+      this.presentationsAttach = []
       this.id = options.id ?? uuid()
       this.comment = options.comment
       this.goalCode = options.goalCode
