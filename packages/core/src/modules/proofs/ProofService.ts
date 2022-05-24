@@ -157,7 +157,7 @@ export abstract class ProofService {
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService
-  ): Promise<void>
+  ): void
 
   public abstract findRequestMessage(proofRecordId: string): Promise<AgentMessage | null>
 

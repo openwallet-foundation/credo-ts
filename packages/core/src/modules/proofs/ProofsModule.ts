@@ -68,7 +68,7 @@ export class ProofsModule {
       [ProofProtocolVersion.V2]: v2ProofService,
     }
 
-    void this.registerHandlers(dispatcher, mediationRecipientService)
+    this.registerHandlers(dispatcher, mediationRecipientService)
   }
 
   private getService(protocolVersion: ProofProtocolVersion) {
@@ -475,9 +475,9 @@ export class ProofsModule {
     return this.proofRepository.delete(proofRecord)
   }
 
-  private async registerHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {
+  private registerHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {
     for (const service of Object.values(this.serviceMap)) {
-      await service.registerHandlers(
+      service.registerHandlers(
         dispatcher,
         this.agentConfig,
         new ProofResponseCoordinator(this.agentConfig, service),

@@ -806,12 +806,12 @@ export class V1ProofService extends ProofService {
     return await this.indyProofFormatService.autoSelectCredentialsForProofRequest(options)
   }
 
-  public async registerHandlers(
+  public registerHandlers(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService
-  ): Promise<void> {
+  ): void {
     dispatcher.registerHandler(
       new V1ProposePresentationHandler(this, agentConfig, proofResponseCoordinator, this.didCommMessageRepository)
     )

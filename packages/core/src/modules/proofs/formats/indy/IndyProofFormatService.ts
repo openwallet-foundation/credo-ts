@@ -25,7 +25,6 @@ import type {
 } from '../models/ProofFormatServiceOptions'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
-import { validateOrReject } from 'class-validator'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
@@ -36,6 +35,7 @@ import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMes
 import { checkProofRequestForDuplicates } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../../utils/MessageValidator'
 import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { CredentialUtils } from '../../../credentials'
@@ -141,9 +141,7 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async processProposal(options: ProcessProposalOptions): Promise<void> {
-    const proofProposalJson = options.proposal.attachment.getDataAsJson<PresentationPreview | ProofRequest>()
-
-    let proposalMessage
+    const proofProposalJson = options.proposal.attachment.getDataAsJson<ProofRequest>()
 
     // Assert attachment
     if (!proofProposalJson) {
@@ -152,15 +150,9 @@ export class IndyProofFormatService extends ProofFormatService {
       )
     }
 
-    if (typeof proofProposalJson === typeof PresentationPreview) {
-      proposalMessage = JsonTransformer.fromJSON(proofProposalJson, PresentationPreview)
+    const proposalMessage = JsonTransformer.fromJSON(proofProposalJson, ProofRequest)
 
-      await validateOrReject(proposalMessage)
-    } else {
-      proposalMessage = JsonTransformer.fromJSON(proofProposalJson, ProofRequest)
-
-      await validateOrReject(proposalMessage)
-    }
+    await MessageValidator.validate(proposalMessage)
   }
 
   public async createRequestAsResponse(options: CreateRequestAsResponseOptions): Promise<ProofAttachmentFormat> {
@@ -207,7 +199,7 @@ export class IndyProofFormatService extends ProofFormatService {
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${options.record?.threadId}`
       )
     }
-    await validateOrReject(proofRequestMessage)
+    await MessageValidator.validate(proofRequestMessage)
   }
 
   public async createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat> {

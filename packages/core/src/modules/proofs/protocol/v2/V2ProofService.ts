@@ -770,12 +770,12 @@ export class V2ProofService extends ProofService {
     return returnValue
   }
 
-  public async registerHandlers(
+  public registerHandlers(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService
-  ): Promise<void> {
+  ): void {
     dispatcher.registerHandler(
       new V2ProposePresentationHandler(this, agentConfig, this.didCommMessageRepository, proofResponseCoordinator)
     )
