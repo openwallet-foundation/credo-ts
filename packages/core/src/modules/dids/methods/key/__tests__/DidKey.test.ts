@@ -13,6 +13,7 @@ describe('DidKey', () => {
 
     for (const documentType of documentTypes) {
       const didKey = DidKey.fromDid(documentType.id)
+
       expect(didKey.didDocument.toJSON()).toMatchObject(documentType)
     }
   })
