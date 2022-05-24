@@ -1,6 +1,5 @@
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { DidDocument } from '../modules/dids'
-import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
@@ -19,10 +18,6 @@ export class TransportService {
 
   public findSessionByConnectionId(connectionId: string) {
     return Object.values(this.transportSessionTable).find((session) => session?.connection?.id === connectionId)
-  }
-
-  public findSessionByOutOfBandId(outOfBandId: string) {
-    return Object.values(this.transportSessionTable).find((session) => session?.outOfBand?.id === outOfBandId)
   }
 
   public hasInboundEndpoint(didDocument: DidDocument): boolean {
@@ -48,7 +43,6 @@ export interface TransportSession {
   keys?: EnvelopeKeys
   inboundMessage?: AgentMessage
   connection?: ConnectionRecord
-  outOfBand?: OutOfBandRecord
   send(encryptedMessage: EncryptedMessage): Promise<void>
   close(): Promise<void>
 }
