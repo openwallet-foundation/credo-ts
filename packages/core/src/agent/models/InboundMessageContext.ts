@@ -1,4 +1,5 @@
 import type { ConnectionRecord } from '../../modules/connections'
+import type { Transport } from '../../modules/routing/types'
 import type { DIDCommMessage } from '../didcomm'
 
 import { AriesFrameworkError } from '../../error'
@@ -7,6 +8,7 @@ export interface MessageContextParams {
   connection?: ConnectionRecord
   sender?: string
   recipient?: string
+  transport?: Transport
 }
 
 export class InboundMessageContext<T extends DIDCommMessage = DIDCommMessage> {
@@ -14,12 +16,14 @@ export class InboundMessageContext<T extends DIDCommMessage = DIDCommMessage> {
   public connection?: ConnectionRecord
   public sender?: string
   public recipient?: string
+  public transport?: Transport
 
   public constructor(message: T, context: MessageContextParams = {}) {
     this.message = message
     this.recipient = context.recipient
     this.sender = context.sender
     this.connection = context.connection
+    this.transport = context.transport
   }
 
   /**

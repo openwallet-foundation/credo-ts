@@ -1,4 +1,4 @@
-import type { InitConfig } from '@aries-framework/core'
+import type { InboundTransport, InitConfig, OutboundTransport } from '@aries-framework/core'
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
 import { Agent, AutoAcceptCredential, AutoAcceptProof, HttpOutboundTransport } from '@aries-framework/core'
@@ -18,6 +18,8 @@ export class BaseAgent {
   public name: string
   public config: InitConfig
   public agent: Agent
+  public inBoundTransport!: InboundTransport
+  public outBoundTransport!: OutboundTransport
 
   public constructor(
     name: string,
@@ -55,18 +57,22 @@ export class BaseAgent {
     this.agent = new Agent(config, agentDependencies)
 
     if (port) {
-      this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
-      this.agent.registerOutboundTransport(new HttpOutboundTransport())
+      this.inBoundTransport = new HttpInboundTransport({ port })
+      this.outBoundTransport = new HttpOutboundTransport()
+      this.agent.registerInboundTransport(this.inBoundTransport)
+      this.agent.registerOutboundTransport(this.outBoundTransport)
     }
+
     if (offlineTransports) {
       for (const transport of offlineTransports) {
-        this.agent.registerInboundTransport(new FileInboundTransport({ alias: name, schema: transport }))
-        this.agent.registerOutboundTransport(
-          new FileOutboundTransport({
-            alias: name,
-            schema: transport,
-          })
-        )
+        this.inBoundTransport = new FileInboundTransport({ alias: name, schema: transport })
+        this.outBoundTransport = new FileOutboundTransport({
+          alias: name,
+          schema: transport,
+        })
+
+        this.agent.registerInboundTransport(this.inBoundTransport)
+        this.agent.registerOutboundTransport(this.outBoundTransport)
       }
     }
   }

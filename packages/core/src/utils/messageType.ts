@@ -1,4 +1,4 @@
-import type { PlaintextMessage } from '../types'
+import type { PlaintextMessageV1 } from '../types'
 
 import { rightSplit } from './string'
 
@@ -51,7 +51,7 @@ export function parseMessageType(messageType: string): ParsedMessageType {
   }
 }
 
-export function replaceLegacyDidSovPrefixOnMessage(message: PlaintextMessage | Record<string, unknown>) {
+export function replaceLegacyDidSovPrefixOnMessage(message: PlaintextMessageV1 | Record<string, unknown>) {
   message['@type'] = replaceLegacyDidSovPrefix(message['@type'] as string)
 }
 

@@ -16,6 +16,8 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
+import { ConnectionInvitationHandler } from './handlers/ConnectionInvitationHandler'
+import { OutOfBandInvitationHandler } from './handlers/OutOfBandInvitationHandler'
 import { ConnectionInvitationMessage } from './messages'
 import { OutOfBandInvitationMessage } from './messages/OutOfBandInvitationMessage'
 import { ConnectionService } from './services/ConnectionService'
@@ -362,11 +364,17 @@ export class ConnectionsModule {
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerDIDCommV1Handler(
+      new ConnectionInvitationHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
+    )
+    dispatcher.registerDIDCommV1Handler(
       new ConnectionRequestHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
     )
     dispatcher.registerDIDCommV1Handler(new ConnectionResponseHandler(this.connectionService, this.agentConfig))
     dispatcher.registerDIDCommV1Handler(new AckMessageHandler(this.connectionService))
     dispatcher.registerDIDCommV1Handler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerDIDCommV1Handler(new TrustPingResponseMessageHandler(this.trustPingService))
+    dispatcher.registerDIDCommV2Handler(
+      new OutOfBandInvitationHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
+    )
   }
 }

@@ -47,13 +47,17 @@ export class Getter extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  private async printConnectionInvite() {
+  private async sendConnectionInvite() {
     const invite = await this.agent.connections.createConnection({
       transport: Getter.transport,
     })
+    await this.outBoundTransport.sendMessage({
+      payload: { ...invite.invitation },
+    })
+    console.log(Output.ConnectionInvitationSent, invite.invitation, '\n')
+
     this.connectionRecordWitnessId = invite.connectionRecord.id
 
-    console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')
     return invite.connectionRecord
   }
 
@@ -95,20 +99,9 @@ export class Getter extends BaseAgent {
   }
 
   public async setupConnection() {
-    await this.printConnectionInvite()
+    await this.sendConnectionInvite()
     await this.waitForConnection()
   }
-
-  // private async printConnectionInvite() {
-  //   const invite = await this.agent.connections.createOutOfBandConnection({
-  //     goalCode: 'pay.cash.vtp',
-  //     accept: ['didcomm/v2'],
-  //   })
-  //   this.connectionRecordWitnessId = invite.connectionRecord.id
-  //   console.log(Output.ConnectionLink, JsonEncoder.toString(invite.connectionRecord.didDoc), '\n')
-  //   console.log(Output.ConnectionLink, JsonEncoder.toString(invite.invitation), '\n')
-  //   return invite.connectionRecord
-  // }
 
   public async requestPayment(giver: string) {
     if (!this.connectionRecordWitnessId) {

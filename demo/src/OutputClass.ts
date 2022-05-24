@@ -11,6 +11,7 @@ export enum Output {
   PaymentDone = `\nPayment Done!`,
   MissingConnectionRecord = `\nNo connectionRecord ID has been set yet\n`,
   MissingValueTransferRecord = `\nNo valueTransferRecord ID has been set yet\n`,
+  ConnectionInvitationSent = `\nConnection invitation sent\n\n`,
   ConnectionLink = `\nRun 'Receive connection invitation' in Faber and paste this invitation link:\n\n`,
   Exit = 'Shutting down agent...\nExiting...',
 }

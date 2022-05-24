@@ -44,15 +44,17 @@ export class Giver extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  private async printConnectionInvite() {
+  private async sendOutOfBandInvite() {
     const invite = await this.agent.connections.createOutOfBandConnection({
       transport: Giver.transport,
       goalCode: 'pay.cash.vtp',
     })
     this.connectionRecordWitnessId = invite.connectionRecord.id
 
-    console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost` }), '\n')
-    console.log(greenText('Invitation: ' + JsonEncoder.toString(invite.invitation)))
+    await this.outBoundTransport.sendMessage({
+      payload: { ...invite.invitation },
+    })
+    console.log(Output.ConnectionInvitationSent, invite.invitation, '\n')
     console.log(greenText('DID: ' + invite.connectionRecord.did))
     return invite.connectionRecord
   }
@@ -81,18 +83,8 @@ export class Giver extends BaseAgent {
   }
 
   public async setupConnection() {
-    await this.printConnectionInvite()
+    await this.sendOutOfBandInvite()
   }
-
-  // private async printConnectionInvite() {
-  //   const invite = await this.agent.connections.createOutOfBandConnection({
-  //     goalCode: 'pay.cash.vtp',
-  //     accept: ['didcomm/v2'],
-  //   })
-  //   this.connectionRecordWitnessId = invite.connectionRecord.id
-  //   console.log(Output.ConnectionLink, JsonEncoder.toString(invite.invitation), '\n')
-  //   return invite.invitation
-  // }
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
     const { record } = await this.agent.valueTransfer.acceptPaymentRequest(valueTransferRecord.id)

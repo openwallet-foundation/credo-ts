@@ -15,8 +15,6 @@ export const runFaber = async () => {
 }
 
 enum PromptOptions {
-  ReceiveGetterConnectionUrl = 'Receive Getter connection invitation',
-  ReceiveGiverConnectionUrl = 'Receive Giver connection invitation',
   Exit = 'Exit',
   Restart = 'Restart',
 }
@@ -40,16 +38,7 @@ export class WitnessInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.witness.connectionRecordGiverId && this.witness.connectionRecordGetterId)
-      return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
-
-    const reducedOption = [
-      PromptOptions.ReceiveGetterConnectionUrl,
-      PromptOptions.ReceiveGiverConnectionUrl,
-      PromptOptions.Exit,
-      PromptOptions.Restart,
-    ]
-    return inquirer.prompt([this.inquireOptions(reducedOption)])
+    return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
   }
 
   public async processAnswer() {
@@ -57,12 +46,6 @@ export class WitnessInquirer extends BaseInquirer {
     if (this.listener.on) return
 
     switch (choice.options) {
-      case PromptOptions.ReceiveGetterConnectionUrl:
-        await this.getterConnection()
-        break
-      case PromptOptions.ReceiveGiverConnectionUrl:
-        await this.giverConnection()
-        break
       case PromptOptions.Exit:
         await this.exit()
         break
@@ -71,18 +54,6 @@ export class WitnessInquirer extends BaseInquirer {
         return
     }
     await this.processAnswer()
-  }
-
-  public async getterConnection() {
-    const title = Title.InvitationTitle
-    const invitation = await inquirer.prompt([this.inquireInput(title)])
-    await this.witness.acceptGetterConnection(invitation.input)
-  }
-
-  public async giverConnection() {
-    const title = Title.InvitationTitle
-    const invitation = await inquirer.prompt([this.inquireInput(title)])
-    await this.witness.acceptGiverConnection(invitation.input)
   }
 
   public async exit() {

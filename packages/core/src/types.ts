@@ -82,9 +82,17 @@ export interface InitConfig {
   valueTransferConfig?: ValueTransferConfig
 }
 
-export interface PlaintextMessage {
+export type PlaintextMessage = PlaintextMessageV1 | PlaintextMessageV2
+
+export interface PlaintextMessageV1 {
   '@type': string
   '@id': string
+  [key: string]: unknown
+}
+
+export interface PlaintextMessageV2 {
+  type: string
+  id: string
   [key: string]: unknown
 }
 
@@ -106,7 +114,7 @@ export interface OutboundServiceMessage<T extends DIDCommMessage = DIDCommMessag
 }
 
 export interface OutboundPackage {
-  payload: EncryptedMessage
+  payload: EncryptedMessage | PlaintextMessage
   responseRequested?: boolean
   endpoint?: string
   connectionId?: string

@@ -1,6 +1,7 @@
 import type { PlaintextMessage } from '../agent/didcomm/EnvelopeService'
 import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections'
+import type { Transport } from '../modules/routing/types'
 import type { InboundTransport } from '../transport'
 import type { TransportSession } from './TransportService'
 import type { DIDCommMessage, EncryptedMessage } from './didcomm'
@@ -71,24 +72,28 @@ export class MessageReceiver {
    *
    * @param inboundMessage the message to receive and handle
    */
-  public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
+  public async receiveMessage(inboundMessage: unknown, session?: TransportSession, transport?: Transport) {
     this.logger.debug(`Agent ${this.config.label} received message`)
     if (this.isEncryptedMessage(inboundMessage)) {
-      await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, session)
+      await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, transport, session)
     } else if (this.isPlaintextMessage(inboundMessage)) {
-      await this.receivePlaintextMessage(inboundMessage)
+      await this.receivePlaintextMessage(inboundMessage, transport)
     } else {
       throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
     }
   }
 
-  private async receivePlaintextMessage(plaintextMessage: PlaintextMessage) {
+  private async receivePlaintextMessage(plaintextMessage: PlaintextMessage, transport?: Transport) {
     const message = await this.transformAndValidate(plaintextMessage)
-    const messageContext = new InboundMessageContext(message, {})
+    const messageContext = new InboundMessageContext(message, { transport })
     await this.dispatcher.dispatch(messageContext)
   }
 
-  private async receiveEncryptedMessage(encryptedMessage: EncryptedMessage, session?: TransportSession) {
+  private async receiveEncryptedMessage(
+    encryptedMessage: EncryptedMessage,
+    transport?: Transport,
+    session?: TransportSession
+  ) {
     const decryptedMessage = await this.decryptMessage(encryptedMessage)
     const { plaintextMessage, sender, recipient } = decryptedMessage
 
@@ -129,6 +134,7 @@ export class MessageReceiver {
       connection: connection?.isReady ? connection : undefined,
       sender,
       recipient,
+      transport,
     })
     await this.dispatcher.dispatch(messageContext)
   }

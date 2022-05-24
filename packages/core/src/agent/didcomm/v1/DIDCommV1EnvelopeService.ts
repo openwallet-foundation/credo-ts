@@ -1,4 +1,5 @@
 import type { Logger } from '../../../logger'
+import type { PlaintextMessage } from '../../../types'
 import type { EncryptedMessage } from '../types'
 import type { DIDCommV1Message } from './DIDCommV1Message'
 
@@ -14,12 +15,6 @@ export interface PackMessageParams {
   recipientKeys: string[]
   routingKeys: string[]
   senderKey: string | null
-}
-
-export interface PlaintextMessage {
-  '@type': string
-  '@id': string
-  [key: string]: unknown
 }
 
 export interface DecryptedMessageContext {

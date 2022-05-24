@@ -1,4 +1,5 @@
 import type { Logger } from '../logger'
+import type { Transport } from '../modules/routing/types'
 import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
@@ -238,8 +239,8 @@ export class Agent {
     return this.walletService.publicDid
   }
 
-  public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
-    return await this.messageReceiver.receiveMessage(inboundMessage, session)
+  public async receiveMessage(inboundMessage: unknown, session?: TransportSession, transport?: Transport) {
+    return await this.messageReceiver.receiveMessage(inboundMessage, session, transport)
   }
 
   public get injectionContainer() {
