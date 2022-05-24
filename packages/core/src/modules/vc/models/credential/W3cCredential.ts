@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import type { JsonObject } from '../../../../types'
 import type { CredentialSubjectOptions } from './CredentialSubject'
 import type { IssuerOptions } from './Issuer'

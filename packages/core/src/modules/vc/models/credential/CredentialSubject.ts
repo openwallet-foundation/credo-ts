@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import { Transform, TransformationType, plainToInstance, instanceToPlain } from 'class-transformer'
 import { isString } from 'class-validator'
 
