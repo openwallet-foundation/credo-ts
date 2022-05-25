@@ -17,7 +17,7 @@ export const runFaber = async () => {
 }
 
 enum PromptOptions {
-  CreateConnection = 'Create Out-of-Band invitation',
+  CreateConnection = 'Make Witness Out-of-Band connection',
   Exit = 'Exit',
   Restart = 'Restart',
 }

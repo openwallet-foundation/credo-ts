@@ -16,8 +16,8 @@ export class DidsModule {
     this.resolverService = resolverService
   }
 
-  public create(didType: DidType, keyType?: KeyType) {
-    return this.didService.createDID(didType, keyType)
+  public create(didType: DidType, keyType?: KeyType, seed?: string) {
+    return this.didService.createDID(didType, keyType, seed)
   }
 
   public resolve(didUrl: string, options?: DidResolutionOptions) {

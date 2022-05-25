@@ -13,6 +13,7 @@ export class Getter extends BaseAgent {
   public connectionRecordWitnessId?: string
   public connected: boolean
   public static transport: Transport = 'ipc'
+  public static seed = '6b8b882e2618fa5d45ee7229ca880082'
 
   public constructor(
     name: string,
@@ -20,7 +21,7 @@ export class Getter extends BaseAgent {
     offlineTransports?: string[],
     valueTransferConfig?: ValueTransferConfig
   ) {
-    super(name, port, offlineTransports, valueTransferConfig)
+    super(name, Getter.seed, port, offlineTransports, valueTransferConfig)
     this.connected = false
   }
 

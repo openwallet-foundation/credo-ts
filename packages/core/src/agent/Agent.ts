@@ -19,6 +19,7 @@ import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
+import { DidService, DidType } from '../modules/dids'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { KeysModule } from '../modules/keys'
@@ -51,6 +52,7 @@ export class Agent {
   private _isInitialized = false
   public messageSubscription: Subscription
   private walletService: Wallet
+  private didService: DidService
   private valueTransferService: ValueTransferService
 
   public readonly connections: ConnectionsModule
@@ -105,6 +107,7 @@ export class Agent {
     this.transportService = this.container.resolve(TransportService)
     this.walletService = this.container.resolve(InjectionSymbols.Wallet)
     this.valueTransferService = this.container.resolve(ValueTransferService)
+    this.didService = this.container.resolve(DidService)
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
@@ -161,6 +164,7 @@ export class Agent {
       walletConfig,
       mediatorConnectionsInvite,
       valueTransferConfig,
+      publicDidType,
     } = this.agentConfig
 
     if (this._isInitialized) {
@@ -181,7 +185,11 @@ export class Agent {
 
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
-      await this.walletService.initPublicDid({ seed: publicDidSeed })
+      const publicDid = await this.didService.findPublicDid()
+      if (!publicDid) {
+        const didType = publicDidType || DidType.PeerDid
+        await this.didService.createDID(didType, undefined, publicDidSeed, true)
+      }
     }
 
     // As long as value isn't false we will async connect to all genesis pools on startup

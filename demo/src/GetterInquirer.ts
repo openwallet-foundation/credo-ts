@@ -15,7 +15,7 @@ export const runFaber = async () => {
 }
 
 enum PromptOptions {
-  CreateConnection = 'Create connection invitation',
+  CreateConnection = 'Make Witness connection',
   RequestPayment = 'Request payment',
   Exit = 'Exit',
   Restart = 'Restart',

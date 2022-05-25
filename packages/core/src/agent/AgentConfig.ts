@@ -48,6 +48,10 @@ export class AgentConfig {
     return this.initConfig.publicDidSeed
   }
 
+  public get publicDidType() {
+    return this.initConfig.publicDidType
+  }
+
   public get indyLedgers() {
     return this.initConfig.indyLedgers ?? []
   }

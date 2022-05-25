@@ -23,6 +23,7 @@ export class BaseAgent {
 
   public constructor(
     name: string,
+    publicDidSeed?: string,
     port?: number,
     offlineTransports?: string[],
     valueTransferConfig?: ValueTransferConfig
@@ -36,7 +37,7 @@ export class BaseAgent {
         id: name,
         key: name,
       },
-      publicDidSeed: '6b8b882e2618fa5d45ee7229ca880083',
+      publicDidSeed,
       indyLedgers: [
         {
           genesisTransactions: bcovrin,

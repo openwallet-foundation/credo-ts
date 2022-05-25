@@ -34,7 +34,7 @@ export class DidService {
     this.didResolverService = didResolverService
   }
 
-  public async createDID(didType?: DidType, keyType?: KeyType, seed?: string): Promise<DidRecord> {
+  public async createDID(didType?: DidType, keyType?: KeyType, seed?: string, isPublic?: boolean): Promise<DidRecord> {
     const didType_ = didType || DidType.KeyDid
     const keyType_ = keyType || KeyType.Ed25519
 
@@ -50,6 +50,7 @@ export class DidService {
       id: didDocument.id,
       didDocument,
       role: DidDocumentRole.Created,
+      isPublic,
     })
     await this.didRepository.save(didRecord)
 
@@ -100,6 +101,12 @@ export class DidService {
 
   public findById(recordId: string): Promise<DidRecord | null> {
     return this.didRepository.findById(recordId)
+  }
+
+  public async findPublicDid() {
+    return this.didRepository.findSingleByQuery({
+      isPublic: true,
+    })
   }
 
   private getDIDDocumentFromKey(didType: DidType, key: Key) {

@@ -74,13 +74,16 @@ export class ValueTransferService {
   }
 
   public async initState(config: ValueTransferConfig) {
-    const didType = config.didType || DidType.PeerDid
+    const publicDid = await this.didService.findPublicDid()
 
     if (config.role === ValueTransferRole.Witness) {
       const state = await this.witnessStateRepository.findSingleByQuery({})
       if (state) return
 
-      const publicDid = await this.didService.createDID(didType, config.keyType, config.seed)
+      if (!publicDid) {
+        throw new AriesFrameworkError('Public DID not found. Please set `publicDidSeed` field in the agent config.')
+      }
+
       const record = new WitnessStateRecord({
         publicDid: publicDid.id,
         stateAccumulator: '',
@@ -91,10 +94,8 @@ export class ValueTransferService {
       const state = await this.valueTransferStateRepository.findSingleByQuery({})
       if (state) return
 
-      const publicDid = await this.didService.createDID(didType, config.keyType, config.seed)
-
       const record = new ValueTransferStateRecord({
-        publicDid: publicDid.id,
+        publicDid: publicDid?.id,
         previousHash: '',
         verifiableNotes: [],
       })

@@ -12,6 +12,7 @@ export interface DidRecordProps {
   id: string
   role: DidDocumentRole
   didDocument?: DidDocument
+  isPublic?: boolean
   createdAt?: Date
   tags?: CustomDidTags
 }
@@ -33,6 +34,8 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
   @IsEnum(DidDocumentRole)
   public role!: DidDocumentRole
 
+  public isPublic!: boolean
+
   public static readonly type = 'DidDocumentRecord'
   public readonly type = DidRecord.type
 
@@ -43,6 +46,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
       this.id = props.id
       this.role = props.role
       this.didDocument = props.didDocument
+      this.isPublic = props.isPublic || false
       this.createdAt = props.createdAt ?? new Date()
       this._tags = props.tags ?? {}
     }
@@ -54,6 +58,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
     return {
       ...this._tags,
       role: this.role,
+      isPublic: this.isPublic,
       method: did.method,
     }
   }

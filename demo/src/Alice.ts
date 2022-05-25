@@ -1,15 +1,18 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
 
+import { Transport } from '@aries-framework/core'
+
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class Alice extends BaseAgent {
   public connectionRecordFaberId?: string
   public connected: boolean
+  public static seed = '6b8b882e2618fa5d45ee7229ca880083'
 
   public constructor(port: number, name: string) {
-    super(name, port)
+    super(name, Alice.seed, port, undefined, undefined)
     this.connected = false
   }
 

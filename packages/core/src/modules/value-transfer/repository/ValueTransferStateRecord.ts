@@ -14,7 +14,7 @@ export type ValueTransferStateTags = RecordTags<ValueTransferStateRecord>
 
 export interface ValueTransferStateProps {
   id?: string
-  publicDid: string
+  publicDid?: string
   previousHash: string
   verifiableNotes: Array<VerifiableNote>
 }
@@ -27,7 +27,7 @@ export class ValueTransferStateRecord extends BaseRecord<DefaultValueTransferSta
   @IsInstance(VerifiableNote, { each: true })
   public verifiableNotes!: Array<VerifiableNote>
 
-  public publicDid!: string
+  public publicDid?: string
 
   public static readonly type = 'ValueTransferState'
   public readonly type = ValueTransferStateRecord.type

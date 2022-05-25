@@ -43,9 +43,6 @@ export interface WalletExportImportConfig {
 
 export interface ValueTransferConfig {
   role: ValueTransferRole
-  didType?: DidType
-  keyType?: KeyType
-  seed?: string
   verifiableNotes?: VerifiableNote[]
   autoAcceptValueTransfer?: AutoAcceptValueTransfer
 }
@@ -59,6 +56,7 @@ export interface InitConfig {
   endpoints?: string[]
   label: string
   publicDidSeed?: string
+  publicDidType?: DidType
   mediatorRecordId?: string
   walletConfig?: WalletConfig
   autoAcceptConnections?: boolean

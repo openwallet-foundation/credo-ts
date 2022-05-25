@@ -9,6 +9,7 @@ import { Output } from './OutputClass'
 
 export class Witness extends BaseAgent {
   public static transports: Transport[] = ['nfc', 'ipc']
+  public static seed = '6b8b882e2618fa5d45ee7229ca880083'
 
   public constructor(
     name: string,
@@ -16,7 +17,7 @@ export class Witness extends BaseAgent {
     offlineTransports?: string[],
     valueTransferConfig?: ValueTransferConfig
   ) {
-    super(name, port, offlineTransports, valueTransferConfig)
+    super(name, Witness.seed, port, offlineTransports, valueTransferConfig)
   }
 
   public static async build(): Promise<Witness> {

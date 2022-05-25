@@ -94,9 +94,9 @@ export class ValueTransferGetterService {
     }
 
     // Get payment public DID from the storage or generate a new one if requested
-    const getter = usePublicDid
-      ? (await this.valueTransferStateService.getState()).publicDid
-      : (await this.didService.createDID(DidType.PeerDid)).id
+    const state = await this.valueTransferStateService.getState()
+    const getter =
+      usePublicDid && state.publicDid ? state.publicDid : (await this.didService.createDID(DidType.PeerDid)).id
 
     // Call VTP package to create payment request
     const { error, message } = await this.valueTransfer.getter().createRequest(getter, amount, witness, giver)
