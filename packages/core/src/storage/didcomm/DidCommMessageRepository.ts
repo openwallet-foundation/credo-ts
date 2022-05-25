@@ -28,12 +28,13 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
   }
 
   public async saveOrUpdateAgentMessage(options: SaveAgentMessageOptions) {
-    const parsedMessageType = parseMessageType(options.agentMessage.type)
+    const { messageName, protocolName, protocolMajorVersion } = parseMessageType(options.agentMessage.type)
+
     const record = await this.findSingleByQuery({
       associatedRecordId: options.associatedRecordId,
-      messageName: parsedMessageType.messageName,
-      protocolName: parsedMessageType.protocolName,
-      protocolMajorVersion: String(parsedMessageType.protocolMajorVersion),
+      messageName: messageName,
+      protocolName: protocolName,
+      protocolMajorVersion: String(protocolMajorVersion),
     })
 
     if (record) {
