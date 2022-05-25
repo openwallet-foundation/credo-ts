@@ -17,7 +17,6 @@ describe('Present Proof', () => {
   let aliceConnection: ConnectionRecord
   let presentationPreview: PresentationPreview
   let faberProofRecord: ProofRecord
-  let aliceProofRecord: ProofRecord
   let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
@@ -54,13 +53,14 @@ describe('Present Proof', () => {
       comment: 'V1 propose proof test',
     }
 
-    aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
-
-    testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.threadId,
+    const faberProofRecordPromise = waitForProofRecord(faberAgent, {
       state: ProofState.ProposalReceived,
     })
+
+    await aliceAgent.proofs.proposeProof(proposeOptions)
+
+    testLogger.test('Faber waits for presentation from Alice')
+    faberProofRecord = await faberProofRecordPromise
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 

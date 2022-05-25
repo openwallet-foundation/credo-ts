@@ -56,13 +56,14 @@ describe('Present Proof', () => {
       comment: 'V2 propose proof test',
     }
 
+    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
+      state: ProofState.ProposalReceived,
+    })
+
     aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.threadId,
-      state: ProofState.ProposalReceived,
-    })
+    faberProofRecord = await faberPresentationRecordPromise
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
@@ -109,14 +110,16 @@ describe('Present Proof', () => {
       proofRecordId: faberProofRecord.id,
     }
 
+    const alicePresentationRecordPromise = waitForProofRecord(aliceAgent, {
+      threadId: faberProofRecord.threadId,
+      state: ProofState.RequestReceived,
+    })
+
     testLogger.test('Faber accepts presentation proposal from Alice')
     faberProofRecord = await faberAgent.proofs.acceptProposal(acceptProposalOptions)
 
     testLogger.test('Alice waits for proof request from Faber')
-    aliceProofRecord = await waitForProofRecord(aliceAgent, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.RequestReceived,
-    })
+    aliceProofRecord = await alicePresentationRecordPromise
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
