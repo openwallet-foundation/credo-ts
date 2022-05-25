@@ -6,7 +6,7 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../CredentialsModuleOptions'
-import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
+import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type {
   ServiceAcceptCredentialOptions,
   ServiceAcceptOfferOptions as ServiceOfferOptions,
