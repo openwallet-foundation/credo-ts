@@ -78,7 +78,9 @@ export class V1OfferCredentialHandler implements Handler {
       }
       const indyDid = getIndyDidFromVerficationMethod(verificationMethod)
 
-      const { message, credentialRecord } = await this.credentialService.createRequest(record, {}, indyDid)
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
+        holderDid: indyDid
+      })
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: message,
         role: DidCommMessageRole.Sender,
@@ -95,11 +97,9 @@ export class V1OfferCredentialHandler implements Handler {
       })
       const recipientService = offerMessage.service
 
-      const { message, credentialRecord } = await this.credentialService.createRequest(
-        record,
-        {},
-        ourService.recipientKeys[0]
-      )
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
+        holderDid: ourService.recipientKeys[0],
+      })
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService

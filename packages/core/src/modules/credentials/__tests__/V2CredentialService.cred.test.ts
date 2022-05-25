@@ -299,11 +299,12 @@ describe('CredentialService', () => {
 
       const requestOptions: RequestCredentialOptions = {
         credentialFormats: v2CredentialRequest,
+        holderDid: 'holderDid',
       }
 
       // when
 
-      await credentialService.createRequest(credentialRecord, requestOptions, 'holderDid')
+      await credentialService.createRequest(credentialRecord, requestOptions)
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
@@ -320,13 +321,10 @@ describe('CredentialService', () => {
       const options: RequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
         comment: 'credential request comment',
+        holderDid: 'holderDid',
       }
       // when
-      const { message: credentialRequest } = await credentialService.createRequest(
-        credentialRecord,
-        options,
-        'holderDid'
-      )
+      const { message: credentialRequest } = await credentialService.createRequest(credentialRecord, options)
 
       // then
       expect(credentialRequest.toJSON()).toMatchObject({
@@ -354,7 +352,7 @@ describe('CredentialService', () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           await expect(
-            credentialService.createRequest(mockCredentialRecord({ state }), {}, 'mockDid')
+            credentialService.createRequest(mockCredentialRecord({ state }), { holderDid: 'mockDid' })
           ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )

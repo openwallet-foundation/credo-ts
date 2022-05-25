@@ -241,12 +241,6 @@ export class CredentialsModule implements CredentialsModule {
     // Use connection if present
     if (record.connectionId) {
       const connection = await this.connectionService.getById(record.connectionId)
-
-      const requestOptions: RequestCredentialOptions = {
-        comment: options.comment,
-        autoAcceptCredential: options.autoAcceptCredential,
-      }
-
       const didDocument = await this.didResolver.resolveDidDocument(connection.did)
 
       const verificationMethod = await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocument)
@@ -255,7 +249,13 @@ export class CredentialsModule implements CredentialsModule {
       }
       const indyDid = getIndyDidFromVerficationMethod(verificationMethod)
 
-      const { message, credentialRecord } = await service.createRequest(record, requestOptions, indyDid)
+      const requestOptions: RequestCredentialOptions = {
+        comment: options.comment,
+        autoAcceptCredential: options.autoAcceptCredential,
+        holderDid: indyDid,
+      }
+      
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       await this.didCommMessageRepo.saveAgentMessage({
         agentMessage: message,
@@ -285,12 +285,9 @@ export class CredentialsModule implements CredentialsModule {
       const requestOptions: RequestCredentialOptions = {
         comment: options.comment,
         autoAcceptCredential: options.autoAcceptCredential,
+        holderDid: ourService.recipientKeys[0],
       }
-      const { message, credentialRecord } = await service.createRequest(
-        record,
-        requestOptions,
-        ourService.recipientKeys[0]
-      )
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
@@ -361,6 +358,9 @@ export class CredentialsModule implements CredentialsModule {
   public async offerCredential(options: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
     if (!options.connectionId) {
       throw new AriesFrameworkError('Missing connectionId on offerCredential')
+    }
+    if (!options.protocolVersion) {
+      throw new AriesFrameworkError('Missing protocol version in offerCredential')
     }
     const connection = await this.connectionService.getById(options.connectionId)
 
