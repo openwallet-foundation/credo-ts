@@ -30,7 +30,6 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
-import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 import { isLinkedAttachment } from '../../../../utils/attachment'
@@ -508,32 +507,30 @@ export class V1CredentialService extends CredentialService {
   public async createOffer(
     credentialOptions: OfferCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
-    if (!credentialOptions.connectionId) {
-      throw new AriesFrameworkError('Connection id missing from offer credential options')
-    }
-    if (!credentialOptions.credentialFormats.indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
+    // connection id can be undefined in connection-less scenario
+    const connection = credentialOptions.connectionId
+      ? await this.connectionService.getById(credentialOptions.connectionId)
+      : undefined
+
+    const indy = credentialOptions.credentialFormats.indy
+
+    if (!indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
       throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
     }
 
-    const connection = await this.connectionService.getById(credentialOptions.connectionId)
-
-    if (
-      !credentialOptions?.credentialFormats.indy?.attributes ||
-      !credentialOptions?.credentialFormats.indy?.credentialDefinitionId
-    ) {
+    if (!indy.attributes || !indy.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing properties from OfferCredentialOptions object: cannot create Offer!')
     }
-    const preview: V1CredentialPreview = new V1CredentialPreview({
-      attributes: credentialOptions.credentialFormats.indy?.attributes,
-    })
 
-    const linkedAttachments = credentialOptions.credentialFormats.indy?.linkedAttachments
+    const preview: V1CredentialPreview = new V1CredentialPreview({
+      attributes: indy.attributes,
+    })
 
     const template: CredentialOfferTemplate = {
       ...credentialOptions,
       preview: preview,
-      credentialDefinitionId: credentialOptions?.credentialFormats.indy?.credentialDefinitionId,
-      linkedAttachments,
+      credentialDefinitionId: indy.credentialDefinitionId,
+      linkedAttachments: indy.linkedAttachments,
     }
 
     const { credentialRecord, message } = await this.createOfferProcessing(template, connection)
@@ -553,6 +550,7 @@ export class V1CredentialService extends CredentialService {
     })
     return { credentialRecord, message }
   }
+
   /**
    * Process a received {@link OfferCredentialMessage}. This will not accept the credential offer
    * or send a credential request. It will only create a new credential record with
@@ -718,50 +716,6 @@ export class V1CredentialService extends CredentialService {
     return { message: offerMessage, credentialRecord }
   }
 
-  public async createOutOfBandOffer(
-    credentialOptions: OfferCredentialOptions
-  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
-    if (!credentialOptions.credentialFormats.indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
-      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
-    }
-
-    if (!credentialOptions.credentialFormats.indy?.credentialDefinitionId) {
-      throw new AriesFrameworkError('Missing credential definition id for out of band credential')
-    }
-    const v1Preview = new V1CredentialPreview({
-      attributes: credentialOptions.credentialFormats.indy?.attributes,
-    })
-    const template: CredentialOfferTemplate = {
-      credentialDefinitionId: credentialOptions.credentialFormats.indy?.credentialDefinitionId,
-      comment: credentialOptions.comment,
-      preview: v1Preview,
-      autoAcceptCredential: credentialOptions.autoAcceptCredential,
-    }
-
-    const { credentialRecord, message } = await this.createOfferProcessing(template)
-
-    // Create and set ~service decorator
-    const routing = await this.mediationRecipientService.getRouting()
-    message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.recipientKey.publicKeyBase58],
-      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
-    })
-    await this.credentialRepository.save(credentialRecord)
-    await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: message,
-      role: DidCommMessageRole.Receiver,
-      associatedRecordId: credentialRecord.id,
-    })
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
-    })
-    return { credentialRecord, message }
-  }
   /**
    * Create a {@link RequestCredentialMessage} as response to a received credential offer.
    *
