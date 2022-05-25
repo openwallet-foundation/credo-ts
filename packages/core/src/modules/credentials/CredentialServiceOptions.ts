@@ -11,7 +11,7 @@ import type {
   OfferCredentialOptions,
   RequestCredentialOptions,
 } from './CredentialsModuleOptions'
-import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
+import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttribute'
 import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
 import type { ProposeCredentialMessageOptions } from './protocol/v1/messages'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
@@ -48,7 +48,6 @@ export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
 export interface ServiceOfferCredentialOptions extends OfferCredentialOptions {
   connectionId?: string
   attachId?: string
-  // offerAttachment?: Attachment
 }
 
 export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {
@@ -71,6 +70,7 @@ export interface ServiceRequestCredentialOptions extends RequestCredentialOption
   attachId?: string
   offerAttachment?: Attachment
   requestAttachment?: Attachment
+  holderDid?: string
 }
 
 export interface ServiceAcceptCredentialOptions {

@@ -231,8 +231,8 @@ export class Agent {
     // Because this requires the connections module, we do this in the agent constructor
     if (mediatorConnectionsInvite) {
       this.logger.debug('Provision mediation with invitation', { mediatorConnectionsInvite })
-      const mediatonConnection = await this.getMediationConnection(mediatorConnectionsInvite)
-      await this.mediationRecipient.provision(mediatonConnection)
+      const mediationConnection = await this.getMediationConnection(mediatorConnectionsInvite)
+      await this.mediationRecipient.provision(mediationConnection)
     }
 
     await this.mediationRecipient.initialize()
