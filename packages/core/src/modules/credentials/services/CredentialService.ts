@@ -94,13 +94,10 @@ export abstract class CredentialService {
   abstract createOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
 
-  abstract createOutOfBandOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-
   // methods for request
   abstract createRequest(
     credentialRecord: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions,
-    holderDid: string
+    options: ServiceRequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
@@ -169,6 +166,7 @@ export abstract class CredentialService {
     await this.update(credentialRecord)
     return credentialRecord
   }
+
   abstract shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): Promise<boolean>
 
   abstract shouldAutoRespondToOffer(

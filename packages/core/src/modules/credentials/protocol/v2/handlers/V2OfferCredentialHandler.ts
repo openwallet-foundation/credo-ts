@@ -71,11 +71,13 @@ export class V2OfferCredentialHandler implements Handler {
     )
 
     if (messageContext.connection) {
-      const { message, credentialRecord } = await this.credentialService.createRequest(
-        record,
-        {},
-        messageContext.connection.did
-      )
+      if (!messageContext.connection.did) {
+        throw new AriesFrameworkError(`Connection record ${messageContext.connection.id} has no 'did'`)
+      }
+
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
+        holderDid: messageContext.connection.did,
+      })
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: message,
         role: DidCommMessageRole.Receiver,
@@ -86,16 +88,14 @@ export class V2OfferCredentialHandler implements Handler {
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
       const recipientService = offerMessage.service
 
-      const { message, credentialRecord } = await this.credentialService.createRequest(
-        record,
-        {},
-        ourService.recipientKeys[0]
-      )
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {
+        holderDid: ourService.recipientKeys[0],
+      })
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService

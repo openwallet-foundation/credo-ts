@@ -44,7 +44,7 @@ export interface CredentialsModule {
   declineOffer(credentialRecordId: string): Promise<CredentialExchangeRecord>
   negotiateOffer(options: NegotiateOfferOptions): Promise<CredentialExchangeRecord>
   // out of band
-  createOutOfBandOffer(options: OfferCredentialOptions): Promise<{
+  createOffer(options: OfferCredentialOptions): Promise<{
     message: AgentMessage
     credentialRecord: CredentialExchangeRecord
   }>
@@ -241,8 +241,9 @@ export class CredentialsModule implements CredentialsModule {
       const requestOptions: RequestCredentialOptions = {
         comment: options.comment,
         autoAcceptCredential: options.autoAcceptCredential,
+        holderDid: connection.did,
       }
-      const { message, credentialRecord } = await service.createRequest(record, requestOptions, connection.did)
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       await this.didCommMessageRepo.saveAgentMessage({
         agentMessage: message,
@@ -264,20 +265,17 @@ export class CredentialsModule implements CredentialsModule {
       const routing = await this.mediatorRecipientService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
       const recipientService = offerMessage.service
 
       const requestOptions: RequestCredentialOptions = {
         comment: options.comment,
         autoAcceptCredential: options.autoAcceptCredential,
+        holderDid: ourService.recipientKeys[0],
       }
-      const { message, credentialRecord } = await service.createRequest(
-        record,
-        requestOptions,
-        ourService.recipientKeys[0]
-      )
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
@@ -348,6 +346,9 @@ export class CredentialsModule implements CredentialsModule {
   public async offerCredential(options: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
     if (!options.connectionId) {
       throw new AriesFrameworkError('Missing connectionId on offerCredential')
+    }
+    if (!options.protocolVersion) {
+      throw new AriesFrameworkError('Missing protocol version in offerCredential')
     }
     const connection = await this.connectionService.getById(options.connectionId)
 
@@ -521,18 +522,14 @@ export class CredentialsModule implements CredentialsModule {
    * @param options The credential options to use for the offer
    * @returns The credential record and credential offer message
    */
-  public async createOutOfBandOffer(options: OfferCredentialOptions): Promise<{
+  public async createOffer(options: OfferCredentialOptions): Promise<{
     message: AgentMessage
     credentialRecord: CredentialExchangeRecord
   }> {
-    // with version we can get the Service
-    if (!options.protocolVersion) {
-      throw new AriesFrameworkError('Missing protocol version in createOutOfBandOffer')
-    }
     const service = this.getService(options.protocolVersion)
 
     this.logger.debug(`Got a CredentialService object for version ${options.protocolVersion}`)
-    const { message, credentialRecord } = await service.createOutOfBandOffer(options)
+    const { message, credentialRecord } = await service.createOffer(options)
 
     this.logger.debug('Offer Message successfully created; message= ', message)
 

@@ -268,7 +268,6 @@ export function getMockOutOfBand({
   label,
   serviceEndpoint,
   recipientKeys,
-  did,
   mediatorId,
   role,
   state,
@@ -277,7 +276,6 @@ export function getMockOutOfBand({
 }: {
   label?: string
   serviceEndpoint?: string
-  did?: string
   mediatorId?: string
   recipientKeys?: string[]
   role?: OutOfBandRole
@@ -303,7 +301,6 @@ export function getMockOutOfBand({
   }
   const outOfBandInvitation = new OutOfBandInvitation(options)
   const outOfBandRecord = new OutOfBandRecord({
-    did: did || 'test-did',
     mediatorId,
     role: role || OutOfBandRole.Receiver,
     state: state || OutOfBandState.Initial,
@@ -484,11 +481,15 @@ export async function issueConnectionLessCredential({
     connectionId: '',
   }
   // eslint-disable-next-line prefer-const
-  let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOutOfBandOffer(
-    offerOptions
-  )
+  let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOffer(offerOptions)
 
-  await holderAgent.receiveMessage(message.toJSON())
+  const { message: offerMessage } = await issuerAgent.oob.createLegacyConnectionlessInvitation({
+    recordId: issuerCredentialRecord.id,
+    domain: 'https://example.org',
+    message,
+  })
+
+  await holderAgent.receiveMessage(offerMessage.toJSON())
 
   let holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
