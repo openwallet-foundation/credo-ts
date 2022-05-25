@@ -520,8 +520,8 @@ export class V1ProofService extends ProofService {
     try {
       const isValid = await this.indyProofFormatService.processPresentation({
         record: proofRecord,
-        presentation: {
-          proof: presentationMessage.getAttachmentFormats(),
+        formatAttachments: {
+          presentation: presentationMessage.getAttachmentFormats(),
           request: requestMessage.getAttachmentFormats(),
         },
       })

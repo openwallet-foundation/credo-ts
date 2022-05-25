@@ -496,9 +496,9 @@ export class V2ProofService extends ProofService {
           formatVerificationResults.push(
             await service.processPresentation({
               record: proofRecord,
-              presentation: {
+              formatAttachments: {
                 request: requestMessage?.getAttachmentFormats(),
-                proof: presentationMessage.getAttachmentFormats(),
+                presentation: presentationMessage.getAttachmentFormats(),
               },
             })
           )

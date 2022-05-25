@@ -239,7 +239,9 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
-    const requestFormat = options.presentation.request.find((x) => x.format.format === V2_INDY_PRESENTATION_REQUEST)
+    const requestFormat = options.formatAttachments.request.find(
+      (x) => x.format.format === V2_INDY_PRESENTATION_REQUEST
+    )
 
     if (!requestFormat) {
       throw new MissingIndyProofMessageError(
@@ -247,7 +249,7 @@ export class IndyProofFormatService extends ProofFormatService {
       )
     }
 
-    const proofFormat = options.presentation.proof.find((x) => x.format.format === V2_INDY_PRESENTATION)
+    const proofFormat = options.formatAttachments.presentation.find((x) => x.format.format === V2_INDY_PRESENTATION)
 
     if (!proofFormat) {
       throw new MissingIndyProofMessageError(

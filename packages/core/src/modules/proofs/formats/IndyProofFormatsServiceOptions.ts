@@ -52,3 +52,9 @@ export interface CreateRequestAsResponseOptions {
   id?: string
   formats: RequestProofFormats
 }
+
+export interface IndyProofConfig {
+  name: string
+  version: string
+  nonce?: string
+}
