@@ -251,7 +251,7 @@ export class CredentialsModule implements CredentialsModule {
 
       const verificationMethod = await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocument)
       if (!verificationMethod) {
-        throw new AriesFrameworkError('Invalid DidDocument: Missing verification methods')
+        throw new AriesFrameworkError('Invalid DidDocument: Missing verification method with type Ed25519VerificationKey2018 to use as indy holder did')
       }
       const indyDid = getIndyDidFromVerficationMethod(verificationMethod)
 
