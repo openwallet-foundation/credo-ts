@@ -22,7 +22,7 @@ import type {
 } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { HandlerAutoAcceptOptions } from '../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
+import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type { CredOffer } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'

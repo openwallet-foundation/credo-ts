@@ -7,7 +7,7 @@ import type {
   CredentialFormatSpec,
   FormatServiceRequestCredentialFormats,
 } from '../formats/models/CredentialFormatServiceOptions'
-import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
+import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { V2IssueCredentialMessageProps } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
