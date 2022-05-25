@@ -109,10 +109,6 @@ describe('Present Proof', () => {
   test(`Faber accepts the Proposal send by Alice`, async () => {
     // Accept Proposal
     const acceptProposalOptions: AcceptProposalOptions = {
-      config: {
-        name: 'proof-request',
-        version: '1.0',
-      },
       proofRecordId: faberProofRecord.id,
     }
 

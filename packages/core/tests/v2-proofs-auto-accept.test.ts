@@ -181,10 +181,6 @@ describe('Auto accept present proof', () => {
       testLogger.test('Faber accepts presentation proposal from Alice')
 
       const acceptProposalOptions: AcceptProposalOptions = {
-        config: {
-          name: 'proof-request',
-          version: '1.0',
-        },
         proofRecordId: faberProofRecord.id,
       }
 

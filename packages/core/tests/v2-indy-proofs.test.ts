@@ -112,10 +112,6 @@ describe('Present Proof', () => {
     })
 
     const acceptProposalOptions: AcceptProposalOptions = {
-      config: {
-        name: 'proof-request',
-        version: '1.0',
-      },
       proofRecordId: faberProofRecord.id,
     }
 

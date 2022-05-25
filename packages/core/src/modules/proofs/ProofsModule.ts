@@ -137,8 +137,6 @@ export class ProofsModule {
     connection.assertReady()
 
     const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
-      name: options.config?.name ? options.config.name : 'proof-request',
-      version: options.config?.version ?? '1.0',
       nonce: await service.generateProofRequestNonce(),
       proofRecord,
     }
