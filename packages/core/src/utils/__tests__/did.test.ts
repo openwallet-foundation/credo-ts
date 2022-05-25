@@ -95,12 +95,6 @@ const verificationMethod = [
     controller: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr',
     publicKeyBase58: 'VExfvq3kqkbAfCA3PZ8CRbzH2A3HyV9FWwdSq6WhtgU',
   },
-  {
-    id: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr#z6LShCN4msCWSr1ackFxNeUBmP6Em3cKBxr3gFREAAJ91NCj',
-    type: 'X25519KeyAgreementKey2019',
-    controller: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr',
-    publicKeyBase58: '6XBuFZPeMPHqXMtBqzxESnskuu5CVMftoGhYfhecHzRy',
-  },
 ]
 
 const invalidVerificationMethod = [
@@ -111,6 +105,8 @@ const invalidVerificationMethod = [
     publicKeyBase58: '',
   },
 ]
+
+const indyDid = 'tpF86Zd1cf9JdVmqKdMW2'
 
 describe('Utils | Did', () => {
   describe('isSelfCertifiedDid()', () => {
@@ -184,7 +180,7 @@ describe('Utils | Did', () => {
 
   describe('getIndyDidFromVerficationMethod()', () => {
     test.each(verificationMethod)('returns indy did from verification method', (method) => {
-      expect(typeof getIndyDidFromVerficationMethod(method)).toBe('string')
+      expect(getIndyDidFromVerficationMethod(method)).toBe(indyDid)
     })
 
     test.each(invalidVerificationMethod)('throw error when invalid public key in verification method', (method) => {
