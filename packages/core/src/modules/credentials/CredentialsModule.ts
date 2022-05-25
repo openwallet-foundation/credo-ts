@@ -241,6 +241,9 @@ export class CredentialsModule implements CredentialsModule {
     // Use connection if present
     if (record.connectionId) {
       const connection = await this.connectionService.getById(record.connectionId)
+      if (!connection.did) {
+        throw new AriesFrameworkError(`Connection record ${connection.id} has no 'did'`)
+      }
       const didDocument = await this.didResolver.resolveDidDocument(connection.did)
 
       const verificationMethod = await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocument)

@@ -73,7 +73,7 @@ export class V1OfferCredentialHandler implements Handler {
       if (!messageContext.connection.did) {
         throw new AriesFrameworkError(`Connection record ${messageContext.connection.id} has no 'did'`)
       }
-      
+
       const didDocument = await this.didResolver.resolveDidDocument(messageContext.connection.did)
 
       const verificationMethod = await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocument)
