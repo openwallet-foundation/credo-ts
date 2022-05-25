@@ -23,7 +23,9 @@ import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { DidCommMessageRole } from '../../storage'
 import { DidCommMessageRepository } from '../../storage/didcomm/DidCommMessageRepository'
+import { getIndyDidFromVerficationMethod } from '../../utils/did'
 import { ConnectionService } from '../connections/services'
+import { DidResolverService, findVerificationMethodByKeyType } from '../dids'
 import { MediationRecipientService } from '../routing'
 
 import { CredentialProtocolVersion } from './CredentialProtocolVersion'
@@ -78,6 +80,7 @@ export class CredentialsModule implements CredentialsModule {
   private mediatorRecipientService: MediationRecipientService
   private logger: Logger
   private serviceMap: { [key in CredentialProtocolVersion]: CredentialService }
+  private didResolver: DidResolverService
 
   // note some of the parameters passed in here are temporary, as we intend
   // to eventually remove CredentialsModule
@@ -89,7 +92,8 @@ export class CredentialsModule implements CredentialsModule {
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
     v1Service: V1CredentialService,
-    v2Service: V2CredentialService
+    v2Service: V2CredentialService,
+    didResolver: DidResolverService
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
@@ -101,7 +105,7 @@ export class CredentialsModule implements CredentialsModule {
 
     this.v1Service = v1Service
     this.v2Service = v2Service
-
+    this.didResolver = didResolver
     this.serviceMap = {
       [CredentialProtocolVersion.V1]: this.v1Service,
       [CredentialProtocolVersion.V2]: this.v2Service,
@@ -237,12 +241,25 @@ export class CredentialsModule implements CredentialsModule {
     // Use connection if present
     if (record.connectionId) {
       const connection = await this.connectionService.getById(record.connectionId)
+      if (!connection.did) {
+        throw new AriesFrameworkError(`Connection record ${connection.id} has no 'did'`)
+      }
+      const didDocument = await this.didResolver.resolveDidDocument(connection.did)
+
+      const verificationMethod = await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocument)
+      if (!verificationMethod) {
+        throw new AriesFrameworkError(
+          'Invalid DidDocument: Missing verification method with type Ed25519VerificationKey2018 to use as indy holder did'
+        )
+      }
+      const indyDid = getIndyDidFromVerficationMethod(verificationMethod)
 
       const requestOptions: RequestCredentialOptions = {
         comment: options.comment,
         autoAcceptCredential: options.autoAcceptCredential,
-        holderDid: connection.did,
+        holderDid: indyDid,
       }
+
       const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       await this.didCommMessageRepo.saveAgentMessage({

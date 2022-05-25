@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
+import type { DidRepository } from '../../dids/repository'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { OfferCredentialOptions } from '../CredentialsModuleOptions'
 
@@ -12,6 +13,7 @@ import { MessageSender } from '../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { DidExchangeState } from '../../connections'
+import { DidResolverService } from '../../dids'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
@@ -86,6 +88,8 @@ describe('CredentialService', () => {
   let dispatcher: Dispatcher
   let credentialService: V1CredentialService
   let revocationService: RevocationService
+  let didResolverService: DidResolverService
+  let didRepository: DidRepository
 
   beforeEach(async () => {
     credentialRepository = new CredentialRepositoryMock()
@@ -101,6 +105,7 @@ describe('CredentialService', () => {
 
     dispatcher = new Dispatcher(messageSender, eventEmitter, agentConfig)
     revocationService = new RevocationService(credentialRepository, eventEmitter, agentConfig)
+    didResolverService = new DidResolverService(agentConfig, indyLedgerService, didRepository)
 
     credentialService = new V1CredentialService(
       {
@@ -121,7 +126,8 @@ describe('CredentialService', () => {
         indyHolderService,
         agentConfig
       ),
-      revocationService
+      revocationService,
+      didResolverService
     )
     mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
   })
@@ -293,7 +299,8 @@ describe('CredentialService', () => {
           indyHolderService,
           agentConfig
         ),
-        revocationService
+        revocationService,
+        didResolverService
       )
       // when
       const returnedCredentialRecord = await credentialService.processOffer(messageContext)

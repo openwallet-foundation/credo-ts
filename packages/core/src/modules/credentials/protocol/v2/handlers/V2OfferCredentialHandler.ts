@@ -2,6 +2,7 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
+import type { DidResolverService } from '../../../../dids'
 import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
@@ -10,6 +11,8 @@ import { createOutboundMessage, createOutboundServiceMessage } from '../../../..
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { DidCommMessageRole } from '../../../../../storage'
+import { getIndyDidFromVerficationMethod } from '../../../../../utils/did'
+import { findVerificationMethodByKeyType } from '../../../../dids'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
@@ -18,19 +21,21 @@ export class V2OfferCredentialHandler implements Handler {
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
   public supportedMessages = [V2OfferCredentialMessage]
-
   private didCommMessageRepository: DidCommMessageRepository
+  private didResolver: DidResolverService
 
   public constructor(
     credentialService: V2CredentialService,
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
-    didCommMessageRepository: DidCommMessageRepository
+    didCommMessageRepository: DidCommMessageRepository,
+    didResolver: DidResolverService
   ) {
     this.credentialService = credentialService
     this.agentConfig = agentConfig
     this.mediationRecipientService = mediationRecipientService
     this.didCommMessageRepository = didCommMessageRepository
+    this.didResolver = didResolver
   }
 
   public async handle(messageContext: InboundMessageContext<V2OfferCredentialMessage>) {
@@ -75,8 +80,17 @@ export class V2OfferCredentialHandler implements Handler {
         throw new AriesFrameworkError(`Connection record ${messageContext.connection.id} has no 'did'`)
       }
 
+      const didDocument = await this.didResolver.resolveDidDocument(messageContext.connection.did)
+
+      const verificationMethod = await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocument)
+      if (!verificationMethod) {
+        throw new AriesFrameworkError(
+          'Invalid DidDocument: Missing verification method with type Ed25519VerificationKey2018 to use as indy holder did'
+        )
+      }
+      const indyDid = getIndyDidFromVerficationMethod(verificationMethod)
       const { message, credentialRecord } = await this.credentialService.createRequest(record, {
-        holderDid: messageContext.connection.did,
+        holderDid: indyDid,
       })
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: message,
