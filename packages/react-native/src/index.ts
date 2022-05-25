@@ -3,7 +3,7 @@ import '@azure/core-asynciterator-polyfill'
 
 import type { AgentDependencies } from '@aries-framework/core'
 
-import * as didcomm from 'didcomm' // TODO: Replace with React Native package
+import * as didcomm from '@sicpa-dlab/didcomm-react-native'
 import { EventEmitter } from 'events'
 // Eslint complains indy-sdk-react-native has no default export
 // But that's not true
