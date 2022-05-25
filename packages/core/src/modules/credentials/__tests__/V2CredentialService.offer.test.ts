@@ -250,6 +250,7 @@ describe('CredentialService', () => {
       )
     })
   })
+
   describe('processCredentialOffer', () => {
     let messageContext: InboundMessageContext<V2OfferCredentialMessage>
     let credentialOfferMessage: V2OfferCredentialMessage
