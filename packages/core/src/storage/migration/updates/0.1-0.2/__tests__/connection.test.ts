@@ -404,7 +404,6 @@ describe('0.1-0.2 | Connection', () => {
         role: OutOfBandRole.Sender,
         state: OutOfBandState.AwaitResponse,
         autoAcceptConnection: true,
-        did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
         reusable: false,
         mediatorId: 'a-mediator-id',
         createdAt: connectionRecord.createdAt.toISOString(),

@@ -6,7 +6,7 @@ import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommS
 import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
-import type { CustomConnectionTags } from '../repository/ConnectionRecord'
+import type { ConnectionRecordProps } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
@@ -595,38 +595,8 @@ export class ConnectionService {
     return this.connectionRepository.findByQuery({ invitationDid })
   }
 
-  public async createConnection(options: {
-    role: DidExchangeRole
-    state: DidExchangeState
-    alias?: string
-    mediatorId?: string
-    theirLabel?: string
-    theirDid?: string
-    did?: string
-    autoAcceptConnection?: boolean
-    tags?: CustomConnectionTags
-    threadId?: string
-    imageUrl?: string
-    protocol?: HandshakeProtocol
-    outOfBandId?: string
-    invitationDid?: string
-  }): Promise<ConnectionRecord> {
-    const connectionRecord = new ConnectionRecord({
-      state: options.state,
-      role: options.role,
-      tags: options.tags,
-      alias: options.alias,
-      theirLabel: options.theirLabel,
-      theirDid: options.theirDid,
-      did: options.did,
-      threadId: options.threadId,
-      autoAcceptConnection: options.autoAcceptConnection,
-      imageUrl: options.imageUrl,
-      mediatorId: options.mediatorId,
-      protocol: options.protocol,
-      outOfBandId: options.outOfBandId,
-      invitationDid: options.invitationDid,
-    })
+  public async createConnection(options: ConnectionRecordProps): Promise<ConnectionRecord> {
+    const connectionRecord = new ConnectionRecord(options)
     await this.connectionRepository.save(connectionRecord)
     return connectionRecord
   }
