@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { OfferCredentialOptions } from '../CredentialsModuleOptions'
+import type { OfferCredentialOptions, ProposeCredentialOptions } from '../CredentialsModuleOptions'
 
 import { Agent } from '../../../../src/agent/Agent'
 import { Dispatcher } from '../../../../src/agent/Dispatcher'
@@ -124,6 +124,108 @@ describe('CredentialService', () => {
       revocationService
     )
     mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
+  })
+
+  describe('createCredentialProposal', () => {
+    let proposeOptions: ProposeCredentialOptions
+    const credPropose = {
+      credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+      schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+      schemaName: 'ahoy',
+      schemaVersion: '1.0',
+      schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
+      issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+    }
+
+    beforeEach(async () => {
+      proposeOptions = {
+        connectionId: connection.id,
+        protocolVersion: CredentialProtocolVersion.V1,
+        credentialFormats: {
+          indy: {
+            payload: credPropose,
+            attributes: credentialPreview.attributes,
+          },
+        },
+        comment: 'v1 propose credential test',
+      }
+    })
+
+    test(`creates credential record in ${CredentialState.OfferSent} state with offer, thread ID`, async () => {
+      const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
+
+      await credentialService.createProposal(proposeOptions)
+
+      // then
+      expect(repositorySaveSpy).toHaveBeenCalledTimes(1)
+
+      const [[createdCredentialRecord]] = repositorySaveSpy.mock.calls
+      expect(createdCredentialRecord).toMatchObject({
+        type: CredentialExchangeRecord.type,
+        id: expect.any(String),
+        createdAt: expect.any(Date),
+        threadId: createdCredentialRecord.threadId,
+        connectionId: connection.id,
+        state: CredentialState.ProposalSent,
+      })
+    })
+
+    test(`emits stateChange event with a new credential in ${CredentialState.ProposalSent} state`, async () => {
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
+
+      await credentialService.createProposal(proposeOptions)
+
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'CredentialStateChanged',
+        payload: {
+          previousState: null,
+          credentialRecord: expect.objectContaining({
+            state: CredentialState.ProposalSent,
+          }),
+        },
+      })
+    })
+
+    test('returns credential proposal message', async () => {
+      const { message: credentialProposal } = await credentialService.createProposal(proposeOptions)
+
+      // console.log(credentialProposal.toJSON())
+      expect(credentialProposal.toJSON()).toMatchObject({
+        '@id': expect.any(String),
+        '@type': 'https://didcomm.org/issue-credential/1.0/propose-credential',
+        comment: 'v1 propose credential test',
+        schema_id: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
+        schema_name: 'ahoy',
+        schema_version: '1.0',
+        cred_def_id: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+        issuer_did: 'GMm4vMw8LLrLJjp81kRRLp',
+        credential_proposal: {
+          '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
+          attributes: [
+            {
+              name: 'name',
+              'mime-type': 'text/plain',
+              value: 'John',
+            },
+            {
+              name: 'age',
+              'mime-type': 'text/plain',
+              value: '99',
+            },
+          ],
+        },
+        '~attach': [
+          {
+            '@id': expect.any(String),
+            'mime-type': 'application/json',
+            data: {
+              base64: expect.any(String),
+            },
+          },
+        ],
+      })
+    })
   })
 
   describe('createCredentialOffer', () => {

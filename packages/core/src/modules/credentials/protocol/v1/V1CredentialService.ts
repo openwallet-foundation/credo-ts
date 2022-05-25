@@ -121,10 +121,10 @@ export class V1CredentialService extends CredentialService {
     }
 
     const config: CredentialProposeOptions = {
+      ...credPropose,
+      comment: proposal.comment,
       credentialProposal: credentialProposal,
-      credentialDefinitionId: credPropose?.credentialDefinitionId,
       linkedAttachments: proposal.credentialFormats.indy?.linkedAttachments,
-      schemaId: credPropose?.schemaId,
     }
 
     const options = { ...config }

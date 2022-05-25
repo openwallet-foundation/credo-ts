@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { OfferCredentialOptions } from '../CredentialsModuleOptions'
+import type { OfferCredentialOptions, ProposeCredentialOptions } from '../CredentialsModuleOptions'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -124,7 +124,6 @@ describe('CredentialService', () => {
     )
     mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
   })
-
   describe('createCredentialOffer', () => {
     let offerOptions: OfferCredentialOptions
 
@@ -143,10 +142,6 @@ describe('CredentialService', () => {
     })
 
     test(`creates credential record in ${CredentialState.OfferSent} state with offer, thread ID`, async () => {
-      // given
-      // agent = new Agent(config, dependencies)
-      // await agent.initialize()
-      // expect(agent.isInitialized).toBe(true)
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
 
       await credentialService.createOffer(offerOptions)
