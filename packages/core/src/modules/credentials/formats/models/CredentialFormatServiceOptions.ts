@@ -41,6 +41,12 @@ export interface IndyIssueCredentialFormat {
 }
 
 export class CredentialFormatSpec {
+  public constructor(options: { attachId: string; format: string }) {
+    if (options) {
+      this.attachId = options.attachId
+      this.format = options.format
+    }
+  }
   @Expose({ name: 'attach_id' })
   @IsString()
   public attachId!: string

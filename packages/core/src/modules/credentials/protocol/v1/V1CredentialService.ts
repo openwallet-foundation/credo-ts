@@ -40,9 +40,9 @@ import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
-import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialState } from '../../CredentialState'
 import { CredentialUtils } from '../../CredentialUtils'
+import { composeAutoAccept } from '../../composeAutoAccept'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord } from '../../repository'
@@ -111,18 +111,23 @@ export class V1CredentialService extends CredentialService {
   ): Promise<CredentialProtocolMsgReturnType<V1ProposeCredentialMessage>> {
     const connection = await this.connectionService.getById(proposal.connectionId)
     connection.assertReady()
-
+    if (!proposal.credentialFormats.indy || Object.keys(proposal.credentialFormats).length !== 1) {
+      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
+    }
     let credentialProposal: V1CredentialPreview | undefined
 
     const credPropose = proposal.credentialFormats.indy?.payload
 
+    if (!credPropose) {
+      throw new AriesFrameworkError('Missing credPropose data payload in createProposal')
+    }
     if (proposal.credentialFormats.indy?.attributes) {
       credentialProposal = new V1CredentialPreview({ attributes: proposal.credentialFormats.indy?.attributes })
     }
 
     const config: CredentialProposeOptions = {
       credentialProposal: credentialProposal,
-      credentialDefinitionId: credPropose?.credentialDefinitionId,
+      credentialDefinitionId: credPropose.credentialDefinitionId,
       linkedAttachments: proposal.credentialFormats.indy?.linkedAttachments,
       schemaId: credPropose?.schemaId,
     }
@@ -186,6 +191,9 @@ export class V1CredentialService extends CredentialService {
     options: AcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
+    if (!options.credentialFormats.indy || Object.keys(options.credentialFormats).length !== 1) {
+      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
+    }
     const proposalCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V1ProposeCredentialMessage,
@@ -237,6 +245,9 @@ export class V1CredentialService extends CredentialService {
       throw new AriesFrameworkError(
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
       )
+    }
+    if (!credentialOptions.credentialFormats.indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
+      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
     }
 
     const credentialProposalMessage = await this.didCommMessageRepository.findAgentMessage({
@@ -449,6 +460,10 @@ export class V1CredentialService extends CredentialService {
         `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
       )
     }
+    if (!credentialOptions.credentialFormats.indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
+      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
+    }
+
     if (!credentialOptions.credentialFormats.indy?.attributes) {
       throw new AriesFrameworkError('Missing attributes in V1 Negotiate Offer Options')
     }
@@ -492,6 +507,10 @@ export class V1CredentialService extends CredentialService {
     if (!credentialOptions.connectionId) {
       throw new AriesFrameworkError('Connection id missing from offer credential options')
     }
+    if (!credentialOptions.credentialFormats.indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
+      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
+    }
+
     const connection = await this.connectionService.getById(credentialOptions.connectionId)
 
     if (
@@ -698,6 +717,10 @@ export class V1CredentialService extends CredentialService {
   public async createOutOfBandOffer(
     credentialOptions: OfferCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
+    if (!credentialOptions.credentialFormats.indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
+      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
+    }
+
     if (!credentialOptions.credentialFormats.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing credential definition id for out of band credential')
     }
@@ -745,8 +768,7 @@ export class V1CredentialService extends CredentialService {
    */
   public async createRequest(
     record: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions,
-    holderDid: string
+    options: ServiceRequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
     record.assertState(CredentialState.OfferReceived)
@@ -770,7 +792,7 @@ export class V1CredentialService extends CredentialService {
       throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
     }
     options.attachId = INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
-    const { attachment: requestAttach } = await this.formatService.createRequest(options, record, holderDid)
+    const { attachment: requestAttach } = await this.formatService.createRequest(options, record)
     if (!requestAttach) {
       throw new AriesFrameworkError(`Failed to create attachment for request; credential record = ${record.id}`)
     }
@@ -1121,7 +1143,7 @@ export class V1CredentialService extends CredentialService {
   }
 
   public async shouldAutoRespondToProposal(handlerOptions: HandlerAutoAcceptOptions): Promise<boolean> {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+    const autoAccept = composeAutoAccept(
       handlerOptions.credentialRecord.autoAcceptCredential,
       handlerOptions.autoAcceptType
     )

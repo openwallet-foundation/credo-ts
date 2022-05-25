@@ -189,9 +189,7 @@ export class MessageSender {
     }
     if (!session) {
       // Try to send to already open session
-      session =
-        this.transportService.findSessionByConnectionId(connection.id) ||
-        (outOfBand && this.transportService.findSessionByOutOfBandId(outOfBand.id))
+      session = this.transportService.findSessionByConnectionId(connection.id)
     }
 
     if (session?.inboundMessage?.hasReturnRouting(payload.threadId)) {

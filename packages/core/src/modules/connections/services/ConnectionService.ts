@@ -2,7 +2,6 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
-import type { DidDocument } from '../../dids'
 import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
@@ -27,6 +26,7 @@ import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
 import { didKeyToVerkey } from '../../dids/helpers'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRepository, DidRecord } from '../../dids/repository'
+import { DidRecordMetadataKeys } from '../../dids/repository/didRecordMetadataTypes'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionEventTypes } from '../ConnectionEvents'
@@ -38,7 +38,6 @@ import {
   Connection,
   DidDoc,
   Ed25119Sig2018,
-  EmbeddedAuthentication,
   HandshakeProtocol,
   ReferencedAuthentication,
   authenticationTypes,
@@ -108,7 +107,7 @@ export class ConnectionService {
 
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Created,
-      didDocument: convertToNewDidDocument(didDoc),
+      didDoc,
     })
 
     const connectionRecord = await this.createConnection({
@@ -120,7 +119,6 @@ export class ConnectionService {
       did: peerDid,
       mediatorId,
       autoAcceptConnection: config?.autoAcceptConnection,
-      multiUseInvitation: false,
       outOfBandId: outOfBandRecord.id,
       invitationDid,
     })
@@ -166,14 +164,13 @@ export class ConnectionService {
 
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Received,
-      didDocument: convertToNewDidDocument(message.connection.didDoc),
+      didDoc: message.connection.didDoc,
     })
 
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
       role: DidExchangeRole.Responder,
       state: DidExchangeState.RequestReceived,
-      multiUseInvitation: false,
       theirLabel: message.label,
       imageUrl: message.imageUrl,
       outOfBandId: outOfBandRecord.id,
@@ -221,7 +218,7 @@ export class ConnectionService {
 
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Created,
-      didDocument: convertToNewDidDocument(didDoc),
+      didDoc,
     })
 
     const connection = new Connection({
@@ -320,7 +317,7 @@ export class ConnectionService {
 
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Received,
-      didDocument: convertToNewDidDocument(connection.didDoc),
+      didDoc: connection.didDoc,
     })
 
     connectionRecord.theirDid = peerDid
@@ -607,7 +604,6 @@ export class ConnectionService {
     theirDid?: string
     did?: string
     autoAcceptConnection?: boolean
-    multiUseInvitation: boolean
     tags?: CustomConnectionTags
     threadId?: string
     imageUrl?: string
@@ -626,7 +622,6 @@ export class ConnectionService {
       threadId: options.threadId,
       autoAcceptConnection: options.autoAcceptConnection,
       imageUrl: options.imageUrl,
-      multiUseInvitation: options.multiUseInvitation,
       mediatorId: options.mediatorId,
       protocol: options.protocol,
       outOfBandId: options.outOfBandId,
@@ -636,7 +631,10 @@ export class ConnectionService {
     return connectionRecord
   }
 
-  private async createDid({ role, didDocument }: { role: DidDocumentRole; didDocument: DidDocument }) {
+  private async createDid({ role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {
+    // Convert the legacy did doc to a new did document
+    const didDocument = convertToNewDidDocument(didDoc)
+
     const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
     didDocument.id = peerDid
     const didRecord = new DidRecord({
@@ -648,6 +646,13 @@ export class ConnectionService {
         // of a key when we receive a message from another connection.
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
       },
+    })
+
+    // Store the unqualified did with the legacy did document in the metadata
+    // Can be removed at a later stage if we know for sure we don't need it anymore
+    didRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {
+      unqualifiedDid: didDoc.id,
+      didDocumentString: JsonTransformer.serialize(didDoc),
     })
 
     this.logger.debug('Saving DID record', {

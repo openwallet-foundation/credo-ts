@@ -222,7 +222,6 @@ describe('ConnectionService', () => {
         id: 'test',
         state: DidExchangeState.InvitationSent,
         role: DidExchangeRole.Responder,
-        multiUseInvitation: true,
       })
 
       const theirDid = 'their-did'
