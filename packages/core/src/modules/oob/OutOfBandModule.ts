@@ -27,7 +27,8 @@ import {
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
-import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
+import { DidKey } from '../dids'
+import { didKeyToVerkey } from '../dids/helpers'
 import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { MediationRecipientService } from '../routing'
 
@@ -53,6 +54,15 @@ export interface CreateOutOfBandInvitationConfig {
   handshake?: boolean
   handshakeProtocols?: HandshakeProtocol[]
   messages?: AgentMessage[]
+  multiUseInvitation?: boolean
+  autoAcceptConnection?: boolean
+  routing?: Routing
+}
+
+export interface CreateLegacyInvitationConfig {
+  label?: string
+  alias?: string
+  imageUrl?: string
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
   routing?: Routing
@@ -106,9 +116,9 @@ export class OutOfBandModule {
    * Creates an outbound out-of-band record containing out-of-band invitation message defined in
    * Aries RFC 0434: Out-of-Band Protocol 1.1.
    *
-   * It automatically adds all supported handshake protocols by agent to `hanshake_protocols`. You
+   * It automatically adds all supported handshake protocols by agent to `handshake_protocols`. You
    * can modify this by setting `handshakeProtocols` in `config` parameter. If you want to create
-   * invitation without handhsake, you can set `handshake` to `false`.
+   * invitation without handshake, you can set `handshake` to `false`.
    *
    * If `config` parameter contains `messages` it adds them to `requests~attach` attribute.
    *
@@ -161,8 +171,8 @@ export class OutOfBandModule {
       return new OutOfBandDidCommService({
         id: `#inline-${index}`,
         serviceEndpoint: endpoint,
-        recipientKeys: [routing.verkey].map(verkeyToDidKey),
-        routingKeys: routing.routingKeys.map(verkeyToDidKey),
+        recipientKeys: [routing.recipientKey].map((key) => new DidKey(key).did),
+        routingKeys: routing.routingKeys.map((key) => new DidKey(key).did),
       })
     })
 
@@ -188,7 +198,6 @@ export class OutOfBandModule {
     }
 
     const outOfBandRecord = new OutOfBandRecord({
-      did: routing.did,
       mediatorId: routing.mediatorId,
       role: OutOfBandRole.Sender,
       state: OutOfBandState.AwaitResponse,
@@ -216,28 +225,15 @@ export class OutOfBandModule {
    *
    * Agent role: sender (inviter)
    *
-   * @param config configuration of how out-of-band invitation should be created
+   * @param config configuration of how a connection invitation should be created
    * @returns out-of-band record and connection invitation
    */
-  public async createLegacyInvitation(config: CreateOutOfBandInvitationConfig = {}) {
-    if (config.handshake === false) {
-      throw new AriesFrameworkError(
-        `Invalid value of handshake in config. Value is ${config.handshake}, but this method supports only 'true' or 'undefined'.`
-      )
-    }
-    if (
-      !config.handshakeProtocols ||
-      (config.handshakeProtocols?.length === 1 && config.handshakeProtocols.includes(HandshakeProtocol.Connections))
-    ) {
-      const outOfBandRecord = await this.createInvitation({
-        ...config,
-        handshakeProtocols: [HandshakeProtocol.Connections],
-      })
-      return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
-    }
-    throw new AriesFrameworkError(
-      `Invalid value of handshakeProtocols in config. Value is ${config.handshakeProtocols}, but this method supports only ${HandshakeProtocol.Connections}.`
-    )
+  public async createLegacyInvitation(config: CreateLegacyInvitationConfig = {}) {
+    const outOfBandRecord = await this.createInvitation({
+      ...config,
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
+    return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
   }
 
   public async createLegacyConnectionlessInvitation<Message extends AgentMessage>(config: {
@@ -251,8 +247,8 @@ export class OutOfBandModule {
     // Set the service on the message
     config.message.service = new ServiceDecorator({
       serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.verkey],
-      routingKeys: routing.routingKeys,
+      recipientKeys: [routing.recipientKey].map((key) => key.publicKeyBase58),
+      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
     })
 
     // We need to update the message with the new service, so we can
@@ -316,15 +312,19 @@ export class OutOfBandModule {
    *
    * Agent role: receiver (invitee)
    *
-   * @param outOfBandInvitation
+   * @param invitation either OutOfBandInvitation or ConnectionInvitationMessage
    * @param config config for handling of invitation
    *
    * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveInvitation(
-    outOfBandInvitation: OutOfBandInvitation,
+    invitation: OutOfBandInvitation | ConnectionInvitationMessage,
     config: ReceiveOutOfBandInvitationConfig = {}
   ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
+    // Convert to out of band invitation if needed
+    const outOfBandInvitation =
+      invitation instanceof OutOfBandInvitation ? invitation : convertToNewInvitation(invitation)
+
     const { handshakeProtocols } = outOfBandInvitation
     const { routing } = config
 

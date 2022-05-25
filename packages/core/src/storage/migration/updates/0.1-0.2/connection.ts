@@ -331,7 +331,6 @@ export async function migrateToOobRecord(
         role: oobRole,
         state: oobState,
         autoAcceptConnection: connectionRecord.autoAcceptConnection,
-        did: connectionRecord.did,
         outOfBandInvitation,
         reusable: oldMultiUseInvitation,
         mediatorId: connectionRecord.mediatorId,
@@ -351,7 +350,6 @@ export async function migrateToOobRecord(
     if (oldMultiUseInvitation) {
       oobRecord.reusable = true
       oobRecord.state = OutOfBandState.AwaitResponse
-      oobRecord.did = connectionRecord.did
       oobRecord.mediatorId = connectionRecord.mediatorId
       oobRecord.autoAcceptConnection = connectionRecord.autoAcceptConnection
 
