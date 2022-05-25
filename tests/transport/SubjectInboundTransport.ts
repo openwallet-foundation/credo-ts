@@ -1,11 +1,11 @@
-import type { InboundTransport, Agent, EncryptedMessage } from '../../packages/core/src'
+import type { InboundTransport, Agent, EncryptedMessage, PlaintextMessage } from '../../packages/core/src'
 import type { TransportSession } from '../../packages/core/src/agent/TransportService'
 import type { Subject, Subscription } from 'rxjs'
 
 import { AgentConfig } from '../../packages/core/src/agent/AgentConfig'
 import { uuid } from '../../packages/core/src/utils/uuid'
 
-export type SubjectMessage = { message: EncryptedMessage; replySubject?: Subject<SubjectMessage> }
+export type SubjectMessage = { message: EncryptedMessage | PlaintextMessage; replySubject?: Subject<SubjectMessage> }
 
 export class SubjectInboundTransport implements InboundTransport {
   private subject: Subject<SubjectMessage>
