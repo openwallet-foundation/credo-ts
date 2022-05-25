@@ -143,7 +143,7 @@ export class CredentialMessageBuilder {
     }
     const credentialOfferMessage = new V2OfferCredentialMessage(messageProps)
 
-    credentialOfferMessage.setThread(credentialRecord)
+    credentialOfferMessage.setThread({ threadId: credentialRecord.threadId })
 
     credentialRecord.credentialAttributes = credentialPreview.attributes
 
