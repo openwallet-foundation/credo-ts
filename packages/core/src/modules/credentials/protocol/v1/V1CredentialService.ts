@@ -36,6 +36,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storag
 import { isLinkedAttachment } from '../../../../utils/attachment'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services'
+import { DidResolverService } from '../../../dids'
 import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../CredentialEvents'
@@ -83,7 +84,8 @@ export class V1CredentialService extends CredentialService {
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
     formatService: IndyCredentialFormatService,
-    revocationService: RevocationService
+    revocationService: RevocationService,
+    didResolver: DidResolverService
   ) {
     super(
       credentialRepository,
@@ -92,10 +94,12 @@ export class V1CredentialService extends CredentialService {
       agentConfig,
       mediationRecipientService,
       didCommMessageRepository,
-      revocationService
+      revocationService,
+      didResolver
     )
     this.connectionService = connectionService
     this.formatService = formatService
+    this.didResolver = didResolver
   }
 
   /**
@@ -1063,7 +1067,8 @@ export class V1CredentialService extends CredentialService {
         this,
         this.agentConfig,
         this.mediationRecipientService,
-        this.didCommMessageRepository
+        this.didCommMessageRepository,
+        this.didResolver
       )
     )
     this.dispatcher.registerHandler(

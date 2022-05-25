@@ -1,4 +1,12 @@
-import { isAbbreviatedVerkey, isDid, isDidIdentifier, isFullVerkey, isSelfCertifiedDid, isVerkey } from '../did'
+import {
+  getIndyDidFromVerficationMethod,
+  isAbbreviatedVerkey,
+  isDid,
+  isDidIdentifier,
+  isFullVerkey,
+  isSelfCertifiedDid,
+  isVerkey,
+} from '../did'
 
 const validAbbreviatedVerkeys = [
   '~PKAYz8Ev4yoQgr2LaMAWFx',
@@ -80,6 +88,30 @@ const invalidDidIdentifiers = [
   'deid:ethr:9noxi4nL4SiJAsFcMLp2U4',
 ]
 
+const verificationMethod = [
+  {
+    id: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr#z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr',
+    type: 'Ed25519VerificationKey2018',
+    controller: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr',
+    publicKeyBase58: 'VExfvq3kqkbAfCA3PZ8CRbzH2A3HyV9FWwdSq6WhtgU',
+  },
+  {
+    id: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr#z6LShCN4msCWSr1ackFxNeUBmP6Em3cKBxr3gFREAAJ91NCj',
+    type: 'X25519KeyAgreementKey2019',
+    controller: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr',
+    publicKeyBase58: '6XBuFZPeMPHqXMtBqzxESnskuu5CVMftoGhYfhecHzRy',
+  },
+]
+
+const invalidVerificationMethod = [
+  {
+    id: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr#z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr',
+    type: 'Ed25519VerificationKey2018',
+    controller: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr',
+    publicKeyBase58: '',
+  },
+]
+
 describe('Utils | Did', () => {
   describe('isSelfCertifiedDid()', () => {
     test('returns true if the verkey is abbreviated', () => {
@@ -147,6 +179,18 @@ describe('Utils | Did', () => {
 
     test.each(invalidDidIdentifiers)('returns false when invalid did identifier "%s" is passed in', (didIdentifier) => {
       expect(isDidIdentifier(didIdentifier)).toBe(false)
+    })
+  })
+
+  describe('getIndyDidFromVerficationMethod()', () => {
+    test.each(verificationMethod)('returns indy did from verification method', (method) => {
+      expect(typeof getIndyDidFromVerficationMethod(method)).toBe('string')
+    })
+
+    test.each(invalidVerificationMethod)('throw error whem invalid public key in verification method', (method) => {
+      expect(() => {
+        getIndyDidFromVerficationMethod(method)
+      }).toThrow()
     })
   })
 })

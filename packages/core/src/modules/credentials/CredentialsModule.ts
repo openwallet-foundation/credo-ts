@@ -23,9 +23,9 @@ import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { DidCommMessageRole } from '../../storage'
 import { DidCommMessageRepository } from '../../storage/didcomm/DidCommMessageRepository'
-import { indyDidFromPublicKeyBase58 } from '../../utils/did'
+import { getIndyDidFromVerficationMethod } from '../../utils/did'
 import { ConnectionService } from '../connections/services'
-import { DidResolverService, getPublicKeyBase58 } from '../dids'
+import { DidResolverService, findVerificationMethodByKeyType } from '../dids'
 import { MediationRecipientService } from '../routing'
 
 import { CredentialProtocolVersion } from './CredentialProtocolVersion'
@@ -249,8 +249,8 @@ export class CredentialsModule implements CredentialsModule {
 
       const didDocument = await this.didResolver.resolveDidDocument(connection.did)
 
-      const key = await getPublicKeyBase58('Ed25519VerificationKey2018', didDocument)
-      const indyDid = indyDidFromPublicKeyBase58(key)
+      const verificationMethod = await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocument)
+      const indyDid = getIndyDidFromVerficationMethod(verificationMethod)
 
       const { message, credentialRecord } = await service.createRequest(record, requestOptions, indyDid)
 

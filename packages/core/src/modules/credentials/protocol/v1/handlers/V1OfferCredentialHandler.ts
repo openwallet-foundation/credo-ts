@@ -1,6 +1,7 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
+import type { DidResolverService } from '../../../../dids'
 import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
@@ -9,6 +10,8 @@ import { createOutboundMessage, createOutboundServiceMessage } from '../../../..
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { DidCommMessageRole } from '../../../../../storage'
+import { getIndyDidFromVerficationMethod } from '../../../../../utils/did'
+import { findVerificationMethodByKeyType } from '../../../../dids'
 import { V1OfferCredentialMessage, V1ProposeCredentialMessage } from '../messages'
 
 export class V1OfferCredentialHandler implements Handler {
@@ -17,17 +20,20 @@ export class V1OfferCredentialHandler implements Handler {
   private mediationRecipientService: MediationRecipientService
   private didCommMessageRepository: DidCommMessageRepository
   public supportedMessages = [V1OfferCredentialMessage]
+  private didResolver: DidResolverService
 
   public constructor(
     credentialService: V1CredentialService,
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
-    didCommMessageRepository: DidCommMessageRepository
+    didCommMessageRepository: DidCommMessageRepository,
+    didResolver: DidResolverService
   ) {
     this.credentialService = credentialService
     this.agentConfig = agentConfig
     this.mediationRecipientService = mediationRecipientService
     this.didCommMessageRepository = didCommMessageRepository
+    this.didResolver = didResolver
   }
 
   public async handle(messageContext: HandlerInboundMessage<V1OfferCredentialHandler>) {
@@ -64,11 +70,12 @@ export class V1OfferCredentialHandler implements Handler {
       `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
     )
     if (messageContext.connection) {
-      const { message, credentialRecord } = await this.credentialService.createRequest(
-        record,
-        {},
-        messageContext.connection.did
-      )
+      const didDocument = await this.didResolver.resolveDidDocument(messageContext.connection.did)
+
+      const verificationMethod = await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocument)
+      const indyDid = getIndyDidFromVerficationMethod(verificationMethod)
+
+      const { message, credentialRecord } = await this.credentialService.createRequest(record, {}, indyDid)
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: message,
         role: DidCommMessageRole.Sender,

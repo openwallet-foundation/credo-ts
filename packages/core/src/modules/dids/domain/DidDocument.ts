@@ -18,7 +18,14 @@ type DidPurpose =
   | 'assertionMethod'
   | 'capabilityInvocation'
   | 'capabilityDelegation'
+
+type DidVerificationMethods =
   | 'verificationMethod'
+  | 'authentication'
+  | 'keyAgreement'
+  | 'assertionMethod'
+  | 'capabilityInvocation'
+  | 'capabilityDelegation'
 
 interface DidDocumentOptions {
   context?: string | string[]
@@ -217,13 +224,16 @@ export function keyReferenceToKey(didDocument: DidDocument, keyId: string) {
 }
 
 /**
- * Extracting the first publicKeyBase58 for signature type
+ * Extracting the verification method for signature type
  * @param type Signature type
  * @param didDocument DidDocument
- * @returns publicKeyBase58
+ * @returns verification method
  */
-export async function getPublicKeyBase58(type: string, didDocument: DidDocument): Promise<string> {
-  const allPurposes: DidPurpose[] = [
+export async function findVerificationMethodByKeyType(
+  keyType: string,
+  didDocument: DidDocument
+): Promise<VerificationMethod> {
+  const didVerificationMethods: DidVerificationMethods[] = [
     'verificationMethod',
     'authentication',
     'keyAgreement',
@@ -232,21 +242,18 @@ export async function getPublicKeyBase58(type: string, didDocument: DidDocument)
     'capabilityDelegation',
   ]
 
-  for await (const purpose of allPurposes) {
+  for await (const purpose of didVerificationMethods) {
     const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
     if (key instanceof Array) {
       for await (const method of key) {
         if (typeof method !== 'string') {
-          if (method.type === type) {
-            if (!method?.publicKeyBase58) {
-              throw new Error(`Unable to get publicKeyBase58 for '${type}' in DidDocument`)
-            }
-            return method?.publicKeyBase58
+          if (method.type === keyType) {
+            return method
           }
         }
       }
     }
   }
 
-  throw new Error(`Unable to get publicKeyBase58 for '${type}' in DidDocument`)
+  throw new Error(`Unable to get verification method for '${keyType}' in DidDocument`)
 }

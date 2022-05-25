@@ -2,6 +2,7 @@ import type { Logger } from '../../../../src/logger'
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionRecord } from '../../connections'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
+import type { DidRepository } from '../../dids/repository'
 import type { StoreCredentialOptions } from '../../indy/services/IndyHolderService'
 import type { RevocationNotificationReceivedEvent, CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ServiceAcceptRequestOptions } from '../CredentialServiceOptions'
@@ -21,6 +22,7 @@ import { DidCommMessageRepository } from '../../../storage'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { AckStatus } from '../../common'
 import { DidExchangeState } from '../../connections'
+import { DidResolverService } from '../../dids'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
@@ -188,6 +190,8 @@ let credentialRequestMessage: V1RequestCredentialMessage
 let credentialOfferMessage: V1OfferCredentialMessage
 let credentialIssueMessage: V1IssueCredentialMessage
 let revocationService: RevocationService
+let didResolverService: DidResolverService
+
 let logger: Logger
 
 describe('CredentialService', () => {
@@ -203,6 +207,7 @@ describe('CredentialService', () => {
 
   let dispatcher: Dispatcher
   let credentialService: V1CredentialService
+  let didRepository: DidRepository
 
   const initMessages = () => {
     credentialRequestMessage = new V1RequestCredentialMessage({
@@ -248,6 +253,7 @@ describe('CredentialService', () => {
 
     dispatcher = new Dispatcher(messageSender, eventEmitter, agentConfig)
     revocationService = new RevocationService(credentialRepository, eventEmitter, agentConfig)
+    didResolverService = new DidResolverService(agentConfig, indyLedgerService, didRepository)
     logger = agentConfig.logger
 
     credentialService = new V1CredentialService(
@@ -269,7 +275,8 @@ describe('CredentialService', () => {
         indyHolderService,
         agentConfig
       ),
-      revocationService
+      revocationService,
+      didResolverService
     )
     mockFunction(indyLedgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
     mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
