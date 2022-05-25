@@ -19,7 +19,6 @@ import type { V1CredentialPreview } from '../../protocol/v1/V1CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type {
   FormatServiceCredentialAttachmentFormats,
-  CredentialFormatSpec,
   HandlerAutoAcceptOptions,
   FormatServiceOfferAttachmentFormats,
   FormatServiceProposeAttachmentFormats,
@@ -38,15 +37,16 @@ import { uuid } from '../../../../utils/uuid'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
-import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialUtils } from '../../CredentialUtils'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
+import { composeAutoAccept } from '../../composeAutoAccept'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialMetadataKeys } from '../../repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
 import { CredPropose } from '../models/CredPropose'
+import { CredentialFormatSpec } from '../models/CredentialFormatServiceOptions'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyCredentialFormatService extends CredentialFormatService {
@@ -85,6 +85,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       attachId: this.generateId(),
       format: 'hlindy/cred-filter@v2.0',
     }
+
     if (!options.credentialFormats.indy?.payload) {
       throw new AriesFrameworkError('Missing payload in createProposal')
     }
@@ -111,26 +112,25 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     options: ServiceAcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
   ): Promise<void> {
-    let credPropose = options.proposalAttachment?.getDataAsJson<CredPropose>()
-    credPropose = JsonTransformer.fromJSON(credPropose, CredPropose)
-
-    if (!credPropose) {
+    const credProposalJson = options.proposalAttachment?.getDataAsJson<CredPropose>()
+    if (!credProposalJson) {
       throw new AriesFrameworkError('Missing indy credential proposal data payload')
     }
-    await MessageValidator.validate(credPropose)
+    const credProposal = JsonTransformer.fromJSON(credProposalJson, CredPropose)
+    await MessageValidator.validate(credProposal)
 
-    if (credPropose.credentialDefinitionId) {
+    if (credProposal.credentialDefinitionId) {
       options.credentialFormats = {
         indy: {
-          credentialDefinitionId: credPropose?.credentialDefinitionId,
+          credentialDefinitionId: credProposal?.credentialDefinitionId,
           attributes: [],
         },
       }
     }
 
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-      schemaId: credPropose.schemaId,
-      credentialDefinitionId: credPropose.credentialDefinitionId,
+      schemaId: credProposal.schemaId,
+      credentialDefinitionId: credProposal.credentialDefinitionId,
     })
   }
 
@@ -143,10 +143,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    *
    */
   public async createOffer(options: ServiceOfferCredentialOptions): Promise<FormatServiceOfferAttachmentFormats> {
-    const formats: CredentialFormatSpec = {
+    const formats = new CredentialFormatSpec({
       attachId: this.generateId(),
       format: 'hlindy/cred-abstract@v2.0',
-    }
+    })
     const offer = await this.createCredentialOffer(options)
 
     let preview: V2CredentialPreview | undefined
@@ -195,24 +195,29 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   public async createRequest(
     options: ServiceRequestCredentialOptions,
-    credentialRecord: CredentialExchangeRecord,
-    holderDid: string
+    credentialRecord: CredentialExchangeRecord
   ): Promise<FormatServiceCredentialAttachmentFormats> {
     if (!options.offerAttachment) {
       throw new AriesFrameworkError(
         `Missing attachment from offer message, credential record id = ${credentialRecord.id}`
       )
     }
+
+    if (!options.holderDid) {
+      throw new AriesFrameworkError(
+        `Missing holder DID from offer message, credential record id = ${credentialRecord.id}`
+      )
+    }
     const offer = options.offerAttachment.getDataAsJson<CredOffer>()
     const credDef = await this.getCredentialDefinition(offer)
 
-    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(offer, credDef, holderDid)
+    const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(offer, credDef, options.holderDid)
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
 
-    const formats: CredentialFormatSpec = {
+    const formats = new CredentialFormatSpec({
       attachId: this.generateId(),
       format: 'hlindy/cred-req@v2.0',
-    }
+    })
 
     const attachmentId = options.attachId ?? formats.attachId
     const requestAttach: Attachment = this.getFormatData(credReq, attachmentId)
@@ -375,10 +380,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       credentialValues: CredentialUtils.convertAttributesToValues(credentialAttributes),
     })
 
-    const formats: CredentialFormatSpec = {
+    const formats = new CredentialFormatSpec({
       attachId: this.generateId(),
       format: 'hlindy/cred-abstract@v2.0',
-    }
+    })
 
     const attachmentId = options.attachId ? options.attachId : formats.attachId
     const issueAttachment = this.getFormatData(credential, attachmentId)
@@ -439,7 +444,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
 
   public shouldAutoRespondToProposal(handlerOptions: HandlerAutoAcceptOptions): boolean {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
+    const autoAccept = composeAutoAccept(
       handlerOptions.credentialRecord.autoAcceptCredential,
       handlerOptions.autoAcceptType
     )
@@ -463,10 +468,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
  */
 
   public shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
-      options.credentialRecord.autoAcceptCredential,
-      options.autoAcceptType
-    )
+    const autoAccept = composeAutoAccept(options.credentialRecord.autoAcceptCredential, options.autoAcceptType)
 
     if (!options.requestAttachment) {
       throw new AriesFrameworkError(`Missing Request Attachment for Credential Record ${options.credentialRecord.id}`)
@@ -489,10 +491,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
 
   public shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
-      options.credentialRecord.autoAcceptCredential,
-      options.autoAcceptType
-    )
+    const autoAccept = composeAutoAccept(options.credentialRecord.autoAcceptCredential, options.autoAcceptType)
 
     if (autoAccept === AutoAcceptCredential.ContentApproved) {
       if (options.credentialAttachment) {
