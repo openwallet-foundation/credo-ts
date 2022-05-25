@@ -191,17 +191,20 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async processRequest(options: ProcessRequestOptions): Promise<void> {
-    const proofRequestJson = options.request.attachment.getDataAsJson<ProofRequest>()
+    const proofRequestJson = options.formatAttachments.attachment.getDataAsJson<ProofRequest>()
 
-    const proofRequestMessage = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
+    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 
     // Assert attachment
-    if (!proofRequestMessage) {
+    if (!proofRequest) {
       throw new AriesFrameworkError(
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${options.record?.threadId}`
       )
     }
-    await MessageValidator.validate(proofRequestMessage)
+    await MessageValidator.validate(proofRequest)
+
+    // Assert attribute and predicate (group) names do not match
+    checkProofRequestForDuplicates(proofRequest)
   }
 
   public async createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat> {

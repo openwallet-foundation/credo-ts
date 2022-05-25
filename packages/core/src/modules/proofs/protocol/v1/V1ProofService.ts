@@ -350,6 +350,14 @@ export class V1ProofService extends ProofService {
 
     this.logger.debug(`Processing presentation request with id ${proofRequestMessage.id}`)
 
+    const requestAttachments = proofRequestMessage.getAttachmentFormats()
+
+    for (const attachmentFormat of requestAttachments) {
+      await this.indyProofFormatService.processRequest({
+        formatAttachments: attachmentFormat,
+      })
+    }
+
     const proofRequest = proofRequestMessage.indyProofRequest
 
     // Assert attachment
