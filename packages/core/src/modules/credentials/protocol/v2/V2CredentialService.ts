@@ -24,7 +24,7 @@ import type {
   CredentialFormatSpec,
   HandlerAutoAcceptOptions,
 } from '../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
+import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type { CreateRequestOptions } from './CredentialMessageBuilder'
 
 import { Lifecycle, scoped } from 'tsyringe'
