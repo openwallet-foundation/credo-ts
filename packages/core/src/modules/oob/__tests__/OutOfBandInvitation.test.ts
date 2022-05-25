@@ -6,7 +6,7 @@ import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'
 
 describe('OutOfBandInvitation', () => {
   describe('toUrl', () => {
-    test('encode the message into the URL containg the base64 encoded invitation as the oob query parameter', async () => {
+    test('encode the message into the URL containing the base64 encoded invitation as the oob query parameter', async () => {
       const domain = 'https://example.com/ssi'
       const json = {
         '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
