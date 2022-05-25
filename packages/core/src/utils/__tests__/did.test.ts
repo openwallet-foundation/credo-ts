@@ -187,7 +187,7 @@ describe('Utils | Did', () => {
       expect(typeof getIndyDidFromVerficationMethod(method)).toBe('string')
     })
 
-    test.each(invalidVerificationMethod)('throw error whem invalid public key in verification method', (method) => {
+    test.each(invalidVerificationMethod)('throw error when invalid public key in verification method', (method) => {
       expect(() => {
         getIndyDidFromVerficationMethod(method)
       }).toThrow()

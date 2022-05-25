@@ -19,13 +19,7 @@ type DidPurpose =
   | 'capabilityInvocation'
   | 'capabilityDelegation'
 
-type DidVerificationMethods =
-  | 'verificationMethod'
-  | 'authentication'
-  | 'keyAgreement'
-  | 'assertionMethod'
-  | 'capabilityInvocation'
-  | 'capabilityDelegation'
+type DidVerificationMethods = DidPurpose | 'verificationMethod'
 
 interface DidDocumentOptions {
   context?: string | string[]
@@ -232,7 +226,7 @@ export function keyReferenceToKey(didDocument: DidDocument, keyId: string) {
 export async function findVerificationMethodByKeyType(
   keyType: string,
   didDocument: DidDocument
-): Promise<VerificationMethod> {
+): Promise<VerificationMethod | null> {
   const didVerificationMethods: DidVerificationMethods[] = [
     'verificationMethod',
     'authentication',
@@ -255,5 +249,5 @@ export async function findVerificationMethodByKeyType(
     }
   }
 
-  throw new Error(`Unable to get verification method for '${keyType}' in DidDocument`)
+  return null
 }

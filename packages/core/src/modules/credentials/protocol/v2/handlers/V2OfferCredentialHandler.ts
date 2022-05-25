@@ -79,6 +79,9 @@ export class V2OfferCredentialHandler implements Handler {
       const didDocument = await this.didResolver.resolveDidDocument(messageContext.connection.did)
 
       const verificationMethod = await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocument)
+      if (!verificationMethod) {
+        throw new AriesFrameworkError('Invalid DidDocument: Missing verification methods')
+      }
       const indyDid = getIndyDidFromVerficationMethod(verificationMethod)
       const { message, credentialRecord } = await this.credentialService.createRequest(record, {}, indyDid)
       await this.didCommMessageRepository.saveAgentMessage({
