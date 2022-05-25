@@ -24,7 +24,8 @@ import {
   ConnectionInvitationMessage,
   ConnectionsModule,
 } from '../../modules/connections'
-import { JsonTransformer } from '../../utils'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
+import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
 import { DidKey } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
@@ -82,6 +83,7 @@ export class OutOfBandModule {
   private outOfBandService: OutOfBandService
   private mediationRecipientService: MediationRecipientService
   private connectionsModule: ConnectionsModule
+  private didCommMessageRepository: DidCommMessageRepository
   private dispatcher: Dispatcher
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
@@ -94,6 +96,7 @@ export class OutOfBandModule {
     outOfBandService: OutOfBandService,
     mediationRecipientService: MediationRecipientService,
     connectionsModule: ConnectionsModule,
+    didCommMessageRepository: DidCommMessageRepository,
     messageSender: MessageSender,
     eventEmitter: EventEmitter
   ) {
@@ -103,6 +106,7 @@ export class OutOfBandModule {
     this.outOfBandService = outOfBandService
     this.mediationRecipientService = mediationRecipientService
     this.connectionsModule = connectionsModule
+    this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.registerHandlers(dispatcher)
@@ -230,6 +234,35 @@ export class OutOfBandModule {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
     return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
+  }
+
+  public async createLegacyConnectionlessInvitation<Message extends AgentMessage>(config: {
+    recordId: string
+    message: Message
+    domain: string
+  }): Promise<{ message: Message; invitationUrl: string }> {
+    // Create keys (and optionally register them at the mediator)
+    const routing = await this.mediationRecipientService.getRouting()
+
+    // Set the service on the message
+    config.message.service = new ServiceDecorator({
+      serviceEndpoint: routing.endpoints[0],
+      recipientKeys: [routing.recipientKey].map((key) => key.publicKeyBase58),
+      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+    })
+
+    // We need to update the message with the new service, so we can
+    // retrieve it from storage later on.
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: config.message,
+      associatedRecordId: config.recordId,
+      role: DidCommMessageRole.Sender,
+    })
+
+    return {
+      message: config.message,
+      invitationUrl: `${config.domain}?d_m=${JsonEncoder.toBase64URL(JsonTransformer.toJSON(config.message))}`,
+    }
   }
 
   /**
