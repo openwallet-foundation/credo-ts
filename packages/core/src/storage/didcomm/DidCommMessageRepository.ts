@@ -5,6 +5,7 @@ import type { DidCommMessageRole } from './DidCommMessageRole'
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../../constants'
+import { parseMessageType } from '../../utils/messageType'
 import { Repository } from '../Repository'
 import { StorageService } from '../StorageService'
 
@@ -27,9 +28,13 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
   }
 
   public async saveOrUpdateAgentMessage(options: SaveAgentMessageOptions) {
+    const { messageName, protocolName, protocolMajorVersion } = parseMessageType(options.agentMessage.type)
+
     const record = await this.findSingleByQuery({
       associatedRecordId: options.associatedRecordId,
-      messageType: options.agentMessage.type,
+      messageName: messageName,
+      protocolName: protocolName,
+      protocolMajorVersion: String(protocolMajorVersion),
     })
 
     if (record) {
