@@ -36,6 +36,7 @@ import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services/ConnectionService'
+import { DidResolverService } from '../../../dids'
 import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../CredentialEvents'
@@ -78,7 +79,8 @@ export class V2CredentialService extends CredentialService {
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
     indyCredentialFormatService: IndyCredentialFormatService,
-    revocationService: RevocationService
+    revocationService: RevocationService,
+    didResolver: DidResolverService
   ) {
     super(
       credentialRepository,
@@ -87,7 +89,8 @@ export class V2CredentialService extends CredentialService {
       agentConfig,
       mediationRecipientService,
       didCommMessageRepository,
-      revocationService
+      revocationService,
+      didResolver
     )
     this.connectionService = connectionService
     this.indyCredentialFormatService = indyCredentialFormatService
@@ -95,6 +98,7 @@ export class V2CredentialService extends CredentialService {
     this.serviceFormatMap = {
       [CredentialFormatType.Indy]: this.indyCredentialFormatService,
     }
+    this.didResolver = didResolver
   }
 
   /**
@@ -814,7 +818,8 @@ export class V2CredentialService extends CredentialService {
         this,
         this.agentConfig,
         this.mediationRecipientService,
-        this.didCommMessageRepository
+        this.didCommMessageRepository,
+        this.didResolver
       )
     )
 
