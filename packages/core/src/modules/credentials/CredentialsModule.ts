@@ -44,7 +44,7 @@ export interface CredentialsModule {
   declineOffer(credentialRecordId: string): Promise<CredentialExchangeRecord>
   negotiateOffer(options: NegotiateOfferOptions): Promise<CredentialExchangeRecord>
   // out of band
-  createOutOfBandOffer(options: OfferCredentialOptions): Promise<{
+  createOffer(options: OfferCredentialOptions): Promise<{
     message: AgentMessage
     credentialRecord: CredentialExchangeRecord
   }>
@@ -522,18 +522,14 @@ export class CredentialsModule implements CredentialsModule {
    * @param options The credential options to use for the offer
    * @returns The credential record and credential offer message
    */
-  public async createOutOfBandOffer(options: OfferCredentialOptions): Promise<{
+  public async createOffer(options: OfferCredentialOptions): Promise<{
     message: AgentMessage
     credentialRecord: CredentialExchangeRecord
   }> {
-    // with version we can get the Service
-    if (!options.protocolVersion) {
-      throw new AriesFrameworkError('Missing protocol version in createOutOfBandOffer')
-    }
     const service = this.getService(options.protocolVersion)
 
     this.logger.debug(`Got a CredentialService object for version ${options.protocolVersion}`)
-    const { message, credentialRecord } = await service.createOutOfBandOffer(options)
+    const { message, credentialRecord } = await service.createOffer(options)
 
     this.logger.debug('Offer Message successfully created; message= ', message)
 

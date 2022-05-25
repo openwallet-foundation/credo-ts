@@ -94,8 +94,6 @@ export abstract class CredentialService {
   abstract createOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
 
-  abstract createOutOfBandOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-
   // methods for request
   abstract createRequest(
     credentialRecord: CredentialExchangeRecord,
