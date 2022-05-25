@@ -36,6 +36,7 @@ import { checkProofRequestForDuplicates } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
+import { ObjectCheck } from '../../../../utils/objectCheck'
 import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { CredentialUtils } from '../../../credentials'
@@ -329,12 +330,15 @@ export class IndyProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError('Request message has no attachment linked to it')
     }
 
-    const proposalAttachmentData = proposalAttachment.getDataAsJson<ProofRequest>()
-    const requestAttachmentData = requestAttachment.getDataAsJson<ProofRequest>()
+    const proposalAttachmentJson = proposalAttachment.getDataAsJson<ProofRequest>()
+    const proposalAttachmentData = JsonTransformer.fromJSON(proposalAttachmentJson, ProofRequest)
+
+    const requestAttachmentJson = requestAttachment.getDataAsJson<ProofRequest>()
+    const requestAttachmentData = JsonTransformer.fromJSON(requestAttachmentJson, ProofRequest)
 
     if (
-      proposalAttachmentData.requestedAttributes === requestAttachmentData.requestedAttributes &&
-      proposalAttachmentData.requestedPredicates === requestAttachmentData.requestedPredicates
+      ObjectCheck.objectEquals(proposalAttachmentData.requestedAttributes, requestAttachmentData.requestedAttributes) &&
+      ObjectCheck.objectEquals(proposalAttachmentData.requestedPredicates, requestAttachmentData.requestedPredicates)
     ) {
       return true
     }
