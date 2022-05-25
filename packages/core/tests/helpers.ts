@@ -251,7 +251,6 @@ export function getMockConnection({
   tags = {},
   theirLabel,
   theirDid = 'their-did',
-  multiUseInvitation = false,
 }: Partial<ConnectionRecordProps> = {}) {
   return new ConnectionRecord({
     did,
@@ -262,7 +261,6 @@ export function getMockConnection({
     state,
     tags,
     theirLabel,
-    multiUseInvitation,
   })
 }
 

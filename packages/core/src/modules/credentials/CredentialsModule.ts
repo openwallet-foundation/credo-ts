@@ -241,8 +241,9 @@ export class CredentialsModule implements CredentialsModule {
       const requestOptions: RequestCredentialOptions = {
         comment: options.comment,
         autoAcceptCredential: options.autoAcceptCredential,
+        holderDid: connection.did,
       }
-      const { message, credentialRecord } = await service.createRequest(record, requestOptions, connection.did)
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       await this.didCommMessageRepo.saveAgentMessage({
         agentMessage: message,
@@ -272,12 +273,9 @@ export class CredentialsModule implements CredentialsModule {
       const requestOptions: RequestCredentialOptions = {
         comment: options.comment,
         autoAcceptCredential: options.autoAcceptCredential,
+        holderDid: ourService.recipientKeys[0],
       }
-      const { message, credentialRecord } = await service.createRequest(
-        record,
-        requestOptions,
-        ourService.recipientKeys[0]
-      )
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
@@ -348,6 +346,9 @@ export class CredentialsModule implements CredentialsModule {
   public async offerCredential(options: OfferCredentialOptions): Promise<CredentialExchangeRecord> {
     if (!options.connectionId) {
       throw new AriesFrameworkError('Missing connectionId on offerCredential')
+    }
+    if (!options.protocolVersion) {
+      throw new AriesFrameworkError('Missing protocol version in offerCredential')
     }
     const connection = await this.connectionService.getById(options.connectionId)
 
