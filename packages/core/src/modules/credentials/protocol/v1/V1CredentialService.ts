@@ -740,8 +740,8 @@ export class V1CredentialService extends CredentialService {
     const routing = await this.mediationRecipientService.getRouting()
     message.service = new ServiceDecorator({
       serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.verkey],
-      routingKeys: routing.routingKeys,
+      recipientKeys: [routing.recipientKey.publicKeyBase58],
+      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
     })
     await this.credentialRepository.save(credentialRecord)
     await this.didCommMessageRepository.saveAgentMessage({
