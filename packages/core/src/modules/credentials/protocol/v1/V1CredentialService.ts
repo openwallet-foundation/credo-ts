@@ -133,6 +133,7 @@ export class V1CredentialService extends CredentialService {
 
     const options = { ...config }
 
+    // call create proposal for validation of the proposal and addition of linked attachments
     const { attachment: filtersAttach } = await this.formatService.createProposal(proposal)
 
     if (!filtersAttach) {
