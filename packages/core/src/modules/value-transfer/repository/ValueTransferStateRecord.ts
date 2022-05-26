@@ -1,6 +1,6 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 
-import { VerifiableNote } from '@value-transfer/value-transfer-lib'
+import { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
 import { IsInstance, ValidateNested } from 'class-validator'
 

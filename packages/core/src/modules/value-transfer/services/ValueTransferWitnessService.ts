@@ -3,7 +3,7 @@ import type { ConnectionRecord } from '../../connections'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { RequestMessage, RequestAcceptedMessage, CashAcceptedMessage, CashRemovedMessage } from '../messages'
 
-import { ValueTransfer, verifiableNoteProofConfig } from '@value-transfer/value-transfer-lib'
+import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'

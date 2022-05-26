@@ -2,7 +2,7 @@ import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptValueTransfer } from '../ValueTransferAutoAcceptType'
 import type { ValueTransferRole } from '../ValueTransferRole'
 import type { ValueTransferState } from '../ValueTransferState'
-import type { Payment } from '@value-transfer/value-transfer-lib'
+import type { Payment } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Type } from 'class-transformer'
 
