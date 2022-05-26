@@ -57,7 +57,7 @@ This issue results as too many files/resources have been opened in the process o
 
 #### Reduce Configured Ledgers
 
-This issue is specifically tied to the number of ledgers configured, and can be addressed by reducing the number of ledgers configured. 
+This issue is specifically tied to the number of ledgers configured, and can be addressed by reducing the number of ledgers configured.
 
 #### Increase Open Files Limit
 
@@ -66,17 +66,17 @@ In your apps `main.m`, you can add the following to log and increase the rlimit 
 ```main.m
   struct rlimit rlim;
   unsigned long long NEW_SOFT_LIMIT = 1024;
-  
+
   //Fetch existing file limits, adjust file limits if possible
   if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
     NSLog(@"Current soft RLimit: %llu", rlim.rlim_cur);
     NSLog(@"Current hard RLimit: %llu", rlim.rlim_max);
-    
+
     // Adjust only if the limit is less than NEW_SOFT_LIMIT
     if(rlim.rlim_cur < NEW_SOFT_LIMIT){
       rlim.rlim_cur = NEW_SOFT_LIMIT;
     }
-    
+
     if (setrlimit(RLIMIT_NOFILE, &rlim) == -1) {
       NSLog(@"Can't set RLimits");
     }
@@ -94,6 +94,7 @@ In your apps `main.m`, you can add the following to log and increase the rlimit 
 ```
 
 Once run, the logs will look like:
+
 ```
 2022-05-24 15:46:32.256188-0600 AriesBifold[731:288330] Current soft RLimit: 256
 2022-05-24 15:46:32.256343-0600 AriesBifold[731:288330] Current hard RLimit: 9223372036854775807
@@ -101,6 +102,9 @@ Once run, the logs will look like:
 2022-05-24 15:46:32.256369-0600 AriesBifold[731:288330] New hard RLimit: 9223372036854775807
 ```
 
+Example main.m file with the above changes: https://github.com/hyperledger/aries-mobile-agent-react-native/commit/b420d1df5c4bf236969aafad1e46000111fe30d5
+
 Helpful resources:
-* https://pubs.opengroup.org/onlinepubs/009695399/functions/getrlimit.html
-* https://stackoverflow.com/a/62074374
+
+- https://pubs.opengroup.org/onlinepubs/009695399/functions/getrlimit.html
+- https://stackoverflow.com/a/62074374
