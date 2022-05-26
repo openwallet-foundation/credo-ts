@@ -40,10 +40,14 @@ export class IndyPoolService {
    * Create connections to all ledger pools
    */
   public async connectToPools() {
-    const poolsPromises = this.pools.map((pool) => {
-      return pool.connect()
-    })
-    return Promise.all(poolsPromises)
+    const handleArray: number[] = []
+    for (const pool of this.pools) {
+      this.logger.debug(`Connecting to pool: ${pool.id}`)
+      const poolHandle = await pool.connect()
+      this.logger.debug(`Finished connection to pool: ${pool.id}`)
+      handleArray.push(poolHandle)
+    }
+    return handleArray
   }
 
   /**
