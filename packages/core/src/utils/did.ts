@@ -15,6 +15,8 @@
  *  https://github.com/hyperledger/aries-framework-dotnet/blob/f90eaf9db8548f6fc831abea917e906201755763/src/Hyperledger.Aries/Ledger/DefaultLedgerService.cs#L139-L147
  */
 
+import type { VerificationMethod } from './../modules/dids/domain/verificationMethod/VerificationMethod'
+
 import { TypedArrayEncoder } from './TypedArrayEncoder'
 import { Buffer } from './buffer'
 
@@ -144,4 +146,18 @@ export function isDid(did: string): boolean {
  */
 export function isDidIdentifier(identifier: string): boolean {
   return DID_IDENTIFIER_REGEX.test(identifier)
+}
+
+/**
+ * Get indy did from verification method
+ * @param verificationMethod
+ * @returns indy did
+ */
+export function getIndyDidFromVerficationMethod(verificationMethod: VerificationMethod): string {
+  if (!verificationMethod?.publicKeyBase58) {
+    throw new Error(`Unable to get publicKeyBase58 from verification method`)
+  }
+  const buffer = TypedArrayEncoder.fromBase58(verificationMethod.publicKeyBase58)
+  const did = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
+  return did
 }
