@@ -1,12 +1,13 @@
 import type { AgentConfig } from '../../../../src/agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
+import type { DidRepository } from '../../dids/repository'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { AcceptRequestOptions, RequestCredentialOptions } from '../CredentialsModuleOptions'
 import type {
   CredentialFormatSpec,
   FormatServiceRequestCredentialFormats,
 } from '../formats/models/CredentialFormatServiceOptions'
-import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
+import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { V2IssueCredentialMessageProps } from '../protocol/v2/messages/V2IssueCredentialMessage'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
@@ -23,6 +24,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../../../storage'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { AckStatus } from '../../common/messages/AckMessage'
 import { DidExchangeState } from '../../connections'
+import { DidResolverService } from '../../dids'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
@@ -216,6 +218,8 @@ describe('CredentialService', () => {
   let dispatcher: Dispatcher
   let credentialService: V2CredentialService
   let revocationService: RevocationService
+  let didResolverService: DidResolverService
+  let didRepository: DidRepository
 
   const initMessages = () => {
     credentialRequestMessage = new V2RequestCredentialMessage(requestOptions)
@@ -243,6 +247,7 @@ describe('CredentialService', () => {
     dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
     didCommMessageRepository = new DidCommMessageRepositoryMock()
     revocationService = new RevocationService(credentialRepository, eventEmitter, agentConfig)
+    didResolverService = new DidResolverService(agentConfig, indyLedgerService, didRepository)
 
     credentialService = new V2CredentialService(
       {
@@ -263,7 +268,8 @@ describe('CredentialService', () => {
         indyHolderService,
         agentConfig
       ),
-      revocationService
+      revocationService,
+      didResolverService
     )
   })
 
@@ -293,11 +299,12 @@ describe('CredentialService', () => {
 
       const requestOptions: RequestCredentialOptions = {
         credentialFormats: v2CredentialRequest,
+        holderDid: 'holderDid',
       }
 
       // when
 
-      await credentialService.createRequest(credentialRecord, requestOptions, 'holderDid')
+      await credentialService.createRequest(credentialRecord, requestOptions)
 
       // then
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
@@ -314,13 +321,10 @@ describe('CredentialService', () => {
       const options: RequestCredentialOptions = {
         connectionId: credentialRecord.connectionId,
         comment: 'credential request comment',
+        holderDid: 'holderDid',
       }
       // when
-      const { message: credentialRequest } = await credentialService.createRequest(
-        credentialRecord,
-        options,
-        'holderDid'
-      )
+      const { message: credentialRequest } = await credentialService.createRequest(credentialRecord, options)
 
       // then
       expect(credentialRequest.toJSON()).toMatchObject({
@@ -348,7 +352,7 @@ describe('CredentialService', () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           await expect(
-            credentialService.createRequest(mockCredentialRecord({ state }), {}, 'mockDid')
+            credentialService.createRequest(mockCredentialRecord({ state }), { holderDid: 'mockDid' })
           ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )

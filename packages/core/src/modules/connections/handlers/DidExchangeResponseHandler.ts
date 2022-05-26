@@ -45,9 +45,13 @@ export class DidExchangeResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }
 
-    const ourDidDocument = await this.resolveDidDocument(connectionRecord.did)
+    if (!connectionRecord.did) {
+      throw new AriesFrameworkError(`Connection record ${connectionRecord.id} has no 'did'`)
+    }
+
+    const ourDidDocument = await this.didResolverService.resolveDidDocument(connectionRecord.did)
     if (!ourDidDocument) {
-      throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved!`)
+      throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved`)
     }
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
@@ -98,17 +102,5 @@ export class DidExchangeResponseHandler implements Handler {
       }
       return createOutboundMessage(connection, message)
     }
-  }
-
-  private async resolveDidDocument(did: string) {
-    const {
-      didDocument,
-      didResolutionMetadata: { error, message },
-    } = await this.didResolverService.resolve(did)
-
-    if (!didDocument) {
-      throw new AriesFrameworkError(`Unable to resolve did document for did '${did}': ${error} ${message}`)
-    }
-    return didDocument
   }
 }

@@ -1,2 +1,2 @@
 export * from './RevocationNotification'
-export * from './CredentialPreviewAttributes'
+export * from './CredentialPreviewAttribute'

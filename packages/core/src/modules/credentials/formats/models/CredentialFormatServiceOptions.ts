@@ -2,7 +2,7 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import type { ParseRevocationRegistryDefinitionTemplate } from '../../../ledger/services'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
-import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
+import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { CredPropose } from './CredPropose'
@@ -41,6 +41,12 @@ export interface IndyIssueCredentialFormat {
 }
 
 export class CredentialFormatSpec {
+  public constructor(options: { attachId: string; format: string }) {
+    if (options) {
+      this.attachId = options.attachId
+      this.format = options.format
+    }
+  }
   @Expose({ name: 'attach_id' })
   @IsString()
   public attachId!: string

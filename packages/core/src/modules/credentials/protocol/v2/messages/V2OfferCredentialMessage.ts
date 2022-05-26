@@ -31,7 +31,7 @@ export class V2OfferCredentialMessage extends AgentMessage {
   @Type(() => CredentialFormatSpec)
   @ValidateNested()
   @IsArray()
-  // @IsInstance(CredentialFormatSpec, { each: true }) -> this causes message validation to fail
+  @IsInstance(CredentialFormatSpec, { each: true })
   public formats!: CredentialFormatSpec[]
 
   @IsValidMessageType(V2OfferCredentialMessage.type)
