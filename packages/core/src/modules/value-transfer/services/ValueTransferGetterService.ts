@@ -2,7 +2,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { RequestAcceptedWitnessedMessage, GetterReceiptMessage } from '../messages'
 
-import { ValueTransfer, verifiableNoteProofConfig } from '@value-transfer/value-transfer-lib'
+import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'

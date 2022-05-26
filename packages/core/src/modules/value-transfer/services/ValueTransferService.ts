@@ -4,7 +4,7 @@ import type { Transport } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferTags, ValueTransferRecord } from '../repository'
 
-import { ValueTransfer, verifiableNoteProofConfig } from '@value-transfer/value-transfer-lib'
+import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'

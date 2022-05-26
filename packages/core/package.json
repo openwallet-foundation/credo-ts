@@ -32,7 +32,7 @@
     "@types/indy-sdk": "^1.16.16",
     "@types/node-fetch": "^2.5.10",
     "@types/ws": "^7.4.6",
-    "@value-transfer/value-transfer-lib": "file:/Users/artem/value-transfer-protocol-ts/build",
+    "@sicpa-dlab/value-transfer-protocol-ts": "^0.0.2",
     "abort-controller": "^3.0.0",
     "bn.js": "^5.2.0",
     "borc": "^3.0.0",

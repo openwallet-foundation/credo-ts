@@ -10,7 +10,7 @@ import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy, Transport } from './modules/routing'
 import type { ValueTransferRole } from './modules/value-transfer'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
-import type { VerifiableNote } from '@value-transfer/value-transfer-lib'
+import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
