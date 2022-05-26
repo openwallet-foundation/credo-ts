@@ -162,17 +162,20 @@ export class RecipientModule {
           `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
         )
         try {
-          await this.openMediationWebSocket(mediator)
           if (mediator.pickupStrategy === MediatorPickupStrategy.PickUpV2) {
             // Start Pickup v2 protocol to receive messages received while websocket offline
             await this.sendStatusRequest({ mediatorId: mediator.id })
+          } else {
+            await this.openMediationWebSocket(mediator)
           }
         } catch (error) {
           this.logger.warn('Unable to re-open websocket connection to mediator', { error })
         }
       })
     try {
-      await this.openMediationWebSocket(mediator)
+      if (mediator.pickupStrategy === MediatorPickupStrategy.Implicit) {
+        await this.openMediationWebSocket(mediator)
+      }
     } catch (error) {
       this.logger.warn('Unable to open websocket connection to mediator', { error })
     }
