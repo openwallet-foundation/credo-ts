@@ -38,9 +38,10 @@ export interface ValueTransferStorageProps {
   threadId: string
   createdAt?: Date
   autoAcceptValueTransfer?: AutoAcceptValueTransfer
-  witnessConnectionId?: string
-  getterConnectionId?: string
-  giverConnectionId?: string
+
+  witness?: string
+  getter?: string
+  giver?: string
 
   tags?: CustomValueTransferTags
   requestMessage?: RequestMessage
@@ -56,9 +57,9 @@ export interface ValueTransferStorageProps {
 }
 
 export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, CustomValueTransferTags> {
-  public witnessConnectionId?: string
-  public getterConnectionId?: string
-  public giverConnectionId?: string
+  public witnessDid?: string
+  public getterDid?: string
+  public giverDid?: string
 
   public threadId!: string
 
@@ -109,9 +110,9 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this.witnessConnectionId = props.witnessConnectionId
-      this.getterConnectionId = props.getterConnectionId
-      this.giverConnectionId = props.giverConnectionId
+      this.witnessDid = props.witness
+      this.getterDid = props.getter
+      this.giverDid = props.giver
       this.threadId = props.threadId
       this.role = props.role
       this.payment = props.payment
@@ -134,9 +135,9 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   public getTags() {
     return {
       ...this._tags,
-      witnessConnectionId: this.witnessConnectionId,
-      getterConnectionId: this.getterConnectionId,
-      giverConnectionId: this.giverConnectionId,
+      witnessDid: this.witnessDid,
+      getterDid: this.getterDid,
+      giverDid: this.giverDid,
       threadId: this.threadId,
       txnId: this.payment?.txId,
       role: this.role,

@@ -1,5 +1,3 @@
-import type { OutOfBandRecord } from '@aries-framework/core/src/modules/oob/repository'
-
 import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
@@ -7,7 +5,7 @@ import inquirer from 'inquirer'
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Getter } from './Getter'
 import { Listener } from './Listener'
-import { Output, redText, Title } from './OutputClass'
+import { Title } from './OutputClass'
 
 export const runFaber = async () => {
   clear()
@@ -17,7 +15,6 @@ export const runFaber = async () => {
 }
 
 enum PromptOptions {
-  CreateConnection = 'Make Witness connection',
   RequestPayment = 'Request payment',
   Exit = 'Exit',
   Restart = 'Restart',
@@ -42,10 +39,7 @@ export class GetterInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.getter.connectionRecordWitnessId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
-
-    const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
-    return inquirer.prompt([this.inquireOptions(reducedOption)])
+    return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
   }
 
   public async processAnswer() {
@@ -53,11 +47,8 @@ export class GetterInquirer extends BaseInquirer {
     if (this.listener.on) return
 
     switch (choice.options) {
-      case PromptOptions.CreateConnection:
-        await this.connection()
-        break
       case PromptOptions.RequestPayment:
-        await this.requestGiverDid()
+        await this.requestPayment()
         return
       case PromptOptions.Exit:
         await this.exit()
@@ -69,28 +60,10 @@ export class GetterInquirer extends BaseInquirer {
     await this.processAnswer()
   }
 
-  public async connection() {
-    await this.getter.setupConnection()
-  }
-
-  public async requestGiverDid() {
-    await this.getter.requestGiverDid()
-    this.listener.getterOutOfBandListener(this.getter, this)
-  }
-
-  public async handlePayCashInvitation(outOfBandRecord: OutOfBandRecord) {
-    if (!outOfBandRecord.invitation.from) {
-      throw Error(redText(Output.MissingGiverDid))
-    }
-    await this.getter.setGiverDid(outOfBandRecord.invitation.from)
-
-    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.GiverDidReceiveTitle)])
-    if (confirm.options === ConfirmOptions.No) {
-      return
-    } else if (confirm.options === ConfirmOptions.Yes) {
-      await this.getter.requestPayment()
-      await this.processAnswer()
-    }
+  public async requestPayment() {
+    const title = 'Paster Witness DID here'
+    const witness = await inquirer.prompt([this.inquireInput(title)])
+    await this.getter.requestPayment(witness.input)
   }
 
   public async exit() {

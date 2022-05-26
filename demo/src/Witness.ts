@@ -1,9 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { Transport } from '@aries-framework/core'
-import type { OutOfBandRecord } from '@aries-framework/core/src/modules/oob/repository'
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
-import { OutOfBandGoalCodes } from '@aries-framework/core/src/modules/oob/OutOfBandGoalCodes'
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
 
 import { BaseAgent } from './BaseAgent'
@@ -27,30 +25,14 @@ export class Witness extends BaseAgent {
   public static async build(): Promise<Witness> {
     const valueTransferConfig: ValueTransferConfig = {
       role: ValueTransferRole.Witness,
+      getterTransport: Witness.getterTransport,
+      giverTransport: Witness.giverTransport,
     }
     const witness = new Witness('witness', undefined, Witness.transports, valueTransferConfig)
     await witness.initializeAgent()
+    const publicDid = await witness.agent.getPublicDid()
+    console.log(`Witness Public DID: ${publicDid?.did}`)
     return witness
-  }
-
-  public async handleOutOBandInvitation(outOfBandRecord: OutOfBandRecord) {
-    if (outOfBandRecord.invitation.body.goalCode === OutOfBandGoalCodes.RequestPayCashVtp) {
-      console.log('\nForward Invitation')
-      await this.agent.oob.sendInvitation(outOfBandRecord, {
-        transport: Witness.giverTransport,
-      })
-      await this.agent.oob.complete(outOfBandRecord)
-    }
-    if (outOfBandRecord.invitation.body.goalCode === OutOfBandGoalCodes.PayCashVtp) {
-      console.log('\nAccept and Forward Invitation')
-      await this.agent.oob.acceptOutOfBandInvitation(outOfBandRecord, {
-        transport: Witness.giverTransport,
-      })
-      await this.agent.oob.sendInvitation(outOfBandRecord, {
-        transport: Witness.getterTransport,
-      })
-    }
-    await this.agent.oob.complete(outOfBandRecord)
   }
 
   public async exit() {

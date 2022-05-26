@@ -49,7 +49,7 @@ export class MediatorModule {
     const { message, mediationRecord } = await this.mediatorService.createGrantMediationMessage(record)
     const outboundMessage = createOutboundMessage(connectionRecord, message)
 
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return mediationRecord
   }

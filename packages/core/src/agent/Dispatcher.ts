@@ -87,7 +87,7 @@ class Dispatcher {
         returnRoute: true,
       })
     } else if (outboundMessage) {
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
     }
 
     // Emit event that allows to hook into received messages

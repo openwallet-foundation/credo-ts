@@ -328,7 +328,7 @@ export class MessageReceiver {
     })
     const outboundMessage = createOutboundMessage(connection, problemReportMessage)
     if (outboundMessage) {
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
     }
   }
 }

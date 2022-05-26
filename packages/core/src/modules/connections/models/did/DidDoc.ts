@@ -1,16 +1,14 @@
-import type { DidDocument, VerificationMethod } from '../../../dids'
 import type { DidDocumentService } from '../../../dids/domain/service'
 import type { Authentication } from './authentication'
+import type { PublicKey } from './publicKey'
 
 import { Expose } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
 
-import { AriesFrameworkError } from '../../../../error'
-import { TypedArrayEncoder } from '../../../../utils'
 import { ServiceTransformer, DidCommService, IndyAgentService } from '../../../dids/domain/service'
 
-import { AuthenticationTransformer, authenticationTypes, ReferencedAuthentication } from './authentication'
-import { PublicKey, PublicKeyTransformer } from './publicKey'
+import { AuthenticationTransformer } from './authentication'
+import { PublicKeyTransformer } from './publicKey'
 
 type DidDocOptions = Pick<DidDoc, 'id' | 'publicKey' | 'service' | 'authentication'>
 
@@ -51,8 +49,8 @@ export class DidDoc {
    *
    * @param id fully qualified key id
    */
-  public getPublicKey(id?: string): PublicKey | undefined {
-    return this.publicKey.find((item) => (id ? item.id === id : item))
+  public getPublicKey(id: string): PublicKey | undefined {
+    return this.publicKey.find((item) => item.id === id)
   }
 
   /**
@@ -87,51 +85,5 @@ export class DidDoc {
 
     // Sort services based on indicated priority
     return services.sort((a, b) => b.priority - a.priority)
-  }
-
-  public static convertVerificationMethodToPublicKey(verificationMethod: VerificationMethod): PublicKey {
-    const publicKeyBase58 =
-      verificationMethod.publicKeyBase58 ?? TypedArrayEncoder.toBase58(verificationMethod.keyBytes)
-
-    return new PublicKey({
-      id: verificationMethod.id,
-      controller: verificationMethod.controller,
-      type: verificationMethod.type,
-      value: publicKeyBase58,
-    })
-  }
-
-  public static convertDIDDocToConnectionDIDDoc(didDocument: DidDocument): DidDoc {
-    const authentication = didDocument.authentication?.map((authentication) => {
-      if (typeof authentication === 'string') {
-        const verificationMethod = didDocument.verificationMethod?.find(
-          (verificationMethod) => verificationMethod.id === authentication
-        )
-        if (!verificationMethod) {
-          throw new AriesFrameworkError(`Invalid DIDDoc: Unable to get key definition for kid ${authentication}`)
-        }
-        return new ReferencedAuthentication(
-          this.convertVerificationMethodToPublicKey(verificationMethod),
-          authenticationTypes.Ed25519VerificationKey2018
-        )
-      } else {
-        didDocument.verificationMethod.push(authentication)
-        return new ReferencedAuthentication(
-          this.convertVerificationMethodToPublicKey(authentication),
-          authenticationTypes.Ed25519VerificationKey2018
-        )
-      }
-    })
-
-    const publicKeys = didDocument.verificationMethod?.map((verificationMethod) =>
-      this.convertVerificationMethodToPublicKey(verificationMethod)
-    )
-
-    return new DidDoc({
-      id: didDocument.id,
-      authentication: authentication || [],
-      publicKey: publicKeys || authentication.map((auth) => auth.publicKey),
-      service: didDocument.service,
-    })
   }
 }

@@ -2,7 +2,7 @@ import type { ConnectionRecord } from '../modules/connections'
 import type { DidCommService, IndyAgentService } from '../modules/dids/domain/service'
 import type { AcceptProtocol, Transport } from '../modules/routing/types'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { OutboundMessage, OutboundPackage, OutboundPlainMessage, SendMessageOptions } from '../types'
+import type { OutboundDIDCommV2Message, OutboundMessage, OutboundPackage, SendMessageOptions } from '../types'
 import type { TransportSession } from './TransportService'
 import type { DIDCommMessage, EncryptedMessage } from './didcomm'
 import type { PackMessageParams } from './didcomm/EnvelopeService'
@@ -181,7 +181,7 @@ export class MessageSender {
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
 
-  public async sendMessage(outboundMessage: OutboundMessage, options?: SendMessageOptions) {
+  public async sendDIDCommV1Message(outboundMessage: OutboundMessage, options?: SendMessageOptions) {
     const { connection, payload } = outboundMessage
     const errors: Error[] = []
 
@@ -255,6 +255,29 @@ export class MessageSender {
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
 
+  public async sendDIDCommV2Message(outboundMessage: OutboundDIDCommV2Message, transport?: Transport) {
+    const { payload } = outboundMessage
+
+    if (!payload.to || !payload.to.length) {
+      // send plain-text message
+      const outboundPackage: OutboundPackage = { payload: { ...payload } }
+      await this.sendMessage(outboundPackage, transport)
+      return
+    }
+
+    // send encrypt message
+    const params = {
+      toDID: payload.to[0],
+      fromDID: payload.from,
+      signByDID: null,
+    }
+    const message = await this.envelopeService.packMessage(payload, params)
+
+    const outboundPackage: OutboundPackage = { payload: message }
+    await this.sendMessage(outboundPackage, transport)
+    return
+  }
+
   public async packAndSendMessage({
     message,
     service,
@@ -306,23 +329,22 @@ export class MessageSender {
 
     outboundPackage.endpoint = endpoint
     outboundPackage.connectionId = connection?.id
-    await this.sendMessageUsingTransport(outboundPackage, transport)
+    await this.sendMessage(outboundPackage, transport)
   }
 
-  public async sendPlaintextMessage(outboundMessage: OutboundPlainMessage, transport: Transport) {
-    const outboundPackage = {
-      payload: { ...outboundMessage.payload },
-      responseRequested: false,
-    }
-    return this.sendMessageUsingTransport(outboundPackage, transport)
-  }
-
-  public async sendMessageUsingTransport(outboundPackage: OutboundPackage, transport: string) {
-    for (const outboundTransport of this.outboundTransports) {
-      if (outboundTransport.supportedSchemes.includes(transport)) {
-        await outboundTransport.sendMessage(outboundPackage)
-        break
+  public async sendMessage(outboundPackage: OutboundPackage, transport?: string) {
+    if (transport) {
+      for (const outboundTransport of this.outboundTransports) {
+        if (outboundTransport.supportedSchemes.includes(transport)) {
+          await outboundTransport.sendMessage(outboundPackage)
+          break
+        }
       }
+    } else {
+      if (this.outboundTransports) {
+        this.logger.warn(`There is no any transport registered`)
+      }
+      await this.outboundTransports[0]?.sendMessage(outboundPackage)
     }
   }
 

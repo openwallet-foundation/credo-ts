@@ -52,6 +52,10 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
     }
   }
 
+  public get did() {
+    return this.id
+  }
+
   public getTags() {
     const did = parseDid(this.id)
 

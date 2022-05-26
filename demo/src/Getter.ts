@@ -2,7 +2,6 @@
 import type { Transport } from '@aries-framework/core'
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
-import { OutOfBandGoalCodes } from '@aries-framework/core/src/modules/oob/OutOfBandGoalCodes'
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
 import { ValueTransferState } from '@aries-framework/core/src/modules/value-transfer/ValueTransferState'
 
@@ -11,9 +10,6 @@ import { greenText, Output, redText } from './OutputClass'
 
 export class Getter extends BaseAgent {
   public valueTransferRecordId?: string
-  public connectionRecordWitnessId?: string
-  public giver?: string
-  public connected: boolean
   public static transport: Transport = 'ipc'
   public static seed = '6b8b882e2618fa5d45ee7229ca880082'
 
@@ -24,23 +20,18 @@ export class Getter extends BaseAgent {
     valueTransferConfig?: ValueTransferConfig
   ) {
     super(name, Getter.seed, port, offlineTransports, valueTransferConfig)
-    this.connected = false
   }
 
   public static async build(): Promise<Getter> {
     const valueTransferConfig: ValueTransferConfig = {
       role: ValueTransferRole.Getter,
+      witnessTransport: Getter.transport,
     }
     const getter = new Getter('getter', undefined, [Getter.transport], valueTransferConfig)
     await getter.initializeAgent()
+    const publicDid = await getter.agent.getPublicDid()
+    console.log(`Getter Public DID: ${publicDid?.did}`)
     return getter
-  }
-
-  private async getConnectionRecord() {
-    if (!this.connectionRecordWitnessId) {
-      throw Error(redText(Output.MissingConnectionRecord))
-    }
-    return await this.agent.connections.getById(this.connectionRecordWitnessId)
   }
 
   private async getValueTransferRecord() {
@@ -50,60 +41,8 @@ export class Getter extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  private async sendConnectionInvite() {
-    const invite = await this.agent.connections.createConnection({
-      transport: Getter.transport,
-    })
-    await this.outBoundTransport.sendMessage({
-      payload: { ...invite.invitation },
-    })
-    console.log(Output.ConnectionInvitationSent, invite.invitation, '\n')
-
-    this.connectionRecordWitnessId = invite.connectionRecord.id
-
-    return invite.connectionRecord
-  }
-
-  private async waitForConnection() {
-    const connectionRecord = await this.getConnectionRecord()
-
-    console.log('Waiting for Witness to finish connection...')
-    try {
-      await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
-    } catch (e) {
-      console.log(redText(`\nTimeout of 20 seconds reached.. Returning to home screen.\n`))
-      return
-    }
-    console.log(greenText(Output.ConnectionEstablished))
-    this.connected = true
-  }
-
-  public async setupConnection() {
-    await this.sendConnectionInvite()
-    await this.waitForConnection()
-  }
-
-  public async requestGiverDid() {
-    await this.agent.oob.createOutOfBandInvitation({
-      goalCode: OutOfBandGoalCodes.RequestPayCashVtp,
-      send: true,
-      connectionId: this.connectionRecordWitnessId,
-    })
-  }
-
-  public setGiverDid(did: string) {
-    this.giver = did
-  }
-
-  public async requestPayment() {
-    if (!this.connectionRecordWitnessId) {
-      throw Error(redText(Output.MissingConnectionRecord))
-    }
-    if (!this.giver) {
-      throw Error(redText(Output.MissingGiverDid))
-    }
-
-    const { record } = await this.agent.valueTransfer.requestPayment(this.connectionRecordWitnessId, 10, this.giver)
+  public async requestPayment(witness: string) {
+    const { record } = await this.agent.valueTransfer.requestPayment(10, witness)
     this.valueTransferRecordId = record.id
     console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()

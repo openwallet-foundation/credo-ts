@@ -69,7 +69,7 @@ export class CredentialsModule {
     const { message, credentialRecord } = await this.credentialService.createProposal(connection, config)
 
     const outbound = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
 
     return credentialRecord
   }
@@ -129,7 +129,7 @@ export class CredentialsModule {
     })
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }
@@ -187,7 +187,7 @@ export class CredentialsModule {
     })
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }
@@ -209,7 +209,7 @@ export class CredentialsModule {
     const { message, credentialRecord } = await this.credentialService.createOffer(credentialTemplate, connection)
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }
@@ -267,7 +267,7 @@ export class CredentialsModule {
       })
       const outboundMessage = createOutboundMessage(connection, message)
 
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
       return credentialRecord
     }
     // Use ~service decorator otherwise
@@ -349,7 +349,7 @@ export class CredentialsModule {
     })
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }
@@ -375,7 +375,7 @@ export class CredentialsModule {
       const connection = await this.connectionService.getById(credentialRecord.connectionId)
       const outboundMessage = createOutboundMessage(connection, message)
 
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
     }
     // Use ~service decorator otherwise
     else if (credentialRecord.requestMessage?.service && credentialRecord.offerMessage?.service) {
@@ -420,7 +420,7 @@ export class CredentialsModule {
       const connection = await this.connectionService.getById(credentialRecord.connectionId)
       const outboundMessage = createOutboundMessage(connection, message)
 
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
     }
     // Use ~service decorator otherwise
     else if (credentialRecord.credentialMessage?.service && credentialRecord.requestMessage?.service) {
@@ -466,7 +466,7 @@ export class CredentialsModule {
       threadId: record.threadId,
     })
     const outboundMessage = createOutboundMessage(connection, credentialProblemReportMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return record
   }

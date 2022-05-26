@@ -2,12 +2,8 @@ import type { Alice } from './Alice'
 import type { AliceInquirer } from './AliceInquirer'
 import type { Faber } from './Faber'
 import type { FaberInquirer } from './FaberInquirer'
-import type { Getter } from './Getter'
-import type { GetterInquirer } from './GetterInquirer'
 import type { Giver } from './Giver'
 import type { GiverInquirer } from './GiverInquirer'
-import type { Witness } from './Witness'
-import type { WitnessInquirer } from './WitnessInquirer'
 import type {
   Agent,
   BasicMessageStateChangedEvent,
@@ -16,8 +12,6 @@ import type {
   ProofRecord,
   ProofStateChangedEvent,
 } from '@aries-framework/core'
-import type { OutOfBandEventStateChangedEvent } from '@aries-framework/core/src/modules/oob/OutOfBandEvents'
-import type { OutOfBandRecord } from '@aries-framework/core/src/modules/oob/repository'
 import type {
   ValueTransferStateChangedEvent,
   ValueTransferRecord,
@@ -32,9 +26,6 @@ import {
   ProofEventTypes,
   ProofState,
 } from '@aries-framework/core'
-import { OutOfBandEventTypes } from '@aries-framework/core/src/modules/oob/OutOfBandEvents'
-import { OutOfBandGoalCodes } from '@aries-framework/core/src/modules/oob/OutOfBandGoalCodes'
-import { OutOfBandState } from '@aries-framework/core/src/modules/oob/OutOfBandState'
 import { ValueTransferEventTypes } from '@aries-framework/core/src/modules/value-transfer'
 import { ValueTransferState } from '@aries-framework/core/src/modules/value-transfer/ValueTransferState'
 import { JsonEncoder } from '@aries-framework/core/src/utils'
@@ -109,58 +100,6 @@ export class Listener {
       async ({ payload }: ValueTransferStateChangedEvent) => {
         if (payload.record.state === ValueTransferState.RequestReceived) {
           await this.newPaymentRequestPrompt(payload.record, giverInquirer)
-        }
-      }
-    )
-  }
-
-  private printOutOfBandInvitation(outOfBandRecord: OutOfBandRecord) {
-    if (outOfBandRecord.invitation) {
-      console.log('\n\nInvitation:')
-      console.log(purpleText(JsonEncoder.toString(outOfBandRecord.invitation)))
-    }
-  }
-
-  private async newPayCashPrompt(outOfBandRecord: OutOfBandRecord, getterInquirer: GetterInquirer) {
-    this.turnListenerOn()
-    await getterInquirer.handlePayCashInvitation(outOfBandRecord)
-    this.turnListenerOff()
-    await getterInquirer.processAnswer()
-  }
-
-  public getterOutOfBandListener(getter: Getter, getterInquirer: GetterInquirer) {
-    getter.agent.events.on(
-      OutOfBandEventTypes.OutOfBandStateChanged,
-      async ({ payload }: OutOfBandEventStateChangedEvent) => {
-        if (payload.outOfBandRecord.state === OutOfBandState.Received) {
-          this.printOutOfBandInvitation(payload.outOfBandRecord)
-          if (payload.outOfBandRecord.invitation.body.goalCode === OutOfBandGoalCodes.PayCashVtp) {
-            await this.newPayCashPrompt(payload.outOfBandRecord, getterInquirer)
-          }
-        }
-      }
-    )
-  }
-
-  public giverOutOfBandListener(giver: Giver, giverInquirer: GiverInquirer) {
-    giver.agent.events.on(
-      OutOfBandEventTypes.OutOfBandStateChanged,
-      async ({ payload }: OutOfBandEventStateChangedEvent) => {
-        if (payload.outOfBandRecord.state === OutOfBandState.Received) {
-          this.printOutOfBandInvitation(payload.outOfBandRecord)
-          await giverInquirer.handleOutOBandInvitation(payload.outOfBandRecord)
-        }
-      }
-    )
-  }
-
-  public witnessOutOfBandListener(witness: Witness, witnessInquirer: WitnessInquirer) {
-    witness.agent.events.on(
-      OutOfBandEventTypes.OutOfBandStateChanged,
-      async ({ payload }: OutOfBandEventStateChangedEvent) => {
-        if (payload.outOfBandRecord.state === OutOfBandState.Received) {
-          this.printOutOfBandInvitation(payload.outOfBandRecord)
-          await witnessInquirer.handleOutOBandInvitation(payload.outOfBandRecord)
         }
       }
     )

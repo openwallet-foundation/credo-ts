@@ -1,13 +1,11 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { Transport } from '../../routing'
-import type { ConnectionRole } from '../models/ConnectionRole'
+import type { ConnectionRole } from '@aries-framework/core'
 
 import { Type } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { OutOfBandInvitationMessage } from '../../oob/messages'
 import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage'
 import { ConnectionState } from '../models/ConnectionState'
 import { DidDoc } from '../models/did/DidDoc'
@@ -22,7 +20,6 @@ export interface ConnectionRecordProps {
   theirDidDoc?: DidDoc
   theirLabel?: string
   invitation?: ConnectionInvitationMessage
-  outOfBandInvitation?: OutOfBandInvitationMessage
   state: ConnectionState
   role: ConnectionRole
   alias?: string
@@ -33,7 +30,6 @@ export interface ConnectionRecordProps {
   multiUseInvitation: boolean
   mediatorId?: string
   errorMessage?: string
-  transport?: Transport
 }
 
 export type CustomConnectionTags = TagsBase
@@ -69,9 +65,6 @@ export class ConnectionRecord
   @Type(() => ConnectionInvitationMessage)
   public invitation?: ConnectionInvitationMessage
 
-  @Type(() => OutOfBandInvitationMessage)
-  public outOfBandInvitation?: OutOfBandInvitationMessage
-
   public alias?: string
   public autoAcceptConnection?: boolean
   public imageUrl?: string
@@ -80,7 +73,6 @@ export class ConnectionRecord
   public threadId?: string
   public mediatorId?: string
   public errorMessage?: string
-  public transport?: Transport
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
@@ -103,13 +95,11 @@ export class ConnectionRecord
       this.autoAcceptConnection = props.autoAcceptConnection
       this._tags = props.tags ?? {}
       this.invitation = props.invitation
-      this.outOfBandInvitation = props.outOfBandInvitation
       this.threadId = props.threadId
       this.imageUrl = props.imageUrl
       this.multiUseInvitation = props.multiUseInvitation
       this.mediatorId = props.mediatorId
       this.errorMessage = props.errorMessage
-      this.transport = props.transport
     }
   }
 
@@ -178,9 +168,5 @@ export class ConnectionRecord
     if (this.role !== expectedRole) {
       throw new AriesFrameworkError(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }
-  }
-
-  public get isOutOfBandConnection() {
-    return !!this.outOfBandInvitation
   }
 }

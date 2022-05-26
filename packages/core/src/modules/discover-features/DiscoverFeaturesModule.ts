@@ -32,7 +32,7 @@ export class DiscoverFeaturesModule {
     const queryMessage = await this.discoverFeaturesService.createQuery(options)
 
     const outbound = createOutboundMessage(connection, queryMessage)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

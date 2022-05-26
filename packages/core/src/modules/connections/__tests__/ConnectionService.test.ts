@@ -11,9 +11,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
-import { DidResolverService } from '../../dids'
 import { DidCommService } from '../../dids/domain/service/DidCommService'
-import { DidService } from '../../dids/services/DidService'
 import {
   ConnectionInvitationMessage,
   ConnectionRequestMessage,
@@ -27,8 +25,6 @@ import { ConnectionService } from '../services/ConnectionService'
 
 jest.mock('../repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
-const DidServiceMock = DidService as jest.Mock<DidService>
-const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 
 const connectionImageUrl = 'https://example.com/image.png'
 
@@ -40,8 +36,6 @@ describe('ConnectionService', () => {
 
   let wallet: Wallet
   let connectionRepository: ConnectionRepository
-  let didService: DidService
-  let didResolverService: DidResolverService
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
   let myRouting: Routing
@@ -59,16 +53,7 @@ describe('ConnectionService', () => {
   beforeEach(async () => {
     eventEmitter = new EventEmitter(config)
     connectionRepository = new ConnectionRepositoryMock()
-    didService = new DidServiceMock()
-    didResolverService = new DidResolverServiceMock()
-    connectionService = new ConnectionService(
-      wallet,
-      config,
-      connectionRepository,
-      eventEmitter,
-      didService,
-      didResolverService
-    )
+    connectionService = new ConnectionService(wallet, config, connectionRepository, eventEmitter)
     myRouting = {
       did: 'fakeDid',
       verkey: 'fakeVerkey',

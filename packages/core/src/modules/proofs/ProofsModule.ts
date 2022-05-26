@@ -78,7 +78,7 @@ export class ProofsModule {
     const { message, proofRecord } = await this.proofService.createProposal(connection, presentationProposal, config)
 
     const outbound = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
 
     return proofRecord
   }
@@ -129,7 +129,7 @@ export class ProofsModule {
     })
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return proofRecord
   }
@@ -163,7 +163,7 @@ export class ProofsModule {
     const { message, proofRecord } = await this.proofService.createRequest(proofRequest, connection, config)
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return proofRecord
   }
@@ -235,7 +235,7 @@ export class ProofsModule {
       const connection = await this.connectionService.getById(proofRecord.connectionId)
 
       const outboundMessage = createOutboundMessage(connection, message)
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
       return proofRecord
     }
@@ -300,7 +300,7 @@ export class ProofsModule {
     if (proofRecord.connectionId) {
       const connection = await this.connectionService.getById(proofRecord.connectionId)
       const outboundMessage = createOutboundMessage(connection, message)
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
     }
     // Use ~service decorator otherwise
     else if (proofRecord.requestMessage?.service && proofRecord.presentationMessage?.service) {
@@ -396,7 +396,7 @@ export class ProofsModule {
       threadId: record.threadId,
     })
     const outboundMessage = createOutboundMessage(connection, presentationProblemReportMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return record
   }

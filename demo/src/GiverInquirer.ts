@@ -1,4 +1,3 @@
-import type { OutOfBandRecord } from '@aries-framework/core/src/modules/oob/repository'
 import type { ValueTransferRecord } from '@aries-framework/core/src/modules/value-transfer'
 
 import { clear } from 'console'
@@ -41,14 +40,10 @@ export class GiverInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.giver.connectionRecordWitnessId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
-
-    const reducedOption = [PromptOptions.Exit, PromptOptions.Restart]
-    return inquirer.prompt([this.inquireOptions(reducedOption)])
+    return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
   }
 
   public async processAnswer() {
-    this.listener.giverOutOfBandListener(this.giver, this)
     this.listener.paymentRequestListener(this.giver, this)
 
     const choice = await this.getPromptChoice()
@@ -63,10 +58,6 @@ export class GiverInquirer extends BaseInquirer {
         return
     }
     await this.processAnswer()
-  }
-
-  public async handleOutOBandInvitation(outOfBandRecord: OutOfBandRecord) {
-    await this.giver.handleOutOBandInvitation(outOfBandRecord)
   }
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {

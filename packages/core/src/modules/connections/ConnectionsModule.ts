@@ -1,4 +1,3 @@
-import type { Transport } from '../routing/types'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -16,7 +15,6 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
-import { ConnectionInvitationHandler } from './handlers/ConnectionInvitationHandler'
 import { ConnectionInvitationMessage } from './messages'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
@@ -52,7 +50,6 @@ export class ConnectionsModule {
     multiUseInvitation?: boolean
     myLabel?: string
     myImageUrl?: string
-    transport?: Transport
   }): Promise<{
     invitation: ConnectionInvitationMessage
     connectionRecord: ConnectionRecord
@@ -69,7 +66,6 @@ export class ConnectionsModule {
       multiUseInvitation: config?.multiUseInvitation,
       myLabel: config?.myLabel,
       myImageUrl: config?.myImageUrl,
-      transport: config?.transport,
     })
 
     return { connectionRecord, invitation }
@@ -90,7 +86,6 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean
       alias?: string
       mediatorId?: string
-      transport?: Transport
     }
   ): Promise<ConnectionRecord> {
     const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
@@ -98,7 +93,6 @@ export class ConnectionsModule {
     let connection = await this.connectionService.processInvitation(invitation, {
       autoAcceptConnection: config?.autoAcceptConnection,
       alias: config?.alias,
-      transport: config?.transport,
       routing,
     })
     // if auto accept is enabled (either on the record or the global agent config)
@@ -124,7 +118,6 @@ export class ConnectionsModule {
       autoAcceptConnection?: boolean
       alias?: string
       mediatorId?: string
-      transport?: Transport
     }
   ): Promise<ConnectionRecord> {
     const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
@@ -149,7 +142,7 @@ export class ConnectionsModule {
       config
     )
     const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
 
     return connectionRecord
   }
@@ -165,7 +158,7 @@ export class ConnectionsModule {
     const { message, connectionRecord: connectionRecord } = await this.connectionService.createResponse(connectionId)
 
     const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
 
     return connectionRecord
   }
@@ -183,7 +176,7 @@ export class ConnectionsModule {
     })
 
     const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
 
     return connectionRecord
   }
@@ -278,9 +271,6 @@ export class ConnectionsModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerDIDCommV1Handler(
-      new ConnectionInvitationHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
-    )
     dispatcher.registerDIDCommV1Handler(
       new ConnectionRequestHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
     )

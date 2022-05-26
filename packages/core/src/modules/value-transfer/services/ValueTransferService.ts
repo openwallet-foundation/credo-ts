@@ -1,6 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferConfig } from '../../../types'
-import type { ConnectionRecord } from '../../connections'
+import type { Transport } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferTags, ValueTransferRecord } from '../repository'
 
@@ -91,14 +91,14 @@ export class ValueTransferService {
     }
     if (config.role === ValueTransferRole.Getter || ValueTransferRole.Giver) {
       const state = await this.valueTransferStateRepository.findSingleByQuery({})
-      if (state) return
-
-      const record = new ValueTransferStateRecord({
-        publicDid: publicDid?.id,
-        previousHash: '',
-        verifiableNotes: [],
-      })
-      await this.valueTransferStateRepository.save(record)
+      if (!state) {
+        const record = new ValueTransferStateRecord({
+          publicDid: publicDid?.id,
+          previousHash: '',
+          verifiableNotes: [],
+        })
+        await this.valueTransferStateRepository.save(record)
+      }
 
       if (config.verifiableNotes) {
         await this.valueTransfer.giver().addCash(config.verifiableNotes)
@@ -115,33 +115,34 @@ export class ValueTransferService {
    */
   public async processProblemReport(messageContext: InboundMessageContext<ProblemReportMessage>): Promise<{
     record: ValueTransferRecord
-    forward?: { connection: ConnectionRecord; message: ProblemReportMessage }
+    forward?: {
+      transport?: Transport
+      message: ProblemReportMessage
+    }
   }> {
-    const { message: problemReportMessage, connection } = messageContext
+    const { message: problemReportMessage } = messageContext
     const record = await this.getByThread(problemReportMessage.pthid)
 
     const previousState = record.state
 
-    let forward = undefined
+    let forward
 
     if (record.role === ValueTransferRole.Witness) {
       // When Witness receives Problem Report he needs to forward this to the 3rd party
-      const forwardConnectionId =
-        connection?.id === record.getterConnectionId ? record.giverConnectionId : record.getterConnectionId
+      const to = messageContext.message.from === record.getterDid ? record.giverDid : record.getterDid
+      const transport =
+        messageContext.message.from === record.getterDid
+          ? this.config.valueTransferConfig?.giverTransport
+          : this.config.valueTransferConfig?.getterTransport
 
-      if (forwardConnectionId) {
-        const forwardConnection = await this.connectionService.getById(forwardConnectionId)
-
-        const witnessedProblemReportMessage = new ProblemReportMessage({
-          from: forwardConnection.did,
-          to: forwardConnection.theirDid,
+      forward = {
+        message: new ProblemReportMessage({
+          from: record.witnessDid,
+          to,
           body: problemReportMessage.body,
           pthid: problemReportMessage.pthid,
-        })
-        forward = {
-          connection: forwardConnection,
-          message: witnessedProblemReportMessage,
-        }
+        }),
+        transport,
       }
     }
     if (record.role === ValueTransferRole.Getter) {

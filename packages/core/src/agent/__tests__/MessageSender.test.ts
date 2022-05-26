@@ -122,14 +122,16 @@ describe('MessageSender', () => {
     })
 
     test('throw error when there is no outbound transport', async () => {
-      await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(/Message is undeliverable to connection/)
+      await expect(messageSender.sendDIDCommV1Message(outboundMessage)).rejects.toThrow(
+        /Message is undeliverable to connection/
+      )
     })
 
     test('throw error when there is no service or queue', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
       transportServiceFindServicesMock.mockReturnValue([])
 
-      await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(
+      await expect(messageSender.sendDIDCommV1Message(outboundMessage)).rejects.toThrow(
         `Message is undeliverable to connection test-123 (Test 123)`
       )
     })
@@ -142,7 +144,7 @@ describe('MessageSender', () => {
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
-      await messageSender.sendMessage(outboundMessage)
+      await messageSender.sendDIDCommV1Message(outboundMessage)
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
         connectionId: 'test-123',
@@ -170,7 +172,7 @@ describe('MessageSender', () => {
         didDocumentMetadata: {},
       })
 
-      await messageSender.sendMessage(outboundMessage)
+      await messageSender.sendDIDCommV1Message(outboundMessage)
 
       expect(resolveMock).toHaveBeenCalledWith(did)
       expect(sendMessageSpy).toHaveBeenCalledWith({
@@ -197,7 +199,7 @@ describe('MessageSender', () => {
         didDocumentMetadata: {},
       })
 
-      await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrowError(
+      await expect(messageSender.sendDIDCommV1Message(outboundMessage)).rejects.toThrowError(
         `Unable to resolve did document for did '${did}': notFound`
       )
     })
@@ -209,7 +211,7 @@ describe('MessageSender', () => {
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
-      await messageSender.sendMessage(outboundMessage)
+      await messageSender.sendDIDCommV1Message(outboundMessage)
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
         connectionId: 'test-123',
@@ -225,7 +227,7 @@ describe('MessageSender', () => {
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
       const sendMessageToServiceSpy = jest.spyOn(messageSender, 'packAndSendMessage')
 
-      await messageSender.sendMessage(outboundMessage)
+      await messageSender.sendDIDCommV1Message(outboundMessage)
 
       expect(sendMessageToServiceSpy).toHaveBeenCalledWith({
         connection: connection,
@@ -246,7 +248,7 @@ describe('MessageSender', () => {
       // Simulate the case when the first call fails
       sendMessageSpy.mockRejectedValueOnce(new Error())
 
-      await messageSender.sendMessage(outboundMessage)
+      await messageSender.sendDIDCommV1Message(outboundMessage)
 
       expect(sendMessageToServiceSpy).toHaveBeenNthCalledWith(2, {
         connection: connection,

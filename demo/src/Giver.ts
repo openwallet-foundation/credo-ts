@@ -1,10 +1,8 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { Transport } from '@aries-framework/core'
-import type { OutOfBandRecord } from '@aries-framework/core/src/modules/oob/repository'
 import type { ValueTransferRecord } from '@aries-framework/core/src/modules/value-transfer'
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
-import { OutOfBandGoalCodes } from '@aries-framework/core/src/modules/oob/OutOfBandGoalCodes'
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
 import { ValueTransferState } from '@aries-framework/core/src/modules/value-transfer/ValueTransferState'
 import { createVerifiableNotes } from '@value-transfer/value-transfer-lib'
@@ -14,8 +12,6 @@ import { greenText, Output, redText } from './OutputClass'
 
 export class Giver extends BaseAgent {
   public valueTransferRecordId?: string
-  public connectionRecordWitnessId?: string
-  public connected: boolean
   public static transport: Transport = 'nfc'
   public static seed = '6b8b882e2618fa5d45ee7229ca880083'
 
@@ -26,12 +22,12 @@ export class Giver extends BaseAgent {
     valueTransferConfig?: ValueTransferConfig
   ) {
     super(name, undefined, port, offlineTransports, valueTransferConfig)
-    this.connected = false
   }
 
   public static async build(): Promise<Giver> {
     const valueTransferConfig: ValueTransferConfig = {
       role: ValueTransferRole.Giver,
+      witnessTransport: Giver.transport,
       verifiableNotes: createVerifiableNotes(10),
     }
     const giver = new Giver('giver', undefined, [Giver.transport], valueTransferConfig)
@@ -66,19 +62,6 @@ export class Giver extends BaseAgent {
     } catch (e) {
       console.log(redText(`\nTimeout of 120 seconds reached.. Returning to home screen.\n`))
       return
-    }
-  }
-
-  public async handleOutOBandInvitation(outOfBandRecord: OutOfBandRecord) {
-    if (outOfBandRecord.invitation.body.goalCode === OutOfBandGoalCodes.RequestPayCashVtp) {
-      console.log('\nCreate new Invitation')
-      const { outOfBandRecord: newOutOfBandRecord } = await this.agent.oob.createOutOfBandInvitation({
-        goalCode: OutOfBandGoalCodes.PayCashVtp,
-        send: true,
-        transport: Giver.transport,
-      })
-      await this.agent.oob.complete(outOfBandRecord)
-      await this.agent.oob.complete(newOutOfBandRecord)
     }
   }
 

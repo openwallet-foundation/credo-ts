@@ -1,9 +1,8 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { ConnectionRecord } from '../../connections'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { RequestMessage, RequestAcceptedMessage, CashAcceptedMessage, CashRemovedMessage } from '../messages'
 
-import { ValueTransfer, verifiableNoteProofConfig } from '@value-transfer/value-transfer-lib'
+import { defaultGiver, ValueTransfer, verifiableNoteProofConfig } from '@value-transfer/value-transfer-lib'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -99,23 +98,27 @@ export class ValueTransferWitnessService {
   public async processRequest(messageContext: InboundMessageContext<RequestMessage>): Promise<{
     record?: ValueTransferRecord
     message: RequestWitnessedMessage | ProblemReportMessage
-    forward: ConnectionRecord
   }> {
-    const { message: requestMessage, connection: getterConnection } = messageContext
-
-    if (!getterConnection) {
-      throw new AriesFrameworkError(`Connection not found in the message context`)
-    }
-
-    const giver = requestMessage.body.payment.giver
+    const { message: requestMessage } = messageContext
 
     // Get Witness state
     const state = await this.witnessStateRepository.getState()
 
-    // Find connection for requested giver
-    const giverConnection = await this.connectionService.findByTheirDid(giver)
-    if (!giverConnection || !giverConnection.theirDid) {
-      throw new AriesFrameworkError(`Connection not found for Giver DID: ${giver}`)
+    const { getter, giver, witness } = requestMessage.body.payment
+
+    // Check requested witness
+    if (state.publicDid !== witness) {
+      return {
+        message: new ProblemReportMessage({
+          from: state.publicDid,
+          to: requestMessage.from,
+          pthid: requestMessage.id,
+          body: {
+            code: 'e.p.req.bad-witness',
+            comment: `Requested witness ${requestMessage.body.payment.witness} is different`,
+          },
+        }),
+      }
     }
 
     //Call VTP package to process received Payment Request request
@@ -123,6 +126,8 @@ export class ValueTransferWitnessService {
     if (error || !message) {
       // send problem report back to Getter
       const problemReportMessage = new ProblemReportMessage({
+        from: state.publicDid,
+        to: requestMessage.from,
         pthid: requestMessage.id,
         body: {
           code: error?.code || 'invalid-payment-request',
@@ -130,12 +135,16 @@ export class ValueTransferWitnessService {
         },
       })
 
-      return { message: problemReportMessage, forward: getterConnection }
+      return { message: problemReportMessage }
     }
 
+    // VTP sets placeholder when giver is not set
+    const giverDId = giver === defaultGiver ? undefined : giver
+
+    // next protocol message
     const requestWitnessedMessage = new RequestWitnessedMessage({
-      from: giverConnection.did,
-      to: giverConnection.theirDid,
+      from: state.publicDid,
+      to: giverDId,
       body: message,
       thid: requestMessage.id,
     })
@@ -147,8 +156,9 @@ export class ValueTransferWitnessService {
       state: ValueTransferState.RequestSent,
       threadId: requestMessage.id,
       requestMessage,
-      getterConnectionId: getterConnection?.id,
-      giverConnectionId: giverConnection.id,
+      getter,
+      giver: giverDId,
+      witness,
     })
 
     await this.valueTransferRepository.save(record)
@@ -158,7 +168,7 @@ export class ValueTransferWitnessService {
       payload: { record },
     })
 
-    return { record, message: requestWitnessedMessage, forward: giverConnection }
+    return { record, message: requestWitnessedMessage }
   }
 
   /**
@@ -177,17 +187,9 @@ export class ValueTransferWitnessService {
   public async processRequestAcceptance(messageContext: InboundMessageContext<RequestAcceptedMessage>): Promise<{
     record: ValueTransferRecord
     message: RequestAcceptedWitnessedMessage | ProblemReportMessage
-    forward: {
-      getterConnection: ConnectionRecord
-      giverConnection: ConnectionRecord
-    }
   }> {
     // Verify that we are in appropriate state to perform action
-    const { message: requestAcceptedMessage, connection: giverConnection } = messageContext
-
-    if (!giverConnection) {
-      throw new AriesFrameworkError(`Connection not found in the message context`)
-    }
+    const { message: requestAcceptedMessage } = messageContext
 
     let resultMessage: RequestAcceptedWitnessedMessage | ProblemReportMessage
 
@@ -198,8 +200,6 @@ export class ValueTransferWitnessService {
 
     const previousState = record.state
 
-    const getterConnection = await this.getConnection(record.getterConnectionId)
-
     // Witness: Call VTP package to process received request acceptance
     const { error, message } = await this.valueTransfer.witness().processRequestAccepted(requestAcceptedMessage.body)
 
@@ -207,6 +207,8 @@ export class ValueTransferWitnessService {
     if (error || !message) {
       // VTP message verification failed
       resultMessage = new ProblemReportMessage({
+        from: requestAcceptedMessage.body.payment.witness,
+        to: requestAcceptedMessage.body.payment.giver,
         pthid: requestAcceptedMessage.thid,
         body: {
           code: error?.code || 'invalid-payment-request-acceptance',
@@ -221,13 +223,14 @@ export class ValueTransferWitnessService {
       // VTP message verification succeed
       resultMessage = new RequestAcceptedWitnessedMessage({
         ...requestAcceptedMessage,
-        from: getterConnection.did,
-        to: getterConnection.theirDid,
+        from: requestAcceptedMessage.body.payment.witness,
+        to: requestAcceptedMessage.body.payment.getter,
         body: message,
       })
 
       // Update Value Transfer record
       record.payment = requestAcceptedMessage.body.payment
+      record.giverDid = requestAcceptedMessage.body.payment.giver
       record.requestAcceptedMessage = requestAcceptedMessage
       record.state = ValueTransferState.RequestAcceptanceSent
     }
@@ -242,10 +245,6 @@ export class ValueTransferWitnessService {
     return {
       record,
       message: resultMessage,
-      forward: {
-        getterConnection,
-        giverConnection,
-      },
     }
   }
 
@@ -264,17 +263,9 @@ export class ValueTransferWitnessService {
   public async processCashAcceptance(messageContext: InboundMessageContext<CashAcceptedMessage>): Promise<{
     record: ValueTransferRecord
     message: CashAcceptedWitnessedMessage | ProblemReportMessage
-    forward: {
-      getterConnection: ConnectionRecord
-      giverConnection: ConnectionRecord
-    }
   }> {
     // Verify that we are in appropriate state to perform action
-    const { message: cashAcceptedMessage, connection: getterConnection } = messageContext
-
-    if (!getterConnection) {
-      throw new AriesFrameworkError(`Connection not found in the message context`)
-    }
+    const { message: cashAcceptedMessage } = messageContext
 
     let resultMessage: CashAcceptedWitnessedMessage | ProblemReportMessage
 
@@ -285,14 +276,14 @@ export class ValueTransferWitnessService {
 
     const previousState = record.state
 
-    const giverConnection = await this.getConnection(record.giverConnectionId)
-
     // Witness: Call VTP package to process received cash acceptance
     const { error, message } = await this.valueTransfer.witness().processCashAccepted(cashAcceptedMessage.body)
     // change state
     if (error || !message) {
       // VTP message verification failed
       resultMessage = new ProblemReportMessage({
+        from: record.witnessDid,
+        to: record.giverDid,
         pthid: cashAcceptedMessage.thid,
         body: {
           code: error?.code || 'invalid-cash-acceptance',
@@ -307,8 +298,8 @@ export class ValueTransferWitnessService {
       // VTP message verification succeed
       resultMessage = new CashAcceptedWitnessedMessage({
         ...cashAcceptedMessage,
-        from: giverConnection.did,
-        to: giverConnection.theirDid,
+        from: record.witnessDid,
+        to: record.giverDid,
         body: message,
       })
 
@@ -327,10 +318,6 @@ export class ValueTransferWitnessService {
     return {
       record,
       message: resultMessage,
-      forward: {
-        getterConnection,
-        giverConnection,
-      },
     }
   }
 
@@ -347,17 +334,9 @@ export class ValueTransferWitnessService {
   public async processCashRemoved(messageContext: InboundMessageContext<CashRemovedMessage>): Promise<{
     record: ValueTransferRecord
     message: CashRemovedMessage | ProblemReportMessage
-    forward: {
-      getterConnection: ConnectionRecord
-      giverConnection: ConnectionRecord
-    }
   }> {
     // Verify that we are in appropriate state to perform action
-    const { message: cashRemovedMessage, connection: giverConnection } = messageContext
-
-    if (!giverConnection) {
-      throw new AriesFrameworkError(`Connection not found in the message context`)
-    }
+    const { message: cashRemovedMessage } = messageContext
 
     let resultMessage: CashRemovedMessage | ProblemReportMessage
 
@@ -367,13 +346,13 @@ export class ValueTransferWitnessService {
 
     const previousState = record.state
 
-    const getterConnection = await this.getConnection(record.getterConnectionId)
-
     // Call VTP package to process received cash removal
     const { error, message } = await this.valueTransfer.witness().processCashRemoved(cashRemovedMessage.body)
     if (error || !message) {
       // VTP message verification failed
       resultMessage = new ProblemReportMessage({
+        from: record.witnessDid,
+        to: record.giverDid,
         pthid: cashRemovedMessage.thid,
         body: {
           code: error?.code || 'invalid-cash-removal',
@@ -403,10 +382,6 @@ export class ValueTransferWitnessService {
     return {
       record,
       message: resultMessage,
-      forward: {
-        getterConnection,
-        giverConnection,
-      },
     }
   }
 
@@ -421,11 +396,7 @@ export class ValueTransferWitnessService {
    *    * Value Transfer record
    *    * Getter and Giver Receipt messages
    */
-  public async createReceipt(
-    record: ValueTransferRecord,
-    getterConnection: ConnectionRecord,
-    giverConnection: ConnectionRecord
-  ): Promise<{
+  public async createReceipt(record: ValueTransferRecord): Promise<{
     record: ValueTransferRecord
     getterReceiptMessage: GetterReceiptMessage
     giverReceiptMessage: GiverReceiptMessage
@@ -447,15 +418,15 @@ export class ValueTransferWitnessService {
     }
 
     const getterReceiptMessage = new GetterReceiptMessage({
-      from: getterConnection.did,
-      to: getterConnection.theirDid,
+      from: record.witnessDid,
+      to: record.getterDid,
       body: message,
       thid: record.threadId,
     })
 
     const giverReceiptMessage = new GiverReceiptMessage({
-      from: giverConnection.did,
-      to: giverConnection.theirDid,
+      from: record.witnessDid,
+      to: record.giverDid,
       body: message,
       thid: record.threadId,
     })

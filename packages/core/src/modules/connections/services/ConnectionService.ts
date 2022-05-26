@@ -2,16 +2,13 @@ import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Messag
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
-import type { IndyAgentService } from '../../dids/domain/service'
-import type { OutOfBandInvitationMessage } from '../../oob/messages'
-import type { Transport } from '../../routing/types'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
 import type { CustomConnectionTags } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -21,9 +18,7 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
-import { DidCommService, DidDocument, DidResolverService } from '../../dids'
-import { DidService } from '../../dids/services/DidService'
-import { offlineTransports } from '../../routing/types'
+import { IndyAgentService } from '../../dids/domain/service'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import {
@@ -33,12 +28,12 @@ import {
   TrustPingMessage,
 } from '../messages'
 import {
-  authenticationTypes,
   Connection,
-  ConnectionRole,
   ConnectionState,
+  ConnectionRole,
   DidDoc,
   Ed25119Sig2018,
+  authenticationTypes,
   ReferencedAuthentication,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
@@ -51,24 +46,18 @@ export class ConnectionService {
   private connectionRepository: ConnectionRepository
   private eventEmitter: EventEmitter
   private logger: Logger
-  private didService: DidService
-  private didResolverService: DidResolverService
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     config: AgentConfig,
     connectionRepository: ConnectionRepository,
-    eventEmitter: EventEmitter,
-    didService: DidService,
-    didResolverService: DidResolverService
+    eventEmitter: EventEmitter
   ) {
     this.wallet = wallet
     this.config = config
     this.connectionRepository = connectionRepository
     this.eventEmitter = eventEmitter
     this.logger = config.logger
-    this.didService = didService
-    this.didResolverService = didResolverService
   }
 
   /**
@@ -84,7 +73,6 @@ export class ConnectionService {
     multiUseInvitation?: boolean
     myLabel?: string
     myImageUrl?: string
-    transport?: Transport
   }): Promise<ConnectionProtocolMsgReturnType<ConnectionInvitationMessage>> {
     // TODO: public did
     const connectionRecord = await this.createConnection({
@@ -92,7 +80,6 @@ export class ConnectionService {
       state: ConnectionState.Invited,
       alias: config?.alias,
       routing: config.routing,
-      transport: config.transport,
       autoAcceptConnection: config?.autoAcceptConnection,
       multiUseInvitation: config.multiUseInvitation ?? false,
     })
@@ -136,7 +123,6 @@ export class ConnectionService {
       routing: Routing
       autoAcceptConnection?: boolean
       alias?: string
-      transport?: Transport
     }
   ): Promise<ConnectionRecord> {
     const connectionRecord = await this.createConnection({
@@ -152,7 +138,6 @@ export class ConnectionService {
         invitationKey: invitation.recipientKeys && invitation.recipientKeys[0],
       },
       multiUseInvitation: false,
-      transport: config.transport,
     })
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
@@ -224,7 +209,7 @@ export class ConnectionService {
     const { message, recipient, sender } = messageContext
 
     if (!recipient || !sender) {
-      throw new AriesFrameworkError('Unable to process connection request without senderKid or recipientKid')
+      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
     }
 
     let connectionRecord = await this.findByVerkey(recipient)
@@ -332,7 +317,7 @@ export class ConnectionService {
     const { message, recipient, sender } = messageContext
 
     if (!recipient || !sender) {
-      throw new AriesFrameworkError('Unable to process connection request without senderKid or recipientKid')
+      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
     }
 
     const connectionRecord = await this.findByVerkey(recipient)
@@ -427,9 +412,6 @@ export class ConnectionService {
   public async processAck(messageContext: InboundMessageContext<AckMessage>): Promise<ConnectionRecord> {
     const { connection, recipient } = messageContext
 
-    if (!recipient) {
-      throw new AriesFrameworkError('Unable to process connection request without senderKid or recipientKid')
-    }
     if (!connection) {
       throw new AriesFrameworkError(`Unable to process connection ack: connection for verkey ${recipient} not found`)
     }
@@ -454,13 +436,11 @@ export class ConnectionService {
     messageContext: InboundMessageContext<ConnectionProblemReportMessage>
   ): Promise<ConnectionRecord> {
     const { message: connectionProblemReportMessage, recipient, sender } = messageContext
-    if (!recipient || !sender) {
-      throw new AriesFrameworkError('Unable to process connection request without senderKid or recipientKid')
-    }
+
     this.logger.debug(`Processing connection problem report for verkey ${recipient}`)
 
     if (!recipient) {
-      throw new AriesFrameworkError('Unable to process connection problem report without recipientKid')
+      throw new AriesFrameworkError('Unable to process connection problem report without recipientVerkey')
     }
 
     const connectionRecord = await this.findByVerkey(recipient)
@@ -480,50 +460,6 @@ export class ConnectionService {
     return connectionRecord
   }
 
-  public async setConnectionTheirInfo(connectionRecord: ConnectionRecord, senderKid: string): Promise<void> {
-    if (!connectionRecord.isOutOfBandConnection) {
-      throw new AriesFrameworkError(`Function can be used for Out-Of-Band connections only`)
-    }
-
-    const theirDid = DidDocument.extractDidFromKid(senderKid)
-    const theirDIDDoc = await this.buildConnectionDIDDoc(theirDid, connectionRecord.transport)
-
-    connectionRecord.theirDid = theirDid
-    connectionRecord.theirDidDoc = theirDIDDoc
-
-    await this.update(connectionRecord)
-  }
-
-  public async buildConnectionDIDDoc(did: string, transport: Transport = 'nfc'): Promise<DidDoc> {
-    const { didDocument: theirDidDocument } = await this.didResolverService.resolve(did)
-    if (!theirDidDocument) {
-      throw new AriesFrameworkError(`Invalid Out-Of-Band invitation: 'from' field is missing`)
-    }
-
-    const theirDidDoc = DidDoc.convertDIDDocToConnectionDIDDoc(theirDidDocument)
-    const publicKey = theirDidDoc.publicKey[0]
-    if (!publicKey.value) {
-      throw new AriesFrameworkError(`Unable to resolve valid DIDDoc for DID: ${did}`)
-    }
-
-    const service = theirDidDoc.service.length
-      ? theirDidDoc.service
-      : [
-          new DidCommService({
-            id: `${did}#${transport}`,
-            serviceEndpoint: transport,
-            recipientKeys: [publicKey.value],
-          }),
-        ]
-
-    return new DidDoc({
-      id: did,
-      authentication: theirDidDoc.authentication,
-      service: service,
-      publicKey: [publicKey],
-    })
-  }
-
   /**
    * Assert that an inbound message either has a connection associated with it,
    * or has everything correctly set up for connection-less exchange.
@@ -541,7 +477,7 @@ export class ConnectionService {
       previousReceivedMessage?: DIDCommV1Message
     } = {}
   ) {
-    const { connection, message, recipient, sender } = messageContext
+    const { connection, message } = messageContext
 
     // Check if we have a ready connection. Verification is already done somewhere else. Return
     if (connection) {
@@ -555,8 +491,8 @@ export class ConnectionService {
       })
 
       if (previousSentMessage) {
-        // If we have previously sent a message, it is not allowed to receive an OOB/unpacked record
-        if (!recipient) {
+        // If we have previously sent a message, it is not allowed to receive an OOB/unpacked message
+        if (!messageContext.recipient) {
           throw new AriesFrameworkError(
             'Cannot verify service without recipientKey on incoming message (received unpacked message)'
           )
@@ -564,7 +500,10 @@ export class ConnectionService {
 
         // Check if the inbound message recipient key is present
         // in the recipientKeys of previously sent message ~service decorator
-        if (!previousSentMessage?.service || !previousSentMessage.service.recipientKeys.includes(recipient)) {
+        if (
+          !previousSentMessage?.service ||
+          !previousSentMessage.service.recipientKeys.includes(messageContext.recipient)
+        ) {
           throw new AriesFrameworkError(
             'Previously sent message ~service recipientKeys does not include current received message recipient key'
           )
@@ -573,7 +512,7 @@ export class ConnectionService {
 
       if (previousReceivedMessage) {
         // If we have previously received a message, it is not allowed to receive an OOB/unpacked/AnonCrypt message
-        if (!sender) {
+        if (!messageContext.sender) {
           throw new AriesFrameworkError(
             'Cannot verify service without senderKey on incoming message (received AnonCrypt or unpacked message)'
           )
@@ -581,7 +520,10 @@ export class ConnectionService {
 
         // Check if the inbound message sender key is present
         // in the recipientKeys of previously received message ~service decorator
-        if (!previousReceivedMessage.service || !previousReceivedMessage.service.recipientKeys.includes(sender)) {
+        if (
+          !previousReceivedMessage.service ||
+          !previousReceivedMessage.service.recipientKeys.includes(messageContext.sender)
+        ) {
           throw new AriesFrameworkError(
             'Previously received message ~service recipientKeys does not include current received message sender key'
           )
@@ -589,7 +531,7 @@ export class ConnectionService {
       }
 
       // If message is received unpacked/, we need to make sure it included a ~service decorator
-      if (!message.serviceDecorator() && !recipient) {
+      if (!message.serviceDecorator() && !messageContext.recipient) {
         throw new AriesFrameworkError('Message recipientKey must have ~service decorator')
       }
     }
@@ -655,28 +597,6 @@ export class ConnectionService {
   }
 
   /**
-   * Find connection by my DID.
-   *
-   * @param did the did to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given did
-   */
-  public findByMyDid(did: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findByMyDid(did)
-  }
-
-  /**
-   * Find connection by their DID.
-   *
-   * @param did the did to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given did
-   */
-  public findByTheirDid(did: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findByTheirDid(did)
-  }
-
-  /**
    * Find connection by verkey.
    *
    * @param verkey the verkey to search for
@@ -721,11 +641,10 @@ export class ConnectionService {
     return this.connectionRepository.getByThreadId(threadId)
   }
 
-  public async createConnection(options: {
+  private async createConnection(options: {
     role: ConnectionRole
     state: ConnectionState
     invitation?: ConnectionInvitationMessage
-    outOfBandInvitation?: OutOfBandInvitationMessage
     alias?: string
     routing: Routing
     theirLabel?: string
@@ -733,7 +652,6 @@ export class ConnectionService {
     multiUseInvitation: boolean
     tags?: CustomConnectionTags
     imageUrl?: string
-    transport?: Transport
   }): Promise<ConnectionRecord> {
     const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
 
@@ -743,31 +661,18 @@ export class ConnectionService {
       publicKeyBase58: verkey,
     })
 
-    const transport = options.transport || 'http'
-
-    let services: IndyAgentService[] | DidCommService[]
-    if (transport && offlineTransports.includes(transport)) {
-      services = [
-        new DidCommService({
-          id: `${did}#${transport}`,
-          serviceEndpoint: transport,
+    // IndyAgentService is old service type
+    const services = endpoints.map(
+      (endpoint, index) =>
+        new IndyAgentService({
+          id: `${did}#IndyAgentService`,
+          serviceEndpoint: endpoint,
           recipientKeys: [verkey],
-        }),
-      ]
-    } else {
-      services = endpoints.map(
-        (endpoint, index) =>
-          new DidCommService({
-            id: `${did}#IndyAgentService`,
-            serviceEndpoint: endpoint,
-            recipientKeys: [verkey],
-            routingKeys: routingKeys,
-
-            // Order of endpoint determines priority
-            priority: index,
-          })
-      )
-    }
+          routingKeys: routingKeys,
+          // Order of endpoint determines priority
+          priority: index,
+        })
+    )
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
@@ -788,14 +693,12 @@ export class ConnectionService {
       role: options.role,
       tags: options.tags,
       invitation: options.invitation,
-      outOfBandInvitation: options.outOfBandInvitation,
       alias: options.alias,
       theirLabel: options.theirLabel,
       autoAcceptConnection: options.autoAcceptConnection,
       imageUrl: options.imageUrl,
       multiUseInvitation: options.multiUseInvitation,
       mediatorId,
-      transport,
     })
 
     await this.connectionRepository.save(connectionRecord)

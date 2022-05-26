@@ -1,5 +1,5 @@
 import type { TransportPriorityOptions } from './agent/MessageSender'
-import type { DIDCommMessage, EncryptedMessage } from './agent/didcomm/index'
+import type { DIDCommMessage, EncryptedMessage, DIDCommV2Message } from './agent/didcomm/index'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
@@ -108,6 +108,15 @@ export interface OutboundMessage<T extends DIDCommMessage = DIDCommMessage> {
 }
 
 export interface OutboundPlainMessage<T extends DIDCommMessage = DIDCommMessage> {
+  payload: T
+}
+
+export interface OutboundSignedMessage<T extends DIDCommMessage = DIDCommMessage> {
+  payload: T
+  from: string
+}
+
+export interface OutboundDIDCommV2Message<T extends DIDCommV2Message = DIDCommV2Message> {
   payload: T
 }
 

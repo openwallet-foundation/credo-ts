@@ -157,7 +157,7 @@ export class MediationRecipientService {
       .subscribe(subject)
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     const keylistUpdate = await firstValueFrom(subject)
     return keylistUpdate.payload.mediationRecord

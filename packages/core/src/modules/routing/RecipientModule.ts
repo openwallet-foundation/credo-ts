@@ -92,7 +92,7 @@ export class RecipientModule {
         ? { schemes: ['wss', 'ws'], restrictive: true }
         : undefined
 
-    await this.messageSender.sendMessage(outboundMessage, {
+    await this.messageSender.sendDIDCommV1Message(outboundMessage, {
       transportPriority,
       // TODO: add keepAlive: true to enforce through the public api
       // we need to keep the socket alive. It already works this way, but would
@@ -117,7 +117,7 @@ export class RecipientModule {
     }
 
     try {
-      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message), {
+      await this.messageSender.sendDIDCommV1Message(createOutboundMessage(connectionRecord, message), {
         transportPriority: {
           schemes: websocketSchemes,
           restrictive: true,
@@ -360,7 +360,7 @@ export class RecipientModule {
       })
       const { message, connectionRecord } = await this.connectionService.createRequest(invitationConnectionRecord.id)
       const outbound = createOutboundMessage(connectionRecord, message)
-      await this.messageSender.sendMessage(outbound)
+      await this.messageSender.sendDIDCommV1Message(outbound)
 
       const completedConnectionRecord = await this.connectionService.returnWhenIsConnected(connectionRecord.id)
       this.logger.debug('Connection completed, requesting mediation')

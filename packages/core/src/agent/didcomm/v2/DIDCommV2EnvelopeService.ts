@@ -13,8 +13,8 @@ import { SecretResolverService } from './SecretResolverService'
 
 export interface PackMessageParams {
   toDID: string
-  fromDID: string | null
-  signByDID: string | null
+  fromDID: string | null | undefined
+  signByDID: string | null | undefined
 }
 
 export interface PlaintextMessage {
@@ -52,8 +52,8 @@ export class DIDCommV2EnvelopeService {
 
     const [encryptedMsg] = await message.pack_encrypted(
       params.toDID,
-      params.fromDID,
-      params.signByDID,
+      params.fromDID || null,
+      params.signByDID || null,
       this.didResolverService,
       this.secretResolverService,
       {}

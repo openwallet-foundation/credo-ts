@@ -1,4 +1,4 @@
-import type { PlaintextMessage } from './EnvelopeService'
+import type { PlaintextMessage } from '@aries-framework/core'
 
 export type EncryptedMessage = {
   protected: string
