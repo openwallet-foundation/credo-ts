@@ -196,7 +196,6 @@ describe('CredentialService', () => {
     test('returns credential proposal message', async () => {
       const { message: credentialProposal } = await credentialService.createProposal(proposeOptions)
 
-      // console.log(credentialProposal.toJSON())
       expect(credentialProposal.toJSON()).toMatchObject({
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/propose-credential',
