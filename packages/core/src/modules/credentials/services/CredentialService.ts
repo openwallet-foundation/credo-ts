@@ -250,14 +250,8 @@ export abstract class CredentialService {
   public async delete(credentialRecord: CredentialExchangeRecord, options?: DeleteCredentialOptions): Promise<void> {
     await this.credentialRepository.delete(credentialRecord)
 
-    let deleteOptions = options
-
-    if (!deleteOptions || !deleteOptions.deleteAssociatedCredentials) {
-      deleteOptions = { ...options, deleteAssociatedCredentials: true }
-    }
-
     const deleteAssociatedCredentials = options?.deleteAssociatedCredentials ?? true
-
+    
     if (deleteAssociatedCredentials) {
       for (const credential of credentialRecord.credentials) {
         const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
