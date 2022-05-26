@@ -2030,6 +2030,13 @@
   resolved "https://npm.pkg.github.com/download/@sicpa-dlab/didcomm-react-native/0.0.2/594e9dd51deb6bf8df65f2c4d956c945a861be614347178c3b8f5dbc4c8155f5#93106dd59cc7e2ea418bdf9f5876c696bcf13215"
   integrity sha512-BVfMNwoqmHhjBxdDAjBZ7ys1Mt+RJpVNn6YRaSfJAgmOF3wgSLMDsfb32Ki+vyvH3KW6YCeKvWK/3y/o73jo9w==
 
+"@sicpa-dlab/value-transfer-protocol-ts@^0.0.2":
+  version "0.0.2"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.2/a6837337db14612b473cc70863575c1766d14248ca98ee3d5b66c75f63396509#7117e48e08a1c80a56ed42b8ed5b9521a96c9c01"
+  integrity sha512-/fhZgTdNNHA45uz8GHDrVON6gL98qlhFxSQmq6iZFWG8WRwCMyVqyG4EDvtnm/9S5zMg1XOnrkqe/Uc7pYvXgw==
+  dependencies:
+    "@noble/hashes" "^1.0.0"
+
 "@sideway/address@^4.1.3":
   version "4.1.3"
   resolved "https://registry.npmjs.org/@sideway/address/-/address-4.1.3.tgz#d93cce5d45c5daec92ad76db492cc2ee3c64ab27"
@@ -2579,9 +2586,6 @@
   dependencies:
     "@typescript-eslint/types" "4.33.0"
     eslint-visitor-keys "^2.0.0"
-
-"@value-transfer/value-transfer-lib@file:../value-transfer-protocol-ts/build":
-  version "0.0.0"
 
 JSONStream@^1.0.4:
   version "1.3.5"

@@ -1,6 +1,6 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-import { ValueTransferMessage } from '@value-transfer/value-transfer-lib'
+import { ValueTransferMessage } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
 import { Equals, IsInstance, ValidateNested } from 'class-validator'
 

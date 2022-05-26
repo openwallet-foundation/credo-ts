@@ -1,5 +1,5 @@
 import type { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
-import type { State, StorageInterface, WitnessState } from '@value-transfer/value-transfer-lib'
+import type { State, StorageInterface, WitnessState } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Lifecycle, scoped } from 'tsyringe'
 

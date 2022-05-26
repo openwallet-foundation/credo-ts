@@ -5,7 +5,7 @@ import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
 import { ValueTransferState } from '@aries-framework/core/src/modules/value-transfer/ValueTransferState'
-import { createVerifiableNotes } from '@value-transfer/value-transfer-lib'
+import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'

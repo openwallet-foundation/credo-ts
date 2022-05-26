@@ -1,5 +1,5 @@
 import type { Buffer } from '../../../utils'
-import type { CryptoInterface } from '@value-transfer/value-transfer-lib'
+import type { CryptoInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
