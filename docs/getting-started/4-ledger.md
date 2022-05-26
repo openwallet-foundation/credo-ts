@@ -44,7 +44,7 @@ The order of the ledgers in the `indyLedgers` configuration object matters. The 
 
 ### iOS Multiple Ledgers Troubleshooting
 
-With having multiple ledgers, the community has run into issues relating to credential issuance or other ledger operation in iOS release environments (as seen in [#647](https://github.com/hyperledger/aries-framework-javascript/issues/647)). This can appear as a soft crash preventing usage of the ledger. If you're able to get the logs, they might look similar to the following:
+With having multiple ledgers, you can run into issues relating to credential issuance or other ledger operation in iOS release environments (as seen in [#647](https://github.com/hyperledger/aries-framework-javascript/issues/647)). This can appear as a soft crash preventing usage of the ledger. If you're able to get the logs, they might look similar to the following:
 
 ```
 Undefined error: 0
@@ -53,7 +53,7 @@ thread '<unnamed>' panicked at 'FIXME: IndyError { inner: Too many open files
 IO error }', src/libcore/result.rs:1165:5
 ```
 
-This issue results as too many files have been opened in the process of opening the ledgers and contacting their nodes. IOS defaults the open files limit to 256 (rlimit). This is likely something that can and should be addressed in indy-sdk or indy-vdr in the future.
+This issue results as too many files/resources have been opened in the process of connecting to the ledgers. IOS defaults the this limit to 256 (rlimit). This is likely something that can and should be addressed in indy-sdk or indy-vdr in the future.
 
 #### Reduce Configured Ledgers
 
@@ -101,6 +101,6 @@ Once run, the logs will look like:
 2022-05-24 15:46:32.256369-0600 AriesBifold[731:288330] New hard RLimit: 9223372036854775807
 ```
 
-Helpful links:
+Helpful resources:
 * https://pubs.opengroup.org/onlinepubs/009695399/functions/getrlimit.html
 * https://stackoverflow.com/a/62074374
