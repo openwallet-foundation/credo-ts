@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../../src/agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
+import type { DidRepository } from '../../dids/repository'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { AcceptRequestOptions, RequestCredentialOptions } from '../CredentialsModuleOptions'
 import type {
@@ -23,6 +24,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../../../storage'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { AckStatus } from '../../common/messages/AckMessage'
 import { DidExchangeState } from '../../connections'
+import { DidResolverService } from '../../dids'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
@@ -216,6 +218,8 @@ describe('CredentialService', () => {
   let dispatcher: Dispatcher
   let credentialService: V2CredentialService
   let revocationService: RevocationService
+  let didResolverService: DidResolverService
+  let didRepository: DidRepository
 
   const initMessages = () => {
     credentialRequestMessage = new V2RequestCredentialMessage(requestOptions)
@@ -243,6 +247,7 @@ describe('CredentialService', () => {
     dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
     didCommMessageRepository = new DidCommMessageRepositoryMock()
     revocationService = new RevocationService(credentialRepository, eventEmitter, agentConfig)
+    didResolverService = new DidResolverService(agentConfig, indyLedgerService, didRepository)
 
     credentialService = new V2CredentialService(
       {
@@ -263,7 +268,8 @@ describe('CredentialService', () => {
         indyHolderService,
         agentConfig
       ),
-      revocationService
+      revocationService,
+      didResolverService
     )
   })
 
