@@ -1,3 +1,5 @@
+import type { OutOfBandRecord } from '@aries-framework/core/src/modules/oob/repository'
+
 import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
@@ -42,6 +44,7 @@ export class WitnessInquirer extends BaseInquirer {
   }
 
   public async processAnswer() {
+    this.listener.witnessOutOfBandListener(this.witness, this)
     const choice = await this.getPromptChoice()
     if (this.listener.on) return
 
@@ -74,6 +77,10 @@ export class WitnessInquirer extends BaseInquirer {
       await this.witness.restart()
       await runFaber()
     }
+  }
+
+  public async handleOutOBandInvitation(outOfBandRecord: OutOfBandRecord) {
+    await this.witness.handleOutOBandInvitation(outOfBandRecord)
   }
 }
 

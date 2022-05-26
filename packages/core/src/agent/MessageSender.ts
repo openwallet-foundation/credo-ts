@@ -1,8 +1,8 @@
 import type { ConnectionRecord } from '../modules/connections'
 import type { DidCommService, IndyAgentService } from '../modules/dids/domain/service'
-import type { AcceptProtocol } from '../modules/routing/types'
+import type { AcceptProtocol, Transport } from '../modules/routing/types'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { OutboundMessage, OutboundPackage, SendMessageOptions } from '../types'
+import type { OutboundMessage, OutboundPackage, OutboundPlainMessage, SendMessageOptions } from '../types'
 import type { TransportSession } from './TransportService'
 import type { DIDCommMessage, EncryptedMessage } from './didcomm'
 import type { PackMessageParams } from './didcomm/EnvelopeService'
@@ -306,6 +306,18 @@ export class MessageSender {
 
     outboundPackage.endpoint = endpoint
     outboundPackage.connectionId = connection?.id
+    await this.sendMessageUsingTransport(outboundPackage, transport)
+  }
+
+  public async sendPlaintextMessage(outboundMessage: OutboundPlainMessage, transport: Transport) {
+    const outboundPackage = {
+      payload: { ...outboundMessage.payload },
+      responseRequested: false,
+    }
+    return this.sendMessageUsingTransport(outboundPackage, transport)
+  }
+
+  public async sendMessageUsingTransport(outboundPackage: OutboundPackage, transport: string) {
     for (const outboundTransport of this.outboundTransports) {
       if (outboundTransport.supportedSchemes.includes(transport)) {
         await outboundTransport.sendMessage(outboundPackage)

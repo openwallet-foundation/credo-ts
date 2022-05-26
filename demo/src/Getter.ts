@@ -2,6 +2,7 @@
 import type { Transport } from '@aries-framework/core'
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
+import { OutOfBandGoalCodes } from '@aries-framework/core/src/modules/oob/OutOfBandGoalCodes'
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
 import { ValueTransferState } from '@aries-framework/core/src/modules/value-transfer/ValueTransferState'
 
@@ -11,6 +12,7 @@ import { greenText, Output, redText } from './OutputClass'
 export class Getter extends BaseAgent {
   public valueTransferRecordId?: string
   public connectionRecordWitnessId?: string
+  public giver?: string
   public connected: boolean
   public static transport: Transport = 'ipc'
   public static seed = '6b8b882e2618fa5d45ee7229ca880082'
@@ -76,6 +78,37 @@ export class Getter extends BaseAgent {
     this.connected = true
   }
 
+  public async setupConnection() {
+    await this.sendConnectionInvite()
+    await this.waitForConnection()
+  }
+
+  public async requestGiverDid() {
+    await this.agent.oob.createOutOfBandInvitation({
+      goalCode: OutOfBandGoalCodes.RequestPayCashVtp,
+      send: true,
+      connectionId: this.connectionRecordWitnessId,
+    })
+  }
+
+  public setGiverDid(did: string) {
+    this.giver = did
+  }
+
+  public async requestPayment() {
+    if (!this.connectionRecordWitnessId) {
+      throw Error(redText(Output.MissingConnectionRecord))
+    }
+    if (!this.giver) {
+      throw Error(redText(Output.MissingGiverDid))
+    }
+
+    const { record } = await this.agent.valueTransfer.requestPayment(this.connectionRecordWitnessId, 10, this.giver)
+    this.valueTransferRecordId = record.id
+    console.log(greenText('\nRequest Sent!\n'))
+    await this.waitForPayment()
+  }
+
   private async waitForPayment() {
     const valueTransferRecord = await this.getValueTransferRecord()
 
@@ -97,21 +130,6 @@ export class Getter extends BaseAgent {
       console.log(redText(`\nTimeout of 120 seconds reached.. Returning to home screen.\n`))
       return
     }
-  }
-
-  public async setupConnection() {
-    await this.sendConnectionInvite()
-    await this.waitForConnection()
-  }
-
-  public async requestPayment(giver: string) {
-    if (!this.connectionRecordWitnessId) {
-      throw Error(redText(Output.MissingConnectionRecord))
-    }
-    const { record } = await this.agent.valueTransfer.requestPayment(this.connectionRecordWitnessId, 10, giver)
-    this.valueTransferRecordId = record.id
-    console.log(greenText('\nRequest Sent!\n'))
-    await this.waitForPayment()
   }
 
   public async exit() {

@@ -86,7 +86,7 @@ export class ValueTransferGiverService {
     // If connection doesn't contain remote info -> fill it
     // TODO: Think about more appropriate place for populating connection -> middleware?
     if (!witnessConnection.theirDid && messageContext.sender && witnessConnection.isOutOfBandConnection) {
-      await this.connectionService.setOutOfBandConnectionTheirInfo(witnessConnection, messageContext.sender)
+      await this.connectionService.setConnectionTheirInfo(witnessConnection, messageContext.sender)
     }
 
     // Create Value Transfer record and raise event

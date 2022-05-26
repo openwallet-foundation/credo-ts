@@ -1,6 +1,5 @@
 import type { TransportPriorityOptions } from './agent/MessageSender'
 import type { DIDCommMessage, EncryptedMessage } from './agent/didcomm/index'
-import type { KeyType } from './crypto'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
@@ -8,7 +7,7 @@ import type { DidType } from './modules/dids'
 import type { DidCommService } from './modules/dids/domain/service/DidCommService'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
-import type { MediatorPickupStrategy } from './modules/routing'
+import type { MediatorPickupStrategy, Transport } from './modules/routing'
 import type { ValueTransferRole } from './modules/value-transfer'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
 import type { VerifiableNote } from '@value-transfer/value-transfer-lib'
@@ -43,6 +42,9 @@ export interface WalletExportImportConfig {
 
 export interface ValueTransferConfig {
   role: ValueTransferRole
+  getterTransport?: Transport
+  giverTransport?: Transport
+  witnessTransport?: Transport
   verifiableNotes?: VerifiableNote[]
   autoAcceptValueTransfer?: AutoAcceptValueTransfer
 }
@@ -103,6 +105,10 @@ export interface DecryptedMessageContext {
 export interface OutboundMessage<T extends DIDCommMessage = DIDCommMessage> {
   payload: T
   connection: ConnectionRecord
+}
+
+export interface OutboundPlainMessage<T extends DIDCommMessage = DIDCommMessage> {
+  payload: T
 }
 
 export interface OutboundServiceMessage<T extends DIDCommMessage = DIDCommMessage> {

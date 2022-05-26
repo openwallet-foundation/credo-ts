@@ -3,6 +3,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
 import type { IndyAgentService } from '../../dids/domain/service'
+import type { OutOfBandInvitationMessage } from '../../oob/messages'
 import type { Transport } from '../../routing/types'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
@@ -22,7 +23,7 @@ import { MessageValidator } from '../../../utils/MessageValidator'
 import { Wallet } from '../../../wallet/Wallet'
 import { DidCommService, DidDocument, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
-import { defaultAcceptProfiles, offlineTransports } from '../../routing/types'
+import { offlineTransports } from '../../routing/types'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import {
@@ -31,7 +32,6 @@ import {
   ConnectionResponseMessage,
   TrustPingMessage,
 } from '../messages'
-import { OutOfBandInvitationMessage } from '../messages/OutOfBandInvitationMessage'
 import {
   authenticationTypes,
   Connection,
@@ -480,104 +480,7 @@ export class ConnectionService {
     return connectionRecord
   }
 
-  /**
-   * Create a new Out-Of-Band connection
-   *
-   * @param config config for creation of connection and invitation
-   * @returns new connection record
-   */
-  public async createOutOfBandConnection(config: {
-    goalCode?: string
-    alias?: string
-    myLabel?: string
-    myImageUrl?: string
-    autoAcceptConnection?: boolean
-    multiUseInvitation?: boolean
-    routing: Routing
-    transport?: Transport
-  }): Promise<{ connectionRecord: ConnectionRecord; message: OutOfBandInvitationMessage }> {
-    const connectionRecord = await this.createConnection({
-      role: ConnectionRole.Inviter,
-      state: ConnectionState.Complete,
-      alias: config?.alias,
-      routing: config.routing,
-      autoAcceptConnection: config?.autoAcceptConnection,
-      multiUseInvitation: config.multiUseInvitation ?? false,
-      transport: config?.transport,
-    })
-    const invitation = new OutOfBandInvitationMessage({
-      from: connectionRecord.didDoc.id,
-      body: {
-        label: config?.myLabel ?? this.config.label,
-        goalCode: config?.goalCode,
-        accept: defaultAcceptProfiles,
-        imageUrl: config?.myImageUrl ?? this.config.connectionImageUrl,
-      },
-    })
-
-    connectionRecord.outOfBandInvitation = invitation
-
-    await this.connectionRepository.update(connectionRecord)
-
-    this.eventEmitter.emit<ConnectionStateChangedEvent>({
-      type: ConnectionEventTypes.ConnectionStateChanged,
-      payload: {
-        connectionRecord: connectionRecord,
-        previousState: null,
-      },
-    })
-
-    return { connectionRecord: connectionRecord, message: invitation }
-  }
-
-  /**
-   * Create a new connection record from received Out-Of-Band invitation
-   *
-   * @param invitation The record context containing a connection problem report record
-   * @param config config for creation of connection and invitation
-   * @returns new connection record
-   */
-  public async acceptOutOfBandInvitation(
-    invitation: OutOfBandInvitationMessage,
-    config: {
-      alias?: string
-      routing: Routing
-      transport?: Transport
-    }
-  ): Promise<{ connectionRecord: ConnectionRecord; message: OutOfBandInvitationMessage }> {
-    if (!invitation.from) {
-      throw new AriesFrameworkError(`Invalid Out-Of-Band invitation: 'from' field is missing`)
-    }
-
-    const connectionRecord = await this.createConnection({
-      role: ConnectionRole.Invitee,
-      state: ConnectionState.Complete,
-      alias: config?.alias,
-      outOfBandInvitation: invitation,
-      theirLabel: invitation.body?.label,
-      routing: config.routing,
-      imageUrl: invitation.body?.imageUrl,
-      multiUseInvitation: false,
-      transport: config.transport,
-    })
-    const theirDIDDoc = await this.buildConnectionDIDDoc(invitation.from, connectionRecord.transport)
-
-    connectionRecord.theirDid = theirDIDDoc.id
-    connectionRecord.theirDidDoc = theirDIDDoc
-
-    await this.connectionRepository.update(connectionRecord)
-    this.eventEmitter.emit<ConnectionStateChangedEvent>({
-      type: ConnectionEventTypes.ConnectionStateChanged,
-      payload: {
-        connectionRecord: connectionRecord,
-        previousState: null,
-      },
-    })
-
-    return { connectionRecord, message: invitation }
-  }
-
-  public async setOutOfBandConnectionTheirInfo(connectionRecord: ConnectionRecord, senderKid: string): Promise<void> {
+  public async setConnectionTheirInfo(connectionRecord: ConnectionRecord, senderKid: string): Promise<void> {
     if (!connectionRecord.isOutOfBandConnection) {
       throw new AriesFrameworkError(`Function can be used for Out-Of-Band connections only`)
     }
@@ -818,7 +721,7 @@ export class ConnectionService {
     return this.connectionRepository.getByThreadId(threadId)
   }
 
-  private async createConnection(options: {
+  public async createConnection(options: {
     role: ConnectionRole
     state: ConnectionState
     invitation?: ConnectionInvitationMessage

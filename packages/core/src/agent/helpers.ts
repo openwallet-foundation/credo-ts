@@ -1,5 +1,5 @@
 import type { ConnectionRecord } from '../modules/connections'
-import type { OutboundMessage, OutboundServiceMessage } from '../types'
+import type { OutboundMessage, OutboundPlainMessage, OutboundServiceMessage } from '../types'
 import type { DIDCommMessage } from './didcomm'
 
 import { DidCommService } from '../modules/dids/domain/service/DidCommService'
@@ -10,6 +10,14 @@ export function createOutboundMessage<T extends DIDCommMessage = DIDCommMessage>
 ): OutboundMessage<T> {
   return {
     connection,
+    payload,
+  }
+}
+
+export function createOutboundPlainMessage<T extends DIDCommMessage = DIDCommMessage>(
+  payload: T
+): OutboundPlainMessage<T> {
+  return {
     payload,
   }
 }

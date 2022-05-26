@@ -1,3 +1,4 @@
+import type { OutOfBandRecord } from '@aries-framework/core/src/modules/oob/repository'
 import type { ValueTransferRecord } from '@aries-framework/core/src/modules/value-transfer'
 
 import { clear } from 'console'
@@ -17,7 +18,6 @@ export const runFaber = async () => {
 }
 
 enum PromptOptions {
-  CreateConnection = 'Make Witness Out-of-Band connection',
   Exit = 'Exit',
   Restart = 'Restart',
 }
@@ -43,18 +43,18 @@ export class GiverInquirer extends BaseInquirer {
   private async getPromptChoice() {
     if (this.giver.connectionRecordWitnessId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
 
-    const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
+    const reducedOption = [PromptOptions.Exit, PromptOptions.Restart]
     return inquirer.prompt([this.inquireOptions(reducedOption)])
   }
 
   public async processAnswer() {
+    this.listener.giverOutOfBandListener(this.giver, this)
+    this.listener.paymentRequestListener(this.giver, this)
+
     const choice = await this.getPromptChoice()
     if (this.listener.on) return
 
     switch (choice.options) {
-      case PromptOptions.CreateConnection:
-        await this.connection()
-        break
       case PromptOptions.Exit:
         await this.exit()
         break
@@ -65,9 +65,8 @@ export class GiverInquirer extends BaseInquirer {
     await this.processAnswer()
   }
 
-  public async connection() {
-    await this.giver.setupConnection()
-    this.listener.paymentRequesyListener(this.giver, this)
+  public async handleOutOBandInvitation(outOfBandRecord: OutOfBandRecord) {
+    await this.giver.handleOutOBandInvitation(outOfBandRecord)
   }
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {

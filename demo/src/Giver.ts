@@ -1,8 +1,10 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { Transport } from '@aries-framework/core'
+import type { OutOfBandRecord } from '@aries-framework/core/src/modules/oob/repository'
 import type { ValueTransferRecord } from '@aries-framework/core/src/modules/value-transfer'
 import type { ValueTransferConfig } from '@aries-framework/core/src/types'
 
+import { OutOfBandGoalCodes } from '@aries-framework/core/src/modules/oob/OutOfBandGoalCodes'
 import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
 import { ValueTransferState } from '@aries-framework/core/src/modules/value-transfer/ValueTransferState'
 import { createVerifiableNotes } from '@value-transfer/value-transfer-lib'
@@ -44,21 +46,6 @@ export class Giver extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  private async sendOutOfBandInvite() {
-    const invite = await this.agent.connections.createOutOfBandConnection({
-      transport: Giver.transport,
-      goalCode: 'pay.cash.vtp',
-    })
-    this.connectionRecordWitnessId = invite.connectionRecord.id
-
-    await this.outBoundTransport.sendMessage({
-      payload: { ...invite.invitation },
-    })
-    console.log(Output.ConnectionInvitationSent, invite.invitation, '\n')
-    console.log(greenText('DID: ' + invite.connectionRecord.did))
-    return invite.connectionRecord
-  }
-
   private async waitForPayment() {
     const valueTransferRecord = await this.getValueTransferRecord()
 
@@ -82,8 +69,17 @@ export class Giver extends BaseAgent {
     }
   }
 
-  public async setupConnection() {
-    await this.sendOutOfBandInvite()
+  public async handleOutOBandInvitation(outOfBandRecord: OutOfBandRecord) {
+    if (outOfBandRecord.invitation.body.goalCode === OutOfBandGoalCodes.RequestPayCashVtp) {
+      console.log('\nCreate new Invitation')
+      const { outOfBandRecord: newOutOfBandRecord } = await this.agent.oob.createOutOfBandInvitation({
+        goalCode: OutOfBandGoalCodes.PayCashVtp,
+        send: true,
+        transport: Giver.transport,
+      })
+      await this.agent.oob.complete(outOfBandRecord)
+      await this.agent.oob.complete(newOutOfBandRecord)
+    }
   }
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {

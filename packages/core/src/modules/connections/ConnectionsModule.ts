@@ -17,9 +17,7 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ConnectionInvitationHandler } from './handlers/ConnectionInvitationHandler'
-import { OutOfBandInvitationHandler } from './handlers/OutOfBandInvitationHandler'
 import { ConnectionInvitationMessage } from './messages'
-import { OutOfBandInvitationMessage } from './messages/OutOfBandInvitationMessage'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -190,89 +188,6 @@ export class ConnectionsModule {
     return connectionRecord
   }
 
-  /**
-   * Create Out-of-Band connection and invitation message.
-   *
-   * @param config config for creating invitation
-   * @returns new connection record
-   */
-  public async createOutOfBandConnection(config?: {
-    alias?: string
-    myLabel?: string
-    myImageUrl?: string
-    goalCode?: string
-    transport?: Transport
-    autoAcceptConnection?: boolean
-    mediatorId?: string
-    useDefaultMediator?: boolean
-    multiUseInvitation?: boolean
-  }): Promise<{
-    invitation: OutOfBandInvitationMessage
-    connectionRecord: ConnectionRecord
-  }> {
-    const myRouting = await this.mediationRecipientService.getRouting({
-      mediatorId: config?.mediatorId,
-      useDefaultMediator: config?.useDefaultMediator,
-    })
-
-    const { connectionRecord, message: invitation } = await this.connectionService.createOutOfBandConnection({
-      autoAcceptConnection: config?.autoAcceptConnection,
-      alias: config?.alias,
-      routing: myRouting,
-      multiUseInvitation: config?.multiUseInvitation,
-      myLabel: config?.myLabel,
-      myImageUrl: config?.myImageUrl,
-      goalCode: config?.goalCode,
-      transport: config?.transport,
-    })
-    return { connectionRecord, invitation }
-  }
-
-  public async acceptOutOfBandInvitationFromUrl(
-    invitationUrl: string,
-    config?: {
-      autoAcceptConnection?: boolean
-      alias?: string
-      mediatorId?: string
-      transport?: Transport
-    }
-  ): Promise<{ connectionRecord: ConnectionRecord }> {
-    const invitation = await OutOfBandInvitationMessage.fromUrl(invitationUrl)
-    return this.acceptOutOfBandInvitation(invitation, {
-      alias: config?.alias,
-      mediatorId: config?.mediatorId,
-      transport: config?.transport,
-    })
-  }
-
-  /**
-   * Create connection from received Out-of-Band invitation.
-   *
-   * @param invitation invitation to receive
-   * @param config config for handling of invitation
-   * @returns connection record
-   */
-  public async acceptOutOfBandInvitation(
-    invitation: OutOfBandInvitationMessage,
-    config?: {
-      alias?: string
-      mediatorId?: string
-      transport?: Transport
-    }
-  ): Promise<{
-    connectionRecord: ConnectionRecord
-  }> {
-    const routing = await this.mediationRecipientService.getRouting({
-      mediatorId: config?.mediatorId,
-    })
-
-    const { connectionRecord } = await this.connectionService.acceptOutOfBandInvitation(invitation, {
-      ...config,
-      routing,
-    })
-    return { connectionRecord }
-  }
-
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
     return this.connectionService.returnWhenIsConnected(connectionId, options?.timeoutMs)
   }
@@ -373,8 +288,5 @@ export class ConnectionsModule {
     dispatcher.registerDIDCommV1Handler(new AckMessageHandler(this.connectionService))
     dispatcher.registerDIDCommV1Handler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerDIDCommV1Handler(new TrustPingResponseMessageHandler(this.trustPingService))
-    dispatcher.registerDIDCommV2Handler(
-      new OutOfBandInvitationHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
-    )
   }
 }

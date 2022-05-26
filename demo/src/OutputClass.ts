@@ -10,6 +10,7 @@ export enum Output {
   PaymentReceived = `\nPayment Received!`,
   PaymentDone = `\nPayment Done!`,
   MissingConnectionRecord = `\nNo connectionRecord ID has been set yet\n`,
+  MissingGiverDid = `\nNo giver DID has been set yet\n`,
   MissingValueTransferRecord = `\nNo valueTransferRecord ID has been set yet\n`,
   ConnectionInvitationSent = `\nConnection invitation sent\n\n`,
   ConnectionLink = `\nRun 'Receive connection invitation' in Faber and paste this invitation link:\n\n`,
@@ -23,6 +24,7 @@ export enum Title {
   ConfirmTitle = '\n\nAre you sure?',
   CredentialOfferTitle = '\n\nCredential offer received, do you want to accept it?',
   PaymentRequestTitle = '\n\nPayment Request received, do you want to accept it?',
+  GiverDidReceiveTitle = '\n\nGiver DID received, do you want to request him?',
   ProofRequestTitle = '\n\nProof request received, do you want to accept it?',
 }
 

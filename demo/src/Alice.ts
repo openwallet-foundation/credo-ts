@@ -1,8 +1,6 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
 
-import { Transport } from '@aries-framework/core'
-
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 

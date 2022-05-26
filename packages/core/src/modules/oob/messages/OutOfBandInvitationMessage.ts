@@ -41,9 +41,7 @@ export class OutOfBandInvitationMessage extends DIDCommV2Message {
     const invitationJson = this.toJSON()
 
     const encodedInvitation = JsonEncoder.toBase64URL(invitationJson)
-    const invitationUrl = `${domain}?oob=${encodedInvitation}`
-
-    return invitationUrl
+    return `${domain}?oob=${encodedInvitation}`
   }
 
   public static async fromUrl(invitationUrl: string) {

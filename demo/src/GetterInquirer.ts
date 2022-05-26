@@ -1,3 +1,5 @@
+import type { OutOfBandRecord } from '@aries-framework/core/src/modules/oob/repository'
+
 import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
@@ -5,7 +7,7 @@ import inquirer from 'inquirer'
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Getter } from './Getter'
 import { Listener } from './Listener'
-import { Title } from './OutputClass'
+import { Output, redText, Title } from './OutputClass'
 
 export const runFaber = async () => {
   clear()
@@ -55,7 +57,7 @@ export class GetterInquirer extends BaseInquirer {
         await this.connection()
         break
       case PromptOptions.RequestPayment:
-        await this.requestPayment()
+        await this.requestGiverDid()
         return
       case PromptOptions.Exit:
         await this.exit()
@@ -71,11 +73,24 @@ export class GetterInquirer extends BaseInquirer {
     await this.getter.setupConnection()
   }
 
-  public async requestPayment() {
-    const title = 'Paster Giver DID here'
-    const giver = await inquirer.prompt([this.inquireInput(title)])
-    await this.getter.requestPayment(giver.input)
-    await this.processAnswer()
+  public async requestGiverDid() {
+    await this.getter.requestGiverDid()
+    this.listener.getterOutOfBandListener(this.getter, this)
+  }
+
+  public async handlePayCashInvitation(outOfBandRecord: OutOfBandRecord) {
+    if (!outOfBandRecord.invitation.from) {
+      throw Error(redText(Output.MissingGiverDid))
+    }
+    await this.getter.setGiverDid(outOfBandRecord.invitation.from)
+
+    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.GiverDidReceiveTitle)])
+    if (confirm.options === ConfirmOptions.No) {
+      return
+    } else if (confirm.options === ConfirmOptions.Yes) {
+      await this.getter.requestPayment()
+      await this.processAnswer()
+    }
   }
 
   public async exit() {
