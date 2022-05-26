@@ -36,6 +36,7 @@
     "@types/ws": "^7.4.6",
     "@typescript-eslint/eslint-plugin": "^4.26.1",
     "@typescript-eslint/parser": "^4.26.1",
+    "@stablelib/uuid": "^1.0.1",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "eslint": "^7.28.0",
