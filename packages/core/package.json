@@ -24,6 +24,9 @@
   },
   "dependencies": {
     "@multiformats/base-x": "^4.0.1",
+    "@noble/ed25519": "^1.6.0",
+    "@noble/hashes": "^1.0.0",
+    "@sicpa-dlab/value-transfer-protocol-ts": "^0.0.3",
     "@stablelib/aes": "^1.0.1",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/random": "^1.0.1",
@@ -32,8 +35,8 @@
     "@types/indy-sdk": "^1.16.16",
     "@types/node-fetch": "^2.5.10",
     "@types/ws": "^7.4.6",
-    "@sicpa-dlab/value-transfer-protocol-ts": "^0.0.2",
     "abort-controller": "^3.0.0",
+    "bloom-filters": "^3.0.0",
     "bn.js": "^5.2.0",
     "borc": "^3.0.0",
     "buffer": "^6.0.3",
@@ -51,10 +54,7 @@
     "tsyringe": "^4.5.0",
     "uuid": "^8.3.2",
     "varint": "^6.0.0",
-    "web-did-resolver": "^2.0.8",
-    "@noble/ed25519": "^1.6.0",
-    "@noble/hashes": "^1.0.0",
-    "bloom-filters": "^3.0.0"
+    "web-did-resolver": "^2.0.8"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.0",
