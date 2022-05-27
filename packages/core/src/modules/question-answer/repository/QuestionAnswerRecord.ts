@@ -2,6 +2,7 @@ import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 import type { QuestionAnswerRole } from '../QuestionAnswerRole'
 import type { QuestionAnswerState, ValidResponse } from '../models'
 
+import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 
@@ -72,6 +73,18 @@ export class QuestionAnswerRecord extends BaseRecord<DefaultQuestionAnswerTags, 
       role: this.role,
       state: this.state,
       threadId: this.threadId,
+    }
+  }
+
+  public assertState(expectedStates: QuestionAnswerState | QuestionAnswerState[]) {
+    if (!Array.isArray(expectedStates)) {
+      expectedStates = [expectedStates]
+    }
+
+    if (!expectedStates.includes(this.state)) {
+      throw new AriesFrameworkError(
+        `Question answer record is in invalid state ${this.state}. Valid states are: ${expectedStates.join(', ')}.`
+      )
     }
   }
 }

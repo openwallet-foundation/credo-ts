@@ -86,6 +86,9 @@ export class QuestionAnswerService {
   ): Promise<QuestionAnswerRecord> {
     const { message: questionMessage } = messageContext
 
+    const questionRecord = await this.getById(questionMessage.id)
+    questionRecord.assertState(QuestionAnswerState.QuestionSent)
+
     this.logger.debug(`Receiving question message with id ${questionMessage.id}`)
 
     const connection = messageContext.assertReadyConnection()
@@ -142,13 +145,7 @@ export class QuestionAnswerService {
 
     this.logger.debug(`Receiving answer message with id ${answerMessage.id}`)
 
-    if (!connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
-    }
-
-    if (!connection.theirKey) {
-      throw new AriesFrameworkError(`Connection with verkey ${connection.verkey} has no recipient keys.`)
-    }
+    const connection = messageContext.assertReadyConnection()
 
     const questionAnswerRecord: QuestionAnswerRecord = await this.getByThreadAndConnectionId(
       answerMessage.threadId,
