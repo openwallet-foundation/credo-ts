@@ -2,8 +2,8 @@ import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Messag
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
-import type { KeylistUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
-import type { KeylistUpdateResponseMessage, MediationDenyMessage, MediationGrantMessage } from '../messages'
+import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
+import type { MediationGrantMessage, MediationDenyMessage, KeylistUpdateResponseMessage } from '../messages'
 import type { GetRoutingOptions } from '../types'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -15,11 +15,9 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
-import { Crypto } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../../connections/services/ConnectionService'
-import { DidService, DidType } from '../../dids'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { KeylistUpdateAction, MediationRequestMessage } from '../messages'
 import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMessage'
@@ -33,20 +31,16 @@ export class MediationRecipientService {
   private mediatorRepository: MediationRepository
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
-  private didService: DidService
   private messageSender: MessageSender
   private config: AgentConfig
-  private crypto: Crypto
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
-    @inject(InjectionSymbols.Crypto) crypto: Crypto,
     connectionService: ConnectionService,
     messageSender: MessageSender,
     config: AgentConfig,
     mediatorRepository: MediationRepository,
-    eventEmitter: EventEmitter,
-    didService: DidService
+    eventEmitter: EventEmitter
   ) {
     this.config = config
     this.wallet = wallet
@@ -54,8 +48,6 @@ export class MediationRecipientService {
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
-    this.didService = didService
-    this.crypto = crypto
   }
 
   public async createRequest(
@@ -189,21 +181,8 @@ export class MediationRecipientService {
     let endpoints = this.config.endpoints
     let routingKeys: string[] = []
 
-    // FIXME: Find package that can be used for DIDComm V1 message encryption instead Indy
-    // Creates keys with sane random Seed in Indy Key wallet and our custom wallet layer.
-    // It's a quick way to get DIDComm V1 and V2 packing to work together
-    const seed = await this.crypto.randomSeed()
-
-    const { id, didDocument } = await this.didService.createDID(DidType.PeerDid, undefined, seed)
-    if (!didDocument?.verificationMethod.length) {
-      throw new AriesFrameworkError(`Unable to create DIDDoc`)
-    }
-    await this.wallet.createDid({ seed })
-
-    const did = id
-    const verkey = didDocument.verificationKey
-
     // Create and store new key
+    const { did, verkey } = await this.wallet.createDid()
     if (mediationRecord) {
       routingKeys = [...routingKeys, ...mediationRecord.routingKeys]
       endpoints = mediationRecord.endpoint ? [mediationRecord.endpoint] : endpoints

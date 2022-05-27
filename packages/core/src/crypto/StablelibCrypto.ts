@@ -3,7 +3,6 @@ import type { KeyPair } from './types'
 
 import * as aes from '@stablelib/aes'
 import * as ed25519 from '@stablelib/ed25519'
-import * as random from '@stablelib/random'
 import * as x25518 from '@stablelib/x25519'
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -95,10 +94,6 @@ export class StablelibCrypto implements Crypto {
       default:
         throw new AriesFrameworkError(`Unsupported key type: ${keyType}`)
     }
-  }
-
-  public async randomSeed(): Promise<string> {
-    return random.randomString(32)
   }
 
   public async convertEd25519ToX25519Key(keyPair: KeyPair): Promise<KeyPair> {
