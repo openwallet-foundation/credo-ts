@@ -14,7 +14,6 @@ import type {
   AcceptRequestOptions,
   NegotiateOfferOptions,
   NegotiateProposalOptions,
-  OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../CredentialsModuleOptions'
@@ -340,7 +339,7 @@ export class V2CredentialService extends CredentialService {
    *
    */
   public async createOffer(
-    options: OfferCredentialOptions
+    options: ServiceOfferCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     const connection = options.connectionId ? await this.connectionService.getById(options.connectionId) : undefined
     connection?.assertReady()

@@ -16,7 +16,6 @@ import type {
 import type {
   AcceptProposalOptions,
   NegotiateProposalOptions,
-  OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../CredentialsModuleOptions'
@@ -506,13 +505,8 @@ export class V1CredentialService extends CredentialService {
    *
    */
   public async createOffer(
-    credentialOptions: OfferCredentialOptions
+    credentialOptions: ServiceOfferCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
-    // connection id can be undefined in connection-less scenario
-    const connection = credentialOptions.connectionId
-      ? await this.connectionService.getById(credentialOptions.connectionId)
-      : undefined
-
     const indy = credentialOptions.credentialFormats.indy
 
     if (!indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
@@ -534,7 +528,7 @@ export class V1CredentialService extends CredentialService {
       linkedAttachments: indy.linkedAttachments,
     }
 
-    const { credentialRecord, message } = await this.createOfferProcessing(template, connection)
+    const { credentialRecord, message } = await this.createOfferProcessing(template, credentialOptions.connection)
 
     await this.credentialRepository.save(credentialRecord)
     this.eventEmitter.emit<CredentialStateChangedEvent>({

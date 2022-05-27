@@ -7,6 +7,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { DidCommMessageRepository } from '../../../storage'
 import type { MediationRecipientService } from '../../routing'
+import type { CredentialFormatService } from '../formats/CredentialFormatService'
 import type { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import type { DidResolverService } from './../../dids/services/DidResolverService'
 import type { CredentialStateChangedEvent } from './../CredentialEvents'
@@ -14,6 +15,7 @@ import type { CredentialProtocolVersion } from './../CredentialProtocolVersion'
 import type {
   CredentialProtocolMsgReturnType,
   DeleteCredentialOptions,
+  ServiceOfferCredentialOptions,
   ServiceRequestCredentialOptions,
 } from './../CredentialServiceOptions'
 import type {
@@ -22,10 +24,8 @@ import type {
   CredentialFormatType,
   NegotiateOfferOptions,
   NegotiateProposalOptions,
-  OfferCredentialOptions,
   ProposeCredentialOptions,
 } from './../CredentialsModuleOptions'
-import type { CredentialFormatService } from './../formats/CredentialFormatService'
 import type { CredentialFormats, HandlerAutoAcceptOptions } from './../formats/models/CredentialFormatServiceOptions'
 import type {
   V1CredentialProblemReportMessage,
@@ -96,7 +96,7 @@ export abstract class CredentialService {
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for offer
-  abstract createOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract createOffer(options: ServiceOfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
 
   // methods for request
@@ -253,7 +253,9 @@ export abstract class CredentialService {
   public async delete(credentialRecord: CredentialExchangeRecord, options?: DeleteCredentialOptions): Promise<void> {
     await this.credentialRepository.delete(credentialRecord)
 
-    if (options?.deleteAssociatedCredentials) {
+    const deleteAssociatedCredentials = options?.deleteAssociatedCredentials ?? true
+
+    if (deleteAssociatedCredentials) {
       for (const credential of credentialRecord.credentials) {
         const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
         await formatService.deleteCredentialById(credential.credentialRecordId)
