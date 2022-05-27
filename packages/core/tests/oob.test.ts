@@ -14,6 +14,8 @@ import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
+import { DidCommMessageRepository, DidCommMessageRole } from '../src/storage'
+import { JsonEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
 import { getBaseConfig, prepareForIssuance, waitForCredentialRecord } from './helpers'
@@ -181,7 +183,7 @@ describe('out of band', () => {
     })
 
     test('create OOB message only with requests', async () => {
-      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         label: 'test-connection',
         handshake: false,
@@ -205,7 +207,7 @@ describe('out of band', () => {
     })
 
     test('create OOB message with both handshake and requests', async () => {
-      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         label: 'test-connection',
         handshakeProtocols: [HandshakeProtocol.Connections],
@@ -311,10 +313,7 @@ describe('out of band', () => {
     })
 
     test('make a connection based on old connection invitation encoded in URL', async () => {
-      const { outOfBandRecord, invitation } = await faberAgent.oob.createLegacyInvitation({
-        ...makeConnectionConfig,
-        handshakeProtocols: [HandshakeProtocol.Connections],
-      })
+      const { outOfBandRecord, invitation } = await faberAgent.oob.createLegacyInvitation(makeConnectionConfig)
       const urlMessage = invitation.toUrl({ domain: 'http://example.com' })
 
       let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
@@ -331,7 +330,7 @@ describe('out of band', () => {
     })
 
     test('process credential offer requests based on OOB message', async () => {
-      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         ...issueCredentialConfig,
         messages: [message],
@@ -353,7 +352,7 @@ describe('out of band', () => {
       const eventListener = jest.fn()
       aliceAgent.events.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, eventListener)
 
-      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         ...makeConnectionConfig,
         messages: [message],
@@ -369,7 +368,7 @@ describe('out of band', () => {
     })
 
     test('make a connection based on OOB invitation and process requests after the acceptation', async () => {
-      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
       const outOfBandRecord = await faberAgent.oob.createInvitation({
         ...makeConnectionConfig,
         messages: [message],
@@ -645,7 +644,7 @@ describe('out of band', () => {
     })
 
     test('throw an error when a did is used in the out of band message', async () => {
-      const { message } = await faberAgent.credentials.createOutOfBandOffer(credentialTemplate)
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         ...issueCredentialConfig,
         messages: [message],
@@ -655,6 +654,54 @@ describe('out of band', () => {
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
         new AriesFrameworkError('Dids are not currently supported in out-of-band invitation services attribute.')
       )
+    })
+  })
+
+  describe('createLegacyConnectionlessInvitation', () => {
+    test('add ~service decorator to the message and returns invitation url', async () => {
+      const { message, credentialRecord } = await faberAgent.credentials.createOffer(credentialTemplate)
+
+      const { message: offerMessage, invitationUrl } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+        recordId: credentialRecord.id,
+        domain: 'https://test.com',
+        message,
+      })
+
+      expect(offerMessage.service).toMatchObject({
+        serviceEndpoint: expect.any(String),
+        recipientKeys: [expect.any(String)],
+        routingKeys: [],
+      })
+
+      expect(invitationUrl).toEqual(expect.stringContaining('https://test.com?d_m='))
+
+      const messageBase64 = invitationUrl.split('https://test.com?d_m=')[1]
+
+      expect(JsonEncoder.fromBase64(messageBase64)).toMatchObject({
+        '@id': expect.any(String),
+        '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
+      })
+    })
+
+    test('updates the message in the didCommMessageRepository', async () => {
+      const { message, credentialRecord } = await faberAgent.credentials.createOffer(credentialTemplate)
+
+      const didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
+
+      const saveOrUpdateSpy = jest.spyOn(didCommMessageRepository, 'saveOrUpdateAgentMessage')
+      saveOrUpdateSpy.mockResolvedValue()
+
+      await faberAgent.oob.createLegacyConnectionlessInvitation({
+        recordId: credentialRecord.id,
+        domain: 'https://test.com',
+        message,
+      })
+
+      expect(saveOrUpdateSpy).toHaveBeenCalledWith({
+        agentMessage: message,
+        associatedRecordId: credentialRecord.id,
+        role: DidCommMessageRole.Sender,
+      })
     })
   })
 })

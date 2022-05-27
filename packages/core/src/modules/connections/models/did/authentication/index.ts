@@ -16,7 +16,7 @@ export const authenticationTypes = {
 }
 
 /**
- * Decorator that transforms authentication json to corresonding class instances. See {@link authenticationTypes}
+ * Decorator that transforms authentication json to corresponding class instances. See {@link authenticationTypes}
  *
  * @example
  * class Example {
