@@ -545,16 +545,8 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
     return false
   }
-  public async deleteCredentialById(credentialRecord: CredentialExchangeRecord): Promise<void> {
-    const indyCredential = credentialRecord.credentials.filter((binding) => {
-      return binding.credentialRecordType == CredentialFormatType.Indy
-    })
-    if (indyCredential.length != 1) {
-      throw new AriesFrameworkError(`Could not find Indy record id for credential record ${credentialRecord.id}`)
-    }
-    if (indyCredential[0].credentialRecordId) {
-      await this.indyHolderService.deleteCredential(indyCredential[0].credentialRecordId)
-    }
+  public async deleteCredentialById(credentialRecordId: string): Promise<void> {
+    await this.indyHolderService.deleteCredential(credentialRecordId)
   }
 
   public async checkPreviewAttributesMatchSchemaAttributes(

@@ -65,7 +65,7 @@ export abstract class CredentialFormatService {
   abstract shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean
   abstract shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean
 
-  abstract deleteCredentialById(credentialRecord: CredentialExchangeRecord): Promise<void>
+  abstract deleteCredentialById(credentialRecordId: string): Promise<void>
 
   /**
    *
