@@ -51,8 +51,6 @@ export class MediationRecipientService {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private config: AgentConfig
-  private logger: Logger
-  private messageReceiver: MessageReceiver
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
@@ -60,8 +58,7 @@ export class MediationRecipientService {
     messageSender: MessageSender,
     config: AgentConfig,
     mediatorRepository: MediationRepository,
-    eventEmitter: EventEmitter,
-    messageReveiver: MessageReceiver
+    eventEmitter: EventEmitter
   ) {
     this.config = config
     this.wallet = wallet
@@ -69,8 +66,6 @@ export class MediationRecipientService {
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
-    this.logger = config.logger
-    this.messageReceiver = messageReveiver
   }
 
   public async requestStatus(
@@ -84,7 +79,7 @@ export class MediationRecipientService {
 
     if (config.mediatorId) {
       const record = await this.getById(config.mediatorId)
-      mediator = await this.connectionService.findById(record.id)
+      mediator = await this.connectionService.findById(record.connectionId)
     } else {
       mediatorRecord = await this.findDefaultMediator()
       if (mediatorRecord) mediator = await this.connectionService.getById(mediatorRecord.connectionId)

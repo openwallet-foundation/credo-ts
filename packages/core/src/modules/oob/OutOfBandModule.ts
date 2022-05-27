@@ -287,17 +287,13 @@ export class OutOfBandModule {
    * @returns OutOfBandInvitation
    */
   public async parseInvitation(invitationUrl: string) {
-    const parsedUrl = parseUrl(invitationUrl).query
-    if (parsedUrl['oob']) {
+    try {
       const outOfBandInvitation = await OutOfBandInvitation.fromUrl(invitationUrl)
       return outOfBandInvitation
-    } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
+    } catch (error) {
       const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
       return convertToNewInvitation(invitation)
     }
-    throw new AriesFrameworkError(
-      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`.'
-    )
   }
 
   /**
