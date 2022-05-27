@@ -806,7 +806,7 @@ describe('CredentialService', () => {
     })
 
     it('deleteAssociatedCredential parameter should call deleteCredential in indyHolderService with credentialId', async () => {
-      const storeCredentialMock = indyHolderService.deleteCredential as jest.Mock<Promise<void>, [string]>
+      const deleteCredentialMock = mockFunction(indyHolderService.deleteCredential)
 
       const credentialRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialRecord))
@@ -814,7 +814,18 @@ describe('CredentialService', () => {
       await credentialService.delete(credentialRecord, {
         deleteAssociatedCredentials: true,
       })
-      expect(storeCredentialMock).toHaveBeenNthCalledWith(1, credentialRecord.credentials[0].credentialRecordId)
+      expect(deleteCredentialMock).toHaveBeenNthCalledWith(1, credentialRecord.credentials[0].credentialRecordId)
+    })
+
+    it('deleteAssociatedCredentials not set - defaults to true , credential still deleted by default', async () => {
+      const deleteCredentialMock = mockFunction(indyHolderService.deleteCredential)
+
+      const credentialRecord = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialRecord))
+
+      // deleteAssociatedCredentials not set - defaults to true
+      await credentialService.delete(credentialRecord)
+      expect(deleteCredentialMock).toHaveBeenNthCalledWith(1, credentialRecord.credentials[0].credentialRecordId)
     })
   })
 
