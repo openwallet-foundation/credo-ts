@@ -8,6 +8,7 @@ import type { Logger } from '../../../logger'
 import type { DidCommMessageRepository } from '../../../storage'
 import type { MediationRecipientService } from '../../routing'
 import type { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
+import type { DidResolverService } from './../../dids/services/DidResolverService'
 import type { CredentialStateChangedEvent } from './../CredentialEvents'
 import type { CredentialProtocolVersion } from './../CredentialProtocolVersion'
 import type {
@@ -53,6 +54,7 @@ export abstract class CredentialService {
   protected didCommMessageRepository: DidCommMessageRepository
   protected logger: Logger
   protected revocationService: RevocationService
+  protected didResolver: DidResolverService
 
   public constructor(
     credentialRepository: CredentialRepository,
@@ -61,7 +63,8 @@ export abstract class CredentialService {
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
-    revocationService: RevocationService
+    revocationService: RevocationService,
+    didResolver: DidResolverService
   ) {
     this.credentialRepository = credentialRepository
     this.eventEmitter = eventEmitter
@@ -71,6 +74,7 @@ export abstract class CredentialService {
     this.didCommMessageRepository = didCommMessageRepository
     this.logger = this.agentConfig.logger
     this.revocationService = revocationService
+    this.didResolver = didResolver
 
     this.registerHandlers()
   }
