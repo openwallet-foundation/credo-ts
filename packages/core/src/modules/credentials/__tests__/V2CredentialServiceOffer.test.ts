@@ -1,17 +1,20 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
+import type { DidRepository } from '../../dids/repository'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { ServiceOfferCredentialOptions } from '../CredentialServiceOptions'
+import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 
-import { Agent } from '../../../../src/agent/Agent'
-import { Dispatcher } from '../../../../src/agent/Dispatcher'
-import { DidCommMessageRepository } from '../../../../src/storage'
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
+import { Agent } from '../../../agent/Agent'
+import { Dispatcher } from '../../../agent/Dispatcher'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { DidCommMessageRepository } from '../../../storage'
 import { DidExchangeState } from '../../connections'
+import { DidResolverService } from '../../dids'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
@@ -19,15 +22,17 @@ import { MediationRecipientService } from '../../routing/services/MediationRecip
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
-import { IndyCredentialFormatService } from '../formats'
+import { IndyCredentialFormatService } from '../formats/indy/IndyCredentialFormatService'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
-import { V1CredentialService } from '../protocol/v1/V1CredentialService'
-import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../protocol/v1/messages'
+import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID } from '../protocol/v1/messages'
+import { V2CredentialPreview } from '../protocol/v2/V2CredentialPreview'
+import { V2CredentialService } from '../protocol/v2/V2CredentialService'
+import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 import { CredentialRepository } from '../repository/CredentialRepository'
 import { RevocationService } from '../services'
 
-import { schema, credDef } from './fixtures'
+import { credDef, schema } from './fixtures'
 
 // Mock classes
 jest.mock('../repository/CredentialRepository')
@@ -56,10 +61,6 @@ const credentialPreview = V1CredentialPreview.fromRecord({
   age: '99',
 })
 
-const badCredentialPreview = V1CredentialPreview.fromRecord({
-  test: 'credential',
-  error: 'yes',
-})
 const offerAttachment = new Attachment({
   id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   mimeType: 'application/json',
@@ -69,7 +70,7 @@ const offerAttachment = new Attachment({
   }),
 })
 
-const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test V1 Cred')
+const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test V2 Offer')
 
 describe('CredentialService', () => {
   let agent: Agent
@@ -84,8 +85,10 @@ describe('CredentialService', () => {
   let agentConfig: AgentConfig
 
   let dispatcher: Dispatcher
-  let credentialService: V1CredentialService
+  let credentialService: V2CredentialService
   let revocationService: RevocationService
+  let didResolverService: DidResolverService
+  let didRepository: DidRepository
 
   beforeEach(async () => {
     credentialRepository = new CredentialRepositoryMock()
@@ -101,18 +104,19 @@ describe('CredentialService', () => {
 
     dispatcher = new Dispatcher(messageSender, eventEmitter, agentConfig)
     revocationService = new RevocationService(credentialRepository, eventEmitter, agentConfig)
+    didResolverService = new DidResolverService(agentConfig, indyLedgerService, didRepository)
 
-    credentialService = new V1CredentialService(
+    credentialService = new V2CredentialService(
       {
         getById: () => Promise.resolve(connection),
         assertConnectionOrServiceDecorator: () => true,
       } as unknown as ConnectionService,
-      didCommMessageRepository,
+      credentialRepository,
+      eventEmitter,
+      dispatcher,
       agentConfig,
       mediationRecipientService,
-      dispatcher,
-      eventEmitter,
-      credentialRepository,
+      didCommMessageRepository,
       new IndyCredentialFormatService(
         credentialRepository,
         eventEmitter,
@@ -121,18 +125,17 @@ describe('CredentialService', () => {
         indyHolderService,
         agentConfig
       ),
-      revocationService
+      revocationService,
+      didResolverService
     )
     mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
   })
-
   describe('createCredentialOffer', () => {
     let offerOptions: ServiceOfferCredentialOptions
 
     beforeEach(async () => {
       offerOptions = {
         comment: 'some comment',
-        connection,
         connectionId: connection.id,
         credentialFormats: {
           indy: {
@@ -146,7 +149,6 @@ describe('CredentialService', () => {
 
     test(`creates credential record in ${CredentialState.OfferSent} state with offer, thread ID`, async () => {
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
-
       await credentialService.createOffer(offerOptions)
 
       // then
@@ -158,8 +160,8 @@ describe('CredentialService', () => {
         id: expect.any(String),
         createdAt: expect.any(Date),
         threadId: createdCredentialRecord.threadId,
-        connectionId: connection.id,
         state: CredentialState.OfferSent,
+        connectionId: connection.id,
       })
     })
 
@@ -182,12 +184,13 @@ describe('CredentialService', () => {
 
     test('returns credential offer message', async () => {
       const { message: credentialOffer } = await credentialService.createOffer(offerOptions)
+
       expect(credentialOffer.toJSON()).toMatchObject({
         '@id': expect.any(String),
-        '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
+        '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
         comment: 'some comment',
         credential_preview: {
-          '@type': 'https://didcomm.org/issue-credential/1.0/credential-preview',
+          '@type': 'https://didcomm.org/issue-credential/2.0/credential-preview',
           attributes: [
             {
               name: 'name',
@@ -214,6 +217,11 @@ describe('CredentialService', () => {
     })
 
     test('throw error if credential preview attributes do not match with schema attributes', async () => {
+      const badCredentialPreview = V2CredentialPreview.fromRecord({
+        test: 'credential',
+        error: 'yes',
+      })
+
       offerOptions = {
         ...offerOptions,
         credentialFormats: {
@@ -226,7 +234,7 @@ describe('CredentialService', () => {
       expect(credentialService.createOffer(offerOptions)).rejects.toThrowError(
         `The credential preview attributes do not match the schema attributes (difference is: test,error,name,age, needs: name,age)`
       )
-      const credentialPreviewWithExtra = V1CredentialPreview.fromRecord({
+      const credentialPreviewWithExtra = V2CredentialPreview.fromRecord({
         test: 'credential',
         error: 'yes',
         name: 'John',
@@ -249,15 +257,24 @@ describe('CredentialService', () => {
   })
 
   describe('processCredentialOffer', () => {
-    let messageContext: InboundMessageContext<V1OfferCredentialMessage>
-    let credentialOfferMessage: V1OfferCredentialMessage
+    let messageContext: InboundMessageContext<V2OfferCredentialMessage>
+    let credentialOfferMessage: V2OfferCredentialMessage
 
     beforeEach(async () => {
-      credentialOfferMessage = new V1OfferCredentialMessage({
+      const offerOptions: V2OfferCredentialMessageOptions = {
+        id: '',
+        formats: [
+          {
+            attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+            format: 'hlindy/cred-abstract@v2.0',
+          },
+        ],
         comment: 'some comment',
         credentialPreview: credentialPreview,
         offerAttachments: [offerAttachment],
-      })
+        replacementId: undefined,
+      }
+      credentialOfferMessage = new V2OfferCredentialMessage(offerOptions)
       messageContext = new InboundMessageContext(credentialOfferMessage, {
         connection,
       })
@@ -274,18 +291,19 @@ describe('CredentialService', () => {
 
       const dispatcher = agent.injectionContainer.resolve<Dispatcher>(Dispatcher)
       const mediationRecipientService = agent.injectionContainer.resolve(MediationRecipientService)
+      revocationService = new RevocationService(credentialRepository, eventEmitter, agentConfig)
 
-      credentialService = new V1CredentialService(
+      credentialService = new V2CredentialService(
         {
           getById: () => Promise.resolve(connection),
           assertConnectionOrServiceDecorator: () => true,
         } as unknown as ConnectionService,
-        didCommMessageRepository,
+        credentialRepository,
+        eventEmitter,
+        dispatcher,
         agentConfig,
         mediationRecipientService,
-        dispatcher,
-        eventEmitter,
-        credentialRepository,
+        didCommMessageRepository,
         new IndyCredentialFormatService(
           credentialRepository,
           eventEmitter,
@@ -294,7 +312,8 @@ describe('CredentialService', () => {
           indyHolderService,
           agentConfig
         ),
-        revocationService
+        revocationService,
+        didResolverService
       )
       // when
       const returnedCredentialRecord = await credentialService.processOffer(messageContext)
