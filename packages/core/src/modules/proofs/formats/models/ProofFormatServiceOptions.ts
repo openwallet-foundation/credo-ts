@@ -1,6 +1,5 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { CreatePresentationFormats, ProposeProofFormats } from '../../models/SharedOptions'
-import type { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import type { ProofRecord } from '../../repository'
 import type { IndyProofConfig } from '../IndyProofFormatsServiceOptions'
 import type { ProofRequestOptions } from '../indy/models/ProofRequest'
@@ -13,7 +12,7 @@ export interface CreateRequestAttachmentOptions {
 
 export interface CreateProofAttachmentOptions {
   id?: string
-  proofProposalOptions: PresentationPreview
+  proofProposalOptions: ProofRequestOptions
 }
 
 export interface CreateProposalOptions {
@@ -62,5 +61,5 @@ export interface CreateProblemReportOptions {
 
 export interface CreatePresentationFormatsOptions {
   presentationAttachment: Attachment
-  config: IndyProofConfig
+  config?: IndyProofConfig
 }

@@ -89,7 +89,7 @@ export class V2ProofService extends ProofService {
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
       formats.push(
-        await service.createRequest({
+        await service.createProposal({
           formats:
             key === PresentationRecordType.Indy
               ? await IndyProofUtils.createRequestFromPreview(options)

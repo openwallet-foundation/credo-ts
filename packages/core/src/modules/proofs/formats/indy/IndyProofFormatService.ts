@@ -4,6 +4,7 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
+import type { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import type {
   CreateRequestAsResponseOptions,
   GetRequestedCredentialsFormat,
@@ -44,7 +45,6 @@ import { Credential, IndyCredentialInfo } from '../../../credentials/protocol/v1
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import { PartialProof } from '../../protocol/v1/models'
-import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import { ProofFormatService } from '../ProofFormatService'
 import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../ProofFormats'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
@@ -111,11 +111,13 @@ export class IndyProofFormatService extends ProofFormatService {
       format: V2_INDY_PRESENTATION_PROPOSAL,
     })
 
+    const request = new ProofRequest(options.proofProposalOptions)
+
     const attachment = new Attachment({
       id: options.id,
       mimeType: 'application/json',
       data: new AttachmentData({
-        base64: JsonEncoder.toBase64(options.proofProposalOptions),
+        base64: JsonEncoder.toBase64(request),
       }),
     })
     return { format, attachment }
@@ -127,18 +129,9 @@ export class IndyProofFormatService extends ProofFormatService {
     }
     const indyFormat = options.formats.indy
 
-    const preview = new PresentationPreview({
-      attributes: indyFormat.attributes,
-      predicates: indyFormat.predicates,
-    })
-
-    if (!preview) {
-      throw Error('Missing presentation preview to create proposal attachment format')
-    }
-
     return this.createProofAttachment({
       id: options.id ?? uuid(),
-      proofProposalOptions: preview,
+      proofProposalOptions: indyFormat,
     })
   }
 
