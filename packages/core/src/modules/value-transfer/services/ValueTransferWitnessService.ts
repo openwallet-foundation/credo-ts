@@ -2,7 +2,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { RequestMessage, RequestAcceptedMessage, CashAcceptedMessage, CashRemovedMessage } from '../messages'
 
-import { defaultGiver, ValueTransfer, verifiableNoteProofConfig } from '@value-transfer/value-transfer-lib'
+import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -107,7 +107,8 @@ export class ValueTransferWitnessService {
     const { getter, giver, witness } = requestMessage.body.payment
 
     // Check requested witness
-    if (state.publicDid !== witness) {
+    if (witness !== 'witness' && state.publicDid !== witness) {
+      // FIXME: use helper from vtp
       return {
         message: new ProblemReportMessage({
           from: state.publicDid,
@@ -139,7 +140,8 @@ export class ValueTransferWitnessService {
     }
 
     // VTP sets placeholder when giver is not set
-    const giverDId = giver === defaultGiver ? undefined : giver
+    // FIXME: import default giver value from vtp-ts package
+    const giverDId = giver === 'giver' ? undefined : giver
 
     // next protocol message
     const requestWitnessedMessage = new RequestWitnessedMessage({
@@ -158,7 +160,7 @@ export class ValueTransferWitnessService {
       requestMessage,
       getter,
       giver: giverDId,
-      witness,
+      witness: state.publicDid,
     })
 
     await this.valueTransferRepository.save(record)

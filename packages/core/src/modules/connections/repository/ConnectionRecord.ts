@@ -1,5 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { ConnectionRole } from '@aries-framework/core'
+import type { ConnectionRole } from '../models/ConnectionRole'
 
 import { Type } from 'class-transformer'
 

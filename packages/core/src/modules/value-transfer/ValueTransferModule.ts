@@ -75,7 +75,7 @@ export class ValueTransferModule {
    */
   public async requestPayment(
     amount: number,
-    witness: string,
+    witness?: string,
     giver?: string,
     usePublicDid = true
   ): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
@@ -148,33 +148,33 @@ export class ValueTransferModule {
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerDIDCommV2Handler(
-      new RequestHandler(this.config, this.valueTransferWitnessService, this.messageSender)
+      new RequestHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
     )
     dispatcher.registerDIDCommV2Handler(
       new RequestWitnessedHandler(
         this.config,
+        this.valueTransferService,
         this.valueTransferGiverService,
-        this.valueTransferResponseCoordinator,
-        this.messageSender
+        this.valueTransferResponseCoordinator
       )
     )
     dispatcher.registerDIDCommV2Handler(
-      new RequestAcceptedHandler(this.config, this.valueTransferWitnessService, this.messageSender)
+      new RequestAcceptedHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
     )
     dispatcher.registerDIDCommV2Handler(
-      new RequestAcceptedWitnessedHandler(this.config, this.valueTransferGetterService, this.messageSender)
+      new RequestAcceptedWitnessedHandler(this.config, this.valueTransferService, this.valueTransferGetterService)
     )
     dispatcher.registerDIDCommV2Handler(
-      new CashAcceptedHandler(this.config, this.valueTransferWitnessService, this.messageSender)
+      new CashAcceptedHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
     )
     dispatcher.registerDIDCommV2Handler(
-      new CashAcceptedWitnessedHandler(this.config, this.valueTransferGiverService, this.messageSender)
+      new CashAcceptedWitnessedHandler(this.config, this.valueTransferService, this.valueTransferGiverService)
     )
     dispatcher.registerDIDCommV2Handler(
-      new CashRemovedHandler(this.config, this.valueTransferWitnessService, this.messageSender)
+      new CashRemovedHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
     )
     dispatcher.registerDIDCommV2Handler(new GetterReceiptHandler(this.valueTransferGetterService))
     dispatcher.registerDIDCommV2Handler(new GiverReceiptHandler(this.valueTransferGiverService))
-    dispatcher.registerDIDCommV2Handler(new ProblemReportHandler(this.valueTransferService, this.messageSender))
+    dispatcher.registerDIDCommV2Handler(new ProblemReportHandler(this.valueTransferService))
   }
 }

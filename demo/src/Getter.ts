@@ -41,8 +41,8 @@ export class Getter extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  public async requestPayment(witness: string) {
-    const { record } = await this.agent.valueTransfer.requestPayment(10, witness)
+  public async requestPayment() {
+    const { record } = await this.agent.valueTransfer.requestPayment(1)
     this.valueTransferRecordId = record.id
     console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()

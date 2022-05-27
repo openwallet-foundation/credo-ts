@@ -2,7 +2,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { RequestWitnessedMessage, CashAcceptedWitnessedMessage, GiverReceiptMessage } from '../messages'
 
-import { defaultGiver, ValueTransfer, verifiableNoteProofConfig } from '@value-transfer/value-transfer-lib'
+import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -77,7 +77,8 @@ export class ValueTransferGiverService {
     const { getter, giver, witness } = requestWitnessedMessage.body.payment
 
     let giverDID: string
-    if (giver !== defaultGiver) {
+    if (giver !== 'giver') {
+      // FIXME: Import default giver placeholder from vtp package or even provide helper functino there
       const didRecord = await this.didService.findById(giver)
       if (!didRecord) {
         return {

@@ -1,5 +1,6 @@
 import type { ValueTransferRecord } from '@aries-framework/core/src/modules/value-transfer'
 
+import { JsonEncoder } from '@aries-framework/core/src/utils'
 import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
@@ -7,7 +8,7 @@ import inquirer from 'inquirer'
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Giver } from './Giver'
 import { Listener } from './Listener'
-import { Title } from './OutputClass'
+import { greenText, purpleText, Title } from './OutputClass'
 
 export const runFaber = async () => {
   clear()
@@ -40,6 +41,8 @@ export class GiverInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
+    const balance = await this.giver.agent.valueTransfer.getBalance()
+    console.log(greenText('Balance: ' + balance))
     return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
   }
 
@@ -61,6 +64,8 @@ export class GiverInquirer extends BaseInquirer {
   }
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
+    const balance = await this.giver.agent.valueTransfer.getBalance()
+    console.log(greenText(`\nCurrent balance: ${balance}`))
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.PaymentRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
       return

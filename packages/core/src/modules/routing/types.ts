@@ -5,6 +5,8 @@ export const defaultAcceptProfiles = [DIDCommAip1Profile, DIDCommV2Profile]
 export const offlineTransports = ['nfc', 'ipc']
 export const onlineTransports = ['http', 'https', 'ws', 'wss']
 
+export type DIDTransports = { [did: string]: Transport }
+
 export type Transport = 'http' | 'https' | 'ws' | 'wss' | 'nfc' | 'ipc'
 export type AcceptProtocol = 'didcomm/aip1' | 'didcomm/v2'
 

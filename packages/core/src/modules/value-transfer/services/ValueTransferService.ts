@@ -1,3 +1,4 @@
+import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferConfig } from '../../../types'
 import type { Transport } from '../../routing/types'
@@ -11,6 +12,8 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { MessageSender } from '../../../agent/MessageSender'
+import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { DidService } from '../../dids/services/DidService'
@@ -39,6 +42,7 @@ export class ValueTransferService {
   private didService: DidService
   private connectionService: ConnectionService
   private eventEmitter: EventEmitter
+  private messageSender: MessageSender
 
   public constructor(
     config: AgentConfig,
@@ -49,7 +53,8 @@ export class ValueTransferService {
     witnessStateRepository: WitnessStateRepository,
     didService: DidService,
     connectionService: ConnectionService,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    messageSender: MessageSender
   ) {
     this.config = config
     this.valueTransferRepository = valueTransferRepository
@@ -60,6 +65,7 @@ export class ValueTransferService {
     this.didService = didService
     this.connectionService = connectionService
     this.eventEmitter = eventEmitter
+    this.messageSender = messageSender
 
     this.valueTransfer = new ValueTransfer(
       {
@@ -80,7 +86,9 @@ export class ValueTransferService {
       if (state) return
 
       if (!publicDid) {
-        throw new AriesFrameworkError('Public DID not found. Please set `publicDidSeed` field in the agent config.')
+        throw new AriesFrameworkError(
+          'Witness public DID not found. Please set `publicDidSeed` field in the agent config.'
+        )
       }
 
       const record = new WitnessStateRecord({
@@ -88,9 +96,11 @@ export class ValueTransferService {
         stateAccumulator: '',
       })
       await this.witnessStateRepository.save(record)
+      return
     }
     if (config.role === ValueTransferRole.Getter || ValueTransferRole.Giver) {
       const state = await this.valueTransferStateRepository.findSingleByQuery({})
+
       if (!state) {
         const record = new ValueTransferStateRecord({
           publicDid: publicDid?.id,
@@ -100,7 +110,7 @@ export class ValueTransferService {
         await this.valueTransferStateRepository.save(record)
       }
 
-      if (config.verifiableNotes) {
+      if (!state?.verifiableNotes?.length && config.verifiableNotes) {
         await this.valueTransfer.giver().addCash(config.verifiableNotes)
       }
     }
@@ -115,35 +125,25 @@ export class ValueTransferService {
    */
   public async processProblemReport(messageContext: InboundMessageContext<ProblemReportMessage>): Promise<{
     record: ValueTransferRecord
-    forward?: {
-      transport?: Transport
-      message: ProblemReportMessage
-    }
+    message?: ProblemReportMessage
   }> {
     const { message: problemReportMessage } = messageContext
     const record = await this.getByThread(problemReportMessage.pthid)
 
     const previousState = record.state
 
-    let forward
+    let message
 
     if (record.role === ValueTransferRole.Witness) {
       // When Witness receives Problem Report he needs to forward this to the 3rd party
       const to = messageContext.message.from === record.getterDid ? record.giverDid : record.getterDid
-      const transport =
-        messageContext.message.from === record.getterDid
-          ? this.config.valueTransferConfig?.giverTransport
-          : this.config.valueTransferConfig?.getterTransport
 
-      forward = {
-        message: new ProblemReportMessage({
-          from: record.witnessDid,
-          to,
-          body: problemReportMessage.body,
-          pthid: problemReportMessage.pthid,
-        }),
-        transport,
-      }
+      message = new ProblemReportMessage({
+        from: record.witnessDid,
+        to,
+        body: problemReportMessage.body,
+        pthid: problemReportMessage.pthid,
+      })
     }
     if (record.role === ValueTransferRole.Getter) {
       if (record.state === ValueTransferState.CashAcceptanceSent) {
@@ -197,7 +197,7 @@ export class ValueTransferService {
       payload: { record, previousState },
     })
 
-    return { record, forward }
+    return { record, message }
   }
 
   public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {
@@ -227,6 +227,28 @@ export class ValueTransferService {
     }
 
     return firstValueFrom(subject)
+  }
+
+  public async sendMessageToWitness(message: DIDCommV2Message) {
+    const witnessTransport = this.config.valueTransferConfig?.witnessTransport
+    return this.sendMessage(message, witnessTransport)
+  }
+
+  public async sendMessageToGiver(message: DIDCommV2Message) {
+    message.to = message.body.payment.giver === 'giver' ? undefined : [message.body.payment.giver]
+    const giverTransport = this.config.valueTransferConfig?.giverTransport
+    return this.sendMessage(message, giverTransport)
+  }
+
+  public async sendMessageToGetter(message: DIDCommV2Message) {
+    message.to = [message.body.payment.getter]
+    const getterTransport = this.config.valueTransferConfig?.getterTransport
+    return this.sendMessage(message, getterTransport)
+  }
+
+  private async sendMessage(message: DIDCommV2Message, transport?: Transport) {
+    const outboundMessage = createOutboundDIDCommV2Message(message)
+    await this.messageSender.sendDIDCommV2Message(outboundMessage, transport)
   }
 
   public async getBalance(): Promise<number> {

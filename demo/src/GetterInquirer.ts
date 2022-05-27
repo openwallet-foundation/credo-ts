@@ -61,9 +61,7 @@ export class GetterInquirer extends BaseInquirer {
   }
 
   public async requestPayment() {
-    const title = 'Paster Witness DID here'
-    const witness = await inquirer.prompt([this.inquireInput(title)])
-    await this.getter.requestPayment(witness.input)
+    await this.getter.requestPayment()
   }
 
   public async exit() {
