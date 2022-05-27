@@ -1,5 +1,5 @@
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
-import type { DIDCommMessageClass } from './didcomm/types'
+import type { DIDCommMessageClass } from './didcomm'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 export interface Handler<T extends DIDCommMessageClass> {
