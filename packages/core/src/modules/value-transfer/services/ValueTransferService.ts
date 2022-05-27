@@ -130,28 +130,24 @@ export class ValueTransferService {
     const { message: problemReportMessage } = messageContext
     const record = await this.getByThread(problemReportMessage.pthid)
 
-    const previousState = record.state
-
-    let message
-
     if (record.role === ValueTransferRole.Witness) {
       // When Witness receives Problem Report he needs to forward this to the 3rd party
-      const to = messageContext.message.from === record.getterDid ? record.giverDid : record.getterDid
-
-      message = new ProblemReportMessage({
+      const forwardedProblemReportMessage = new ProblemReportMessage({
         from: record.witnessDid,
-        to,
+        to: messageContext.message.from === record.getterDid ? record.giverDid : record.getterDid,
         body: problemReportMessage.body,
         pthid: problemReportMessage.pthid,
       })
+
+      record.problemReportMessage = forwardedProblemReportMessage
+      await this.updateState(record, ValueTransferState.Failed)
+      return {
+        record,
+        message: problemReportMessage,
+      }
     }
     if (record.role === ValueTransferRole.Getter) {
       if (record.state === ValueTransferState.CashAcceptanceSent) {
-        if (!record.cashAcceptedMessage) {
-          throw new AriesFrameworkError(
-            `Cash Acceptance not found for Value Transfer with thread id ${record.threadId}`
-          )
-        }
         // If Getter has already accepted the cash -> he needs to rollback the state
         // TODO: implement deleteCash in value transfer
         // const { error, message } = await this.valueTransfer.getter().deleteCash(record.cashAcceptedMessage)
@@ -162,11 +158,6 @@ export class ValueTransferService {
     }
     if (record.role === ValueTransferRole.Giver) {
       if (record.state === ValueTransferState.RequestAcceptanceSent) {
-        if (!record.requestAcceptedMessage) {
-          throw new AriesFrameworkError(
-            `Request Acceptance not found for Value Transfer with thread id ${record.threadId}`
-          )
-        }
         // If Giver has already accepted the request and marked the cash for spending -> he needs to free the cash
         // TODO: implement freeCash in value transfer
         // const { error, message } = await this.valueTransfer.giver().freeCash(record.requestAcceptedMessage)
@@ -175,9 +166,6 @@ export class ValueTransferService {
         // }
       }
       if (record.state === ValueTransferState.CashRemovalSent) {
-        if (!record.cashRemovedMessage) {
-          throw new AriesFrameworkError(`Cash Removal not found for Value Transfer with thread id ${record.threadId}`)
-        }
         // If Giver has already accepted the request and marked the cash for spending -> he needs to free the cash
         // const { error, message } = await this.valueTransfer.giver().freeCash(record.cashRemovedMessage)
         // if (error || !message) {
@@ -188,16 +176,8 @@ export class ValueTransferService {
 
     // Update Value Transfer record and raise event
     record.problemReportMessage = problemReportMessage
-    record.state = ValueTransferState.Failed
-
-    await this.valueTransferRepository.update(record)
-
-    this.eventEmitter.emit<ValueTransferStateChangedEvent>({
-      type: ValueTransferEventTypes.ValueTransferStateChanged,
-      payload: { record, previousState },
-    })
-
-    return { record, message }
+    await this.updateState(record, ValueTransferState.Failed)
+    return { record }
   }
 
   public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {
@@ -270,5 +250,15 @@ export class ValueTransferService {
 
   public async findAllByQuery(query: Partial<ValueTransferTags>) {
     return this.valueTransferRepository.findByQuery(query)
+  }
+
+  public async updateState(record: ValueTransferRecord, state: ValueTransferState) {
+    const previousState = record.state
+    record.state = state
+    await this.valueTransferRepository.update(record)
+    this.eventEmitter.emit<ValueTransferStateChangedEvent>({
+      type: ValueTransferEventTypes.ValueTransferStateChanged,
+      payload: { record: record, previousState },
+    })
   }
 }

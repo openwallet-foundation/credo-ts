@@ -57,7 +57,7 @@ export class Getter extends BaseAgent {
       if (record.state === ValueTransferState.Completed) {
         console.log(greenText(Output.PaymentDone))
         console.log(greenText('Receipt:'))
-        console.log(record.getterReceiptMessage)
+        console.log(record.receipt)
         const balance = await this.agent.valueTransfer.getBalance()
         console.log(greenText('Balance: ' + balance))
       }
