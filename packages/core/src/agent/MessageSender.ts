@@ -258,24 +258,45 @@ export class MessageSender {
   public async sendDIDCommV2Message(outboundMessage: OutboundDIDCommV2Message, transport?: Transport) {
     const { payload } = outboundMessage
 
-    if (!payload.to || !payload.to.length) {
-      // send plain-text message
-      const outboundPackage: OutboundPackage = { payload: { ...payload } }
-      await this.sendMessage(outboundPackage, transport)
+    if (!payload.to?.length) {
+      // recipient is not set -> send plain-text message
+      await this.sendMessage({ payload: { ...payload } }, transport)
       return
     }
 
-    // send encrypt message
+    const toDID = payload.to[0]
+
+    // pack message
     const params = {
-      toDID: payload.to[0],
+      toDID: toDID,
       fromDID: payload.from,
       signByDID: null,
     }
     const message = await this.envelopeService.packMessage(payload, params)
 
-    const outboundPackage: OutboundPackage = { payload: message }
-    await this.sendMessage(outboundPackage, transport)
-    return
+    if (transport) {
+      // if transport specified explicitly - send message
+      this.logger.debug(`Sending outbound message to transport:`, { transport })
+      return await this.sendMessage({ payload: message }, transport)
+    }
+
+    // else try to resolve transport from DID Document
+    const {
+      didDocument,
+      didResolutionMetadata: { error, message: errorMessage },
+    } = await this.didResolverService.resolve(toDID)
+
+    if (!didDocument) {
+      throw new AriesFrameworkError(`Unable to resolve did document for did '${toDID}': ${error} ${errorMessage}`)
+    }
+
+    const { services } = await this.retrieveServicesFromDidCommServices(didDocument.didCommServices)
+
+    for await (const service of services) {
+      this.logger.debug(`Sending outbound message to service:`, { service })
+      const outboundPackage = { payload: message, endpoint: service.serviceEndpoint }
+      await this.sendMessage(outboundPackage, service.protocolScheme)
+    }
   }
 
   public async packAndSendMessage({
@@ -333,18 +354,23 @@ export class MessageSender {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage, transport?: string) {
-    if (transport) {
-      for (const outboundTransport of this.outboundTransports) {
-        if (outboundTransport.supportedSchemes.includes(transport)) {
-          await outboundTransport.sendMessage(outboundPackage)
-          break
+    try {
+      if (transport) {
+        for (const outboundTransport of this.outboundTransports) {
+          if (outboundTransport.supportedSchemes.includes(transport)) {
+            await outboundTransport.sendMessage(outboundPackage)
+            break
+          }
         }
+      } else {
+        // try to send to the first registered
+        await this.outboundTransports[0]?.sendMessage(outboundPackage)
       }
-    } else {
-      if (this.outboundTransports) {
-        this.logger.warn(`There is no any transport registered`)
-      }
-      await this.outboundTransports[0]?.sendMessage(outboundPackage)
+    } catch (error) {
+      this.logger.debug(`Sending outbound message failed with the following error:`, {
+        message: error.message,
+        error: error,
+      })
     }
   }
 
@@ -381,6 +407,22 @@ export class MessageSender {
       didCommServices = this.transportService.findDidCommServices(connection)
     }
 
+    const { services, queueService } = await this.retrieveServicesFromDidCommServices(
+      didCommServices,
+      transportPriority
+    )
+
+    this.logger.debug(
+      `Retrieved ${services.length} services for message to connection '${connection.id}'(${connection.theirLabel})'`
+    )
+
+    return { services, queueService }
+  }
+
+  private async retrieveServicesFromDidCommServices(
+    didCommServices: Array<IndyAgentService | DidCommService>,
+    transportPriority?: TransportPriorityOptions
+  ) {
     // Separate queue service out
     let services = didCommServices.filter((s) => !isDidCommTransportQueue(s.serviceEndpoint))
     const queueService = didCommServices.find((s) => isDidCommTransportQueue(s.serviceEndpoint))
@@ -402,9 +444,6 @@ export class MessageSender {
       })
     }
 
-    this.logger.debug(
-      `Retrieved ${services.length} services for message to connection '${connection.id}'(${connection.theirLabel})'`
-    )
     return { services, queueService }
   }
 }
