@@ -2,7 +2,7 @@ import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
 import didExample123Fixture from '../../__tests__/__fixtures__/didExample123.json'
 import didExample456Invalid from '../../__tests__/__fixtures__/didExample456Invalid.json'
-import { DidDocument } from '../DidDocument'
+import { DidDocument, findVerificationMethodByKeyType } from '../DidDocument'
 import { DidDocumentService, IndyAgentService, DidCommV1Service } from '../service'
 import { VerificationMethod } from '../verificationMethod'
 
@@ -92,6 +92,12 @@ const didDocumentInstance = new DidDocument({
     new VerificationMethod({
       id: 'did:example:123#keyAgreement-1',
       type: 'RsaVerificationKey2018',
+      controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
+      publicKeyPem: '-----BEGIN PUBLIC A...',
+    }),
+    new VerificationMethod({
+      id: 'did:example:123#keyAgreement-1',
+      type: 'Ed25519VerificationKey2018',
       controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
       publicKeyPem: '-----BEGIN PUBLIC A...',
     }),
@@ -276,6 +282,14 @@ describe('Did | DidDocument', () => {
       const services = didDocumentInstance.service ?? []
 
       expect(didDocumentInstance.didCommServices).toEqual([services[2], services[1]])
+    })
+  })
+
+  describe('findVerificationMethodByKeyType', () => {
+    it('return first verfication method that match key type', async () => {
+      expect(await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocumentInstance)).toBeInstanceOf(
+        VerificationMethod
+      )
     })
   })
 })

@@ -3,7 +3,7 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { Attachment } from '../../../../../decorators/attachment/Attachment'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttributes'
+import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttribute'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
