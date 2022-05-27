@@ -61,7 +61,7 @@ export class CredentialExchangeRecord extends BaseRecord<
   public revocationNotification?: RevocationNotification
   public errorMessage?: string
   public protocolVersion!: CredentialProtocolVersion
-  public credentials: CredentialRecordBinding[] = []
+  public credentials: CredentialRecordBinding[] = [] // default in case constructor not used (as in tests)
 
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]
