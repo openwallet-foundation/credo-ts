@@ -6,7 +6,6 @@ import type { PlaintextMessage } from '../../types'
 import type { Key } from '../dids'
 import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
 
-import { parseUrl } from 'query-string'
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 import { Lifecycle, scoped } from 'tsyringe'
 
