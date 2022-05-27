@@ -1,4 +1,6 @@
 import type { PlaintextMessage } from './EnvelopeService'
+import type { DIDCommV1Message } from './v1/DIDCommV1Message'
+import type { DIDCommV2Message } from './v2/DIDCommV2Message'
 
 export type EncryptedMessage = {
   protected: string
@@ -26,3 +28,5 @@ export enum DidCommV1Algorithms {
   Authcrypt = 'Authcrypt',
   Anoncrypt = 'Anoncrypt',
 }
+
+export type DIDCommMessageInstance = typeof DIDCommV1Message | typeof DIDCommV2Message

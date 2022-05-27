@@ -1,10 +1,11 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { MessagePickupService } from '../services'
 
 import { AriesFrameworkError } from '../../../error'
 import { BatchPickupMessage } from '../messages'
 
-export class BatchPickupHandler implements Handler {
+export class BatchPickupHandler implements Handler<typeof DIDCommV1Message> {
   private messagePickupService: MessagePickupService
   public supportedMessages = [BatchPickupMessage]
 

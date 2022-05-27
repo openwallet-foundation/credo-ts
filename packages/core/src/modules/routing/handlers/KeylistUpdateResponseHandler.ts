@@ -1,9 +1,10 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { MediationRecipientService } from '../services'
 
 import { KeylistUpdateResponseMessage } from '../messages'
 
-export class KeylistUpdateResponseHandler implements Handler {
+export class KeylistUpdateResponseHandler implements Handler<typeof DIDCommV1Message> {
   public mediationRecipientService: MediationRecipientService
   public supportedMessages = [KeylistUpdateResponseMessage]
 

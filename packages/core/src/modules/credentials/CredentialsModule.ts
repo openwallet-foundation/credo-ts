@@ -512,10 +512,10 @@ export class CredentialsModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerDIDCommV1Handler(
+    dispatcher.registerHandler(
       new ProposeCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
     )
-    dispatcher.registerDIDCommV1Handler(
+    dispatcher.registerHandler(
       new OfferCredentialHandler(
         this.credentialService,
         this.agentConfig,
@@ -523,13 +523,13 @@ export class CredentialsModule {
         this.mediationRecipientService
       )
     )
-    dispatcher.registerDIDCommV1Handler(
+    dispatcher.registerHandler(
       new RequestCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
     )
-    dispatcher.registerDIDCommV1Handler(
+    dispatcher.registerHandler(
       new IssueCredentialHandler(this.credentialService, this.agentConfig, this.credentialResponseCoordinator)
     )
-    dispatcher.registerDIDCommV1Handler(new CredentialAckHandler(this.credentialService))
-    dispatcher.registerDIDCommV1Handler(new CredentialProblemReportHandler(this.credentialService))
+    dispatcher.registerHandler(new CredentialAckHandler(this.credentialService))
+    dispatcher.registerHandler(new CredentialProblemReportHandler(this.credentialService))
   }
 }

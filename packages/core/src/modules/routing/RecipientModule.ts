@@ -393,9 +393,9 @@ export class RecipientModule {
 
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerDIDCommV1Handler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
-    dispatcher.registerDIDCommV1Handler(new MediationGrantHandler(this.mediationRecipientService))
-    dispatcher.registerDIDCommV1Handler(new MediationDenyHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
     //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }

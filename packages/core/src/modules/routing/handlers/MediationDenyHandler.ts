@@ -1,9 +1,10 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { MediationRecipientService } from '../services'
 
 import { MediationDenyMessage } from '../messages'
 
-export class MediationDenyHandler implements Handler {
+export class MediationDenyHandler implements Handler<typeof DIDCommV1Message> {
   private mediationRecipientService: MediationRecipientService
   public supportedMessages = [MediationDenyMessage]
 
