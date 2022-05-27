@@ -148,6 +148,8 @@ export abstract class ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
   abstract processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
+  public abstract shouldAutoRespondToProposal(proofRecord: ProofRecord): Promise<boolean>
+
   public abstract shouldAutoRespondToRequest(proofRecord: ProofRecord): Promise<boolean>
 
   public abstract shouldAutoRespondToPresentation(proofRecord: ProofRecord): Promise<boolean>

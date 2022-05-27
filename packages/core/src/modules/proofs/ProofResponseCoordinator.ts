@@ -38,46 +38,57 @@ export class ProofResponseCoordinator {
    * Checks whether it should automatically respond to a proposal
    */
   public shouldAutoRespondToProposal(proofRecord: ProofRecord) {
-    return this.isAutoAcceptProofAlways(proofRecord)
+    const autoAccept = ProofResponseCoordinator.composeAutoAccept(
+      proofRecord.autoAcceptProof,
+      this.agentConfig.autoAcceptProofs
+    )
+
+    if (autoAccept === AutoAcceptProof.Always) {
+      return true
+    }
+
+    if (autoAccept === AutoAcceptProof.ContentApproved) {
+      return this.proofService.shouldAutoRespondToProposal(proofRecord)
+    }
+
+    return false
   }
 
   /**
    * Checks whether it should automatically respond to a request
    */
   public shouldAutoRespondToRequest(proofRecord: ProofRecord) {
-    return this.isAutoAcceptProofAlways(proofRecord)
-      ? this.isAutoAcceptProofAlways(proofRecord)
-      : this.isAutoAcceptProofContentApproved(proofRecord)
+    const autoAccept = ProofResponseCoordinator.composeAutoAccept(
+      proofRecord.autoAcceptProof,
+      this.agentConfig.autoAcceptProofs
+    )
+
+    if (autoAccept === AutoAcceptProof.Always) {
+      return true
+    }
+
+    if (autoAccept === AutoAcceptProof.ContentApproved) {
+      return this.proofService.shouldAutoRespondToRequest(proofRecord)
+    }
+
+    return false
   }
 
   /**
    * Checks whether it should automatically respond to a presentation of proof
    */
   public shouldAutoRespondToPresentation(proofRecord: ProofRecord) {
-    return this.isAutoAcceptProofAlways(proofRecord)
-      ? this.isAutoAcceptProofAlways(proofRecord)
-      : this.isAutoAcceptProofContentApproved(proofRecord)
-  }
-
-  private checkAutoRespond(proofRecord: ProofRecord) {
-    return ProofResponseCoordinator.composeAutoAccept(proofRecord.autoAcceptProof, this.agentConfig.autoAcceptProofs)
-  }
-
-  private isAutoAcceptProofAlways(proofRecord: ProofRecord) {
-    const autoAccept = this.checkAutoRespond(proofRecord)
+    const autoAccept = ProofResponseCoordinator.composeAutoAccept(
+      proofRecord.autoAcceptProof,
+      this.agentConfig.autoAcceptProofs
+    )
 
     if (autoAccept === AutoAcceptProof.Always) {
       return true
     }
 
-    return false
-  }
-
-  private isAutoAcceptProofContentApproved(proofRecord: ProofRecord) {
-    const autoAccept = this.checkAutoRespond(proofRecord)
-
     if (autoAccept === AutoAcceptProof.ContentApproved) {
-      return this.proofService.shouldAutoRespondToRequest(proofRecord)
+      return this.proofService.shouldAutoRespondToPresentation(proofRecord)
     }
 
     return false

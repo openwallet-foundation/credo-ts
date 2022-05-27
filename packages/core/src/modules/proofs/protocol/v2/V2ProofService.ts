@@ -31,6 +31,7 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
+import { MessageValidator } from '../../../../utils/MessageValidator'
 import { Wallet } from '../../../../wallet/Wallet'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
@@ -655,6 +656,20 @@ export class V2ProofService extends ProofService {
     }
 
     return result
+  }
+
+  public async shouldAutoRespondToProposal(proofRecord: ProofRecord): Promise<boolean> {
+    const proposal = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V2ProposalPresentationMessage,
+    })
+
+    if (!proposal) {
+      return false
+    }
+
+    await MessageValidator.validate(proposal)
+    return true
   }
 
   public async shouldAutoRespondToRequest(proofRecord: ProofRecord): Promise<boolean> {

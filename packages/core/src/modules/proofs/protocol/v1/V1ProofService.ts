@@ -35,6 +35,7 @@ import { DidCommMessageRole } from '../../../../storage'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { checkProofRequestForDuplicates } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../../utils/MessageValidator'
 import { Wallet } from '../../../../wallet'
 import { AckStatus } from '../../../common/messages/AckMessage'
 import { ConnectionService } from '../../../connections'
@@ -712,6 +713,20 @@ export class V1ProofService extends ProofService {
     }
 
     return attachments.length ? attachments : undefined
+  }
+
+  public async shouldAutoRespondToProposal(proofRecord: ProofRecord): Promise<boolean> {
+    const proposal = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V1ProposePresentationMessage,
+    })
+
+    if (!proposal) {
+      return false
+    }
+
+    await MessageValidator.validate(proposal)
+    return true
   }
 
   public async shouldAutoRespondToRequest(proofRecord: ProofRecord): Promise<boolean> {

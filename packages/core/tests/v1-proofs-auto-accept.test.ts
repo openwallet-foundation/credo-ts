@@ -1,9 +1,5 @@
 import type { Agent, ConnectionRecord } from '../src'
-import type {
-  AcceptProposalOptions,
-  ProposeProofOptions,
-  RequestProofOptions,
-} from '../src/modules/proofs/models/ModuleOptions'
+import type { ProposeProofOptions, RequestProofOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 
 import {
@@ -177,13 +173,9 @@ describe('Auto accept present proof', () => {
 
       testLogger.test('Faber waits for presentation proposal from Alice')
 
-      const faberProofRecord = await faberProofRecordPromise
+      await faberProofRecordPromise
 
       testLogger.test('Faber accepts presentation proposal from Alice')
-
-      const acceptProposalOptions: AcceptProposalOptions = {
-        proofRecordId: faberProofRecord.id,
-      }
 
       faberProofRecordPromise = waitForProofRecord(faberAgent, {
         threadId: aliceProofRecord.threadId,
@@ -194,8 +186,6 @@ describe('Auto accept present proof', () => {
         threadId: aliceProofRecord.threadId,
         state: ProofState.Done,
       })
-
-      await faberAgent.proofs.acceptProposal(acceptProposalOptions)
 
       testLogger.test('Faber waits for presentation from Alice')
 
