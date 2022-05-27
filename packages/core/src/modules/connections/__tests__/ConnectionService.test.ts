@@ -25,6 +25,8 @@ import {
   Ed25119Sig2018,
   DidExchangeRole,
   DidExchangeState,
+  ReferencedAuthentication,
+  authenticationTypes,
 } from '../models'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 import { ConnectionService } from '../services/ConnectionService'
@@ -66,8 +68,7 @@ describe('ConnectionService', () => {
     didRepository = new DidRepositoryMock()
     connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, didRepository, eventEmitter)
     myRouting = {
-      did: 'fakeDid',
-      verkey: 'fakeVerkey',
+      recipientKey: Key.fromFingerprint('z6MkwFkSP4uv5PhhKJCGehtjuZedkotC7VF64xtMsxuM8R3W'),
       endpoints: agentConfig.endpoints ?? [],
       routingKeys: [],
       mediatorId: 'fakeMediatorId',
@@ -85,31 +86,25 @@ describe('ConnectionService', () => {
 
       expect(connectionRecord.state).toBe(DidExchangeState.RequestSent)
       expect(message.label).toBe(agentConfig.label)
-      expect(message.connection.did).toBe('fakeDid')
+      expect(message.connection.did).toBe('XpwgBjsC2wh3eHcMW6ZRJT')
+
+      const publicKey = new Ed25119Sig2018({
+        id: `XpwgBjsC2wh3eHcMW6ZRJT#1`,
+        controller: 'XpwgBjsC2wh3eHcMW6ZRJT',
+        publicKeyBase58: 'HoVPnpfUjrDECoMZy8vu4U6dwEcLhbzjNwyS3gwLDCG8',
+      })
+
       expect(message.connection.didDoc).toEqual(
         new DidDoc({
-          id: 'fakeDid',
-          publicKey: [
-            new Ed25119Sig2018({
-              id: `fakeDid#1`,
-              controller: 'fakeDid',
-              publicKeyBase58: 'fakeVerkey',
-            }),
-          ],
-          authentication: [
-            new EmbeddedAuthentication(
-              new Ed25119Sig2018({
-                id: `fakeDid#1`,
-                controller: 'fakeDid',
-                publicKeyBase58: 'fakeVerkey',
-              })
-            ),
-          ],
+          id: 'XpwgBjsC2wh3eHcMW6ZRJT',
+          publicKey: [publicKey],
+          authentication: [new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)],
+
           service: [
             new IndyAgentService({
-              id: `fakeDid#IndyAgentService`,
+              id: `XpwgBjsC2wh3eHcMW6ZRJT#IndyAgentService`,
               serviceEndpoint: agentConfig.endpoints[0],
-              recipientKeys: ['fakeVerkey'],
+              recipientKeys: ['HoVPnpfUjrDECoMZy8vu4U6dwEcLhbzjNwyS3gwLDCG8'],
               routingKeys: [],
             }),
           ],
@@ -207,7 +202,6 @@ describe('ConnectionService', () => {
       })
 
       const outOfBand = getMockOutOfBand({
-        did: 'fakeDid',
         mediatorId: 'fakeMediatorId',
         role: OutOfBandRole.Sender,
         state: OutOfBandState.AwaitResponse,
@@ -228,7 +222,6 @@ describe('ConnectionService', () => {
         id: 'test',
         state: DidExchangeState.InvitationSent,
         role: DidExchangeRole.Responder,
-        multiUseInvitation: true,
       })
 
       const theirDid = 'their-did'
@@ -267,7 +260,6 @@ describe('ConnectionService', () => {
       })
 
       const outOfBand = getMockOutOfBand({
-        did: 'fakeDid',
         mediatorId: 'fakeMediatorId',
         role: OutOfBandRole.Sender,
         state: OutOfBandState.AwaitResponse,
@@ -351,25 +343,17 @@ describe('ConnectionService', () => {
       })
 
       const recipientKeys = [new DidKey(Key.fromPublicKeyBase58(verkey, KeyType.Ed25519))]
-      const outOfBand = getMockOutOfBand({ did, recipientKeys: recipientKeys.map((did) => did.did) })
+      const outOfBand = getMockOutOfBand({ recipientKeys: recipientKeys.map((did) => did.did) })
+
+      const publicKey = new Ed25119Sig2018({
+        id: `${did}#1`,
+        controller: did,
+        publicKeyBase58: verkey,
+      })
       const mockDidDoc = new DidDoc({
         id: did,
-        publicKey: [
-          new Ed25119Sig2018({
-            id: `${did}#1`,
-            controller: did,
-            publicKeyBase58: verkey,
-          }),
-        ],
-        authentication: [
-          new EmbeddedAuthentication(
-            new Ed25119Sig2018({
-              id: `${did}#1`,
-              controller: did,
-              publicKeyBase58: verkey,
-            })
-          ),
-        ],
+        publicKey: [publicKey],
+        authentication: [new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)],
         service: [
           new IndyAgentService({
             id: `${did}#IndyAgentService`,

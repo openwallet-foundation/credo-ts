@@ -10,7 +10,6 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionsModule } from '../modules/connections'
-import { OutOfBandService } from '../modules/oob/OutOfBandService'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { isValidJweStructure } from '../utils/JWE'
 import { JsonTransformer } from '../utils/JsonTransformer'
@@ -35,7 +34,6 @@ export class MessageReceiver {
   private logger: Logger
   private connectionsModule: ConnectionsModule
   public readonly inboundTransports: InboundTransport[] = []
-  private outOfBandService: OutOfBandService
 
   public constructor(
     config: AgentConfig,
@@ -43,7 +41,6 @@ export class MessageReceiver {
     transportService: TransportService,
     messageSender: MessageSender,
     connectionsModule: ConnectionsModule,
-    outOfBandService: OutOfBandService,
     dispatcher: Dispatcher
   ) {
     this.config = config
@@ -51,7 +48,6 @@ export class MessageReceiver {
     this.transportService = transportService
     this.messageSender = messageSender
     this.connectionsModule = connectionsModule
-    this.outOfBandService = outOfBandService
     this.dispatcher = dispatcher
     this.logger = this.config.logger
   }
@@ -96,7 +92,6 @@ export class MessageReceiver {
     )
 
     const connection = await this.findConnectionByMessageKeys(decryptedMessage)
-    const outOfBand = (recipientKey && (await this.outOfBandService.findByRecipientKey(recipientKey))) || undefined
 
     const message = await this.transformAndValidate(plaintextMessage, connection)
 
@@ -126,7 +121,6 @@ export class MessageReceiver {
       // with mediators when you don't have a public endpoint yet.
       session.connection = connection ?? undefined
       messageContext.sessionId = session.id
-      session.outOfBand = outOfBand
       this.transportService.saveSession(session)
     } else if (session) {
       // No need to wait for session to stay open if we're not actually going to respond to the message.

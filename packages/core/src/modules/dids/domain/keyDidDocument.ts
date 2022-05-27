@@ -31,7 +31,9 @@ function getBls12381g1DidDoc(did: string, key: Key) {
     did,
     key,
     verificationMethod,
-  }).build()
+  })
+    .addContext('https://w3id.org/security/bbs/v1')
+    .build()
 }
 
 function getBls12381g1g2DidDoc(did: string, key: Key) {
@@ -48,7 +50,7 @@ function getBls12381g1g2DidDoc(did: string, key: Key) {
       .addCapabilityInvocation(verificationMethod.id)
   }
 
-  return didDocumentBuilder.build()
+  return didDocumentBuilder.addContext('https://w3id.org/security/bbs/v1').build()
 }
 
 function getEd25519DidDoc(did: string, key: Key) {
@@ -75,7 +77,10 @@ function getEd25519DidDoc(did: string, key: Key) {
 function getX25519DidDoc(did: string, key: Key) {
   const verificationMethod = getX25519VerificationMethod({ id: `${did}#${key.fingerprint}`, key, controller: did })
 
-  const document = new DidDocumentBuilder(did).addKeyAgreement(verificationMethod).build()
+  const document = new DidDocumentBuilder(did)
+    .addKeyAgreement(verificationMethod)
+    .addContext('https://w3id.org/security/suites/x25519-2019/v1')
+    .build()
 
   return document
 }
@@ -87,7 +92,9 @@ function getBls12381g2DidDoc(did: string, key: Key) {
     did,
     key,
     verificationMethod,
-  }).build()
+  })
+    .addContext('https://w3id.org/security/bbs/v1')
+    .build()
 }
 
 function getSignatureKeyBase({

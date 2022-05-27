@@ -1,0 +1,634 @@
+{
+  "8f4908ee-15ad-4058-9106-eda26eae735c": {
+    "value": {
+      "metadata": {},
+      "id": "8f4908ee-15ad-4058-9106-eda26eae735c",
+      "createdAt": "2022-04-30T13:02:21.577Z",
+      "did": "XajWZZmHGAWUvYCi7CApaG",
+      "didDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "XajWZZmHGAWUvYCi7CApaG#1",
+            "controller": "XajWZZmHGAWUvYCi7CApaG",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp"
+          }
+        ],
+        "service": [
+          {
+            "id": "XajWZZmHGAWUvYCi7CApaG#IndyAgentService",
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "XajWZZmHGAWUvYCi7CApaG#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "XajWZZmHGAWUvYCi7CApaG"
+      },
+      "verkey": "HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp",
+      "theirDid": "3KAjJWF5NjiDTUm6JpPBQD",
+      "theirDidDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "3KAjJWF5NjiDTUm6JpPBQD#1",
+            "controller": "3KAjJWF5NjiDTUm6JpPBQD",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"
+          }
+        ],
+        "service": [
+          {
+            "id": "3KAjJWF5NjiDTUm6JpPBQD#IndyAgentService",
+            "serviceEndpoint": "rxjs:faber",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "3KAjJWF5NjiDTUm6JpPBQD#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "3KAjJWF5NjiDTUm6JpPBQD"
+      },
+      "theirLabel": "Agent: PopulateWallet2",
+      "state": "complete",
+      "role": "invitee",
+      "invitation": {
+        "@type": "https://didcomm.org/connections/1.0/invitation",
+        "@id": "d56fd7af-852e-458e-b750-7a4f4e53d6e6",
+        "label": "Agent: PopulateWallet2",
+        "recipientKeys": ["2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"],
+        "serviceEndpoint": "rxjs:faber",
+        "routingKeys": []
+      },
+      "threadId": "fe287ec6-711b-4582-bb2b-d155aee86e61",
+      "multiUseInvitation": false
+    },
+    "id": "8f4908ee-15ad-4058-9106-eda26eae735c",
+    "type": "ConnectionRecord",
+    "tags": {
+      "invitationKey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
+      "state": "complete",
+      "role": "invitee",
+      "threadId": "fe287ec6-711b-4582-bb2b-d155aee86e61",
+      "verkey": "HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp",
+      "theirKey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
+      "did": "XajWZZmHGAWUvYCi7CApaG",
+      "theirDid": "3KAjJWF5NjiDTUm6JpPBQD"
+    }
+  },
+  "9383d8e5-c002-4aae-8300-4a21384c919e": {
+    "value": {
+      "metadata": {},
+      "id": "9383d8e5-c002-4aae-8300-4a21384c919e",
+      "createdAt": "2022-04-30T13:02:21.608Z",
+      "did": "SDqTzbVuCowusqGBNbNDjH",
+      "didDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "SDqTzbVuCowusqGBNbNDjH#1",
+            "controller": "SDqTzbVuCowusqGBNbNDjH",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq"
+          }
+        ],
+        "service": [
+          {
+            "id": "SDqTzbVuCowusqGBNbNDjH#IndyAgentService",
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "SDqTzbVuCowusqGBNbNDjH#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "SDqTzbVuCowusqGBNbNDjH"
+      },
+      "verkey": "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq",
+      "theirDid": "YUH4t3KMkEJiXgmqsncrY9",
+      "theirDidDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "YUH4t3KMkEJiXgmqsncrY9#1",
+            "controller": "YUH4t3KMkEJiXgmqsncrY9",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX"
+          }
+        ],
+        "service": [
+          {
+            "id": "YUH4t3KMkEJiXgmqsncrY9#IndyAgentService",
+            "serviceEndpoint": "rxjs:faber",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "YUH4t3KMkEJiXgmqsncrY9#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "YUH4t3KMkEJiXgmqsncrY9"
+      },
+      "theirLabel": "Agent: PopulateWallet2",
+      "state": "complete",
+      "role": "inviter",
+      "invitation": {
+        "@type": "https://didcomm.org/connections/1.0/invitation",
+        "@id": "d939d371-3155-4d9c-87d1-46447f624f44",
+        "label": "Agent: PopulateWallet",
+        "recipientKeys": ["EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq"],
+        "serviceEndpoint": "rxjs:alice",
+        "routingKeys": []
+      },
+      "threadId": "0b2f1133-ced9-49f1-83a1-eb6ba1c24cdf",
+      "multiUseInvitation": false
+    },
+    "id": "9383d8e5-c002-4aae-8300-4a21384c919e",
+    "type": "ConnectionRecord",
+    "tags": {
+      "state": "complete",
+      "role": "inviter",
+      "invitationKey": "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq",
+      "threadId": "0b2f1133-ced9-49f1-83a1-eb6ba1c24cdf",
+      "verkey": "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq",
+      "theirKey": "J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX",
+      "did": "SDqTzbVuCowusqGBNbNDjH",
+      "theirDid": "YUH4t3KMkEJiXgmqsncrY9"
+    }
+  },
+  "7781341d-be29-441b-9b79-4a957d8c6d37": {
+    "value": {
+      "metadata": {},
+      "id": "7781341d-be29-441b-9b79-4a957d8c6d37",
+      "createdAt": "2022-04-30T13:02:21.628Z",
+      "did": "RtH4qxVPL1Dpmdv7GytjBv",
+      "didDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "RtH4qxVPL1Dpmdv7GytjBv#1",
+            "controller": "RtH4qxVPL1Dpmdv7GytjBv",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF"
+          }
+        ],
+        "service": [
+          {
+            "id": "RtH4qxVPL1Dpmdv7GytjBv#IndyAgentService",
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "RtH4qxVPL1Dpmdv7GytjBv#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "RtH4qxVPL1Dpmdv7GytjBv"
+      },
+      "verkey": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF",
+      "theirDid": "Ak15GBhMYpdS8XX3QDMv31",
+      "theirDidDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "Ak15GBhMYpdS8XX3QDMv31#1",
+            "controller": "Ak15GBhMYpdS8XX3QDMv31",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi"
+          }
+        ],
+        "service": [
+          {
+            "id": "Ak15GBhMYpdS8XX3QDMv31#IndyAgentService",
+            "serviceEndpoint": "rxjs:faber",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "Ak15GBhMYpdS8XX3QDMv31#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "Ak15GBhMYpdS8XX3QDMv31"
+      },
+      "theirLabel": "Agent: PopulateWallet2",
+      "state": "requested",
+      "role": "inviter",
+      "autoAcceptConnection": false,
+      "invitation": {
+        "@type": "https://didcomm.org/connections/1.0/invitation",
+        "@id": "21ef606f-b25b-48c6-bafa-e79193732413",
+        "label": "Agent: PopulateWallet",
+        "recipientKeys": ["EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF"],
+        "serviceEndpoint": "rxjs:alice",
+        "routingKeys": []
+      },
+      "threadId": "a0c0e4d2-1501-42a2-a09b-7d5adc90b353",
+      "multiUseInvitation": false
+    },
+    "id": "7781341d-be29-441b-9b79-4a957d8c6d37",
+    "type": "ConnectionRecord",
+    "tags": {
+      "state": "requested",
+      "role": "inviter",
+      "invitationKey": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF",
+      "threadId": "a0c0e4d2-1501-42a2-a09b-7d5adc90b353",
+      "verkey": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF",
+      "theirKey": "6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi",
+      "did": "RtH4qxVPL1Dpmdv7GytjBv",
+      "theirDid": "Ak15GBhMYpdS8XX3QDMv31"
+    }
+  },
+  "ee88e2e1-e27e-46a6-a910-f87690109e32": {
+    "value": {
+      "metadata": {},
+      "id": "ee88e2e1-e27e-46a6-a910-f87690109e32",
+      "createdAt": "2022-04-30T13:02:21.635Z",
+      "did": "WewvCdyBi4HL8ogyGviYVS",
+      "didDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "WewvCdyBi4HL8ogyGviYVS#1",
+            "controller": "WewvCdyBi4HL8ogyGviYVS",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7"
+          }
+        ],
+        "service": [
+          {
+            "id": "WewvCdyBi4HL8ogyGviYVS#IndyAgentService",
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "WewvCdyBi4HL8ogyGviYVS#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "WewvCdyBi4HL8ogyGviYVS"
+      },
+      "verkey": "HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7",
+      "theirLabel": "Agent: PopulateWallet2",
+      "state": "requested",
+      "role": "invitee",
+      "invitation": {
+        "@type": "https://didcomm.org/connections/1.0/invitation",
+        "@id": "08eb8d8b-67cf-4ce2-9aca-c7d260a5c143",
+        "label": "Agent: PopulateWallet2",
+        "recipientKeys": ["8MN6LZnM8t1HmzMNw5Sp8kUVfQkFK1nCUMRSfQBoSNAC"],
+        "serviceEndpoint": "rxjs:faber",
+        "routingKeys": []
+      },
+      "multiUseInvitation": false
+    },
+    "id": "ee88e2e1-e27e-46a6-a910-f87690109e32",
+    "type": "ConnectionRecord",
+    "tags": {
+      "invitationKey": "8MN6LZnM8t1HmzMNw5Sp8kUVfQkFK1nCUMRSfQBoSNAC",
+      "state": "requested",
+      "role": "invitee",
+      "verkey": "HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7",
+      "did": "WewvCdyBi4HL8ogyGviYVS"
+    }
+  },
+  "e3f9bc2b-f0a1-4a2c-ab81-2f0a3488c199": {
+    "value": {
+      "metadata": {},
+      "id": "e3f9bc2b-f0a1-4a2c-ab81-2f0a3488c199",
+      "createdAt": "2022-04-30T13:02:21.641Z",
+      "did": "TMnQftvJJJwoYogYkQgVjg",
+      "didDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "TMnQftvJJJwoYogYkQgVjg#1",
+            "controller": "TMnQftvJJJwoYogYkQgVjg",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7"
+          }
+        ],
+        "service": [
+          {
+            "id": "TMnQftvJJJwoYogYkQgVjg#IndyAgentService",
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "TMnQftvJJJwoYogYkQgVjg#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "TMnQftvJJJwoYogYkQgVjg"
+      },
+      "verkey": "FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7",
+      "theirDid": "9jTqUnV4k5ucxbyxumAaV7",
+      "theirDidDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "9jTqUnV4k5ucxbyxumAaV7#1",
+            "controller": "9jTqUnV4k5ucxbyxumAaV7",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU"
+          }
+        ],
+        "service": [
+          {
+            "id": "9jTqUnV4k5ucxbyxumAaV7#IndyAgentService",
+            "serviceEndpoint": "rxjs:faber",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "9jTqUnV4k5ucxbyxumAaV7#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "9jTqUnV4k5ucxbyxumAaV7"
+      },
+      "theirLabel": "Agent: PopulateWallet2",
+      "state": "responded",
+      "role": "invitee",
+      "autoAcceptConnection": false,
+      "invitation": {
+        "@type": "https://didcomm.org/connections/1.0/invitation",
+        "@id": "cc67fb5e-1414-4ba6-9030-7456ccd2aaea",
+        "label": "Agent: PopulateWallet2",
+        "recipientKeys": ["5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU"],
+        "serviceEndpoint": "rxjs:faber",
+        "routingKeys": []
+      },
+      "threadId": "daf3372c-1ee2-4246-a1f4-f62f54f7d68b",
+      "multiUseInvitation": false
+    },
+    "id": "e3f9bc2b-f0a1-4a2c-ab81-2f0a3488c199",
+    "type": "ConnectionRecord",
+    "tags": {
+      "invitationKey": "5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU",
+      "state": "responded",
+      "role": "invitee",
+      "threadId": "daf3372c-1ee2-4246-a1f4-f62f54f7d68b",
+      "verkey": "FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7",
+      "theirKey": "5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU",
+      "did": "TMnQftvJJJwoYogYkQgVjg",
+      "theirDid": "9jTqUnV4k5ucxbyxumAaV7"
+    }
+  },
+  "da518433-0e55-4b74-a05b-aa75c1095a99": {
+    "value": {
+      "metadata": {},
+      "id": "da518433-0e55-4b74-a05b-aa75c1095a99",
+      "createdAt": "2022-04-30T13:02:21.646Z",
+      "did": "GkEeb96MGT94K1HyQQzpj1",
+      "didDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "GkEeb96MGT94K1HyQQzpj1#1",
+            "controller": "GkEeb96MGT94K1HyQQzpj1",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS"
+          }
+        ],
+        "service": [
+          {
+            "id": "GkEeb96MGT94K1HyQQzpj1#IndyAgentService",
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "GkEeb96MGT94K1HyQQzpj1#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "GkEeb96MGT94K1HyQQzpj1"
+      },
+      "verkey": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
+      "theirDid": "YKc7qhYN1TckZAMUf7jgwc",
+      "theirDidDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "YKc7qhYN1TckZAMUf7jgwc#1",
+            "controller": "YKc7qhYN1TckZAMUf7jgwc",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "J57UsQT3wa4FcivfKpvjgUtaPDScZhFJ8kd5Q2iR5sBT"
+          }
+        ],
+        "service": [
+          {
+            "id": "YKc7qhYN1TckZAMUf7jgwc#IndyAgentService",
+            "serviceEndpoint": "rxjs:faber",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["J57UsQT3wa4FcivfKpvjgUtaPDScZhFJ8kd5Q2iR5sBT"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "YKc7qhYN1TckZAMUf7jgwc#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "YKc7qhYN1TckZAMUf7jgwc"
+      },
+      "theirLabel": "Agent: PopulateWallet2",
+      "state": "responded",
+      "role": "inviter",
+      "autoAcceptConnection": true,
+      "invitation": {
+        "@type": "https://didcomm.org/connections/1.0/invitation",
+        "@id": "f0ca03d8-2e11-4ff2-a5fc-e0137a434b7e",
+        "label": "Agent: PopulateWallet",
+        "recipientKeys": ["9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS"],
+        "serviceEndpoint": "rxjs:alice",
+        "routingKeys": []
+      },
+      "threadId": "6eeb6a80-cd75-491d-b2e0-7bae65ced1c3",
+      "multiUseInvitation": false
+    },
+    "id": "da518433-0e55-4b74-a05b-aa75c1095a99",
+    "type": "ConnectionRecord",
+    "tags": {
+      "state": "responded",
+      "role": "inviter",
+      "invitationKey": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
+      "threadId": "6eeb6a80-cd75-491d-b2e0-7bae65ced1c3",
+      "verkey": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
+      "theirKey": "J57UsQT3wa4FcivfKpvjgUtaPDScZhFJ8kd5Q2iR5sBT",
+      "did": "GkEeb96MGT94K1HyQQzpj1",
+      "theirDid": "YKc7qhYN1TckZAMUf7jgwc"
+    }
+  },
+  "98260a2d-33df-450d-bc7c-c4305677978e": {
+    "value": {
+      "metadata": {},
+      "id": "98260a2d-33df-450d-bc7c-c4305677978e",
+      "createdAt": "2022-04-20T13:02:21.646Z",
+      "did": "WSwJQMBHGZbQsq9LDBTWjX",
+      "didDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "WSwJQMBHGZbQsq9LDBTWjX#1",
+            "controller": "WSwJQMBHGZbQsq9LDBTWjX",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3"
+          }
+        ],
+        "service": [
+          {
+            "id": "WSwJQMBHGZbQsq9LDBTWjX#IndyAgentService",
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "WSwJQMBHGZbQsq9LDBTWjX#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "WSwJQMBHGZbQsq9LDBTWjX"
+      },
+      "verkey": "H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3",
+      "state": "invited",
+      "role": "inviter",
+      "autoAcceptConnection": true,
+      "invitation": {
+        "@type": "https://didcomm.org/connections/1.0/invitation",
+        "@id": "f0ca03d8-2e11-4ff2-a5fc-e0137a434b7e",
+        "label": "Agent: PopulateWallet",
+        "recipientKeys": ["9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS"],
+        "serviceEndpoint": "rxjs:alice",
+        "routingKeys": []
+      },
+      "multiUseInvitation": true
+    },
+    "id": "98260a2d-33df-450d-bc7c-c4305677978e",
+    "type": "ConnectionRecord",
+    "tags": {
+      "state": "invited",
+      "role": "inviter",
+      "invitationKey": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
+      "verkey": "H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3",
+      "did": "WSwJQMBHGZbQsq9LDBTWjX"
+    }
+  },
+  "b65c2ccd-277c-4140-9d87-c8dd30e7a98c": {
+    "value": {
+      "metadata": {},
+      "id": "b65c2ccd-277c-4140-9d87-c8dd30e7a98c",
+      "createdAt": "2022-04-30T13:02:21.653Z",
+      "did": "Ud6AWCk6WrwfYKZUw5tJmt",
+      "didDoc": {
+        "@context": "https://w3id.org/did/v1",
+        "publicKey": [
+          {
+            "id": "Ud6AWCk6WrwfYKZUw5tJmt#1",
+            "controller": "Ud6AWCk6WrwfYKZUw5tJmt",
+            "type": "Ed25519VerificationKey2018",
+            "publicKeyBase58": "G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe"
+          }
+        ],
+        "service": [
+          {
+            "id": "Ud6AWCk6WrwfYKZUw5tJmt#IndyAgentService",
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": ["G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "publicKey": "Ud6AWCk6WrwfYKZUw5tJmt#1",
+            "type": "Ed25519SignatureAuthentication2018"
+          }
+        ],
+        "id": "Ud6AWCk6WrwfYKZUw5tJmt"
+      },
+      "verkey": "G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe",
+      "state": "invited",
+      "role": "inviter",
+      "autoAcceptConnection": true,
+      "invitation": {
+        "@type": "https://didcomm.org/connections/1.0/invitation",
+        "@id": "1f516e35-08d3-43d8-900c-99d5239f54da",
+        "label": "Agent: PopulateWallet",
+        "recipientKeys": ["G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe"],
+        "serviceEndpoint": "rxjs:alice",
+        "routingKeys": []
+      },
+      "multiUseInvitation": false
+    },
+    "id": "b65c2ccd-277c-4140-9d87-c8dd30e7a98c",
+    "type": "ConnectionRecord",
+    "tags": {
+      "state": "invited",
+      "role": "inviter",
+      "invitationKey": "G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe",
+      "verkey": "G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe",
+      "did": "Ud6AWCk6WrwfYKZUw5tJmt"
+    }
+  }
+}
