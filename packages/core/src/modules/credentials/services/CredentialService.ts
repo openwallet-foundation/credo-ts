@@ -13,6 +13,7 @@ import type { CredentialProtocolVersion } from './../CredentialProtocolVersion'
 import type {
   CredentialProtocolMsgReturnType,
   DeleteCredentialOptions,
+  ServiceOfferCredentialOptions,
   ServiceRequestCredentialOptions,
 } from './../CredentialServiceOptions'
 import type {
@@ -21,7 +22,6 @@ import type {
   CredentialFormatType,
   NegotiateOfferOptions,
   NegotiateProposalOptions,
-  OfferCredentialOptions,
   ProposeCredentialOptions,
 } from './../CredentialsModuleOptions'
 import type { CredentialFormatService } from './../formats/CredentialFormatService'
@@ -95,7 +95,7 @@ export abstract class CredentialService {
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for offer
-  abstract createOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract createOffer(options: ServiceOfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
 
   // methods for request
