@@ -4,7 +4,7 @@ import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
 import type { TransportSession } from './TransportService'
 import type { DIDCommMessage, EncryptedMessage } from './didcomm'
-import type { DecryptedMessageContext, DIDCommMessageInstance } from './didcomm/types'
+import type { DecryptedMessageContext, DIDCommMessageClass } from './didcomm/types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 

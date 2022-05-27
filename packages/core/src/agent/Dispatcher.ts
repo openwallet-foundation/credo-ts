@@ -3,7 +3,7 @@ import type { OutboundMessage, OutboundServiceMessage } from '../types'
 import type { AgentMessageProcessedEvent } from './Events'
 import type { Handler } from './Handler'
 import type { DIDCommMessage } from './didcomm'
-import type { DIDCommMessageInstance } from './didcomm/types'
+import type { DIDCommMessageClass } from './didcomm/types'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -20,7 +20,7 @@ import { isOutboundServiceMessage } from './helpers'
 
 @scoped(Lifecycle.ContainerScoped)
 class Dispatcher {
-  private handlers: Handler<DIDCommMessageInstance>[] = []
+  private handlers: Handler<DIDCommMessageClass>[] = []
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
@@ -31,7 +31,7 @@ class Dispatcher {
     this.logger = agentConfig.logger
   }
 
-  public registerHandler(handler: Handler<DIDCommMessageInstance>) {
+  public registerHandler(handler: Handler<DIDCommMessageClass>) {
     this.handlers.push(handler)
   }
 
@@ -96,7 +96,7 @@ class Dispatcher {
     })
   }
 
-  private getHandlerForType(messageType: string): Handler<DIDCommMessageInstance> | undefined {
+  private getHandlerForType(messageType: string): Handler<DIDCommMessageClass> | undefined {
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
         if (MessageClass.type === messageType) return handler
@@ -104,7 +104,7 @@ class Dispatcher {
     }
   }
 
-  public getMessageClassForType(messageType: string): DIDCommMessageInstance | undefined {
+  public getMessageClassForType(messageType: string): DIDCommMessageClass | undefined {
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
         if (MessageClass.type === messageType) return MessageClass
@@ -118,7 +118,7 @@ class Dispatcher {
    */
   public get supportedMessageTypes() {
     return this.handlers
-      .reduce<DIDCommMessageInstance[]>((all, cur) => [...all, ...cur.supportedMessages], [])
+      .reduce<DIDCommMessageClass[]>((all, cur) => [...all, ...cur.supportedMessages], [])
       .map((m) => m.type)
   }
 

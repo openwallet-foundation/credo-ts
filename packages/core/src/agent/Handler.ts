@@ -1,8 +1,8 @@
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
-import type { DIDCommMessageInstance } from './didcomm/types'
+import type { DIDCommMessageClass } from './didcomm/types'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
-export interface Handler<T extends DIDCommMessageInstance> {
+export interface Handler<T extends DIDCommMessageClass> {
   readonly supportedMessages: readonly T[]
 
   handle(messageContext: InboundMessageContext): Promise<OutboundMessage | OutboundServiceMessage | void>
@@ -14,6 +14,6 @@ export interface Handler<T extends DIDCommMessageInstance> {
  * @example
  * async handle(messageContext: HandlerInboundMessage<BasicMessageHandler>) {}
  */
-export type HandlerInboundMessage<H extends Handler<DIDCommMessageInstance>> = InboundMessageContext<
+export type HandlerInboundMessage<H extends Handler<DIDCommMessageClass>> = InboundMessageContext<
   InstanceType<H['supportedMessages'][number]>
 >

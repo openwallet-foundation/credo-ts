@@ -29,4 +29,4 @@ export enum DidCommV1Algorithms {
   Anoncrypt = 'Anoncrypt',
 }
 
-export type DIDCommMessageInstance = typeof DIDCommV1Message | typeof DIDCommV2Message
+export type DIDCommMessageClass = typeof DIDCommV1Message | typeof DIDCommV2Message
