@@ -249,7 +249,9 @@ export class RecipientModule {
           ? MediatorPickupStrategy.PickUpV1
           : MediatorPickupStrategy.Implicit
       }
+    }
 
+    if (mediator.pickupStrategy !== mediatorPickupStrategy) {
       // Store the result so it can be reused next time
       mediator.pickupStrategy = mediatorPickupStrategy
       await this.mediationRepository.update(mediator)
