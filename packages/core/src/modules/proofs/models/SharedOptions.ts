@@ -19,22 +19,16 @@ export interface ProposeProofFormats {
 }
 
 export interface RequestProofFormats {
-  // If you want to propose an indy proof without attributes or
-  // any of the other properties you should pass an empty object
   indy?: IndyRequestProofFormat
   presentationExchange?: RequestPresentationOptions
 }
 
 export interface CreatePresentationFormats {
-  // If you want to propose an indy proof without attributes or
-  // any of the other properties you should pass an empty object
   indy?: IndyRequestedCredentialsOptions
   presentationExchange?: IVerifiableCredential
 }
 
 export interface AcceptProposalFormats {
-  // If you want to propose an indy proof without attributes or
-  // any of the other properties you should pass an empty object
   indy?: IndyAcceptProposalOptions
   presentationExchange?: never
 }
@@ -46,22 +40,22 @@ export interface VerifyProofFormats {
 
 export interface RequestedCredentialConfigOptions {
   indy?: GetRequestedCredentialsConfig
-  jsonLd?: never
+  presentationExchange?: never
 }
 
 export interface RetrievedCredentialOptions {
-  indy?: RetrievedCredentials | undefined
-  presentationExchange?: SelectResults | undefined
+  indy?: RetrievedCredentials
+  presentationExchange?: SelectResults
 }
 
 export interface ProofRequestFormats {
-  indy?: ProofRequest | undefined
-  presentationExchange?: RequestPresentationOptions | undefined
+  indy?: ProofRequest
+  presentationExchange?: RequestPresentationOptions
 }
 
 export interface RequestedCredentialsFormats {
-  indy?: RequestedCredentials | undefined
-  presentationExchange?: IVerifiableCredential | undefined
+  indy?: RequestedCredentials
+  presentationExchange?: IVerifiableCredential
 }
 
 interface IndyAcceptProposalOptions {
@@ -69,6 +63,6 @@ interface IndyAcceptProposalOptions {
 }
 
 export interface AutoSelectCredentialOptions {
-  indy?: RetrievedCredentials | undefined
-  presentationExchange?: SelectResults | undefined
+  indy?: RetrievedCredentials
+  presentationExchange?: SelectResults
 }

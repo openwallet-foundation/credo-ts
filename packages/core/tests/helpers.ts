@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
   AutoAcceptProof,
@@ -28,31 +29,33 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
   JsonTransformer,
+  ProofProtocolVersion,
+  HandshakeProtocol,
+  DidExchangeState,
+  DidExchangeRole,
   LogLevel,
   AgentConfig,
   AriesFrameworkError,
   BasicMessageEventTypes,
-  ConnectionInvitationMessage,
   ConnectionRecord,
-  ConnectionRole,
-  ConnectionState,
   CredentialEventTypes,
   CredentialState,
-  DidDoc,
   PredicateType,
   ProofEventTypes,
   ProofState,
   Agent,
 } from '../src'
 import { KeyType } from '../src/crypto'
-import { Key } from '../src/crypto/Key'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../src/modules/credentials/CredentialProtocolVersion'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/V1CredentialPreview'
-import { V2CredentialPreview } from '../src/modules/credentials/protocol/v2/V2CredentialPreview'
-import { DidCommService, DidKey } from '../src/modules/dids'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
+// import { V2CredentialPreview } from '../src/modules/credentials/protocol/v2/V2CredentialPreview'
+import { DidCommV1Service, DidKey, Key } from '../src/modules/dids'
+import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
+import { OutOfBandInvitation } from '../src/modules/oob/messages'
+import { OutOfBandRecord } from '../src/modules/oob/repository'
 import {
   PresentationPreview,
   PresentationPreviewAttribute,
@@ -249,78 +252,84 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
 }
 
 export function getMockConnection({
-  state = ConnectionState.Invited,
-  role = ConnectionRole.Invitee,
+  state = DidExchangeState.InvitationReceived,
+  role = DidExchangeRole.Requester,
   id = 'test',
   did = 'test-did',
   threadId = 'threadId',
-  verkey = 'key-1',
-  didDoc = new DidDoc({
-    id: did,
-    publicKey: [],
-    authentication: [],
-    service: [
-      new DidCommService({
-        id: `${did};indy`,
-        serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [verkey],
-      }),
-    ],
-  }),
   tags = {},
   theirLabel,
-  invitation = new ConnectionInvitationMessage({
-    label: 'test',
-    recipientKeys: [verkey],
-    serviceEndpoint: 'https:endpoint.com/msg',
-  }),
   theirDid = 'their-did',
-  theirDidDoc = new DidDoc({
-    id: theirDid,
-    publicKey: [],
-    authentication: [],
-    service: [
-      new DidCommService({
-        id: `${did};indy`,
-        serviceEndpoint: 'https://endpoint.com',
-        recipientKeys: [verkey],
-      }),
-    ],
-  }),
-  multiUseInvitation = false,
 }: Partial<ConnectionRecordProps> = {}) {
   return new ConnectionRecord({
     did,
-    didDoc,
     threadId,
     theirDid,
-    theirDidDoc,
     id,
     role,
     state,
     tags,
-    verkey,
-    invitation,
     theirLabel,
-    multiUseInvitation,
   })
 }
 
-export async function makeConnection(
-  agentA: Agent,
-  agentB: Agent,
-  config?: {
-    autoAcceptConnection?: boolean
-    alias?: string
-    mediatorId?: string
+export function getMockOutOfBand({
+  label,
+  serviceEndpoint,
+  recipientKeys,
+  mediatorId,
+  role,
+  state,
+  reusable,
+  reuseConnectionId,
+}: {
+  label?: string
+  serviceEndpoint?: string
+  mediatorId?: string
+  recipientKeys?: string[]
+  role?: OutOfBandRole
+  state?: OutOfBandState
+  reusable?: boolean
+  reuseConnectionId?: string
+} = {}) {
+  const options = {
+    label: label ?? 'label',
+    accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
+    handshakeProtocols: [HandshakeProtocol.DidExchange],
+    services: [
+      new DidCommV1Service({
+        id: `#inline-0`,
+        priority: 0,
+        serviceEndpoint: serviceEndpoint ?? 'http://example.com',
+        recipientKeys: recipientKeys || [
+          new DidKey(Key.fromPublicKeyBase58('ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7', KeyType.Ed25519)).did,
+        ],
+        routingKeys: [],
+      }),
+    ],
   }
-) {
-  // eslint-disable-next-line prefer-const
-  let { invitation, connectionRecord: agentAConnection } = await agentA.connections.createConnection(config)
-  let agentBConnection = await agentB.connections.receiveInvitation(invitation)
+  const outOfBandInvitation = new OutOfBandInvitation(options)
+  const outOfBandRecord = new OutOfBandRecord({
+    mediatorId,
+    role: role || OutOfBandRole.Receiver,
+    state: state || OutOfBandState.Initial,
+    outOfBandInvitation: outOfBandInvitation,
+    reusable,
+    reuseConnectionId,
+  })
+  return outOfBandRecord
+}
 
-  agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection.id)
-  agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection.id)
+export async function makeConnection(agentA: Agent, agentB: Agent) {
+  const agentAOutOfBand = await agentA.oob.createInvitation({
+    handshakeProtocols: [HandshakeProtocol.Connections],
+  })
+
+  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand.outOfBandInvitation)
+
+  agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
+  let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand.id)
+  agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection!.id)
 
   return [agentAConnection, agentBConnection]
 }
@@ -483,11 +492,15 @@ export async function issueConnectionLessCredential({
     connectionId: '',
   }
   // eslint-disable-next-line prefer-const
-  let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOutOfBandOffer(
-    offerOptions
-  )
+  let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOffer(offerOptions)
 
-  await holderAgent.receiveMessage(message.toJSON())
+  const { message: offerMessage } = await issuerAgent.oob.createLegacyConnectionlessInvitation({
+    recordId: issuerCredentialRecord.id,
+    domain: 'https://example.org',
+    message,
+  })
+
+  await holderAgent.receiveMessage(offerMessage.toJSON())
 
   let holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
@@ -550,12 +563,13 @@ export async function presentProof({
     },
   }
 
-  let verifierRecord = await verifierAgent.proofs.requestProof(requestProofsOptions)
-
-  let holderRecord = await waitForProofRecordSubject(holderReplay, {
-    threadId: verifierRecord.threadId,
+  let holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
     state: ProofState.RequestReceived,
   })
+
+  let verifierRecord = await verifierAgent.proofs.requestProof(requestProofsOptions)
+
+  let holderRecord = await holderProofRecordPromise
 
   const requestedCredentials = await holderAgent.proofs.autoSelectCredentialsForProofRequest({
     proofRecordId: holderRecord.id,
@@ -568,21 +582,26 @@ export async function presentProof({
     proofRecordId: holderRecord.id,
     proofFormats: { indy: requestedCredentials.indy },
   }
-  await holderAgent.proofs.acceptRequest(acceptPresentationOptions)
 
-  verifierRecord = await waitForProofRecordSubject(verifierReplay, {
+  const verifierProofRecordPromise = waitForProofRecordSubject(verifierReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.PresentationReceived,
   })
 
+  await holderAgent.proofs.acceptRequest(acceptPresentationOptions)
+
+  verifierRecord = await verifierProofRecordPromise
+
   // assert presentation is valid
   expect(verifierRecord.isVerified).toBe(true)
 
-  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
-  holderRecord = await waitForProofRecordSubject(holderReplay, {
+  holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.Done,
   })
+
+  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
+  holderRecord = await holderProofRecordPromise
 
   return {
     verifierProof: verifierRecord,
@@ -763,12 +782,12 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
 }
 
 export async function setupV2ProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
-  const credentialPreview = V2CredentialPreview.fromRecord({
-    name: 'John',
-    age: '99',
-    image_0: 'some x-ray',
-    image_1: 'profile picture',
-  })
+  // const credentialPreview = V2CredentialPreview.fromRecord({
+  //   name: 'John',
+  //   age: '99',
+  //   image_0: 'some x-ray',
+  //   image_1: 'profile picture',
+  // })
 
   const unique = uuid().substring(0, 4)
 
@@ -909,8 +928,6 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
     ],
     issuer: issuerDidKey.did,
   }
-
-
 
   // const credential: W3cCredential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
   const credential: W3cCredential = JsonTransformer.fromJSON(vcPermanentResidenceCard, W3cCredential)

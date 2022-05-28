@@ -8,6 +8,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
+import { HandshakeProtocol } from '../src/modules/connections'
 import { CredentialProtocolVersion } from '../src/modules/credentials'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/V1CredentialPreview'
 import {
@@ -22,6 +23,7 @@ import {
 } from '../src/modules/proofs'
 import { MediatorPickupStrategy } from '../src/modules/routing'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
+import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 
 import {
@@ -90,6 +92,10 @@ describe('Present Proof', () => {
       },
     }
 
+    let aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.RequestReceived,
+    })
+
     // eslint-disable-next-line prefer-const
     let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createOutOfBandRequest(
       outOfBandRequestOptions
@@ -98,10 +104,7 @@ describe('Present Proof', () => {
     await aliceAgent.receiveMessage(message.toJSON())
 
     testLogger.test('Alice waits for presentation request from Faber')
-    let aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.RequestReceived,
-    })
+    let aliceProofRecord = await aliceProofRecordPromise
 
     testLogger.test('Alice accepts presentation request from Faber')
     const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
@@ -116,25 +119,29 @@ describe('Present Proof', () => {
       proofFormats: { indy: requestedCredentials.indy },
     }
 
-    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
-
-    testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await waitForProofRecordSubject(faberReplay, {
+    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
     })
 
+    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+
+    testLogger.test('Faber waits for presentation from Alice')
+    faberProofRecord = await faberProofRecordPromise
+
     // assert presentation is valid
     expect(faberProofRecord.isVerified).toBe(true)
+
+    aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.Done,
+    })
 
     // Faber accepts presentation
     await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits till it receives presentation ack
-    aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
-      threadId: aliceProofRecord.threadId,
-      state: ProofState.Done,
-    })
+    aliceProofRecord = await aliceProofRecordPromise
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
@@ -186,22 +193,22 @@ describe('Present Proof', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     }
 
+    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+    })
+
+    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+      state: ProofState.Done,
+    })
+
     // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createOutOfBandRequest(
-      outOfBandRequestOptions
-    )
+    let { message } = await faberAgent.proofs.createOutOfBandRequest(outOfBandRequestOptions)
 
     await aliceAgent.receiveMessage(message.toJSON())
 
-    await waitForProofRecordSubject(aliceReplay, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.Done,
-    })
+    await aliceProofRecordPromise
 
-    await waitForProofRecordSubject(faberReplay, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.Done,
-    })
+    await faberProofRecordPromise
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
@@ -233,18 +240,29 @@ describe('Present Proof', () => {
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const faberMediationInvitation = await mediatorAgent.connections.createConnection()
-    const aliceMediationInvitation = await mediatorAgent.connections.createConnection()
+    const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+      label: 'faber invitation',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
+
+    const aliceMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+      label: 'alice invitation',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
 
     const faberConfig = getBaseConfig(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: faberMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+        domain: 'https://example.com',
+      }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
     const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: aliceMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+        domain: 'https://example.com',
+      }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
@@ -336,10 +354,17 @@ describe('Present Proof', () => {
       },
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     }
+
+    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+    })
+
+    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+      state: ProofState.Done,
+    })
+
     // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createOutOfBandRequest(
-      outOfBandRequestOptions
-    )
+    let { message } = await faberAgent.proofs.createOutOfBandRequest(outOfBandRequestOptions)
 
     const mediationRecord = await faberAgent.mediationRecipient.findDefaultMediator()
     if (!mediationRecord) {
@@ -356,14 +381,15 @@ describe('Present Proof', () => {
 
     await aliceAgent.receiveMessage(message.toJSON())
 
-    await waitForProofRecordSubject(aliceReplay, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.Done,
-    })
+    await aliceProofRecordPromise
 
-    await waitForProofRecordSubject(faberReplay, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.Done,
-    })
+    await faberProofRecordPromise
+
+    // We want to stop the mediator polling before the agent is shutdown.
+    // FIXME: add a way to stop mediator polling from the public api, and make sure this is
+    // being handled in the agent shutdown so we don't get any errors with wallets being closed.
+    faberAgent.config.stop$.next(true)
+    aliceAgent.config.stop$.next(true)
+    await sleep(2000)
   })
 })

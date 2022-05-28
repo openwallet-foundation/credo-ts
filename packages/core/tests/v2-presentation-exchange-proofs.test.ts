@@ -1,5 +1,4 @@
 import type { Agent, ConnectionRecord, ProofRecord } from '../src'
-import type { InputDescriptors } from '../src/modules/proofs/formats/presentation-exchange/models'
 import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
@@ -8,17 +7,9 @@ import type {
 } from '../src/modules/proofs/models/ModuleOptions'
 
 import { ProofState } from '../src'
-import {
-  V2_PRESENTATION_EXCHANGE_PRESENTATION,
-  V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
-} from '../src/modules/proofs/formats/ProofFormats'
-import { PresentationDefinition } from '../src/modules/proofs/formats/presentation-exchange/models/RequestPresentation'
+import { V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST } from '../src/modules/proofs/formats/ProofFormats'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
-import {
-  V2PresentationMessage,
-  V2ProposalPresentationMessage,
-  V2RequestPresentationMessage,
-} from '../src/modules/proofs/protocol/v2/messages'
+import { V2ProposalPresentationMessage, V2RequestPresentationMessage } from '../src/modules/proofs/protocol/v2/messages'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
 
 import { setupV2ProofsTest, waitForProofRecord } from './helpers'

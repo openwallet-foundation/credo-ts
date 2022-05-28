@@ -2,8 +2,8 @@ import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
 import didExample123Fixture from '../../__tests__/__fixtures__/didExample123.json'
 import didExample456Invalid from '../../__tests__/__fixtures__/didExample456Invalid.json'
-import { DidDocument } from '../DidDocument'
-import { DidDocumentService, IndyAgentService, DidCommService } from '../service'
+import { DidDocument, findVerificationMethodByKeyType } from '../DidDocument'
+import { DidDocumentService, IndyAgentService, DidCommV1Service } from '../service'
 import { VerificationMethod } from '../verificationMethod'
 
 const didDocumentInstance = new DidDocument({
@@ -43,7 +43,7 @@ const didDocumentInstance = new DidDocument({
       routingKeys: ['Q4zqM7aXqm7gDQkUVLng9h'],
       priority: 5,
     }),
-    new DidCommService({
+    new DidCommV1Service({
       id: 'did:example:123#service-3',
       serviceEndpoint: 'https://agent.com/did-comm',
       recipientKeys: ['DADEajsDSaksLng9h'],
@@ -95,11 +95,17 @@ const didDocumentInstance = new DidDocument({
       controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
       publicKeyPem: '-----BEGIN PUBLIC A...',
     }),
+    new VerificationMethod({
+      id: 'did:example:123#keyAgreement-1',
+      type: 'Ed25519VerificationKey2018',
+      controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
+      publicKeyPem: '-----BEGIN PUBLIC A...',
+    }),
   ],
 })
 
 describe('Did | DidDocument', () => {
-  it('should correctly transforms Json to DidDoc class', () => {
+  it('should correctly transforms Json to DidDocument class', () => {
     const didDocument = JsonTransformer.fromJSON(didExample123Fixture, DidDocument)
 
     // Check other properties
@@ -118,7 +124,7 @@ describe('Did | DidDocument', () => {
     const services = didDocument.service ?? []
     expect(services[0]).toBeInstanceOf(DidDocumentService)
     expect(services[1]).toBeInstanceOf(IndyAgentService)
-    expect(services[2]).toBeInstanceOf(DidCommService)
+    expect(services[2]).toBeInstanceOf(DidCommV1Service)
 
     // Check Authentication
     const authentication = didDocument.authentication ?? []
@@ -276,6 +282,14 @@ describe('Did | DidDocument', () => {
       const services = didDocumentInstance.service ?? []
 
       expect(didDocumentInstance.didCommServices).toEqual([services[2], services[1]])
+    })
+  })
+
+  describe('findVerificationMethodByKeyType', () => {
+    it('return first verfication method that match key type', async () => {
+      expect(await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocumentInstance)).toBeInstanceOf(
+        VerificationMethod
+      )
     })
   })
 })

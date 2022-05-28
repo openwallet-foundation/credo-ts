@@ -4,7 +4,7 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { ProofAttributeInfo, ProofPredicateInfo } from '../../protocol/v1/models'
+import type { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import type {
   CreateRequestAsResponseOptions,
   GetRequestedCredentialsFormat,
@@ -20,8 +20,10 @@ import type {
   CreateRequestOptions,
   ProcessPresentationOptions,
   ProcessProposalOptions,
+  ProcessRequestOptions,
   VerifyProofOptions,
 } from '../models/ProofFormatServiceOptions'
+import type { ProofAttributeInfo, ProofPredicateInfo } from './models'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -34,21 +36,23 @@ import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMes
 import { checkProofRequestForDuplicates } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../../utils/MessageValidator'
+import { ObjectCheck } from '../../../../utils/objectCheck'
 import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { CredentialUtils } from '../../../credentials'
 import { Credential, IndyCredentialInfo } from '../../../credentials/protocol/v1/models'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
-import { ProofsUtils } from '../../ProofsUtil'
-import { PartialProof, RequestedPredicate, RequestedAttribute } from '../../protocol/v1/models'
-import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
+import { PartialProof } from '../../protocol/v1/models'
 import { ProofFormatService } from '../ProofFormatService'
 import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../ProofFormats'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
+import { IndyProofUtils } from './IndyProofUtils'
+import { RequestedAttribute, RequestedPredicate } from './models'
 import { ProofRequest } from './models/ProofRequest'
 import { RequestedCredentials } from './models/RequestedCredentials'
 import { RetrievedCredentials } from './models/RetrievedCredentials'
@@ -107,11 +111,13 @@ export class IndyProofFormatService extends ProofFormatService {
       format: V2_INDY_PRESENTATION_PROPOSAL,
     })
 
+    const request = new ProofRequest(options.proofProposalOptions)
+
     const attachment = new Attachment({
       id: options.id,
       mimeType: 'application/json',
       data: new AttachmentData({
-        base64: JsonEncoder.toBase64(options.proofProposalOptions),
+        base64: JsonEncoder.toBase64(request),
       }),
     })
     return { format, attachment }
@@ -123,19 +129,25 @@ export class IndyProofFormatService extends ProofFormatService {
     }
     const indyFormat = options.formats.indy
 
-    const preview = new PresentationPreview({
-      attributes: indyFormat.attributes,
-      predicates: indyFormat.predicates,
-    })
-
-    if (!preview) {
-      throw Error('Missing presentation preview to create proposal attachment format')
-    }
-
     return this.createProofAttachment({
       id: options.id ?? uuid(),
-      proofProposalOptions: preview,
+      proofProposalOptions: indyFormat,
     })
+  }
+
+  public async processProposal(options: ProcessProposalOptions): Promise<void> {
+    const proofProposalJson = options.proposal.attachment.getDataAsJson<ProofRequest>()
+
+    // Assert attachment
+    if (!proofProposalJson) {
+      throw new AriesFrameworkError(
+        `Missing required base64 or json encoded attachment data for presentation proposal with thread id ${options.record?.threadId}`
+      )
+    }
+
+    const proposalMessage = JsonTransformer.fromJSON(proofProposalJson, ProofRequest)
+
+    await MessageValidator.validate(proposalMessage)
   }
 
   public processProposal(options: ProcessProposalOptions): void {
@@ -175,6 +187,23 @@ export class IndyProofFormatService extends ProofFormatService {
     })
   }
 
+  public async processRequest(options: ProcessRequestOptions): Promise<void> {
+    const proofRequestJson = options.formatAttachments.attachment.getDataAsJson<ProofRequest>()
+
+    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
+
+    // Assert attachment
+    if (!proofRequest) {
+      throw new AriesFrameworkError(
+        `Missing required base64 or json encoded attachment data for presentation request with thread id ${options.record?.threadId}`
+      )
+    }
+    await MessageValidator.validate(proofRequest)
+
+    // Assert attribute and predicate (group) names do not match
+    checkProofRequestForDuplicates(proofRequest)
+  }
+
   public async createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat> {
     // Extract proof request from attachment
     const proofRequestJson = options.attachment.getDataAsJson<ProofRequest>() ?? null
@@ -211,7 +240,9 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
-    const requestFormat = options.presentation.request.find((x) => x.format.format === V2_INDY_PRESENTATION_REQUEST)
+    const requestFormat = options.formatAttachments.request.find(
+      (x) => x.format.format === V2_INDY_PRESENTATION_REQUEST
+    )
 
     if (!requestFormat) {
       throw new MissingIndyProofMessageError(
@@ -219,7 +250,7 @@ export class IndyProofFormatService extends ProofFormatService {
       )
     }
 
-    const proofFormat = options.presentation.proof.find((x) => x.format.format === V2_INDY_PRESENTATION)
+    const proofFormat = options.formatAttachments.presentation.find((x) => x.format.format === V2_INDY_PRESENTATION)
 
     if (!proofFormat) {
       throw new MissingIndyProofMessageError(
@@ -299,12 +330,15 @@ export class IndyProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError('Request message has no attachment linked to it')
     }
 
-    const proposalAttachmentData = proposalAttachment.getDataAsJson<ProofRequest>()
-    const requestAttachmentData = requestAttachment.getDataAsJson<ProofRequest>()
+    const proposalAttachmentJson = proposalAttachment.getDataAsJson<ProofRequest>()
+    const proposalAttachmentData = JsonTransformer.fromJSON(proposalAttachmentJson, ProofRequest)
+
+    const requestAttachmentJson = requestAttachment.getDataAsJson<ProofRequest>()
+    const requestAttachmentData = JsonTransformer.fromJSON(requestAttachmentJson, ProofRequest)
 
     if (
-      proposalAttachmentData.requestedAttributes === requestAttachmentData.requestedAttributes &&
-      proposalAttachmentData.requestedPredicates === requestAttachmentData.requestedPredicates
+      ObjectCheck.objectEquals(proposalAttachmentData.requestedAttributes, requestAttachmentData.requestedAttributes) &&
+      ObjectCheck.objectEquals(proposalAttachmentData.requestedPredicates, requestAttachmentData.requestedPredicates)
     ) {
       return true
     }
@@ -557,7 +591,7 @@ export class IndyProofFormatService extends ProofFormatService {
       nonce: nonce,
     }
 
-    const proofRequest = ProofsUtils.createReferentForProofRequest(indyProposeProofFormat, proposalJson)
+    const proofRequest = IndyProofUtils.createReferentForProofRequest(indyProposeProofFormat, proposalJson)
 
     return {
       indy: proofRequest,

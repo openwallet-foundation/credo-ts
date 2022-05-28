@@ -1,11 +1,11 @@
-import { DocumentLoader, JsonLdDoc, Proof, TypedArrayEncoder, VerificationMethod } from '../../../utils'
+import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../../utils'
 import type { JwsLinkedDataSignatureOptions, ProofPurpose } from '../JwsLinkedDataSignature'
 
 // @ts-ignore
 import jsonld from '@digitalcredentials/jsonld'
 
 import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
-import { MultiBaseEncoder, _includesContext } from '../../../utils'
+import { TypedArrayEncoder, MultiBaseEncoder, _includesContext } from '../../../utils'
 import { encodeToBase58 } from '../../../utils/base58'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 

@@ -32,8 +32,8 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     for (const [key, value] of Object.entries(tags)) {
       // If the value is a boolean string ('1' or '0')
       // use the boolean val
-      if (value === '1' && value?.includes(':')) {
-        const [tagName, tagValue] = value.split(':')
+      if (value === '1' && key?.includes(':')) {
+        const [tagName, tagValue] = key.split(':')
 
         const transformedValue = transformedTags[tagName]
 
@@ -42,8 +42,15 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
         } else {
           transformedTags[tagName] = [tagValue]
         }
-      } else if (value === '1' || value === '0') {
+      }
+      // Transform '1' and '0' to boolean
+      else if (value === '1' || value === '0') {
         transformedTags[key] = value === '1'
+      }
+      // If 1 or 0 is prefixed with 'n__' we need to remove it. This is to prevent
+      // casting the value to a boolean
+      else if (value === 'n__1' || value === 'n__0') {
+        transformedTags[key] = value === 'n__1' ? '1' : '0'
       }
       // Otherwise just use the value
       else {
@@ -62,6 +69,11 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
       // '1' or '0' syntax
       if (isBoolean(value)) {
         transformedTags[key] = value ? '1' : '0'
+      }
+      // If the value is 1 or 0, we need to add something to the value, otherwise
+      // the next time we deserialize the tag values it will be converted to boolean
+      else if (value === '1' || value === '0') {
+        transformedTags[key] = `n__${value}`
       }
       // If the value is an array we create a tag for each array
       // item ("tagName:arrayItem" = "1")
@@ -228,7 +240,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
         }
       }
     } catch (error) {
-      throw new IndySdkError(error)
+      throw new IndySdkError(error, `Searching '${type}' records for query '${JSON.stringify(query)}' failed`)
     }
   }
 }

@@ -8,6 +8,7 @@ import type { V1ProofService } from '../V1ProofService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
+import { AriesFrameworkError } from '../../../../../error'
 import { DidCommMessageRole } from '../../../../../storage'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V1RequestPresentationMessage } from '../messages'
@@ -58,19 +59,19 @@ export class V1RequestPresentationHandler implements Handler {
 
     if (!indyProofRequest) {
       this.agentConfig.logger.error('Proof request is undefined.')
-      return
+      throw new AriesFrameworkError('No proof request found.')
     }
 
     const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest({
       proofRecord: record,
       config: {
-        filterByPresentationPreview: false,
+        filterByPresentationPreview: true,
       },
     })
 
     if (!retrievedCredentials.indy) {
       this.agentConfig.logger.error('No matching Indy credentials could be retrieved.')
-      return
+      throw new AriesFrameworkError('No matching Indy credentials could be retrieved.')
     }
 
     const requestedCredentials = await this.proofService.autoSelectCredentialsForProofRequest({
@@ -93,8 +94,8 @@ export class V1RequestPresentationHandler implements Handler {
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
 
       const recipientService = requestMessage.service
@@ -110,8 +111,8 @@ export class V1RequestPresentationHandler implements Handler {
 
       return createOutboundServiceMessage({
         payload: message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
       })
     }
 

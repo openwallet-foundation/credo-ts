@@ -1,5 +1,6 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Logger } from '../../logger'
+import type { DeleteCredentialOptions } from './CredentialServiceOptions'
 import type {
   AcceptOfferOptions,
   AcceptProposalOptions,
@@ -22,7 +23,9 @@ import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { DidCommMessageRole } from '../../storage'
 import { DidCommMessageRepository } from '../../storage/didcomm/DidCommMessageRepository'
+import { getIndyDidFromVerficationMethod } from '../../utils/did'
 import { ConnectionService } from '../connections/services'
+import { DidResolverService, findVerificationMethodByKeyType } from '../dids'
 import { MediationRecipientService } from '../routing'
 
 import { CredentialProtocolVersion } from './CredentialProtocolVersion'
@@ -43,7 +46,7 @@ export interface CredentialsModule {
   declineOffer(credentialRecordId: string): Promise<CredentialExchangeRecord>
   negotiateOffer(options: NegotiateOfferOptions): Promise<CredentialExchangeRecord>
   // out of band
-  createOutOfBandOffer(options: OfferCredentialOptions): Promise<{
+  createOffer(options: OfferCredentialOptions): Promise<{
     message: AgentMessage
     credentialRecord: CredentialExchangeRecord
   }>
@@ -62,7 +65,7 @@ export interface CredentialsModule {
   getAll(): Promise<CredentialExchangeRecord[]>
   getById(credentialRecordId: string): Promise<CredentialExchangeRecord>
   findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
-  deleteById(credentialRecordId: string): Promise<void>
+  deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void>
 }
 
 @scoped(Lifecycle.ContainerScoped)
@@ -77,6 +80,7 @@ export class CredentialsModule implements CredentialsModule {
   private mediatorRecipientService: MediationRecipientService
   private logger: Logger
   private serviceMap: { [key in CredentialProtocolVersion]: CredentialService }
+  private didResolver: DidResolverService
 
   // note some of the parameters passed in here are temporary, as we intend
   // to eventually remove CredentialsModule
@@ -88,7 +92,8 @@ export class CredentialsModule implements CredentialsModule {
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
     v1Service: V1CredentialService,
-    v2Service: V2CredentialService
+    v2Service: V2CredentialService,
+    didResolver: DidResolverService
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
@@ -100,7 +105,7 @@ export class CredentialsModule implements CredentialsModule {
 
     this.v1Service = v1Service
     this.v2Service = v2Service
-
+    this.didResolver = didResolver
     this.serviceMap = {
       [CredentialProtocolVersion.V1]: this.v1Service,
       [CredentialProtocolVersion.V2]: this.v2Service,
@@ -240,12 +245,26 @@ export class CredentialsModule implements CredentialsModule {
     // Use connection if present
     if (record.connectionId) {
       const connection = await this.connectionService.getById(record.connectionId)
+      if (!connection.did) {
+        throw new AriesFrameworkError(`Connection record ${connection.id} has no 'did'`)
+      }
+      const didDocument = await this.didResolver.resolveDidDocument(connection.did)
+
+      const verificationMethod = await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocument)
+      if (!verificationMethod) {
+        throw new AriesFrameworkError(
+          'Invalid DidDocument: Missing verification method with type Ed25519VerificationKey2018 to use as indy holder did'
+        )
+      }
+      const indyDid = getIndyDidFromVerficationMethod(verificationMethod)
 
       const requestOptions: RequestCredentialOptions = {
         comment: options.comment,
         autoAcceptCredential: options.autoAcceptCredential,
+        holderDid: indyDid,
       }
-      const { message, credentialRecord } = await service.createRequest(record, requestOptions, connection.did)
+
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       await this.didCommMessageRepo.saveAgentMessage({
         agentMessage: message,
@@ -267,20 +286,17 @@ export class CredentialsModule implements CredentialsModule {
       const routing = await this.mediatorRecipientService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
       const recipientService = offerMessage.service
 
       const requestOptions: RequestCredentialOptions = {
         comment: options.comment,
         autoAcceptCredential: options.autoAcceptCredential,
+        holderDid: ourService.recipientKeys[0],
       }
-      const { message, credentialRecord } = await service.createRequest(
-        record,
-        requestOptions,
-        ourService.recipientKeys[0]
-      )
+      const { message, credentialRecord } = await service.createRequest(record, requestOptions)
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
@@ -293,8 +309,8 @@ export class CredentialsModule implements CredentialsModule {
 
       await this.messageSender.sendMessageToService({
         message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
 
@@ -353,12 +369,17 @@ export class CredentialsModule implements CredentialsModule {
     if (!options.connectionId) {
       throw new AriesFrameworkError('Missing connectionId on offerCredential')
     }
+    if (!options.protocolVersion) {
+      throw new AriesFrameworkError('Missing protocol version in offerCredential')
+    }
     const connection = await this.connectionService.getById(options.connectionId)
 
     const service = this.getService(options.protocolVersion)
 
     this.logger.debug(`Got a CredentialService object for version ${options.protocolVersion}`)
-    const { message, credentialRecord } = await service.createOffer(options)
+
+    // pass the connection in rather than leave it to the service layer to get the connection
+    const { message, credentialRecord } = await service.createOffer({ ...options, connection })
 
     this.logger.debug('Offer Message successfully created; message= ', message)
     const outboundMessage = createOutboundMessage(connection, message)
@@ -408,8 +429,8 @@ export class CredentialsModule implements CredentialsModule {
 
       await this.messageSender.sendMessageToService({
         message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
     }
@@ -462,8 +483,8 @@ export class CredentialsModule implements CredentialsModule {
 
       await this.messageSender.sendMessageToService({
         message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
     }
@@ -506,14 +527,17 @@ export class CredentialsModule implements CredentialsModule {
   public findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null> {
     return this.credentialRepository.findById(credentialRecordId)
   }
+
   /**
-   * Delete a credential record by id
+   * Delete a credential record by id, also calls service to delete from wallet
    *
    * @param credentialId the credential record id
+   * @param options the delete credential options for the delete operation
    */
-  public async deleteById(credentialId: string) {
+  public async deleteById(credentialId: string, options?: DeleteCredentialOptions) {
     const credentialRecord = await this.getById(credentialId)
-    return this.credentialRepository.delete(credentialRecord)
+    const service = this.getService(credentialRecord.protocolVersion)
+    return service.delete(credentialRecord, options)
   }
 
   /**
@@ -522,18 +546,14 @@ export class CredentialsModule implements CredentialsModule {
    * @param options The credential options to use for the offer
    * @returns The credential record and credential offer message
    */
-  public async createOutOfBandOffer(options: OfferCredentialOptions): Promise<{
+  public async createOffer(options: OfferCredentialOptions): Promise<{
     message: AgentMessage
     credentialRecord: CredentialExchangeRecord
   }> {
-    // with version we can get the Service
-    if (!options.protocolVersion) {
-      throw new AriesFrameworkError('Missing protocol version in createOutOfBandOffer')
-    }
     const service = this.getService(options.protocolVersion)
 
     this.logger.debug(`Got a CredentialService object for version ${options.protocolVersion}`)
-    const { message, credentialRecord } = await service.createOutOfBandOffer(options)
+    const { message, credentialRecord } = await service.createOffer(options)
 
     this.logger.debug('Offer Message successfully created; message= ', message)
 

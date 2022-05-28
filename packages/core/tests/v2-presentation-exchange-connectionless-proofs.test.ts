@@ -13,6 +13,7 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { Agent } from '../src/agent/Agent'
 import { Key } from '../src/crypto/Key'
 import { KeyType } from '../src/crypto/KeyType'
+import { HandshakeProtocol } from '../src/modules/connections/models/HandshakeProtocol'
 import {
   AutoAcceptCredential,
   CredentialEventTypes,
@@ -235,12 +236,12 @@ describe('Present Proof', () => {
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const credentialPreview = V2CredentialPreview.fromRecord({
-      name: 'John',
-      age: '99',
-      image_0: 'some x-ray',
-      image_1: 'profile picture',
-    })
+    // const credentialPreview = V2CredentialPreview.fromRecord({
+    //   name: 'John',
+    //   age: '99',
+    //   image_0: 'some x-ray',
+    //   image_1: 'profile picture',
+    // })
 
     const unique = uuid().substring(0, 4)
 
@@ -263,13 +264,22 @@ describe('Present Proof', () => {
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const faberMediationInvitation = await mediatorAgent.connections.createConnection()
-    const aliceMediationInvitation = await mediatorAgent.connections.createConnection()
+    const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+      label: 'faber invitation',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
+
+    const aliceMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+      label: 'alice invitation',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
 
     const faberConfig = getBaseConfig(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptCredentials: AutoAcceptCredential.Always,
       autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: faberMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+        domain: 'https://example.com',
+      }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
@@ -277,7 +287,9 @@ describe('Present Proof', () => {
       autoAcceptCredentials: AutoAcceptCredential.Always,
       autoAcceptProofs: AutoAcceptProof.Always,
       // logger: new TestLogger(LogLevel.test),
-      mediatorConnectionsInvite: aliceMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+        domain: 'https://example.com',
+      }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
@@ -293,7 +305,7 @@ describe('Present Proof', () => {
 
     agents = [aliceAgent, faberAgent, mediatorAgent]
 
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
+    // const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
 
     const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
     expect(faberConnection.isReady).toBe(true)

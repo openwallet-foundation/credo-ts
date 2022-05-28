@@ -89,6 +89,12 @@
       "type": "RsaVerificationKey2018",
       "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
       "publicKeyPem": "-----BEGIN PUBLIC A..."
+    },
+    {
+      "id": "did:example:123#keyAgreement-1",
+      "type": "Ed25519VerificationKey2018",
+      "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
     }
   ]
 }

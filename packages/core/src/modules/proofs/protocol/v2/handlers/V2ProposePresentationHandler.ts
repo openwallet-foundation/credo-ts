@@ -7,7 +7,7 @@ import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V2ProofService } from '../V2ProofService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
-import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
 export class V2ProposePresentationHandler implements Handler {
@@ -47,7 +47,7 @@ export class V2ProposePresentationHandler implements Handler {
 
     if (!messageContext.connection) {
       this.agentConfig.logger.error('No connection on the messageContext')
-      return
+      throw new AriesFrameworkError('No connection on the messageContext')
     }
 
     const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
@@ -57,7 +57,7 @@ export class V2ProposePresentationHandler implements Handler {
 
     if (!proposalMessage) {
       this.agentConfig.logger.error(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
-      return
+      throw new AriesFrameworkError(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
     }
 
     const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
@@ -69,9 +69,13 @@ export class V2ProposePresentationHandler implements Handler {
 
     const proofRequest = await this.proofService.createProofRequestFromProposal(proofRequestFromProposalOptions)
 
+    if (!proofRequest) {
+      this.agentConfig.logger.error('Failed to create proof request')
+      throw new AriesFrameworkError('Failed to create proof request.')
+    }
+
     const { message } = await this.proofService.createRequestAsResponse({
       proofRecord: proofRecord,
-      protocolVersion: ProofProtocolVersion.V2,
       autoAcceptProof: proofRecord.autoAcceptProof,
       proofFormats: proofRequest,
       willConfirm: true,

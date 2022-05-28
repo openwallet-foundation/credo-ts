@@ -44,13 +44,6 @@ describe('x25519', () => {
     expect(didKey.prefixedPublicKey.equals(TEST_X25519_PREFIX_BYTES)).toBe(true)
   })
 
-  it('should return a valid did:key did document for the did', async () => {
-    const key = Key.fromFingerprint(TEST_X25519_FINGERPRINT)
-    const didDocument = keyDidX25519.getDidDocument(TEST_X25519_DID, key)
-
-    expect(JsonTransformer.toJSON(didDocument)).toMatchObject(didKeyX25519Fixture)
-  })
-
   it('should return a valid verification method', async () => {
     const key = Key.fromFingerprint(TEST_X25519_FINGERPRINT)
     const verificationMethods = keyDidX25519.getVerificationMethods(TEST_X25519_DID, key)

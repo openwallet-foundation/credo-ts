@@ -1,8 +1,9 @@
 import { Expose, Transform } from 'class-transformer'
-import { Equals, IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
+import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { DateParser } from '../../../utils/transformers'
 
 export interface StatusMessageOptions {
@@ -32,9 +33,9 @@ export class StatusMessage extends AgentMessage {
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @Equals(StatusMessage.type)
-  public readonly type = StatusMessage.type
-  public static readonly type = 'https://didcomm.org/messagepickup/2.0/status'
+  @IsValidMessageType(StatusMessage.type)
+  public readonly type = StatusMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/2.0/status')
 
   @IsString()
   @IsOptional()

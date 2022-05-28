@@ -3,11 +3,23 @@ import type { DidDocumentService } from './service'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
+import { KeyType } from '../../../crypto'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
-import { IndyAgentService, ServiceTransformer, DidCommService } from './service'
+import { Key } from './Key'
+import { getKeyDidMappingByVerificationMethod } from './key-type'
+import { IndyAgentService, ServiceTransformer, DidCommV1Service } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
+
+type DidPurpose =
+  | 'authentication'
+  | 'keyAgreement'
+  | 'assertionMethod'
+  | 'capabilityInvocation'
+  | 'capabilityDelegation'
+
+type DidVerificationMethods = DidPurpose | 'verificationMethod'
 
 interface DidDocumentOptions {
   context?: string | string[]
@@ -97,17 +109,41 @@ export class DidDocument {
     }
   }
 
-  public dereferenceKey(keyId: string) {
+  public dereferenceVerificationMethod(keyId: string) {
     // TODO: once we use JSON-LD we should use that to resolve references in did documents.
     // for now we check whether the key id ends with the keyId.
     // so if looking for #123 and key.id is did:key:123#123, it is valid. But #123 as key.id is also valid
     const verificationMethod = this.verificationMethod?.find((key) => key.id.endsWith(keyId))
 
     if (!verificationMethod) {
-      throw new Error(`Unable to locate verification with id '${keyId}'`)
+      throw new Error(`Unable to locate verification method with id '${keyId}'`)
     }
 
     return verificationMethod
+  }
+
+  public dereferenceKey(keyId: string, allowedPurposes?: DidPurpose[]) {
+    const allPurposes: DidPurpose[] = [
+      'authentication',
+      'keyAgreement',
+      'assertionMethod',
+      'capabilityInvocation',
+      'capabilityDelegation',
+    ]
+
+    const purposes = allowedPurposes ?? allPurposes
+
+    for (const purpose of purposes) {
+      for (const key of this[purpose] ?? []) {
+        if (typeof key === 'string' && key.endsWith(keyId)) {
+          return this.dereferenceVerificationMethod(key)
+        } else if (typeof key !== 'string' && key.id.endsWith(keyId)) {
+          return key
+        }
+      }
+    }
+
+    throw new Error(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
   }
 
   /**
@@ -134,25 +170,84 @@ export class DidDocument {
    * Get all DIDComm services ordered by priority descending. This means the highest
    * priority will be the first entry.
    */
-  public get didCommServices(): Array<IndyAgentService | DidCommService> {
-    const didCommServiceTypes = [IndyAgentService.type, DidCommService.type]
+  public get didCommServices(): Array<IndyAgentService | DidCommV1Service> {
+    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type]
     const services = (this.service?.filter((service) => didCommServiceTypes.includes(service.type)) ?? []) as Array<
-      IndyAgentService | DidCommService
+      IndyAgentService | DidCommV1Service
     >
 
     // Sort services based on indicated priority
     return services.sort((a, b) => b.priority - a.priority)
   }
 
-  public get recipientKeys(): string[] {
-    // Get a `recipientKeys` entries from the did document
-    return this.didCommServices.reduce<string[]>(
-      (recipientKeys, service) => recipientKeys.concat(service.recipientKeys),
-      []
-    )
+  // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
+  public get recipientKeys(): Key[] {
+    let recipientKeys: Key[] = []
+
+    for (const service of this.didCommServices) {
+      if (service instanceof IndyAgentService) {
+        recipientKeys = [
+          ...recipientKeys,
+          ...service.recipientKeys.map((publicKeyBase58) => Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)),
+        ]
+      } else if (service instanceof DidCommV1Service) {
+        recipientKeys = [
+          ...recipientKeys,
+          ...service.recipientKeys.map((recipientKey) => keyReferenceToKey(this, recipientKey)),
+        ]
+      }
+    }
+
+    return recipientKeys
   }
 
   public toJSON() {
     return JsonTransformer.toJSON(this)
   }
+}
+
+export function keyReferenceToKey(didDocument: DidDocument, keyId: string) {
+  // FIXME: we allow authentication keys as historically ed25519 keys have been used in did documents
+  // for didcomm. In the future we should update this to only be allowed for IndyAgent and DidCommV1 services
+  // as didcomm v2 doesn't have this issue anymore
+  const verificationMethod = didDocument.dereferenceKey(keyId, ['authentication', 'keyAgreement'])
+  const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+  const key = getKeyFromVerificationMethod(verificationMethod)
+
+  return key
+}
+
+/**
+ * Extracting the verification method for signature type
+ * @param type Signature type
+ * @param didDocument DidDocument
+ * @returns verification method
+ */
+export async function findVerificationMethodByKeyType(
+  keyType: string,
+  didDocument: DidDocument
+): Promise<VerificationMethod | null> {
+  const didVerificationMethods: DidVerificationMethods[] = [
+    'verificationMethod',
+    'authentication',
+    'keyAgreement',
+    'assertionMethod',
+    'capabilityInvocation',
+    'capabilityDelegation',
+  ]
+
+  for await (const purpose of didVerificationMethods) {
+    const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
+    if (key instanceof Array) {
+      for await (const method of key) {
+        if (typeof method !== 'string') {
+          if (method.type === keyType) {
+            return method
+          }
+        }
+      }
+    }
+  }
+
+  return null
 }

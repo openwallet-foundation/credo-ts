@@ -1,10 +1,11 @@
 import type { Cred } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 export const INDY_CREDENTIAL_ATTACHMENT_ID = 'libindy-cred-0'
 
@@ -27,9 +28,9 @@ export class V1IssueCredentialMessage extends AgentMessage {
     }
   }
 
-  @Equals(V1IssueCredentialMessage.type)
-  public readonly type = V1IssueCredentialMessage.type
-  public static readonly type = 'https://didcomm.org/issue-credential/1.0/issue-credential'
+  @IsValidMessageType(V1IssueCredentialMessage.type)
+  public readonly type = V1IssueCredentialMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/issue-credential')
 
   @IsString()
   @IsOptional()

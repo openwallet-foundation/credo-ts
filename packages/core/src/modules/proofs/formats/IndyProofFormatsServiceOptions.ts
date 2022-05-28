@@ -2,14 +2,14 @@ import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { RevocationInterval } from '../../credentials/protocol/v1/models/RevocationInterval'
 import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
 import type { RequestProofFormats } from '../models/SharedOptions'
-import type { RequestedAttribute, RequestedPredicate } from '../protocol/v1/models'
-import type { ProofAttributeInfo } from '../protocol/v1/models/ProofAttributeInfo'
-import type { ProofPredicateInfo } from '../protocol/v1/models/ProofPredicateInfo'
 import type {
   PresentationPreview,
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
 } from '../protocol/v1/models/V1PresentationPreview'
+import type { RequestedAttribute, RequestedPredicate } from './indy/models'
+import type { ProofAttributeInfo } from './indy/models/ProofAttributeInfo'
+import type { ProofPredicateInfo } from './indy/models/ProofPredicateInfo'
 import type { ProofRequest } from './indy/models/ProofRequest'
 
 export interface IndyProposeProofFormat {
@@ -51,4 +51,10 @@ export interface GetRequestedCredentialsFormat {
 export interface CreateRequestAsResponseOptions {
   id?: string
   formats: RequestProofFormats
+}
+
+export interface IndyProofConfig {
+  name: string
+  version: string
+  nonce?: string
 }

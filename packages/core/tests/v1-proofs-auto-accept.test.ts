@@ -1,9 +1,5 @@
 import type { Agent, ConnectionRecord } from '../src'
-import type {
-  AcceptProposalOptions,
-  ProposeProofOptions,
-  RequestProofOptions,
-} from '../src/modules/proofs/models/ModuleOptions'
+import type { ProposeProofOptions, RequestProofOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 
 import {
@@ -60,19 +56,21 @@ describe('Auto accept present proof', () => {
         },
       }
 
-      const aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeProofOptions)
+      const faberProofRecordPromise = waitForProofRecord(faberAgent, {
+        state: ProofState.Done,
+      })
+
+      const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+        state: ProofState.Done,
+      })
+
+      await aliceAgent.proofs.proposeProof(proposeProofOptions)
 
       testLogger.test('Faber waits for presentation from Alice')
-      await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.Done,
-      })
+      await faberProofRecordPromise
 
       testLogger.test('Alice waits till it receives presentation ack')
-      await waitForProofRecord(aliceAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.Done,
-      })
+      await aliceProofRecordPromise
     })
 
     test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
@@ -113,18 +111,22 @@ describe('Auto accept present proof', () => {
           },
         },
       }
+      const faberProofRecordPromise = waitForProofRecord(faberAgent, {
+        state: ProofState.Done,
+      })
 
-      const faberProofRecord = await faberAgent.proofs.requestProof(requestProofsOptions)
+      const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+        state: ProofState.Done,
+      })
+
+      await faberAgent.proofs.requestProof(requestProofsOptions)
+
       testLogger.test('Faber waits for presentation from Alice')
-      await waitForProofRecord(faberAgent, {
-        threadId: faberProofRecord.threadId,
-        state: ProofState.Done,
-      })
+
+      await faberProofRecordPromise
+
       // Alice waits till it receives presentation ack
-      await waitForProofRecord(aliceAgent, {
-        threadId: faberProofRecord.threadId,
-        state: ProofState.Done,
-      })
+      await aliceProofRecordPromise
     })
   })
 
@@ -163,38 +165,33 @@ describe('Auto accept present proof', () => {
         },
       }
 
+      let faberProofRecordPromise = waitForProofRecord(faberAgent, {
+        state: ProofState.ProposalReceived,
+      })
+
       const aliceProofRecord = await aliceAgent.proofs.proposeProof(proposal)
 
       testLogger.test('Faber waits for presentation proposal from Alice')
 
-      const faberProofRecord = await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.ProposalReceived,
-      })
+      await faberProofRecordPromise
 
       testLogger.test('Faber accepts presentation proposal from Alice')
 
-      const acceptProposalOptions: AcceptProposalOptions = {
-        config: {
-          name: 'proof-request',
-          version: '1.0',
-        },
-        proofRecordId: faberProofRecord.id,
-      }
+      faberProofRecordPromise = waitForProofRecord(faberAgent, {
+        threadId: aliceProofRecord.threadId,
+        state: ProofState.Done,
+      })
 
-      await faberAgent.proofs.acceptProposal(acceptProposalOptions)
+      const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+        threadId: aliceProofRecord.threadId,
+        state: ProofState.Done,
+      })
 
       testLogger.test('Faber waits for presentation from Alice')
 
-      await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.Done,
-      })
+      await faberProofRecordPromise
       // Alice waits till it receives presentation ack
-      await waitForProofRecord(aliceAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.Done,
-      })
+      await aliceProofRecordPromise
     })
 
     test('Faber starts with proof requests to Alice, both with autoacceptproof on `contentApproved`', async () => {
@@ -236,19 +233,21 @@ describe('Auto accept present proof', () => {
         },
       }
 
-      const faberProofRecord = await faberAgent.proofs.requestProof(requestProofsOptions)
+      const faberProofRecordPromise = waitForProofRecord(faberAgent, {
+        state: ProofState.Done,
+      })
+
+      const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+        state: ProofState.Done,
+      })
+
+      await faberAgent.proofs.requestProof(requestProofsOptions)
 
       testLogger.test('Faber waits for presentation from Alice')
-      await waitForProofRecord(faberAgent, {
-        threadId: faberProofRecord.threadId,
-        state: ProofState.Done,
-      })
+      await faberProofRecordPromise
 
       // Alice waits till it receives presentation ack
-      await waitForProofRecord(aliceAgent, {
-        threadId: faberProofRecord.threadId,
-        state: ProofState.Done,
-      })
+      await aliceProofRecordPromise
     })
   })
 })

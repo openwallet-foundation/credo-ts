@@ -105,7 +105,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public processProposal(options: ProcessProposalOptions): void {
+  public async processProposal(options: ProcessProposalOptions): Promise<void> {
     if (!options.proposal) {
       throw Error('Proposal message is missing while processing proof proposal.')
     }
@@ -213,12 +213,12 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public processRequest(options: ProcessRequestOptions): void {
-    if (!options.request) {
+  public async processRequest(options: ProcessRequestOptions): Promise<void> {
+    if (!options.formatAttachments) {
       throw Error('Request message is missing while processing proof request in presentation exchange.')
     }
 
-    const requestMessage = options.request
+    const requestMessage = options.formatAttachments
 
     const presentationDefinition = requestMessage.attachment.getDataAsJson<PresentationDefinitionV1>()
 
@@ -363,15 +363,15 @@ export class PresentationExchangeFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
-    if (!options.presentation) {
+    if (!options.formatAttachments) {
       throw Error('Presentation  missing while processing presentation in presentation exchange service.')
     }
 
-    const requestFormat = options.presentation.request.find(
+    const requestFormat = options.formatAttachments.request.find(
       (x) => x.format.format === V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST
     )
 
-    const proofFormat = options.presentation.proof.find(
+    const proofFormat = options.formatAttachments.presentation.find(
       (x) => x.format.format === V2_PRESENTATION_EXCHANGE_PRESENTATION
     )
 
@@ -430,6 +430,10 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     const pex: PEXv1 = new PEXv1()
     const selectResults = pex.selectFrom(presentationDefinition, pexCredentials)
 
+    if (selectResults.verifiableCredential?.length === 0) {
+      throw new AriesFrameworkError('No matching credentials found.')
+    }
+
     return {
       presentationExchange: selectResults,
     }
@@ -461,7 +465,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     // We probably also need to return the selected matches we used so we can use those to create the presentation submission
 
     // Check how to correlate it. I think we may need to do something with the count here?
-    presentationExchange.matches[0].count
+    // presentationExchange.matches[0].count
 
     return {
       presentationExchange: presentationExchange.verifiableCredential[0],

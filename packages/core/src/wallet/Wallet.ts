@@ -2,10 +2,10 @@ import type { Key } from '../crypto/Key'
 import type { KeyType } from '../crypto/KeyType'
 import type {
   EncryptedMessage,
-  DecryptedMessageContext,
   WalletConfig,
   WalletExportImportConfig,
   WalletConfigRekey,
+  PlaintextMessage,
 } from '../types'
 import type { Buffer } from '../utils/buffer'
 
@@ -24,13 +24,13 @@ export interface Wallet {
   import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
 
   createKey(options: CreateKeyOptions): Promise<Key>
-  sign(options: SignOptions): Promise<Buffer>
-  verify(options: VerifyOptions): Promise<boolean>
 
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>
   pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
-  unpack(encryptedMessage: EncryptedMessage): Promise<DecryptedMessageContext>
+  unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
+  sign(data: Buffer, verkey: string): Promise<Buffer>
+  verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean>
   generateNonce(): Promise<string>
 }
 
@@ -57,4 +57,10 @@ export interface VerifyOptions {
 
 export interface DidConfig {
   seed?: string
+}
+
+export interface UnpackedMessageContext {
+  plaintextMessage: PlaintextMessage
+  senderKey?: string
+  recipientKey?: string
 }

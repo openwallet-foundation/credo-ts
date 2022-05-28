@@ -1,8 +1,9 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
 
 export interface V2RequestCredentialMessageOptions {
@@ -26,12 +27,12 @@ export class V2RequestCredentialMessage extends AgentMessage {
   @Type(() => CredentialFormatSpec)
   @ValidateNested()
   @IsArray()
-  // @IsInstance(CredentialFormatSpec, { each: true }) -> this causes message validation to fail
+  @IsInstance(CredentialFormatSpec, { each: true })
   public formats!: CredentialFormatSpec[]
 
-  @Equals(V2RequestCredentialMessage.type)
-  public readonly type = V2RequestCredentialMessage.type
-  public static readonly type = 'https://didcomm.org/issue-credential/2.0/request-credential'
+  @IsValidMessageType(V2RequestCredentialMessage.type)
+  public readonly type = V2RequestCredentialMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/2.0/request-credential')
 
   @Expose({ name: 'requests~attach' })
   @Type(() => Attachment)

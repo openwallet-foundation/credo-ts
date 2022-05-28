@@ -68,7 +68,7 @@ export class ProofsModule {
       [ProofProtocolVersion.V2]: v2ProofService,
     }
 
-    void this.registerHandlers(dispatcher, mediationRecipientService)
+    this.registerHandlers(dispatcher, mediationRecipientService)
   }
 
   private getService(protocolVersion: ProofProtocolVersion) {
@@ -137,8 +137,6 @@ export class ProofsModule {
     connection.assertReady()
 
     const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
-      name: options.config?.name ? options.config.name : 'proof-request',
-      version: options.config?.version ?? '1.0',
       nonce: await service.generateProofRequestNonce(),
       proofRecord,
     }
@@ -218,8 +216,8 @@ export class ProofsModule {
     const routing = await this.mediationRecipientService.getRouting()
     message.service = new ServiceDecorator({
       serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.verkey],
-      routingKeys: routing.routingKeys,
+      recipientKeys: [routing.recipientKey.publicKeyBase58],
+      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
     })
 
     // Save ~service decorator to record (to remember our verkey)
@@ -280,8 +278,8 @@ export class ProofsModule {
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
 
       const recipientService = requestMessage.service
@@ -297,8 +295,8 @@ export class ProofsModule {
 
       await this.messageSender.sendMessageToService({
         message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
 
@@ -344,6 +342,10 @@ export class ProofsModule {
       proofRecord: record,
     })
 
+    const requestMessage = await service.findRequestMessage(record.id)
+
+    const presentationMessage = await service.findPresentationMessage(record.id)
+
     // Use connection if present
     if (proofRecord.connectionId) {
       const connection = await this.connectionService.getById(proofRecord.connectionId)
@@ -355,29 +357,24 @@ export class ProofsModule {
       await this.messageSender.sendMessage(outboundMessage)
     }
     // Use ~service decorator otherwise
-    else {
-      const requestMessage = await service.findRequestMessage(record.id)
+    else if (requestMessage?.service && presentationMessage?.service) {
+      const recipientService = presentationMessage?.service
+      const ourService = requestMessage.service
 
-      const presentationMessage = await service.findPresentationMessage(record.id)
-
-      if (requestMessage?.service && presentationMessage?.service) {
-        const recipientService = presentationMessage.service
-        const ourService = requestMessage.service
-
-        await this.messageSender.sendMessageToService({
-          message,
-          service: recipientService.toDidCommService(),
-          senderKey: ourService.recipientKeys[0],
-          returnRoute: true,
-        })
-      }
-      // Cannot send message without credentialId or ~service decorator
-      else {
-        throw new AriesFrameworkError(
-          `Cannot accept presentation without connectionId or ~service decorator on presentation message.`
-        )
-      }
+      await this.messageSender.sendMessageToService({
+        message,
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        returnRoute: true,
+      })
     }
+    // Cannot send message without credentialId or ~service decorator
+    else {
+      throw new AriesFrameworkError(
+        `Cannot accept presentation without connectionId or ~service decorator on presentation message.`
+      )
+    }
+
     return record
   }
 
@@ -476,9 +473,9 @@ export class ProofsModule {
     return this.proofRepository.delete(proofRecord)
   }
 
-  private async registerHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {
+  private registerHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {
     for (const service of Object.values(this.serviceMap)) {
-      await service.registerHandlers(
+      service.registerHandlers(
         dispatcher,
         this.agentConfig,
         new ProofResponseCoordinator(this.agentConfig, service),
