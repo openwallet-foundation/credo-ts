@@ -5,6 +5,7 @@ import type { ProofStateChangedEvent } from '../src/modules/proofs'
 import type { InputDescriptors } from '../src/modules/proofs/formats/presentation-exchange/models/InputDescriptors'
 import type { AcceptPresentationOptions, OutOfBandRequestOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { SignCredentialOptions } from '../src/modules/vc/models/W3cCredentialServiceOptions'
+import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -34,7 +35,6 @@ import { IndyWallet } from '../src/wallet/IndyWallet'
 import {
   getBaseConfig,
   makeConnection,
-  prepareForIssuance,
   setupV2ProofsTest,
   waitForCredentialRecordSubject,
   waitForProofRecordSubject,
@@ -84,14 +84,10 @@ describe('Present Proof', () => {
       },
     ]
 
-    const presentationDefinition: PresentationDefinition = new PresentationDefinition({
-      inputDescriptors,
-      format: {
-        ldpVc: {
-          proofType: ['Ed25519Signature2018'],
-        },
-      },
-    })
+    const presentationDefinition: PresentationDefinitionV1 = {
+      input_descriptors: inputDescriptors,
+      id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+    }
 
     const outOfBandRequestOptions: OutOfBandRequestOptions = {
       protocolVersion: ProofProtocolVersion.V2,
@@ -190,14 +186,14 @@ describe('Present Proof', () => {
       },
     ]
 
-    const presentationDefinition: PresentationDefinition = new PresentationDefinition({
+    const presentationDefinition: PresentationDefinitionV1 = {
       inputDescriptors,
       format: {
         ldpVc: {
           proofType: ['Ed25519Signature2018'],
         },
       },
-    })
+    }
 
     const outOfBandRequestOptions: OutOfBandRequestOptions = {
       protocolVersion: ProofProtocolVersion.V2,
@@ -364,7 +360,7 @@ describe('Present Proof', () => {
     const signCredentialOptions: SignCredentialOptions = {
       credential,
       proofType: 'Ed25519Signature2018',
-      verificationMethod: issuerDidKey.keyId,
+      verificationMethod: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
     }
 
     const issuerReplay = new ReplaySubject<CredentialStateChangedEvent>()

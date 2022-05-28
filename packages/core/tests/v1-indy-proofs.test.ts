@@ -201,7 +201,7 @@ describe('Present Proof', () => {
           },
         },
       ],
-      attachments: [
+      appendedAttachments: [
         {
           data: {
             base64: expect.any(String),
@@ -384,7 +384,7 @@ describe('Present Proof', () => {
           },
         },
       ],
-      attachments: [
+      appendedAttachments: [
         {
           data: {
             base64: expect.any(String),
