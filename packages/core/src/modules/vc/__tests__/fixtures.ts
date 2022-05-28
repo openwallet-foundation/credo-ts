@@ -3,7 +3,6 @@ import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_BBS_URL } from '../constan
 export const Ed25519Signature2018Fixtures = {
   TEST_LD_DOCUMENT: {
     '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
-    // id: 'http://example.edu/credentials/temporary/28934792387492384',
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
     issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
     issuanceDate: '2017-10-22T12:23:48Z',

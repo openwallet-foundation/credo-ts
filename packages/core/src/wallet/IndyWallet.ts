@@ -12,10 +12,10 @@ import type {
   Wallet,
   DidInfo,
   DidConfig,
-  UnpackedMessageContext,
-  SignOptions,
   CreateKeyOptions,
   VerifyOptions,
+  SignOptions,
+  UnpackedMessageContext,
 } from './Wallet'
 import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
 

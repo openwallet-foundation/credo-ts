@@ -82,15 +82,6 @@ const signCredentialOptions = {
   verificationMethod: 'weprih2ofueb',
 }
 
-const jsonProposal: ProposeCredentialOptions = {
-  connectionId: '',
-  protocolVersion: CredentialProtocolVersion.V2,
-  credentialFormats: {
-    jsonld: signCredentialOptions,
-  },
-  comment: 'v2 propose credential test',
-}
-
 const multiFormatProposal: ProposeCredentialOptions = {
   connectionId: '',
   protocolVersion: CredentialProtocolVersion.V2,
@@ -129,6 +120,15 @@ describe('V2 Credential Architecture', () => {
       expect(formatService).not.toBeNull()
       const type: string = formatService.constructor.name
       expect(type).toEqual('IndyCredentialFormatService')
+    })
+
+    test('returns the correct credential format service for jsonld', () => {
+      const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
+      const service: CredentialService = api.getService(version)
+      const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.JsonLd)
+      expect(formatService).not.toBeNull()
+      const type: string = formatService.constructor.name
+      expect(type).toEqual('JsonLdCredentialFormatService')
     })
 
     test('propose credential format service returns correct format and filters~attach', async () => {

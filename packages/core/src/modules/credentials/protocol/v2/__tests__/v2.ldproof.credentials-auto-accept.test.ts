@@ -1,5 +1,5 @@
-import type { SignCredentialOptions } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
 import type { Agent } from '../../../../../agent/Agent'
+import type { SignCredentialOptions } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
 import type { ConnectionRecord } from '../../../../connections'
 import type {
   AcceptOfferOptions,
@@ -10,15 +10,16 @@ import type {
   ProposeCredentialOptions,
 } from '../../../CredentialsModuleOptions'
 
-import { KeyType } from '../../../../../../src/crypto'
-import { Key } from '../../../../../../src/crypto/Key'
-import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
-import { DidKey } from '../../../../../../src/modules/dids'
-import { W3cCredential } from '../../../../../../src/modules/vc/models'
-import { JsonTransformer } from '../../../../../../src/utils'
-import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
+import { KeyType } from '../../../../../crypto'
+import { Key } from '../../../../../crypto/Key'
+import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
+import { DidKey } from '../../../../../modules/dids'
+import { W3cCredential } from '../../../../../modules/vc/models'
+import { JsonTransformer } from '../../../../../utils'
+import { sleep } from '../../../../../utils/sleep'
+import { IndyWallet } from '../../../../../wallet/IndyWallet'
 import { AutoAcceptCredential } from '../../../CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
@@ -34,6 +35,7 @@ describe('credentials', () => {
   let aliceCredentialRecord: CredentialExchangeRecord
   let wallet: IndyWallet
   let issuerDidKey: DidKey
+  let verificationMethod: string
   let credential: W3cCredential
   let signCredentialOptions: SignCredentialOptions
 
@@ -46,17 +48,10 @@ describe('credentials', () => {
         AutoAcceptCredential.Always
       ))
       wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-      // await wallet.initPublicDid({})
-      // const pubDid = wallet.publicDid
-      // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-      // issuerDidKey = new DidKey(key)
-
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const issuerDidInfo = await wallet.createDid({ seed })
       const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
       issuerDidKey = new DidKey(issuerKey)
-
+      verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
       const inputDoc = {
         '@context': [
           'https://www.w3.org/2018/credentials/v1',
@@ -92,7 +87,7 @@ describe('credentials', () => {
       signCredentialOptions = {
         credential,
         proofType: 'Ed25519Signature2018',
-        verificationMethod: issuerDidKey.keyId,
+        verificationMethod,
       }
     })
     afterAll(async () => {
@@ -170,6 +165,7 @@ describe('credentials', () => {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.Done,
       })
+
       expect(aliceCredentialRecord).toMatchObject({
         type: CredentialExchangeRecord.type,
         id: expect.any(String),
@@ -196,13 +192,6 @@ describe('credentials', () => {
         AutoAcceptCredential.ContentApproved
       ))
       wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-      // await wallet.initPublicDid({})
-      // const pubDid = wallet.publicDid
-      // // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      // const key = Key.fromPublicKeyBase58(pubDid!.verkey, KeyType.Ed25519)
-      // issuerDidKey = new DidKey(key)
-
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const issuerDidInfo = await wallet.createDid({ seed })
       const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
       issuerDidKey = new DidKey(issuerKey)
@@ -242,7 +231,7 @@ describe('credentials', () => {
       signCredentialOptions = {
         credential,
         proofType: 'Ed25519Signature2018',
-        verificationMethod: issuerDidKey.keyId,
+        verificationMethod,
       }
     })
 
@@ -283,7 +272,6 @@ describe('credentials', () => {
       }
       const faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal(options)
 
-      // await sleep(5000)
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
@@ -352,8 +340,6 @@ describe('credentials', () => {
           acceptOfferOptions
         )
 
-        // await sleep(5000)
-
         testLogger.test('Alice waits for credential from Faber')
         aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
           threadId: faberCredentialExchangeRecord.threadId,
@@ -410,9 +396,6 @@ describe('credentials', () => {
         },
         protocolVersion: CredentialProtocolVersion.V2,
       }
-
-      // await sleep(5000)
-
       await faberAgent.credentials.negotiateProposal(negotiateOptions)
 
       testLogger.test('Alice waits for credential offer from Faber')
@@ -477,7 +460,6 @@ describe('credentials', () => {
         },
         comment: 'v2 propose credential test',
       }
-      // await sleep(5000)
 
       const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateOffer(proposeOptions)
 
@@ -493,6 +475,7 @@ describe('credentials', () => {
 
       aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id)
       aliceCredentialRecord.assertState(CredentialState.ProposalSent)
+      await sleep(5000)
     })
   })
 })

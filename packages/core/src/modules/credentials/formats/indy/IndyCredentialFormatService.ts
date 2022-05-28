@@ -76,7 +76,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * Create a {@link AttachmentFormats} object dependent on the message type.
    *
    * @param options The object containing all the options for the proposed credential
-   * @param messageType the type of message which can be Indy, JsonLd etc eg "CRED_20_PROPOSAL"
    * @returns object containing associated attachment, formats and filtersAttach elements
    *
    */
@@ -108,6 +107,12 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     return { format: formats, attachment, preview: previewWithAttachments }
   }
 
+  /**
+   * Method called on reception of a propose credential message
+   * We do the necessary processing here to accept the proposal and do the state change, emit event etc.
+   * @param options the options neeeded to accept the proposal
+   * @param credentialRecord the credential record for the message exchange
+   */
   public async processProposal(
     options: ServiceAcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
@@ -169,6 +174,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
 
     return { format: formats, attachment: offersAttach, preview }
   }
+  /**
+   * Process incoming offer message
+   * @param attachment the attachment containing the offer
+   * @param credentialRecord the credential record for the message exchange
+   */
   public async processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord) {
     if (!attachment) {
       throw new AriesFrameworkError('Missing offer attachment in processOffer')
@@ -184,11 +194,12 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   }
 
   /**
-   * Create a {@link AttachmentFormats} object dependent on the message type.
+   * Create a credential attachment format for a credential request.
    *
-   * @param requestOptions The object containing all the options for the credential request
+   * @param options The object containing all the options for the credential request
    * @param credentialRecord the credential record containing the offer from which this request
    * is derived
+   * @param holderDid the [holder] DID used to create the request
    * @returns object containing associated attachment, formats and requestAttach elements
    *
    */
@@ -295,7 +306,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @param messageAttachment the attachment containing the payload
    * @returns The Attachment if found or undefined
    */
-
   public getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
     const formatId = formats.find((f) => f.format.includes('indy'))
     const attachment = messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
@@ -342,9 +352,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
    *
-   * @param requestOptions The object containing all the options for the credential request
-   * @param credentialRecord the credential record containing the offer from which this request
+   * @param options The object containing all the options for the credential to be issued
+   * @param record the credential record containing the offer from which this request
    * is derived
+   * @param requestAttachment the attachment containing the request
+   * @param offerAttachment the attachment containing the offer (if present)
    * @returns object containing associated attachment, formats and requestAttach elements
    *
    */
@@ -388,11 +400,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     const issueAttachment = this.getFormatData(credential, attachmentId)
     return { format: formats, attachment: issueAttachment }
   }
-  /**
-   * Processes an incoming credential - retrieve metadata, retrieve payload and store it in the Indy wallet
-   * @param message the issue credential message
-   */
-
   /**
    * Processes an incoming credential - retrieve metadata, retrieve payload and store it in the Indy wallet
    * @param options the issue credential message wrapped inside this object
@@ -461,12 +468,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   /**
  * Checks whether it should automatically respond to a request. Moved from CredentialResponseCoordinator
  * as this contains format-specific logic
- * @param credentialRecord The credential record for which we are testing whether or not to auto respond
- * @param autoAcceptType auto accept type for this credential exchange - normal auto or content approved
+ * @param options the interface for params for auto respond {@link HandlerAutoAcceptOptions}
  * @returns true if we should auto respond, false otherwise
 
  */
-
   public shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean {
     const autoAccept = composeAutoAccept(options.credentialRecord.autoAcceptCredential, options.autoAcceptType)
 

@@ -45,13 +45,12 @@ import {
   ProofState,
   Agent,
 } from '../src'
-import { KeyType } from '../src/crypto'
+import { Key, KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
 import { CredentialProtocolVersion } from '../src/modules/credentials/CredentialProtocolVersion'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/V1CredentialPreview'
-// import { V2CredentialPreview } from '../src/modules/credentials/protocol/v2/V2CredentialPreview'
-import { DidCommV1Service, DidKey, Key } from '../src/modules/dids'
+import { DidCommV1Service, DidKey } from '../src/modules/dids'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
@@ -936,7 +935,7 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
   const signCredentialOptions: SignCredentialOptions = {
     credential,
     proofType: 'Ed25519Signature2018',
-    verificationMethod: issuerDidKey.keyId,
+    verificationMethod: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
   }
 
   // const signCredentialOptionsDriversLicense: SignCredentialOptions = {

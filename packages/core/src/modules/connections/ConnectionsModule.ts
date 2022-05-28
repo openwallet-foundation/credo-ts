@@ -1,4 +1,4 @@
-import type { Key } from '../dids'
+import type { Key } from '../../crypto'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'

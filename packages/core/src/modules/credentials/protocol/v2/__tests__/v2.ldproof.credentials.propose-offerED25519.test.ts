@@ -1,6 +1,6 @@
-import type { W3cVerifiableCredential } from '../../../../../../src/modules/vc/models'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
+import type { SignCredentialOptions } from '../../../../vc/models/W3cCredentialServiceOptions'
 import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
 import type {
   AcceptProposalOptions,
@@ -35,6 +35,7 @@ describe('credentials', () => {
   let faberCredentialRecord: CredentialExchangeRecord
   let wallet: IndyWallet
   let issuerDidKey: DidKey
+  let verificationMethod: string
   let didCommMessageRepository: DidCommMessageRepository
 
   const inputDoc = {
@@ -45,7 +46,7 @@ describe('credentials', () => {
     ],
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
     type: ['VerifiableCredential', 'PermanentResidentCard'],
-    // issuer: issuerDidKey.did,
+    issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
     identifier: '83627465',
     name: 'Permanent Resident Card',
     description: 'Government of Example Permanent Resident Card.',
@@ -69,11 +70,8 @@ describe('credentials', () => {
 
   const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
 
-  const signCredentialOptions = {
-    credential,
-    proofType: 'Ed25519Signature2018',
-    verificationMethod: '',
-  }
+  let signCredentialOptions: SignCredentialOptions
+
   const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
@@ -83,13 +81,15 @@ describe('credentials', () => {
     ))
     wallet = faberAgent.injectionContainer.resolve(IndyWallet)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const issuerDidInfo = await wallet.createDid({ seed })
     const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
     issuerDidKey = new DidKey(issuerKey)
-
-    credential.issuer = issuerDidKey.did
-    signCredentialOptions.verificationMethod = issuerDidKey.keyId
+    verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
+    signCredentialOptions = {
+      credential,
+      proofType: 'Ed25519Signature2018',
+      verificationMethod,
+    }
   })
 
   afterAll(async () => {
@@ -248,12 +248,6 @@ describe('credentials', () => {
         associatedRecordId: faberCredentialRecord.id,
         messageClass: V2IssueCredentialMessage,
       })
-
-      const data = credentialMessage?.messageAttachment[0].getDataAsJson<W3cVerifiableCredential>()
-
-      // console.log('====> V2 Credential (JsonLd) = ', credentialMessage)
-
-      // console.log('====> W3C VerifiableCredential = ', data)
 
       expect(JsonTransformer.toJSON(credentialMessage)).toMatchObject({
         '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',

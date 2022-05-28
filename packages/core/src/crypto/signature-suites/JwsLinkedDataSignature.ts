@@ -4,14 +4,11 @@
 import type { DocumentLoader, Proof, VerificationMethod } from '../../utils'
 import type { LdKeyPair } from '../LdKeyPair'
 
-import jsigs from '@digitalcredentials/jsonld-signatures'
-
+import { suites } from '../../../types/jsonld-signatures'
+import { AriesFrameworkError } from '../../error'
 import { TypedArrayEncoder, JsonEncoder } from '../../utils'
 
-const LinkedDataSignature = jsigs.suites.LinkedDataSignature
-
-export type ProofPurpose = any
-
+const LinkedDataSignature = suites.LinkedDataSignature
 export interface JwsLinkedDataSignatureOptions {
   type: string
   algorithm: string
@@ -167,7 +164,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     return verifier.verify({ data, signature })
   }
 
-  public async getVerificationMethod(options: { proof: Proof; documentLoader: DocumentLoader }) {
+  public async getVerificationMethod(options: { proof: Proof; documentLoader?: DocumentLoader }) {
     if (this.key) {
       // This happens most often during sign() operations. For verify(),
       // the expectation is that the verification method will be fetched
@@ -183,6 +180,12 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
 
     if (!verificationMethod) {
       throw new Error('No "verificationMethod" found in proof.')
+    }
+
+    if (!options.documentLoader) {
+      throw new AriesFrameworkError(
+        'Missing custom document loader. This is required for resolving verification methods.'
+      )
     }
 
     const { document } = await options.documentLoader(verificationMethod)
@@ -216,9 +219,10 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
   public async matchProof(options: {
     proof: Proof
     document: VerificationMethod
-    purpose: ProofPurpose
-    documentLoader: DocumentLoader
-    expansionMap: () => void
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    purpose: any
+    documentLoader?: DocumentLoader
+    expansionMap?: () => void
   }) {
     const proofMatches = await super.matchProof({
       proof: options.proof,

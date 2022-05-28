@@ -150,10 +150,6 @@ export class IndyProofFormatService extends ProofFormatService {
     await MessageValidator.validate(proposalMessage)
   }
 
-  public processProposal(options: ProcessProposalOptions): void {
-    throw new Error('Method not implemented.')
-  }
-
   public async createRequestAsResponse(options: CreateRequestAsResponseOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.indy) {
       throw Error('Missing indy format to create proposal attachment format')

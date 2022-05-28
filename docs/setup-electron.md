@@ -10,12 +10,17 @@ To start using Electron, the prerequisites of NodeJS are required. Please follow
 
 To add the aries framework and indy to your project execute the following:
 
+## Installing dependencies
+
 ```sh
 yarn add @aries-framework/core @aries-framework/node indy-sdk
 
 # Additional for typescript
 yarn add --dev @types/indy-sdk
 ```
+
+Right now, as a patch that will later be changed, some platforms will have an "error" when installing the dependencies. This is because the BBS signatures library that we use is built for Linux x86 and MacOS x86 (and not Windows and MacOS arm). This means that it will show that it could not download the binary.
+This is not an error, as the library that fails is `node-bbs-signaturs` and is an optional dependency for perfomance improvements. It will fallback to a, slower, wasm build.
 
 Because Electron is like a browser-environment, some additional work has to be done to get it working. The indy-sdk is used to make calls to `libindy`. Since `libindy` is not build for browser environments, a binding for the indy-sdk has to be created from the browser to the NodeJS environment in the `public/preload.js` file.
 

@@ -29,7 +29,6 @@ import type {
 } from '@sphereon/pex'
 import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 
-import { expand } from '@digitalcredentials/jsonld'
 import { KeyEncoding, ProofPurpose, ProofType, Status, PEXv1 } from '@sphereon/pex'
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -415,11 +414,11 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       uriList = [...uriList, ...inputDescriptor.schema.map((s) => s.uri)]
     }
 
-    const credentialsByContext = await this.w3cCredentialService.findCredentialByQuery({
+    const credentialsByContext = await this.w3cCredentialService.findCredentialsByQuery({
       contexts: uriList,
     })
 
-    const credentialsByExpandedType = await this.w3cCredentialService.findCredentialByQuery({
+    const credentialsByExpandedType = await this.w3cCredentialService.findCredentialsByQuery({
       expandedTypes: uriList,
     })
 

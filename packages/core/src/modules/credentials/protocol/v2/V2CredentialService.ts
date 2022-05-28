@@ -18,7 +18,6 @@ import type {
   RequestCredentialOptions,
 } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
-import type { JsonLdCredentialFormatService } from '../../formats/jsonld/JsonLdCredentialFormatService'
 import type {
   CredentialFormats,
   CredentialFormatSpec,
@@ -45,6 +44,7 @@ import { CredentialState } from '../../CredentialState'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
+import { JsonLdCredentialFormatService } from '../../formats/jsonld/JsonLdCredentialFormatService'
 import { FORMAT_KEYS } from '../../formats/models/CredentialFormatServiceOptions'
 import { CredentialRepository, CredentialExchangeRecord } from '../../repository'
 import { RevocationService } from '../../services'
@@ -89,7 +89,8 @@ export class V2CredentialService extends CredentialService {
     didCommMessageRepository: DidCommMessageRepository,
     indyCredentialFormatService: IndyCredentialFormatService,
     revocationService: RevocationService,
-    didResolver: DidResolverService
+    didResolver: DidResolverService,
+    jsonldCredentialFormatService?: JsonLdCredentialFormatService
   ) {
     super(
       credentialRepository,
@@ -164,6 +165,7 @@ export class V2CredentialService extends CredentialService {
       const options: ServiceAcceptProposalOptions = {
         credentialRecordId: credentialRecord.id,
         credentialFormats: {},
+        protocolVersion: CredentialProtocolVersion.V2,
       }
       options.proposalAttachment = format.getAttachment(proposalMessage.formats, proposalMessage.messageAttachment)
       await format.processProposal(options, credentialRecord)
@@ -271,6 +273,7 @@ export class V2CredentialService extends CredentialService {
     const options: ServiceAcceptProposalOptions = {
       credentialRecordId: credentialRecord.id,
       credentialFormats: {},
+      protocolVersion: CredentialProtocolVersion.V2,
     }
 
     for (const formatService of formats) {
@@ -410,7 +413,8 @@ export class V2CredentialService extends CredentialService {
       options = {
         credentialFormats: proposalOptions.credentialFormats,
         protocolVersion: CredentialProtocolVersion.V2,
-        comment: acceptProposalOptions.comment,
+        credentialRecordId: proposalOptions.connectionId ? proposalOptions.connectionId : undefined,
+        comment: proposalOptions.comment,
       }
     } else {
       options = proposal

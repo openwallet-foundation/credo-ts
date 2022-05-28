@@ -41,16 +41,15 @@ export function createWalletKeyPairClass(wallet: Wallet) {
       throw new Error('Method not implemented.')
     }
 
-    public static async from(verificationMethod: Record<string, any>): Promise<WalletKeyPair> {
+    public static async from(verificationMethod: VerificationMethod): Promise<WalletKeyPair> {
       const vMethod = JsonTransformer.fromJSON(verificationMethod, VerificationMethod)
       await MessageValidator.validate(vMethod)
       const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(vMethod)
       const key = getKeyFromVerificationMethod(vMethod)
 
       return new WalletKeyPair({
-        id: verificationMethod.id,
-        controller: verificationMethod.controller,
-        revoked: verificationMethod.revoked ?? undefined,
+        id: vMethod.id,
+        controller: vMethod.controller,
         wallet: wallet,
         key: key,
       })
