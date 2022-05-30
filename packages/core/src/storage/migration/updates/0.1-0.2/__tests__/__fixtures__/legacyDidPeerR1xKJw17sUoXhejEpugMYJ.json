@@ -1,0 +1,49 @@
+{
+  "@context": "https://w3id.org/did/v1",
+  "id": "R1xKJw17sUoXhejEpugMYJ",
+  "publicKey": [
+    {
+      "id": "R1xKJw17sUoXhejEpugMYJ#4",
+      "type": "Ed25519VerificationKey2018",
+      "controller": "R1xKJw17sUoXhejEpugMYJ",
+      "publicKeyBase58": "E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu"
+    }
+  ],
+  "service": [
+    {
+      "id": "0",
+      "type": "Mediator",
+      "serviceEndpoint": "did:sov:Q4zqM7aXqm7gDQkUVLng9h"
+    },
+    {
+      "id": "6",
+      "type": "IndyAgent",
+      "serviceEndpoint": "did:sov:Q4zqM7aXqm7gDQkUVLng9h",
+      "recipientKeys": ["E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu"],
+      "routingKeys": [],
+      "priority": 5
+    },
+    {
+      "id": "7",
+      "type": "did-communication",
+      "serviceEndpoint": "https://agent.com/did-comm",
+      "recipientKeys": ["R1xKJw17sUoXhejEpugMYJ#4"],
+      "routingKeys": [],
+      "priority": 10
+    }
+  ],
+  "keyAgreement": [
+    {
+      "id": "R1xKJw17sUoXhejEpugMYJ#key-agreement-1",
+      "type": "X25519KeyAgreementKey2019",
+      "controller": "R1xKJw17sUoXhejEpugMYJ",
+      "publicKeyBase58": "Fbv17ZbnUSbafsiUBJbdGeC62M8v8GEscVMMcE59mRPt"
+    }
+  ],
+  "authentication": [
+    {
+      "type": "Ed25519SignatureAuthentication2018",
+      "publicKey": "R1xKJw17sUoXhejEpugMYJ#4"
+    }
+  ]
+}

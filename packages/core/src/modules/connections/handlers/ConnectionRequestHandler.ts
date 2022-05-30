@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
-import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
+import type { MediationRecipientService } from '../../routing'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
@@ -55,14 +55,12 @@ export class ConnectionRequestHandler implements Handler {
       throw new AriesFrameworkError(`Did record for sender key ${senderKey.fingerprint} already exists.`)
     }
 
-    // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
-    let routing
-    if (outOfBandRecord.reusable) {
-      routing = await this.mediationRecipientService.getRouting()
-    }
-    const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord, routing)
+    const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord)
 
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+      // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
+      const routing = outOfBandRecord.reusable ? await this.mediationRecipientService.getRouting() : undefined
+
       const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord, routing)
       return createOutboundMessage(connectionRecord, message, outOfBandRecord)
     }

@@ -14,7 +14,6 @@ import type {
   AcceptRequestOptions,
   NegotiateOfferOptions,
   NegotiateProposalOptions,
-  OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../CredentialsModuleOptions'
@@ -24,7 +23,7 @@ import type {
   CredentialFormatSpec,
   HandlerAutoAcceptOptions,
 } from '../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
+import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type { CreateRequestOptions } from './CredentialMessageBuilder'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -32,11 +31,11 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
-import { ServiceDecorator } from '../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services/ConnectionService'
+import { DidResolverService } from '../../../dids'
 import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import { CredentialEventTypes } from '../../CredentialEvents'
@@ -79,7 +78,8 @@ export class V2CredentialService extends CredentialService {
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
     indyCredentialFormatService: IndyCredentialFormatService,
-    revocationService: RevocationService
+    revocationService: RevocationService,
+    didResolver: DidResolverService
   ) {
     super(
       credentialRepository,
@@ -88,7 +88,8 @@ export class V2CredentialService extends CredentialService {
       agentConfig,
       mediationRecipientService,
       didCommMessageRepository,
-      revocationService
+      revocationService,
+      didResolver
     )
     this.connectionService = connectionService
     this.indyCredentialFormatService = indyCredentialFormatService
@@ -96,6 +97,7 @@ export class V2CredentialService extends CredentialService {
     this.serviceFormatMap = {
       [CredentialFormatType.Indy]: this.indyCredentialFormatService,
     }
+    this.didResolver = didResolver
   }
 
   /**
@@ -145,7 +147,6 @@ export class V2CredentialService extends CredentialService {
       const options: ServiceAcceptProposalOptions = {
         credentialRecordId: credentialRecord.id,
         credentialFormats: {},
-        protocolVersion: CredentialProtocolVersion.V2,
       }
       options.proposalAttachment = format.getAttachment(proposalMessage.formats, proposalMessage.messageAttachment)
       await format.processProposal(options, credentialRecord)
@@ -220,10 +221,9 @@ export class V2CredentialService extends CredentialService {
     credentialRecord: CredentialExchangeRecord
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
     const options: ServiceOfferCredentialOptions = {
-      connectionId: proposal.connectionId ?? undefined,
-      protocolVersion: proposal.protocolVersion,
       credentialFormats: proposal.credentialFormats,
       comment: proposal.comment,
+      protocolVersion: credentialRecord.protocolVersion,
     }
     const message = await this.createOfferAsResponse(credentialRecord, options)
 
@@ -256,7 +256,6 @@ export class V2CredentialService extends CredentialService {
     const options: ServiceAcceptProposalOptions = {
       credentialRecordId: credentialRecord.id,
       credentialFormats: {},
-      protocolVersion: CredentialProtocolVersion.V2,
     }
 
     for (const formatService of formats) {
@@ -331,7 +330,8 @@ export class V2CredentialService extends CredentialService {
     return { message: credentialProposalMessage, credentialRecord }
   }
   /**
-   * Create a {@link V2OfferCredentialMessage} as beginning of protocol process.
+   * Create a {@link V2OfferCredentialMessage} as beginning of protocol process. If no connectionId is provided, the
+   * exchange will be created without a connection for usage in oob and connection-less issuance.
    *
    * @param formatService {@link CredentialFormatService} the format service object containing format-specific logic
    * @param options attributes of the original offer
@@ -339,20 +339,17 @@ export class V2CredentialService extends CredentialService {
    *
    */
   public async createOffer(
-    options: OfferCredentialOptions
+    options: ServiceOfferCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
-    if (!options.connectionId) {
-      throw new AriesFrameworkError('Connection id missing from offer credential options')
-    }
-    const connection = await this.connectionService.getById(options.connectionId)
-
+    const connection = options.connectionId ? await this.connectionService.getById(options.connectionId) : undefined
     connection?.assertReady()
 
-    const formats: CredentialFormatService[] = this.getFormats(options.credentialFormats)
+    const formats = this.getFormats(options.credentialFormats)
 
-    if (!formats || formats.length === 0) {
+    if (formats.length === 0) {
       throw new AriesFrameworkError(`Unable to create offer. No supported formats`)
     }
+
     // Create message
     const { credentialRecord, message: credentialOfferMessage } = await this.credentialMessageBuilder.createOffer(
       formats,
@@ -372,41 +369,6 @@ export class V2CredentialService extends CredentialService {
     return { credentialRecord, message: credentialOfferMessage }
   }
 
-  /**
-   * Create an offer message for an out-of-band (connectionless) credential
-   * @param credentialOptions the options (parameters) object for the offer
-   * @returns the credential record and the offer message
-   */
-  public async createOutOfBandOffer(
-    credentialOptions: OfferCredentialOptions
-  ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
-    const formats: CredentialFormatService[] = this.getFormats(credentialOptions.credentialFormats)
-
-    if (!formats || formats.length === 0) {
-      throw new AriesFrameworkError(`Unable to create out of band offer. No supported formats`)
-    }
-    // Create message
-    const { credentialRecord, message: offerCredentialMessage } = await this.credentialMessageBuilder.createOffer(
-      formats,
-      credentialOptions
-    )
-
-    // Create and set ~service decorator
-    const routing = await this.mediationRecipientService.getRouting()
-    offerCredentialMessage.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.verkey],
-      routingKeys: routing.routingKeys,
-    })
-    await this.credentialRepository.save(credentialRecord)
-    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
-      agentMessage: offerCredentialMessage,
-      role: DidCommMessageRole.Receiver,
-      associatedRecordId: credentialRecord.id,
-    })
-    await this.emitEvent(credentialRecord)
-    return { credentialRecord, message: offerCredentialMessage }
-  }
   /**
    * Create a {@link OfferCredentialMessage} as response to a received credential proposal.
    * To create an offer not bound to an existing credential exchange, use {@link V2CredentialService#createOffer}.
@@ -430,7 +392,6 @@ export class V2CredentialService extends CredentialService {
       options = {
         credentialFormats: acceptProposalOptions.credentialFormats,
         protocolVersion: CredentialProtocolVersion.V2,
-        credentialRecordId: acceptProposalOptions.connectionId,
         comment: acceptProposalOptions.comment,
       }
     } else {
@@ -856,7 +817,8 @@ export class V2CredentialService extends CredentialService {
         this,
         this.agentConfig,
         this.mediationRecipientService,
-        this.didCommMessageRepository
+        this.didCommMessageRepository,
+        this.didResolver
       )
     )
 
@@ -1055,6 +1017,7 @@ export class V2CredentialService extends CredentialService {
       },
     })
   }
+
   /**
    * Retrieve a credential record by connection id and thread id
    *

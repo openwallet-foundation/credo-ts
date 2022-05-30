@@ -218,8 +218,8 @@ export class ProofsModule {
     const routing = await this.mediationRecipientService.getRouting()
     message.service = new ServiceDecorator({
       serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.verkey],
-      routingKeys: routing.routingKeys,
+      recipientKeys: [routing.recipientKey.publicKeyBase58],
+      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
     })
 
     // Save ~service decorator to record (to remember our verkey)
@@ -280,8 +280,8 @@ export class ProofsModule {
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
 
       const recipientService = requestMessage.service
