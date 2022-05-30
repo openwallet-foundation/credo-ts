@@ -6,7 +6,6 @@ import type {
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../CredentialsModuleOptions'
-import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type {
   ServiceAcceptCredentialOptions,
   ServiceAcceptOfferOptions as ServiceOfferOptions,
@@ -41,6 +40,7 @@ import { CredentialUtils } from '../../CredentialUtils'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
 import { composeAutoAccept } from '../../composeAutoAccept'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
+import { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialMetadataKeys } from '../../repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../../repository/CredentialRepository'
@@ -153,7 +153,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
 
     if (options?.credentialFormats.indy?.attributes) {
       preview = new V2CredentialPreview({
-        attributes: options?.credentialFormats.indy?.attributes,
+        attributes: options?.credentialFormats.indy?.attributes.map(
+          (attribute) => new CredentialPreviewAttribute(attribute)
+        ),
       })
     }
 
@@ -261,7 +263,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     let previewWithAttachments: V2CredentialPreview | undefined
     if (options.credentialFormats.indy.attributes) {
       previewWithAttachments = new V2CredentialPreview({
-        attributes: options.credentialFormats.indy.attributes,
+        attributes: options.credentialFormats.indy.attributes.map(
+          (attribute) => new CredentialPreviewAttribute(attribute)
+        ),
       })
     }
 
@@ -275,7 +279,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       previewWithAttachments = CredentialUtils.createAndLinkAttachmentsToPreview(
         options.credentialFormats.indy.linkedAttachments,
         new V2CredentialPreview({
-          attributes: options.credentialFormats.indy.attributes,
+          attributes: options.credentialFormats.indy.attributes.map(
+            (attribute) => new CredentialPreviewAttribute(attribute)
+          ),
         })
       )
 
