@@ -475,7 +475,9 @@ export class V1CredentialService extends CredentialService {
       throw new AriesFrameworkError('Missing attributes in V1 Negotiate Offer Options')
     }
     const credentialPreview = new V1CredentialPreview({
-      attributes: credentialOptions.credentialFormats.indy?.attributes,
+      attributes: credentialOptions.credentialFormats.indy?.attributes.map(
+        (attribute) => new CredentialPreviewAttribute(attribute)
+      ),
     })
     const options: CredentialProposeOptions = {
       credentialProposal: credentialPreview,
