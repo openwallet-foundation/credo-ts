@@ -21,7 +21,6 @@ import type {
 } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { HandlerAutoAcceptOptions } from '../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type { CredOffer } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -44,6 +43,7 @@ import { CredentialUtils } from '../../CredentialUtils'
 import { composeAutoAccept } from '../../composeAutoAccept'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
+import { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord } from '../../repository'
 import { CredentialService, RevocationService } from '../../services'
 
@@ -124,7 +124,11 @@ export class V1CredentialService extends CredentialService {
       throw new AriesFrameworkError('Missing credPropose data payload in createProposal')
     }
     if (proposal.credentialFormats.indy?.attributes) {
-      credentialProposal = new V1CredentialPreview({ attributes: proposal.credentialFormats.indy?.attributes })
+      credentialProposal = new V1CredentialPreview({
+        attributes: proposal.credentialFormats.indy?.attributes.map(
+          (attribute) => new CredentialPreviewAttribute(attribute)
+        ),
+      })
     }
 
     const config: CredentialProposeOptions = {
@@ -518,7 +522,7 @@ export class V1CredentialService extends CredentialService {
     }
 
     const preview: V1CredentialPreview = new V1CredentialPreview({
-      attributes: indy.attributes,
+      attributes: indy.attributes.map((attribute) => new CredentialPreviewAttribute(attribute)),
     })
 
     const template: CredentialOfferTemplate = {
