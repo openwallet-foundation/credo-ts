@@ -4,12 +4,7 @@ import type {
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../../models/SharedOptions'
-import type { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
-import type {
-  CreateRequestAsResponseOptions,
-  GetRequestedCredentialsFormat,
-  IndyProposeProofFormat,
-} from '../IndyProofFormatsServiceOptions'
+import type { CreateRequestAsResponseOptions, GetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
@@ -51,7 +46,6 @@ import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
 import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
-import { IndyProofUtils } from './IndyProofUtils'
 import { RequestedAttribute, RequestedPredicate } from './models'
 import { ProofRequest } from './models/ProofRequest'
 import { RequestedCredentials } from './models/RequestedCredentials'
