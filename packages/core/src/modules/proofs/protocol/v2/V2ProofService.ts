@@ -641,17 +641,22 @@ export class V2ProofService extends ProofService {
       throw new AriesFrameworkError(`Proof record with id ${proofRecordId} is missing required presentation proposal`)
     }
 
+    const proposalAttachments = proposalMessage.getAttachmentFormats()
+
     let result = {}
-    for (const key of proposalMessage.formats) {
-      if (key.format === V2_INDY_PRESENTATION_PROPOSAL) {
-        for (const attachment of proposalMessage.proposalsAttach) {
-          const proofRequestJson = attachment.getDataAsJson<ProofRequest>() ?? null
-          result = {
-            indy: proofRequestJson,
-          }
-        }
-      } else {
-        // PK-TODO create Presentation Exchange request format
+
+    for (const attachmentFormat of proposalAttachments) {
+      const service = this.getFormatServiceForFormat(attachmentFormat.format)
+
+      if (!service) {
+        throw new AriesFrameworkError('No format service found for getting requested.')
+      }
+
+      result = {
+        ...result,
+        ...(await service.createProofRequestFromProposal({
+          presentationAttachment: attachmentFormat.attachment,
+        })),
       }
     }
 

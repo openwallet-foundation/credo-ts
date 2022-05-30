@@ -566,32 +566,18 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats> {
-    const indyAttachment = options.presentationAttachment
-    const indyConfig = options?.config
+    const proofRequestJson = options.presentationAttachment.getDataAsJson<ProofRequest>()
 
-    if (!indyAttachment) {
-      throw new AriesFrameworkError('Indy attachment is missing to create proof request from proposal.')
+    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
+
+    // Assert attachment
+    if (!proofRequest) {
+      throw new AriesFrameworkError(`Missing required base64 or json encoded attachment data for presentation request.`)
     }
+    await MessageValidator.validate(proofRequest)
 
-    if (!indyConfig) {
-      throw new AriesFrameworkError('Indy config is missing to  create proof request from proposal.')
-    }
-
-    const proposalJson = indyAttachment.getDataAsJson<PresentationPreview>() ?? null
-
-    if (!proposalJson) {
-      throw new AriesFrameworkError(`Presentation Preview is missing`)
-    }
-
-    const nonce = indyConfig?.nonce ?? (await this.wallet.generateNonce())
-
-    const indyProposeProofFormat: IndyProposeProofFormat = {
-      name: indyConfig?.name ?? 'Proof Request',
-      version: indyConfig?.version ?? '1.0',
-      nonce: nonce,
-    }
-
-    const proofRequest = IndyProofUtils.createReferentForProofRequest(indyProposeProofFormat, proposalJson)
+    // Assert attribute and predicate (group) names do not match
+    checkProofRequestForDuplicates(proofRequest)
 
     return {
       indy: proofRequest,
