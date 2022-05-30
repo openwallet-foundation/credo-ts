@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { MediationRecipientService } from '../../routing'
 import type { ProofResponseCoordinator } from '../ProofResponseCoordinator'
 import type { ProofRecord } from '../repository'
@@ -9,7 +10,7 @@ import { createOutboundMessage, createOutboundServiceMessage } from '../../../ag
 import { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 import { RequestPresentationMessage } from '../messages'
 
-export class RequestPresentationHandler implements Handler {
+export class RequestPresentationHandler implements Handler<typeof DIDCommV1Message> {
   private proofService: ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator

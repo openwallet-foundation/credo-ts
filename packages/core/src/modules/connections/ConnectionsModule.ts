@@ -271,12 +271,12 @@ export class ConnectionsModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerDIDCommV1Handler(
+    dispatcher.registerHandler(
       new ConnectionRequestHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
     )
-    dispatcher.registerDIDCommV1Handler(new ConnectionResponseHandler(this.connectionService, this.agentConfig))
-    dispatcher.registerDIDCommV1Handler(new AckMessageHandler(this.connectionService))
-    dispatcher.registerDIDCommV1Handler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
-    dispatcher.registerDIDCommV1Handler(new TrustPingResponseMessageHandler(this.trustPingService))
+    dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig))
+    dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
+    dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
+    dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
   }
 }

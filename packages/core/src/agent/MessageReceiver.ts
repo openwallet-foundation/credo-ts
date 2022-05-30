@@ -245,11 +245,10 @@ export class MessageReceiver {
       throw new AriesFrameworkError(`No type found in the message: ${message}`)
     }
 
-    const { v1MessageClass, v2MessageClass } = this.dispatcher.getMessageClassForType(messageType)
+    const messageClass = this.dispatcher.getMessageClassForType(messageType)
 
     // Cast the plain JSON object to specific instance of Message extended from DIDCommMessages
-    if (v1MessageClass) return JsonTransformer.fromJSON(message, v1MessageClass)
-    if (v2MessageClass) return JsonTransformer.fromJSON(message, v2MessageClass)
+    if (messageClass) return JsonTransformer.fromJSON<DIDCommMessage>(message, messageClass)
 
     throw new ProblemReportError(`No message class found for message type "${messageType}"`, {
       problemCode: ProblemReportReason.MessageParseFailure,

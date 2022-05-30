@@ -1,9 +1,10 @@
-import type { HandlerV2InboundMessage, HandlerV2 } from '../../../agent/Handler'
+import type { HandlerInboundMessage, Handler } from '../../../agent/Handler'
+import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferService } from '../services'
 
 import { ProblemReportMessage } from '../messages/ProblemReportMessage'
 
-export class ProblemReportHandler implements HandlerV2 {
+export class ProblemReportHandler implements Handler<typeof DIDCommV2Message> {
   private valueTransferService: ValueTransferService
 
   public readonly supportedMessages = [ProblemReportMessage]
@@ -12,7 +13,7 @@ export class ProblemReportHandler implements HandlerV2 {
     this.valueTransferService = valueTransferService
   }
 
-  public async handle(messageContext: HandlerV2InboundMessage<ProblemReportHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<ProblemReportHandler>) {
     const { message, record } = await this.valueTransferService.processProblemReport(messageContext)
     if (message) {
       messageContext.message.from === record.getterDid

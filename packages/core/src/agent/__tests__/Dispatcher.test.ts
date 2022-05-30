@@ -24,7 +24,7 @@ class CredentialProposalTestMessage extends DIDCommV1Message {
   public static readonly type = 'https://didcomm.org/issue-credential/1.0/credential-proposal'
 }
 
-class TestHandler implements Handler {
+class TestHandler implements Handler<typeof DIDCommV1Message> {
   // We want to pass various classes to test various behaviours so we dont need to strictly type it.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public constructor(classes: any[]) {
@@ -45,11 +45,11 @@ describe('Dispatcher', () => {
 
   const dispatcher = new Dispatcher(new MessageSenderMock(), eventEmitter, agentConfig)
 
-  dispatcher.registerDIDCommV1Handler(
+  dispatcher.registerHandler(
     new TestHandler([ConnectionInvitationTestMessage, ConnectionRequestTestMessage, ConnectionResponseTestMessage])
   )
-  dispatcher.registerDIDCommV1Handler(new TestHandler([NotificationAckTestMessage]))
-  dispatcher.registerDIDCommV1Handler(new TestHandler([CredentialProposalTestMessage]))
+  dispatcher.registerHandler(new TestHandler([NotificationAckTestMessage]))
+  dispatcher.registerHandler(new TestHandler([CredentialProposalTestMessage]))
 
   describe('supportedMessageTypes', () => {
     test('return all supported message types URIs', async () => {

@@ -1,11 +1,12 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { HandlerV2, HandlerV2InboundMessage } from '../../../agent/Handler'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferService } from '../services'
 import type { ValueTransferWitnessService } from '../services/ValueTransferWitnessService'
 
 import { CashAcceptedMessage, ProblemReportMessage } from '../messages'
 
-export class CashAcceptedHandler implements HandlerV2 {
+export class CashAcceptedHandler implements Handler<typeof DIDCommV2Message> {
   private agentConfig: AgentConfig
   private valueTransferService: ValueTransferService
   private valueTransferWitnessService: ValueTransferWitnessService
@@ -22,7 +23,7 @@ export class CashAcceptedHandler implements HandlerV2 {
     this.valueTransferWitnessService = valueTransferWitnessService
   }
 
-  public async handle(messageContext: HandlerV2InboundMessage<CashAcceptedHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<CashAcceptedHandler>) {
     const { record, message } = await this.valueTransferWitnessService.processCashAcceptance(messageContext)
 
     // if message is Problem Report -> also send it to Giver as well

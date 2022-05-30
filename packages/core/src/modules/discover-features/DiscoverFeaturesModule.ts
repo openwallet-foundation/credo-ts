@@ -36,7 +36,7 @@ export class DiscoverFeaturesModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerDIDCommV1Handler(new DiscloseMessageHandler())
-    dispatcher.registerDIDCommV1Handler(new QueryMessageHandler(this.discoverFeaturesService))
+    dispatcher.registerHandler(new DiscloseMessageHandler())
+    dispatcher.registerHandler(new QueryMessageHandler(this.discoverFeaturesService))
   }
 }
