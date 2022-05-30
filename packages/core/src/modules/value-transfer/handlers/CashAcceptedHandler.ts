@@ -23,18 +23,18 @@ export class CashAcceptedHandler implements HandlerV2 {
   }
 
   public async handle(messageContext: HandlerV2InboundMessage<CashAcceptedHandler>) {
-    const { message } = await this.valueTransferWitnessService.processCashAcceptance(messageContext)
+    const { record, message } = await this.valueTransferWitnessService.processCashAcceptance(messageContext)
 
     // if message is Problem Report -> also send it to Giver as well
     if (message.type === ProblemReportMessage.type) {
       await Promise.all([
-        this.valueTransferService.sendMessageToGetter(message),
-        this.valueTransferService.sendMessageToGiver(message),
+        this.valueTransferService.sendMessageToGetter(message, record),
+        this.valueTransferService.sendMessageToGiver(message, record),
       ])
       return
     }
 
     // send success message to Giver
-    await this.valueTransferService.sendMessageToGiver(message)
+    await this.valueTransferService.sendMessageToGiver(message, record)
   }
 }

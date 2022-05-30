@@ -16,8 +16,8 @@ export class ProblemReportHandler implements HandlerV2 {
     const { message, record } = await this.valueTransferService.processProblemReport(messageContext)
     if (message) {
       messageContext.message.from === record.getterDid
-        ? await this.valueTransferService.sendMessageToGiver(message)
-        : await this.valueTransferService.sendMessageToGetter(message)
+        ? await this.valueTransferService.sendMessageToGiver(message, record)
+        : await this.valueTransferService.sendMessageToGetter(message, record)
     }
   }
 }

@@ -3,8 +3,11 @@ import type { Attachment } from 'didcomm'
 import { Expose } from 'class-transformer'
 import { IsArray, IsNumber, IsOptional, IsString, Matches } from 'class-validator'
 
+import { JsonEncoder } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
 import { MessageIdRegExp, MessageTypeRegExp } from '../validation'
+
+export const ATTACHMENT_MEDIA_TYPE = 'application/json'
 
 export type DIDCommV2MessageParams = {
   id?: string
@@ -85,5 +88,30 @@ export class DIDCommV2BaseMessage {
 
   public generateId() {
     return uuid()
+  }
+
+  public static createBase64Attachment(id: string, message: any): Attachment {
+    return {
+      id: id,
+      media_type: ATTACHMENT_MEDIA_TYPE,
+      data: {
+        base64: JsonEncoder.toBase64(message),
+      },
+    }
+  }
+
+  public getAttachmentDataAsJson(id: string): any {
+    if (!this.attachments) return null
+    const attachment = this.attachments?.find((attachment) => attachment.id === id)
+    if (!attachment) return null
+
+    const data = attachment.data as any // FIXME: didcomm package doesn't provide convenient way to process attachment
+    if (typeof data.base64 === 'string') {
+      return JsonEncoder.fromBase64(data.base64)
+    } else if (data.json) {
+      return data.json
+    } else {
+      return null
+    }
   }
 }

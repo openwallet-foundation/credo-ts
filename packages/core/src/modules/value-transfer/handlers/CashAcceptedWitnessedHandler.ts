@@ -25,6 +25,6 @@ export class CashAcceptedWitnessedHandler implements HandlerV2 {
   public async handle(messageContext: HandlerV2InboundMessage<CashAcceptedWitnessedHandler>) {
     const { record } = await this.valueTransferGiverService.processCashAcceptanceWitnessed(messageContext)
     const { message } = await this.valueTransferGiverService.removeCash(record)
-    return this.valueTransferService.sendMessageToWitness(message)
+    return this.valueTransferService.sendMessageToWitness(message, record)
   }
 }

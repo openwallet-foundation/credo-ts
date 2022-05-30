@@ -25,6 +25,6 @@ export class RequestAcceptedWitnessedHandler implements HandlerV2 {
   public async handle(messageContext: HandlerV2InboundMessage<RequestAcceptedWitnessedHandler>) {
     const { record } = await this.valueTransferGetterService.processRequestAcceptanceWitnessed(messageContext)
     const { message } = await this.valueTransferGetterService.acceptCash(record)
-    return this.valueTransferService.sendMessageToWitness(message)
+    return this.valueTransferService.sendMessageToWitness(message, record)
   }
 }

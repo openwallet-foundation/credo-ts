@@ -23,6 +23,7 @@ import {
   RequestAcceptedWitnessedMessage,
   RequestWitnessedMessage,
 } from '../messages'
+import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
 import { ValueTransferRecord, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 import { WitnessStateRepository } from '../repository/WitnessStateRepository'
@@ -107,17 +108,31 @@ export class ValueTransferWitnessService {
     // Get Witness state
     const state = await this.witnessStateRepository.getState()
 
-    const { getter, giver, witness } = requestMessage.body.payment
+    const valueTransferMessage = requestMessage.valueTransferMessage
+    if (!valueTransferMessage) {
+      const problemReport = new ProblemReportMessage({
+        from: state.publicDid,
+        to: requestMessage.from,
+        pthid: requestMessage.id,
+        body: {
+          code: 'e.p.req.bad-request',
+          comment: `Missing required base64 or json encoded attachment data for payment request with thread id ${requestMessage.id}`,
+        },
+      })
+      return {
+        message: problemReport,
+      }
+    }
 
     // Check that witness request by Getter is corrected
-    if (requestMessage.body.payment.isWitnessSet && state.publicDid !== witness) {
+    if (valueTransferMessage.payment.isWitnessSet && state.publicDid !== valueTransferMessage.payment.witness) {
       const problemReport = new ProblemReportMessage({
         from: state.publicDid,
         to: requestMessage.from,
         pthid: requestMessage.id,
         body: {
           code: 'e.p.req.bad-witness',
-          comment: `Requested witness ${requestMessage.body.payment.witness} is different`,
+          comment: `Requested witness ${valueTransferMessage.payment.witness} is different`,
         },
       })
       return {
@@ -126,7 +141,7 @@ export class ValueTransferWitnessService {
     }
 
     //Call VTP package to process received Payment Request request
-    const { error, message } = await this.valueTransfer.witness().processRequest(state.publicDid, requestMessage.body)
+    const { error, message } = await this.valueTransfer.witness().processRequest(state.publicDid, valueTransferMessage)
     if (error || !message) {
       // send problem report back to Getter
       const problemReportMessage = new ProblemReportMessage({
@@ -142,14 +157,15 @@ export class ValueTransferWitnessService {
       return { message: problemReportMessage }
     }
 
-    const giverDid = requestMessage.body.payment.isGiverSet ? giver : undefined
+    const giverDid = valueTransferMessage.payment.isGiverSet ? valueTransferMessage.payment.giver : undefined
 
     // next protocol message
     const requestWitnessedMessage = new RequestWitnessedMessage({
       from: state.publicDid,
       to: giverDid,
-      body: message,
       thid: requestMessage.id,
+      body: {},
+      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
     // Create Value Transfer record and raise event
@@ -159,7 +175,7 @@ export class ValueTransferWitnessService {
       threadId: requestMessage.id,
       valueTransferMessage: message,
       requestMessage,
-      getter,
+      getter: valueTransferMessage.payment.getter,
       giver: giverDid,
       witness: state.publicDid,
     })
@@ -196,14 +212,28 @@ export class ValueTransferWitnessService {
     record.assertRole(ValueTransferRole.Witness)
     record.assertState(ValueTransferState.RequestSent)
 
+    const valueTransferMessage = requestAcceptedMessage.valueTransferMessage
+    if (!valueTransferMessage) {
+      const problemReport = new ProblemReportMessage({
+        from: record.witnessDid,
+        to: record.giverDid,
+        pthid: requestAcceptedMessage.thid,
+        body: {
+          code: 'invalid-payment-acceptance',
+          comment: `Missing required base64 or json encoded attachment data for receipt with thread id ${record.threadId}`,
+        },
+      })
+      return { record, message: problemReport }
+    }
+
     // Witness: Call VTP package to process received request acceptance
-    const { error, message } = await this.valueTransfer.witness().processRequestAccepted(requestAcceptedMessage.body)
+    const { error, message } = await this.valueTransfer.witness().processRequestAccepted(valueTransferMessage)
     // change state
     if (error || !message) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
-        from: requestAcceptedMessage.body.payment.witness,
-        to: requestAcceptedMessage.body.payment.giver,
+        from: record.witnessDid,
+        to: valueTransferMessage.payment.giver,
         pthid: requestAcceptedMessage.thid,
         body: {
           code: error?.code || 'invalid-payment-request-acceptance',
@@ -220,14 +250,15 @@ export class ValueTransferWitnessService {
     // VTP message verification succeed
     const requestAcceptedWitnessedMessage = new RequestAcceptedWitnessedMessage({
       ...requestAcceptedMessage,
-      from: requestAcceptedMessage.body.payment.witness,
-      to: requestAcceptedMessage.body.payment.getter,
-      body: message,
+      from: record.witnessDid,
+      to: record.getterDid,
+      body: {},
+      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
     // Update Value Transfer record
     record.valueTransferMessage = message
-    record.giverDid = requestAcceptedMessage.body.payment.giver
+    record.giverDid = valueTransferMessage.payment.giver
 
     await this.valueTransferService.updateState(record, ValueTransferState.RequestAcceptanceSent)
     return { record, message: requestAcceptedWitnessedMessage }
@@ -256,8 +287,22 @@ export class ValueTransferWitnessService {
     record.assertRole(ValueTransferRole.Witness)
     record.assertState(ValueTransferState.RequestAcceptanceSent)
 
+    const valueTransferMessage = cashAcceptedMessage.valueTransferMessage
+    if (!valueTransferMessage) {
+      const problemReport = new ProblemReportMessage({
+        from: record.witnessDid,
+        to: record.giverDid,
+        pthid: cashAcceptedMessage.thid,
+        body: {
+          code: 'invalid-cash-acceptance',
+          comment: `Missing required base64 or json encoded attachment data for cash acceptance with thread id ${record.threadId}`,
+        },
+      })
+      return { record, message: problemReport }
+    }
+
     // Witness: Call VTP package to process received cash acceptance
-    const { error, message } = await this.valueTransfer.witness().processCashAccepted(cashAcceptedMessage.body)
+    const { error, message } = await this.valueTransfer.witness().processCashAccepted(valueTransferMessage)
     // change state
     if (error || !message) {
       // VTP message verification failed
@@ -282,7 +327,8 @@ export class ValueTransferWitnessService {
       ...cashAcceptedMessage,
       from: record.witnessDid,
       to: record.giverDid,
-      body: message,
+      body: {},
+      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
     // Update Value Transfer record
@@ -311,8 +357,22 @@ export class ValueTransferWitnessService {
     record.assertState(ValueTransferState.CashAcceptanceSent)
     record.assertRole(ValueTransferRole.Witness)
 
+    const valueTransferMessage = cashRemovedMessage.valueTransferMessage
+    if (!valueTransferMessage) {
+      const problemReport = new ProblemReportMessage({
+        from: record.witnessDid,
+        to: record.giverDid,
+        pthid: cashRemovedMessage.thid,
+        body: {
+          code: 'invalid-cash-removal',
+          comment: `Missing required base64 or json encoded attachment data for cash removal with thread id ${record.threadId}`,
+        },
+      })
+      return { record, message: problemReport }
+    }
+
     // Call VTP package to process received cash removal
-    const { error, message } = await this.valueTransfer.witness().processCashRemoved(cashRemovedMessage.body)
+    const { error, message } = await this.valueTransfer.witness().processCashRemoved(valueTransferMessage)
     if (error || !message) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
@@ -387,15 +447,17 @@ export class ValueTransferWitnessService {
     const getterReceiptMessage = new GetterReceiptMessage({
       from: record.witnessDid,
       to: record.getterDid,
-      body: message,
       thid: record.threadId,
+      body: {},
+      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
     const giverReceiptMessage = new GiverReceiptMessage({
       from: record.witnessDid,
       to: record.giverDid,
-      body: message,
+      body: {},
       thid: record.threadId,
+      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
     // Update Value Transfer record and raise event

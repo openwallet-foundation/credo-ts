@@ -209,19 +209,22 @@ export class ValueTransferService {
     return firstValueFrom(subject)
   }
 
-  public async sendMessageToWitness(message: DIDCommV2Message) {
+  public async sendMessageToWitness(message: DIDCommV2Message, record?: ValueTransferRecord) {
+    message.to = record ? [record.valueTransferMessage.payment.witness] : undefined
     const witnessTransport = this.config.valueTransferConfig?.witnessTransport
     return this.sendMessage(message, witnessTransport)
   }
 
-  public async sendMessageToGiver(message: DIDCommV2Message) {
-    message.to = message.body.payment.giver === 'giver' ? undefined : [message.body.payment.giver]
+  public async sendMessageToGiver(message: DIDCommV2Message, record?: ValueTransferRecord) {
+    message.to = record?.valueTransferMessage.payment.isGiverSet
+      ? [record?.valueTransferMessage.payment.giver]
+      : undefined
     const giverTransport = this.config.valueTransferConfig?.giverTransport
     return this.sendMessage(message, giverTransport)
   }
 
-  public async sendMessageToGetter(message: DIDCommV2Message) {
-    message.to = [message.body.payment.getter]
+  public async sendMessageToGetter(message: DIDCommV2Message, record?: ValueTransferRecord) {
+    message.to = record ? [record.valueTransferMessage.payment.getter] : undefined
     const getterTransport = this.config.valueTransferConfig?.getterTransport
     return this.sendMessage(message, getterTransport)
   }

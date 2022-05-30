@@ -14,6 +14,7 @@ import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
 import { CashAcceptedMessage, ProblemReportMessage, RequestMessage } from '../messages'
+import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
 import { ValueTransferRecord, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
@@ -98,7 +99,8 @@ export class ValueTransferGetterService {
     const requestMessage = new RequestMessage({
       from: getter,
       to: witness,
-      body: message,
+      body: {},
+      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
     // Create Value Transfer record and raise event
@@ -134,7 +136,7 @@ export class ValueTransferGetterService {
     messageContext: InboundMessageContext<RequestAcceptedWitnessedMessage>
   ): Promise<{
     record: ValueTransferRecord
-    message: RequestAcceptedWitnessedMessage
+    message: RequestAcceptedWitnessedMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: requestAcceptedWitnessedMessage } = messageContext
@@ -144,10 +146,24 @@ export class ValueTransferGetterService {
     record.assertRole(ValueTransferRole.Getter)
     record.assertState(ValueTransferState.RequestSent)
 
+    const valueTransferMessage = requestAcceptedWitnessedMessage.valueTransferMessage
+    if (!valueTransferMessage) {
+      const problemReport = new ProblemReportMessage({
+        from: record.getterDid,
+        to: requestAcceptedWitnessedMessage.from,
+        pthid: record.threadId,
+        body: {
+          code: 'e.p.req.bad-request',
+          comment: `Missing required base64 or json encoded attachment data for payment request with thread id ${requestAcceptedWitnessedMessage.thid}`,
+        },
+      })
+      return { record, message: problemReport }
+    }
+
     // Update Value Transfer record and raise event
-    record.valueTransferMessage = requestAcceptedWitnessedMessage.body
-    record.witnessDid = requestAcceptedWitnessedMessage.body.payment.witness
-    record.giverDid = requestAcceptedWitnessedMessage.body.payment.giver
+    record.valueTransferMessage = valueTransferMessage
+    record.witnessDid = valueTransferMessage.payment.witness
+    record.giverDid = valueTransferMessage.payment.giver
 
     await this.valueTransferService.updateState(record, ValueTransferState.RequestAcceptanceReceived)
     return { record, message: requestAcceptedWitnessedMessage }
@@ -197,8 +213,9 @@ export class ValueTransferGetterService {
     const cashAcceptedMessage = new CashAcceptedMessage({
       from: record.getterDid,
       to: record.witnessDid,
-      body: message,
       thid: record.threadId,
+      body: {},
+      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
     // Update Value Transfer record
@@ -229,8 +246,20 @@ export class ValueTransferGetterService {
     record.assertState(ValueTransferState.CashAcceptanceSent)
     record.assertRole(ValueTransferRole.Getter)
 
+    const valueTransferMessage = getterReceiptMessage.valueTransferMessage
+    if (!valueTransferMessage) {
+      const problemReport = new ProblemReportMessage({
+        pthid: record.threadId,
+        body: {
+          code: 'e.p.req.bad-receipt',
+          comment: `Missing required base64 or json encoded attachment data for receipt with thread id ${record.threadId}`,
+        },
+      })
+      return { record, message: problemReport }
+    }
+
     // Call VTP to process Receipt
-    const { error, message } = await this.valueTransfer.getter().processReceipt(getterReceiptMessage.body)
+    const { error, message } = await this.valueTransfer.getter().processReceipt(valueTransferMessage)
     if (error || !message) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({

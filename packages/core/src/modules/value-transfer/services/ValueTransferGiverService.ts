@@ -12,6 +12,7 @@ import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
 import { CashRemovedMessage, ProblemReportMessage, RequestAcceptedMessage } from '../messages'
+import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
 import { ValueTransferRecord, ValueTransferRepository } from '../repository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
@@ -77,9 +78,22 @@ export class ValueTransferGiverService {
   }> {
     const { message: requestWitnessedMessage } = messageContext
 
-    const { getter, giver, witness } = requestWitnessedMessage.body.payment
+    const valueTransferMessage = requestWitnessedMessage.valueTransferMessage
+    if (!valueTransferMessage) {
+      const problemReport = new ProblemReportMessage({
+        to: requestWitnessedMessage.from,
+        pthid: requestWitnessedMessage.id,
+        body: {
+          code: 'e.p.req.bad-request',
+          comment: `Missing required base64 or json encoded attachment data for payment request with thread id ${requestWitnessedMessage.thid}`,
+        },
+      })
+      return { message: problemReport }
+    }
 
-    if (requestWitnessedMessage.body.payment.isGiverSet) {
+    const { getter, giver, witness } = valueTransferMessage.payment
+
+    if (valueTransferMessage.payment.isGiverSet) {
       // ensure that DID exist in the wallet
       const did = await this.didService.findById(giver)
       if (!did) {
@@ -102,7 +116,7 @@ export class ValueTransferGiverService {
       role: ValueTransferRole.Giver,
       state: ValueTransferState.RequestReceived,
       threadId: requestWitnessedMessage.thid,
-      valueTransferMessage: requestWitnessedMessage.body,
+      valueTransferMessage,
       requestWitnessedMessage,
       getter,
       witness,
@@ -169,8 +183,9 @@ export class ValueTransferGiverService {
     const requestAcceptedMessage = new RequestAcceptedMessage({
       from: giver,
       to: record.witnessDid,
-      body: message,
       thid: record.threadId,
+      body: {},
+      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
     // Update Value Transfer record
@@ -193,7 +208,7 @@ export class ValueTransferGiverService {
     messageContext: InboundMessageContext<CashAcceptedWitnessedMessage>
   ): Promise<{
     record: ValueTransferRecord
-    message: CashAcceptedWitnessedMessage
+    message: CashAcceptedWitnessedMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: cashAcceptedWitnessedMessage } = messageContext
@@ -203,8 +218,22 @@ export class ValueTransferGiverService {
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.RequestAcceptanceSent)
 
+    const valueTransferMessage = cashAcceptedWitnessedMessage.valueTransferMessage
+    if (!valueTransferMessage) {
+      const problemReport = new ProblemReportMessage({
+        from: record.witnessDid,
+        to: record.giverDid,
+        pthid: record.threadId,
+        body: {
+          code: 'e.p.req.bad-cash-acceptance',
+          comment: `Missing required base64 or json encoded attachment data for cash acceptance with thread id ${record.threadId}`,
+        },
+      })
+      return { record, message: problemReport }
+    }
+
     // Update Value Transfer record and raise event
-    record.valueTransferMessage = cashAcceptedWitnessedMessage.body
+    record.valueTransferMessage = valueTransferMessage
     await this.valueTransferService.updateState(record, ValueTransferState.CashAcceptanceReceived)
     return { record, message: cashAcceptedWitnessedMessage }
   }
@@ -251,7 +280,8 @@ export class ValueTransferGiverService {
       from: record.giverDid,
       to: record.witnessDid,
       thid: record.threadId,
-      body: message,
+      body: {},
+      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
     // Update Value Transfer record
@@ -282,8 +312,20 @@ export class ValueTransferGiverService {
     record.assertState(ValueTransferState.CashRemovalSent)
     record.assertRole(ValueTransferRole.Giver)
 
+    const valueTransferMessage = receiptMessage.valueTransferMessage
+    if (!valueTransferMessage) {
+      const problemReport = new ProblemReportMessage({
+        pthid: record.threadId,
+        body: {
+          code: 'invalid-payment-receipt',
+          comment: `Missing required base64 or json encoded attachment data for receipt with thread id ${record.threadId}`,
+        },
+      })
+      return { record, message: problemReport }
+    }
+
     // Call VTP to process Receipt
-    const { error, message } = await this.valueTransfer.giver().processReceipt(receiptMessage.body)
+    const { error, message } = await this.valueTransfer.giver().processReceipt(valueTransferMessage)
     if (error || !message) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({

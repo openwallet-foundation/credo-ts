@@ -28,8 +28,8 @@ export class CashRemovedHandler implements HandlerV2 {
     // if message is Problem Report -> also send it to Giver as well
     if (message.type === ProblemReportMessage.type) {
       await Promise.all([
-        this.valueTransferService.sendMessageToGetter(message),
-        this.valueTransferService.sendMessageToGiver(message),
+        this.valueTransferService.sendMessageToGetter(message, record),
+        this.valueTransferService.sendMessageToGiver(message, record),
       ])
       return
     }
@@ -37,8 +37,8 @@ export class CashRemovedHandler implements HandlerV2 {
     const { getterReceiptMessage, giverReceiptMessage } = await this.valueTransferWitnessService.createReceipt(record)
 
     await Promise.all([
-      this.valueTransferService.sendMessageToGetter(getterReceiptMessage),
-      this.valueTransferService.sendMessageToGiver(giverReceiptMessage),
+      this.valueTransferService.sendMessageToGetter(getterReceiptMessage, record),
+      this.valueTransferService.sendMessageToGiver(giverReceiptMessage, record),
     ])
     return
   }

@@ -30,12 +30,12 @@ export class RequestWitnessedHandler implements HandlerV2 {
   public async handle(messageContext: HandlerV2InboundMessage<RequestWitnessedHandler>) {
     const { record, message } = await this.valueTransferGiverService.processRequestWitnessed(messageContext)
     if (!record || message.type === ProblemReportMessage.type) {
-      return this.valueTransferService.sendMessageToWitness(message)
+      return this.valueTransferService.sendMessageToWitness(message, record)
     }
 
     if (this.valueTransferResponseCoordinator.shouldAutoRespondToRequest(record)) {
       const { message } = await this.valueTransferGiverService.acceptRequest(record)
-      return this.valueTransferService.sendMessageToWitness(message)
+      return this.valueTransferService.sendMessageToWitness(message, record)
     }
   }
 }

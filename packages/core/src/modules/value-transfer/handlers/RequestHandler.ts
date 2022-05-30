@@ -23,10 +23,10 @@ export class RequestHandler implements HandlerV2 {
   }
 
   public async handle(messageContext: HandlerV2InboundMessage<RequestHandler>) {
-    const { message } = await this.valueTransferWitnessService.processRequest(messageContext)
+    const { record, message } = await this.valueTransferWitnessService.processRequest(messageContext)
     if (message.type === ProblemReportMessage.type) {
-      return this.valueTransferService.sendMessageToGetter(message)
+      return this.valueTransferService.sendMessageToGetter(message, record)
     }
-    return this.valueTransferService.sendMessageToGiver(message)
+    return this.valueTransferService.sendMessageToGiver(message, record)
   }
 }
