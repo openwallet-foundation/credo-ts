@@ -11,41 +11,32 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../types'
-import type { DocumentLoader, Proof } from '../../../../utils'
+import type { JsonObject } from '../../../../../types'
+import type { DocumentLoader, Proof } from '../../../jsonldUtil'
+import type { ProofPurpose } from '../../../proof-purposes/ProofPurpose'
 
 /**
- * Options for creating a proof
+ * Options for verifying a proof
  */
-export interface DeriveProofOptions {
+export interface VerifyProofOptions {
   /**
-   * Document outlining what statements to reveal
-   */
-  readonly revealDocument: JsonObject
-  /**
-   * The document featuring the proof to derive from
-   */
-  readonly document: JsonObject
-  /**
-   * The proof for the document
+   * The proof
    */
   readonly proof: Proof
   /**
+   * The document
+   */
+  readonly document: JsonObject
+  /**
+   * The proof purpose to specify for the generated proof
+   */
+  readonly purpose: ProofPurpose
+  /**
    * Optional custom document loader
    */
-  // eslint-disable-next-line
   documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
-  // eslint-disable-next-line
   expansionMap?: () => void
-  /**
-   * Nonce to include in the derived proof
-   */
-  readonly nonce?: Uint8Array
-  /**
-   * Indicates whether to compact the resulting proof
-   */
-  readonly skipProofCompaction?: boolean
 }

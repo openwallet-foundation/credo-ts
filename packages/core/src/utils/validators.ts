@@ -4,6 +4,7 @@ import type { ValidationOptions } from 'class-validator'
 import { isString, ValidateBy, isInstance, buildMessage } from 'class-validator'
 
 export interface IsInstanceOrArrayOfInstancesValidationOptions extends ValidationOptions {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   classType: new (...args: any[]) => any
 }
 
@@ -60,6 +61,7 @@ export function IsInstanceOrArrayOfInstances(
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isStringArray(value: any): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'string')
 }
