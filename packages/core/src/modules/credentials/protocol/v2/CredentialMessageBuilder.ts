@@ -243,10 +243,8 @@ export class CredentialMessageBuilder {
     // Construct v2 offer message
     const message = new V2OfferCredentialMessage(messageProps)
 
-    const id = connection ? connection.id : undefined
-
     const recordProps: CredentialExchangeRecordProps = {
-      connectionId: id,
+      connectionId: connection?.id,
       threadId: message.threadId,
       autoAcceptCredential,
       state: CredentialState.OfferSent,
