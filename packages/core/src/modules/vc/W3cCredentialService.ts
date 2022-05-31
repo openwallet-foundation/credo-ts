@@ -1,5 +1,5 @@
 import type { Key } from '../../crypto/Key'
-import type { DocumentLoaderResult } from '../../utils'
+import type { DocumentLoaderResult } from './jsonldUtil'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
   CreatePresentationOptions,
@@ -12,24 +12,27 @@ import type {
 } from './models/W3cCredentialServiceOptions'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
 
-import jsonld, { documentLoaderNode, documentLoaderXhr } from '../../../types/jsonld'
-import vc from '../../../types/vc'
+import { inject } from 'tsyringe'
+
 import { InjectionSymbols } from '../../constants'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
-import { deriveProof } from '../../crypto/signature-suites/bbs'
 import { AriesFrameworkError } from '../../error'
-import { inject, injectable } from '../../plugins'
-import { JsonTransformer, orArrayToArray, w3cDate } from '../../utils'
+import { injectable } from '../../plugins'
+import { JsonTransformer } from '../../utils'
 import { isNodeJS, isReactNative } from '../../utils/environment'
 import { Wallet } from '../../wallet'
 import { DidResolverService, VerificationMethod } from '../dids'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
+import { orArrayToArray, w3cDate } from './jsonldUtil'
+import jsonld, { documentLoaderNode, documentLoaderXhr } from './libraries/jsonld'
+import vc from './libraries/vc'
 import { W3cVerifiableCredential } from './models'
 import { W3cPresentation } from './models/presentation/W3Presentation'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
 import { W3cCredentialRecord, W3cCredentialRepository } from './repository'
+import { deriveProof } from './signature-suites/bbs'
 
 @injectable()
 export class W3cCredentialService {

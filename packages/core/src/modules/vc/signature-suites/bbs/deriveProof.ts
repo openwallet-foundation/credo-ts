@@ -11,12 +11,13 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../types'
+import type { JsonObject } from '../../../../types'
 
-import jsonld from '../../../../types/jsonld'
-import { SECURITY_PROOF_URL } from '../../../modules/vc/constants'
-import { W3cVerifiableCredential } from '../../../modules/vc/models'
-import { JsonTransformer, getProofs, getTypeInfo } from '../../../utils'
+import { JsonTransformer } from '../../../../utils'
+import { SECURITY_PROOF_URL } from '../../constants'
+import { getProofs, getTypeInfo } from '../../jsonldUtil'
+import jsonld from '../../libraries/jsonld'
+import { W3cVerifiableCredential } from '../../models'
 
 /**
  * Derives a proof from a document featuring a supported linked data proof

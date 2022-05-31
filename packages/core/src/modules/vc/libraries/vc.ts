@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// No type definitions available for this package
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import vc from '@digitalcredentials/vc'
 

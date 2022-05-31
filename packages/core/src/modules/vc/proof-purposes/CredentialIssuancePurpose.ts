@@ -1,8 +1,7 @@
 import type { JsonObject } from '../../../types'
-import type { DocumentLoader, Proof } from '../../../utils'
+import type { Proof, DocumentLoader } from '../jsonldUtil'
 
-import jsonld from '../../../../types/jsonld'
-import { suites, purposes } from '../../../../types/jsonld-signatures'
+import { suites, purposes } from '../libraries/jsonld-signatures'
 
 const AssertionProofPurpose = purposes.AssertionProofPurpose
 const LinkedDataProof = suites.LinkedDataProof

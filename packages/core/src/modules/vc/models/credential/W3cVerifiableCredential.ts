@@ -3,9 +3,8 @@ import type { W3cCredentialOptions } from './W3cCredential'
 
 import { instanceToPlain, plainToInstance, Transform, TransformationType } from 'class-transformer'
 
-import { orArrayToArray } from '../../../../utils'
-import { SingleOrArray } from '../../../../utils/type'
-import { IsInstanceOrArrayOfInstances } from '../../../../utils/validators'
+import { IsInstanceOrArrayOfInstances, SingleOrArray } from '../../../../utils'
+import { orArrayToArray } from '../../jsonldUtil'
 import { LinkedDataProof, LinkedDataProofTransformer } from '../LinkedDataProof'
 
 import { W3cCredential } from './W3cCredential'

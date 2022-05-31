@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../types'
-import type { DocumentLoader, Proof, VerificationMethod } from '../../../utils'
+import type { JsonObject } from '../../../../types'
+import type { DocumentLoader, Proof, VerificationMethod } from '../../jsonldUtil'
 import type {
   SignatureSuiteOptions,
   CreateProofOptions,
@@ -23,11 +23,12 @@ import type {
   SuiteSignOptions,
 } from './types'
 
-import jsonld from '../../../../types/jsonld'
-import { suites } from '../../../../types/jsonld-signatures'
-import { AriesFrameworkError } from '../../../error'
-import { SECURITY_CONTEXT_BBS_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
-import { w3cDate, TypedArrayEncoder } from '../../../utils'
+import { AriesFrameworkError } from '../../../../error'
+import { TypedArrayEncoder } from '../../../../utils'
+import { SECURITY_CONTEXT_BBS_URL, SECURITY_CONTEXT_URL } from '../../constants'
+import { w3cDate } from '../../jsonldUtil'
+import jsonld from '../../libraries/jsonld'
+import { suites } from '../../libraries/jsonld-signatures'
 
 /**
  * A BBS+ signature suite for use with BLS12-381 key pairs

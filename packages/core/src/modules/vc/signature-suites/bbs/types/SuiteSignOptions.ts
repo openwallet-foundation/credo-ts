@@ -11,33 +11,31 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../types'
-import type { DocumentLoader } from '../../../../utils'
+import type { JsonObject } from '../../../../../types'
+import type { DocumentLoader } from '../../../jsonldUtil'
 
 /**
- * Options for creating a proof
+ * Options for signing using a signature suite
  */
-export interface CreateVerifyDataOptions {
+export interface SuiteSignOptions {
   /**
-   * Document to create the proof for
+   * Input document to sign
    */
   readonly document: JsonObject
   /**
-   * The proof
-   */
-  readonly proof: JsonObject
-  /**
    * Optional custom document loader
    */
-
   documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
-
   expansionMap?: () => void
   /**
-   * Indicates whether to compact the proof
+   * The array of statements to sign
    */
-  readonly compactProof: boolean
+  readonly verifyData: readonly Uint8Array[]
+  /**
+   * The proof
+   */
+  readonly proof: JsonObject
 }

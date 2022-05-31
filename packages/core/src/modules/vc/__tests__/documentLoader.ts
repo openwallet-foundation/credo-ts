@@ -1,11 +1,7 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-// eslint-disable-next-line import/no-extraneous-dependencies
-
 import type { JsonObject } from '../../../types'
-import type { DocumentLoaderResult } from '../../../utils'
+import type { DocumentLoaderResult } from '../jsonldUtil'
 
-import jsonld from '../../../../types/jsonld'
+import jsonld from '../libraries/jsonld'
 
 import { BBS_V1, EXAMPLES_V1, ODRL, SCHEMA_ORG, VACCINATION_V1 } from './contexts'
 import { X25519_V1 } from './contexts/X25519_v1'
