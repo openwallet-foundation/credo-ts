@@ -1,4 +1,5 @@
-import { ConnectionInvitationMessage, ConnectionRecord } from '../../modules/connections'
+import { ConnectionInvitationMessage } from '../../modules/connections'
+import { DidDocument, VerificationMethod } from '../../modules/dids'
 import { JsonTransformer } from '../JsonTransformer'
 
 describe('JsonTransformer', () => {
@@ -69,13 +70,15 @@ describe('JsonTransformer', () => {
       expect(JsonTransformer.deserialize(jsonString, ConnectionInvitationMessage)).toEqual(invitation)
     })
 
-    // TODO Use other testing object than connection because it does not contain `didDoc` anymore
-    it.skip('transforms JSON string to nested class instance', () => {
-      const connectionString = `{"createdAt":"2021-06-06T10:16:02.740Z","did":"5AhYREdFcNAdxMhuFfMrG8","didDoc":{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"5AhYREdFcNAdxMhuFfMrG8#1","controller":"5AhYREdFcNAdxMhuFfMrG8","type":"Ed25519VerificationKey2018","publicKeyBase58":"3GjajqxDHZfD4FCpMsA6K5mey782oVJgizapkYUTkYJC"}],"service":[{"id":"5AhYREdFcNAdxMhuFfMrG8#did-communication","serviceEndpoint":"didcomm:transport/queue","type":"did-communication","priority":1,"recipientKeys":["3GjajqxDHZfD4FCpMsA6K5mey782oVJgizapkYUTkYJC"],"routingKeys":[]},{"id":"5AhYREdFcNAdxMhuFfMrG8#IndyAgentService","serviceEndpoint":"didcomm:transport/queue","type":"IndyAgent","priority":0,"recipientKeys":["3GjajqxDHZfD4FCpMsA6K5mey782oVJgizapkYUTkYJC"],"routingKeys":[]}],"authentication":[{"publicKey":"5AhYREdFcNAdxMhuFfMrG8#1","type":"Ed25519SignatureAuthentication2018"}],"id":"5AhYREdFcNAdxMhuFfMrG8"},"verkey":"3GjajqxDHZfD4FCpMsA6K5mey782oVJgizapkYUTkYJC","state":"complete","role":"invitee","alias":"Mediator","invitation":{"@type":"https://didcomm.org/connections/1.0/invitation","@id":"f2938e83-4ea4-44ef-acb1-be2351112fec","label":"RoutingMediator02","recipientKeys":["DHf1TwnRHQdkdTUFAoSdQBPrVToNK6ULHo165Cbq7woB"],"serviceEndpoint":"https://mediator.animo.id/msg","routingKeys":[]},"theirDid":"PYYVEngpK4wsWM5aQuBQt5","theirDidDoc":{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"PYYVEngpK4wsWM5aQuBQt5#1","controller":"PYYVEngpK4wsWM5aQuBQt5","type":"Ed25519VerificationKey2018","publicKeyBase58":"DHf1TwnRHQdkdTUFAoSdQBPrVToNK6ULHo165Cbq7woB"}],"service":[{"id":"PYYVEngpK4wsWM5aQuBQt5#did-communication","serviceEndpoint":"https://mediator.animo.id/msg","type":"did-communication","priority":1,"recipientKeys":["DHf1TwnRHQdkdTUFAoSdQBPrVToNK6ULHo165Cbq7woB"],"routingKeys":[]},{"id":"PYYVEngpK4wsWM5aQuBQt5#IndyAgentService","serviceEndpoint":"https://mediator.animo.id/msg","type":"IndyAgent","priority":0,"recipientKeys":["DHf1TwnRHQdkdTUFAoSdQBPrVToNK6ULHo165Cbq7woB"],"routingKeys":[]}],"authentication":[{"publicKey":"PYYVEngpK4wsWM5aQuBQt5#1","type":"Ed25519SignatureAuthentication2018"}],"id":"PYYVEngpK4wsWM5aQuBQt5"}}`
+    it('transforms JSON string to nested class instance', () => {
+      const didDocumentString =
+        '{"@context":["https://w3id.org/did/v1"],"id":"did:peer:1zQmRYBx1pL86DrsxoJ2ZD3w42d7Ng92ErPgFsCSqg8Q1h4i","keyAgreement":[{"id":"#6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V","type":"Ed25519VerificationKey2018","publicKeyBase58":"ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7"}],"service":[{"id":"#service-0","type":"did-communication","serviceEndpoint":"https://example.com/endpoint","recipientKeys":["#6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V"],"routingKeys":["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH#z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],"accept":["didcomm/v2","didcomm/aip2;env=rfc587"]}]}'
 
-      const connection = JsonTransformer.deserialize(connectionString, ConnectionRecord)
+      const didDocument = JsonTransformer.deserialize(didDocumentString, DidDocument)
 
-      // expect(connection.didDoc).toBeInstanceOf(DidDoc)
+      const keyAgreement = didDocument.keyAgreement ?? []
+
+      expect(keyAgreement[0]).toBeInstanceOf(VerificationMethod)
     })
   })
 })

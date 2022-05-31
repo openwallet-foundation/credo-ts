@@ -1,18 +1,17 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 
+import { JsonTransformer } from '../../..'
 import { getAgentConfig } from '../../../../tests/helpers'
-import { TestLogger } from '../../../../tests/logger'
-import { purposes } from '../../../../types/jsonld-signatures'
 import { KeyType } from '../../../crypto'
 import { Key } from '../../../crypto/Key'
-import { LogLevel } from '../../../logger'
-import { JsonTransformer, orArrayToArray } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { WalletError } from '../../../wallet/error'
 import { DidKey, DidResolverService } from '../../dids'
 import { DidRepository } from '../../dids/repository'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { W3cCredentialService } from '../W3cCredentialService'
+import { orArrayToArray } from '../jsonldUtil'
+import { purposes } from '../libraries/jsonld-signatures'
 import { W3cCredential, W3cVerifiableCredential } from '../models'
 import { LinkedDataProof } from '../models/LinkedDataProof'
 import { W3cCredentialRepository } from '../models/credential/W3cCredentialRepository'
@@ -35,7 +34,6 @@ describe('W3cCredentialService', () => {
   let wallet: IndyWallet
   let agentConfig: AgentConfig
   let didResolverService: DidResolverService
-  let logger: TestLogger
   let w3cCredentialService: W3cCredentialService
   let w3cCredentialRepository: W3cCredentialRepository
   const seed = 'testseed000000000000000000000001'
@@ -43,18 +41,11 @@ describe('W3cCredentialService', () => {
   beforeAll(async () => {
     agentConfig = getAgentConfig('W3cCredentialServiceTest')
     wallet = new IndyWallet(agentConfig)
-    logger = new TestLogger(LogLevel.error)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
     didResolverService = new DidResolverService(agentConfig, new IndyLedgerServiceMock(), new DidRepositoryMock())
     w3cCredentialRepository = new W3cCredentialRepositoryMock()
-    w3cCredentialService = new W3cCredentialService(
-      wallet,
-      w3cCredentialRepository,
-      didResolverService,
-      agentConfig,
-      logger
-    )
+    w3cCredentialService = new W3cCredentialService(wallet, w3cCredentialRepository, didResolverService)
     w3cCredentialService.documentLoader = customDocumentLoader
   })
 

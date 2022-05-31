@@ -42,7 +42,7 @@ export class AliceInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.alice.connectionRecordFaberId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    if (this.alice.outOfBandId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
 
     const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
     return inquirer.prompt([this.inquireOptions(reducedOption)])

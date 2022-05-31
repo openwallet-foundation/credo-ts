@@ -1,6 +1,4 @@
-import type { Key } from '../../../crypto'
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 import type { OutOfBandRole } from '../domain/OutOfBandRole'
 import type { OutOfBandState } from '../domain/OutOfBandState'
 
@@ -9,7 +7,6 @@ import { Type } from 'class-transformer'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { DidKey } from '../../dids'
 import { OutOfBandInvitation } from '../messages'
 
 export interface OutOfBandRecordProps {
@@ -22,7 +19,6 @@ export interface OutOfBandRecordProps {
   state: OutOfBandState
   autoAcceptConnection?: boolean
   reusable?: boolean
-  did?: string
   mediatorId?: string
   reuseConnectionId?: string
 }
@@ -41,7 +37,6 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
   public state!: OutOfBandState
   public reusable!: boolean
   public autoAcceptConnection?: boolean
-  public did?: string
   public mediatorId?: string
   public reuseConnectionId?: string
 
@@ -59,7 +54,6 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
       this.state = props.state
       this.autoAcceptConnection = props.autoAcceptConnection
       this.reusable = props.reusable ?? false
-      this.did = props.did
       this.mediatorId = props.mediatorId
       this.reuseConnectionId = props.reuseConnectionId
       this._tags = props.tags ?? {}
@@ -72,17 +66,8 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
       role: this.role,
       state: this.state,
       invitationId: this.outOfBandInvitation.id,
-      recipientKeyFingerprints: this.getRecipientKeys().map((key) => key.fingerprint),
+      recipientKeyFingerprints: this.outOfBandInvitation.getRecipientKeys().map((key) => key.fingerprint),
     }
-  }
-
-  // TODO: this only takes into account inline didcomm services, won't work for public dids
-  public getRecipientKeys(): Key[] {
-    return this.outOfBandInvitation.services
-      .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
-      .map((s) => s.recipientKeys)
-      .reduce((acc, curr) => [...acc, ...curr], [])
-      .map((didKey) => DidKey.fromDid(didKey).key)
   }
 
   public assertRole(expectedRole: OutOfBandRole) {

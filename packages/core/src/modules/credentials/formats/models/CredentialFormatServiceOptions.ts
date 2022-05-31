@@ -5,7 +5,10 @@ import type { SignCredentialOptions } from '../../../vc/models/W3cCredentialServ
 import type { W3cCredential } from '../../../vc/models/credential/W3cCredential'
 import type { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
 import type { ServiceRequestCredentialOptions } from '../../CredentialServiceOptions'
-import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttributes'
+import type {
+  CredentialPreviewAttribute,
+  CredentialPreviewAttributeOptions,
+} from '../../models/CredentialPreviewAttribute'
 import type { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { CredPropose } from './CredPropose'
@@ -26,7 +29,7 @@ export interface IndyCredentialPreview {
 }
 
 export interface IndyProposeCredentialFormat {
-  attributes?: CredentialPreviewAttribute[]
+  attributes?: CredentialPreviewAttributeOptions[]
   linkedAttachments?: LinkedAttachment[]
   payload?: CredPropose
 }
@@ -102,7 +105,7 @@ export interface FormatServiceProposeCredentialFormats {
 export interface FormatServiceAcceptProposeCredentialFormats {
   indy?: {
     credentialDefinitionId?: string
-    attributes: CredentialPreviewAttribute[]
+    attributes: CredentialPreviewAttributeOptions[]
     linkedAttachments?: LinkedAttachment[]
   }
   jsonld?: SignCredentialOptions

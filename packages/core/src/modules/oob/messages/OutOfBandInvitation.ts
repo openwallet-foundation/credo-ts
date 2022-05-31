@@ -1,3 +1,4 @@
+import type { Key } from '../../../crypto'
 import type { PlaintextMessage } from '../../../types'
 import type { HandshakeProtocol } from '../../connections'
 
@@ -13,6 +14,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { IsStringOrInstance } from '../../../utils/validators'
+import { DidKey } from '../../dids'
 import { outOfBandServiceToNumAlgo2Did } from '../../dids/methods/peer/peerDidNumAlgo2'
 import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 
@@ -96,6 +98,15 @@ export class OutOfBandInvitation extends AgentMessage {
       return outOfBandServiceToNumAlgo2Did(didOrService)
     })
     return dids
+  }
+
+  // TODO: this only takes into account inline didcomm services, won't work for public dids
+  public getRecipientKeys(): Key[] {
+    return this.services
+      .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
+      .map((s) => s.recipientKeys)
+      .reduce((acc, curr) => [...acc, ...curr], [])
+      .map((didKey) => DidKey.fromDid(didKey).key)
   }
 
   @IsValidMessageType(OutOfBandInvitation.type)

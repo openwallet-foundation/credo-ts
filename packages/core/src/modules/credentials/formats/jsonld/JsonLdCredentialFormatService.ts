@@ -6,6 +6,7 @@ import type {
   ServiceAcceptCredentialOptions,
   ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
+  ServiceOfferCredentialOptions,
 } from '../../CredentialServiceOptions'
 import type { ProposeCredentialOptions, RequestCredentialOptions } from '../../CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from '../../repository'
@@ -26,8 +27,8 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { W3cCredentialService } from '../../../vc'
 import { W3cVerifiableCredential, W3cCredential } from '../../../vc/models'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
-import { CredentialResponseCoordinator } from '../../CredentialResponseCoordinator'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
+import { composeAutoAccept } from '../../composeAutoAccept'
 import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
@@ -89,7 +90,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
    * @returns object containing associated attachment, formats and offersAttach elements
    *
    */
-  public async createOffer(options: ServiceAcceptProposalOptions): Promise<FormatServiceOfferAttachmentFormats> {
+  public async createOffer(options: ServiceOfferCredentialOptions): Promise<FormatServiceOfferAttachmentFormats> {
     const formats = new CredentialFormatSpec({
       attachId: uuid(),
       format: 'aries/ld-proof-vc-detail@v1.0',
@@ -257,10 +258,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   }
 
   public shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): boolean {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
-      options.credentialRecord.autoAcceptCredential,
-      options.autoAcceptType
-    )
+    const autoAccept = composeAutoAccept(options.credentialRecord.autoAcceptCredential, options.autoAcceptType)
     if (autoAccept === AutoAcceptCredential.Always) {
       return true
     }
@@ -299,10 +297,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   }
 
   public shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
-      options.credentialRecord.autoAcceptCredential,
-      options.autoAcceptType
-    )
+    const autoAccept = composeAutoAccept(options.credentialRecord.autoAcceptCredential, options.autoAcceptType)
 
     if (!options.requestAttachment) {
       throw new AriesFrameworkError(`Missing Request Attachment for Credential Record ${options.credentialRecord.id}`)
@@ -321,10 +316,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
   }
 
   public shouldAutoRespondToCredential(options: HandlerAutoAcceptOptions): boolean {
-    const autoAccept = CredentialResponseCoordinator.composeAutoAccept(
-      options.credentialRecord.autoAcceptCredential,
-      options.autoAcceptType
-    )
+    const autoAccept = composeAutoAccept(options.credentialRecord.autoAcceptCredential, options.autoAcceptType)
 
     if (autoAccept === AutoAcceptCredential.ContentApproved) {
       if (options.credentialAttachment) {

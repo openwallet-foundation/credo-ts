@@ -60,7 +60,7 @@ describe('MessageSender', () => {
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
 
   const didResolverService = new DidResolverServiceMock()
-  const didResolverServiceResolveMock = mockFunction(didResolverService.resolve)
+  const didResolverServiceResolveMock = mockFunction(didResolverService.resolveDidDocument)
 
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
@@ -128,11 +128,7 @@ describe('MessageSender', () => {
       transportServiceHasInboundEndpoint.mockReturnValue(true)
 
       const didDocumentInstance = getMockDidDocument({ service: [firstDidCommService, secondDidCommService] })
-      didResolverServiceResolveMock.mockResolvedValue({
-        didDocument: didDocumentInstance,
-        didResolutionMetadata: {},
-        didDocumentMetadata: {},
-      })
+      didResolverServiceResolveMock.mockResolvedValue(didDocumentInstance)
     })
 
     afterEach(() => {
@@ -146,11 +142,7 @@ describe('MessageSender', () => {
     test('throw error when there is no service or queue', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
-      didResolverServiceResolveMock.mockResolvedValue({
-        didDocument: getMockDidDocument({ service: [] }),
-        didResolutionMetadata: {},
-        didDocumentMetadata: {},
-      })
+      didResolverServiceResolveMock.mockResolvedValue(getMockDidDocument({ service: [] }))
 
       await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(
         `Message is undeliverable to connection test-123 (Test 123)`
@@ -196,13 +188,9 @@ describe('MessageSender', () => {
     test("throws an error if connection.theirDid starts with 'did:' but the resolver can't resolve the did document", async () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
-      didResolverServiceResolveMock.mockResolvedValue({
-        didDocument: null,
-        didResolutionMetadata: {
-          error: 'notFound',
-        },
-        didDocumentMetadata: {},
-      })
+      didResolverServiceResolveMock.mockRejectedValue(
+        new Error(`Unable to resolve did document for did '${connection.theirDid}': notFound`)
+      )
 
       await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrowError(
         `Unable to resolve did document for did '${connection.theirDid}': notFound`
