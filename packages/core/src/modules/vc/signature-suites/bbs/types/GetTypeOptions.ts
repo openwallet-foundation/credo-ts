@@ -11,35 +11,20 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../types'
-import type { DocumentLoader, Proof, VerificationMethod } from '../../../../utils'
+import type { DocumentLoader } from '../../../jsonldUtil'
 
 /**
- * Options for verifying a signature
+ * Options for getting the type from a JSON-LD document
  */
-export interface VerifySignatureOptions {
-  /**
-   * Document to verify
-   */
-  readonly document: JsonObject
-  /**
-   * Array of statements to verify
-   */
-  readonly verifyData: Uint8Array[]
-  /**
-   * Verification method to verify the signature against
-   */
-  readonly verificationMethod: VerificationMethod
-  /**
-   * Proof to verify
-   */
-  readonly proof: Proof
+export interface GetTypeOptions {
   /**
    * Optional custom document loader
    */
+  // eslint-disable-next-line
   documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
+  // eslint-disable-next-line
   expansionMap?: () => void
 }
