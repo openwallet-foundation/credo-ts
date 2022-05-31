@@ -29,7 +29,7 @@
     "@mattrglobal/bbs-signatures": "^1.0.0",
     "@mattrglobal/bls12381-key-pair": "^1.0.0",
     "@multiformats/base-x": "^4.0.1",
-    "@sphereon/pex": "^1.0.2",
+    "@sphereon/pex": "^1.1.0",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/random": "^1.0.1",
     "@stablelib/sha256": "^1.0.1",
