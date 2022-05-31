@@ -1,12 +1,12 @@
 /*!
  * Copyright (c) 2020-2021 Digital Bazaar, Inc. All rights reserved.
  */
-import type { DocumentLoader, Proof, VerificationMethod } from '../../utils'
-import type { LdKeyPair } from '../LdKeyPair'
+import type { LdKeyPair } from '../../../crypto/LdKeyPair'
+import type { DocumentLoader, Proof, VerificationMethod } from '../jsonldUtil'
 
-import { suites } from '../../../types/jsonld-signatures'
-import { AriesFrameworkError } from '../../error'
-import { TypedArrayEncoder, JsonEncoder } from '../../utils'
+import { AriesFrameworkError } from '../../../error'
+import { TypedArrayEncoder, JsonEncoder } from '../../../utils'
+import { suites } from '../libraries/jsonld-signatures'
 
 const LinkedDataSignature = suites.LinkedDataSignature
 export interface JwsLinkedDataSignatureOptions {

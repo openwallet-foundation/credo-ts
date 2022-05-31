@@ -1,9 +1,9 @@
-import type { GetProofsOptions, GetProofsResult, GetTypeOptions } from '../crypto/signature-suites/bbs'
-import type { JsonObject, JsonValue } from '../types'
-import type { SingleOrArray } from './type'
+import type { JsonObject, JsonValue } from '../../types'
+import type { SingleOrArray } from '../../utils/type'
+import type { GetProofsOptions, GetProofsResult, GetTypeOptions } from './signature-suites/bbs'
 
-import jsonld from '../../types/jsonld'
-import { SECURITY_CONTEXT_URL } from '../modules/vc/constants'
+import { SECURITY_CONTEXT_URL } from './constants'
+import jsonld from './libraries/jsonld'
 
 export type JsonLdDoc = Record<string, unknown>
 export interface VerificationMethod extends JsonObject {

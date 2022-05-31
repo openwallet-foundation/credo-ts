@@ -1,7 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// No type definitions available for this library
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 //@ts-ignore
 import jsonld from '@digitalcredentials/jsonld'
+// No type definitions available for this library
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 //@ts-ignore
 import nodeDocumentLoader from '@digitalcredentials/jsonld/lib/documentLoaders/node'
+// No type definitions available for this library
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 //@ts-ignore
 import xhrDocumentLoader from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
 

@@ -11,26 +11,29 @@
  * limitations under the License.
  */
 
-import type { ProofPurpose } from '../../../../modules/vc/proof-purposes/ProofPurpose'
-import type { JsonObject } from '../../../../types'
-import type { DocumentLoader, Proof } from '../../../../utils'
+import type { JsonObject } from '../../../../../types'
+import type { DocumentLoader, Proof, VerificationMethod } from '../../../jsonldUtil'
 
 /**
- * Options for verifying a proof
+ * Options for verifying a signature
  */
-export interface VerifyProofOptions {
+export interface VerifySignatureOptions {
   /**
-   * The proof
-   */
-  readonly proof: Proof
-  /**
-   * The document
+   * Document to verify
    */
   readonly document: JsonObject
   /**
-   * The proof purpose to specify for the generated proof
+   * Array of statements to verify
    */
-  readonly purpose: ProofPurpose
+  readonly verifyData: Uint8Array[]
+  /**
+   * Verification method to verify the signature against
+   */
+  readonly verificationMethod: VerificationMethod
+  /**
+   * Proof to verify
+   */
+  readonly proof: Proof
   /**
    * Optional custom document loader
    */
