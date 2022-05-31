@@ -1,7 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import {
   suites as JsonLdSuites,
   purposes as JsonLdPurposes,
   constants as JsonLdConstants,
+  // No type definitions available for this library
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
 } from '@digitalcredentials/jsonld-signatures'
 

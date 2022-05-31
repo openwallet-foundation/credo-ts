@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import type { JsonArray } from '../../../../types'
-import type { LdKeyPair } from '../../../LdKeyPair'
+import type { LdKeyPair } from '../../../../../crypto/LdKeyPair'
+import type { JsonArray } from '../../../../../types'
 import type { KeyPairSigner } from './KeyPairSigner'
 import type { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 

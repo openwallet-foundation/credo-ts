@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '../../../../utils'
+import type { DocumentLoader } from '../../../jsonldUtil'
 
 /**
  * Options for canonizing a document
