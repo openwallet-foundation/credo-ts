@@ -2,13 +2,11 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { Logger } from '../../../../logger'
 import type {
   NegotiateProposalOptions,
-  OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../CredentialsModuleOptions'
 import type {
   ServiceAcceptCredentialOptions,
-  ServiceAcceptOfferOptions as ServiceOfferOptions,
   ServiceAcceptProposalOptions,
   ServiceAcceptRequestOptions,
   ServiceOfferCredentialOptions,
