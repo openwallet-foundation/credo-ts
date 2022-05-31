@@ -61,7 +61,7 @@ export class CredentialExchangeRecord extends BaseRecord<
   public revocationNotification?: RevocationNotification
   public errorMessage?: string
   public protocolVersion!: CredentialProtocolVersion
-  public credentials!: CredentialRecordBinding[]
+  public credentials: CredentialRecordBinding[] = [] // default in case constructor not used (as in tests)
 
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]
@@ -75,7 +75,6 @@ export class CredentialExchangeRecord extends BaseRecord<
 
   public constructor(props: CredentialExchangeRecordProps) {
     super()
-
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
@@ -96,10 +95,8 @@ export class CredentialExchangeRecord extends BaseRecord<
 
   public getTags() {
     const metadata = this.metadata.get(CredentialMetadataKeys.IndyCredential)
-    let ids: string[] = []
-    if (this.credentials) {
-      ids = this.credentials.map((c) => c.credentialRecordId)
-    }
+    const ids = this.credentials.map((c) => c.credentialRecordId)
+
     return {
       ...this._tags,
       threadId: this.threadId,
