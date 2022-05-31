@@ -1,8 +1,8 @@
 import type { VerificationMethod } from './verificationMethod/VerificationMethod'
 
 import { KeyType, Key } from '../../../crypto'
-import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../../crypto/signature-suites/ed25519/constants'
 import { SECURITY_CONTEXT_BBS_URL, SECURITY_X25519_CONTEXT_URL } from '../../vc/constants'
+import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../vc/signature-suites/ed25519/constants'
 
 import { DidDocumentBuilder } from './DidDocumentBuilder'
 import { getBls12381g1VerificationMethod } from './key-type/bls12381g1'

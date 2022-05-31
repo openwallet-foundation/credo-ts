@@ -1,5 +1,5 @@
 import type { Key } from '../../crypto/Key'
-import type { DocumentLoaderResult } from '../../utils'
+import type { DocumentLoaderResult } from './jsonldUtil'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
   CreatePresentationOptions,
@@ -14,48 +14,41 @@ import type { VerifyPresentationResult } from './models/presentation/VerifyPrese
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
-import jsonld, { documentLoaderNode, documentLoaderXhr } from '../../../types/jsonld'
-import vc from '../../../types/vc'
-import { AgentConfig } from '../../agent/AgentConfig'
 import { InjectionSymbols } from '../../constants'
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
-import { deriveProof } from '../../crypto/signature-suites/bbs'
 import { AriesFrameworkError } from '../../error'
-import { Logger } from '../../logger'
-import { JsonTransformer, orArrayToArray, w3cDate } from '../../utils'
+import { JsonTransformer } from '../../utils'
 import { isNodeJS, isReactNative } from '../../utils/environment'
 import { Wallet } from '../../wallet'
 import { DidResolverService, VerificationMethod } from '../dids'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
+import { orArrayToArray, w3cDate } from './jsonldUtil'
+import jsonld, { documentLoaderNode, documentLoaderXhr } from './libraries/jsonld'
+import vc from './libraries/vc'
 import { W3cVerifiableCredential } from './models'
 import { W3cCredentialRecord } from './models/credential/W3cCredentialRecord'
 import { W3cCredentialRepository } from './models/credential/W3cCredentialRepository'
 import { W3cPresentation } from './models/presentation/W3Presentation'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
+import { deriveProof } from './signature-suites/bbs'
 
 @scoped(Lifecycle.ContainerScoped)
 export class W3cCredentialService {
   private wallet: Wallet
   private w3cCredentialRepository: W3cCredentialRepository
   private didResolver: DidResolverService
-  private agentConfig: AgentConfig
-  private logger: Logger
   private suiteRegistry: SignatureSuiteRegistry
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     w3cCredentialRepository: W3cCredentialRepository,
-    didResolver: DidResolverService,
-    agentConfig: AgentConfig,
-    @inject(InjectionSymbols.Logger) logger: Logger
+    didResolver: DidResolverService
   ) {
     this.wallet = wallet
     this.w3cCredentialRepository = w3cCredentialRepository
     this.didResolver = didResolver
-    this.agentConfig = agentConfig
-    this.logger = logger
     this.suiteRegistry = new SignatureSuiteRegistry()
   }
 
