@@ -232,14 +232,12 @@ describe('CredentialService', () => {
       offerOptions = {
         comment: 'some comment',
         connection,
-        connectionId: connection.id,
         credentialFormats: {
           indy: {
             attributes: credentialPreview.attributes,
             credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
           },
         },
-        protocolVersion: CredentialProtocolVersion.V1,
       }
     })
 

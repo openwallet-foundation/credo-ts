@@ -223,7 +223,6 @@ export class V2CredentialService extends CredentialService {
     const options: ServiceOfferCredentialOptions = {
       credentialFormats: proposal.credentialFormats,
       comment: proposal.comment,
-      protocolVersion: credentialRecord.protocolVersion,
     }
     const message = await this.createOfferAsResponse(credentialRecord, options)
 
@@ -341,7 +340,7 @@ export class V2CredentialService extends CredentialService {
   public async createOffer(
     options: ServiceOfferCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V2OfferCredentialMessage>> {
-    const connection = options.connectionId ? await this.connectionService.getById(options.connectionId) : undefined
+    const connection = options.connection
     connection?.assertReady()
 
     const formats = this.getFormats(options.credentialFormats)
@@ -355,7 +354,7 @@ export class V2CredentialService extends CredentialService {
       formats,
       options
     )
-    credentialRecord.connectionId = options.connectionId
+    credentialRecord.connectionId = connection?.id
 
     await this.credentialRepository.save(credentialRecord)
     await this.emitEvent(credentialRecord)
@@ -391,7 +390,6 @@ export class V2CredentialService extends CredentialService {
 
       options = {
         credentialFormats: acceptProposalOptions.credentialFormats,
-        protocolVersion: CredentialProtocolVersion.V2,
         comment: acceptProposalOptions.comment,
       }
     } else {

@@ -9,9 +9,9 @@ import type {
   AcceptRequestOptions,
   NegotiateOfferOptions,
   NegotiateProposalOptions,
-  OfferCredentialOptions,
   RequestCredentialOptions,
 } from './CredentialsModuleOptions'
+import type { FormatServiceAcceptProposeCredentialFormats } from './formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttribute'
 import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
 import type { ProposeCredentialMessageOptions } from './protocol/v1/messages'
@@ -46,9 +46,13 @@ export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
   }
 }
 
-export interface ServiceOfferCredentialOptions extends OfferCredentialOptions {
+export interface ServiceOfferCredentialOptions {
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+  credentialRecordId?: string
   connection?: ConnectionRecord
   attachId?: string
+  credentialFormats: FormatServiceAcceptProposeCredentialFormats
 }
 
 export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {
