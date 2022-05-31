@@ -1,5 +1,5 @@
 import {
-  getIndyDidFromVerficationMethod,
+  getIndyDidFromVerificationMethod,
   isAbbreviatedVerkey,
   isDid,
   isDidIdentifier,
@@ -176,12 +176,12 @@ describe('Utils | Did', () => {
     })
   })
 
-  describe('getIndyDidFromVerficationMethod()', () => {
-    expect(getIndyDidFromVerficationMethod(verificationMethod)).toBe(indyDid)
+  describe('getIndyDidFromVerificationMethod()', () => {
+    expect(getIndyDidFromVerificationMethod(verificationMethod)).toBe(indyDid)
 
     test.each(invalidVerificationMethod)('throw error when invalid public key in verification method', (method) => {
       expect(() => {
-        getIndyDidFromVerficationMethod(method)
+        getIndyDidFromVerificationMethod(method)
       }).toThrow()
     })
   })

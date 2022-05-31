@@ -315,7 +315,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns The created credential offer
    */
   private async createCredentialOffer(
-    proposal: ServiceOfferOptions | NegotiateProposalOptions | OfferCredentialOptions
+    proposal: NegotiateProposalOptions | ServiceOfferCredentialOptions
   ): Promise<CredOffer> {
     if (!proposal.credentialFormats?.indy?.credentialDefinitionId) {
       throw new AriesFrameworkError('Missing Credential Definition id')

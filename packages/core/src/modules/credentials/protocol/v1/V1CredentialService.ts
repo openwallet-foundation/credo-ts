@@ -403,7 +403,6 @@ export class V1CredentialService extends CredentialService {
           attributes: preview.attributes,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V1,
     }
 
     const { attachment: offersAttach } = await this.formatService.createOffer(options)
@@ -679,7 +678,6 @@ export class V1CredentialService extends CredentialService {
           attributes: credentialPreview.attributes,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V1,
     }
 
     const { attachment: offersAttach } = await this.formatService.createOffer(options)
