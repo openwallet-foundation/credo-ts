@@ -9,9 +9,7 @@ import type {
 } from '../../../CredentialsModuleOptions'
 
 import { Key } from '../../../../../../src/crypto/Key'
-import { Attachment, AttachmentData } from '../../../../../../src/decorators/attachment/Attachment'
 import { DidKey } from '../../../../../../src/modules/dids'
-import { LinkedAttachment } from '../../../../../../src/utils/LinkedAttachment'
 import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -75,7 +73,7 @@ describe('credentials', () => {
   const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
-    ; ({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
+    ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD',
       'Alice Agent Credentials LD'
     ))
