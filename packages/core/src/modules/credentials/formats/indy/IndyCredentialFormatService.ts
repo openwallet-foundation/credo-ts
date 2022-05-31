@@ -19,7 +19,6 @@ import type { V1CredentialPreview } from '../../protocol/v1/V1CredentialPreview'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type {
   FormatServiceCredentialAttachmentFormats,
-  CredentialFormatSpec,
   HandlerAutoAcceptOptions,
   FormatServiceOfferAttachmentFormats,
   FormatServiceProposeAttachmentFormats,
@@ -47,6 +46,7 @@ import { CredentialMetadataKeys } from '../../repository/CredentialMetadataTypes
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
 import { CredPropose } from '../models/CredPropose'
+import { CredentialFormatSpec } from '../models/CredentialFormatServiceOptions'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyCredentialFormatService extends CredentialFormatService {
@@ -80,10 +80,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    *
    */
   public async createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats> {
-    const formats: CredentialFormatSpec = {
+    const formats = new CredentialFormatSpec({
       attachId: this.generateId(),
       format: 'hlindy/cred-filter@v2.0',
-    }
+    })
+
     if (!options.credentialFormats.indy?.payload) {
       throw new AriesFrameworkError('Missing payload in createProposal')
     }
@@ -148,10 +149,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    *
    */
   public async createOffer(options: ServiceOfferCredentialOptions): Promise<FormatServiceOfferAttachmentFormats> {
-    const formats: CredentialFormatSpec = {
+    const formats = new CredentialFormatSpec({
       attachId: this.generateId(),
       format: 'hlindy/cred-abstract@v2.0',
-    }
+    })
     const offer = await this.createCredentialOffer(options)
 
     let preview: V2CredentialPreview | undefined
@@ -219,10 +220,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     const { credReq, credReqMetadata } = await this.createIndyCredentialRequest(offer, credDef, holderDid)
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credReqMetadata)
 
-    const formats: CredentialFormatSpec = {
+    const formats = new CredentialFormatSpec({
       attachId: this.generateId(),
       format: 'hlindy/cred-req@v2.0',
-    }
+    })
 
     const attachmentId = options.attachId ?? formats.attachId
     const requestAttach: Attachment = this.getFormatData(credReq, attachmentId)
@@ -386,10 +387,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       credentialValues: CredentialUtils.convertAttributesToValues(credentialAttributes),
     })
 
-    const formats: CredentialFormatSpec = {
+    const formats = new CredentialFormatSpec({
       attachId: this.generateId(),
       format: 'hlindy/cred-abstract@v2.0',
-    }
+    })
 
     const attachmentId = options.attachId ? options.attachId : formats.attachId
     const issueAttachment = this.getFormatData(credential, attachmentId)
