@@ -148,6 +148,8 @@ describe('CredentialService', () => {
 
     test(`creates credential record in ${CredentialState.OfferSent} state with offer, thread ID`, async () => {
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
+
+      // when
       await credentialService.createOffer(offerOptions)
 
       // then
