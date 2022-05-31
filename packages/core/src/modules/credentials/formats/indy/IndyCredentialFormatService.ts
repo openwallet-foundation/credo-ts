@@ -80,10 +80,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    *
    */
   public async createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats> {
-    const formats: CredentialFormatSpec = {
+    const formats = new CredentialFormatSpec({
       attachId: this.generateId(),
       format: 'hlindy/cred-filter@v2.0',
-    }
+    })
 
     if (!options.credentialFormats.indy?.payload) {
       throw new AriesFrameworkError('Missing payload in createProposal')

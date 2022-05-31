@@ -10,7 +10,6 @@ import type {
 import type { ProposeCredentialOptions, RequestCredentialOptions } from '../../CredentialsModuleOptions'
 import type { CredentialExchangeRecord } from '../../repository'
 import type {
-  CredentialFormatSpec,
   FormatServiceCredentialAttachmentFormats,
   FormatServiceOfferAttachmentFormats,
   FormatServiceProposeAttachmentFormats,
@@ -32,6 +31,7 @@ import { CredentialFormatType } from '../../CredentialsModuleOptions'
 import { V2CredentialPreview } from '../../protocol/v2/V2CredentialPreview'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
+import { CredentialFormatSpec } from '../models/CredentialFormatServiceOptions'
 
 @scoped(Lifecycle.ContainerScoped)
 export class JsonLdCredentialFormatService extends CredentialFormatService {
@@ -56,10 +56,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
    *
    */
   public async createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats> {
-    const format: CredentialFormatSpec = {
+    const format = new CredentialFormatSpec({
       attachId: 'ld_proof',
       format: 'aries/ld-proof-vc-detail@v1.0',
-    }
+    })
 
     const attachment: Attachment = this.getFormatData(options.credentialFormats.jsonld, format.attachId)
     return { format, attachment }
@@ -90,10 +90,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
    *
    */
   public async createOffer(options: ServiceAcceptProposalOptions): Promise<FormatServiceOfferAttachmentFormats> {
-    const formats: CredentialFormatSpec = {
+    const formats = new CredentialFormatSpec({
       attachId: uuid(),
       format: 'aries/ld-proof-vc-detail@v1.0',
-    }
+    })
 
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const attachmentId = options.attachId ? options.attachId : formats.attachId
@@ -146,10 +146,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
         `Missing attachment from offer message, credential record id = ${credentialRecord.id}`
       )
     }
-    const formats: CredentialFormatSpec = {
+    const formats = new CredentialFormatSpec({
       attachId: uuid(),
       format: 'aries/ld-proof-vc-detail@v1.0',
-    }
+    })
 
     // W3C message exchange can begin with request or there could be an offer.
     // Use offer attachment as the credential if present
@@ -184,10 +184,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
       )
     }
 
-    const formats: CredentialFormatSpec = {
+    const formats = new CredentialFormatSpec({
       attachId: uuid(),
       format: 'aries/ld-proof-vc@1.0',
-    }
+    })
 
     const attachmentId = options.attachId ? options.attachId : formats.attachId
 
