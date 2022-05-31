@@ -42,29 +42,47 @@ describe('Auto accept present proof', () => {
         protocolVersion: ProofProtocolVersion.V2,
         proofFormats: {
           presentationExchange: {
-            inputDescriptors: [
-              {
-                id: 'citizenship_input',
-                name: 'US Passport',
-                group: ['A'],
-                schema: [
-                  {
-                    uri: 'https://w3id.org/citizenship/v1',
-                  },
-                ],
-                constraints: {
-                  fields: [
-                    {
-                      path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
-                      filter: {
-                        type: 'date',
-                        minimum: '1999-5-16',
+            presentationDefinition: {
+              id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+              input_descriptors: [
+                {
+                  constraints: {
+                    fields: [
+                      {
+                        path: ['$.credentialSubject.familyName'],
+                        purpose: 'The claim must be from one of the specified issuers',
+                        id: '1f44d55f-f161-4938-a659-f8026467f126',
                       },
+                      {
+                        path: ['$.credentialSubject.givenName'],
+                        purpose: 'The claim must be from one of the specified issuers',
+                      },
+                    ],
+                    // limit_disclosure: 'required',
+                    // is_holder: [
+                    //   {
+                    //     directive: 'required',
+                    //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
+                    //   },
+                    // ],
+                  },
+                  schema: [
+                    {
+                      uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+                    },
+                    {
+                      uri: 'https://w3id.org/citizenship#PermanentResident',
+                    },
+                    {
+                      uri: 'https://w3id.org/citizenship/v1',
                     },
                   ],
+                  name: "EU Driver's License",
+                  group: ['A'],
+                  id: 'citizenship_input_1',
                 },
-              },
-            ],
+              ],
+            },
           },
         },
         comment: 'V2 Presentation Exchange propose proof test',
@@ -89,39 +107,6 @@ describe('Auto accept present proof', () => {
     test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
-      const inputDescriptors: InputDescriptors[] = [
-        {
-          id: 'citizenship_input',
-          name: 'US Passport',
-          group: ['A'],
-          schema: [
-            {
-              uri: 'https://w3id.org/citizenship/v1',
-            },
-          ],
-          constraints: {
-            fields: [
-              {
-                path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
-                filter: {
-                  type: 'date',
-                  minimum: '1999-5-16',
-                },
-              },
-            ],
-          },
-        },
-      ]
-
-      const presentationDefinition: PresentationDefinition = new PresentationDefinition({
-        inputDescriptors,
-        format: {
-          ldpVc: {
-            proofType: ['Ed25519Signature2018'],
-          },
-        },
-      })
-
       const requestProofsOptions: RequestProofOptions = {
         protocolVersion: ProofProtocolVersion.V2,
         connectionId: faberConnection.id,
@@ -131,7 +116,47 @@ describe('Auto accept present proof', () => {
               challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
               domain: '',
             },
-            presentationDefinition,
+            presentationDefinition: {
+              id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+              input_descriptors: [
+                {
+                  constraints: {
+                    fields: [
+                      {
+                        path: ['$.credentialSubject.familyName'],
+                        purpose: 'The claim must be from one of the specified issuers',
+                        id: '1f44d55f-f161-4938-a659-f8026467f126',
+                      },
+                      {
+                        path: ['$.credentialSubject.givenName'],
+                        purpose: 'The claim must be from one of the specified issuers',
+                      },
+                    ],
+                    // limit_disclosure: 'required',
+                    // is_holder: [
+                    //   {
+                    //     directive: 'required',
+                    //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
+                    //   },
+                    // ],
+                  },
+                  schema: [
+                    {
+                      uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+                    },
+                    {
+                      uri: 'https://w3id.org/citizenship#PermanentResident',
+                    },
+                    {
+                      uri: 'https://w3id.org/citizenship/v1',
+                    },
+                  ],
+                  name: "EU Driver's License",
+                  group: ['A'],
+                  id: 'citizenship_input_1',
+                },
+              ],
+            },
           },
         },
       }
@@ -177,29 +202,47 @@ describe('Auto accept present proof', () => {
         protocolVersion: ProofProtocolVersion.V2,
         proofFormats: {
           presentationExchange: {
-            inputDescriptors: [
-              {
-                id: 'citizenship_input',
-                name: 'US Passport',
-                group: ['A'],
-                schema: [
-                  {
-                    uri: 'https://w3id.org/citizenship/v1',
-                  },
-                ],
-                constraints: {
-                  fields: [
-                    {
-                      path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
-                      filter: {
-                        type: 'date',
-                        minimum: '1999-5-16',
+            presentationDefinition: {
+              id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+              input_descriptors: [
+                {
+                  constraints: {
+                    fields: [
+                      {
+                        path: ['$.credentialSubject.familyName'],
+                        purpose: 'The claim must be from one of the specified issuers',
+                        id: '1f44d55f-f161-4938-a659-f8026467f126',
                       },
+                      {
+                        path: ['$.credentialSubject.givenName'],
+                        purpose: 'The claim must be from one of the specified issuers',
+                      },
+                    ],
+                    // limit_disclosure: 'required',
+                    // is_holder: [
+                    //   {
+                    //     directive: 'required',
+                    //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
+                    //   },
+                    // ],
+                  },
+                  schema: [
+                    {
+                      uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+                    },
+                    {
+                      uri: 'https://w3id.org/citizenship#PermanentResident',
+                    },
+                    {
+                      uri: 'https://w3id.org/citizenship/v1',
                     },
                   ],
+                  name: "EU Driver's License",
+                  group: ['A'],
+                  id: 'citizenship_input_1',
                 },
-              },
-            ],
+              ],
+            },
           },
         },
         comment: 'V2 Presentation Exchange propose proof test',
@@ -244,39 +287,6 @@ describe('Auto accept present proof', () => {
     test('Faber starts with proof requests to Alice, both with autoacceptproof on `contentApproved`', async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
-      const inputDescriptors: InputDescriptors[] = [
-        {
-          id: 'citizenship_input',
-          name: 'US Passport',
-          group: ['A'],
-          schema: [
-            {
-              uri: 'https://w3id.org/citizenship/v1',
-            },
-          ],
-          constraints: {
-            fields: [
-              {
-                path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
-                filter: {
-                  type: 'date',
-                  minimum: '1999-5-16',
-                },
-              },
-            ],
-          },
-        },
-      ]
-
-      const presentationDefinition: PresentationDefinition = new PresentationDefinition({
-        inputDescriptors,
-        format: {
-          ldpVc: {
-            proofType: ['Ed25519Signature2018'],
-          },
-        },
-      })
-
       const requestProofsOptions: RequestProofOptions = {
         protocolVersion: ProofProtocolVersion.V2,
         connectionId: faberConnection.id,
@@ -286,7 +296,47 @@ describe('Auto accept present proof', () => {
               challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
               domain: '',
             },
-            presentationDefinition,
+            presentationDefinition: {
+              id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+              input_descriptors: [
+                {
+                  constraints: {
+                    fields: [
+                      {
+                        path: ['$.credentialSubject.familyName'],
+                        purpose: 'The claim must be from one of the specified issuers',
+                        id: '1f44d55f-f161-4938-a659-f8026467f126',
+                      },
+                      {
+                        path: ['$.credentialSubject.givenName'],
+                        purpose: 'The claim must be from one of the specified issuers',
+                      },
+                    ],
+                    // limit_disclosure: 'required',
+                    // is_holder: [
+                    //   {
+                    //     directive: 'required',
+                    //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
+                    //   },
+                    // ],
+                  },
+                  schema: [
+                    {
+                      uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+                    },
+                    {
+                      uri: 'https://w3id.org/citizenship#PermanentResident',
+                    },
+                    {
+                      uri: 'https://w3id.org/citizenship/v1',
+                    },
+                  ],
+                  name: "EU Driver's License",
+                  group: ['A'],
+                  id: 'citizenship_input_1',
+                },
+              ],
+            },
           },
         },
       }
