@@ -1596,6 +1596,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "574b2a37-1db1-4af1-a3bf-35c6cb9e1d7a",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -1707,6 +1708,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "5f2b7bc7-edfd-47e7-a1d4-aae050df2c4a",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -1835,6 +1837,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "ad644d8a-48a2-4c55-b46d-7a7f1a9278c7",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -1946,6 +1949,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "c7e0a752-7f1c-41c0-b0ae-a68c2d97ca8c",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -2068,6 +2072,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "574b2a37-1db1-4af1-a3bf-35c6cb9e1d7a",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -2179,6 +2184,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "5f2b7bc7-edfd-47e7-a1d4-aae050df2c4a",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -2307,6 +2313,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "ad644d8a-48a2-4c55-b46d-7a7f1a9278c7",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -2418,6 +2425,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "c7e0a752-7f1c-41c0-b0ae-a68c2d97ca8c",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -2484,6 +2492,446 @@ Object {
       },
       "state": "done",
       "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
+    },
+  },
+}
+`;
+
+exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the mediation record: allMediator 1`] = `
+Object {
+  "0b47db94-c0fa-4476-87cf-a5f664440412": Object {
+    "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
+    "tags": Object {
+      "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "createdAt": "2022-03-21T22:50:17.157Z",
+      "endpoint": "rxjs:alice",
+      "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "routingKeys": Array [
+        "D86mPByntjjYMuoaVwxotLY8RMwyRSkRkUL3XPrpwcDu",
+      ],
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+  },
+  "7f14c1ec-514c-49b2-a00b-04af7e600060": Object {
+    "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
+    "tags": Object {
+      "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "createdAt": "2022-03-21T22:50:17.126Z",
+      "endpoint": "rxjs:alice",
+      "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "routingKeys": Array [
+        "D86mPByntjjYMuoaVwxotLY8RMwyRSkRkUL3XPrpwcDu",
+      ],
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+  },
+  "802ef124-36b7-490f-b152-e9d090ddf073": Object {
+    "id": "802ef124-36b7-490f-b152-e9d090ddf073",
+    "tags": Object {
+      "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "createdAt": "2022-03-21T22:50:17.161Z",
+      "id": "802ef124-36b7-490f-b152-e9d090ddf073",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "routingKeys": Array [],
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+  },
+  "STORAGE_VERSION_RECORD_ID": Object {
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "tags": Object {},
+    "type": "StorageVersionRecord",
+    "value": Object {
+      "createdAt": "2022-01-21T22:50:20.522Z",
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "metadata": Object {},
+      "storageVersion": "0.2",
+    },
+  },
+  "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd": Object {
+    "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
+    "tags": Object {
+      "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "createdAt": "2022-03-21T22:50:17.132Z",
+      "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "routingKeys": Array [],
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+  },
+}
+`;
+
+exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the mediation record: allRecipient 1`] = `
+Object {
+  "0b47db94-c0fa-4476-87cf-a5f664440412": Object {
+    "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
+    "tags": Object {
+      "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "createdAt": "2022-03-21T22:50:17.157Z",
+      "endpoint": "rxjs:alice",
+      "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "routingKeys": Array [
+        "D86mPByntjjYMuoaVwxotLY8RMwyRSkRkUL3XPrpwcDu",
+      ],
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+  },
+  "7f14c1ec-514c-49b2-a00b-04af7e600060": Object {
+    "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
+    "tags": Object {
+      "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "createdAt": "2022-03-21T22:50:17.126Z",
+      "endpoint": "rxjs:alice",
+      "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "routingKeys": Array [
+        "D86mPByntjjYMuoaVwxotLY8RMwyRSkRkUL3XPrpwcDu",
+      ],
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+  },
+  "802ef124-36b7-490f-b152-e9d090ddf073": Object {
+    "id": "802ef124-36b7-490f-b152-e9d090ddf073",
+    "tags": Object {
+      "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "createdAt": "2022-03-21T22:50:17.161Z",
+      "id": "802ef124-36b7-490f-b152-e9d090ddf073",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "routingKeys": Array [],
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+  },
+  "STORAGE_VERSION_RECORD_ID": Object {
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "tags": Object {},
+    "type": "StorageVersionRecord",
+    "value": Object {
+      "createdAt": "2022-01-21T22:50:20.522Z",
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "metadata": Object {},
+      "storageVersion": "0.2",
+    },
+  },
+  "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd": Object {
+    "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
+    "tags": Object {
+      "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "createdAt": "2022-03-21T22:50:17.132Z",
+      "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "routingKeys": Array [],
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+  },
+}
+`;
+
+exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the mediation record: doNotChange 1`] = `
+Object {
+  "0b47db94-c0fa-4476-87cf-a5f664440412": Object {
+    "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
+    "tags": Object {
+      "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "createdAt": "2022-03-21T22:50:17.157Z",
+      "endpoint": "rxjs:alice",
+      "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "routingKeys": Array [
+        "D86mPByntjjYMuoaVwxotLY8RMwyRSkRkUL3XPrpwcDu",
+      ],
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+  },
+  "7f14c1ec-514c-49b2-a00b-04af7e600060": Object {
+    "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
+    "tags": Object {
+      "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "createdAt": "2022-03-21T22:50:17.126Z",
+      "endpoint": "rxjs:alice",
+      "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "routingKeys": Array [
+        "D86mPByntjjYMuoaVwxotLY8RMwyRSkRkUL3XPrpwcDu",
+      ],
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+  },
+  "802ef124-36b7-490f-b152-e9d090ddf073": Object {
+    "id": "802ef124-36b7-490f-b152-e9d090ddf073",
+    "tags": Object {
+      "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "createdAt": "2022-03-21T22:50:17.161Z",
+      "id": "802ef124-36b7-490f-b152-e9d090ddf073",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "routingKeys": Array [],
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+  },
+  "STORAGE_VERSION_RECORD_ID": Object {
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "tags": Object {},
+    "type": "StorageVersionRecord",
+    "value": Object {
+      "createdAt": "2022-01-21T22:50:20.522Z",
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "metadata": Object {},
+      "storageVersion": "0.2",
+    },
+  },
+  "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd": Object {
+    "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
+    "tags": Object {
+      "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "createdAt": "2022-03-21T22:50:17.132Z",
+      "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "routingKeys": Array [],
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+  },
+}
+`;
+
+exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the mediation record: recipientIfEndpoint 1`] = `
+Object {
+  "0b47db94-c0fa-4476-87cf-a5f664440412": Object {
+    "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
+    "tags": Object {
+      "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "createdAt": "2022-03-21T22:50:17.157Z",
+      "endpoint": "rxjs:alice",
+      "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "routingKeys": Array [
+        "D86mPByntjjYMuoaVwxotLY8RMwyRSkRkUL3XPrpwcDu",
+      ],
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+  },
+  "7f14c1ec-514c-49b2-a00b-04af7e600060": Object {
+    "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
+    "tags": Object {
+      "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "createdAt": "2022-03-21T22:50:17.126Z",
+      "endpoint": "rxjs:alice",
+      "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "RECIPIENT",
+      "routingKeys": Array [
+        "D86mPByntjjYMuoaVwxotLY8RMwyRSkRkUL3XPrpwcDu",
+      ],
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+  },
+  "802ef124-36b7-490f-b152-e9d090ddf073": Object {
+    "id": "802ef124-36b7-490f-b152-e9d090ddf073",
+    "tags": Object {
+      "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "createdAt": "2022-03-21T22:50:17.161Z",
+      "id": "802ef124-36b7-490f-b152-e9d090ddf073",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "routingKeys": Array [],
+      "state": "granted",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+    },
+  },
+  "STORAGE_VERSION_RECORD_ID": Object {
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "tags": Object {},
+    "type": "StorageVersionRecord",
+    "value": Object {
+      "createdAt": "2022-01-21T22:50:20.522Z",
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "metadata": Object {},
+      "storageVersion": "0.2",
+    },
+  },
+  "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd": Object {
+    "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
+    "tags": Object {
+      "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+    },
+    "type": "MediationRecord",
+    "value": Object {
+      "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "createdAt": "2022-03-21T22:50:17.132Z",
+      "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
+      "metadata": Object {},
+      "recipientKeys": Array [],
+      "role": "MEDIATOR",
+      "routingKeys": Array [],
+      "state": "granted",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
     },
   },
 }
