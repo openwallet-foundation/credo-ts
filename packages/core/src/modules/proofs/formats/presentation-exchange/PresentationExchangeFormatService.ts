@@ -17,7 +17,7 @@ import type {
   ProcessProposalOptions,
   ProcessRequestOptions,
 } from '../models/ProofFormatServiceOptions'
-import type { SchemaOptions, InputDescriptorsSchema } from './models'
+import type { InputDescriptorsSchema } from './models'
 import type { RequestPresentationOptions } from './models/RequestPresentation'
 import type {
   ICredentialSubject,
@@ -32,6 +32,7 @@ import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 import { KeyEncoding, ProofPurpose, ProofType, Status, PEXv1 } from '@sphereon/pex'
 import { Lifecycle, scoped } from 'tsyringe'
 
+import jsonld from '../../../../../types/jsonld'
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
@@ -219,10 +220,10 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const requestMessage = options.formatAttachments
 
-    const presentationDefinition = requestMessage.attachment.getDataAsJson<PresentationDefinitionV1>()
+    const requestPresentation = requestMessage.attachment.getDataAsJson<RequestPresentationOptions>()
 
     const pex: PEXv1 = new PEXv1()
-    const result: Validated = pex.validateDefinition(presentationDefinition)
+    const result: Validated = pex.validateDefinition(requestPresentation.presentationDefinition)
 
     if (Array.isArray(result) && result[0].status !== Status.INFO) {
       throw new AriesFrameworkError(
@@ -336,7 +337,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       },
     }
 
-    const verifiablePresentation = pex.verifiablePresentationFrom(
+    const verifiablePresentation = await pex.verifiablePresentationFromAsync(
       requestPresentation.presentationDefinition,
       [options.formats.presentationExchange], // TBD required an IVerifiableCredential[] but AutoSelectCredential returns single credential
       this.signedProofCallBack.bind(this),
@@ -362,6 +363,8 @@ export class PresentationExchangeFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
+    // console.log('options:\n', JSON.stringify(options, null, 2))
+
     if (!options.formatAttachments) {
       throw Error('Presentation  missing while processing presentation in presentation exchange service.')
     }
@@ -381,10 +384,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     // const pex: PEXv1 = new PEXv1()
     // pex.evaluatePresentation(presentationDefinition, verifiablePresentation)
     const proofPresentationRequestJson = proofFormat?.attachment.getDataAsJson<Attachment>() ?? null
-    // console.log(
-    //   'proofPresentationRequestJson in process Presentation:==========\n',
-    //   JSON.stringify(proofPresentationRequestJson, null, 2)
-    // )
 
     const w3cVerifiablePresentation = JsonTransformer.fromJSON(proofPresentationRequestJson, W3cVerifiablePresentation)
 
@@ -409,6 +408,10 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const presentationDefinition = requestMessageJson.presentationDefinition
 
+    const expandedTypes = await jsonld.expand(JsonTransformer.toJSON(presentationDefinition), {
+      documentLoader: this.w3cCredentialService.documentLoader,
+    })
+
     let uriList: string[] = []
     for (const inputDescriptor of presentationDefinition.input_descriptors) {
       uriList = [...uriList, ...inputDescriptor.schema.map((s) => s.uri)]
@@ -419,7 +422,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     })
 
     const credentialsByExpandedType = await this.w3cCredentialService.findCredentialsByQuery({
-      expandedTypes: uriList,
+      expandedTypes: expandedTypes,
     })
 
     const credentials = [...credentialsByContext, ...credentialsByExpandedType]
@@ -512,30 +515,9 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     return supportedFormats.includes(formatIdentifier)
   }
 
-  private async retrieveUriListFromSchemaFilter(schemaUriGroups: SchemaOptions[][]): Promise<string[]> {
-    // Retrieve list of schema uri from uri_group.
-    const groupSchemaUriList = []
-
-    for (const schemaGroup of schemaUriGroups) {
-      const uriList = []
-      for (const schema in schemaGroup) {
-        uriList.push(schema)
-      }
-      if (uriList.length > 0) {
-        groupSchemaUriList.push(uriList)
-      }
-    }
-    return ['']
-  }
-
   private signedProofCallBack(callBackParams: PresentationSignCallBackParams): IVerifiablePresentation {
-    // console.log('callBackParams:\n', JSON.stringify(callBackParams, null, 2))
-
-    // Prereq is properly filled out `proofOptions` and `signatureOptions`, together with a `proofValue` or `jws` value.
-    // And thus a generated signature
     const { presentation, proof, options } = callBackParams // The created partial proof and presentation, as well as original supplied options
-    const { signatureOptions, proofOptions } = options // extract the orignially supploed signature and proof Options
-    const privateKeyBase58 = signatureOptions?.privateKey // Please check keyEncoding from signatureOptions first!
+    const { signatureOptions, proofOptions } = options // extract the originally supplied signature and proof Options
 
     if (!proofOptions?.type) {
       throw new AriesFrameworkError('Missing proof type in proof options for signing the presentation.')
@@ -549,16 +531,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       throw new AriesFrameworkError('Missing challenge in proof options for signing the presentation.')
     }
 
-    /**
-     * IProof looks like this:
-     * {
-     *    type: 'Ed25519Signature2018',
-     *    created: '2021-12-01T20:10:45.000Z',
-     *    proofPurpose: 'assertionMethod',
-     *    verificationMethod: 'did:example:"1234......#key',
-     *    .....
-     * }
-     */
     const w3Presentation = presentation as unknown as W3cPresentation
 
     const signPresentationOptions: SignPresentationOptions = {
@@ -568,26 +540,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       verificationMethod: signatureOptions?.verificationMethod,
       challenge: proofOptions.challenge,
     }
-    // const promise= new Promise()
-    // Just an example. Obviously your lib will have a different method signature
-    // const vp = (await this.w3cCredentialService.signPresentation(
-    //   signPresentationOptions
-    // )) as unknown as IVerifiablePresentation
-    // console.log('vp:\n', vp)
 
-    const vp: IVerifiablePresentation = this.returnSign(signPresentationOptions) as unknown as IVerifiablePresentation
-    return vp
-  }
-
-  public async returnSign(param: SignPresentationOptions): Promise<W3cVerifiablePresentation> {
-    try {
-      // return new Promise(async (resolve, reject) => {
-      return await this.w3cCredentialService.signPresentation(param)
-      //   resolve(response)
-      // })
-    } catch (error) {
-      console.error('Error in promise method')
-      throw error
-    }
+    return this.w3cCredentialService.signPresentation(signPresentationOptions) as unknown as IVerifiablePresentation
   }
 }
