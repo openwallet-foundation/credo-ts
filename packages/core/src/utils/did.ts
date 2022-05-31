@@ -153,7 +153,7 @@ export function isDidIdentifier(identifier: string): boolean {
  * @param verificationMethod
  * @returns indy did
  */
-export function getIndyDidFromVerficationMethod(verificationMethod: VerificationMethod): string {
+export function getIndyDidFromVerificationMethod(verificationMethod: VerificationMethod): string {
   if (!verificationMethod?.publicKeyBase58) {
     throw new Error(`Unable to get publicKeyBase58 from verification method`)
   }
