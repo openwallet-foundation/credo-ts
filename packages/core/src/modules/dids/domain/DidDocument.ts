@@ -18,6 +18,8 @@ type DidPurpose =
   | 'capabilityInvocation'
   | 'capabilityDelegation'
 
+type DidVerificationMethods = DidPurpose | 'verificationMethod'
+
 interface DidDocumentOptions {
   context?: string | string[]
   id: string
@@ -212,4 +214,39 @@ export function keyReferenceToKey(didDocument: DidDocument, keyId: string) {
   const key = getKeyFromVerificationMethod(verificationMethod)
 
   return key
+}
+
+/**
+ * Extracting the verification method for signature type
+ * @param type Signature type
+ * @param didDocument DidDocument
+ * @returns verification method
+ */
+export async function findVerificationMethodByKeyType(
+  keyType: string,
+  didDocument: DidDocument
+): Promise<VerificationMethod | null> {
+  const didVerificationMethods: DidVerificationMethods[] = [
+    'verificationMethod',
+    'authentication',
+    'keyAgreement',
+    'assertionMethod',
+    'capabilityInvocation',
+    'capabilityDelegation',
+  ]
+
+  for await (const purpose of didVerificationMethods) {
+    const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
+    if (key instanceof Array) {
+      for await (const method of key) {
+        if (typeof method !== 'string') {
+          if (method.type === keyType) {
+            return method
+          }
+        }
+      }
+    }
+  }
+
+  return null
 }

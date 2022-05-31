@@ -7,11 +7,14 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Logger } from '../../../logger'
 import type { DidCommMessageRepository } from '../../../storage'
 import type { MediationRecipientService } from '../../routing'
+import type { CredentialFormatService } from '../formats/CredentialFormatService'
+import type { DidResolverService } from './../../dids/services/DidResolverService'
 import type { CredentialStateChangedEvent } from './../CredentialEvents'
 import type { CredentialProtocolVersion } from './../CredentialProtocolVersion'
 import type {
   CredentialProtocolMsgReturnType,
   DeleteCredentialOptions,
+  ServiceOfferCredentialOptions,
   ServiceRequestCredentialOptions,
 } from './../CredentialServiceOptions'
 import type {
@@ -20,10 +23,8 @@ import type {
   CredentialFormatType,
   NegotiateOfferOptions,
   NegotiateProposalOptions,
-  OfferCredentialOptions,
   ProposeCredentialOptions,
 } from './../CredentialsModuleOptions'
-import type { CredentialFormatService } from './../formats/CredentialFormatService'
 import type { CredentialFormats, HandlerAutoAcceptOptions } from './../formats/models/CredentialFormatServiceOptions'
 import type {
   V1CredentialProblemReportMessage,
@@ -52,6 +53,7 @@ export abstract class CredentialService {
   protected didCommMessageRepository: DidCommMessageRepository
   protected logger: Logger
   protected revocationService: RevocationService
+  protected didResolver: DidResolverService
 
   public constructor(
     credentialRepository: CredentialRepository,
@@ -60,7 +62,8 @@ export abstract class CredentialService {
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
-    revocationService: RevocationService
+    revocationService: RevocationService,
+    didResolver: DidResolverService
   ) {
     this.credentialRepository = credentialRepository
     this.eventEmitter = eventEmitter
@@ -70,6 +73,7 @@ export abstract class CredentialService {
     this.didCommMessageRepository = didCommMessageRepository
     this.logger = this.agentConfig.logger
     this.revocationService = revocationService
+    this.didResolver = didResolver
 
     this.registerHandlers()
   }
@@ -91,16 +95,13 @@ export abstract class CredentialService {
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for offer
-  abstract createOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract createOffer(options: ServiceOfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
-
-  abstract createOutOfBandOffer(options: OfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for request
   abstract createRequest(
     credentialRecord: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions,
-    holderDid: string
+    options: ServiceRequestCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
@@ -169,6 +170,7 @@ export abstract class CredentialService {
     await this.update(credentialRecord)
     return credentialRecord
   }
+
   abstract shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): Promise<boolean>
 
   abstract shouldAutoRespondToOffer(
@@ -250,7 +252,9 @@ export abstract class CredentialService {
   public async delete(credentialRecord: CredentialExchangeRecord, options?: DeleteCredentialOptions): Promise<void> {
     await this.credentialRepository.delete(credentialRecord)
 
-    if (options?.deleteAssociatedCredentials) {
+    const deleteAssociatedCredentials = options?.deleteAssociatedCredentials ?? true
+
+    if (deleteAssociatedCredentials) {
       for (const credential of credentialRecord.credentials) {
         const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
         await formatService.deleteCredentialById(credential.credentialRecordId)

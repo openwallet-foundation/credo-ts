@@ -4,10 +4,10 @@ import type { ParsedDid, DidResolutionResult } from '../../types'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../../../crypto/signature-suites/ed25519/constants'
 import { TypedArrayEncoder } from '../../../../utils/TypedArrayEncoder'
 import { getFullVerkey } from '../../../../utils/did'
 import { SECURITY_X25519_CONTEXT_URL } from '../../../vc/constants'
+import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../../vc/signature-suites/ed25519/constants'
 import { DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { DidCommV1Service } from '../../domain/service/DidCommV1Service'

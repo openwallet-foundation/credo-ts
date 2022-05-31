@@ -75,7 +75,7 @@ describe('credentials', () => {
   const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
-    ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
+    ; ({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD',
       'Alice Agent Credentials LD'
     ))
@@ -136,7 +136,6 @@ describe('credentials', () => {
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
-      protocolVersion: CredentialProtocolVersion.V2,
     }
     testLogger.test('Faber sends credential offer to Alice')
     await faberAgent.credentials.acceptProposal(options)
@@ -292,6 +291,8 @@ describe('credentials', () => {
     const credentialPreview = V2CredentialPreview.fromRecord({
       name: 'John',
       age: '99',
+      'x-ray': 'some x-ray',
+      profile_picture: 'profile picture',
     })
     const testAttributes = {
       attributes: credentialPreview.attributes,
@@ -301,22 +302,6 @@ describe('credentials', () => {
       schemaId: '1560364003',
       issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
       credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
-      linkedAttachments: [
-        new LinkedAttachment({
-          name: 'profile_picture',
-          attachment: new Attachment({
-            mimeType: 'image/png',
-            data: new AttachmentData({ base64: 'base64encodedpic' }),
-          }),
-        }),
-        new LinkedAttachment({
-          name: 'x-ray',
-          attachment: new Attachment({
-            mimeType: 'image/png',
-            data: new AttachmentData({ base64: 'base64encodedpic' }),
-          }),
-        }),
-      ],
       payload: {
         schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
         schemaName: 'ahoy',
@@ -362,7 +347,6 @@ describe('credentials', () => {
         },
         jsonld: signCredentialOptions,
       },
-      protocolVersion: CredentialProtocolVersion.V2,
     }
     testLogger.test('Faber sends credential offer to Alice')
     await faberAgent.credentials.acceptProposal(options)

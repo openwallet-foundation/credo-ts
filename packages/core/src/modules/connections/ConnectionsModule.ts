@@ -73,7 +73,6 @@ export class ConnectionsModule {
       label?: string
       alias?: string
       imageUrl?: string
-      mediatorId?: string
       protocol: HandshakeProtocol
       routing?: Routing
     }
@@ -81,7 +80,7 @@ export class ConnectionsModule {
     const { protocol, label, alias, imageUrl, autoAcceptConnection } = config
 
     const routing =
-      config.routing || (await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId }))
+      config.routing || (await this.mediationRecipientService.getRouting({ mediatorId: outOfBandRecord.mediatorId }))
 
     let result
     if (protocol === HandshakeProtocol.DidExchange) {

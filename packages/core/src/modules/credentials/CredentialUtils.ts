@@ -11,7 +11,7 @@ import { encodeAttachment } from '../../utils/attachment'
 import { Buffer } from '../../utils/buffer'
 import { isBoolean, isNumber, isString } from '../../utils/type'
 
-import { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
+import { CredentialPreviewAttribute } from './models/CredentialPreviewAttribute'
 
 export class CredentialUtils {
   /**

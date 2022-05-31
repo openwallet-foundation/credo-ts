@@ -190,9 +190,7 @@ export class MessageSender {
     }
     if (!session) {
       // Try to send to already open session
-      session =
-        this.transportService.findSessionByConnectionId(connection.id) ||
-        (outOfBand && this.transportService.findSessionByOutOfBandId(outOfBand.id))
+      session = this.transportService.findSessionByConnectionId(connection.id)
     }
 
     if (session?.inboundMessage?.hasReturnRouting(payload.threadId)) {
@@ -213,7 +211,14 @@ export class MessageSender {
       outOfBand
     )
 
-    const ourDidDocument = await this.resolveDidDocument(connection.did)
+    if (!connection.did) {
+      this.logger.error(`Unable to send message using connection '${connection.id}' that doesn't have a did`)
+      throw new AriesFrameworkError(
+        `Unable to send message using connection '${connection.id}' that doesn't have a did`
+      )
+    }
+
+    const ourDidDocument = await this.didResolverService.resolveDidDocument(connection.did)
     const ourAuthenticationKeys = getAuthenticationKeys(ourDidDocument)
 
     // TODO We're selecting just the first authentication key. Is it ok?
@@ -340,7 +345,7 @@ export class MessageSender {
 
   private async retrieveServicesFromDid(did: string) {
     this.logger.debug(`Resolving services for did ${did}.`)
-    const didDocument = await this.resolveDidDocument(did)
+    const didDocument = await this.didResolverService.resolveDidDocument(did)
 
     const didCommServices: ResolvedDidCommService[] = []
 
@@ -359,7 +364,7 @@ export class MessageSender {
         // Resolve dids to DIDDocs to retrieve routingKeys
         const routingKeys = []
         for (const routingKey of didCommService.routingKeys ?? []) {
-          const routingDidDocument = await this.resolveDidDocument(routingKey)
+          const routingDidDocument = await this.didResolverService.resolveDidDocument(routingKey)
           routingKeys.push(keyReferenceToKey(routingDidDocument, routingKey))
         }
 
@@ -442,18 +447,6 @@ export class MessageSender {
       { hasQueueService: queueService !== undefined }
     )
     return { services, queueService }
-  }
-
-  private async resolveDidDocument(did: string) {
-    const {
-      didDocument,
-      didResolutionMetadata: { error, message },
-    } = await this.didResolverService.resolve(did)
-
-    if (!didDocument) {
-      throw new AriesFrameworkError(`Unable to resolve did document for did '${did}': ${error} ${message}`)
-    }
-    return didDocument
   }
 }
 

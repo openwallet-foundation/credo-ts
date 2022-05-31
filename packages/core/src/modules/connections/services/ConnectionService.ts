@@ -2,12 +2,11 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
-import type { DidDocument } from '../../dids'
 import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
-import type { CustomConnectionTags } from '../repository/ConnectionRecord'
+import type { ConnectionRecordProps } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
@@ -21,12 +20,14 @@ import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
+import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
 import { Wallet } from '../../../wallet/Wallet'
-import { IndyAgentService } from '../../dids'
+import { DidKey, IndyAgentService } from '../../dids'
 import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
 import { didKeyToVerkey } from '../../dids/helpers'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRepository, DidRecord } from '../../dids/repository'
+import { DidRecordMetadataKeys } from '../../dids/repository/didRecordMetadataTypes'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionEventTypes } from '../ConnectionEvents'
@@ -38,8 +39,9 @@ import {
   Connection,
   DidDoc,
   Ed25119Sig2018,
-  EmbeddedAuthentication,
   HandshakeProtocol,
+  ReferencedAuthentication,
+  authenticationTypes,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
@@ -97,12 +99,17 @@ export class ConnectionService {
 
     const { outOfBandInvitation } = outOfBandRecord
 
-    const { did, mediatorId } = config.routing
+    const { mediatorId } = config.routing
     const didDoc = this.createDidDoc(config.routing)
 
     // TODO: We should store only one did that we'll use to send the request message with success.
     // We take just the first one for now.
     const [invitationDid] = outOfBandInvitation.invitationDids
+
+    const { did: peerDid } = await this.createDid({
+      role: DidDocumentRole.Created,
+      didDoc,
+    })
 
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
@@ -110,24 +117,18 @@ export class ConnectionService {
       state: DidExchangeState.InvitationReceived,
       theirLabel: outOfBandInvitation.label,
       alias: config?.alias,
-      did,
+      did: peerDid,
       mediatorId,
       autoAcceptConnection: config?.autoAcceptConnection,
-      multiUseInvitation: false,
       outOfBandId: outOfBandRecord.id,
       invitationDid,
-    })
-
-    const { did: peerDid } = await this.createDid({
-      role: DidDocumentRole.Created,
-      didDocument: convertToNewDidDocument(didDoc),
     })
 
     const { label, imageUrl, autoAcceptConnection } = config
 
     const connectionRequest = new ConnectionRequestMessage({
       label: label ?? this.config.label,
-      did: connectionRecord.did,
+      did: didDoc.id,
       didDoc,
       imageUrl: imageUrl ?? this.config.connectionImageUrl,
     })
@@ -136,7 +137,6 @@ export class ConnectionService {
       connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
     }
 
-    connectionRecord.did = peerDid
     connectionRecord.threadId = connectionRequest.id
     await this.updateState(connectionRecord, DidExchangeState.RequestSent)
 
@@ -148,19 +148,13 @@ export class ConnectionService {
 
   public async processRequest(
     messageContext: InboundMessageContext<ConnectionRequestMessage>,
-    outOfBandRecord: OutOfBandRecord,
-    routing?: Routing
+    outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} start`, messageContext)
     outOfBandRecord.assertRole(OutOfBandRole.Sender)
     outOfBandRecord.assertState(OutOfBandState.AwaitResponse)
 
     // TODO check there is no connection record for particular oob record
-
-    const { did, mediatorId } = routing ? routing : outOfBandRecord
-    if (!did) {
-      throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
-    }
 
     const { message } = messageContext
     if (!message.connection.didDoc) {
@@ -169,26 +163,23 @@ export class ConnectionService {
       })
     }
 
+    const { did: peerDid } = await this.createDid({
+      role: DidDocumentRole.Received,
+      didDoc: message.connection.didDoc,
+    })
+
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
       role: DidExchangeRole.Responder,
       state: DidExchangeState.RequestReceived,
-      multiUseInvitation: false,
-      did,
-      mediatorId,
+      theirLabel: message.label,
+      imageUrl: message.imageUrl,
+      outOfBandId: outOfBandRecord.id,
+      theirDid: peerDid,
+      threadId: message.threadId,
+      mediatorId: outOfBandRecord.mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
     })
-
-    const { did: peerDid } = await this.createDid({
-      role: DidDocumentRole.Received,
-      didDocument: convertToNewDidDocument(message.connection.didDoc),
-    })
-
-    connectionRecord.theirDid = peerDid
-    connectionRecord.theirLabel = message.label
-    connectionRecord.threadId = message.id
-    connectionRecord.imageUrl = message.imageUrl
-    connectionRecord.outOfBandId = outOfBandRecord.id
 
     await this.connectionRepository.update(connectionRecord)
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
@@ -218,16 +209,9 @@ export class ConnectionService {
     connectionRecord.assertState(DidExchangeState.RequestReceived)
     connectionRecord.assertRole(DidExchangeRole.Responder)
 
-    const { did } = routing ? routing : outOfBandRecord
-    if (!did) {
-      throw new AriesFrameworkError('Out-of-band record does not have did attribute.')
-    }
-
     const didDoc = routing
       ? this.createDidDoc(routing)
-      : this.createDidDocFromServices(
-          did,
-          Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58,
+      : this.createDidDocFromOutOfBandDidCommServices(
           outOfBandRecord.outOfBandInvitation.services.filter(
             (s): s is OutOfBandDidCommService => typeof s !== 'string'
           )
@@ -235,11 +219,11 @@ export class ConnectionService {
 
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Created,
-      didDocument: convertToNewDidDocument(didDoc),
+      didDoc,
     })
 
     const connection = new Connection({
-      did,
+      did: didDoc.id,
       didDoc,
     })
 
@@ -302,7 +286,7 @@ export class ConnectionService {
     } catch (error) {
       if (error instanceof AriesFrameworkError) {
         throw new ConnectionProblemReportError(error.message, {
-          problemCode: ConnectionProblemReportReason.RequestProcessingError,
+          problemCode: ConnectionProblemReportReason.ResponseProcessingError,
         })
       }
       throw error
@@ -334,7 +318,7 @@ export class ConnectionService {
 
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Received,
-      didDocument: convertToNewDidDocument(connection.didDoc),
+      didDoc: connection.didDoc,
     })
 
     connectionRecord.theirDid = peerDid
@@ -612,41 +596,16 @@ export class ConnectionService {
     return this.connectionRepository.findByQuery({ invitationDid })
   }
 
-  public async createConnection(options: {
-    role: DidExchangeRole
-    state: DidExchangeState
-    alias?: string
-    did: string
-    mediatorId?: string
-    theirLabel?: string
-    autoAcceptConnection?: boolean
-    multiUseInvitation: boolean
-    tags?: CustomConnectionTags
-    imageUrl?: string
-    protocol?: HandshakeProtocol
-    outOfBandId?: string
-    invitationDid?: string
-  }): Promise<ConnectionRecord> {
-    const connectionRecord = new ConnectionRecord({
-      did: options.did,
-      state: options.state,
-      role: options.role,
-      tags: options.tags,
-      alias: options.alias,
-      theirLabel: options.theirLabel,
-      autoAcceptConnection: options.autoAcceptConnection,
-      imageUrl: options.imageUrl,
-      multiUseInvitation: options.multiUseInvitation,
-      mediatorId: options.mediatorId,
-      protocol: options.protocol,
-      outOfBandId: options.outOfBandId,
-      invitationDid: options.invitationDid,
-    })
+  public async createConnection(options: ConnectionRecordProps): Promise<ConnectionRecord> {
+    const connectionRecord = new ConnectionRecord(options)
     await this.connectionRepository.save(connectionRecord)
     return connectionRecord
   }
 
-  private async createDid({ role, didDocument }: { role: DidDocumentRole; didDocument: DidDocument }) {
+  private async createDid({ role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {
+    // Convert the legacy did doc to a new did document
+    const didDocument = convertToNewDidDocument(didDoc)
+
     const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
     didDocument.id = peerDid
     const didRecord = new DidRecord({
@@ -658,6 +617,13 @@ export class ConnectionService {
         // of a key when we receive a message from another connection.
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
       },
+    })
+
+    // Store the unqualified did with the legacy did document in the metadata
+    // Can be removed at a later stage if we know for sure we don't need it anymore
+    didRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {
+      unqualifiedDid: didDoc.id,
+      didDocumentString: JsonTransformer.serialize(didDoc),
     })
 
     this.logger.debug('Saving DID record', {
@@ -673,49 +639,50 @@ export class ConnectionService {
   }
 
   private createDidDoc(routing: Routing) {
-    const { endpoints, did, verkey, routingKeys } = routing
+    const indyDid = indyDidFromPublicKeyBase58(routing.recipientKey.publicKeyBase58)
 
     const publicKey = new Ed25119Sig2018({
-      id: `${did}#1`,
-      controller: did,
-      publicKeyBase58: verkey,
+      id: `${indyDid}#1`,
+      controller: indyDid,
+      publicKeyBase58: routing.recipientKey.publicKeyBase58,
     })
 
-    // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
-    // inferred from the publicKey class instance
-    const auth = new EmbeddedAuthentication(publicKey)
+    const auth = new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)
 
     // IndyAgentService is old service type
-    const services = endpoints.map(
+    const services = routing.endpoints.map(
       (endpoint, index) =>
         new IndyAgentService({
-          id: `${did}#IndyAgentService`,
+          id: `${indyDid}#IndyAgentService`,
           serviceEndpoint: endpoint,
-          recipientKeys: [verkey],
-          routingKeys: routingKeys,
+          recipientKeys: [routing.recipientKey.publicKeyBase58],
+          routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
           // Order of endpoint determines priority
           priority: index,
         })
     )
 
     return new DidDoc({
-      id: did,
+      id: indyDid,
       authentication: [auth],
       service: services,
       publicKey: [publicKey],
     })
   }
 
-  private createDidDocFromServices(did: string, recipientKey: string, services: OutOfBandDidCommService[]) {
+  private createDidDocFromOutOfBandDidCommServices(services: OutOfBandDidCommService[]) {
+    const [recipientDidKey] = services[0].recipientKeys
+
+    const recipientKey = DidKey.fromDid(recipientDidKey).key
+    const did = indyDidFromPublicKeyBase58(recipientKey.publicKeyBase58)
+
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
       controller: did,
-      publicKeyBase58: recipientKey,
+      publicKeyBase58: recipientKey.publicKeyBase58,
     })
 
-    // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
-    // inferred from the publicKey class instance
-    const auth = new EmbeddedAuthentication(publicKey)
+    const auth = new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)
 
     // IndyAgentService is old service type
     const service = services.map(
@@ -723,7 +690,7 @@ export class ConnectionService {
         new IndyAgentService({
           id: `${did}#IndyAgentService`,
           serviceEndpoint: service.serviceEndpoint,
-          recipientKeys: [recipientKey],
+          recipientKeys: [recipientKey.publicKeyBase58],
           routingKeys: service.routingKeys?.map(didKeyToVerkey),
           priority: index,
         })
@@ -766,9 +733,8 @@ export class ConnectionService {
 
 export interface Routing {
   endpoints: string[]
-  verkey: string
-  did: string
-  routingKeys: string[]
+  recipientKey: Key
+  routingKeys: Key[]
   mediatorId?: string
 }
 

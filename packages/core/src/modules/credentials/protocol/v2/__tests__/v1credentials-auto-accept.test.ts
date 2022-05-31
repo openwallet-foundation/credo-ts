@@ -213,7 +213,6 @@ describe('credentials', () => {
             attributes: credentialPreview.attributes,
           },
         },
-        protocolVersion: CredentialProtocolVersion.V1,
       }
       testLogger.test('Faber sends credential offer to Alice')
       options.credentialRecordId = faberCredentialExchangeRecord.id
