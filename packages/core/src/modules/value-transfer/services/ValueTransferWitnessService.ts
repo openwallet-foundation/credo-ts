@@ -125,14 +125,14 @@ export class ValueTransferWitnessService {
     }
 
     // Check that witness request by Getter is corrected
-    if (valueTransferMessage.payment.isWitnessSet && state.publicDid !== valueTransferMessage.payment.witness) {
+    if (valueTransferMessage.isWitnessSet && state.publicDid !== valueTransferMessage.witnessId) {
       const problemReport = new ProblemReportMessage({
         from: state.publicDid,
         to: requestMessage.from,
         pthid: requestMessage.id,
         body: {
           code: 'e.p.req.bad-witness',
-          comment: `Requested witness ${valueTransferMessage.payment.witness} is different`,
+          comment: `Requested witness ${valueTransferMessage.witnessId} is different`,
         },
       })
       return {
@@ -157,7 +157,7 @@ export class ValueTransferWitnessService {
       return { message: problemReportMessage }
     }
 
-    const giverDid = valueTransferMessage.payment.isGiverSet ? valueTransferMessage.payment.giver : undefined
+    const giverDid = valueTransferMessage.isGiverSet ? valueTransferMessage.giverId : undefined
 
     // next protocol message
     const requestWitnessedMessage = new RequestWitnessedMessage({
@@ -175,7 +175,7 @@ export class ValueTransferWitnessService {
       threadId: requestMessage.id,
       valueTransferMessage: message,
       requestMessage,
-      getter: valueTransferMessage.payment.getter,
+      getter: valueTransferMessage.getterId,
       giver: giverDid,
       witness: state.publicDid,
     })
@@ -233,7 +233,7 @@ export class ValueTransferWitnessService {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
         from: record.witnessDid,
-        to: valueTransferMessage.payment.giver,
+        to: valueTransferMessage.giverId,
         pthid: requestAcceptedMessage.thid,
         body: {
           code: error?.code || 'invalid-payment-request-acceptance',
@@ -258,7 +258,7 @@ export class ValueTransferWitnessService {
 
     // Update Value Transfer record
     record.valueTransferMessage = message
-    record.giverDid = valueTransferMessage.payment.giver
+    record.giverDid = valueTransferMessage.giverId
 
     await this.valueTransferService.updateState(record, ValueTransferState.RequestAcceptanceSent)
     return { record, message: requestAcceptedWitnessedMessage }

@@ -35,7 +35,7 @@ class DIDCommV1EnvelopeService {
     this.config = agentConfig
   }
 
-  public async packMessage(payload: DIDCommV1Message, keys: PackMessageParams): Promise<EncryptedMessage> {
+  public async packMessageEncrypted(payload: DIDCommV1Message, keys: PackMessageParams): Promise<EncryptedMessage> {
     const { routingKeys, senderKey } = keys
     let recipientKeys = keys.recipientKeys
 

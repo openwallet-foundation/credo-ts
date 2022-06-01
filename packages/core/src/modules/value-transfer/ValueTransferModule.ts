@@ -1,12 +1,11 @@
-import type { RequestMessage, ProblemReportMessage, RequestAcceptedMessage } from './messages'
-import type { ValueTransferTags, ValueTransferRecord } from './repository'
+import type { ProblemReportMessage, RequestAcceptedMessage, RequestMessage } from './messages'
+import type { ValueTransferRecord, ValueTransferTags } from './repository'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundDIDCommV2Message } from '../../agent/helpers'
 import { ConnectionService } from '../connections'
 import { DidResolverService } from '../dids'
 
@@ -88,8 +87,7 @@ export class ValueTransferModule {
     )
 
     // Send Payment Request to Witness
-    const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.messageSender.sendDIDCommV2Message(outboundMessage)
+    await this.valueTransferService.sendMessageToWitness(message, record)
     return { message, record }
   }
 
@@ -111,9 +109,7 @@ export class ValueTransferModule {
     const { message, record: updatedRecord } = await this.valueTransferGiverService.acceptRequest(record)
 
     // Send Payment Request Acceptance to Witness
-    const outboundMessage = createOutboundDIDCommV2Message(message)
-    const transport = this.config.valueTransferConfig?.witnessTransport
-    await this.messageSender.sendDIDCommV2Message(outboundMessage, transport)
+    await this.valueTransferService.sendMessageToWitness(message, record)
 
     return { record: updatedRecord, message }
   }

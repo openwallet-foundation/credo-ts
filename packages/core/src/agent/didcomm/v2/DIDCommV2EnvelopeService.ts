@@ -1,5 +1,5 @@
 import type { Logger } from '../../../logger'
-import type { EncryptedMessage } from '../types'
+import type { EncryptedMessage, SignedMessage } from '../types'
 import type { DIDCommV2Message } from './DIDCommV2Message'
 import type { default as didcomm } from 'didcomm'
 
@@ -15,6 +15,10 @@ export interface PackMessageParams {
   toDID: string
   fromDID: string | null | undefined
   signByDID: string | null | undefined
+}
+
+export interface PackMessageSignedParams {
+  signByDID: string
 }
 
 export interface PlaintextMessage {
@@ -47,7 +51,7 @@ export class DIDCommV2EnvelopeService {
     this.secretResolverService = secretResolverService
   }
 
-  public async packMessage(payload: DIDCommV2Message, params: PackMessageParams): Promise<EncryptedMessage> {
+  public async packMessageEncrypted(payload: DIDCommV2Message, params: PackMessageParams): Promise<EncryptedMessage> {
     const message = new this.didcomm.Message(payload)
 
     const [encryptedMsg] = await message.pack_encrypted(
@@ -61,9 +65,23 @@ export class DIDCommV2EnvelopeService {
     return JsonEncoder.fromString(encryptedMsg)
   }
 
-  public async unpackMessage(encryptedMessage: EncryptedMessage): Promise<DecryptedMessageContext> {
+  public async packMessageSigned(
+    payload: DIDCommV2Message,
+    params: PackMessageSignedParams
+  ): Promise<EncryptedMessage> {
+    const message = new this.didcomm.Message(payload)
+
+    const [encryptedMsg] = await message.pack_signed(
+      params.signByDID,
+      this.didResolverService,
+      this.secretResolverService
+    )
+    return JsonEncoder.fromString(encryptedMsg)
+  }
+
+  public async unpackMessage(packedMessage: EncryptedMessage | SignedMessage): Promise<DecryptedMessageContext> {
     const [unpackedMsg, unpackMetadata] = await this.didcomm.Message.unpack(
-      JsonEncoder.toString(encryptedMessage),
+      JsonEncoder.toString(packedMessage),
       this.didResolverService,
       this.secretResolverService,
       {}

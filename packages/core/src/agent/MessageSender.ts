@@ -20,6 +20,7 @@ import { MessageValidator } from '../utils/MessageValidator'
 import { TransportService } from './TransportService'
 import { DIDCommVersion } from './didcomm/DIDCommMessage'
 import { EnvelopeService } from './didcomm/EnvelopeService'
+import { SendingMessageType } from './didcomm/types'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -90,7 +91,7 @@ export class MessageSender {
         senderKey: senderKey || null,
       }
     }
-    const encryptedMessage = await this.envelopeService.packMessage(message, params)
+    const encryptedMessage = await this.envelopeService.packMessageEncrypted(message, params)
     return {
       payload: encryptedMessage,
       responseRequested: message.hasAnyReturnRoute(),
@@ -104,7 +105,7 @@ export class MessageSender {
     if (!session.keys) {
       throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
     }
-    const encryptedMessage = await this.envelopeService.packMessage(message, session.keys)
+    const encryptedMessage = await this.envelopeService.packMessageEncrypted(message, session.keys)
     await session.send(encryptedMessage)
   }
 
@@ -241,7 +242,7 @@ export class MessageSender {
         senderKey: connection.verkey,
       }
 
-      const encryptedMessage = await this.envelopeService.packMessage(payload, keys)
+      const encryptedMessage = await this.envelopeService.packMessageEncrypted(payload, keys)
       this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
@@ -255,24 +256,41 @@ export class MessageSender {
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
 
-  public async sendDIDCommV2Message(outboundMessage: OutboundDIDCommV2Message, transport?: Transport) {
+  public async sendDIDCommV2Message(
+    outboundMessage: OutboundDIDCommV2Message,
+    transport?: Transport,
+    sendingMessageType: SendingMessageType = SendingMessageType.Encrypted
+  ) {
     const { payload } = outboundMessage
 
-    if (!payload.to?.length) {
-      // recipient is not set -> send plain-text message
+    if (sendingMessageType === SendingMessageType.Signed) {
+      // send message signed
+      if (!payload.from) {
+        throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
+      }
+      const message = await this.envelopeService.packMessageSigned(payload, { signByDID: payload.from })
+      return await this.sendMessage({ payload: message }, transport)
+    }
+
+    if (sendingMessageType === SendingMessageType.Plain) {
+      // send message plaintext
       await this.sendMessage({ payload: { ...payload } }, transport)
       return
     }
 
-    const toDID = payload.to[0]
+    // send message encrypted
 
-    // pack message
-    const params = {
-      toDID: toDID,
-      fromDID: payload.from,
-      signByDID: null,
+    if (!payload.to?.length) {
+      throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain sender DID.`)
     }
-    const message = await this.envelopeService.packMessage(payload, params)
+
+    const toDID = payload.to[0]
+    const params = {
+      toDID,
+      fromDID: payload.from,
+      signByDID: undefined,
+    }
+    const message = await this.envelopeService.packMessageEncrypted(payload, params)
 
     if (transport) {
       // if transport specified explicitly - send message
@@ -355,6 +373,7 @@ export class MessageSender {
 
   public async sendMessage(outboundPackage: OutboundPackage, transport?: string) {
     try {
+      this.logger.debug(`Sending outbound message to transport:`, { transport })
       if (transport) {
         for (const outboundTransport of this.outboundTransports) {
           if (outboundTransport.supportedSchemes.includes(transport)) {

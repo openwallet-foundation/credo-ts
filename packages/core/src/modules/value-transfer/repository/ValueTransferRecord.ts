@@ -99,7 +99,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       getterDid: this.getterDid,
       giverDid: this.giverDid,
       threadId: this.threadId,
-      txnId: this.valueTransferMessage?.payment.txId,
+      txnId: this.valueTransferMessage?.txnId,
       role: this.role,
     }
   }

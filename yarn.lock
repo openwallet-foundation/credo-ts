@@ -2038,10 +2038,10 @@
     "@noble/hashes" "^1.0.0"
     "@stablelib/uuid" "^1.0.1"
 
-"@sicpa-dlab/value-transfer-protocol-ts@^0.0.4":
-  version "0.0.4"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.4/30d93c713136b6509cabb57bed85cfbf70547ab7a8deb9c5b2a562ffd5fd0b0b#97f79f0f2285904cdba77a8cb246406978c49ef3"
-  integrity sha512-003JwYSxZ7bQ4mvlX45pht13uFlznFmBcbiwNcKh1o/LALDVyVTntd8IyLfYNfMjNWEc7ROp1JV/mZzaNjy3lg==
+"@sicpa-dlab/value-transfer-protocol-ts@^0.0.6":
+  version "0.0.6"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.6/6aacaadc5285c19f4d2af7b38e5cb457757c4fb8f868d545b49691f437e1b24d#5480086a7c980147309d1a3d10dd7aab8d6691c4"
+  integrity sha512-5LZTDrDdsz1UCgyye0+dU74oEq8Uy+rywVnC7GGXX9l4vswEAGEgm6rc7Wws8wW9b1yhC1tZRJjyWK5dzSo/Pw==
   dependencies:
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
@@ -4026,7 +4026,7 @@ csstype@^3.0.2:
 cuint@^0.2.2:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/cuint/-/cuint-0.2.2.tgz#408086d409550c2631155619e9fa7bcadc3b991b"
-  integrity sha1-QICG1AlVDCYxFVYZ6fp7ytw7mRs=
+  integrity sha512-d4ZVpCW31eWwCMe1YT3ur7mUDnTXbgwyzaL320DrcRT45rfjYxkt5QWLrmOJ+/UEAI2+fQgKe/fCjR8l4TpRgw==
 
 dargs@^7.0.0:
   version "7.0.0"
@@ -6876,12 +6876,12 @@ lodash.debounce@^4.0.8:
 lodash.eq@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/lodash.eq/-/lodash.eq-4.0.0.tgz#a39f06779e72f9c0d1f310c90cd292c1661d5035"
-  integrity sha1-o58Gd55y+cDR8xDJDNKSwWYdUDU=
+  integrity sha512-vbrJpXL6kQNG6TkInxX12DZRfuYVllSxhwYqjYB78g2zF3UI15nFO/0AgmZnZRnaQ38sZtjCiVjGr2rnKt4v0g==
 
 lodash.indexof@^4.0.5:
   version "4.0.5"
   resolved "https://registry.yarnpkg.com/lodash.indexof/-/lodash.indexof-4.0.5.tgz#53714adc2cddd6ed87638f893aa9b6c24e31ef3c"
-  integrity sha1-U3FK3Czd1u2HY4+JOqm2wk4x7zw=
+  integrity sha512-t9wLWMQsawdVmf6/IcAgVGqAJkNzYVcn4BHYZKTPW//l7N5Oq7Bq138BaVk19agcsPZePcidSgTTw4NqS1nUAw==
 
 lodash.ismatch@^4.4.0:
   version "4.4.0"

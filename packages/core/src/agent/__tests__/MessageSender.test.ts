@@ -53,7 +53,7 @@ describe('MessageSender', () => {
   }
 
   const enveloperService = new EnvelopeService()
-  const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
+  const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessageEncrypted)
 
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)

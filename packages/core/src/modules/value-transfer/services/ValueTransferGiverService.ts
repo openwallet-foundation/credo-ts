@@ -6,6 +6,7 @@ import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-tran
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../../error'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { DidResolverService, DidService, DidType } from '../../dids'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
@@ -91,18 +92,16 @@ export class ValueTransferGiverService {
       return { message: problemReport }
     }
 
-    const { getter, giver, witness } = valueTransferMessage.payment
-
-    if (valueTransferMessage.payment.isGiverSet) {
+    if (valueTransferMessage.isGiverSet) {
       // ensure that DID exist in the wallet
-      const did = await this.didService.findById(giver)
+      const did = await this.didService.findById(valueTransferMessage.giverId)
       if (!did) {
         const problemReport = new ProblemReportMessage({
           to: requestWitnessedMessage.from,
           pthid: requestWitnessedMessage.id,
           body: {
             code: 'e.p.req.bad-giver',
-            comment: `Requested giver '${giver}' does not exist in the wallet`,
+            comment: `Requested giver '${valueTransferMessage.giverId}' does not exist in the wallet`,
           },
         })
         return {
@@ -118,9 +117,9 @@ export class ValueTransferGiverService {
       threadId: requestWitnessedMessage.thid,
       valueTransferMessage,
       requestWitnessedMessage,
-      getter,
-      witness,
-      giver,
+      getter: valueTransferMessage.getterId,
+      witness: valueTransferMessage.witnessId,
+      giver: valueTransferMessage.giverId,
     })
 
     await this.valueTransferRepository.save(record)
@@ -148,12 +147,19 @@ export class ValueTransferGiverService {
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.RequestReceived)
 
-    const giver = record.valueTransferMessage.payment.isGiverSet
-      ? record.valueTransferMessage.payment.giver
+    const giver = record.valueTransferMessage.isGiverSet
+      ? record.valueTransferMessage.giverId
       : (await this.didService.createDID(DidType.PeerDid)).id
 
     // Call VTP to accept payment request
-    const notesToSpend = await this.valueTransfer.giver().pickNotesToSpend(record.valueTransferMessage.payment.amount)
+    const { error: pickNotesError, notes: notesToSpend } = await this.valueTransfer
+      .giver()
+      .pickNotesToSpend(record.valueTransferMessage.amount)
+    if (pickNotesError || !notesToSpend) {
+      throw new AriesFrameworkError(
+        `Not enough notes for covering requested amount: ${record.valueTransferMessage.amount}`
+      )
+    }
 
     const { error, message } = await this.valueTransfer
       .giver()

@@ -3,7 +3,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { ValueTransferConfig } from '../../../types'
 import type { Transport } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
-import type { ValueTransferTags, ValueTransferRecord } from '../repository'
+import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 
 import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -13,6 +13,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
+import { SendingMessageType } from '../../../agent/didcomm/types'
 import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 import { ConnectionService } from '../../connections/services/ConnectionService'
@@ -210,28 +211,27 @@ export class ValueTransferService {
   }
 
   public async sendMessageToWitness(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.to = record ? [record.valueTransferMessage.payment.witness] : undefined
+    message.to = record?.witnessDid ? [record.witnessDid] : undefined
     const witnessTransport = this.config.valueTransferConfig?.witnessTransport
     return this.sendMessage(message, witnessTransport)
   }
 
   public async sendMessageToGiver(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.to = record?.valueTransferMessage.payment.isGiverSet
-      ? [record?.valueTransferMessage.payment.giver]
-      : undefined
+    message.to = record?.giverDid ? [record.giverDid] : undefined
     const giverTransport = this.config.valueTransferConfig?.giverTransport
     return this.sendMessage(message, giverTransport)
   }
 
   public async sendMessageToGetter(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.to = record ? [record.valueTransferMessage.payment.getter] : undefined
+    message.to = record?.getterDid ? [record.getterDid] : undefined
     const getterTransport = this.config.valueTransferConfig?.getterTransport
     return this.sendMessage(message, getterTransport)
   }
 
   private async sendMessage(message: DIDCommV2Message, transport?: Transport) {
+    const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.messageSender.sendDIDCommV2Message(outboundMessage, transport)
+    await this.messageSender.sendDIDCommV2Message(outboundMessage, transport, sendingMessageType)
   }
 
   public async getBalance(): Promise<number> {

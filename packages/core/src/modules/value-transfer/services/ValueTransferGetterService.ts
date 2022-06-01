@@ -2,7 +2,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { RequestAcceptedWitnessedMessage, GetterReceiptMessage } from '../messages'
 
-import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { TaggedPrice, ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -91,7 +91,13 @@ export class ValueTransferGetterService {
       usePublicDid && state.publicDid ? state.publicDid : (await this.didService.createDID(DidType.PeerDid)).id
 
     // Call VTP package to create payment request
-    const { error, message } = await this.valueTransfer.getter().createRequest(getter, amount, witness, giver)
+    const givenTotal = new TaggedPrice({ amount })
+    const { error, message } = await this.valueTransfer.getter().createRequest({
+      getterId: getter,
+      witnessId: witness,
+      giverId: giver,
+      givenTotal,
+    })
     if (error || !message) {
       throw new AriesFrameworkError(`VTP: Failed to create Payment Request: ${error?.message}`)
     }
@@ -162,8 +168,8 @@ export class ValueTransferGetterService {
 
     // Update Value Transfer record and raise event
     record.valueTransferMessage = valueTransferMessage
-    record.witnessDid = valueTransferMessage.payment.witness
-    record.giverDid = valueTransferMessage.payment.giver
+    record.witnessDid = valueTransferMessage.witnessId
+    record.giverDid = valueTransferMessage.giverId
 
     await this.valueTransferService.updateState(record, ValueTransferState.RequestAcceptanceReceived)
     return { record, message: requestAcceptedWitnessedMessage }
