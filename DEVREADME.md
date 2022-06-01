@@ -19,7 +19,9 @@ If you're using the setup as described in this document, you don't need to provi
   - If using the BuilderNet genesis, make sure your seed is registered on the BuilderNet using [selfserve.sovrin.org](https://selfserve.sovrin.org/) and you have read and accepted the associated [Transaction Author Agreement](https://github.com/sovrin-foundation/sovrin/blob/master/TAA/TAA.md). We are not responsible for any unwanted consequences of using the BuilderNet.
 
 ### Setup Postgres
-Note: Setup the postgres plugin first from here [docs](./docs/postgres-plugin-setup)
+
+> Note: Setup the postgres plugin first from here [docs](./docs/postgres-plugin-setup)
+
 ```sh
 # Get postgres docker image
 docker pull postgres
