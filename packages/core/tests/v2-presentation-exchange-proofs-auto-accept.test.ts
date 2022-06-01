@@ -1,13 +1,7 @@
 import type { Agent, ConnectionRecord } from '../src'
-import type { InputDescriptors } from '../src/modules/proofs/formats/presentation-exchange/models/InputDescriptors'
-import type {
-  AcceptProposalOptions,
-  ProposeProofOptions,
-  RequestProofOptions,
-} from '../src/modules/proofs/models/ModuleOptions'
+import type { ProposeProofOptions, RequestProofOptions } from '../src/modules/proofs/models/ModuleOptions'
 
 import { AutoAcceptProof, ProofState } from '../src'
-import { PresentationDefinition } from '../src/modules/proofs/formats/presentation-exchange/models/RequestPresentation'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
 import { setupV2ProofsTest, waitForProofRecord } from './helpers'
@@ -87,21 +81,24 @@ describe('Auto accept present proof', () => {
         },
         comment: 'V2 Presentation Exchange propose proof test',
       }
-      const aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeProofOptions)
+
+      const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+        state: ProofState.Done,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
+      })
+
+      const faberProofRecordPromise = waitForProofRecord(faberAgent, {
+        state: ProofState.Done,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
+      })
+
+      await aliceAgent.proofs.proposeProof(proposeProofOptions)
 
       testLogger.test('Faber waits for presentation from Alice')
-      await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
-      })
+      await faberProofRecordPromise
 
       testLogger.test('Alice waits till it receives presentation ack')
-      await waitForProofRecord(aliceAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
-      })
+      await aliceProofRecordPromise
     })
 
     test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
@@ -248,40 +245,21 @@ describe('Auto accept present proof', () => {
         comment: 'V2 Presentation Exchange propose proof test',
       }
 
-      const aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeProofOptions)
-
-      testLogger.test('Faber waits for presentation proposal from Alice')
-
-      const faberProofRecord = await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.ProposalReceived,
-      })
-
-      testLogger.test('Faber accepts presentation proposal from Alice')
-
-      const acceptProposalOptions: AcceptProposalOptions = {
-        config: {
-          name: 'proof-request',
-          version: '1.0',
-        },
-        proofRecordId: faberProofRecord.id,
-      }
-
-      await faberAgent.proofs.acceptProposal(acceptProposalOptions)
-
-      testLogger.test('Faber waits for presentation from Alice')
-
-      await waitForProofRecord(faberAgent, {
-        threadId: aliceProofRecord.threadId,
+      const faberProofRecordPromise = waitForProofRecord(faberAgent, {
         state: ProofState.Done,
         timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
+
+      const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+        state: ProofState.Done,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
+      })
+
+      await aliceAgent.proofs.proposeProof(proposeProofOptions)
+
+      await faberProofRecordPromise
       // Alice waits till it receives presentation ack
-      await waitForProofRecord(aliceAgent, {
-        threadId: aliceProofRecord.threadId,
-        state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
-      })
+      await aliceProofRecordPromise
     })
 
     test('Faber starts with proof requests to Alice, both with autoacceptproof on `contentApproved`', async () => {
@@ -341,21 +319,23 @@ describe('Auto accept present proof', () => {
         },
       }
 
-      const faberProofRecord = await faberAgent.proofs.requestProof(requestProofsOptions)
+      const faberProofRecordPromise = waitForProofRecord(faberAgent, {
+        state: ProofState.Done,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
+      })
+
+      const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+        state: ProofState.Done,
+        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
+      })
+
+      await faberAgent.proofs.requestProof(requestProofsOptions)
 
       testLogger.test('Faber waits for presentation from Alice')
-      await waitForProofRecord(faberAgent, {
-        threadId: faberProofRecord.threadId,
-        state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
-      })
+      await faberProofRecordPromise
 
       // Alice waits till it receives presentation ack
-      await waitForProofRecord(aliceAgent, {
-        threadId: faberProofRecord.threadId,
-        state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
-      })
+      await aliceProofRecordPromise
     })
   })
 })

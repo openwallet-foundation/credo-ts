@@ -2,7 +2,6 @@ import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTran
 import type { CredentialStateChangedEvent } from '../src/modules/credentials'
 import type { OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
-import type { InputDescriptors } from '../src/modules/proofs/formats/presentation-exchange/models/InputDescriptors'
 import type { AcceptPresentationOptions, OutOfBandRequestOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { SignCredentialOptions } from '../src/modules/vc/models/W3cCredentialServiceOptions'
 import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
@@ -21,10 +20,8 @@ import {
   CredentialProtocolVersion,
   CredentialState,
 } from '../src/modules/credentials'
-import { V2CredentialPreview } from '../src/modules/credentials/protocol/v2/V2CredentialPreview'
 import { DidKey } from '../src/modules/dids'
 import { ProofEventTypes, ProofState, AutoAcceptProof } from '../src/modules/proofs'
-import { PresentationDefinition } from '../src/modules/proofs/formats/presentation-exchange/models/RequestPresentation'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { MediatorPickupStrategy } from '../src/modules/routing/MediatorPickupStrategy'
 import { W3cCredential } from '../src/modules/vc/models'
@@ -60,32 +57,45 @@ describe('Present Proof', () => {
     agents = [aliceAgent, faberAgent]
     testLogger.test('Faber sends presentation request to Alice')
 
-    const inputDescriptors: InputDescriptors[] = [
-      {
-        id: 'citizenship_input',
-        name: 'US Passport',
-        group: ['A'],
-        schema: [
-          {
-            uri: 'https://w3id.org/citizenship/v1',
-          },
-        ],
-        constraints: {
-          fields: [
-            {
-              path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
-              filter: {
-                type: 'date',
-                minimum: '1999-5-16',
+    const presentationDefinition: PresentationDefinitionV1 = {
+      input_descriptors: [
+        {
+          constraints: {
+            fields: [
+              {
+                path: ['$.credentialSubject.familyName'],
+                purpose: 'The claim must be from one of the specified issuers',
+                id: '1f44d55f-f161-4938-a659-f8026467f126',
               },
+              {
+                path: ['$.credentialSubject.givenName'],
+                purpose: 'The claim must be from one of the specified issuers',
+              },
+            ],
+            // limit_disclosure: 'required',
+            // is_holder: [
+            //   {
+            //     directive: 'required',
+            //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
+            //   },
+            // ],
+          },
+          schema: [
+            {
+              uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+            },
+            {
+              uri: 'https://w3id.org/citizenship#PermanentResident',
+            },
+            {
+              uri: 'https://w3id.org/citizenship/v1',
             },
           ],
+          name: "EU Driver's License",
+          group: ['A'],
+          id: 'citizenship_input_1',
         },
-      },
-    ]
-
-    const presentationDefinition: PresentationDefinitionV1 = {
-      input_descriptors: inputDescriptors,
+      ],
       id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
     }
 
@@ -102,6 +112,10 @@ describe('Present Proof', () => {
       },
     }
 
+    let aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.RequestReceived,
+    })
+
     // eslint-disable-next-line prefer-const
     let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createOutOfBandRequest(
       outOfBandRequestOptions
@@ -110,10 +124,7 @@ describe('Present Proof', () => {
     await aliceAgent.receiveMessage(message.toJSON())
 
     testLogger.test('Alice waits for presentation request from Faber')
-    let aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.RequestReceived,
-    })
+    let aliceProofRecord = await aliceProofRecordPromise
 
     testLogger.test('Alice accepts presentation request from Faber')
 
@@ -129,26 +140,30 @@ describe('Present Proof', () => {
       proofFormats: requestedCredentials,
     }
 
-    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
-
-    testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await waitForProofRecordSubject(faberReplay, {
+    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
+    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+
+    testLogger.test('Faber waits for presentation from Alice')
+    faberProofRecord = await faberProofRecordPromise
+
     // assert presentation is valid
     expect(faberProofRecord.isVerified).toBe(true)
+
+    aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      threadId: aliceProofRecord.threadId,
+      state: ProofState.Done,
+    })
 
     // Faber accepts presentation
     await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
 
     // Alice waits till it receives presentation ack
-    aliceProofRecord = await waitForProofRecordSubject(aliceReplay, {
-      threadId: aliceProofRecord.threadId,
-      state: ProofState.Done,
-    })
+    aliceProofRecord = await aliceProofRecordPromise
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
@@ -162,37 +177,46 @@ describe('Present Proof', () => {
 
     agents = [aliceAgent, faberAgent]
 
-    const inputDescriptors: InputDescriptors[] = [
-      {
-        id: 'citizenship_input',
-        name: 'US Passport',
-        group: ['A'],
-        schema: [
-          {
-            uri: 'https://w3id.org/citizenship/v1',
-          },
-        ],
-        constraints: {
-          fields: [
-            {
-              path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
-              filter: {
-                type: 'date',
-                minimum: '1999-5-16',
+    const presentationDefinition: PresentationDefinitionV1 = {
+      input_descriptors: [
+        {
+          constraints: {
+            fields: [
+              {
+                path: ['$.credentialSubject.familyName'],
+                purpose: 'The claim must be from one of the specified issuers',
+                id: '1f44d55f-f161-4938-a659-f8026467f126',
               },
+              {
+                path: ['$.credentialSubject.givenName'],
+                purpose: 'The claim must be from one of the specified issuers',
+              },
+            ],
+            // limit_disclosure: 'required',
+            // is_holder: [
+            //   {
+            //     directive: 'required',
+            //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
+            //   },
+            // ],
+          },
+          schema: [
+            {
+              uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+            },
+            {
+              uri: 'https://w3id.org/citizenship#PermanentResident',
+            },
+            {
+              uri: 'https://w3id.org/citizenship/v1',
             },
           ],
+          name: "EU Driver's License",
+          group: ['A'],
+          id: 'citizenship_input_1',
         },
-      },
-    ]
-
-    const presentationDefinition: PresentationDefinitionV1 = {
-      inputDescriptors,
-      format: {
-        ldpVc: {
-          proofType: ['Ed25519Signature2018'],
-        },
-      },
+      ],
+      id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
     }
 
     const outOfBandRequestOptions: OutOfBandRequestOptions = {
@@ -209,35 +233,28 @@ describe('Present Proof', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     }
 
+    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
+    })
+
+    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+      state: ProofState.Done,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
+    })
+
     // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createOutOfBandRequest(
-      outOfBandRequestOptions
-    )
+    let { message } = await faberAgent.proofs.createOutOfBandRequest(outOfBandRequestOptions)
 
     await aliceAgent.receiveMessage(message.toJSON())
 
-    await waitForProofRecordSubject(aliceReplay, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.Done,
-      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
-    })
+    await aliceProofRecordPromise
 
-    await waitForProofRecordSubject(faberReplay, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.Done,
-      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
-    })
+    await faberProofRecordPromise
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
     testLogger.test('Faber sends presentation request to Alice')
-
-    // const credentialPreview = V2CredentialPreview.fromRecord({
-    //   name: 'John',
-    //   age: '99',
-    //   image_0: 'some x-ray',
-    //   image_1: 'profile picture',
-    // })
 
     const unique = uuid().substring(0, 4)
 
@@ -400,38 +417,47 @@ describe('Present Proof', () => {
     faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
     aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
 
-    const inputDescriptors: InputDescriptors[] = [
-      {
-        id: 'citizenship_input',
-        name: 'US Passport',
-        group: ['A'],
-        schema: [
-          {
-            uri: 'https://w3id.org/citizenship/v1',
-          },
-        ],
-        constraints: {
-          fields: [
-            {
-              path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
-              filter: {
-                type: 'date',
-                minimum: '1999-5-16',
+    const presentationDefinition: PresentationDefinitionV1 = {
+      input_descriptors: [
+        {
+          constraints: {
+            fields: [
+              {
+                path: ['$.credentialSubject.familyName'],
+                purpose: 'The claim must be from one of the specified issuers',
+                id: '1f44d55f-f161-4938-a659-f8026467f126',
               },
+              {
+                path: ['$.credentialSubject.givenName'],
+                purpose: 'The claim must be from one of the specified issuers',
+              },
+            ],
+            // limit_disclosure: 'required',
+            // is_holder: [
+            //   {
+            //     directive: 'required',
+            //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
+            //   },
+            // ],
+          },
+          schema: [
+            {
+              uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+            },
+            {
+              uri: 'https://w3id.org/citizenship#PermanentResident',
+            },
+            {
+              uri: 'https://w3id.org/citizenship/v1',
             },
           ],
+          name: "EU Driver's License",
+          group: ['A'],
+          id: 'citizenship_input_1',
         },
-      },
-    ]
-
-    const presentationDefinition: PresentationDefinition = new PresentationDefinition({
-      inputDescriptors,
-      format: {
-        ldpVc: {
-          proofType: ['Ed25519Signature2018'],
-        },
-      },
-    })
+      ],
+      id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+    }
 
     const outOfBandRequestOptions: OutOfBandRequestOptions = {
       protocolVersion: ProofProtocolVersion.V2,
@@ -446,10 +472,19 @@ describe('Present Proof', () => {
       },
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     }
+
+    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
+    })
+
+    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+      state: ProofState.Done,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
+    })
+
     // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createOutOfBandRequest(
-      outOfBandRequestOptions
-    )
+    let { message } = await faberAgent.proofs.createOutOfBandRequest(outOfBandRequestOptions)
 
     const mediationRecord = await faberAgent.mediationRecipient.findDefaultMediator()
     if (!mediationRecord) {
@@ -466,16 +501,8 @@ describe('Present Proof', () => {
 
     await aliceAgent.receiveMessage(message.toJSON())
 
-    await waitForProofRecordSubject(aliceReplay, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.Done,
-      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
-    })
+    await aliceProofRecordPromise
 
-    await waitForProofRecordSubject(faberReplay, {
-      threadId: faberProofRecord.threadId,
-      state: ProofState.Done,
-      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
-    })
+    await faberProofRecordPromise
   })
 })

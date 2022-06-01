@@ -9,6 +9,7 @@ import type {
 import { ProofState } from '../src'
 import {
   V2_PRESENTATION_EXCHANGE_PRESENTATION,
+  V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
   V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
 } from '../src/modules/proofs/formats/ProofFormats'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
@@ -124,7 +125,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
         },
       ],
       proposalsAttach: [
@@ -173,8 +174,6 @@ describe('Present Proof', () => {
       associatedRecordId: faberProofRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
-
-    // console.log('request in tests:', JSON.stringify(request, null, 2))
 
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/request-presentation',
@@ -235,8 +234,6 @@ describe('Present Proof', () => {
         filterByPresentationPreview: true,
       },
     })
-
-    // console.log('requestedCredentials in tests:', JSON.stringify(requestedCredentials, null, 2))
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
       proofRecordId: aliceProofRecord.id,
@@ -379,7 +376,7 @@ describe('Present Proof', () => {
     }
 
     let aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
-      // threadId: faberProofRecord.threadId,
+      threadId: faberProofRecord.threadId,
       state: ProofState.RequestReceived,
     })
 

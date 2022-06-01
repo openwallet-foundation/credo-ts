@@ -15,8 +15,7 @@ describe('Present Proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
   let aliceConnection: ConnectionRecord
-  let faberPresentationRecord: ProofRecord
-  let alicePresentationRecord: ProofRecord
+  let faberProofRecord: ProofRecord
   let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
@@ -33,53 +32,72 @@ describe('Present Proof', () => {
   })
 
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
-    testLogger.test('Alice sends (v2) proof proposal to Faber')
+    testLogger.test('Alice sends proof proposal to Faber')
 
     const proposeOptions: ProposeProofOptions = {
       connectionId: aliceConnection.id,
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         presentationExchange: {
-          inputDescriptors: [
-            {
-              id: 'citizenship_input',
-              name: 'US Passport',
-              group: ['A'],
-              schema: [
-                {
-                  uri: 'hub://did:foo:123/Collections/schema.us.gov/passport.json',
-                },
-              ],
-              constraints: {
-                fields: [
-                  {
-                    path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
-                    filter: {
-                      type: 'date',
-                      minimum: '1999-5-16',
+          presentationDefinition: {
+            id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            input_descriptors: [
+              {
+                constraints: {
+                  fields: [
+                    {
+                      path: ['$.credentialSubject.familyName'],
+                      purpose: 'The claim must be from one of the specified issuers',
+                      id: '1f44d55f-f161-4938-a659-f8026467f126',
                     },
+                    {
+                      path: ['$.credentialSubject.givenName'],
+                      purpose: 'The claim must be from one of the specified issuers',
+                    },
+                  ],
+                  // limit_disclosure: 'required',
+                  // is_holder: [
+                  //   {
+                  //     directive: 'required',
+                  //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
+                  //   },
+                  // ],
+                },
+                schema: [
+                  {
+                    uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+                  },
+                  {
+                    uri: 'https://w3id.org/citizenship#PermanentResident',
+                  },
+                  {
+                    uri: 'https://w3id.org/citizenship/v1',
                   },
                 ],
+                name: "EU Driver's License",
+                group: ['A'],
+                id: 'citizenship_input_1',
               },
-            },
-          ],
+            ],
+          },
         },
       },
-      comment: 'Presentation Exchange propose proof test',
+      comment: 'V2 Presentation Exchange propose proof test',
     }
 
-    alicePresentationRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
-
-    testLogger.test('Faber waits for presentation from Alice')
-    faberPresentationRecord = await waitForProofRecord(faberAgent, {
-      threadId: alicePresentationRecord.threadId,
+    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
       state: ProofState.ProposalReceived,
     })
+
+    await aliceAgent.proofs.proposeProof(proposeOptions)
+
+    testLogger.test('Faber waits for presentation from Alice')
+    faberProofRecord = await faberPresentationRecordPromise
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     const proposal = await didCommMessageRepository.findAgentMessage({
-      associatedRecordId: faberPresentationRecord.id,
+      associatedRecordId: faberProofRecord.id,
       messageClass: V2ProposalPresentationMessage,
     })
 
@@ -103,11 +121,11 @@ describe('Present Proof', () => {
         },
       ],
       id: expect.any(String),
-      comment: 'Presentation Exchange propose proof test',
+      comment: 'V2 Presentation Exchange propose proof test',
     })
-    expect(faberPresentationRecord.id).not.toBeNull()
-    expect(faberPresentationRecord).toMatchObject({
-      threadId: faberPresentationRecord.threadId,
+    expect(faberProofRecord.id).not.toBeNull()
+    expect(faberProofRecord).toMatchObject({
+      threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
       protocolVersion: ProofProtocolVersion.V2,
     })
