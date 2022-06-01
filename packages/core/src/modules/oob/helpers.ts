@@ -36,12 +36,7 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
 }
 
 export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
-  if (newInvitation.services.length > 1) {
-    throw new AriesFrameworkError(
-      `Attribute 'services' MUST have exactly one entry. It contains ${newInvitation.services.length} entries.`
-    )
-  }
-
+  // Taking first service, as we can only include one service in a legacy invitation.
   const [service] = newInvitation.services
 
   let options
