@@ -268,7 +268,6 @@ describe('credentials', () => {
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
-        protocolVersion: CredentialProtocolVersion.V2,
       }
       const faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal(options)
 

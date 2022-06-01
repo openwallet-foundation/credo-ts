@@ -49,6 +49,7 @@ export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
 export interface ServiceOfferCredentialOptions extends OfferCredentialOptions {
   connection?: ConnectionRecord
   attachId?: string
+  proposalAttachment?: Attachment
 }
 
 export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {

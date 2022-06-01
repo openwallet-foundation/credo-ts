@@ -248,7 +248,6 @@ describe('CredentialService', () => {
     didCommMessageRepository = new DidCommMessageRepositoryMock()
     revocationService = new RevocationService(credentialRepository, eventEmitter, agentConfig)
     didResolverService = new DidResolverService(agentConfig, indyLedgerService, didRepository)
-
     credentialService = new V2CredentialService(
       {
         getById: () => Promise.resolve(connection),
@@ -260,7 +259,6 @@ describe('CredentialService', () => {
       agentConfig,
       mediationRecipientService,
       didCommMessageRepository,
-      revocationService,
       new IndyCredentialFormatService(
         credentialRepository,
         eventEmitter,

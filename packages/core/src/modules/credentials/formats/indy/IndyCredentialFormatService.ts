@@ -110,7 +110,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   /**
    * Method called on reception of a propose credential message
    * We do the necessary processing here to accept the proposal and do the state change, emit event etc.
-   * @param options the options neeeded to accept the proposal
+   * @param options the options needed to accept the proposal
    * @param credentialRecord the credential record for the message exchange
    */
   public async processProposal(

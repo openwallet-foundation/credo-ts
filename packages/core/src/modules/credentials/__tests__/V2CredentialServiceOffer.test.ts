@@ -117,7 +117,6 @@ describe('CredentialService', () => {
       agentConfig,
       mediationRecipientService,
       didCommMessageRepository,
-      revocationService,
       new IndyCredentialFormatService(
         credentialRepository,
         eventEmitter,
@@ -305,7 +304,6 @@ describe('CredentialService', () => {
         agentConfig,
         mediationRecipientService,
         didCommMessageRepository,
-        revocationService,
         new IndyCredentialFormatService(
           credentialRepository,
           eventEmitter,

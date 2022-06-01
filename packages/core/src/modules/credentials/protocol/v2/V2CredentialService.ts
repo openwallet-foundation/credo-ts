@@ -413,7 +413,6 @@ export class V2CredentialService extends CredentialService {
       options = {
         credentialFormats: proposalOptions.credentialFormats,
         protocolVersion: CredentialProtocolVersion.V2,
-        credentialRecordId: proposalOptions.connectionId ? proposalOptions.connectionId : undefined,
         comment: proposalOptions.comment,
       }
     } else {

@@ -11,20 +11,32 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '../../../../utils'
+import type { JsonObject } from '../../../../../types'
+import type { DocumentLoader } from '../../../jsonldUtil'
+import type { ProofPurpose } from '../../../proof-purposes/ProofPurpose'
 
 /**
- * Options for getting the type from a JSON-LD document
+ * Options for creating a proof
  */
-export interface GetTypeOptions {
+export interface CreateProofOptions {
+  /**
+   * Document to create the proof for
+   */
+  readonly document: JsonObject
+  /**
+   * The proof purpose to specify for the generated proof
+   */
+  readonly purpose: ProofPurpose
   /**
    * Optional custom document loader
    */
-  // eslint-disable-next-line
   documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
-  // eslint-disable-next-line
   expansionMap?: () => void
+  /**
+   * Indicates whether to compact the resulting proof
+   */
+  readonly compactProof: boolean
 }

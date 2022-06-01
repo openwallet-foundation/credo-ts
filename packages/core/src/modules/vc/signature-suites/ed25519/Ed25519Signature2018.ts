@@ -1,9 +1,10 @@
-import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../../utils'
+import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../jsonldUtil'
 import type { JwsLinkedDataSignatureOptions } from '../JwsLinkedDataSignature'
 
-import jsonld from '../../../../types/jsonld'
-import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../modules/vc/constants'
-import { TypedArrayEncoder, MultiBaseEncoder, _includesContext } from '../../../utils'
+import { MultiBaseEncoder, TypedArrayEncoder } from '../../../../utils'
+import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../constants'
+import { _includesContext } from '../../jsonldUtil'
+import jsonld from '../../libraries/jsonld'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 
 import { ED25519_SUITE_CONTEXT_URL_2018, ED25519_SUITE_CONTEXT_URL_2020 } from './constants'
