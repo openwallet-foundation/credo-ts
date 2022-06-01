@@ -38,6 +38,9 @@ describe('Present Proof', () => {
       'Faber agent',
       'Alice agent'
     ))
+
+    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+
   })
 
   afterAll(async () => {
@@ -113,8 +116,6 @@ describe('Present Proof', () => {
     testLogger.test('Faber waits for a presentation proposal from Alice')
     faberProofRecord = await faberProofRecordPromise
 
-    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-
     const proposal = await didCommMessageRepository.findAgentMessage({
       associatedRecordId: faberProofRecord.id,
       messageClass: V2ProposalPresentationMessage,
@@ -158,6 +159,7 @@ describe('Present Proof', () => {
     }
 
     let aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       threadId: aliceProofRecord.threadId,
       state: ProofState.RequestReceived,
     })
@@ -376,7 +378,6 @@ describe('Present Proof', () => {
     }
 
     let aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
-      threadId: faberProofRecord.threadId,
       state: ProofState.RequestReceived,
     })
 
@@ -522,7 +523,6 @@ describe('Present Proof', () => {
     aliceProofRecord = await aliceProofRecordPromise
 
     expect(faberProofRecord).toMatchObject({
-      // type: ProofRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofRecord.threadId,
@@ -532,7 +532,6 @@ describe('Present Proof', () => {
     })
 
     expect(aliceProofRecord).toMatchObject({
-      // type: ProofRecord.name,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofRecord.threadId,

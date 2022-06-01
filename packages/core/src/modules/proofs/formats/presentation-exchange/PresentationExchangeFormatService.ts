@@ -21,6 +21,7 @@ import type { InputDescriptorsSchema } from './models'
 import type { RequestPresentationOptions } from './models/RequestPresentation'
 import type {
   ICredentialSubject,
+  IPresentation,
   IVerifiableCredential,
   IVerifiablePresentation,
   PresentationSignCallBackParams,
@@ -186,13 +187,17 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     if (!requestPresentation.presentationDefinition.input_descriptors) {
       throw Error('Input Descriptor missing while creating the request in presentation exchange service.')
     }
+    const presentationDefinitionJson = options.formats.presentationExchange.presentationDefinition as PresentationDefinitionV1
 
+    const pex: PEXv1 = new PEXv1()
+    const result: Validated = pex.validateDefinition(presentationDefinitionJson)
+    
     const presentationExchangeRequestMessage: RequestPresentationOptions = {
       options: {
-        challenge: requestPresentation.options?.challenge ?? uuid(),
+        challenge: uuid(),
         domain: '',
       },
-      presentationDefinition: requestPresentation.presentationDefinition,
+      presentationDefinition: presentationDefinitionJson,
     }
 
     const attachId = options.id ?? uuid()
@@ -238,8 +243,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     }
 
     const requestPresentation = options.attachment.getDataAsJson<RequestPresentationOptions>()
-
-    // console.log('presentationDefinition:\n', JSON.stringify(requestPresentation.presentationDefinition, null, 2))
 
     const credential = options.formats.presentationExchange
 
@@ -363,7 +366,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
-    // console.log('options:\n', JSON.stringify(options, null, 2))
 
     if (!options.formatAttachments) {
       throw Error('Presentation  missing while processing presentation in presentation exchange service.')
@@ -381,14 +383,17 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const requestMessage: RequestPresentationOptions = proofAttachment as unknown as RequestPresentationOptions
 
-    // const pex: PEXv1 = new PEXv1()
-    // pex.evaluatePresentation(presentationDefinition, verifiablePresentation)
     const proofPresentationRequestJson = proofFormat?.attachment.getDataAsJson<Attachment>() ?? null
-
+    
     const w3cVerifiablePresentation = JsonTransformer.fromJSON(proofPresentationRequestJson, W3cVerifiablePresentation)
-
+    
     const proof = JsonTransformer.fromJSON(w3cVerifiablePresentation.proof, LinkedDataProof)
+    
+    const verifiablePresentation = w3cVerifiablePresentation as unknown as IPresentation
 
+    const pex: PEXv1 = new PEXv1()
+    pex.evaluatePresentation(requestMessage.presentationDefinition, verifiablePresentation)
+    
     const verifyPresentationOptions: VerifyPresentationOptions = {
       presentation: w3cVerifiablePresentation,
       proofType: proof.type,
