@@ -131,16 +131,16 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     const pex: PEXv1 = new PEXv1()
     const result: Validated = pex.validateDefinition(presentationDefinitionJson)
 
+    if (Array.isArray(result) && result[0].status !== Status.INFO) {
+      throw new AriesFrameworkError(`Error in creating presentation definition: ${result[0].message} `)
+    }
+
     const presentationExchangeRequestMessage: RequestPresentationOptions = {
       options: {
         challenge: uuid(),
         domain: '',
       },
       presentationDefinition: presentationDefinitionJson,
-    }
-
-    if (Array.isArray(result) && result[0].status !== Status.INFO) {
-      throw new AriesFrameworkError(`Error in creating presentation definition: ${result[0].message} `)
     }
 
     return {
@@ -187,11 +187,17 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     if (!requestPresentation.presentationDefinition.input_descriptors) {
       throw Error('Input Descriptor missing while creating the request in presentation exchange service.')
     }
-    const presentationDefinitionJson = options.formats.presentationExchange.presentationDefinition as PresentationDefinitionV1
+    const presentationDefinitionJson = requestPresentation.presentationDefinition as PresentationDefinitionV1
 
     const pex: PEXv1 = new PEXv1()
     const result: Validated = pex.validateDefinition(presentationDefinitionJson)
-    
+
+    if (Array.isArray(result) && result[0].status !== Status.INFO) {
+      throw new AriesFrameworkError(
+        `Error in presentation definition while creating presentation request: ${result[0].message} `
+      )
+    }
+
     const presentationExchangeRequestMessage: RequestPresentationOptions = {
       options: {
         challenge: uuid(),
@@ -366,7 +372,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
   }
 
   public async processPresentation(options: ProcessPresentationOptions): Promise<boolean> {
-
     if (!options.formatAttachments) {
       throw Error('Presentation  missing while processing presentation in presentation exchange service.')
     }
@@ -384,16 +389,16 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     const requestMessage: RequestPresentationOptions = proofAttachment as unknown as RequestPresentationOptions
 
     const proofPresentationRequestJson = proofFormat?.attachment.getDataAsJson<Attachment>() ?? null
-    
+
     const w3cVerifiablePresentation = JsonTransformer.fromJSON(proofPresentationRequestJson, W3cVerifiablePresentation)
-    
+
     const proof = JsonTransformer.fromJSON(w3cVerifiablePresentation.proof, LinkedDataProof)
-    
+
     const verifiablePresentation = w3cVerifiablePresentation as unknown as IPresentation
 
     const pex: PEXv1 = new PEXv1()
     pex.evaluatePresentation(requestMessage.presentationDefinition, verifiablePresentation)
-    
+
     const verifyPresentationOptions: VerifyPresentationOptions = {
       presentation: w3cVerifiablePresentation,
       proofType: proof.type,

@@ -40,7 +40,6 @@ describe('Present Proof', () => {
     ))
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-
   })
 
   afterAll(async () => {
