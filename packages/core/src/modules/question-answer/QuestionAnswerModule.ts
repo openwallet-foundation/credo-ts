@@ -45,6 +45,7 @@ export class QuestionAnswerModule {
     }
   ) {
     const connection = await this.connectionService.getById(connectionId)
+    connection.assertReady()
 
     const { questionMessage, questionAnswerRecord } = await this.questionAnswerService.createQuestion(connectionId, {
       question: config.question,

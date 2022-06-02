@@ -86,12 +86,11 @@ export class QuestionAnswerService {
   ): Promise<QuestionAnswerRecord> {
     const { message: questionMessage } = messageContext
 
-    const questionRecord = await this.getById(questionMessage.id)
-    questionRecord.assertState(QuestionAnswerState.QuestionSent)
-
     this.logger.debug(`Receiving question message with id ${questionMessage.id}`)
 
     const connection = messageContext.assertReadyConnection()
+    const questionRecord = await this.getById(questionMessage.id)
+    questionRecord.assertState(QuestionAnswerState.QuestionSent)
 
     const questionAnswerRecord = await this.createRecord({
       questionText: questionMessage.questionText,
@@ -124,6 +123,8 @@ export class QuestionAnswerService {
   public async createAnswer(questionAnswerRecord: QuestionAnswerRecord, response: string) {
     const answerMessage = new AnswerMessage({ response: response, threadId: questionAnswerRecord.threadId })
 
+    questionAnswerRecord.assertState(QuestionAnswerState.QuestionReceived)
+
     questionAnswerRecord.response = response
 
     if (questionAnswerRecord.validResponses.some((e) => e.text === response)) {
@@ -141,16 +142,20 @@ export class QuestionAnswerService {
    * @returns QuestionAnswer record
    */
   public async receiveAnswer(messageContext: InboundMessageContext<AnswerMessage>): Promise<QuestionAnswerRecord> {
-    const { message: answerMessage, connection } = messageContext
+    const { message: answerMessage } = messageContext
 
     this.logger.debug(`Receiving answer message with id ${answerMessage.id}`)
 
     const connection = messageContext.assertReadyConnection()
+    const answerRecord = await this.getById(answerMessage.id)
+    answerRecord.assertState(QuestionAnswerState.AnswerSent)
 
     const questionAnswerRecord: QuestionAnswerRecord = await this.getByThreadAndConnectionId(
       answerMessage.threadId,
       connection?.id
     )
+
+    questionAnswerRecord.response = answerMessage.response
 
     await this.updateState(questionAnswerRecord, QuestionAnswerState.AnswerReceived)
 
