@@ -1,9 +1,6 @@
-/* eslint-disable import/no-unresolved */
-/* eslint-disable import/no-duplicates */
-/* eslint-disable import/order */
+import type { ConnectionRecord } from '@aries-framework/core'
 import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
-import type { ConnectionRecord } from '@aries-framework/core'
 
 import {
   CredentialProtocolVersion,

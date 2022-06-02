@@ -258,6 +258,7 @@ describe('W3cCredentialService', () => {
 
         const w3cCredentialRecord = await w3cCredentialService.storeCredential({ record: credential })
 
+        console.log(">>>>>>QUACK w3cCredentialRecord = ", w3cCredentialRecord)
         expect(w3cCredentialRecord).toMatchObject({
           type: 'W3cCredentialRecord',
           id: expect.any(String),
