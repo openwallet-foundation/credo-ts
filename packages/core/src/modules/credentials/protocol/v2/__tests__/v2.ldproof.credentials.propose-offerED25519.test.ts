@@ -15,6 +15,7 @@ import { setupCredentialTests, waitForCredentialRecord } from '../../../../../..
 import testLogger from '../../../../../../tests/logger'
 import { KeyType } from '../../../../../crypto/KeyType'
 import { DidCommMessageRepository } from '../../../../../storage'
+import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
@@ -472,6 +473,46 @@ describe('credentials', () => {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2IssueCredentialMessage,
     })
+
+    if (credentialMessage?.messageAttachment[1].data.base64) {
+      const w3cCredential = JsonEncoder.fromBase64(credentialMessage?.messageAttachment[1].data.base64)
+      expect(JsonTransformer.toJSON(w3cCredential)).toMatchObject({
+        context: [
+          'https://www.w3.org/2018/credentials/v1',
+          'https://w3id.org/citizenship/v1',
+          'https://w3id.org/security/bbs/v1',
+        ],
+        id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+        type: ['VerifiableCredential', 'PermanentResidentCard'],
+        issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        identifier: '83627465',
+        name: 'Permanent Resident Card',
+        description: 'Government of Example Permanent Resident Card.',
+        issuanceDate: '2019-12-03T12:19:52Z',
+        expirationDate: '2029-12-03T12:19:52Z',
+        credentialSubject: {
+          id: 'did:example:b34ca6cd37bbf23',
+          type: ['PermanentResident', 'Person'],
+          givenName: 'JOHN',
+          familyName: 'SMITH',
+          gender: 'Male',
+          image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+          residentSince: '2015-01-01',
+          lprCategory: 'C09',
+          lprNumber: '999-999-999',
+          commuterClassification: 'C1',
+          birthCountry: 'Bahamas',
+          birthDate: '1958-07-17',
+        },
+        proof: {
+          type: 'Ed25519Signature2018',
+          created: expect.any(String),
+          verificationMethod:
+            'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+          proofPurpose: 'assertionMethod',
+        },
+      })
+    }
 
     expect(JsonTransformer.toJSON(credentialMessage)).toMatchObject({
       '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',
