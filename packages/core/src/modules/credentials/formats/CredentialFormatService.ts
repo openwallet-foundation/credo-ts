@@ -32,6 +32,11 @@ export abstract class CredentialFormatService {
 
   abstract createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats>
 
+  abstract setProposalMetaData(
+    options: ServiceAcceptProposalOptions,
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<void>
+
   abstract processProposal(
     options: ServiceAcceptProposalOptions,
     credentialRecord: CredentialExchangeRecord
