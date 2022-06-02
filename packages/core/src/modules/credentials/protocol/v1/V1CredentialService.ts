@@ -140,8 +140,19 @@ export class V1CredentialService extends CredentialService {
 
     const options = { ...config }
 
+    // Create record
+    const credentialRecord = new CredentialExchangeRecord({
+      connectionId: connection.id,
+      threadId: '',
+      state: CredentialState.ProposalSent,
+      linkedAttachments: config?.linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
+      credentialAttributes: [],
+      autoAcceptCredential: config?.autoAcceptCredential,
+      protocolVersion: CredentialProtocolVersion.V1,
+      credentials: [],
+    })
     // call create proposal for validation of the proposal and addition of linked attachments
-    const { attachment: filtersAttach } = await this.formatService.createProposal(proposal)
+    const { attachment: filtersAttach } = await this.formatService.createProposal(proposal, credentialRecord)
 
     if (!filtersAttach) {
       throw new AriesFrameworkError('Missing filters attach in Proposal')
@@ -152,23 +163,9 @@ export class V1CredentialService extends CredentialService {
     // Create message
     const message = new V1ProposeCredentialMessage(options ?? {})
 
-    // Create record
-    const credentialRecord = new CredentialExchangeRecord({
-      connectionId: connection.id,
-      threadId: message.threadId,
-      state: CredentialState.ProposalSent,
-      linkedAttachments: config?.linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
-      credentialAttributes: message.credentialProposal?.attributes,
-      autoAcceptCredential: config?.autoAcceptCredential,
-      protocolVersion: CredentialProtocolVersion.V1,
-      credentials: [],
-    })
+    credentialRecord.threadId = message.threadId
+    credentialRecord.credentialAttributes = message.credentialProposal?.attributes
 
-    // Set the metadata
-    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-      schemaId: options.schemaId,
-      credentialDefinitionId: options.credentialDefinitionId,
-    })
     await this.credentialRepository.save(credentialRecord)
 
     await this.didCommMessageRepository.saveAgentMessage({

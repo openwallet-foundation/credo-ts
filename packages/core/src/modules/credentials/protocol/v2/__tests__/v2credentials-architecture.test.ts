@@ -9,13 +9,19 @@ import type { CredentialService } from '../../../services/CredentialService'
 import { getBaseConfig } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
+import { CredentialState } from '../../../CredentialState'
 import { CredentialsModule } from '../../../CredentialsModule'
 import { CredentialFormatType } from '../../../CredentialsModuleOptions'
+import { CredentialExchangeRecord } from '../../../repository'
 import { V1CredentialPreview } from '../../v1/V1CredentialPreview'
 import { CredentialMessageBuilder } from '../CredentialMessageBuilder'
 
 const { config, agentDependencies: dependencies } = getBaseConfig('Format Service Test')
-
+const credentialRecord = new CredentialExchangeRecord({
+  state: CredentialState.ProposalSent,
+  threadId: '',
+  protocolVersion: CredentialProtocolVersion.V2,
+})
 const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
@@ -85,7 +91,11 @@ describe('V2 Credential Architecture', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
-      const { format: formats, attachment: filtersAttach } = await formatService.createProposal(proposal)
+
+      const { format: formats, attachment: filtersAttach } = await formatService.createProposal(
+        proposal,
+        credentialRecord
+      )
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-filter@v2.0')
@@ -95,7 +105,10 @@ describe('V2 Credential Architecture', () => {
       const version: CredentialProtocolVersion = CredentialProtocolVersion.V2
       const service: CredentialService = api.getService(version)
       const formatService: CredentialFormatService = service.getFormatService(CredentialFormatType.Indy)
-      const { format: formats, attachment: filtersAttach } = await formatService.createProposal(proposal)
+      const { format: formats, attachment: filtersAttach } = await formatService.createProposal(
+        proposal,
+        credentialRecord
+      )
 
       expect(formats.attachId.length).toBeGreaterThan(0)
       expect(formats.format).toEqual('hlindy/cred-filter@v2.0')

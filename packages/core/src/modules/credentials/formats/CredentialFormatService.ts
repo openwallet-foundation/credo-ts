@@ -30,12 +30,10 @@ export abstract class CredentialFormatService {
     this.eventEmitter = eventEmitter
   }
 
-  abstract createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats>
-
-  abstract setProposalMetaData(
-    options: ServiceAcceptProposalOptions,
+  abstract createProposal(
+    options: ProposeCredentialOptions,
     credentialRecord: CredentialExchangeRecord
-  ): Promise<void>
+  ): Promise<FormatServiceProposeAttachmentFormats>
 
   abstract processProposal(
     options: ServiceAcceptProposalOptions,

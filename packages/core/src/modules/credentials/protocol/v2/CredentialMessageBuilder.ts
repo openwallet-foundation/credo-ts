@@ -56,8 +56,20 @@ export class CredentialMessageBuilder {
     const filterAttachments: Attachment[] = []
     let credentialPreview: V2CredentialPreview | undefined
 
+    const props: CredentialExchangeRecordProps = {
+      connectionId: proposal.connectionId,
+      threadId: '', // set after the message is created
+      state: CredentialState.ProposalSent,
+      autoAcceptCredential: proposal?.autoAcceptCredential,
+      protocolVersion: CredentialProtocolVersion.V2,
+      credentials: [],
+    }
+
+    // Create the v2 record
+    const credentialRecord = new CredentialExchangeRecord(props)
+
     for (const formatService of formatServices) {
-      const { format, attachment, preview } = await formatService.createProposal(proposal)
+      const { format, attachment, preview } = await formatService.createProposal(proposal, credentialRecord)
       credentialPreview ??= preview
 
       filterAttachments.push(attachment)
@@ -74,18 +86,7 @@ export class CredentialMessageBuilder {
 
     const message = new V2ProposeCredentialMessage(options)
 
-    const props: CredentialExchangeRecordProps = {
-      connectionId: proposal.connectionId,
-      threadId: message.threadId,
-      state: CredentialState.ProposalSent,
-      autoAcceptCredential: proposal?.autoAcceptCredential,
-      protocolVersion: CredentialProtocolVersion.V2,
-      credentials: [],
-    }
-
-    // Create the v2 record
-    const credentialRecord = new CredentialExchangeRecord(props)
-
+    credentialRecord.threadId = message.threadId
     return { message, credentialRecord }
   }
 

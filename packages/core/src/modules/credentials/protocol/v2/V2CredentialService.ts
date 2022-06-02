@@ -152,7 +152,6 @@ export class V2CredentialService extends CredentialService {
         proposalMessage.formats,
         proposalMessage.messageAttachment
       )
-      await formatService.setProposalMetaData(options, credentialRecord)
     }
     return { credentialRecord, message: proposalMessage }
   }

@@ -78,7 +78,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    * @returns object containing associated attachment, formats and filtersAttach elements
    *
    */
-  public async createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats> {
+  public async createProposal(
+    options: ProposeCredentialOptions,
+    credentialRecord: CredentialExchangeRecord
+  ): Promise<FormatServiceProposeAttachmentFormats> {
     const formats: CredentialFormatSpec = {
       attachId: this.generateId(),
       format: 'hlindy/cred-filter@v2.0',
@@ -103,6 +106,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
 
     const { previewWithAttachments } = this.getCredentialLinkedAttachments(options)
 
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
+      schemaId: proposal.schemaId,
+      credentialDefinitionId: proposal.credentialDefinitionId,
+    })
     return { format: formats, attachment, preview: previewWithAttachments }
   }
 
@@ -125,22 +132,6 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       options.credentialFormats.indy?.credentialDefinitionId ?? credProposal?.credentialDefinitionId
 
     options.credentialFormats.indy.attributes = credentialRecord.credentialAttributes ?? []
-  }
-
-  public async setProposalMetaData(
-    options: ServiceAcceptProposalOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<void> {
-    const credProposalJson = options.proposalAttachment?.getDataAsJson<CredPropose>()
-    if (!credProposalJson) {
-      throw new AriesFrameworkError('Missing indy credential proposal data payload')
-    }
-    const credProposal = JsonTransformer.fromJSON(credProposalJson, CredPropose)
-
-    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-      schemaId: credProposal.schemaId,
-      credentialDefinitionId: credProposal.credentialDefinitionId,
-    })
   }
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
