@@ -1,6 +1,5 @@
 import type { OutOfBandInvitationOptions } from './messages'
 
-import { AriesFrameworkError } from '../../error'
 import { ConnectionInvitationMessage, HandshakeProtocol } from '../connections'
 import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 
