@@ -2,10 +2,10 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, ci]
     types: [opened, synchronize, reopened, labeled]
   push:
-    branches: [main]
+    branches: [main, ci]
   workflow_dispatch:
 
 env:
