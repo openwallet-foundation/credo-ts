@@ -22,7 +22,7 @@ export interface CredentialExchangeRecordProps {
   createdAt?: Date
   state: CredentialState
   connectionId?: string
-  threadId: string
+  threadId?: string
   protocolVersion: CredentialProtocolVersion
 
   tags?: CustomCredentialTags
@@ -80,11 +80,11 @@ export class CredentialExchangeRecord extends BaseRecord<
       this.createdAt = props.createdAt ?? new Date()
       this.state = props.state
       this.connectionId = props.connectionId
-      this.threadId = props.threadId
+      this.threadId = props.threadId ?? ''
       this.protocolVersion = props.protocolVersion
       this._tags = props.tags ?? {}
 
-      this.credentialAttributes = props.credentialAttributes
+      this.credentialAttributes = props.credentialAttributes ?? []
       this.autoAcceptCredential = props.autoAcceptCredential
       this.linkedAttachments = props.linkedAttachments
       this.revocationNotification = props.revocationNotification

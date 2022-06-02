@@ -143,10 +143,8 @@ export class V1CredentialService extends CredentialService {
     // Create record
     const credentialRecord = new CredentialExchangeRecord({
       connectionId: connection.id,
-      threadId: '',
       state: CredentialState.ProposalSent,
       linkedAttachments: config?.linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
-      credentialAttributes: [],
       autoAcceptCredential: config?.autoAcceptCredential,
       protocolVersion: CredentialProtocolVersion.V1,
       credentials: [],

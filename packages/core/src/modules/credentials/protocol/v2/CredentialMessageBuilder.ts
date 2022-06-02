@@ -58,7 +58,6 @@ export class CredentialMessageBuilder {
 
     const props: CredentialExchangeRecordProps = {
       connectionId: proposal.connectionId,
-      threadId: '', // set after the message is created
       state: CredentialState.ProposalSent,
       autoAcceptCredential: proposal?.autoAcceptCredential,
       protocolVersion: CredentialProtocolVersion.V2,
