@@ -58,8 +58,8 @@ describe('UpdateAssistant | Backup', () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
-      const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
+    const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map(async (data: any) => {
+      const record = await JsonTransformer.fromJSON(data.value, CredentialExchangeRecord, { validate: true })
 
       record.setTags(data.tags)
       return record
@@ -70,7 +70,7 @@ describe('UpdateAssistant | Backup', () => {
 
     // Add 0.1 data and set version to 0.1
     for (const credentialRecord of aliceCredentialRecords) {
-      await credentialRepository.save(credentialRecord)
+      await credentialRepository.save(await credentialRecord)
     }
     await storageUpdateService.setCurrentStorageVersion('0.1')
 
@@ -94,10 +94,10 @@ describe('UpdateAssistant | Backup', () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
-      const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
+    const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map(async (data: any) => {
+      const record = await JsonTransformer.fromJSON(data.value, CredentialExchangeRecord, { validate: true })
 
-      record.setTags(data.tags)
+      await record.setTags(data.tags)
       return record
     })
 
@@ -106,7 +106,7 @@ describe('UpdateAssistant | Backup', () => {
 
     // Add 0.1 data and set version to 0.1
     for (const credentialRecord of aliceCredentialRecords) {
-      await credentialRepository.save(credentialRecord)
+      await credentialRepository.save(await credentialRecord)
     }
     await storageUpdateService.setCurrentStorageVersion('0.1')
 
@@ -141,7 +141,7 @@ describe('UpdateAssistant | Backup', () => {
     expect(await fileSystem.exists(`${backupPath}-error`)).toBe(true)
 
     // Wallet should be same as when we started because of backup
-    expect((await credentialRepository.getAll()).sort((a, b) => a.id.localeCompare(b.id))).toEqual(
+    await expect(async () => (await credentialRepository.getAll()).sort((a, b) => a.id.localeCompare(b.id))).toEqual(
       aliceCredentialRecords.sort((a, b) => a.id.localeCompare(b.id))
     )
   })

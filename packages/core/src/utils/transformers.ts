@@ -18,12 +18,12 @@ import { JsonTransformer } from './JsonTransformer'
  * }
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
+export async function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
   return Transform(({ value, type }) => {
     switch (type) {
       case TransformationType.CLASS_TO_PLAIN:
         return Object.entries(value).reduce(
-          (accumulator, [key, attribute]) => ({
+          async (accumulator, [key, attribute]) => ({
             ...accumulator,
             [key]: JsonTransformer.toJSON(attribute),
           }),
@@ -32,9 +32,9 @@ export function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
 
       case TransformationType.PLAIN_TO_CLASS:
         return Object.entries(value).reduce(
-          (accumulator, [key, attribute]) => ({
+          async (accumulator, [key, attribute]) => ({
             ...accumulator,
-            [key]: JsonTransformer.fromJSON(attribute, Class),
+            [key]: await JsonTransformer.fromJSON(attribute, Class, { validate: true }),
           }),
           {}
         )

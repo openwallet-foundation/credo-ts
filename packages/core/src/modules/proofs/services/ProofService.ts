@@ -359,7 +359,7 @@ export class ProofService {
 
     this.logger.debug(`Processing presentation request with id ${proofRequestMessage.id}`)
 
-    const proofRequest = proofRequestMessage.indyProofRequest
+    const proofRequest = await proofRequestMessage.indyProofRequest()
 
     // Assert attachment
     if (!proofRequest) {
@@ -433,7 +433,7 @@ export class ProofService {
     // Assert
     proofRecord.assertState(ProofState.RequestReceived)
 
-    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+    const indyProofRequest = await proofRecord.requestMessage?.indyProofRequest()
     if (!indyProofRequest) {
       throw new PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation with thread id ${proofRecord.threadId}`,
@@ -499,7 +499,7 @@ export class ProofService {
 
     // TODO: add proof class with validator
     const indyProofJson = presentationMessage.indyProof
-    const indyProofRequest = proofRecord.requestMessage?.indyProofRequest
+    const indyProofRequest = await proofRecord.requestMessage?.indyProofRequest()
 
     if (!indyProofJson) {
       throw new PresentationProblemReportError(
@@ -715,7 +715,9 @@ export class ProofService {
       //Get credentialInfo
       if (!requestedAttribute.credentialInfo) {
         const indyCredentialInfo = await this.indyHolderService.getCredential(requestedAttribute.credentialId)
-        requestedAttribute.credentialInfo = JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo)
+        requestedAttribute.credentialInfo = await JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo, {
+          validate: true,
+        })
       }
 
       // Find the attributes that have a hashlink as a value
@@ -905,7 +907,7 @@ export class ProofService {
    *
    */
   public async verifyProof(proofJson: IndyProof, proofRequest: ProofRequest): Promise<boolean> {
-    const proof = JsonTransformer.fromJSON(proofJson, PartialProof)
+    const proof = await JsonTransformer.fromJSON(proofJson, PartialProof, { validate: true })
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
       if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
@@ -1014,7 +1016,7 @@ export class ProofService {
           return c.credentialInfo
         }
         const credentialInfo = await this.indyHolderService.getCredential(c.credentialId)
-        return JsonTransformer.fromJSON(credentialInfo, IndyCredentialInfo)
+        return await JsonTransformer.fromJSON(credentialInfo, IndyCredentialInfo, { validate: true })
       })
     )
 
@@ -1040,7 +1042,7 @@ export class ProofService {
       attributeReferent,
     })
 
-    return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
+    return (await JsonTransformer.fromJSON(credentialsJson, Credential, { validate: true })) as unknown as Credential[]
   }
 
   private async getRevocationStatusForRequestedItem({

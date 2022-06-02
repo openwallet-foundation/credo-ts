@@ -105,8 +105,8 @@ const didDocumentInstance = new DidDocument({
 })
 
 describe('Did | DidDocument', () => {
-  it('should correctly transforms Json to DidDocument class', () => {
-    const didDocument = JsonTransformer.fromJSON(didExample123Fixture, DidDocument)
+  it('should correctly transforms Json to DidDocument class', async () => {
+    const didDocument = await JsonTransformer.fromJSON(didExample123Fixture, DidDocument, { validate: true })
 
     // Check other properties
     expect(didDocument.id).toBe(didExample123Fixture.id)
@@ -153,8 +153,9 @@ describe('Did | DidDocument', () => {
   })
 
   it('validation should throw an error if the did document is invalid', async () => {
-    const didDocument = JsonTransformer.fromJSON(didExample456Invalid, DidDocument)
+    const didDocument = await JsonTransformer.fromJSON(didExample456Invalid, DidDocument, { validate: true })
 
+    // TODO: validation is done already - make this expect.rejects
     try {
       await MessageValidator.validate(didDocument)
     } catch (error) {

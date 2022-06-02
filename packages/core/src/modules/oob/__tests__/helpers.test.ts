@@ -50,15 +50,16 @@ describe('convertToNewInvitation', () => {
     })
   })
 
-  it('throws an error when no did and serviceEndpoint/routingKeys are present in the connection invitation', () => {
-    const connectionInvitation = JsonTransformer.fromJSON(
+  it('throws an error when no did and serviceEndpoint/routingKeys are present in the connection invitation', async () => {
+    const connectionInvitation = await JsonTransformer.fromJSON(
       {
         '@id': 'd88ff8fd-6c43-4683-969e-11a87a572cf2',
         '@type': 'https://didcomm.org/connections/1.0/invitation',
         label: 'a-label',
         imageUrl: 'https://my-image.com',
       },
-      ConnectionInvitationMessage
+      ConnectionInvitationMessage,
+      { validate: false }
     )
 
     expect(() => convertToNewInvitation(connectionInvitation)).toThrowError(

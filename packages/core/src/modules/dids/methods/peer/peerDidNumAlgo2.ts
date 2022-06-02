@@ -38,7 +38,7 @@ const didPeerExpansions: { [key: string]: string | undefined } = {
   a: 'accept',
 }
 
-export function didToNumAlgo2DidDocument(did: string) {
+export async function didToNumAlgo2DidDocument(did: string) {
   const parsed = parseDid(did)
   const identifierWithoutNumAlgo = parsed.id.substring(2)
 
@@ -66,7 +66,7 @@ export function didToNumAlgo2DidDocument(did: string) {
 
         service.id = `${did}#${service.type.toLowerCase()}-${serviceIndex++}`
 
-        didDocument.addService(JsonTransformer.fromJSON(service, DidDocumentService))
+        didDocument.addService(await JsonTransformer.fromJSON(service, DidDocumentService, { validate: true }))
       }
     }
     // Otherwise we can be sure it is a key

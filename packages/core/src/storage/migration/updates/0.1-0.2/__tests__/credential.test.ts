@@ -35,7 +35,7 @@ describe('0.1-0.2 | Credential', () => {
   describe('migrateCredentialRecordToV0_2()', () => {
     it('should fetch all records and apply the needed updates ', async () => {
       const records: CredentialExchangeRecord[] = [
-        getCredentialWithMetadata({
+        await getCredentialWithMetadata({
           schemaId: 'schemaId',
           credentialDefinitionId: 'schemaId',
           anotherObject: {
@@ -62,7 +62,7 @@ describe('0.1-0.2 | Credential', () => {
       // Check first object is transformed correctly
       expect(credentialRepository.update).toHaveBeenNthCalledWith(
         1,
-        getCredentialWithMetadata({
+        await getCredentialWithMetadata({
           '_internal/indyCredential': {
             schemaId: 'schemaId',
             credentialDefinitionId: 'schemaId',
@@ -84,7 +84,7 @@ describe('0.1-0.2 | Credential', () => {
 
   describe('updateIndyMetadata()', () => {
     it('should correctly update the old top-level keys into the nested structure', async () => {
-      const credentialRecord = getCredentialWithMetadata({
+      const credentialRecord = await getCredentialWithMetadata({
         schemaId: 'schemaId',
         credentialDefinitionId: 'schemaId',
         anotherObject: {
@@ -124,7 +124,7 @@ describe('0.1-0.2 | Credential', () => {
     })
 
     it('should not fail if some the top-level metadata keys do not exist', async () => {
-      const credentialRecord = getCredentialWithMetadata({
+      const credentialRecord = await getCredentialWithMetadata({
         schemaId: 'schemaId',
         anotherObject: {
           someNested: 'value',
@@ -148,7 +148,7 @@ describe('0.1-0.2 | Credential', () => {
     })
 
     it('should not fail if all of the top-level metadata keys do not exist', async () => {
-      const credentialRecord = getCredentialWithMetadata({
+      const credentialRecord = await getCredentialWithMetadata({
         anotherObject: {
           someNested: 'value',
         },
@@ -169,11 +169,12 @@ describe('0.1-0.2 | Credential', () => {
   })
 })
 
-function getCredentialWithMetadata(metadata: Record<string, unknown>) {
-  return JsonTransformer.fromJSON(
+async function getCredentialWithMetadata(metadata: Record<string, unknown>) {
+  return await JsonTransformer.fromJSON(
     {
       metadata,
     },
-    CredentialExchangeRecord
+    CredentialExchangeRecord,
+    { validate: true }
   )
 }

@@ -1,6 +1,7 @@
 import { validateOrReject } from 'class-validator'
 import { parseUrl } from 'query-string'
 
+import { ClassValidationError } from '../../../error/ClassValidationError'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { ConnectionInvitationMessage } from '../messages/ConnectionInvitationMessage'
@@ -14,7 +15,7 @@ describe('ConnectionInvitationMessage', () => {
       serviceEndpoint: 'https://example.com',
       label: 'test',
     }
-    const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage)
+    const invitation = await JsonTransformer.fromJSON(json, ConnectionInvitationMessage, { validate: true })
     await expect(validateOrReject(invitation)).resolves.toBeUndefined()
   })
 
@@ -24,8 +25,9 @@ describe('ConnectionInvitationMessage', () => {
       '@id': '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       label: 'test',
     }
-    const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage)
-    await expect(validateOrReject(invitation)).rejects.not.toBeNull()
+
+    const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage, { validate: true })
+    await expect(async () => invitation).rejects.toThrowError(ClassValidationError)
   })
 
   it('should replace legacy did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix with https://didcomm.org in message type', async () => {
@@ -36,13 +38,13 @@ describe('ConnectionInvitationMessage', () => {
       serviceEndpoint: 'https://example.com',
       label: 'test',
     }
-    const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage)
+    const invitation = await JsonTransformer.fromJSON(json, ConnectionInvitationMessage, { validate: true })
 
     // Assert type
     expect(invitation.type).toBe('https://didcomm.org/connections/1.0/invitation')
 
     // Assert validation also works with the transformation
-    await expect(validateOrReject(invitation)).resolves.toBeUndefined()
+    expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
   })
 
   describe('toUrl', () => {
@@ -55,7 +57,7 @@ describe('ConnectionInvitationMessage', () => {
         serviceEndpoint: 'https://example.com',
         label: 'test',
       }
-      const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage)
+      const invitation = await JsonTransformer.fromJSON(json, ConnectionInvitationMessage, { validate: true })
       const invitationUrl = invitation.toUrl({
         domain,
       })

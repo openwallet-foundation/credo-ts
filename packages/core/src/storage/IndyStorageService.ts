@@ -92,9 +92,9 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     return transformedTags
   }
 
-  private recordToInstance(record: WalletRecord, recordClass: BaseRecordConstructor<T>): T {
+  private async recordToInstance(record: WalletRecord, recordClass: BaseRecordConstructor<T>): Promise<T> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const instance = JsonTransformer.deserialize<T>(record.value!, recordClass)
+    const instance = await JsonTransformer.deserialize<T>(record.value!, recordClass, { validate: true })
     instance.id = record.id
 
     const tags = record.tags ? this.transformToRecordTagValues(record.tags) : {}

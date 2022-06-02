@@ -6,7 +6,6 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../utils/MessageValidator'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
 export interface BaseInvitationOptions {
@@ -127,9 +126,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
 
     if (typeof encodedInvitation === 'string') {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
-      const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
-
-      await MessageValidator.validate(invitation)
+      const invitation = await JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage, { validate: true })
 
       return invitation
     } else {

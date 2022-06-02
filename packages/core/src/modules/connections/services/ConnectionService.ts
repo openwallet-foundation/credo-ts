@@ -18,7 +18,6 @@ import { InjectionSymbols } from '../../../constants'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../utils/MessageValidator'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
 import { Wallet } from '../../../wallet/Wallet'
 import { DidKey, Key, IndyAgentService } from '../../dids'
@@ -291,12 +290,7 @@ export class ConnectionService {
       throw error
     }
 
-    const connection = JsonTransformer.fromJSON(connectionJson, Connection)
-    try {
-      await MessageValidator.validate(connection)
-    } catch (error) {
-      throw new Error(error)
-    }
+    const connection = await JsonTransformer.fromJSON(connectionJson, Connection, { validate: true })
 
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
     // as the recipient key(s) in the connection invitation message

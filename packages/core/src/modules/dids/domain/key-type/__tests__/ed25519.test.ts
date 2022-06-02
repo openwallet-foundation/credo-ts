@@ -55,20 +55,28 @@ describe('ed25519', () => {
     expect(keyDidEd25519.supportedVerificationMethodTypes).toMatchObject(['Ed25519VerificationKey2018'])
   })
 
-  it('returns key for Ed25519VerificationKey2018 verification method', () => {
-    const verificationMethod = JsonTransformer.fromJSON(didKeyEd25519Fixture.verificationMethod[0], VerificationMethod)
+  it('returns key for Ed25519VerificationKey2018 verification method', async () => {
+    const verificationMethod = await JsonTransformer.fromJSON(
+      didKeyEd25519Fixture.verificationMethod[0],
+      VerificationMethod,
+      { validate: true }
+    )
 
     const key = keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)
 
     expect(key.fingerprint).toBe(TEST_ED25519_FINGERPRINT)
   })
 
-  it('throws an error if an invalid verification method is passed', () => {
-    const verificationMethod = JsonTransformer.fromJSON(didKeyEd25519Fixture.verificationMethod[0], VerificationMethod)
+  it('throws an error if an invalid verification method is passed', async () => {
+    const verificationMethod = await JsonTransformer.fromJSON(
+      didKeyEd25519Fixture.verificationMethod[0],
+      VerificationMethod,
+      { validate: true }
+    )
 
     verificationMethod.type = 'SomeRandomType'
 
-    expect(() => keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)).toThrowError(
+    await expect(async () => keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)).rejects.toThrowError(
       'Invalid verification method passed'
     )
   })

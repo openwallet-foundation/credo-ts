@@ -1,3 +1,5 @@
+import type { RequestedAttribute } from './RequestedAttribute'
+import type { RequestedPredicate } from './RequestedPredicate'
 import type { IndyRequestedCredentials } from 'indy-sdk'
 
 import { Expose } from 'class-transformer'
@@ -5,9 +7,6 @@ import { ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { RecordTransformer } from '../../../utils/transformers'
-
-import { RequestedAttribute } from './RequestedAttribute'
-import { RequestedPredicate } from './RequestedPredicate'
 
 interface RequestedCredentialsOptions {
   requestedAttributes?: Record<string, RequestedAttribute>
@@ -31,12 +30,12 @@ export class RequestedCredentials {
 
   @Expose({ name: 'requested_attributes' })
   @ValidateNested({ each: true })
-  @RecordTransformer(RequestedAttribute)
+  // @RecordTransformer(RequestedAttribute)
   public requestedAttributes!: Record<string, RequestedAttribute>
 
   @Expose({ name: 'requested_predicates' })
   @ValidateNested({ each: true })
-  @RecordTransformer(RequestedPredicate)
+  // @RecordTransformer(RequestedPredicate)
   public requestedPredicates!: Record<string, RequestedPredicate>
 
   @Expose({ name: 'self_attested_attributes' })

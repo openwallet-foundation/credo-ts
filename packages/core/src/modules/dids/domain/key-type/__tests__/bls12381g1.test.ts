@@ -55,20 +55,28 @@ describe('bls12381g1', () => {
     expect(keyDidBls12381g1.supportedVerificationMethodTypes).toMatchObject(['Bls12381G1Key2020'])
   })
 
-  it('returns key for Bls12381G1Key2020 verification method', () => {
-    const verificationMethod = JsonTransformer.fromJSON(keyBls12381g1Fixture.verificationMethod[0], VerificationMethod)
+  it('returns key for Bls12381G1Key2020 verification method', async () => {
+    const verificationMethod = await JsonTransformer.fromJSON(
+      keyBls12381g1Fixture.verificationMethod[0],
+      VerificationMethod,
+      { validate: true }
+    )
 
     const key = keyDidBls12381g1.getKeyFromVerificationMethod(verificationMethod)
 
     expect(key.fingerprint).toBe(TEST_BLS12381G1_FINGERPRINT)
   })
 
-  it('throws an error if an invalid verification method is passed', () => {
-    const verificationMethod = JsonTransformer.fromJSON(keyBls12381g1Fixture.verificationMethod[0], VerificationMethod)
+  it('throws an error if an invalid verification method is passed', async () => {
+    const verificationMethod = await JsonTransformer.fromJSON(
+      keyBls12381g1Fixture.verificationMethod[0],
+      VerificationMethod,
+      { validate: true }
+    )
 
     verificationMethod.type = 'SomeRandomType'
 
-    expect(() => keyDidBls12381g1.getKeyFromVerificationMethod(verificationMethod)).toThrowError(
+    await expect(async () => keyDidBls12381g1.getKeyFromVerificationMethod(verificationMethod)).rejects.toThrowError(
       'Invalid verification method passed'
     )
   })

@@ -3,9 +3,9 @@ import { JsonTransformer } from '../../utils/JsonTransformer'
 import { L10nDecorator } from './L10nDecorator'
 
 describe('Decorators | L10nDecorator', () => {
-  it('should correctly transform Json to L10nDecorator class', () => {
+  it('should correctly transform Json to L10nDecorator class', async () => {
     const locale = 'en'
-    const decorator = JsonTransformer.fromJSON({ locale }, L10nDecorator)
+    const decorator = await JsonTransformer.fromJSON({ locale }, L10nDecorator, { validate: true })
 
     expect(decorator.locale).toBe(locale)
   })
