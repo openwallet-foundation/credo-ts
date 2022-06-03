@@ -8,6 +8,7 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
@@ -327,6 +328,19 @@ describe('out of band', () => {
 
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+    })
+
+    test('make a connection based on old connection invitation with multiple endpoints uses first endpoint for invitation', async () => {
+      const { invitation } = await faberAgent.oob.createLegacyInvitation({
+        ...makeConnectionConfig,
+        routing: {
+          endpoints: ['https://endpoint-1.com', 'https://endpoint-2.com'],
+          routingKeys: [Key.fromFingerprint('z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE')],
+          recipientKey: Key.fromFingerprint('z6MkuXrzmDjBoy7r9LA1Czjv9eQXMGr9gt6JBH8zPUMKkCQH'),
+        },
+      })
+
+      expect(invitation.serviceEndpoint).toBe('https://endpoint-1.com')
     })
 
     test('process credential offer requests based on OOB message', async () => {

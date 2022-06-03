@@ -8,6 +8,7 @@ import { scoped, Lifecycle } from 'tsyringe'
 
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../error'
+import { JsonTransformer } from '../../utils'
 
 import { OutOfBandEventTypes } from './domain/OutOfBandEvents'
 import { OutOfBandRole } from './domain/OutOfBandRole'
@@ -132,10 +133,16 @@ export class OutOfBandService {
     outOfBandRecord.state = newState
     await this.outOfBandRepository.update(outOfBandRecord)
 
+    this.emitStateChangedEvent(outOfBandRecord, previousState)
+  }
+
+  public emitStateChangedEvent(outOfBandRecord: OutOfBandRecord, previousState: OutOfBandState | null) {
+    const clonedOutOfBandRecord = JsonTransformer.clone(outOfBandRecord)
+
     this.eventEmitter.emit<OutOfBandStateChangedEvent>({
       type: OutOfBandEventTypes.OutOfBandStateChanged,
       payload: {
-        outOfBandRecord,
+        outOfBandRecord: clonedOutOfBandRecord,
         previousState,
       },
     })
