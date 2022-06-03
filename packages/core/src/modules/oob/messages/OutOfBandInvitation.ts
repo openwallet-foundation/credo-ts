@@ -167,7 +167,7 @@ function OutOfBandServiceTransformer() {
         if (typeof service === 'string') return new String(service)
 
         // inline didcomm service
-        return JsonTransformer.fromJSON(service, OutOfBandDidCommService)
+        return JsonTransformer.fromJSON(service, OutOfBandDidCommService, { validate: false })
       })
     } else if (type === TransformationType.CLASS_TO_PLAIN) {
       return value.map((service) =>

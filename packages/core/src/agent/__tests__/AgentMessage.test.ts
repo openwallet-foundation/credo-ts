@@ -65,7 +65,7 @@ describe('AgentMessage', () => {
         '@type': 'https://didcomm.org/fake-protocol/2.0/message',
       }
 
-      const message = JsonTransformer.fromJSON(json, CustomProtocolMessage)
+      const message = JsonTransformer.fromJSON(json, CustomProtocolMessage, { validate: false })
 
       await expect(MessageValidator.validate(message)).rejects.toMatchObject([
         {

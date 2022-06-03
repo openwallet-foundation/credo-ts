@@ -24,7 +24,7 @@ describe('DidResolverService', () => {
     mockProperty(KeyDidResolver.prototype, 'supportedMethods', ['key'])
 
     const returnValue = {
-      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument, { validate: false }),
+      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
       didDocumentMetadata: {},
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',

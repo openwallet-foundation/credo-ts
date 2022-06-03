@@ -1,3 +1,4 @@
+import { ClassValidationError } from '../../../../error/ClassValidationError'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import didExample123Fixture from '../../__tests__/__fixtures__/didExample123.json'
 import didExample456Invalid from '../../__tests__/__fixtures__/didExample456Invalid.json'
@@ -105,7 +106,7 @@ const didDocumentInstance = new DidDocument({
 
 describe('Did | DidDocument', () => {
   it('should correctly transforms Json to DidDocument class', () => {
-    const didDocument = JsonTransformer.fromJSON(didExample123Fixture, DidDocument, { validate: false })
+    const didDocument = JsonTransformer.fromJSON(didExample123Fixture, DidDocument)
 
     // Check other properties
     expect(didDocument.id).toBe(didExample123Fixture.id)
@@ -151,99 +152,11 @@ describe('Did | DidDocument', () => {
     expect(keyAgreement[1]).toBeInstanceOf(VerificationMethod)
   })
 
-  it('validation should throw an error if the did document is invalid', async () => {
-    // TODO: validation is done already - make this expect.rejects
+  it('validation should throw an error if the did document is invalid', () => {
     try {
       JsonTransformer.fromJSON(didExample456Invalid, DidDocument)
     } catch (error) {
-      expect(error).toMatchObject([
-        {
-          value: 'did:example:123',
-          property: 'alsoKnownAs',
-          children: [],
-          constraints: { isArray: 'alsoKnownAs must be an array' },
-        },
-        {
-          value: [
-            'did:example:456#key-1',
-            {
-              id: 'did:example:456#key-2',
-              type: 'Ed25519VerificationKey2018',
-              controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
-              publicKeyBase58: '-----BEGIN PUBLIC 9...',
-            },
-            {
-              id: 'did:example:456#key-3',
-              controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
-              publicKeyHex: '-----BEGIN PUBLIC A...',
-            },
-          ],
-          property: 'verificationMethod',
-          children: [
-            {
-              target: [
-                'did:example:456#key-1',
-                {
-                  id: 'did:example:456#key-2',
-                  type: 'Ed25519VerificationKey2018',
-                  controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
-                  publicKeyBase58: '-----BEGIN PUBLIC 9...',
-                },
-                {
-                  id: 'did:example:456#key-3',
-                  controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
-                  publicKeyHex: '-----BEGIN PUBLIC A...',
-                },
-              ],
-              value: 'did:example:456#key-1',
-              property: '0',
-              children: [
-                {
-                  value: 'did:example:456#key-1',
-                  property: 'verificationMethod',
-                  constraints: {
-                    nestedValidation: 'each value in nested property verificationMethod must be either object or array',
-                  },
-                },
-              ],
-            },
-            {
-              target: [
-                'did:example:456#key-1',
-                {
-                  id: 'did:example:456#key-2',
-                  type: 'Ed25519VerificationKey2018',
-                  controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
-                  publicKeyBase58: '-----BEGIN PUBLIC 9...',
-                },
-                {
-                  id: 'did:example:456#key-3',
-                  controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
-                  publicKeyHex: '-----BEGIN PUBLIC A...',
-                },
-              ],
-              value: {
-                id: 'did:example:456#key-3',
-                controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
-                publicKeyHex: '-----BEGIN PUBLIC A...',
-              },
-              property: '2',
-              children: [
-                {
-                  target: {
-                    id: 'did:example:456#key-3',
-                    controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
-                    publicKeyHex: '-----BEGIN PUBLIC A...',
-                  },
-                  property: 'type',
-                  children: [],
-                  constraints: { isString: 'type must be a string' },
-                },
-              ],
-            },
-          ],
-        },
-      ])
+      expect(error).toBeInstanceOf(ClassValidationError)
     }
   })
 

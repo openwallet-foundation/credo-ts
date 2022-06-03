@@ -70,10 +70,13 @@ describe('bls12381g1g2', () => {
   it('throws an error for getKeyFromVerificationMethod as it is not supported for bls12381g1g2 key types', () => {
     const verificationMethod = JsonTransformer.fromJSON(
       keyBls12381g1g2Fixture.verificationMethod[0],
-      VerificationMethod
+      VerificationMethod,
+      { validate: false }
     )
 
-    expect(() => keyDidBls12381g1g2.getKeyFromVerificationMethod(verificationMethod)).toThrowError()
+    expect(() => keyDidBls12381g1g2.getKeyFromVerificationMethod(verificationMethod)).toThrowError(
+      'Not supported for bls12381g1g2 key'
+    )
   })
 
   it('should correctly go from g1g2 to g1', async () => {

@@ -16,7 +16,7 @@ describe('ConnectionInvitationMessage', () => {
       label: 'test',
     }
     const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage)
-    expect(invitation).toBeInstanceOf(ClassValidationError)
+    expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
   })
 
   it('should throw error if both did and inline keys / endpoint are missing', async () => {
@@ -26,8 +26,7 @@ describe('ConnectionInvitationMessage', () => {
       label: 'test',
     }
 
-    const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage)
-    expect(invitation).toBeInstanceOf(ClassValidationError)
+    expect(() => JsonTransformer.fromJSON(json, ConnectionInvitationMessage)).toThrowError(ClassValidationError)
   })
 
   it('should replace legacy did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix with https://didcomm.org in message type', async () => {

@@ -134,7 +134,7 @@ describe('peer dids', () => {
     const numAlgo = getNumAlgoFromPeerDid(did)
 
     // Note that the did document could be undefined (if inlined did:peer or public did)
-    const didDocument = JsonTransformer.fromJSON(didPeer1zQmY, DidDocument, { validate: false })
+    const didDocument = JsonTransformer.fromJSON(didPeer1zQmY, DidDocument)
 
     // make sure the dids are valid by matching them against our encoded variants
     expect(didDocumentJsonToNumAlgo1Did(didPeer1zQmY)).toBe(did)

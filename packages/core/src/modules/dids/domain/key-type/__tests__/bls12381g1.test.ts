@@ -68,6 +68,8 @@ describe('bls12381g1', () => {
 
     verificationMethod.type = 'SomeRandomType'
 
-    expect(() => keyDidBls12381g1.getKeyFromVerificationMethod(verificationMethod)).toThrowError()
+    expect(() => keyDidBls12381g1.getKeyFromVerificationMethod(verificationMethod)).toThrowError(
+      'Invalid verification method passed'
+    )
   })
 })

@@ -152,7 +152,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
   const oldTheirDidDocJson = untypedConnectionRecord.theirDidDoc as JsonObject | undefined
 
   if (oldDidDocJson) {
-    const oldDidDoc = JsonTransformer.fromJSON(oldDidDocJson, DidDoc)
+    const oldDidDoc = JsonTransformer.fromJSON(oldDidDocJson, DidDoc, { validate: false })
 
     agent.config.logger.debug(
       `Found a legacy did document for did ${oldDidDoc.id} in connection record didDoc. Converting it to a peer did document.`
@@ -198,7 +198,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
   }
 
   if (oldTheirDidDocJson) {
-    const oldTheirDidDoc = JsonTransformer.fromJSON(oldTheirDidDocJson, DidDoc)
+    const oldTheirDidDoc = JsonTransformer.fromJSON(oldTheirDidDocJson, DidDoc, { validate: false })
 
     agent.config.logger.debug(
       `Found a legacy did document for theirDid ${oldTheirDidDoc.id} in connection record theirDidDoc. Converting it to a peer did document.`
@@ -303,7 +303,7 @@ export async function migrateToOobRecord(
 
   // Only migrate if there is an invitation stored
   if (oldInvitationJson) {
-    const oldInvitation = JsonTransformer.fromJSON(oldInvitationJson, ConnectionInvitationMessage)
+    const oldInvitation = JsonTransformer.fromJSON(oldInvitationJson, ConnectionInvitationMessage, { validate: false })
 
     agent.config.logger.debug(`Found a legacy invitation in connection record. Migrating it to an out of band record.`)
 

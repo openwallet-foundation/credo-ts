@@ -68,6 +68,8 @@ describe('ed25519', () => {
 
     verificationMethod.type = 'SomeRandomType'
 
-    expect(() => keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)).toThrowError()
+    expect(() => keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)).toThrowError(
+      'Invalid verification method passed'
+    )
   })
 })

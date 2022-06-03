@@ -273,7 +273,7 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should not create a did record if a did record for the did already exists', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJson, ConnectionRecord, { validate: false })
+      const connectionRecord = JsonTransformer.fromJSON(connectionJson, ConnectionRecord)
 
       const didRecord = JsonTransformer.fromJSON(
         {
@@ -310,8 +310,7 @@ describe('0.1-0.2 | Connection', () => {
             recipientKeys: ['4kgVt6CidfKgo1MoWMqsQX#4', '5sD8ttxn9Bd9a1HmueLirJ4HNhs4Q8qzAqDd1UCR9iqD'],
           },
         },
-        DidRecord,
-        { validate: false }
+        DidRecord
       )
 
       // Both did records already exist
@@ -527,8 +526,7 @@ describe('0.1-0.2 | Connection', () => {
           mediatorId: 'a-mediator-id',
           createdAt: connectionRecord.createdAt.toISOString(),
         },
-        OutOfBandRecord,
-        { validate: false }
+        OutOfBandRecord
       )
 
       // Out of band record already exists

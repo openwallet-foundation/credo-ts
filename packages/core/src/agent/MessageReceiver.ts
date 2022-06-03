@@ -210,7 +210,7 @@ export class MessageReceiver {
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage
-    return JsonTransformer.fromJSON(message, MessageClass)
+    return JsonTransformer.fromJSON(message, MessageClass, { validate: false })
   }
 
   /**

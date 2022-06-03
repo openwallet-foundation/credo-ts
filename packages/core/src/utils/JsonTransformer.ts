@@ -28,22 +28,24 @@ export class JsonTransformer {
     if (!options.validate) {
       return plainToInstance(Class, json, { exposeDefaultValues: true })
     } else {
+      const plainInstance = plainToInstance(Class, json, { exposeDefaultValues: true })
+      //  validateSync is not happy with null/undefined. Return it to keep returning the same as previous versions without validation
+      if (plainInstance === undefined || plainInstance === null) {
+        return plainInstance
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const plainInstance = plainToInstance(Class, json, { exposeDefaultValues: true }) as any
-      try {
-        MessageValidator.validateSync(plainInstance)
+      const errors = MessageValidator.validateSync(plainInstance as any)
+      // NOTE: validateSync (strangely) return an Array of errors so we
+      // have to transform that into an error of choice and throw that.
+      if (isValidationErrorArray(errors)) {
+        throw new ClassValidationError('Failed to validate class.', {
+          recordType: typeof Class,
+          cause: new Error(JSON.stringify(errors)),
+        })
+      } else if (errors.length !== 0) {
+        throw new ClassValidationError('An unknown validation error occurred.', { recordType: typeof Class })
+      } else {
         return plainInstance as T
-      } catch (e) {
-        // NOTE: validateSync (strangely) throws an Array of errors so we
-        // have to catch and transform that into an error.
-        if (isValidationErrorArray(e)) {
-          throw new ClassValidationError('Failed to validate class.', {
-            recordType: typeof Class,
-            cause: new Error(JSON.stringify(e)),
-          })
-        } else {
-          throw new ClassValidationError('An unknown validation error occurred.', { recordType: typeof Class })
-        }
       }
     }
   }

@@ -700,7 +700,9 @@ export class ProofService {
       //Get credentialInfo
       if (!requestedAttribute.credentialInfo) {
         const indyCredentialInfo = await this.indyHolderService.getCredential(requestedAttribute.credentialId)
-        requestedAttribute.credentialInfo = JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo)
+        requestedAttribute.credentialInfo = JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo, {
+          validate: false,
+        })
       }
 
       // Find the attributes that have a hashlink as a value
@@ -890,7 +892,7 @@ export class ProofService {
    *
    */
   public async verifyProof(proofJson: IndyProof, proofRequest: ProofRequest): Promise<boolean> {
-    const proof = JsonTransformer.fromJSON(proofJson, PartialProof)
+    const proof = JsonTransformer.fromJSON(proofJson, PartialProof, { validate: false })
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
       if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
@@ -999,7 +1001,7 @@ export class ProofService {
           return c.credentialInfo
         }
         const credentialInfo = await this.indyHolderService.getCredential(c.credentialId)
-        return JsonTransformer.fromJSON(credentialInfo, IndyCredentialInfo)
+        return JsonTransformer.fromJSON(credentialInfo, IndyCredentialInfo, { validate: false })
       })
     )
 
@@ -1025,7 +1027,7 @@ export class ProofService {
       attributeReferent,
     })
 
-    return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
+    return JsonTransformer.fromJSON(credentialsJson, Credential, { validate: false }) as unknown as Credential[]
   }
 
   private async getRevocationStatusForRequestedItem({

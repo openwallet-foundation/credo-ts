@@ -1,5 +1,6 @@
 import type { ValidationError } from 'class-validator'
 
+import { ClassValidationError } from '../../../error/ClassValidationError'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'
@@ -123,12 +124,11 @@ describe('OutOfBandInvitation', () => {
         ],
       }
 
-      expect.assertions(1)
+      // expect.assertions(1)
       try {
         await OutOfBandInvitation.fromJson(json)
       } catch (error) {
         const [firstError] = error as [ValidationError]
-
         expect(firstError).toMatchObject({
           children: [
             {
