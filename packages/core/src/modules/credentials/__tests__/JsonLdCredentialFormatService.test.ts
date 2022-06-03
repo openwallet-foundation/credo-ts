@@ -26,7 +26,6 @@ import { W3cCredential } from '../../vc/models/credential/W3cCredential'
 import { W3cCredentialRecord } from '../../vc/models/credential/W3cCredentialRecord'
 import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
-import { CredentialUtils } from '../CredentialUtils'
 import { CredentialFormatType } from '../CredentialsModuleOptions'
 import { JsonLdCredentialFormatService } from '../formats/jsonld/JsonLdCredentialFormatService'
 import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID } from '../protocol/v1/messages'
@@ -216,8 +215,7 @@ describe('JsonLd CredentialFormatService', () => {
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
-        protocolVersion: CredentialProtocolVersion.V2,
-        connectionId: '',
+        connection,
       }
     })
 

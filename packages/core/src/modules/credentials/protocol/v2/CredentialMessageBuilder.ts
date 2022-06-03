@@ -214,7 +214,7 @@ export class CredentialMessageBuilder {
   ): Promise<{ credentialRecord: CredentialExchangeRecord; message: V2OfferCredentialMessage }> {
     if (formatServices.length === 0) throw new AriesFrameworkError('no format services provided to createOffer')
 
-    const { autoAcceptCredential, comment, connectionId } = options
+    const { autoAcceptCredential, comment, connection } = options
 
     const formats: CredentialFormatSpec[] = []
     const offerAttachments: Attachment[] = []
@@ -245,7 +245,7 @@ export class CredentialMessageBuilder {
     const message = new V2OfferCredentialMessage(messageProps)
 
     const recordProps: CredentialExchangeRecordProps = {
-      connectionId,
+      connectionId: connection?.id,
       threadId: message.threadId,
       autoAcceptCredential,
       state: CredentialState.OfferSent,

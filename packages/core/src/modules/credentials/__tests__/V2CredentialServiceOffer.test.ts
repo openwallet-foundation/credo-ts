@@ -20,7 +20,6 @@ import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
 import { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import { CredentialEventTypes } from '../CredentialEvents'
-import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
 import { IndyCredentialFormatService } from '../formats/indy/IndyCredentialFormatService'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
@@ -136,19 +135,20 @@ describe('CredentialService', () => {
     beforeEach(async () => {
       offerOptions = {
         comment: 'some comment',
-        connectionId: connection.id,
+        connection,
         credentialFormats: {
           indy: {
             attributes: credentialPreview.attributes,
             credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
           },
         },
-        protocolVersion: CredentialProtocolVersion.V1,
       }
     })
 
     test(`creates credential record in ${CredentialState.OfferSent} state with offer, thread ID`, async () => {
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
+
+      // when
       await credentialService.createOffer(offerOptions)
 
       // then

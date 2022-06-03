@@ -1596,6 +1596,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "574b2a37-1db1-4af1-a3bf-35c6cb9e1d7a",
       "metadata": Object {
         "credentialDefinitionId": "TL1EaPFCZ8Si5aUrqScBDt:3:CL:681:default",
@@ -1705,6 +1706,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "5f2b7bc7-edfd-47e7-a1d4-aae050df2c4a",
       "metadata": Object {
         "credentialDefinitionId": "TL1EaPFCZ8Si5aUrqScBDt:3:CL:681:default",
@@ -1831,6 +1833,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "ad644d8a-48a2-4c55-b46d-7a7f1a9278c7",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -1942,6 +1945,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "c7e0a752-7f1c-41c0-b0ae-a68c2d97ca8c",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -2064,6 +2068,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "574b2a37-1db1-4af1-a3bf-35c6cb9e1d7a",
       "metadata": Object {
         "credentialDefinitionId": "TL1EaPFCZ8Si5aUrqScBDt:3:CL:681:default",
@@ -2173,6 +2178,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "5f2b7bc7-edfd-47e7-a1d4-aae050df2c4a",
       "metadata": Object {
         "credentialDefinitionId": "TL1EaPFCZ8Si5aUrqScBDt:3:CL:681:default",
@@ -2299,6 +2305,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "ad644d8a-48a2-4c55-b46d-7a7f1a9278c7",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -2410,6 +2417,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "c7e0a752-7f1c-41c0-b0ae-a68c2d97ca8c",
       "metadata": Object {
         "_internal/indyCredential": Object {

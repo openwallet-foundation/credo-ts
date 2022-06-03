@@ -112,25 +112,4 @@ describe('convertToOldInvitation', () => {
       did: 'did:sov:a-did',
     })
   })
-
-  it('throws an error when more than service is present in the out of band invitation', () => {
-    const oobInvitation = new OutOfBandInvitation({
-      id: 'd88ff8fd-6c43-4683-969e-11a87a572cf2',
-      imageUrl: 'https://my-image.com',
-      label: 'a-label',
-      services: [
-        new DidCommV1Service({
-          id: '#inline',
-          recipientKeys: ['did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
-          routingKeys: ['did:key:z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL'],
-          serviceEndpoint: 'https://my-agent.com',
-        }),
-        'did:sov:a-did',
-      ],
-    })
-
-    expect(() => convertToOldInvitation(oobInvitation)).toThrowError(
-      `Attribute 'services' MUST have exactly one entry. It contains 2 entries.`
-    )
-  })
 })
