@@ -24,7 +24,7 @@ describe('ConnectionState', () => {
       expect(rfc0160StateFromDidExchangeState(DidExchangeState.ResponseReceived)).toEqual(ConnectionState.Responded)
       expect(rfc0160StateFromDidExchangeState(DidExchangeState.ResponseReceived)).toEqual(ConnectionState.Responded)
 
-      expect(rfc0160StateFromDidExchangeState(DidExchangeState.Completed)).toEqual(DidExchangeState.Completed)
+      expect(rfc0160StateFromDidExchangeState(DidExchangeState.Completed)).toEqual(ConnectionState.Complete)
     })
   })
 })

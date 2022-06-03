@@ -1,6 +1,6 @@
 import type { Validate } from 'class-validator'
 
-import { instanceToPlain, plainToInstance } from 'class-transformer'
+import { instanceToPlain, plainToInstance, instanceToInstance } from 'class-transformer'
 
 import { ClassValidationError } from '../error/ClassValidationError'
 import { isValidationErrorArray } from '../error/ValidationErrorUtils'
@@ -46,6 +46,15 @@ export class JsonTransformer {
         }
       }
     }
+  }
+
+  public static clone<T>(classInstance: T): T {
+    return instanceToInstance(classInstance, {
+      exposeDefaultValues: true,
+      enableCircularCheck: true,
+      enableImplicitConversion: true,
+      ignoreDecorators: true,
+    })
   }
 
   public static serialize<T>(classInstance: T): string {

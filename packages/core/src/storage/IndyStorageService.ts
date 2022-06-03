@@ -1,5 +1,5 @@
 import type { BaseRecord, TagsBase } from './BaseRecord'
-import type { StorageService, BaseRecordConstructor } from './StorageService'
+import type { StorageService, BaseRecordConstructor, Query } from './StorageService'
 import type { default as Indy, WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
@@ -92,7 +92,32 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     return transformedTags
   }
 
-  private async recordToInstance(record: WalletRecord, recordClass: BaseRecordConstructor<T>): Promise<T> {
+  /**
+   * Transforms the search query into a wallet query compatible with indy WQL.
+   *
+   * The format used by AFJ is almost the same as the indy query, with the exception of
+   * the encoding of values, however this is handled by the {@link IndyStorageService.transformToRecordTagValues}
+   * method.
+   */
+  private indyQueryFromSearchQuery(query: Query<T>): Record<string, unknown> {
+    // eslint-disable-next-line prefer-const
+    let { $and, $or, $not, ...tags } = query
+
+    $and = ($and as Query<T>[] | undefined)?.map((q) => this.indyQueryFromSearchQuery(q))
+    $or = ($or as Query<T>[] | undefined)?.map((q) => this.indyQueryFromSearchQuery(q))
+    $not = $not ? this.indyQueryFromSearchQuery($not as Query<T>) : undefined
+
+    const indyQuery = {
+      ...this.transformFromRecordTagValues(tags as unknown as TagsBase),
+      $and,
+      $or,
+      $not,
+    }
+
+    return indyQuery
+  }
+
+  private recordToInstance(record: WalletRecord, recordClass: BaseRecordConstructor<T>): T {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const instance = JsonTransformer.deserialize<T>(record.value!, recordClass)
     instance.id = record.id
@@ -191,11 +216,8 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   }
 
   /** @inheritDoc */
-  public async findByQuery(
-    recordClass: BaseRecordConstructor<T>,
-    query: Partial<ReturnType<T['getTags']>>
-  ): Promise<T[]> {
-    const indyQuery = this.transformFromRecordTagValues(query as unknown as TagsBase)
+  public async findByQuery(recordClass: BaseRecordConstructor<T>, query: Query<T>): Promise<T[]> {
+    const indyQuery = this.indyQueryFromSearchQuery(query)
 
     const recordIterator = this.search(recordClass.type, indyQuery, IndyStorageService.DEFAULT_QUERY_OPTIONS)
     const records = []

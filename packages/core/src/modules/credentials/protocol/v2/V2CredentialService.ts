@@ -2,7 +2,6 @@ import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
   ServiceAcceptCredentialOptions,
   CredentialProtocolMsgReturnType,
@@ -38,7 +37,6 @@ import { ConnectionService } from '../../../connections/services/ConnectionServi
 import { DidResolverService } from '../../../dids'
 import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
-import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialState } from '../../CredentialState'
 import { CredentialFormatType } from '../../CredentialsModuleOptions'
@@ -128,14 +126,7 @@ export class V2CredentialService extends CredentialService {
     this.logger.debug('Save meta data and emit state change event')
 
     await this.credentialRepository.save(credentialRecord)
-
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
-    })
+    this.emitStateChangedEvent(credentialRecord, null)
 
     await this.didCommMessageRepository.saveOrUpdateAgentMessage({
       agentMessage: proposalMessage,
@@ -211,7 +202,7 @@ export class V2CredentialService extends CredentialService {
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
       })
-      await this.emitEvent(credentialRecord)
+      this.emitStateChangedEvent(credentialRecord, null)
     }
     return credentialRecord
   }
@@ -357,7 +348,7 @@ export class V2CredentialService extends CredentialService {
     credentialRecord.connectionId = connection?.id
 
     await this.credentialRepository.save(credentialRecord)
-    await this.emitEvent(credentialRecord)
+    this.emitStateChangedEvent(credentialRecord, null)
 
     await this.didCommMessageRepository.saveOrUpdateAgentMessage({
       agentMessage: credentialOfferMessage,
@@ -513,13 +504,7 @@ export class V2CredentialService extends CredentialService {
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
       })
-      this.eventEmitter.emit<CredentialStateChangedEvent>({
-        type: CredentialEventTypes.CredentialStateChanged,
-        payload: {
-          credentialRecord,
-          previousState: null,
-        },
-      })
+      this.emitStateChangedEvent(credentialRecord, null)
     }
 
     return credentialRecord
@@ -1004,16 +989,6 @@ export class V2CredentialService extends CredentialService {
    */
   public getFormatService(credentialFormatType: CredentialFormatType): CredentialFormatService {
     return this.serviceFormatMap[credentialFormatType]
-  }
-
-  private async emitEvent(credentialRecord: CredentialExchangeRecord) {
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
-    })
   }
 
   /**

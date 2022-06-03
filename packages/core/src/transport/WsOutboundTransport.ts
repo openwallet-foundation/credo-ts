@@ -1,4 +1,5 @@
 import type { Agent } from '../agent/Agent'
+import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
 import type { OutboundTransport } from './OutboundTransport'
@@ -7,6 +8,7 @@ import type WebSocket from 'ws'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { EventEmitter } from '../agent/EventEmitter'
+import { AgentEventTypes } from '../agent/Events'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 import { Buffer } from '../utils/buffer'
@@ -109,7 +111,12 @@ export class WsOutboundTransport implements OutboundTransport {
       )
     }
     this.logger.debug('Payload received from mediator:', payload)
-    void this.agent.receiveMessage(payload)
+    this.eventEmitter.emit<AgentMessageReceivedEvent>({
+      type: AgentEventTypes.AgentMessageReceived,
+      payload: {
+        message: payload,
+      },
+    })
   }
 
   private listenOnWebSocketMessages(socket: WebSocket) {
