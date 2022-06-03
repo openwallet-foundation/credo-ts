@@ -1,3 +1,5 @@
 export * from './IndyHolderService'
 export * from './IndyIssuerService'
 export * from './IndyVerifierService'
+export * from './IndyUtilitiesService'
+export * from './IndyRevocationService'

@@ -1,7 +1,7 @@
 import type { ValidationOptions } from 'class-validator'
 
 import { Transform, TransformationType } from 'class-transformer'
-import { ValidateBy, buildMessage } from 'class-validator'
+import { isString, ValidateBy, buildMessage } from 'class-validator'
 import { DateTime } from 'luxon'
 
 import { Metadata } from '../storage/Metadata'
@@ -47,8 +47,6 @@ export function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
 
 /*
  * Decorator that transforms to and from a metadata instance.
- *
- * @todo remove the conversion at 0.1.0 release via a migration script
  */
 export function MetadataTransformer() {
   return Transform(({ value, type }) => {
@@ -57,17 +55,7 @@ export function MetadataTransformer() {
     }
 
     if (type === TransformationType.PLAIN_TO_CLASS) {
-      const { requestMetadata, schemaId, credentialDefinitionId, ...rest } = value
-      const metadata = new Metadata(rest)
-
-      if (requestMetadata) metadata.add('_internal/indyRequest', { ...value.requestMetadata })
-
-      if (schemaId) metadata.add('_internal/indyCredential', { schemaId: value.schemaId })
-
-      if (credentialDefinitionId)
-        metadata.add('_internal/indyCredential', { credentialDefinitionId: value.credentialDefinitionId })
-
-      return metadata
+      return new Metadata(value)
     }
 
     if (type === TransformationType.CLASS_TO_CLASS) {
@@ -103,6 +91,25 @@ export function IsMap(validationOptions?: ValidationOptions): PropertyDecorator 
       validator: {
         validate: (value: unknown): boolean => value instanceof Map,
         defaultMessage: buildMessage((eachPrefix) => eachPrefix + '$property must be a Map', validationOptions),
+      },
+    },
+    validationOptions
+  )
+}
+
+/**
+ * Checks if a given value is a string or string array.
+ */
+export function IsStringOrStringArray(validationOptions?: Omit<ValidationOptions, 'each'>): PropertyDecorator {
+  return ValidateBy(
+    {
+      name: 'isStringOrStringArray',
+      validator: {
+        validate: (value): boolean => isString(value) || (Array.isArray(value) && value.every((v) => isString(v))),
+        defaultMessage: buildMessage(
+          (eachPrefix) => eachPrefix + '$property must be a string or string array',
+          validationOptions
+        ),
       },
     },
     validationOptions

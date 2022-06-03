@@ -1,4 +1,4 @@
-import { Exclude, Type } from 'class-transformer'
+import { Exclude, Transform, TransformationType } from 'class-transformer'
 
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MetadataTransformer } from '../utils/transformers'
@@ -15,15 +15,23 @@ export type Tags<DefaultTags extends TagsBase, CustomTags extends TagsBase> = Cu
 
 export type RecordTags<Record extends BaseRecord> = ReturnType<Record['getTags']>
 
-export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, CustomTags extends TagsBase = TagsBase> {
+export abstract class BaseRecord<
+  DefaultTags extends TagsBase = TagsBase,
+  CustomTags extends TagsBase = TagsBase,
+  MetadataValues = Record<string, unknown>
+> {
   protected _tags: CustomTags = {} as CustomTags
 
   public id!: string
 
-  @Type(() => Date)
+  @Transform(({ value, type }) =>
+    type === TransformationType.CLASS_TO_PLAIN ? value.toISOString(value) : new Date(value)
+  )
   public createdAt!: Date
 
-  @Type(() => Date)
+  @Transform(({ value, type }) =>
+    type === TransformationType.CLASS_TO_PLAIN ? value.toISOString(value) : new Date(value)
+  )
   public updatedAt?: Date
 
   @Exclude()
@@ -32,7 +40,7 @@ export abstract class BaseRecord<DefaultTags extends TagsBase = TagsBase, Custom
 
   /** @inheritdoc {Metadata#Metadata} */
   @MetadataTransformer()
-  public metadata: Metadata = new Metadata({})
+  public metadata: Metadata<MetadataValues> = new Metadata({})
 
   /**
    * Get all tags. This is includes custom and default tags

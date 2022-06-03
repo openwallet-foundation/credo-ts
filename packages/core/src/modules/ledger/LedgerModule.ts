@@ -19,6 +19,13 @@ export class LedgerModule {
     this.wallet = wallet
   }
 
+  /**
+   * Connect to all the ledger pools
+   */
+  public async connectToPools() {
+    await this.ledgerService.connectToPools()
+  }
+
   public async registerPublicDid(did: string, verkey: string, alias: string, role?: NymRole) {
     const myPublicDid = this.wallet.publicDid?.did
 
@@ -64,5 +71,17 @@ export class LedgerModule {
 
   public async getCredentialDefinition(id: string) {
     return this.ledgerService.getCredentialDefinition(id)
+  }
+
+  public async getRevocationRegistryDefinition(revocationRegistryDefinitionId: string) {
+    return this.ledgerService.getRevocationRegistryDefinition(revocationRegistryDefinitionId)
+  }
+
+  public async getRevocationRegistryDelta(
+    revocationRegistryDefinitionId: string,
+    fromSeconds = 0,
+    toSeconds = new Date().getTime()
+  ) {
+    return this.ledgerService.getRevocationRegistryDelta(revocationRegistryDefinitionId, fromSeconds, toSeconds)
   }
 }

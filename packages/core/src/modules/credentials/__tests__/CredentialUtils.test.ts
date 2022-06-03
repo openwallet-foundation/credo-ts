@@ -1,5 +1,5 @@
 import { CredentialUtils } from '../CredentialUtils'
-import { CredentialPreviewAttribute } from '../messages/CredentialPreview'
+import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 
 /**
  * Sample test cases for encoding/decoding of verifiable credential claims - Aries RFCs 0036 and 0037
@@ -73,6 +73,10 @@ const testEncodings: { [key: string]: { raw: string | number | boolean | null; e
   'str 0.1': {
     raw: '0.1',
     encoded: '9382477430624249591204401974786823110077201914483282671737639310288175260432',
+  },
+  'leading zero number string': {
+    raw: '012345',
+    encoded: '12345',
   },
   'chr 0': {
     raw: String.fromCharCode(0),

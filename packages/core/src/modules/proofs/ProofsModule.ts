@@ -16,12 +16,15 @@ import { ConnectionService } from '../connections/services/ConnectionService'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
+import { PresentationProblemReportReason } from './errors'
 import {
   ProposePresentationHandler,
   RequestPresentationHandler,
   PresentationAckHandler,
   PresentationHandler,
+  PresentationProblemReportHandler,
 } from './handlers'
+import { PresentationProblemReportMessage } from './messages/PresentationProblemReportMessage'
 import { ProofRequest } from './models/ProofRequest'
 import { ProofService } from './services'
 
@@ -196,8 +199,8 @@ export class ProofsModule {
     const routing = await this.mediationRecipientService.getRouting()
     message.service = new ServiceDecorator({
       serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.verkey],
-      routingKeys: routing.routingKeys,
+      recipientKeys: [routing.recipientKey.publicKeyBase58],
+      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
     })
 
     // Save ~service decorator to record (to remember our verkey)
@@ -242,8 +245,8 @@ export class ProofsModule {
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
 
       const recipientService = proofRecord.requestMessage.service
@@ -255,8 +258,8 @@ export class ProofsModule {
 
       await this.messageSender.sendMessageToService({
         message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
 
@@ -302,12 +305,12 @@ export class ProofsModule {
     // Use ~service decorator otherwise
     else if (proofRecord.requestMessage?.service && proofRecord.presentationMessage?.service) {
       const recipientService = proofRecord.presentationMessage?.service
-      const ourService = proofRecord.requestMessage?.service
+      const ourService = proofRecord.requestMessage.service
 
       await this.messageSender.sendMessageToService({
         message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
     }
@@ -351,7 +354,10 @@ export class ProofsModule {
       )
     }
 
-    return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, presentationPreview)
+    return this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, {
+      presentationProposal: presentationPreview,
+      filterByNonRevocationRequirements: config?.filterByNonRevocationRequirements ?? true,
+    })
   }
 
   /**
@@ -366,6 +372,33 @@ export class ProofsModule {
    */
   public autoSelectCredentialsForProofRequest(retrievedCredentials: RetrievedCredentials): RequestedCredentials {
     return this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
+  }
+
+  /**
+   * Send problem report message for a proof record
+   * @param proofRecordId  The id of the proof record for which to send problem report
+   * @param message message to send
+   * @returns proof record associated with the proof problem report message
+   */
+  public async sendProblemReport(proofRecordId: string, message: string) {
+    const record = await this.proofService.getById(proofRecordId)
+    if (!record.connectionId) {
+      throw new AriesFrameworkError(`No connectionId found for proof record '${record.id}'.`)
+    }
+    const connection = await this.connectionService.getById(record.connectionId)
+    const presentationProblemReportMessage = new PresentationProblemReportMessage({
+      description: {
+        en: message,
+        code: PresentationProblemReportReason.Abandoned,
+      },
+    })
+    presentationProblemReportMessage.setThread({
+      threadId: record.threadId,
+    })
+    const outboundMessage = createOutboundMessage(connection, presentationProblemReportMessage)
+    await this.messageSender.sendMessage(outboundMessage)
+
+    return record
   }
 
   /**
@@ -426,6 +459,7 @@ export class ProofsModule {
       new PresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
     )
     dispatcher.registerHandler(new PresentationAckHandler(this.proofService))
+    dispatcher.registerHandler(new PresentationProblemReportHandler(this.proofService))
   }
 }
 
@@ -443,6 +477,17 @@ export interface GetRequestedCredentialsConfig {
    * Whether to filter the retrieved credentials using the presentation preview.
    * This configuration will only have effect if a presentation proposal message is available
    * containing a presentation preview.
+   *
+   * @default false
    */
   filterByPresentationPreview?: boolean
+
+  /**
+   * Whether to filter the retrieved credentials using the non-revocation request in the proof request.
+   * This configuration will only have effect if the proof request requires proof on non-revocation of any kind.
+   * Default to true
+   *
+   * @default true
+   */
+  filterByNonRevocationRequirements?: boolean
 }

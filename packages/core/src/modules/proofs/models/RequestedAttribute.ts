@@ -13,6 +13,7 @@ export class RequestedAttribute {
       this.timestamp = options.timestamp
       this.revealed = options.revealed
       this.credentialInfo = options.credentialInfo
+      this.revoked = options.revoked
     }
   }
 
@@ -29,5 +30,8 @@ export class RequestedAttribute {
   public revealed!: boolean
 
   @Exclude({ toPlainOnly: true })
-  public credentialInfo!: IndyCredentialInfo
+  public credentialInfo?: IndyCredentialInfo
+
+  @Exclude({ toPlainOnly: true })
+  public revoked?: boolean
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '../src/modules/connections'
 
@@ -6,6 +7,7 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { HandshakeProtocol } from '../src/modules/connections'
 
 import { waitForBasicMessage, getBaseConfig } from './helpers'
 
@@ -23,13 +25,10 @@ describe('agents', () => {
   let bobConnection: ConnectionRecord
 
   afterAll(async () => {
-    await bobAgent.shutdown({
-      deleteWallet: true,
-    })
-
-    await aliceAgent.shutdown({
-      deleteWallet: true,
-    })
+    await bobAgent.shutdown()
+    await bobAgent.wallet.delete()
+    await aliceAgent.shutdown()
+    await aliceAgent.wallet.delete()
   })
 
   test('make a connection between agents', async () => {
@@ -43,19 +42,25 @@ describe('agents', () => {
 
     aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     bobAgent = new Agent(bobConfig.config, bobConfig.agentDependencies)
     bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(bobMessages, subjectMap))
+    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
-    const aliceConnectionAtAliceBob = await aliceAgent.connections.createConnection()
-    const bobConnectionAtBobAlice = await bobAgent.connections.receiveInvitation(aliceConnectionAtAliceBob.invitation)
+    const aliceBobOutOfBandRecord = await aliceAgent.oob.createInvitation({
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
 
-    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob.connectionRecord.id)
-    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice.id)
+    const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveInvitation(
+      aliceBobOutOfBandRecord.outOfBandInvitation
+    )
+    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
+
+    const [aliceConnectionAtAliceBob] = await aliceAgent.connections.findAllByOutOfBandId(aliceBobOutOfBandRecord.id)
+    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob!.id)
 
     expect(aliceConnection).toBeConnectedWith(bobConnection)
     expect(bobConnection).toBeConnectedWith(aliceConnection)
@@ -70,5 +75,13 @@ describe('agents', () => {
     })
 
     expect(basicMessage.content).toBe(message)
+  })
+
+  test('can shutdown and re-initialize the same agent', async () => {
+    expect(aliceAgent.isInitialized).toBe(true)
+    await aliceAgent.shutdown()
+    expect(aliceAgent.isInitialized).toBe(false)
+    await aliceAgent.initialize()
+    expect(aliceAgent.isInitialized).toBe(true)
   })
 })

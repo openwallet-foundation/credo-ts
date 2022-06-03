@@ -1,13 +1,18 @@
 import type { ConnectionRecord } from '../../modules/connections'
+import type { DidDocumentService } from '../../modules/dids'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
-import type { OutboundMessage, WireMessage } from '../../types'
+import type { OutboundMessage, EncryptedMessage } from '../../types'
+import type { ResolvedDidCommService } from '../MessageSender'
 
 import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
 import testLogger from '../../../tests/logger'
+import { KeyType } from '../../crypto'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { DidCommService } from '../../modules/connections'
+import { Key, DidDocument, VerificationMethod } from '../../modules/dids'
+import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Service'
+import { DidResolverService } from '../../modules/dids/services/DidResolverService'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
@@ -18,9 +23,12 @@ import { DummyTransportSession } from './stubs'
 
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
+jest.mock('../../modules/dids/services/DidResolverService')
+
+const logger = testLogger
 
 const TransportServiceMock = TransportService as jest.MockedClass<typeof TransportService>
-const logger = testLogger
+const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 
 class DummyOutboundTransport implements OutboundTransport {
   public start(): Promise<void> {
@@ -41,7 +49,7 @@ class DummyOutboundTransport implements OutboundTransport {
 describe('MessageSender', () => {
   const EnvelopeService = <jest.Mock<EnvelopeServiceImpl>>(<unknown>EnvelopeServiceImpl)
 
-  const wireMessage: WireMessage = {
+  const encryptedMessage: EncryptedMessage = {
     protected: 'base64url',
     iv: 'base64url',
     ciphertext: 'base64url',
@@ -51,14 +59,19 @@ describe('MessageSender', () => {
   const enveloperService = new EnvelopeService()
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
 
+  const didResolverService = new DidResolverServiceMock()
+  const didResolverServiceResolveMock = mockFunction(didResolverService.resolveDidDocument)
+
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
 
+  const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
+  const senderKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
   const session = new DummyTransportSession('session-123')
   session.keys = {
-    recipientKeys: ['verkey'],
+    recipientKeys: [recipientKey],
     routingKeys: [],
-    senderKey: 'senderKey',
+    senderKey: senderKey,
   }
   session.inboundMessage = inboundMessage
   session.send = jest.fn()
@@ -69,19 +82,19 @@ describe('MessageSender', () => {
 
   const transportService = new TransportService()
   const transportServiceFindSessionMock = mockFunction(transportService.findSessionByConnectionId)
+  const transportServiceFindSessionByIdMock = mockFunction(transportService.findSessionById)
   const transportServiceHasInboundEndpoint = mockFunction(transportService.hasInboundEndpoint)
 
-  const firstDidCommService = new DidCommService({
+  const firstDidCommService = new DidCommV1Service({
     id: `<did>;indy`,
     serviceEndpoint: 'https://www.first-endpoint.com',
-    recipientKeys: ['verkey'],
+    recipientKeys: ['#authentication-1'],
   })
-  const secondDidCommService = new DidCommService({
+  const secondDidCommService = new DidCommV1Service({
     id: `<did>;indy`,
     serviceEndpoint: 'https://www.second-endpoint.com',
-    recipientKeys: ['verkey'],
+    recipientKeys: ['#authentication-1'],
   })
-  const transportServiceFindServicesMock = mockFunction(transportService.findDidCommServices)
 
   let messageSender: MessageSender
   let outboundTransport: OutboundTransport
@@ -92,16 +105,30 @@ describe('MessageSender', () => {
   describe('sendMessage', () => {
     beforeEach(() => {
       TransportServiceMock.mockClear()
-      transportServiceHasInboundEndpoint.mockReturnValue(true)
+      DidResolverServiceMock.mockClear()
+
       outboundTransport = new DummyOutboundTransport()
       messageRepository = new InMemoryMessageRepository(getAgentConfig('MessageSender'))
-      messageSender = new MessageSender(enveloperService, transportService, messageRepository, logger)
-      connection = getMockConnection({ id: 'test-123', theirLabel: 'Test 123' })
-
+      messageSender = new MessageSender(
+        enveloperService,
+        transportService,
+        messageRepository,
+        logger,
+        didResolverService
+      )
+      connection = getMockConnection({
+        id: 'test-123',
+        did: 'did:peer:1mydid',
+        theirDid: 'did:peer:1theirdid',
+        theirLabel: 'Test 123',
+      })
       outboundMessage = createOutboundMessage(connection, new TestMessage())
 
-      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(wireMessage))
-      transportServiceFindServicesMock.mockReturnValue([firstDidCommService, secondDidCommService])
+      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
+      transportServiceHasInboundEndpoint.mockReturnValue(true)
+
+      const didDocumentInstance = getMockDidDocument({ service: [firstDidCommService, secondDidCommService] })
+      didResolverServiceResolveMock.mockResolvedValue(didDocumentInstance)
     })
 
     afterEach(() => {
@@ -114,7 +141,8 @@ describe('MessageSender', () => {
 
     test('throw error when there is no service or queue', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
-      transportServiceFindServicesMock.mockReturnValue([])
+
+      didResolverServiceResolveMock.mockResolvedValue(getMockDidDocument({ service: [] }))
 
       await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(
         `Message is undeliverable to connection test-123 (Test 123)`
@@ -133,11 +161,40 @@ describe('MessageSender', () => {
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
         connectionId: 'test-123',
-        payload: wireMessage,
+        payload: encryptedMessage,
         endpoint: firstDidCommService.serviceEndpoint,
         responseRequested: false,
       })
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
+    })
+
+    test("resolves the did document using the did resolver if connection.theirDid starts with 'did:'", async () => {
+      messageSender.registerOutboundTransport(outboundTransport)
+
+      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+
+      await messageSender.sendMessage(outboundMessage)
+
+      expect(didResolverServiceResolveMock).toHaveBeenCalledWith(connection.theirDid)
+      expect(sendMessageSpy).toHaveBeenCalledWith({
+        connectionId: 'test-123',
+        payload: encryptedMessage,
+        endpoint: firstDidCommService.serviceEndpoint,
+        responseRequested: false,
+      })
+      expect(sendMessageSpy).toHaveBeenCalledTimes(1)
+    })
+
+    test("throws an error if connection.theirDid starts with 'did:' but the resolver can't resolve the did document", async () => {
+      messageSender.registerOutboundTransport(outboundTransport)
+
+      didResolverServiceResolveMock.mockRejectedValue(
+        new Error(`Unable to resolve did document for did '${connection.theirDid}': notFound`)
+      )
+
+      await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrowError(
+        `Unable to resolve did document for did '${connection.theirDid}': notFound`
+      )
     })
 
     test('call send message when session send method fails with missing keys', async () => {
@@ -151,11 +208,26 @@ describe('MessageSender', () => {
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
         connectionId: 'test-123',
-        payload: wireMessage,
+        payload: encryptedMessage,
         endpoint: firstDidCommService.serviceEndpoint,
         responseRequested: false,
       })
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
+    })
+
+    test('call send message on session when outbound message has sessionId attached', async () => {
+      transportServiceFindSessionByIdMock.mockReturnValue(session)
+      messageSender.registerOutboundTransport(outboundTransport)
+      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
+
+      await messageSender.sendMessage({ ...outboundMessage, sessionId: 'session-123' })
+
+      expect(session.send).toHaveBeenCalledTimes(1)
+      expect(session.send).toHaveBeenNthCalledWith(1, encryptedMessage)
+      expect(sendMessageSpy).toHaveBeenCalledTimes(0)
+      expect(sendMessageToServiceSpy).toHaveBeenCalledTimes(0)
+      expect(transportServiceFindSessionByIdMock).toHaveBeenCalledWith('session-123')
     })
 
     test('call send message on session when there is a session for a given connection', async () => {
@@ -165,13 +237,22 @@ describe('MessageSender', () => {
 
       await messageSender.sendMessage(outboundMessage)
 
-      expect(sendMessageToServiceSpy).toHaveBeenCalledWith({
+      const [[sendMessage]] = sendMessageToServiceSpy.mock.calls
+
+      expect(sendMessage).toMatchObject({
         connectionId: 'test-123',
         message: outboundMessage.payload,
-        senderKey: connection.verkey,
-        service: firstDidCommService,
         returnRoute: false,
+        service: {
+          serviceEndpoint: firstDidCommService.serviceEndpoint,
+        },
       })
+
+      expect(sendMessage.senderKey.publicKeyBase58).toEqual('EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d')
+      expect(sendMessage.service.recipientKeys.map((key) => key.publicKeyBase58)).toEqual([
+        'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
+      ])
+
       expect(sendMessageToServiceSpy).toHaveBeenCalledTimes(1)
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
     })
@@ -186,25 +267,34 @@ describe('MessageSender', () => {
 
       await messageSender.sendMessage(outboundMessage)
 
-      expect(sendMessageToServiceSpy).toHaveBeenNthCalledWith(2, {
+      const [, [sendMessage]] = sendMessageToServiceSpy.mock.calls
+      expect(sendMessage).toMatchObject({
         connectionId: 'test-123',
         message: outboundMessage.payload,
-        senderKey: connection.verkey,
-        service: secondDidCommService,
         returnRoute: false,
+        service: {
+          serviceEndpoint: secondDidCommService.serviceEndpoint,
+        },
       })
+
+      expect(sendMessage.senderKey.publicKeyBase58).toEqual('EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d')
+      expect(sendMessage.service.recipientKeys.map((key) => key.publicKeyBase58)).toEqual([
+        'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
+      ])
+
       expect(sendMessageToServiceSpy).toHaveBeenCalledTimes(2)
       expect(sendMessageSpy).toHaveBeenCalledTimes(2)
     })
   })
 
   describe('sendMessageToService', () => {
-    const service = new DidCommService({
+    const service: ResolvedDidCommService = {
       id: 'out-of-band',
-      recipientKeys: ['someKey'],
+      recipientKeys: [Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')],
+      routingKeys: [],
       serviceEndpoint: 'https://example.com',
-    })
-    const senderKey = 'someVerkey'
+    }
+    const senderKey = Key.fromFingerprint('z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th')
 
     beforeEach(() => {
       outboundTransport = new DummyOutboundTransport()
@@ -212,10 +302,11 @@ describe('MessageSender', () => {
         enveloperService,
         transportService,
         new InMemoryMessageRepository(getAgentConfig('MessageSenderTest')),
-        logger
+        logger,
+        didResolverService
       )
 
-      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(wireMessage))
+      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
     })
 
     afterEach(() => {
@@ -243,7 +334,7 @@ describe('MessageSender', () => {
       })
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
-        payload: wireMessage,
+        payload: encryptedMessage,
         endpoint: service.serviceEndpoint,
         responseRequested: false,
       })
@@ -264,7 +355,7 @@ describe('MessageSender', () => {
       })
 
       expect(sendMessageSpy).toHaveBeenCalledWith({
-        payload: wireMessage,
+        payload: encryptedMessage,
         endpoint: service.serviceEndpoint,
         responseRequested: true,
       })
@@ -276,10 +367,16 @@ describe('MessageSender', () => {
     beforeEach(() => {
       outboundTransport = new DummyOutboundTransport()
       messageRepository = new InMemoryMessageRepository(getAgentConfig('PackMessage'))
-      messageSender = new MessageSender(enveloperService, transportService, messageRepository, logger)
-      connection = getMockConnection({ id: 'test-123' })
+      messageSender = new MessageSender(
+        enveloperService,
+        transportService,
+        messageRepository,
+        logger,
+        didResolverService
+      )
+      connection = getMockConnection()
 
-      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(wireMessage))
+      envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
     })
 
     afterEach(() => {
@@ -291,17 +388,35 @@ describe('MessageSender', () => {
       const endpoint = 'https://example.com'
 
       const keys = {
-        recipientKeys: ['service.recipientKeys'],
+        recipientKeys: [recipientKey],
         routingKeys: [],
-        senderKey: connection.verkey,
+        senderKey: senderKey,
       }
       const result = await messageSender.packMessage({ message, keys, endpoint })
 
       expect(result).toEqual({
-        payload: wireMessage,
+        payload: encryptedMessage,
         responseRequested: message.hasAnyReturnRoute(),
         endpoint,
       })
     })
   })
 })
+
+function getMockDidDocument({ service }: { service: DidDocumentService[] }) {
+  return new DidDocument({
+    id: 'did:sov:SKJVx2kn373FNgvff1SbJo',
+    alsoKnownAs: ['did:sov:SKJVx2kn373FNgvff1SbJo'],
+    controller: ['did:sov:SKJVx2kn373FNgvff1SbJo'],
+    verificationMethod: [],
+    service,
+    authentication: [
+      new VerificationMethod({
+        id: 'did:sov:SKJVx2kn373FNgvff1SbJo#authentication-1',
+        type: 'Ed25519VerificationKey2018',
+        controller: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
+        publicKeyBase58: 'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
+      }),
+    ],
+  })
+}

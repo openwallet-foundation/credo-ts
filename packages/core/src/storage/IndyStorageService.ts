@@ -1,5 +1,5 @@
 import type { BaseRecord, TagsBase } from './BaseRecord'
-import type { StorageService, BaseRecordConstructor } from './StorageService'
+import type { StorageService, BaseRecordConstructor, Query } from './StorageService'
 import type { default as Indy, WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
@@ -32,8 +32,8 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     for (const [key, value] of Object.entries(tags)) {
       // If the value is a boolean string ('1' or '0')
       // use the boolean val
-      if (value === '1' && value?.includes(':')) {
-        const [tagName, tagValue] = value.split(':')
+      if (value === '1' && key?.includes(':')) {
+        const [tagName, tagValue] = key.split(':')
 
         const transformedValue = transformedTags[tagName]
 
@@ -42,8 +42,15 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
         } else {
           transformedTags[tagName] = [tagValue]
         }
-      } else if (value === '1' || value === '0') {
+      }
+      // Transform '1' and '0' to boolean
+      else if (value === '1' || value === '0') {
         transformedTags[key] = value === '1'
+      }
+      // If 1 or 0 is prefixed with 'n__' we need to remove it. This is to prevent
+      // casting the value to a boolean
+      else if (value === 'n__1' || value === 'n__0') {
+        transformedTags[key] = value === 'n__1' ? '1' : '0'
       }
       // Otherwise just use the value
       else {
@@ -63,6 +70,11 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
       if (isBoolean(value)) {
         transformedTags[key] = value ? '1' : '0'
       }
+      // If the value is 1 or 0, we need to add something to the value, otherwise
+      // the next time we deserialize the tag values it will be converted to boolean
+      else if (value === '1' || value === '0') {
+        transformedTags[key] = `n__${value}`
+      }
       // If the value is an array we create a tag for each array
       // item ("tagName:arrayItem" = "1")
       else if (Array.isArray(value)) {
@@ -80,6 +92,31 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     return transformedTags
   }
 
+  /**
+   * Transforms the search query into a wallet query compatible with indy WQL.
+   *
+   * The format used by AFJ is almost the same as the indy query, with the exception of
+   * the encoding of values, however this is handled by the {@link IndyStorageService.transformToRecordTagValues}
+   * method.
+   */
+  private indyQueryFromSearchQuery(query: Query<T>): Record<string, unknown> {
+    // eslint-disable-next-line prefer-const
+    let { $and, $or, $not, ...tags } = query
+
+    $and = ($and as Query<T>[] | undefined)?.map((q) => this.indyQueryFromSearchQuery(q))
+    $or = ($or as Query<T>[] | undefined)?.map((q) => this.indyQueryFromSearchQuery(q))
+    $not = $not ? this.indyQueryFromSearchQuery($not as Query<T>) : undefined
+
+    const indyQuery = {
+      ...this.transformFromRecordTagValues(tags as unknown as TagsBase),
+      $and,
+      $or,
+      $not,
+    }
+
+    return indyQuery
+  }
+
   private recordToInstance(record: WalletRecord, recordClass: BaseRecordConstructor<T>): T {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const instance = JsonTransformer.deserialize<T>(record.value!, recordClass)
@@ -94,7 +131,6 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   /** @inheritDoc */
   public async save(record: T) {
     const value = JsonTransformer.serialize(record)
-    // FIXME: update @types/indy-sdk to be of type Record<string, string |undefined>
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
@@ -112,7 +148,6 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   /** @inheritDoc */
   public async update(record: T): Promise<void> {
     const value = JsonTransformer.serialize(record)
-    // FIXME: update @types/indy-sdk to be of type Record<string, string |undefined>
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
@@ -181,11 +216,8 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   }
 
   /** @inheritDoc */
-  public async findByQuery(
-    recordClass: BaseRecordConstructor<T>,
-    query: Partial<ReturnType<T['getTags']>>
-  ): Promise<T[]> {
-    const indyQuery = this.transformFromRecordTagValues(query as unknown as TagsBase)
+  public async findByQuery(recordClass: BaseRecordConstructor<T>, query: Query<T>): Promise<T[]> {
+    const indyQuery = this.indyQueryFromSearchQuery(query)
 
     const recordIterator = this.search(recordClass.type, indyQuery, IndyStorageService.DEFAULT_QUERY_OPTIONS)
     const records = []
@@ -213,7 +245,6 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
         // Retrieve records
         const recordsJson = await this.indy.fetchWalletSearchNextRecords(this.wallet.handle, searchHandle, chunk)
 
-        // FIXME: update @types/indy-sdk: records can be null (if last reached)
         if (recordsJson.records) {
           records = [...records, ...recordsJson.records]
 
@@ -224,14 +255,14 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
 
         // If the number of records returned is less than chunk
         // It means we reached the end of the iterator (no more records)
-        if (!records.length || recordsJson.records.length < chunk) {
+        if (!records.length || !recordsJson.records || recordsJson.records.length < chunk) {
           await this.indy.closeWalletSearch(searchHandle)
 
           return
         }
       }
     } catch (error) {
-      throw new IndySdkError(error)
+      throw new IndySdkError(error, `Searching '${type}' records for query '${JSON.stringify(query)}' failed`)
     }
   }
 }

@@ -4,7 +4,7 @@ export const IndyHolderService = jest.fn(() => ({
   storeCredential: jest.fn(({ credentialId }: StoreCredentialOptions) =>
     Promise.resolve(credentialId ?? 'some-random-uuid')
   ),
-
+  deleteCredential: jest.fn(() => Promise.resolve()),
   createCredentialRequest: jest.fn(({ holderDid, credentialDefinition }: CreateCredentialRequestOptions) =>
     Promise.resolve([
       {

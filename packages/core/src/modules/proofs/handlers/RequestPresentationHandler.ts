@@ -41,19 +41,20 @@ export class RequestPresentationHandler implements Handler {
     messageContext: HandlerInboundMessage<RequestPresentationHandler>
   ) {
     const indyProofRequest = record.requestMessage?.indyProofRequest
+    const presentationProposal = record.proposalMessage?.presentationProposal
 
     this.agentConfig.logger.info(
       `Automatically sending presentation with autoAccept on ${this.agentConfig.autoAcceptProofs}`
     )
 
     if (!indyProofRequest) {
+      this.agentConfig.logger.error('Proof request is undefined.')
       return
     }
 
-    const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(
-      indyProofRequest,
-      record.proposalMessage?.presentationProposal
-    )
+    const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, {
+      presentationProposal,
+    })
 
     const requestedCredentials = this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
 
@@ -66,8 +67,8 @@ export class RequestPresentationHandler implements Handler {
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
 
       const recipientService = proofRecord.requestMessage.service
@@ -79,8 +80,8 @@ export class RequestPresentationHandler implements Handler {
 
       return createOutboundServiceMessage({
         payload: message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
       })
     }
 

@@ -2,11 +2,12 @@ import { getBaseConfig } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 
-import { Agent, WsOutboundTransport, AutoAcceptCredential } from '@aries-framework/core'
+import { Agent, WsOutboundTransport, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 import { WsInboundTransport } from '@aries-framework/node'
 
 const recipientConfig = getBaseConfig('E2E WS Recipient ', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
 
 const mediatorPort = 4000
@@ -20,6 +21,7 @@ const senderConfig = getBaseConfig('E2E WS Sender', {
   endpoints: [`ws://localhost:${senderPort}`],
   mediatorPollingInterval: 1000,
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
 
 describe('E2E WS tests', () => {
@@ -34,9 +36,12 @@ describe('E2E WS tests', () => {
   })
 
   afterEach(async () => {
-    await recipientAgent.shutdown({ deleteWallet: true })
-    await mediatorAgent.shutdown({ deleteWallet: true })
-    await senderAgent.shutdown({ deleteWallet: true })
+    await recipientAgent.shutdown()
+    await recipientAgent.wallet.delete()
+    await mediatorAgent.shutdown()
+    await mediatorAgent.wallet.delete()
+    await senderAgent.shutdown()
+    await senderAgent.wallet.delete()
   })
 
   test('Full WS flow (connect, request mediation, issue, verify)', async () => {

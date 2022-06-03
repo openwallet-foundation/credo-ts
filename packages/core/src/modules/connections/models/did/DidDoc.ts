@@ -1,13 +1,14 @@
+import type { DidDocumentService } from '../../../dids/domain/service'
 import type { Authentication } from './authentication'
 import type { PublicKey } from './publicKey'
-import type { Service } from './service'
 
 import { Expose } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
 
+import { ServiceTransformer, DidCommV1Service, IndyAgentService } from '../../../dids/domain/service'
+
 import { AuthenticationTransformer } from './authentication'
 import { PublicKeyTransformer } from './publicKey'
-import { DidCommService, IndyAgentService, ServiceTransformer } from './service'
 
 type DidDocOptions = Pick<DidDoc, 'id' | 'publicKey' | 'service' | 'authentication'>
 
@@ -27,7 +28,7 @@ export class DidDoc {
   @IsArray()
   @ValidateNested()
   @ServiceTransformer()
-  public service: Service[] = []
+  public service: DidDocumentService[] = []
 
   @IsArray()
   @ValidateNested()
@@ -57,7 +58,7 @@ export class DidDoc {
    *
    * @param type The type of service(s) to query.
    */
-  public getServicesByType<S extends Service = Service>(type: string): S[] {
+  public getServicesByType<S extends DidDocumentService = DidDocumentService>(type: string): S[] {
     return this.service.filter((service) => service.type === type) as S[]
   }
 
@@ -66,7 +67,9 @@ export class DidDoc {
    *
    * @param classType The class to query services.
    */
-  public getServicesByClassType<S extends Service = Service>(classType: new (...args: never[]) => S): S[] {
+  public getServicesByClassType<S extends DidDocumentService = DidDocumentService>(
+    classType: new (...args: never[]) => S
+  ): S[] {
     return this.service.filter((service) => service instanceof classType) as S[]
   }
 
@@ -74,10 +77,10 @@ export class DidDoc {
    * Get all DIDComm services ordered by priority descending. This means the highest
    * priority will be the first entry.
    */
-  public get didCommServices(): Array<IndyAgentService | DidCommService> {
-    const didCommServiceTypes = [IndyAgentService.type, DidCommService.type]
+  public get didCommServices(): Array<IndyAgentService | DidCommV1Service> {
+    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type]
     const services = this.service.filter((service) => didCommServiceTypes.includes(service.type)) as Array<
-      IndyAgentService | DidCommService
+      IndyAgentService | DidCommV1Service
     >
 
     // Sort services based on indicated priority

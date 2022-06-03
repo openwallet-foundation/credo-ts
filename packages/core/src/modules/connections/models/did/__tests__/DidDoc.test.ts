@@ -1,9 +1,9 @@
-import { classToPlain, plainToClass } from 'class-transformer'
+import { instanceToPlain, plainToInstance } from 'class-transformer'
 
+import { DidCommV1Service, DidDocumentService, IndyAgentService } from '../../../../dids'
 import { DidDoc } from '../DidDoc'
 import { ReferencedAuthentication, EmbeddedAuthentication } from '../authentication'
 import { Ed25119Sig2018, EddsaSaSigSecp256k1, RsaSig2018 } from '../publicKey'
-import { Service, IndyAgentService, DidCommService } from '../service'
 
 import diddoc from './diddoc.json'
 
@@ -44,7 +44,7 @@ const didDoc = new DidDoc({
     }),
   ],
   service: [
-    new Service({
+    new DidDocumentService({
       id: '0',
       type: 'Mediator',
       serviceEndpoint: 'did:sov:Q4zqM7aXqm7gDQkUVLng9h',
@@ -56,7 +56,7 @@ const didDoc = new DidDoc({
       routingKeys: ['Q4zqM7aXqm7gDQkUVLng9h'],
       priority: 5,
     }),
-    new DidCommService({
+    new DidCommV1Service({
       id: '7',
       serviceEndpoint: 'https://agent.com/did-comm',
       recipientKeys: ['DADEajsDSaksLng9h'],
@@ -70,7 +70,7 @@ const didDoc = new DidDoc({
 // TODO: add more tests
 describe('Did | DidDoc', () => {
   it('should correctly transforms Json to DidDoc class', () => {
-    const didDoc = plainToClass(DidDoc, diddoc)
+    const didDoc = plainToInstance(DidDoc, diddoc)
 
     // Check array length of all items
     expect(didDoc.publicKey.length).toBe(diddoc.publicKey.length)
@@ -87,9 +87,9 @@ describe('Did | DidDoc', () => {
     expect(didDoc.publicKey[2]).toBeInstanceOf(EddsaSaSigSecp256k1)
 
     // Check Service
-    expect(didDoc.service[0]).toBeInstanceOf(Service)
+    expect(didDoc.service[0]).toBeInstanceOf(DidDocumentService)
     expect(didDoc.service[1]).toBeInstanceOf(IndyAgentService)
-    expect(didDoc.service[2]).toBeInstanceOf(DidCommService)
+    expect(didDoc.service[2]).toBeInstanceOf(DidCommV1Service)
 
     // Check Authentication
     expect(didDoc.authentication[0]).toBeInstanceOf(ReferencedAuthentication)
@@ -97,7 +97,7 @@ describe('Did | DidDoc', () => {
   })
 
   it('should correctly transforms DidDoc class to Json', () => {
-    const json = classToPlain(didDoc)
+    const json = instanceToPlain(didDoc)
 
     // Check array length of all items
     expect(json.publicKey.length).toBe(didDoc.publicKey.length)

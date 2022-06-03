@@ -1,7 +1,8 @@
 import type { TagsBase } from '../BaseRecord'
 import type * as Indy from 'indy-sdk'
 
-import { getAgentConfig } from '../../../tests/helpers'
+import { agentDependencies, getAgentConfig } from '../../../tests/helpers'
+import { AgentConfig } from '../../agent/AgentConfig'
 import { RecordDuplicateError, RecordNotFoundError } from '../../error'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { IndyStorageService } from '../IndyStorageService'
@@ -18,7 +19,7 @@ describe('IndyStorageService', () => {
     indy = config.agentDependencies.indy
     wallet = new IndyWallet(config)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.initialize(config.walletConfig!)
+    await wallet.createAndOpen(config.walletConfig!)
     storageService = new IndyStorageService<TestRecord>(wallet, config)
   })
 
@@ -45,6 +46,10 @@ describe('IndyStorageService', () => {
           someBoolean: true,
           someOtherBoolean: false,
           someStringValue: 'string',
+          anArrayValue: ['foo', 'bar'],
+          // booleans are stored as '1' and '0' so we store the string values '1' and '0' as 'n__1' and 'n__0'
+          someStringNumberValue: '1',
+          anotherStringNumberValue: '0',
         },
       })
 
@@ -57,6 +62,10 @@ describe('IndyStorageService', () => {
         someBoolean: '1',
         someOtherBoolean: '0',
         someStringValue: 'string',
+        'anArrayValue:foo': '1',
+        'anArrayValue:bar': '1',
+        someStringNumberValue: 'n__1',
+        anotherStringNumberValue: 'n__0',
       })
     })
 
@@ -65,6 +74,11 @@ describe('IndyStorageService', () => {
         someBoolean: '1',
         someOtherBoolean: '0',
         someStringValue: 'string',
+        'anArrayValue:foo': '1',
+        'anArrayValue:bar': '1',
+        // booleans are stored as '1' and '0' so we store the string values '1' and '0' as 'n__1' and 'n__0'
+        someStringNumberValue: 'n__1',
+        anotherStringNumberValue: 'n__0',
       })
 
       const record = await storageService.getById(TestRecord, 'some-id')
@@ -73,6 +87,9 @@ describe('IndyStorageService', () => {
         someBoolean: true,
         someOtherBoolean: false,
         someStringValue: 'string',
+        anArrayValue: expect.arrayContaining(['bar', 'foo']),
+        someStringNumberValue: '1',
+        anotherStringNumberValue: '0',
       })
     })
   })
@@ -172,6 +189,112 @@ describe('IndyStorageService', () => {
 
       expect(records.length).toBe(1)
       expect(records[0]).toEqual(expectedRecord)
+    })
+
+    it('finds records using $and statements', async () => {
+      const expectedRecord = await insertRecord({ tags: { myTag: 'foo', anotherTag: 'bar' } })
+      await insertRecord({ tags: { myTag: 'notfoobar' } })
+
+      const records = await storageService.findByQuery(TestRecord, {
+        $and: [{ myTag: 'foo' }, { anotherTag: 'bar' }],
+      })
+
+      expect(records.length).toBe(1)
+      expect(records[0]).toEqual(expectedRecord)
+    })
+
+    it('finds records using $or statements', async () => {
+      const expectedRecord = await insertRecord({ tags: { myTag: 'foo' } })
+      const expectedRecord2 = await insertRecord({ tags: { anotherTag: 'bar' } })
+      await insertRecord({ tags: { myTag: 'notfoobar' } })
+
+      const records = await storageService.findByQuery(TestRecord, {
+        $or: [{ myTag: 'foo' }, { anotherTag: 'bar' }],
+      })
+
+      expect(records.length).toBe(2)
+      expect(records).toEqual(expect.arrayContaining([expectedRecord, expectedRecord2]))
+    })
+
+    it('finds records using $not statements', async () => {
+      const expectedRecord = await insertRecord({ tags: { myTag: 'foo' } })
+      const expectedRecord2 = await insertRecord({ tags: { anotherTag: 'bar' } })
+      await insertRecord({ tags: { myTag: 'notfoobar' } })
+
+      const records = await storageService.findByQuery(TestRecord, {
+        $not: { myTag: 'notfoobar' },
+      })
+
+      expect(records.length).toBe(2)
+      expect(records).toEqual(expect.arrayContaining([expectedRecord, expectedRecord2]))
+    })
+
+    it('correctly transforms an advanced query into a valid WQL query', async () => {
+      const indySpy = jest.fn()
+      const storageServiceWithoutIndy = new IndyStorageService<TestRecord>(
+        wallet,
+        new AgentConfig(
+          { label: 'hello' },
+          {
+            ...agentDependencies,
+            indy: {
+              openWalletSearch: indySpy,
+              fetchWalletSearchNextRecords: jest.fn(() => ({ records: undefined })),
+              closeWalletSearch: jest.fn(),
+            } as unknown as typeof Indy,
+          }
+        )
+      )
+
+      await storageServiceWithoutIndy.findByQuery(TestRecord, {
+        $and: [
+          {
+            $or: [{ myTag: true }, { myTag: false }],
+          },
+          {
+            $and: [{ theNumber: '0' }, { theNumber: '1' }],
+          },
+        ],
+        $or: [
+          {
+            aValue: ['foo', 'bar'],
+          },
+        ],
+        $not: { myTag: 'notfoobar' },
+      })
+
+      const expectedQuery = {
+        $and: [
+          {
+            $and: undefined,
+            $not: undefined,
+            $or: [
+              { myTag: '1', $and: undefined, $or: undefined, $not: undefined },
+              { myTag: '0', $and: undefined, $or: undefined, $not: undefined },
+            ],
+          },
+          {
+            $or: undefined,
+            $not: undefined,
+            $and: [
+              { theNumber: 'n__0', $and: undefined, $or: undefined, $not: undefined },
+              { theNumber: 'n__1', $and: undefined, $or: undefined, $not: undefined },
+            ],
+          },
+        ],
+        $or: [
+          {
+            'aValue:foo': '1',
+            'aValue:bar': '1',
+            $and: undefined,
+            $or: undefined,
+            $not: undefined,
+          },
+        ],
+        $not: { myTag: 'notfoobar', $and: undefined, $or: undefined, $not: undefined },
+      }
+
+      expect(indySpy).toBeCalledWith(expect.anything(), expect.anything(), expectedQuery, expect.anything())
     })
   })
 })
