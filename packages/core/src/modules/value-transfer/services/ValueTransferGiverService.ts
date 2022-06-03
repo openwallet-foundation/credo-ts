@@ -1,8 +1,9 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { RequestWitnessedMessage, CashAcceptedWitnessedMessage, GiverReceiptMessage } from '../messages'
+import type { Giver } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -22,7 +23,6 @@ import { ValueTransferStateService } from './ValueTransferStateService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferGiverService {
-  private valueTransfer: ValueTransfer
   private valueTransferRepository: ValueTransferRepository
   private valueTransferService: ValueTransferService
   private valueTransferCryptoService: ValueTransferCryptoService
@@ -31,6 +31,7 @@ export class ValueTransferGiverService {
   private connectionService: ConnectionService
   private didService: DidService
   private eventEmitter: EventEmitter
+  private giver: Giver
 
   public constructor(
     valueTransferRepository: ValueTransferRepository,
@@ -51,15 +52,13 @@ export class ValueTransferGiverService {
     this.didService = didService
     this.eventEmitter = eventEmitter
 
-    this.valueTransfer = new ValueTransfer(
+    this.giver = new ValueTransfer(
       {
         crypto: this.valueTransferCryptoService,
         storage: this.valueTransferStateService,
       },
-      {
-        sparseTree: verifiableNoteProofConfig,
-      }
-    )
+      {}
+    ).giver()
   }
 
   /**
@@ -152,18 +151,14 @@ export class ValueTransferGiverService {
       : (await this.didService.createDID(DidType.PeerDid)).id
 
     // Call VTP to accept payment request
-    const { error: pickNotesError, notes: notesToSpend } = await this.valueTransfer
-      .giver()
-      .pickNotesToSpend(record.valueTransferMessage.amount)
+    const { error: pickNotesError, notes: notesToSpend } = await this.giver.pickNotesToSpend(
+      record.valueTransferMessage.amount
+    )
     if (pickNotesError || !notesToSpend) {
-      throw new AriesFrameworkError(
-        `Not enough notes for covering requested amount: ${record.valueTransferMessage.amount}`
-      )
+      throw new AriesFrameworkError(`Not enough notes to pay: ${record.valueTransferMessage.amount}`)
     }
 
-    const { error, message } = await this.valueTransfer
-      .giver()
-      .acceptPaymentRequest(giver, record.valueTransferMessage, notesToSpend)
+    const { error, message } = await this.giver.acceptPaymentRequest(giver, record.valueTransferMessage, notesToSpend)
     if (error || !message) {
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({
@@ -227,8 +222,8 @@ export class ValueTransferGiverService {
     const valueTransferMessage = cashAcceptedWitnessedMessage.valueTransferMessage
     if (!valueTransferMessage) {
       const problemReport = new ProblemReportMessage({
-        from: record.witnessDid,
-        to: record.giverDid,
+        from: record.giverDid,
+        to: record.witnessDid,
         pthid: record.threadId,
         body: {
           code: 'e.p.req.bad-cash-acceptance',
@@ -262,12 +257,12 @@ export class ValueTransferGiverService {
     record.assertState(ValueTransferState.CashAcceptanceReceived)
 
     // Call VTP package to remove cash
-    const { error, message } = await this.valueTransfer.giver().removeCash(record.valueTransferMessage)
+    const { error, message } = await this.giver.signReceipt(record.valueTransferMessage)
     if (error || !message) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
-        from: record.witnessDid,
-        to: record.giverDid,
+        from: record.giverDid,
+        to: record.witnessDid,
         pthid: record.threadId,
         body: {
           code: error?.code || 'invalid-cash-accepted',
@@ -331,7 +326,7 @@ export class ValueTransferGiverService {
     }
 
     // Call VTP to process Receipt
-    const { error, message } = await this.valueTransfer.giver().processReceipt(valueTransferMessage)
+    const { error, message } = await this.giver.processReceipt(valueTransferMessage)
     if (error || !message) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({

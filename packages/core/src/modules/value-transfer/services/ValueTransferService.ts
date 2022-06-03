@@ -5,7 +5,7 @@ import type { Transport } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 
-import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -73,9 +73,7 @@ export class ValueTransferService {
         crypto: this.valueTransferCryptoService,
         storage: this.valueTransferStateService,
       },
-      {
-        sparseTree: verifiableNoteProofConfig,
-      }
+      {}
     )
   }
 
@@ -103,16 +101,27 @@ export class ValueTransferService {
       const state = await this.valueTransferStateRepository.findSingleByQuery({})
 
       if (!state) {
+        let wallet = new Wallet()
+
+        if (config.verifiableNotes?.length) {
+          const res = wallet.receiveNotes(new Set(config.verifiableNotes))
+          wallet = res[1]
+        }
+
         const record = new ValueTransferStateRecord({
           publicDid: publicDid?.id,
-          previousHash: '',
-          verifiableNotes: [],
+          previousHash: new Uint8Array(),
+          wallet,
         })
         await this.valueTransferStateRepository.save(record)
-      }
+      } else {
+        if (config.verifiableNotes?.length) {
+          if (!state.wallet.amount()) {
+            state.wallet.receiveNotes(new Set(config.verifiableNotes))
+          }
 
-      if (!state?.verifiableNotes?.length && config.verifiableNotes) {
-        await this.valueTransfer.giver().addCash(config.verifiableNotes)
+          await this.valueTransferStateRepository.update(state)
+        }
       }
     }
   }
@@ -236,7 +245,7 @@ export class ValueTransferService {
 
   public async getBalance(): Promise<number> {
     const state = await this.valueTransferStateService.getState()
-    return state.verifiableNotes.length
+    return state.wallet.amount()
   }
 
   public async getByThread(threadId: string): Promise<ValueTransferRecord> {

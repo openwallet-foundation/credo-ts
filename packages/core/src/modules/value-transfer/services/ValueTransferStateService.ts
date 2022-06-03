@@ -35,8 +35,9 @@ export class ValueTransferStateService implements StorageInterface {
 
   public async storeState(state: State): Promise<void> {
     const record = await this.valueTransferStateRepository.getSingleByQuery({})
-    record.verifiableNotes = state.verifiableNotes
     record.previousHash = state.previousHash
+    record.wallet = state.wallet
+    record.proposedNextWallet = state.proposedNextWallet
     this.valueTransferStateRecord = record
     await this.valueTransferStateRepository.update(record)
   }

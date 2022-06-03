@@ -1,8 +1,9 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { RequestMessage, RequestAcceptedMessage, CashAcceptedMessage, CashRemovedMessage } from '../messages'
+import type { Witness } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -36,7 +37,6 @@ import { ValueTransferStateService } from './ValueTransferStateService'
 export class ValueTransferWitnessService {
   private wallet: Wallet
   private config: AgentConfig
-  private valueTransfer: ValueTransfer
   private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository
   private valueTransferService: ValueTransferService
@@ -47,6 +47,7 @@ export class ValueTransferWitnessService {
   private didResolverService: DidResolverService
   private connectionService: ConnectionService
   private eventEmitter: EventEmitter
+  private witness: Witness
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
@@ -75,15 +76,13 @@ export class ValueTransferWitnessService {
     this.connectionService = connectionService
     this.eventEmitter = eventEmitter
 
-    this.valueTransfer = new ValueTransfer(
+    this.witness = new ValueTransfer(
       {
         crypto: this.valueTransferCryptoService,
         storage: this.valueTransferStateService,
       },
-      {
-        sparseTree: verifiableNoteProofConfig,
-      }
-    )
+      {}
+    ).witness()
   }
 
   /**
@@ -141,7 +140,7 @@ export class ValueTransferWitnessService {
     }
 
     //Call VTP package to process received Payment Request request
-    const { error, message } = await this.valueTransfer.witness().processRequest(state.publicDid, valueTransferMessage)
+    const { error, message } = await this.witness.processRequest(state.publicDid, valueTransferMessage)
     if (error || !message) {
       // send problem report back to Getter
       const problemReportMessage = new ProblemReportMessage({
@@ -227,7 +226,7 @@ export class ValueTransferWitnessService {
     }
 
     // Witness: Call VTP package to process received request acceptance
-    const { error, message } = await this.valueTransfer.witness().processRequestAccepted(valueTransferMessage)
+    const { error, message } = await this.witness.processRequestAccepted(valueTransferMessage)
     // change state
     if (error || !message) {
       // VTP message verification failed
@@ -302,7 +301,7 @@ export class ValueTransferWitnessService {
     }
 
     // Witness: Call VTP package to process received cash acceptance
-    const { error, message } = await this.valueTransfer.witness().processCashAccepted(valueTransferMessage)
+    const { error, message } = await this.witness.processCashAccepted(valueTransferMessage)
     // change state
     if (error || !message) {
       // VTP message verification failed
@@ -372,7 +371,7 @@ export class ValueTransferWitnessService {
     }
 
     // Call VTP package to process received cash removal
-    const { error, message } = await this.valueTransfer.witness().processCashRemoved(valueTransferMessage)
+    const { error, message } = await this.witness.processCashRemoved(valueTransferMessage)
     if (error || !message) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
@@ -421,7 +420,7 @@ export class ValueTransferWitnessService {
     record.assertRole(ValueTransferRole.Witness)
 
     // Call VTP package to create receipt
-    const { error, message } = await this.valueTransfer.witness().createReceipt(record.valueTransferMessage)
+    const { error, message } = await this.witness.createReceipt(record.valueTransferMessage)
     if (error || !message) {
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({

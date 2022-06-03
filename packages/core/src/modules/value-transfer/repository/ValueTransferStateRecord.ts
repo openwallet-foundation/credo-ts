@@ -1,6 +1,6 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 
-import { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
 import { IsInstance, ValidateNested } from 'class-validator'
 
@@ -15,17 +15,23 @@ export type ValueTransferStateTags = RecordTags<ValueTransferStateRecord>
 export interface ValueTransferStateProps {
   id?: string
   publicDid?: string
-  previousHash: string
-  verifiableNotes: Array<VerifiableNote>
+  previousHash: Uint8Array
+  wallet: Wallet
+  proposedNextWallet?: Wallet
 }
 
 export class ValueTransferStateRecord extends BaseRecord<DefaultValueTransferStateTags, CustomValueTransferStateTags> {
-  public previousHash!: string
+  public previousHash!: Uint8Array
 
-  @Type(() => VerifiableNote)
-  @ValidateNested({ each: true })
-  @IsInstance(VerifiableNote, { each: true })
-  public verifiableNotes!: Array<VerifiableNote>
+  @Type(() => Wallet)
+  @ValidateNested()
+  @IsInstance(Wallet)
+  public wallet!: Wallet
+
+  @Type(() => Wallet)
+  @ValidateNested()
+  @IsInstance(Wallet)
+  public proposedNextWallet?: Wallet
 
   public publicDid?: string
 
@@ -39,7 +45,8 @@ export class ValueTransferStateRecord extends BaseRecord<DefaultValueTransferSta
       this.id = props.id ?? uuid()
       this.publicDid = props.publicDid
       this.previousHash = props.previousHash
-      this.verifiableNotes = props.verifiableNotes
+      this.wallet = props.wallet
+      this.proposedNextWallet = props.proposedNextWallet
     }
   }
 

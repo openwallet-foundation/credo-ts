@@ -1,3 +1,4 @@
+import type { DIDCommVersion } from './DIDCommMessage'
 import type { PlaintextMessage } from './EnvelopeService'
 import type { DIDCommV1Message } from './v1/DIDCommV1Message'
 import type { DIDCommV2Message } from './v2/DIDCommV2Message'
@@ -56,6 +57,7 @@ export interface DecryptedMessageContext {
   plaintextMessage: PlaintextMessage
   sender?: string
   recipient?: string
+  version?: DIDCommVersion
 }
 
 export enum DidCommV1Types {

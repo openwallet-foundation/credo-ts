@@ -25,13 +25,16 @@ export class ValueTransferBaseMessage extends DIDCommV2Message {
   public body!: ValueTransferMessageBody
 
   public static createValueTransferBase64Attachment(message: ValueTransferMessage): Attachment {
-    return ValueTransferBaseMessage.createBase64Attachment(VALUE_TRANSFER_ATTACHMENT_ID, message)
+    return ValueTransferBaseMessage.createBase64Attachment(
+      VALUE_TRANSFER_ATTACHMENT_ID,
+      JsonTransformer.serialize(message)
+    )
   }
 
   public get valueTransferMessage(): ValueTransferMessage | null {
     // Extract value transfer message from attachment
     const valueTransferMessage = this.getAttachmentDataAsJson(VALUE_TRANSFER_ATTACHMENT_ID)
     if (!valueTransferMessage) return null
-    return JsonTransformer.fromJSON(valueTransferMessage, ValueTransferMessage)
+    return JsonTransformer.deserialize(valueTransferMessage, ValueTransferMessage)
   }
 }

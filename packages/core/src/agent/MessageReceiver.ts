@@ -23,6 +23,7 @@ import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
+import { DIDCommVersion } from './didcomm/DIDCommMessage'
 import { EnvelopeService } from './didcomm/EnvelopeService'
 import { SendingMessageType } from './didcomm/types'
 import { createOutboundMessage } from './helpers'
@@ -108,9 +109,11 @@ export class MessageReceiver {
 
   private async receivePackedMessage(packedMessage: PackedMessage, session?: TransportSession) {
     const decryptedMessage = await this.decryptMessage(packedMessage)
-    const { plaintextMessage, sender, recipient } = decryptedMessage
+    const { plaintextMessage, sender, recipient, version } = decryptedMessage
 
-    const connection = await this.findConnectionByMessageKeys(decryptedMessage)
+    // DIDComm V2 messaging doesn't require connection
+    const connection =
+      version === DIDCommVersion.V1 ? await this.findConnectionByMessageKeys(decryptedMessage) : undefined
 
     this.logger.info(
       `Received message with type '${plaintextMessage['@type'] || plaintextMessage['type']}' from connection ${

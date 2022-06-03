@@ -1,8 +1,9 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { RequestAcceptedWitnessedMessage, GetterReceiptMessage } from '../messages'
+import type { Getter } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { TaggedPrice, ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -24,7 +25,6 @@ import { ValueTransferStateService } from './ValueTransferStateService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferGetterService {
-  private valueTransfer: ValueTransfer
   private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository
   private valueTransferService: ValueTransferService
@@ -33,6 +33,7 @@ export class ValueTransferGetterService {
   private connectionService: ConnectionService
   private didService: DidService
   private eventEmitter: EventEmitter
+  private getter: Getter
 
   public constructor(
     valueTransferRepository: ValueTransferRepository,
@@ -53,15 +54,13 @@ export class ValueTransferGetterService {
     this.connectionService = connectionService
     this.eventEmitter = eventEmitter
 
-    this.valueTransfer = new ValueTransfer(
+    this.getter = new ValueTransfer(
       {
         crypto: this.valueTransferCryptoService,
         storage: this.valueTransferStateService,
       },
-      {
-        sparseTree: verifiableNoteProofConfig,
-      }
-    )
+      {}
+    ).getter()
   }
 
   /**
@@ -92,7 +91,7 @@ export class ValueTransferGetterService {
 
     // Call VTP package to create payment request
     const givenTotal = new TaggedPrice({ amount })
-    const { error, message } = await this.valueTransfer.getter().createRequest({
+    const { error, message } = await this.getter.createRequest({
       getterId: getter,
       witnessId: witness,
       giverId: giver,
@@ -193,7 +192,7 @@ export class ValueTransferGetterService {
     record.assertState(ValueTransferState.RequestAcceptanceReceived)
 
     // Call VTP to accept cash
-    const { error, message } = await this.valueTransfer.getter().acceptCash(record.valueTransferMessage)
+    const { error, message } = await this.getter.acceptCash(record.valueTransferMessage)
     if (error || !message) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
@@ -265,7 +264,7 @@ export class ValueTransferGetterService {
     }
 
     // Call VTP to process Receipt
-    const { error, message } = await this.valueTransfer.getter().processReceipt(valueTransferMessage)
+    const { error, message } = await this.getter.processReceipt(valueTransferMessage)
     if (error || !message) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
