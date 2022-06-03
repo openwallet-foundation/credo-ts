@@ -1,4 +1,4 @@
-import type { InboundTransport, Agent, Transport } from '@aries-framework/core'
+import type { InboundTransport, Agent } from '@aries-framework/core'
 import type { FileSystem } from '@aries-framework/core/src/storage/FileSystem'
 
 import { AgentConfig } from '@aries-framework/core'
@@ -9,12 +9,10 @@ export class FileInboundTransport implements InboundTransport {
   private FileSystem!: FileSystem
   private alias: string
   private file: string
-  private transport: Transport
 
   public constructor({ schema, alias }: { schema: string; alias: string }) {
     this.file = `${schema}.json`
     this.alias = alias
-    this.transport = schema as Transport
   }
 
   public async start(agent: Agent) {
@@ -34,11 +32,11 @@ export class FileInboundTransport implements InboundTransport {
               [alias]: undefined,
             })
             await this.FileSystem.write(this.file, newData)
-            await agent.receiveMessage(message, undefined, this.transport)
+            await agent.receiveMessage(message, undefined)
           }
         }
       }
-      await sleep(3000)
+      await sleep(1000)
     }
   }
 

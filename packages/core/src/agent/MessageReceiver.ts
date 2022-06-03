@@ -1,21 +1,20 @@
 import type { PlaintextMessage } from '../agent/didcomm/EnvelopeService'
 import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections'
-import type { Transport } from '../modules/routing/types'
 import type { InboundTransport } from '../transport'
 import type { TransportSession } from './TransportService'
 import type { DIDCommMessage, EncryptedMessage } from './didcomm'
-import type { DecryptedMessageContext } from './didcomm/types'
+import type { DecryptedMessageContext, PackedMessage, SignedMessage } from './didcomm/types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionRepository } from '../modules/connections'
-import { DidDocument } from '../modules/dids'
 import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { KeyRepository } from '../modules/keys/repository'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { isValidJweStructure } from '../utils/JWE'
+import { isValidJwsStructure } from '../utils/JWS'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { MessageValidator } from '../utils/MessageValidator'
 import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
@@ -25,6 +24,7 @@ import { Dispatcher } from './Dispatcher'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { EnvelopeService } from './didcomm/EnvelopeService'
+import { SendingMessageType } from './didcomm/types'
 import { createOutboundMessage } from './helpers'
 import { InboundMessageContext } from './models/InboundMessageContext'
 
@@ -72,29 +72,42 @@ export class MessageReceiver {
    *
    * @param inboundMessage the message to receive and handle
    */
-  public async receiveMessage(inboundMessage: unknown, session?: TransportSession, transport?: Transport) {
+  public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
     this.logger.debug(`Agent ${this.config.label} received message`)
     if (this.isEncryptedMessage(inboundMessage)) {
-      await this.receiveEncryptedMessage(inboundMessage as EncryptedMessage, transport, session)
+      await this.receivePackedMessage(
+        {
+          type: SendingMessageType.Encrypted,
+          message: inboundMessage as EncryptedMessage,
+        },
+        session
+      )
+    } else if (this.isSignedMessage(inboundMessage)) {
+      await this.receivePackedMessage(
+        {
+          type: SendingMessageType.Signed,
+          message: inboundMessage as SignedMessage,
+        },
+        session
+      )
     } else if (this.isPlaintextMessage(inboundMessage)) {
-      await this.receivePlaintextMessage(inboundMessage, transport)
+      await this.receivePlaintextMessage({
+        type: SendingMessageType.Plain,
+        message: inboundMessage as SignedMessage,
+      })
     } else {
       throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
     }
   }
 
-  private async receivePlaintextMessage(plaintextMessage: PlaintextMessage, transport?: Transport) {
-    const message = await this.transformAndValidate(plaintextMessage)
-    const messageContext = new InboundMessageContext(message, { transport })
+  private async receivePlaintextMessage(plaintextMessage: PackedMessage) {
+    const message = await this.transformAndValidate(plaintextMessage.message)
+    const messageContext = new InboundMessageContext(message, {})
     await this.dispatcher.dispatch(messageContext)
   }
 
-  private async receiveEncryptedMessage(
-    encryptedMessage: EncryptedMessage,
-    transport?: Transport,
-    session?: TransportSession
-  ) {
-    const decryptedMessage = await this.decryptMessage(encryptedMessage)
+  private async receivePackedMessage(packedMessage: PackedMessage, session?: TransportSession) {
+    const decryptedMessage = await this.decryptMessage(packedMessage)
     const { plaintextMessage, sender, recipient } = decryptedMessage
 
     const connection = await this.findConnectionByMessageKeys(decryptedMessage)
@@ -134,7 +147,6 @@ export class MessageReceiver {
       connection: connection?.isReady ? connection : undefined,
       sender,
       recipient,
-      transport,
     })
     await this.dispatcher.dispatch(messageContext)
   }
@@ -144,7 +156,7 @@ export class MessageReceiver {
    *
    * @param message the received inbound message to decrypt
    */
-  private async decryptMessage(message: EncryptedMessage): Promise<DecryptedMessageContext> {
+  private async decryptMessage(message: PackedMessage): Promise<DecryptedMessageContext> {
     try {
       return await this.envelopeService.unpackMessage(message)
     } catch (error) {
@@ -168,6 +180,11 @@ export class MessageReceiver {
   private isEncryptedMessage(message: unknown): message is EncryptedMessage {
     // If the message does has valid JWE structure, we can assume the message is encrypted.
     return isValidJweStructure(message)
+  }
+
+  private isSignedMessage(message: unknown): message is SignedMessage {
+    // If the message does has valid JWS structure, we can assume the message is signed.
+    return isValidJwsStructure(message)
   }
 
   private async transformAndValidate(
@@ -196,29 +213,7 @@ export class MessageReceiver {
 
     let connection: ConnectionRecord | null = null
 
-    // Try to find the did records that holds the sender and recipient keys
-
-    // Try 1: Find DID which control the recipient kid
-    const ourKeyRecord = await this.keyRepository.findByKid(recipient)
-    if (ourKeyRecord && ourKeyRecord.controller) {
-      connection = await this.connectionRepository.findSingleByQuery({
-        did: ourKeyRecord.controller,
-      })
-      // Throw error if the recipient key (ourKey) does not match the key of the connection record
-      if (
-        connection &&
-        connection.theirDid &&
-        connection.theirDid !== sender &&
-        connection.theirDid !== DidDocument.extractDidFromKid(sender)
-      ) {
-        throw new AriesFrameworkError(
-          `Inbound message senderKey '${sender}' is different from connection.theirKey '${connection.theirKey}'`
-        )
-      }
-      if (connection) return connection
-    }
-
-    // Try 2: Find DID base on recipient key
+    // Try 1: Find DID base on recipient key
     const ourDidRecord = await this.didRepository.findByVerkey(recipient)
 
     // If both our did record and their did record is available we can find a matching did record
@@ -274,11 +269,10 @@ export class MessageReceiver {
       throw new AriesFrameworkError(`No type found in the message: ${message}`)
     }
 
-    const { v1MessageClass, v2MessageClass } = this.dispatcher.getMessageClassForType(messageType)
+    const messageClass = this.dispatcher.getMessageClassForType(messageType)
 
     // Cast the plain JSON object to specific instance of Message extended from DIDCommMessages
-    if (v1MessageClass) return JsonTransformer.fromJSON(message, v1MessageClass)
-    if (v2MessageClass) return JsonTransformer.fromJSON(message, v2MessageClass)
+    if (messageClass) return JsonTransformer.fromJSON<DIDCommMessage>(message, messageClass)
 
     throw new ProblemReportError(`No message class found for message type "${messageType}"`, {
       problemCode: ProblemReportReason.MessageParseFailure,

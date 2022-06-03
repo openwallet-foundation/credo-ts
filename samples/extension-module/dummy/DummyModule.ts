@@ -74,7 +74,7 @@ export class DummyModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerDIDCommV1Handler(new DummyRequestHandler(this.dummyService))
-    dispatcher.registerDIDCommV1Handler(new DummyResponseHandler(this.dummyService))
+    dispatcher.registerHandler(new DummyRequestHandler(this.dummyService))
+    dispatcher.registerHandler(new DummyResponseHandler(this.dummyService))
   }
 }

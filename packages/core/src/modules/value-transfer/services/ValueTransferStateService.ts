@@ -1,4 +1,5 @@
 import type { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
+import type { WitnessStateRecord } from '../repository/WitnessStateRecord'
 import type { State, StorageInterface, WitnessState } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -12,6 +13,8 @@ export class ValueTransferStateService implements StorageInterface {
   private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository
   private witnessStateRepository: WitnessStateRepository
+  private valueTransferStateRecord?: ValueTransferStateRecord
+  private witnessStateRecord?: WitnessStateRecord
 
   public constructor(
     valueTransferRepository: ValueTransferRepository,
@@ -24,23 +27,31 @@ export class ValueTransferStateService implements StorageInterface {
   }
 
   public async getState(): Promise<ValueTransferStateRecord> {
-    return this.valueTransferStateRepository.getSingleByQuery({})
+    if (!this.valueTransferStateRecord) {
+      this.valueTransferStateRecord = await this.valueTransferStateRepository.getSingleByQuery({})
+    }
+    return this.valueTransferStateRecord
   }
 
   public async storeState(state: State): Promise<void> {
     const record = await this.valueTransferStateRepository.getSingleByQuery({})
     record.verifiableNotes = state.verifiableNotes
     record.previousHash = state.previousHash
+    this.valueTransferStateRecord = record
     await this.valueTransferStateRepository.update(record)
   }
 
   public async getWitnessState(): Promise<WitnessState> {
-    return this.witnessStateRepository.getSingleByQuery({})
+    if (!this.witnessStateRecord) {
+      this.witnessStateRecord = await this.witnessStateRepository.getSingleByQuery({})
+    }
+    return this.witnessStateRecord
   }
 
   public async storeWitnessState(state: WitnessState): Promise<void> {
     const record = await this.witnessStateRepository.getSingleByQuery({})
     record.stateAccumulator = state.stateAccumulator
+    this.witnessStateRecord = record
     await this.witnessStateRepository.update(record)
   }
 }

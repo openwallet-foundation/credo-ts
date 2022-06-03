@@ -1,8 +1,8 @@
 import type { Logger } from '../logger'
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
 import type { AgentMessageProcessedEvent } from './Events'
-import type { Handler, HandlerV2 } from './Handler'
-import type { DIDCommMessage, DIDCommV1Message, DIDCommV2Message } from './didcomm'
+import type { Handler } from './Handler'
+import type { DIDCommMessage, DIDCommMessageClass } from './didcomm'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -19,8 +19,7 @@ import { isOutboundServiceMessage } from './helpers'
 
 @scoped(Lifecycle.ContainerScoped)
 class Dispatcher {
-  private didcommV1Handlers: Handler[] = []
-  private didcommV2Handlers: HandlerV2[] = []
+  private handlers: Handler<DIDCommMessageClass>[] = []
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
@@ -31,12 +30,8 @@ class Dispatcher {
     this.logger = agentConfig.logger
   }
 
-  public registerDIDCommV1Handler(handler: Handler) {
-    this.didcommV1Handlers.push(handler)
-  }
-
-  public registerDIDCommV2Handler(handler: HandlerV2) {
-    this.didcommV2Handlers.push(handler)
+  public registerHandler(handler: Handler<DIDCommMessageClass>) {
+    this.handlers.push(handler)
   }
 
   public async dispatch(messageContext: InboundMessageContext): Promise<void> {
@@ -100,34 +95,20 @@ class Dispatcher {
     })
   }
 
-  private getHandlerForType(messageType: string): Handler | HandlerV2 | undefined {
-    for (const handler of this.didcommV1Handlers) {
-      for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type === messageType) return handler
-      }
-    }
-    for (const handler of this.didcommV2Handlers) {
+  private getHandlerForType(messageType: string): Handler<DIDCommMessageClass> | undefined {
+    for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
         if (MessageClass.type === messageType) return handler
       }
     }
   }
 
-  public getMessageClassForType(messageType: string): {
-    v1MessageClass?: typeof DIDCommV1Message | undefined
-    v2MessageClass?: typeof DIDCommV2Message | undefined
-  } {
-    for (const handler of this.didcommV1Handlers) {
+  public getMessageClassForType(messageType: string): DIDCommMessageClass | undefined {
+    for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type === messageType) return { v1MessageClass: MessageClass }
+        if (MessageClass.type === messageType) return MessageClass
       }
     }
-    for (const handler of this.didcommV2Handlers) {
-      for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type === messageType) return { v2MessageClass: MessageClass }
-      }
-    }
-    return {}
   }
 
   /**
@@ -135,15 +116,9 @@ class Dispatcher {
    * Message type format is MTURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#mturi.
    */
   public get supportedMessageTypes() {
-    const v1Messages = this.didcommV1Handlers
-      .reduce<typeof DIDCommV1Message[]>((all, cur) => [...all, ...cur.supportedMessages], [])
+    return this.handlers
+      .reduce<DIDCommMessageClass[]>((all, cur) => [...all, ...cur.supportedMessages], [])
       .map((m) => m.type)
-
-    const v2Messages = this.didcommV2Handlers
-      .reduce<typeof DIDCommV2Message[]>((all, cur) => [...all, ...cur.supportedMessages], [])
-      .map((m) => m.type)
-
-    return [...v1Messages, ...v2Messages]
   }
 
   /**

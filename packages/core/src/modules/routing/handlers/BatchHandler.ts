@@ -1,12 +1,13 @@
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type { AgentMessageReceivedEvent } from '../../../agent/Events'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 
 import { AgentEventTypes } from '../../../agent/Events'
 import { AriesFrameworkError } from '../../../error'
 import { BatchMessage } from '../messages'
 
-export class BatchHandler implements Handler {
+export class BatchHandler implements Handler<typeof DIDCommV1Message> {
   private eventEmitter: EventEmitter
   public supportedMessages = [BatchMessage]
 

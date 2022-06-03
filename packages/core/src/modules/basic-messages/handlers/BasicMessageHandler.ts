@@ -1,10 +1,11 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { BasicMessageService } from '../services/BasicMessageService'
 
 import { AriesFrameworkError } from '../../../error'
 import { BasicMessage } from '../messages'
 
-export class BasicMessageHandler implements Handler {
+export class BasicMessageHandler implements Handler<typeof DIDCommV1Message> {
   private basicMessageService: BasicMessageService
   public supportedMessages = [BasicMessage]
 

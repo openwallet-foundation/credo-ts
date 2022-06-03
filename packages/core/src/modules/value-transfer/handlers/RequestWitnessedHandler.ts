@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { HandlerV2, HandlerV2InboundMessage } from '../../../agent/Handler'
+import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferResponseCoordinator } from '../ValueTransferResponseCoordinator'
 import type { ValueTransferService } from '../services'
 import type { ValueTransferGiverService } from '../services/ValueTransferGiverService'
@@ -7,7 +8,7 @@ import type { ValueTransferGiverService } from '../services/ValueTransferGiverSe
 import { ProblemReportMessage } from '../../problem-reports'
 import { RequestWitnessedMessage } from '../messages/RequestWitnessedMessage'
 
-export class RequestWitnessedHandler implements HandlerV2 {
+export class RequestWitnessedHandler implements Handler<typeof DIDCommV2Message> {
   private agentConfig: AgentConfig
   private valueTransferService: ValueTransferService
   private valueTransferGiverService: ValueTransferGiverService
@@ -27,15 +28,15 @@ export class RequestWitnessedHandler implements HandlerV2 {
     this.valueTransferResponseCoordinator = valueTransferResponseCoordinator
   }
 
-  public async handle(messageContext: HandlerV2InboundMessage<RequestWitnessedHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<RequestWitnessedHandler>) {
     const { record, message } = await this.valueTransferGiverService.processRequestWitnessed(messageContext)
     if (!record || message.type === ProblemReportMessage.type) {
-      return this.valueTransferService.sendMessageToWitness(message)
+      return this.valueTransferService.sendMessageToWitness(message, record)
     }
 
     if (this.valueTransferResponseCoordinator.shouldAutoRespondToRequest(record)) {
       const { message } = await this.valueTransferGiverService.acceptRequest(record)
-      return this.valueTransferService.sendMessageToWitness(message)
+      return this.valueTransferService.sendMessageToWitness(message, record)
     }
   }
 }

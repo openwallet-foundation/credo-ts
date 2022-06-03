@@ -1,11 +1,12 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { MediatorService } from '../services/MediatorService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 import { KeylistUpdateMessage } from '../messages'
 
-export class KeylistUpdateHandler implements Handler {
+export class KeylistUpdateHandler implements Handler<typeof DIDCommV1Message> {
   private mediatorService: MediatorService
   public supportedMessages = [KeylistUpdateMessage]
 

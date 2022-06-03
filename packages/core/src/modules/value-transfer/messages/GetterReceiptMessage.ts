@@ -1,29 +1,17 @@
-import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
+import type { ValueTransferMessageParams } from './ValueTransferBaseMessage'
 
-import { ValueTransferMessage } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsString } from 'class-validator'
 
-import { DIDCommV2Message } from '../../../agent/didcomm'
+import { ValueTransferBaseMessage } from './ValueTransferBaseMessage'
 
-type GetterReceiptMessageParams = DIDCommV2MessageParams & {
-  body: ValueTransferMessage
-}
-
-export class GetterReceiptMessage extends DIDCommV2Message {
-  public constructor(options?: GetterReceiptMessageParams) {
+export class GetterReceiptMessage extends ValueTransferBaseMessage {
+  public constructor(options?: ValueTransferMessageParams) {
     super(options)
   }
 
   @Equals(GetterReceiptMessage.type)
   public readonly type = GetterReceiptMessage.type
   public static readonly type = 'https://didcomm.org/vtp/1.0/getter-receipt'
-
-  @Expose({ name: 'body' })
-  @Type(() => ValueTransferMessage)
-  @ValidateNested()
-  @IsInstance(ValueTransferMessage)
-  public body!: ValueTransferMessage
 
   @IsString()
   public thid!: string

@@ -1,12 +1,11 @@
-import type { RequestMessage, ProblemReportMessage, RequestAcceptedMessage } from './messages'
-import type { ValueTransferTags, ValueTransferRecord } from './repository'
+import type { ProblemReportMessage, RequestAcceptedMessage, RequestMessage } from './messages'
+import type { ValueTransferRecord, ValueTransferTags } from './repository'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundDIDCommV2Message } from '../../agent/helpers'
 import { ConnectionService } from '../connections'
 import { DidResolverService } from '../dids'
 
@@ -88,8 +87,7 @@ export class ValueTransferModule {
     )
 
     // Send Payment Request to Witness
-    const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.messageSender.sendDIDCommV2Message(outboundMessage)
+    await this.valueTransferService.sendMessageToWitness(message, record)
     return { message, record }
   }
 
@@ -111,9 +109,7 @@ export class ValueTransferModule {
     const { message, record: updatedRecord } = await this.valueTransferGiverService.acceptRequest(record)
 
     // Send Payment Request Acceptance to Witness
-    const outboundMessage = createOutboundDIDCommV2Message(message)
-    const transport = this.config.valueTransferConfig?.witnessTransport
-    await this.messageSender.sendDIDCommV2Message(outboundMessage, transport)
+    await this.valueTransferService.sendMessageToWitness(message, record)
 
     return { record: updatedRecord, message }
   }
@@ -147,10 +143,10 @@ export class ValueTransferModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerDIDCommV2Handler(
+    dispatcher.registerHandler(
       new RequestHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
     )
-    dispatcher.registerDIDCommV2Handler(
+    dispatcher.registerHandler(
       new RequestWitnessedHandler(
         this.config,
         this.valueTransferService,
@@ -158,23 +154,23 @@ export class ValueTransferModule {
         this.valueTransferResponseCoordinator
       )
     )
-    dispatcher.registerDIDCommV2Handler(
+    dispatcher.registerHandler(
       new RequestAcceptedHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
     )
-    dispatcher.registerDIDCommV2Handler(
+    dispatcher.registerHandler(
       new RequestAcceptedWitnessedHandler(this.config, this.valueTransferService, this.valueTransferGetterService)
     )
-    dispatcher.registerDIDCommV2Handler(
+    dispatcher.registerHandler(
       new CashAcceptedHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
     )
-    dispatcher.registerDIDCommV2Handler(
+    dispatcher.registerHandler(
       new CashAcceptedWitnessedHandler(this.config, this.valueTransferService, this.valueTransferGiverService)
     )
-    dispatcher.registerDIDCommV2Handler(
+    dispatcher.registerHandler(
       new CashRemovedHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
     )
-    dispatcher.registerDIDCommV2Handler(new GetterReceiptHandler(this.valueTransferGetterService))
-    dispatcher.registerDIDCommV2Handler(new GiverReceiptHandler(this.valueTransferGiverService))
-    dispatcher.registerDIDCommV2Handler(new ProblemReportHandler(this.valueTransferService))
+    dispatcher.registerHandler(new GetterReceiptHandler(this.valueTransferGetterService))
+    dispatcher.registerHandler(new GiverReceiptHandler(this.valueTransferGiverService))
+    dispatcher.registerHandler(new ProblemReportHandler(this.valueTransferService))
   }
 }

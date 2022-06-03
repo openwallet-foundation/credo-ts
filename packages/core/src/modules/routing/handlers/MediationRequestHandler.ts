@@ -1,12 +1,13 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { MediatorService } from '../services/MediatorService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 import { MediationRequestMessage } from '../messages/MediationRequestMessage'
 
-export class MediationRequestHandler implements Handler {
+export class MediationRequestHandler implements Handler<typeof DIDCommV1Message> {
   private mediatorService: MediatorService
   private agentConfig: AgentConfig
   public supportedMessages = [MediationRequestMessage]

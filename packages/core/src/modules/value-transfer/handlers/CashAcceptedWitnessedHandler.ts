@@ -1,11 +1,12 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { HandlerV2InboundMessage, HandlerV2 } from '../../../agent/Handler'
+import type { HandlerInboundMessage, Handler } from '../../../agent/Handler'
+import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferService } from '../services'
 import type { ValueTransferGiverService } from '../services/ValueTransferGiverService'
 
 import { CashAcceptedWitnessedMessage } from '../messages'
 
-export class CashAcceptedWitnessedHandler implements HandlerV2 {
+export class CashAcceptedWitnessedHandler implements Handler<typeof DIDCommV2Message> {
   private agentConfig: AgentConfig
   private valueTransferService: ValueTransferService
   private valueTransferGiverService: ValueTransferGiverService
@@ -22,9 +23,9 @@ export class CashAcceptedWitnessedHandler implements HandlerV2 {
     this.valueTransferGiverService = valueTransferGiverService
   }
 
-  public async handle(messageContext: HandlerV2InboundMessage<CashAcceptedWitnessedHandler>) {
+  public async handle(messageContext: HandlerInboundMessage<CashAcceptedWitnessedHandler>) {
     const { record } = await this.valueTransferGiverService.processCashAcceptanceWitnessed(messageContext)
     const { message } = await this.valueTransferGiverService.removeCash(record)
-    return this.valueTransferService.sendMessageToWitness(message)
+    return this.valueTransferService.sendMessageToWitness(message, record)
   }
 }
