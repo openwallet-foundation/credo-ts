@@ -8,16 +8,71 @@ Before initializing your agent, make sure you have followed the setup guide for 
 - [NodeJS](../setup-nodejs.md)
 - [React Native](../setup-react-native.md)
 
-## Setting Up Your Agent
-
-> Note: This setup is assumed for a react native mobile agent
-> Other platforms: To do
+## Setting Up Your Agent for NodeJS with default storage
 
 You can set up an agent by importing the `Agent` class. It requires you to pass in a JSON object to configure the agent. The following is an example with only the required configuration options specified. The agent by itself can't do much yet, we need [transports](1-transports.md) to be able to interact with other agents.
 
 ```ts
 import { Agent, InitConfig } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
+
+const agentConfig: InitConfig = {
+  // The label is used for communication with other agents
+  label: 'My Agent',
+  walletConfig: {
+    id: 'walletId',
+    key: 'testKey0000000000000000000000000',
+  },
+}
+
+const agent = new Agent(agentConfig, agentDependencies)
+```
+
+## Setting Up Your Agent for NodeJS with postgres storage
+
+You can set up an agent by importing the `Agent` class. It requires you to pass in a JSON object to configure the agent. The following is an example with only the required configuration options specified. The agent by itself can't do much yet, we need [transports](1-transports.md) to be able to interact with other agents.
+
+```ts
+import { Agent, InitConfig } from '@aries-framework/core'
+import { agentDependencies, IndyPostgresStorageConfig, loadPostgresPlugin, WalletScheme } from '@aries-framework/node'
+
+const storageConfig: IndyPostgresStorageConfig = {
+  type: 'postgres_storage',
+  config: {
+    url: 'localhost:5432',
+    wallet_scheme: WalletScheme.DatabasePerWallet,
+  },
+  credentials: {
+    account: 'postgres',
+    password: 'postgres',
+    admin_account: 'postgres',
+    admin_password: 'postgres',
+  },
+}
+
+// load the postgres wallet plugin before agent initialization
+loadPostgresPlugin(storageConfig.config, storageConfig.credentials)
+
+const agentConfig: InitConfig = {
+  // The label is used for communication with other agents
+  label: 'My Agent',
+  walletConfig: {
+    id: 'walletId',
+    key: 'testKey0000000000000000000000000',
+    storage: storageConfig,
+  },
+}
+
+const agent = new Agent(agentConfig, agentDependencies)
+```
+
+## Setting Up Your Agent for React Native
+
+You can set up an agent by importing the `Agent` class. It requires you to pass in a JSON object to configure the agent. The following is an example with only the required configuration options specified. The agent by itself can't do much yet, we need [transports](1-transports.md) to be able to interact with other agents.
+
+```ts
+import { Agent, InitConfig } from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/react-native'
 
 const agentConfig: InitConfig = {
   // The label is used for communication with other agents
@@ -224,7 +279,7 @@ The agent currently supports the following configuration options. Fields marked 
 
 - `label`\*: The label to use for invitations.
 - `walletConfig`: The wallet config to use for creating and unlocking the wallet. Not required, but requires extra setup if not passed in constructor
-- `endpoint`: The endpoint (schema + host + port) to use for invitations.
+- `endpoints`: The endpoints (schema + host + port) to use for invitations.
 - `publicDidSeed`: The seed to use for initializing the public did of the agent. This does not register the DID on the ledger.
 - `genesisPath`: The path to the genesis file to use for connecting to an Indy ledger.
 - `genesisTransactions`: String of genesis transactions to use for connecting to an Indy ledger.
@@ -250,3 +305,10 @@ The agent currently supports the following configuration options. Fields marked 
   - `AutoAcceptCredential.Always`: Always auto accepts the credential no matter if it changed in subsequent steps
   - `AutoAcceptCredential.ContentApproved`: Needs one acceptation and the rest will be automated if nothing changes
   - `AutoAcceptCredential.Never`: Default. Never auto accept a credential
+- `mediatorRecordId`: Mediator record id
+- `connectToIndyLedgersOnStartup`: Whether to connect to indy ledgers on startup. Default is false
+- `mediatorPollingInterval`: The interval to use for polling the mediator. Default is 5 seconds.
+- `maximumMessagePickup`: The maximum number of messages to pick up. Default is 10.
+- `useLegacyDidSovPrefix`: Whether to use the legacy Sovrin DID prefix. Default is false.
+- `connectionImageUrl`: The url to use for the connection image.
+- `autoUpdateStorageOnStartup`: Whether to auto update the storage on startup. Default is false.
