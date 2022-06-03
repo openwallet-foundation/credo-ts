@@ -23,7 +23,7 @@ export type { Wallet } from './wallet/Wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
 
-import { parseInvitation } from './utils/parseInvitation'
+import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid } from './utils/uuid'
 
 export * from './transport'
@@ -44,7 +44,7 @@ export * from './agent/Events'
 
 const utils = {
   uuid,
-  parseInvitation,
+  parseInvitationUrl,
 }
 
 export { utils }

@@ -21,6 +21,7 @@ import { DidExchangeState, HandshakeProtocol, ConnectionsModule } from '../../mo
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
+import { parseInvitationUrl } from '../../utils/parseInvitation'
 import { DidKey } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
 import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
@@ -275,7 +276,7 @@ export class OutOfBandModule {
    * @returns OutOfBandInvitation
    */
   public async parseInvitation(invitationUrl: string): Promise<OutOfBandInvitation> {
-    return await this.parseInvitation(invitationUrl)
+    return await parseInvitationUrl(invitationUrl)
   }
 
   /**

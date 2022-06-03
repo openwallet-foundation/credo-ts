@@ -12,7 +12,7 @@ import { OutOfBandInvitation } from '../modules/oob/messages'
  *
  * @returns OutOfBandInvitation
  */
-export const parseInvitation = async (invitationUrl: string): Promise<OutOfBandInvitation> => {
+export const parseInvitationUrl = async (invitationUrl: string): Promise<OutOfBandInvitation> => {
   const parsedUrl = parseUrl(invitationUrl).query
   if (parsedUrl['oob']) {
     const outOfBandInvitation = await OutOfBandInvitation.fromUrl(invitationUrl)
