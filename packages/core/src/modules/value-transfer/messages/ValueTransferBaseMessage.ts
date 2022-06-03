@@ -2,6 +2,8 @@ import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 import type { Attachment } from 'didcomm'
 
 import { ValueTransferMessage } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Type } from 'class-transformer'
+import { IsInstance, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 import { JsonTransformer } from '../../../utils'
@@ -17,6 +19,9 @@ export class ValueTransferBaseMessage extends DIDCommV2Message {
     super(options)
   }
 
+  @Type(() => ValueTransferMessageBody)
+  @ValidateNested()
+  @IsInstance(ValueTransferMessageBody)
   public body!: ValueTransferMessageBody
 
   public static createValueTransferBase64Attachment(message: ValueTransferMessage): Attachment {

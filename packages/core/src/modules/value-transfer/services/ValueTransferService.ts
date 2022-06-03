@@ -144,7 +144,7 @@ export class ValueTransferService {
       await this.updateState(record, ValueTransferState.Failed)
       return {
         record,
-        message: problemReportMessage,
+        message: forwardedProblemReportMessage,
       }
     }
     if (record.role === ValueTransferRole.Getter) {
