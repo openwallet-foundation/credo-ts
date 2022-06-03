@@ -31,6 +31,7 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 import { isLinkedAttachment } from '../../../../utils/attachment'
+import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services'
 import { DidResolverService } from '../../../dids'
@@ -140,9 +141,12 @@ export class V1CredentialService extends CredentialService {
 
     const options = { ...config }
 
+    const threadId = uuid()
+
     // Create record
     const credentialRecord = new CredentialExchangeRecord({
       connectionId: connection.id,
+      threadId,
       state: CredentialState.ProposalSent,
       linkedAttachments: config?.linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
       autoAcceptCredential: config?.autoAcceptCredential,
@@ -157,11 +161,10 @@ export class V1CredentialService extends CredentialService {
     }
     options.attachments = []
     options.attachments?.push(filtersAttach)
-
     // Create message
     const message = new V1ProposeCredentialMessage(options ?? {})
 
-    credentialRecord.threadId = message.threadId
+    message.id = threadId
     credentialRecord.credentialAttributes = message.credentialProposal?.attributes
 
     await this.credentialRepository.save(credentialRecord)
