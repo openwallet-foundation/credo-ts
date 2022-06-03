@@ -221,6 +221,7 @@ export class CredentialMessageBuilder {
     const credentialPreview: V2CredentialPreview = new V2CredentialPreview({ attributes: [] })
 
     const offerMap = new Map<Attachment, CredentialFormatService>()
+
     for (const formatService of formatServices) {
       const { attachment, preview, format } = await formatService.createOffer(options)
 

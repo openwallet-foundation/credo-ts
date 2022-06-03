@@ -177,39 +177,39 @@ describe('credentials', () => {
       credentialIds: [],
     })
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
-    if (aliceCredentialRecord.connectionId) {
-      const acceptOfferOptions: AcceptOfferOptions = {
-        credentialRecordId: aliceCredentialRecord.id,
-      }
-      const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
-        acceptOfferOptions
-      )
 
-      expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-      expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V1)
-      expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
-      expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
-      testLogger.test('Faber waits for credential request from Alice')
-      faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
-        threadId: aliceCredentialRecord.threadId,
-        state: CredentialState.RequestReceived,
-      })
-
-      const options: AcceptRequestOptions = {
-        credentialRecordId: faberCredentialRecord.id,
-        comment: 'V1 Indy Credential',
-      }
-      testLogger.test('Faber sends credential to Alice')
-      await faberAgent.credentials.acceptRequest(options)
-
-      testLogger.test('Alice waits for credential from Faber')
-      aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-        threadId: faberCredentialRecord.threadId,
-        state: CredentialState.CredentialReceived,
-      })
-    } else {
-      throw new AriesFrameworkError('Missing Connection Id')
+    if (!aliceCredentialRecord.connectionId) {
+      throw new Error('Missing Connection Id')
     }
+    const acceptOfferOptions: AcceptOfferOptions = {
+      credentialRecordId: aliceCredentialRecord.id,
+    }
+    const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
+      acceptOfferOptions
+    )
+
+    expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
+    expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V1)
+    expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
+    expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
+    testLogger.test('Faber waits for credential request from Alice')
+    faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      threadId: aliceCredentialRecord.threadId,
+      state: CredentialState.RequestReceived,
+    })
+
+    const acceptRequestOptions: AcceptRequestOptions = {
+      credentialRecordId: faberCredentialRecord.id,
+      comment: 'V1 Indy Credential',
+    }
+    testLogger.test('Faber sends credential to Alice')
+    await faberAgent.credentials.acceptRequest(acceptRequestOptions)
+
+    testLogger.test('Alice waits for credential from Faber')
+    aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      threadId: faberCredentialRecord.threadId,
+      state: CredentialState.CredentialReceived,
+    })
   })
   // ==============================
   // TEST v1 END
@@ -327,52 +327,51 @@ describe('credentials', () => {
     })
     expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
 
-    if (aliceCredentialRecord.connectionId) {
-      const acceptOfferOptions: ServiceAcceptOfferOptions = {
-        credentialRecordId: aliceCredentialRecord.id,
-        credentialFormats: {
-          indy: undefined,
-        },
-      }
-      const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
-        acceptOfferOptions
-      )
-
-      expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-      expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
-      expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
-      expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
-
-      testLogger.test('Faber waits for credential request from Alice')
-      await waitForCredentialRecord(faberAgent, {
-        threadId: aliceCredentialRecord.threadId,
-        state: CredentialState.RequestReceived,
-      })
-
-      testLogger.test('Faber sends credential to Alice')
-
-      const options: AcceptRequestOptions = {
-        credentialRecordId: faberCredentialRecord.id,
-        comment: 'V2 Indy Credential',
-      }
-      await faberAgent.credentials.acceptRequest(options)
-
-      testLogger.test('Alice waits for credential from Faber')
-      aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
-        threadId: faberCredentialRecord.threadId,
-        state: CredentialState.CredentialReceived,
-      })
-
-      await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
-
-      testLogger.test('Faber waits for credential ack from Alice')
-      faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
-        threadId: faberCredentialRecord.threadId,
-        state: CredentialState.Done,
-      })
-    } else {
-      throw new AriesFrameworkError('Missing Connection Id')
+    if (!aliceCredentialRecord.connectionId) {
+      throw new Error('Missing Connection Id')
     }
+    const acceptOfferOptions: ServiceAcceptOfferOptions = {
+      credentialRecordId: aliceCredentialRecord.id,
+      credentialFormats: {
+        indy: undefined,
+      },
+    }
+    const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
+      acceptOfferOptions
+    )
+
+    expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
+    expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
+    expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
+    expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
+
+    testLogger.test('Faber waits for credential request from Alice')
+    await waitForCredentialRecord(faberAgent, {
+      threadId: aliceCredentialRecord.threadId,
+      state: CredentialState.RequestReceived,
+    })
+
+    testLogger.test('Faber sends credential to Alice')
+
+    const acceptRequestOptions: AcceptRequestOptions = {
+      credentialRecordId: faberCredentialRecord.id,
+      comment: 'V2 Indy Credential',
+    }
+    await faberAgent.credentials.acceptRequest(acceptRequestOptions)
+
+    testLogger.test('Alice waits for credential from Faber')
+    aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      threadId: faberCredentialRecord.threadId,
+      state: CredentialState.CredentialReceived,
+    })
+
+    await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
+
+    testLogger.test('Faber waits for credential ack from Alice')
+    faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      threadId: faberCredentialRecord.threadId,
+      state: CredentialState.Done,
+    })
   })
 
   test('Ensure missing attributes are caught if absent from in V2 (Indy) Proposal Message', async () => {

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import type { SignCredentialOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
@@ -125,7 +124,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
    * @param attachment the attachment containing the offer
    * @param credentialRecord the credential record for the message exchange
    */
-  public processOffer(_attachment: Attachment, _credentialRecord: CredentialExchangeRecord): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void> {
     return Promise.resolve()
   }
 
@@ -232,7 +232,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
       record: credential,
     })
 
-    // verifiableCredential.id = uu
     if (!verifiableCredential.credential.id) {
       throw new AriesFrameworkError(
         `JsonLd processCredential - Missing credential id in verifiable credential for record id ${credentialRecord.id}`
