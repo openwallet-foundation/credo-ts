@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/node",
+  "name": "@sicpa-dlab/aries-framework-node",
   "main": "build/index",
   "types": "build/index",
   "version": "0.1.0",
