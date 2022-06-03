@@ -134,7 +134,6 @@ describe('peer dids', () => {
     const numAlgo = getNumAlgoFromPeerDid(did)
 
     // Note that the did document could be undefined (if inlined did:peer or public did)
-    // FIXME: Goes wrong from here. Throws validation error if validate: true, return empty promise, {}, otherwise
     const didDocument = JsonTransformer.fromJSON(didPeer1zQmY, DidDocument, { validate: false })
 
     // make sure the dids are valid by matching them against our encoded variants

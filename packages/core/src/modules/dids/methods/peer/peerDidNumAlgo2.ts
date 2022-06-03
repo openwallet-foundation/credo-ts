@@ -38,7 +38,7 @@ const didPeerExpansions: { [key: string]: string | undefined } = {
   a: 'accept',
 }
 
-export async function didToNumAlgo2DidDocument(did: string) {
+export function didToNumAlgo2DidDocument(did: string) {
   const parsed = parseDid(did)
   const identifierWithoutNumAlgo = parsed.id.substring(2)
 

@@ -23,7 +23,6 @@ describe('DidResolverService', () => {
     const didKeyResolveSpy = jest.spyOn(KeyDidResolver.prototype, 'resolve')
     mockProperty(KeyDidResolver.prototype, 'supportedMethods', ['key'])
 
-    // FIXME: unhandled Promise rejection
     const returnValue = {
       didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument, { validate: false }),
       didDocumentMetadata: {},

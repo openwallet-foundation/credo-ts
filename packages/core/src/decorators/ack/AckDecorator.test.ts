@@ -24,8 +24,6 @@ describe('Decorators | AckDecoratorExtension', () => {
   })
 
   test('transforms Json to AckDecorator class', () => {
-    // FIXME: this doesn't pass the validation check. Should it?
-    // Unsure whether this should validate and is a bug or expected behaviour. Setting validate: false for now
     const transformed = JsonTransformer.fromJSON({ '~please_ack': {} }, TestMessage, { validate: false })
 
     expect(transformed).toEqual({ pleaseAck: {} })

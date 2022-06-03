@@ -25,8 +25,6 @@ describe('Decorators | ServiceDecoratorExtension', () => {
   })
 
   test('transforms Json to ServiceDecorator class', () => {
-    // FIXME: Just like ackDecorator, this doesn;t validate. The test never manually validated anyway.
-    // Hence, unsure whether this should validate and is a bug or expected behaviour. Setting validate: false for now
     const transformed = JsonTransformer.fromJSON({ '~service': service }, TestMessage)
 
     expect(transformed.service).toEqual(service)

@@ -347,7 +347,7 @@ export class ProofService {
 
     this.logger.debug(`Processing presentation request with id ${proofRequestMessage.id}`)
 
-    const proofRequest = await proofRequestMessage.indyProofRequest()
+    const proofRequest = await proofRequestMessage.indyProofRequest
 
     // Assert attachment
     if (!proofRequest) {
@@ -418,7 +418,7 @@ export class ProofService {
     // Assert
     proofRecord.assertState(ProofState.RequestReceived)
 
-    const indyProofRequest = await proofRecord.requestMessage?.indyProofRequest()
+    const indyProofRequest = await proofRecord.requestMessage?.indyProofRequest
     if (!indyProofRequest) {
       throw new PresentationProblemReportError(
         `Missing required base64 or json encoded attachment data for presentation with thread id ${proofRecord.threadId}`,
@@ -484,7 +484,7 @@ export class ProofService {
 
     // TODO: add proof class with validator
     const indyProofJson = presentationMessage.indyProof
-    const indyProofRequest = await proofRecord.requestMessage?.indyProofRequest()
+    const indyProofRequest = await proofRecord.requestMessage?.indyProofRequest
 
     if (!indyProofJson) {
       throw new PresentationProblemReportError(

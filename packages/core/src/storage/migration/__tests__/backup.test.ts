@@ -58,7 +58,7 @@ describe('UpdateAssistant | Backup', () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map(async (data: any) => {
+    const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
       const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
 
       record.setTags(data.tags)
@@ -70,7 +70,7 @@ describe('UpdateAssistant | Backup', () => {
 
     // Add 0.1 data and set version to 0.1
     for (const credentialRecord of aliceCredentialRecords) {
-      await credentialRepository.save(await credentialRecord)
+      await credentialRepository.save(credentialRecord)
     }
     await storageUpdateService.setCurrentStorageVersion('0.1')
 
@@ -94,10 +94,10 @@ describe('UpdateAssistant | Backup', () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map(async (data: any) => {
+    const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
       const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
 
-      await record.setTags(data.tags)
+      record.setTags(data.tags)
       return record
     })
 
@@ -130,7 +130,8 @@ describe('UpdateAssistant | Backup', () => {
 
     try {
       await updateAssistant.update()
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       updateError = error
     }
 
@@ -141,7 +142,7 @@ describe('UpdateAssistant | Backup', () => {
     expect(await fileSystem.exists(`${backupPath}-error`)).toBe(true)
 
     // Wallet should be same as when we started because of backup
-    await expect(async () => (await credentialRepository.getAll()).sort((a, b) => a.id.localeCompare(b.id))).toEqual(
+    expect((await credentialRepository.getAll()).sort((a, b) => a.id.localeCompare(b.id))).toEqual(
       aliceCredentialRecords.sort((a, b) => a.id.localeCompare(b.id))
     )
   })
