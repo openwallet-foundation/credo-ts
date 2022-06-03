@@ -1,7 +1,8 @@
 import { Expose } from 'class-transformer'
-import { Equals, IsString } from 'class-validator'
+import { IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export class AnswerMessage extends AgentMessage {
   /**
@@ -18,9 +19,9 @@ export class AnswerMessage extends AgentMessage {
     }
   }
 
-  @Equals(AnswerMessage.type)
-  public readonly type = AnswerMessage.type
-  public static readonly type = 'https://didcomm.org/questionanswer/1.0/answer'
+  @IsValidMessageType(AnswerMessage.type)
+  public readonly type = AnswerMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/questionanswer/1.0/answer')
 
   @Expose({ name: 'response' })
   @IsString()

@@ -1,7 +1,8 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { ValidResponse } from '../models'
 
 export class QuestionMessage extends AgentMessage {
@@ -29,9 +30,9 @@ export class QuestionMessage extends AgentMessage {
     }
   }
 
-  @Equals(QuestionMessage.type)
-  public readonly type = QuestionMessage.type
-  public static readonly type = 'https://didcomm.org/questionanswer/1.0/question'
+  @IsValidMessageType(QuestionMessage.type)
+  public readonly type = QuestionMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/questionanswer/1.0/question')
 
   @IsOptional()
   @IsString()
