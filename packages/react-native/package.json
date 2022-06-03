@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/react-native",
+  "name": "@sicpa-dlab/aries-framework-react-native",
   "main": "build/index",
   "types": "build/index",
   "version": "0.1.0",
