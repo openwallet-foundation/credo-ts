@@ -53,7 +53,7 @@ thread '<unnamed>' panicked at 'FIXME: IndyError { inner: Too many open files
 IO error }', src/libcore/result.rs:1165:5
 ```
 
-This issue results as too many files/resources have been opened in the process of connecting to the ledgers. IOS defaults the this limit to 256 (rlimit). This is likely something that can and should be addressed in indy-sdk or indy-vdr in the future.
+This issue results as too many files/resources have been opened in the process of connecting to the ledgers. IOS defaults the limit to 256 (rlimit). This is likely something that can and should be addressed in indy-sdk or indy-vdr in the future.
 
 #### Reduce Configured Ledgers
 
