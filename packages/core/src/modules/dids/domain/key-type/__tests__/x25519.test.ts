@@ -56,9 +56,7 @@ describe('x25519', () => {
   })
 
   it('returns key for X25519KeyAgreementKey2019 verification method', async () => {
-    const verificationMethod = await JsonTransformer.fromJSON(didKeyX25519Fixture.keyAgreement[0], VerificationMethod, {
-      validate: true,
-    })
+    const verificationMethod = JsonTransformer.fromJSON(didKeyX25519Fixture.keyAgreement[0], VerificationMethod)
 
     const key = keyDidX25519.getKeyFromVerificationMethod(verificationMethod)
 
@@ -66,9 +64,7 @@ describe('x25519', () => {
   })
 
   it('throws an error if an invalid verification method is passed', async () => {
-    const verificationMethod = await JsonTransformer.fromJSON(didKeyX25519Fixture.keyAgreement[0], VerificationMethod, {
-      validate: true,
-    })
+    const verificationMethod = JsonTransformer.fromJSON(didKeyX25519Fixture.keyAgreement[0], VerificationMethod)
 
     verificationMethod.type = 'SomeRandomType'
 

@@ -47,7 +47,7 @@ const dataInstance = new AttachmentData(data)
 
 describe('Decorators | Attachment', () => {
   it('should correctly transform Json to Attachment class', async () => {
-    const decorator = await JsonTransformer.fromJSON(mockJson, Attachment, { validate: true })
+    const decorator = JsonTransformer.fromJSON(mockJson, Attachment)
 
     expect(decorator.id).toBe(mockJson['@id'])
     expect(decorator.description).toBe(mockJson.description)
@@ -82,15 +82,15 @@ describe('Decorators | Attachment', () => {
     expect(json).toMatchObject(transformed)
   })
 
-  it('should return the data correctly if only JSON exists', async () => {
-    const decorator = await JsonTransformer.fromJSON(mockJson, Attachment, { validate: true })
+  it('should return the data correctly if only JSON exists', () => {
+    const decorator = JsonTransformer.fromJSON(mockJson, Attachment)
 
     const gotData = decorator.getDataAsJson()
     expect(decorator.data.json).toEqual(gotData)
   })
 
-  it('should return the data correctly if only Base64 exists', async () => {
-    const decorator = await JsonTransformer.fromJSON(mockJsonBase64, Attachment, { validate: true })
+  it('should return the data correctly if only Base64 exists', () => {
+    const decorator = JsonTransformer.fromJSON(mockJsonBase64, Attachment)
 
     const gotData = decorator.getDataAsJson()
     expect(mockJson.data.json).toEqual(gotData)

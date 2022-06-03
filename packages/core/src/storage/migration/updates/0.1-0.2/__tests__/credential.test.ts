@@ -170,11 +170,10 @@ describe('0.1-0.2 | Credential', () => {
 })
 
 async function getCredentialWithMetadata(metadata: Record<string, unknown>) {
-  return await JsonTransformer.fromJSON(
+  return JsonTransformer.fromJSON(
     {
       metadata,
     },
-    CredentialExchangeRecord,
-    { validate: true }
+    CredentialExchangeRecord
   )
 }

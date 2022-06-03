@@ -135,7 +135,7 @@ describe('peer dids', () => {
 
     // Note that the did document could be undefined (if inlined did:peer or public did)
     // FIXME: Goes wrong from here. Throws validation error if validate: true, return empty promise, {}, otherwise
-    const didDocument = await JsonTransformer.fromJSON(didPeer1zQmY, DidDocument, { validate: false })
+    const didDocument = JsonTransformer.fromJSON(didPeer1zQmY, DidDocument, { validate: false })
 
     // make sure the dids are valid by matching them against our encoded variants
     expect(didDocumentJsonToNumAlgo1Did(didPeer1zQmY)).toBe(did)

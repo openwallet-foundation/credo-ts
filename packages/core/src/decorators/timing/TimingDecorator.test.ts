@@ -3,7 +3,7 @@ import { JsonTransformer } from '../../utils/JsonTransformer'
 import { TimingDecorator } from './TimingDecorator'
 
 describe('Decorators | TimingDecorator', () => {
-  it('should correctly transform Json to TimingDecorator class', async () => {
+  it('should correctly transform Json to TimingDecorator class', () => {
     const json = {
       in_time: '2019-01-23 18:03:27.123Z',
       out_time: '2019-01-23 18:03:27.123Z',
@@ -12,7 +12,7 @@ describe('Decorators | TimingDecorator', () => {
       delay_milli: 12345,
       wait_until_time: '2019-01-24 00:00Z',
     }
-    const decorator = await JsonTransformer.fromJSON(json, TimingDecorator, { validate: true })
+    const decorator = JsonTransformer.fromJSON(json, TimingDecorator)
 
     expect(decorator.inTime).toBeInstanceOf(Date)
     expect(decorator.outTime).toBeInstanceOf(Date)

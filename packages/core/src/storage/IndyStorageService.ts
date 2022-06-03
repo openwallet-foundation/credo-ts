@@ -94,7 +94,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
 
   private async recordToInstance(record: WalletRecord, recordClass: BaseRecordConstructor<T>): Promise<T> {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const instance = await JsonTransformer.deserialize<T>(record.value!, recordClass, { validate: true })
+    const instance = JsonTransformer.deserialize<T>(record.value!, recordClass)
     instance.id = record.id
 
     const tags = record.tags ? this.transformToRecordTagValues(record.tags) : {}
@@ -239,7 +239,8 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
           return
         }
       }
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       throw new IndySdkError(error, `Searching '${type}' records for query '${JSON.stringify(query)}' failed`)
     }
   }

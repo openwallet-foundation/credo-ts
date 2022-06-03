@@ -94,7 +94,7 @@ describe('Repository', () => {
     it('should transform and save the agent message', async () => {
       await repository.saveAgentMessage({
         role: DidCommMessageRole.Receiver,
-        agentMessage: await JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage, { validate: false }),
+        agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -113,7 +113,7 @@ describe('Repository', () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
       await repository.saveOrUpdateAgentMessage({
         role: DidCommMessageRole.Receiver,
-        agentMessage: await JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage, { validate: true }),
+        agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -131,7 +131,7 @@ describe('Repository', () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
       await repository.saveOrUpdateAgentMessage({
         role: DidCommMessageRole.Receiver,
-        agentMessage: await JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage, { validate: true }),
+        agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 

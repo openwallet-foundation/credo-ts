@@ -56,11 +56,7 @@ describe('bls12381g1', () => {
   })
 
   it('returns key for Bls12381G1Key2020 verification method', async () => {
-    const verificationMethod = await JsonTransformer.fromJSON(
-      keyBls12381g1Fixture.verificationMethod[0],
-      VerificationMethod,
-      { validate: true }
-    )
+    const verificationMethod = JsonTransformer.fromJSON(keyBls12381g1Fixture.verificationMethod[0], VerificationMethod)
 
     const key = keyDidBls12381g1.getKeyFromVerificationMethod(verificationMethod)
 
@@ -68,11 +64,7 @@ describe('bls12381g1', () => {
   })
 
   it('throws an error if an invalid verification method is passed', async () => {
-    const verificationMethod = await JsonTransformer.fromJSON(
-      keyBls12381g1Fixture.verificationMethod[0],
-      VerificationMethod,
-      { validate: true }
-    )
+    const verificationMethod = JsonTransformer.fromJSON(keyBls12381g1Fixture.verificationMethod[0], VerificationMethod)
 
     verificationMethod.type = 'SomeRandomType'
 

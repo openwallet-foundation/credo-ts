@@ -23,7 +23,7 @@ describe('JsonTransformer', () => {
   })
 
   describe('fromJSON', () => {
-    it('transforms JSON object to class instance', async () => {
+    it('transforms JSON object to class instance', () => {
       const json = {
         '@type': 'https://didcomm.org/connections/1.0/invitation',
         '@id': 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
@@ -37,9 +37,7 @@ describe('JsonTransformer', () => {
         label: 'test-label',
       })
 
-      await expect(JsonTransformer.fromJSON(json, ConnectionInvitationMessage, { validate: true })).resolves.toEqual(
-        invitation
-      )
+      expect(JsonTransformer.fromJSON(json, ConnectionInvitationMessage)).toEqual(invitation)
     })
   })
 
@@ -59,7 +57,7 @@ describe('JsonTransformer', () => {
   })
 
   describe('deserialize', () => {
-    it('transforms JSON string to class instance', async () => {
+    it('transforms JSON string to class instance', () => {
       const jsonString =
         '{"@type":"https://didcomm.org/connections/1.0/invitation","@id":"afe2867e-58c3-4a8d-85b2-23370dd9c9f0","label":"test-label","did":"did:sov:test1234"}'
 
@@ -69,20 +67,20 @@ describe('JsonTransformer', () => {
         label: 'test-label',
       })
 
-      await expect(
-        JsonTransformer.deserialize(jsonString, ConnectionInvitationMessage, { validate: false })
-      ).resolves.toEqual(invitation)
+      expect(JsonTransformer.deserialize(jsonString, ConnectionInvitationMessage, { validate: false })).toEqual(
+        invitation
+      )
     })
 
-    // it('transforms JSON string to nested class instance', async () => {
-    //   const didDocumentString =
-    //     '{"@context":["https://w3id.org/did/v1"],"id":"did:peer:1zQmRYBx1pL86DrsxoJ2ZD3w42d7Ng92ErPgFsCSqg8Q1h4i","keyAgreement":[{"id":"#6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V","type":"Ed25519VerificationKey2018","publicKeyBase58":"ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7"}],"service":[{"id":"#service-0","type":"did-communication","serviceEndpoint":"https://example.com/endpoint","recipientKeys":["#6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V"],"routingKeys":["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH#z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],"accept":["didcomm/v2","didcomm/aip2;env=rfc587"]}]}'
+    it('transforms JSON string to nested class instance', () => {
+      const didDocumentString =
+        '{"@context":["https://w3id.org/did/v1"],"id":"did:peer:1zQmRYBx1pL86DrsxoJ2ZD3w42d7Ng92ErPgFsCSqg8Q1h4i","keyAgreement":[{"id":"#6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V","type":"Ed25519VerificationKey2018","publicKeyBase58":"ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7"}],"service":[{"id":"#service-0","type":"did-communication","serviceEndpoint":"https://example.com/endpoint","recipientKeys":["#6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V"],"routingKeys":["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH#z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],"accept":["didcomm/v2","didcomm/aip2;env=rfc587"]}]}'
 
-    //   const didDocument = await JsonTransformer.deserialize(didDocumentString, DidDocument, { validate: true })
+      const didDocument = JsonTransformer.deserialize(didDocumentString, DidDocument, { validate: false })
 
-    //   const keyAgreement = didDocument.keyAgreement ?? []
+      const keyAgreement = didDocument.keyAgreement ?? []
 
-    //   await expect(async () => keyAgreement[0]).resolves.toBeInstanceOf(VerificationMethod)
-    // })
+      expect(keyAgreement[0]).toBeInstanceOf(VerificationMethod)
+    })
   })
 })

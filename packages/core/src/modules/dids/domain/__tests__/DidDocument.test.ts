@@ -1,5 +1,4 @@
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../../utils/MessageValidator'
 import didExample123Fixture from '../../__tests__/__fixtures__/didExample123.json'
 import didExample456Invalid from '../../__tests__/__fixtures__/didExample456Invalid.json'
 import { DidDocument, findVerificationMethodByKeyType } from '../DidDocument'
@@ -106,7 +105,7 @@ const didDocumentInstance = new DidDocument({
 
 describe('Did | DidDocument', () => {
   it('should correctly transforms Json to DidDocument class', async () => {
-    const didDocument = await JsonTransformer.fromJSON(didExample123Fixture, DidDocument, { validate: true })
+    const didDocument = JsonTransformer.fromJSON(didExample123Fixture, DidDocument, { validate: false })
 
     // Check other properties
     expect(didDocument.id).toBe(didExample123Fixture.id)
@@ -153,11 +152,9 @@ describe('Did | DidDocument', () => {
   })
 
   it('validation should throw an error if the did document is invalid', async () => {
-    const didDocument = await JsonTransformer.fromJSON(didExample456Invalid, DidDocument, { validate: true })
-
     // TODO: validation is done already - make this expect.rejects
     try {
-      await MessageValidator.validate(didDocument)
+      JsonTransformer.fromJSON(didExample456Invalid, DidDocument)
     } catch (error) {
       expect(error).toMatchObject([
         {

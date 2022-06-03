@@ -169,7 +169,8 @@ export class MessageReceiver {
     try {
       message = await this.transformMessage(plaintextMessage)
       await this.validateMessage(message)
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       if (connection) await this.sendProblemReportMessage(error.message, connection, plaintextMessage)
       throw error
     }
@@ -209,7 +210,7 @@ export class MessageReceiver {
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage
-    return await JsonTransformer.fromJSON(message, MessageClass, { validate: true })
+    return JsonTransformer.fromJSON(message, MessageClass)
   }
 
   /**

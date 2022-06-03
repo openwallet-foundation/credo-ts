@@ -7,25 +7,25 @@ import didPeer2Ez6L from './__fixtures__/didPeer2Ez6L.json'
 import didPeer2Ez6LMoreServices from './__fixtures__/didPeer2Ez6LMoreServices.json'
 
 describe('peerDidNumAlgo2', () => {
-  // describe('didDocumentToNumAlgo2Did', () => {
-  //   test('transforms method 2 peer did to a did document', async () => {
-  //     await expect(async () => (await didToNumAlgo2DidDocument(didPeer2Ez6L.id)).toJSON()).resolves.toEqual(
-  //       didPeer2Ez6L
-  //     )
+  describe('didDocumentToNumAlgo2Did', () => {
+    test('transforms method 2 peer did to a did document', async () => {
+      await expect(async () => (await didToNumAlgo2DidDocument(didPeer2Ez6L.id)).toJSON()).resolves.toEqual(
+        didPeer2Ez6L
+      )
 
-  //     await expect(async () => (await didToNumAlgo2DidDocument(didPeer2Ez6LMoreServices.id)).toJSON()).resolves.toEqual(
-  //       didPeer2Ez6LMoreServices
-  //     )
-  //   })
-  // })
+      await expect(async () => (await didToNumAlgo2DidDocument(didPeer2Ez6LMoreServices.id)).toJSON()).resolves.toEqual(
+        didPeer2Ez6LMoreServices
+      )
+    })
+  })
 
   describe('didDocumentToNumAlgo2Did', () => {
-    test('transforms method 2 peer did document to a did', async () => {
+    test('transforms method 2 peer did document to a did', () => {
       const expectedDid = didPeer2Ez6L.id
 
-      const didDocument = await JsonTransformer.fromJSON(didPeer2Ez6L, DidDocument, { validate: false })
+      const didDocument = JsonTransformer.fromJSON(didPeer2Ez6L, DidDocument, { validate: false })
 
-      expect(() => didDocumentToNumAlgo2Did(didDocument)).toBe(expectedDid)
+      expect(didDocumentToNumAlgo2Did(didDocument)).toBe(expectedDid)
     })
   })
 

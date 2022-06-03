@@ -55,12 +55,12 @@ export class RequestPresentationMessage extends AgentMessage {
   public requestPresentationAttachments!: Attachment[]
 
   // FIXME: Changing the function/getter signature seems wrong
-  public get indyProofRequest(): () => Promise<ProofRequest | null> {
+  public get indyProofRequest(): () => ProofRequest | null {
     const attachment = this.requestPresentationAttachments.find(
       (attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID
     )
     // Extract proof request from attachment
     const proofRequestJson = attachment?.getDataAsJson<ProofRequest>() ?? null
-    return async () => await JsonTransformer.fromJSON(proofRequestJson, ProofRequest, { validate: true })
+    return () => JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
   }
 }

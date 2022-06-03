@@ -1,5 +1,3 @@
-import { ValidateIf } from 'class-validator'
-
 import { getAgentConfig, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import {
@@ -111,7 +109,7 @@ describe('0.1-0.2 | Connection', () => {
 
   describe('migrateCredentialRecordToV0_2()', () => {
     it('should fetch all records and apply the needed updates', async () => {
-      const input = await JsonTransformer.fromJSON(connectionJson, ConnectionRecord, { validate: true })
+      const input = JsonTransformer.fromJSON(connectionJson, ConnectionRecord)
       const records = [input]
 
       mockFunction(connectionRepository.getAll).mockResolvedValue(records)
@@ -147,10 +145,9 @@ describe('0.1-0.2 | Connection', () => {
 
   describe('updateConnectionRoleAndState', () => {
     it('should update the connection role and state to did exchange values', async () => {
-      const connectionRecord = await JsonTransformer.fromJSON(
+      const connectionRecord = JsonTransformer.fromJSON(
         { ...connectionJson, state: 'requested', role: 'invitee' },
-        ConnectionRecord,
-        { validate: true }
+        ConnectionRecord
       )
 
       await testModule.updateConnectionRoleAndState(agent, connectionRecord)
@@ -178,7 +175,7 @@ describe('0.1-0.2 | Connection', () => {
 
   describe('extractDidDocument', () => {
     it('should extract the did document from the connection record and update the did to a did:peer did', async () => {
-      const connectionRecord = await JsonTransformer.fromJSON(connectionJson, ConnectionRecord, { validate: true })
+      const connectionRecord = JsonTransformer.fromJSON(connectionJson, ConnectionRecord)
 
       // No did record exists yet
       mockFunction(didRepository.findById).mockResolvedValue(null)
@@ -204,7 +201,7 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should create a DidRecord for didDoc and theirDidDoc', async () => {
-      const connectionRecord = await JsonTransformer.fromJSON(connectionJson, ConnectionRecord, { validate: true })
+      const connectionRecord = JsonTransformer.fromJSON(connectionJson, ConnectionRecord)
 
       // No did record exists yet
       mockFunction(didRepository.findById).mockResolvedValue(null)
@@ -255,10 +252,9 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should not extract the did document if it does not exist on the connection record', async () => {
-      const connectionRecord = await JsonTransformer.fromJSON(
+      const connectionRecord = JsonTransformer.fromJSON(
         { ...connectionJson, didDoc: undefined, theirDidDoc: undefined },
-        ConnectionRecord,
-        { validate: true }
+        ConnectionRecord
       )
 
       await testModule.extractDidDocument(agent, connectionRecord)
@@ -277,9 +273,9 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should not create a did record if a did record for the did already exists', async () => {
-      const connectionRecord = await JsonTransformer.fromJSON(connectionJson, ConnectionRecord, { validate: false })
+      const connectionRecord = JsonTransformer.fromJSON(connectionJson, ConnectionRecord, { validate: false })
 
-      const didRecord = await JsonTransformer.fromJSON(
+      const didRecord = JsonTransformer.fromJSON(
         {
           id: didPeerR1xKJw17sUoXhejEpugMYJ.id,
           role: DidDocumentRole.Created,
@@ -295,11 +291,10 @@ describe('0.1-0.2 | Connection', () => {
             recipientKeys: ['R1xKJw17sUoXhejEpugMYJ#4', 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'],
           },
         },
-        DidRecord,
-        { validate: true }
+        DidRecord
       )
 
-      const theirDidRecord = await JsonTransformer.fromJSON(
+      const theirDidRecord = JsonTransformer.fromJSON(
         {
           id: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
           role: DidDocumentRole.Received,
@@ -351,9 +346,7 @@ describe('0.1-0.2 | Connection', () => {
 
   describe('migrateToOobRecord', () => {
     it('should extract the invitation from the connection record and generate an invitation did', async () => {
-      const connectionRecord = await JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord, {
-        validate: true,
-      })
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
 
       // No did record exists yet
       mockFunction(outOfBandRepository.findByQuery).mockResolvedValue([])
@@ -377,9 +370,7 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should create an OutOfBandRecord from the invitation and store the outOfBandId in the connection record', async () => {
-      const connectionRecord = await JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord, {
-        validate: true,
-      })
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
 
       // No did record exists yet
       mockFunction(outOfBandRepository.findByQuery).mockResolvedValue([])
@@ -421,9 +412,7 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should create an OutOfBandRecord if an OutOfBandRecord with the invitation id already exists, but the recipientKeys are different', async () => {
-      const connectionRecord = await JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord, {
-        validate: true,
-      })
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
 
       // Out of band record does not exist yet
       mockFunction(outOfBandRepository.findByQuery).mockResolvedValueOnce([])
@@ -441,11 +430,9 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should not create an OutOfBandRecord if an OutOfBandRecord with the invitation id and recipientKeys already exists', async () => {
-      const connectionRecord = await JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord, {
-        validate: false,
-      })
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
 
-      const outOfBandRecord = await JsonTransformer.fromJSON(
+      const outOfBandRecord = JsonTransformer.fromJSON(
         {
           id: '3c52cc26-577d-4200-8753-05f1f425c342',
           _tags: {},
@@ -474,8 +461,7 @@ describe('0.1-0.2 | Connection', () => {
           mediatorId: 'a-mediator-id',
           createdAt: connectionRecord.createdAt.toISOString(),
         },
-        OutOfBandRecord,
-        { validate: true }
+        OutOfBandRecord
       )
 
       // Out of band record does not exist yet
@@ -507,13 +493,12 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should update the existing out of band record to reusable and state await response if the connection record is a multiUseInvitation', async () => {
-      const connectionRecord = await JsonTransformer.fromJSON(
+      const connectionRecord = JsonTransformer.fromJSON(
         { ...connectionJsonNewDidStateRole, multiUseInvitation: true },
-        ConnectionRecord,
-        { validate: false }
+        ConnectionRecord
       )
 
-      const outOfBandRecord = await JsonTransformer.fromJSON(
+      const outOfBandRecord = JsonTransformer.fromJSON(
         {
           id: '3c52cc26-577d-4200-8753-05f1f425c342',
           _tags: {},

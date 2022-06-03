@@ -25,7 +25,7 @@ describe('DidResolverService', () => {
 
     // FIXME: unhandled Promise rejection
     const returnValue = {
-      didDocument: await JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument, { validate: false }),
+      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument, { validate: false }),
       didDocumentMetadata: {},
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',

@@ -85,7 +85,7 @@ export class OutOfBandInvitation extends AgentMessage {
   }
 
   public static async fromJson(json: Record<string, unknown>) {
-    const invitation = await JsonTransformer.fromJSON(json, OutOfBandInvitation, { validate: true })
+    const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation, { validate: false })
     await MessageValidator.validate(invitation)
     return invitation
   }
@@ -167,7 +167,7 @@ function OutOfBandServiceTransformer() {
         if (typeof service === 'string') return new String(service)
 
         // inline didcomm service
-        return await JsonTransformer.fromJSON(service, OutOfBandDidCommService, { validate: true })
+        return JsonTransformer.fromJSON(service, OutOfBandDidCommService)
       })
     } else if (type === TransformationType.CLASS_TO_PLAIN) {
       return value.map((service) =>

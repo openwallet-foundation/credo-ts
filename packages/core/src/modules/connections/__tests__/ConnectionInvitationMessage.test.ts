@@ -15,8 +15,8 @@ describe('ConnectionInvitationMessage', () => {
       serviceEndpoint: 'https://example.com',
       label: 'test',
     }
-    const invitation = await JsonTransformer.fromJSON(json, ConnectionInvitationMessage, { validate: true })
-    await expect(validateOrReject(invitation)).resolves.toBeUndefined()
+    const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage)
+    expect(invitation).toBeInstanceOf(ClassValidationError)
   })
 
   it('should throw error if both did and inline keys / endpoint are missing', async () => {
@@ -26,8 +26,8 @@ describe('ConnectionInvitationMessage', () => {
       label: 'test',
     }
 
-    const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage, { validate: true })
-    await expect(async () => invitation).rejects.toThrowError(ClassValidationError)
+    const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage)
+    expect(invitation).toBeInstanceOf(ClassValidationError)
   })
 
   it('should replace legacy did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix with https://didcomm.org in message type', async () => {
@@ -38,7 +38,7 @@ describe('ConnectionInvitationMessage', () => {
       serviceEndpoint: 'https://example.com',
       label: 'test',
     }
-    const invitation = await JsonTransformer.fromJSON(json, ConnectionInvitationMessage, { validate: true })
+    const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage)
 
     // Assert type
     expect(invitation.type).toBe('https://didcomm.org/connections/1.0/invitation')
@@ -57,7 +57,7 @@ describe('ConnectionInvitationMessage', () => {
         serviceEndpoint: 'https://example.com',
         label: 'test',
       }
-      const invitation = await JsonTransformer.fromJSON(json, ConnectionInvitationMessage, { validate: true })
+      const invitation = JsonTransformer.fromJSON(json, ConnectionInvitationMessage)
       const invitationUrl = invitation.toUrl({
         domain,
       })

@@ -1,9 +1,10 @@
+import { ClassValidationError } from '../../../error/ClassValidationError'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { ProofRequest } from '../models'
 
 describe('ProofRequest', () => {
   it('should successfully validate if the proof request json contains a valid structure', async () => {
-    const proofRequest = await JsonTransformer.fromJSON(
+    const proofRequest = JsonTransformer.fromJSON(
       {
         name: 'ProofRequest',
         version: '1.0',
@@ -31,8 +32,7 @@ describe('ProofRequest', () => {
           },
         },
       },
-      ProofRequest,
-      { validate: true }
+      ProofRequest
     )
 
     await expect(async () => proofRequest).resolves
@@ -68,6 +68,6 @@ describe('ProofRequest', () => {
     }
 
     // Expect 2 top level validation errors
-    await expect(async () => await JsonTransformer.fromJSON(proofRequest, ProofRequest, { validate: true })).rejects
+    expect(JsonTransformer.fromJSON(proofRequest, ProofRequest)).toBeInstanceOf(ClassValidationError)
   })
 })

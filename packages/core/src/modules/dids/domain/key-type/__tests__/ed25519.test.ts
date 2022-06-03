@@ -56,11 +56,7 @@ describe('ed25519', () => {
   })
 
   it('returns key for Ed25519VerificationKey2018 verification method', async () => {
-    const verificationMethod = await JsonTransformer.fromJSON(
-      didKeyEd25519Fixture.verificationMethod[0],
-      VerificationMethod,
-      { validate: true }
-    )
+    const verificationMethod = JsonTransformer.fromJSON(didKeyEd25519Fixture.verificationMethod[0], VerificationMethod)
 
     const key = keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)
 
@@ -68,11 +64,7 @@ describe('ed25519', () => {
   })
 
   it('throws an error if an invalid verification method is passed', async () => {
-    const verificationMethod = await JsonTransformer.fromJSON(
-      didKeyEd25519Fixture.verificationMethod[0],
-      VerificationMethod,
-      { validate: true }
-    )
+    const verificationMethod = JsonTransformer.fromJSON(didKeyEd25519Fixture.verificationMethod[0], VerificationMethod)
 
     verificationMethod.type = 'SomeRandomType'
 

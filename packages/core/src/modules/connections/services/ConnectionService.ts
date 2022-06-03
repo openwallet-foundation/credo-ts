@@ -290,7 +290,7 @@ export class ConnectionService {
       throw error
     }
 
-    const connection = await JsonTransformer.fromJSON(connectionJson, Connection, { validate: true })
+    const connection = JsonTransformer.fromJSON(connectionJson, Connection)
 
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
     // as the recipient key(s) in the connection invitation message

@@ -171,12 +171,11 @@ describe('0.1-0.2 | Mediation', () => {
 })
 
 async function getMediationRecord({ role, endpoint }: { role: MediationRole; endpoint?: string }) {
-  return await JsonTransformer.fromJSON(
+  return JsonTransformer.fromJSON(
     {
       role,
       endpoint,
     },
-    MediationRecord,
-    { validate: true }
+    MediationRecord
   )
 }

@@ -3,7 +3,7 @@ import { JsonTransformer } from '../../utils/JsonTransformer'
 import { ThreadDecorator } from './ThreadDecorator'
 
 describe('Decorators | ThreadDecorator', () => {
-  it('should correctly transform Json to ThreadDecorator class', async () => {
+  it('should correctly transform Json to ThreadDecorator class', () => {
     const json = {
       thid: 'ceffce22-6471-43e4-8945-b604091981c9',
       pthid: '917a109d-eae3-42bc-9436-b02426d3ce2c',
@@ -12,7 +12,7 @@ describe('Decorators | ThreadDecorator', () => {
         'did:sov:3ecf688c-cb3f-467b-8636-6b0c7f1d9022': 1,
       },
     }
-    const decorator = await JsonTransformer.fromJSON(json, ThreadDecorator, { validate: true })
+    const decorator = JsonTransformer.fromJSON(json, ThreadDecorator)
 
     expect(decorator.threadId).toBe(json.thid)
     expect(decorator.parentThreadId).toBe(json.pthid)

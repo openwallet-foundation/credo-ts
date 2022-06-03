@@ -59,7 +59,7 @@ describe('UpdateAssistant | Backup', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map(async (data: any) => {
-      const record = await JsonTransformer.fromJSON(data.value, CredentialExchangeRecord, { validate: true })
+      const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
 
       record.setTags(data.tags)
       return record
@@ -95,7 +95,7 @@ describe('UpdateAssistant | Backup', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map(async (data: any) => {
-      const record = await JsonTransformer.fromJSON(data.value, CredentialExchangeRecord, { validate: true })
+      const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
 
       await record.setTags(data.tags)
       return record

@@ -1,9 +1,8 @@
 import { TestMessage } from '../../../tests/TestMessage'
 import { JsonTransformer } from '../../utils'
+import { MessageValidator } from '../../utils/MessageValidator'
 import { IsValidMessageType, parseMessageType } from '../../utils/messageType'
 import { AgentMessage } from '../AgentMessage'
-
-import { ClassValidationError } from '@aries-framework/core'
 
 class CustomProtocolMessage extends AgentMessage {
   @IsValidMessageType(CustomProtocolMessage.type)
@@ -31,9 +30,9 @@ describe('AgentMessage', () => {
         '@type': 'https://didcomm.org/fake-protocol/1.5/message',
       }
 
-      const message = await JsonTransformer.fromJSON(json, CustomProtocolMessage, { validate: true })
+      const message = JsonTransformer.fromJSON(json, CustomProtocolMessage)
 
-      await expect(message).toBeInstanceOf(CustomProtocolMessage)
+      expect(message).toBeInstanceOf(CustomProtocolMessage)
     })
 
     it('successfully validates if the message type minor version is lower than the supported message type', async () => {
@@ -42,20 +41,20 @@ describe('AgentMessage', () => {
         '@type': 'https://didcomm.org/fake-protocol/1.2/message',
       }
 
-      const message = await JsonTransformer.fromJSON(json, CustomProtocolMessage, { validate: true })
+      const message = JsonTransformer.fromJSON(json, CustomProtocolMessage)
 
       await expect(message).toBeInstanceOf(CustomProtocolMessage)
     })
 
-    it('successfully validates if the message type minor version is higher than the supported message type', async () => {
+    it('successfully validates if the message type minor version is higher than the supported message type', () => {
       const json = {
         '@id': 'd61c7e3d-d4af-469b-8d42-33fd14262e17',
         '@type': 'https://didcomm.org/fake-protocol/1.8/message',
       }
 
-      const message = await JsonTransformer.fromJSON(json, CustomProtocolMessage, { validate: true })
+      const message = JsonTransformer.fromJSON(json, CustomProtocolMessage)
 
-      await expect(message).toBeInstanceOf(CustomProtocolMessage)
+      expect(message).toBeInstanceOf(CustomProtocolMessage)
     })
 
     it('throws a validation error if the message type major version differs from the supported message type', async () => {
@@ -66,9 +65,15 @@ describe('AgentMessage', () => {
         '@type': 'https://didcomm.org/fake-protocol/2.0/message',
       }
 
-      const message = JsonTransformer.fromJSON(json, CustomProtocolMessage, { validate: true })
+      const message = JsonTransformer.fromJSON(json, CustomProtocolMessage)
 
-      await expect(async () => message).rejects.toThrowError(ClassValidationError)
+      await expect(MessageValidator.validate(message)).rejects.toMatchObject([
+        {
+          constraints: {
+            isValidMessageType: 'type does not match the expected message type (only minor version may be lower)',
+          },
+        },
+      ])
     })
   })
 })

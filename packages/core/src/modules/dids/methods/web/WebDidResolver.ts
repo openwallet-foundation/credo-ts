@@ -28,7 +28,7 @@ export class WebDidResolver implements DidResolver {
 
     let didDocument = null
     if (result.didDocument) {
-      didDocument = await JsonTransformer.fromJSON(result.didDocument, DidDocument, { validate: true })
+      didDocument = JsonTransformer.fromJSON(result.didDocument, DidDocument)
       await MessageValidator.validate(didDocument)
     }
 

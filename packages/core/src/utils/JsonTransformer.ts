@@ -18,22 +18,24 @@ export class JsonTransformer {
     })
   }
 
-  public static async fromJSON<T>(
+  public static fromJSON<T>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     json: any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Class: { new (...args: any[]): T },
-    { validate = true }: Validate
-  ): Promise<T> {
-    if (!validate) {
+    options: Validate = { validate: true }
+  ): T {
+    if (!options.validate) {
       return plainToInstance(Class, json, { exposeDefaultValues: true })
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const plainInstance = plainToInstance(Class, json, { exposeDefaultValues: true }) as any
       try {
-        await MessageValidator.validate(plainInstance)
+        MessageValidator.validateSync(plainInstance)
         return plainInstance as T
       } catch (e) {
+        // NOTE: validateSync (strangely) throws an Array of errors so we
+        // have to catch and transform that into an error.
         if (isValidationErrorArray(e)) {
           throw new ClassValidationError('Failed to validate class.', {
             recordType: typeof Class,
@@ -50,12 +52,12 @@ export class JsonTransformer {
     return JSON.stringify(this.toJSON(classInstance))
   }
 
-  public static async deserialize<T>(
+  public static deserialize<T>(
     jsonString: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Class: { new (...args: any[]): T },
-    options: Validate
-  ): Promise<T> {
-    return await this.fromJSON(JSON.parse(jsonString), Class, options)
+    options?: Validate
+  ): T {
+    return this.fromJSON(JSON.parse(jsonString), Class, options)
   }
 }
