@@ -114,24 +114,27 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   }
 
   public async processProposal(
-    options: ServiceAcceptProposalOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<void> {
-    const credProposalJson = options.proposalAttachment?.getDataAsJson<CredPropose>()
+    credentialRecord: CredentialExchangeRecord,
+    proposalAttachment?: Attachment
+  ): Promise<ServiceAcceptProposalOptions> {
+    const credProposalJson = proposalAttachment?.getDataAsJson<CredPropose>()
     if (!credProposalJson) {
       throw new AriesFrameworkError('Missing indy credential proposal data payload')
     }
     const credProposal = JsonTransformer.fromJSON(credProposalJson, CredPropose)
     await MessageValidator.validate(credProposal)
 
-    options.credentialFormats.indy = {
-      attributes: [],
-    }
     // reuse credential definition id (and attributes) for purposes of sending offer as response
-    options.credentialFormats.indy.credentialDefinitionId =
-      options.credentialFormats.indy?.credentialDefinitionId ?? credProposal?.credentialDefinitionId
 
-    options.credentialFormats.indy.attributes = credentialRecord.credentialAttributes ?? []
+    return {
+      credentialRecordId: credentialRecord.id,
+      credentialFormats: {
+        indy: {
+          attributes: credentialRecord.credentialAttributes ?? [],
+          credentialDefinitionId: credProposal?.credentialDefinitionId,
+        },
+      },
+    }
   }
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.

@@ -8,6 +8,7 @@ import type { CredentialService } from '../../../services/CredentialService'
 
 import { getBaseConfig } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
+import { uuid } from '../../../../../utils/uuid'
 import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
 import { CredentialState } from '../../../CredentialState'
 import { CredentialsModule } from '../../../CredentialsModule'
@@ -18,6 +19,7 @@ import { CredentialMessageBuilder } from '../CredentialMessageBuilder'
 
 const { config, agentDependencies: dependencies } = getBaseConfig('Format Service Test')
 const credentialRecord = new CredentialExchangeRecord({
+  threadId: uuid(),
   state: CredentialState.ProposalSent,
   protocolVersion: CredentialProtocolVersion.V2,
 })

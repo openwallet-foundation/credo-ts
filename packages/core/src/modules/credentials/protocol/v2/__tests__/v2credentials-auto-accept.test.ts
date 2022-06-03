@@ -79,7 +79,7 @@ describe('credentials', () => {
             },
           },
         },
-        comment: 'v propose credential test',
+        comment: 'v2 propose credential test',
       }
       const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential(proposeOptions)
       testLogger.test('Alice waits for credential from Faber')

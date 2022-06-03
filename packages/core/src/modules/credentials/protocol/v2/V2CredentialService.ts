@@ -240,7 +240,7 @@ export class V2CredentialService extends CredentialService {
    */
   private async createAcceptProposalOptions(
     credentialRecord: CredentialExchangeRecord
-  ): Promise<AcceptProposalOptions> {
+  ): Promise<AcceptProposalOptions | undefined> {
     const proposalMessage: V2ProposeCredentialMessage | null = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V2ProposeCredentialMessage,
@@ -254,18 +254,11 @@ export class V2CredentialService extends CredentialService {
     if (!formats || formats.length === 0) {
       throw new AriesFrameworkError(`Unable to create accept proposal options. No supported formats`)
     }
-    const options: ServiceAcceptProposalOptions = {
-      credentialRecordId: credentialRecord.id,
-      credentialFormats: {},
-    }
+    let options: ServiceAcceptProposalOptions | undefined
 
     for (const formatService of formats) {
-      options.proposalAttachment = formatService.getAttachment(
-        proposalMessage.formats,
-        proposalMessage.messageAttachment
-      )
-      // should fill in the credential formats
-      await formatService.processProposal(options, credentialRecord)
+      const proposalAttachment = formatService.getAttachment(proposalMessage.formats, proposalMessage.messageAttachment)
+      options = await formatService.processProposal(credentialRecord, proposalAttachment)
     }
     return options
   }
@@ -388,11 +381,16 @@ export class V2CredentialService extends CredentialService {
 
     let options: ServiceOfferCredentialOptions | undefined
     if (!proposal) {
-      const acceptProposalOptions: AcceptProposalOptions = await this.createAcceptProposalOptions(credentialRecord)
+      const acceptProposalOptions: AcceptProposalOptions | undefined = await this.createAcceptProposalOptions(
+        credentialRecord
+      )
 
+      if (!acceptProposalOptions) {
+        throw new AriesFrameworkError('Could not create accept proposal options')
+      }
       options = {
-        credentialFormats: acceptProposalOptions.credentialFormats,
-        comment: acceptProposalOptions.comment,
+        credentialFormats: acceptProposalOptions?.credentialFormats,
+        comment: acceptProposalOptions?.comment,
       }
     } else {
       options = proposal

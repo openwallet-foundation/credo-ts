@@ -56,16 +56,17 @@ export class CredentialMessageBuilder {
     const filterAttachments: Attachment[] = []
     let credentialPreview: V2CredentialPreview | undefined
 
-    const props: CredentialExchangeRecordProps = {
+    const threadId = this.generateId()
+
+    // Create the v2 record
+    const credentialRecord = new CredentialExchangeRecord({
       connectionId: proposal.connectionId,
       state: CredentialState.ProposalSent,
+      threadId,
       autoAcceptCredential: proposal?.autoAcceptCredential,
       protocolVersion: CredentialProtocolVersion.V2,
       credentials: [],
-    }
-
-    // Create the v2 record
-    const credentialRecord = new CredentialExchangeRecord(props)
+    })
 
     for (const formatService of formatServices) {
       const { format, attachment, preview } = await formatService.createProposal(proposal, credentialRecord)
@@ -76,7 +77,7 @@ export class CredentialMessageBuilder {
     }
 
     const options: V2ProposeCredentialMessageProps = {
-      id: this.generateId(),
+      id: threadId,
       formats,
       filtersAttach: filterAttachments,
       comment: proposal.comment,
@@ -243,7 +244,7 @@ export class CredentialMessageBuilder {
     // Construct v2 offer message
     const message = new V2OfferCredentialMessage(messageProps)
 
-    const recordProps: CredentialExchangeRecordProps = {
+    const credentialRecord = new CredentialExchangeRecord({
       connectionId: connection?.id,
       threadId: message.threadId,
       autoAcceptCredential,
@@ -251,9 +252,7 @@ export class CredentialMessageBuilder {
       credentialAttributes: credentialPreview?.attributes,
       protocolVersion: CredentialProtocolVersion.V2,
       credentials: [],
-    }
-
-    const credentialRecord = new CredentialExchangeRecord(recordProps)
+    })
 
     for (const offersAttach of offerMap.keys()) {
       const service = offerMap.get(offersAttach)
