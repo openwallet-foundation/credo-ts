@@ -23,7 +23,7 @@ import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { DidCommMessageRole } from '../../storage'
 import { DidCommMessageRepository } from '../../storage/didcomm/DidCommMessageRepository'
-import { getIndyDidFromVerficationMethod } from '../../utils/did'
+import { getIndyDidFromVerificationMethod } from '../../utils/did'
 import { ConnectionService } from '../connections/services'
 import { DidResolverService, findVerificationMethodByKeyType } from '../dids'
 import { MediationRecipientService } from '../routing'
@@ -256,7 +256,7 @@ export class CredentialsModule implements CredentialsModule {
           'Invalid DidDocument: Missing verification method with type Ed25519VerificationKey2018 to use as indy holder did'
         )
       }
-      const indyDid = getIndyDidFromVerficationMethod(verificationMethod)
+      const indyDid = getIndyDidFromVerificationMethod(verificationMethod)
 
       const requestOptions: RequestCredentialOptions = {
         comment: options.comment,

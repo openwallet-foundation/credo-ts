@@ -1,10 +1,10 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
-import type { Key } from '../../crypto'
 import type { Logger } from '../../logger'
 import type { ConnectionRecord, Routing } from '../../modules/connections'
 import type { PlaintextMessage } from '../../types'
-import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
+import type { Key } from '../dids'
+import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
 import { parseUrl } from 'query-string'
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
@@ -207,13 +207,7 @@ export class OutOfBandModule {
     })
 
     await this.outOfBandService.save(outOfBandRecord)
-    this.eventEmitter.emit<OutOfBandStateChangedEvent>({
-      type: OutOfBandEventTypes.OutOfBandStateChanged,
-      payload: {
-        outOfBandRecord,
-        previousState: null,
-      },
-    })
+    this.outOfBandService.emitStateChangedEvent(outOfBandRecord, null)
 
     return outOfBandRecord
   }
@@ -358,13 +352,7 @@ export class OutOfBandModule {
       autoAcceptConnection,
     })
     await this.outOfBandService.save(outOfBandRecord)
-    this.eventEmitter.emit<OutOfBandStateChangedEvent>({
-      type: OutOfBandEventTypes.OutOfBandStateChanged,
-      payload: {
-        outOfBandRecord,
-        previousState: null,
-      },
-    })
+    this.outOfBandService.emitStateChangedEvent(outOfBandRecord, null)
 
     if (autoAcceptInvitation) {
       return await this.acceptInvitation(outOfBandRecord.id, {

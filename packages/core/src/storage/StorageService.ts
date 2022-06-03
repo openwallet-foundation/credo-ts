@@ -1,7 +1,16 @@
 import type { Constructor } from '../utils/mixins'
-import type { BaseRecord } from './BaseRecord'
+import type { BaseRecord, TagsBase } from './BaseRecord'
 
-export type Query<T extends BaseRecord> = Partial<ReturnType<T['getTags']>>
+// https://stackoverflow.com/questions/51954558/how-can-i-remove-a-wider-type-from-a-union-type-without-removing-its-subtypes-in/51955852#51955852
+export type SimpleQuery<T extends BaseRecord> = Partial<ReturnType<T['getTags']>> & TagsBase
+
+interface AdvancedQuery<T extends BaseRecord> {
+  $and?: Query<T>[]
+  $or?: Query<T>[]
+  $not?: Query<T>
+}
+
+export type Query<T extends BaseRecord> = AdvancedQuery<T> | SimpleQuery<T>
 
 export interface BaseRecordConstructor<T> extends Constructor<T> {
   type: string

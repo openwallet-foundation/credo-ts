@@ -25,6 +25,7 @@ import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { KeyType, Key } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
+import { JsonTransformer } from '../../../utils'
 import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { ProblemReportError } from '../../problem-reports'
@@ -96,13 +97,7 @@ export class MediationRecipientService {
       connectionId: connection.id,
     })
     await this.mediationRepository.save(mediationRecord)
-    this.eventEmitter.emit<MediationStateChangedEvent>({
-      type: RoutingEventTypes.MediationStateChanged,
-      payload: {
-        mediationRecord,
-        previousState: null,
-      },
-    })
+    this.emitStateChangedEvent(mediationRecord, null)
 
     return { mediationRecord, message }
   }
@@ -336,14 +331,19 @@ export class MediationRecipientService {
     mediationRecord.state = newState
     await this.mediationRepository.update(mediationRecord)
 
+    this.emitStateChangedEvent(mediationRecord, previousState)
+    return mediationRecord
+  }
+
+  private emitStateChangedEvent(mediationRecord: MediationRecord, previousState: MediationState | null) {
+    const clonedMediationRecord = JsonTransformer.clone(mediationRecord)
     this.eventEmitter.emit<MediationStateChangedEvent>({
       type: RoutingEventTypes.MediationStateChanged,
       payload: {
-        mediationRecord,
+        mediationRecord: clonedMediationRecord,
         previousState,
       },
     })
-    return mediationRecord
   }
 
   public async getById(id: string): Promise<MediationRecord> {
