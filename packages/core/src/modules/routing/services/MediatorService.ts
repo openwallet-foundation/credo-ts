@@ -9,6 +9,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { Wallet } from '../../../wallet/Wallet'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
@@ -163,13 +164,7 @@ export class MediatorService {
     })
 
     await this.mediationRepository.save(mediationRecord)
-    this.eventEmitter.emit<MediationStateChangedEvent>({
-      type: RoutingEventTypes.MediationStateChanged,
-      payload: {
-        mediationRecord,
-        previousState: null,
-      },
-    })
+    this.emitStateChangedEvent(mediationRecord, null)
 
     return mediationRecord
   }
@@ -193,11 +188,16 @@ export class MediatorService {
 
     await this.mediationRepository.update(mediationRecord)
 
+    this.emitStateChangedEvent(mediationRecord, previousState)
+  }
+
+  private emitStateChangedEvent(mediationRecord: MediationRecord, previousState: MediationState | null) {
+    const clonedMediationRecord = JsonTransformer.clone(mediationRecord)
     this.eventEmitter.emit<MediationStateChangedEvent>({
       type: RoutingEventTypes.MediationStateChanged,
       payload: {
-        mediationRecord,
-        previousState: previousState,
+        mediationRecord: clonedMediationRecord,
+        previousState,
       },
     })
   }

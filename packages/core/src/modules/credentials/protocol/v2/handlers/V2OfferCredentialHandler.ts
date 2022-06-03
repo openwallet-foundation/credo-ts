@@ -11,7 +11,7 @@ import { createOutboundMessage, createOutboundServiceMessage } from '../../../..
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { DidCommMessageRole } from '../../../../../storage'
-import { getIndyDidFromVerficationMethod } from '../../../../../utils/did'
+import { getIndyDidFromVerificationMethod } from '../../../../../utils/did'
 import { findVerificationMethodByKeyType } from '../../../../dids'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
@@ -88,7 +88,7 @@ export class V2OfferCredentialHandler implements Handler {
           'Invalid DidDocument: Missing verification method with type Ed25519VerificationKey2018 to use as indy holder did'
         )
       }
-      const indyDid = getIndyDidFromVerficationMethod(verificationMethod)
+      const indyDid = getIndyDidFromVerificationMethod(verificationMethod)
       const { message, credentialRecord } = await this.credentialService.createRequest(record, {
         holderDid: indyDid,
       })

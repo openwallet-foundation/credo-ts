@@ -3,7 +3,6 @@ import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionRecord } from '../../../connections'
-import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
   ServiceAcceptCredentialOptions,
   CredentialOfferTemplate,
@@ -36,7 +35,6 @@ import { ConnectionService } from '../../../connections/services'
 import { DidResolverService } from '../../../dids'
 import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
-import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialState } from '../../CredentialState'
 import { CredentialUtils } from '../../CredentialUtils'
@@ -177,13 +175,7 @@ export class V1CredentialService extends CredentialService {
       associatedRecordId: credentialRecord.id,
     })
 
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
-    })
+    this.emitStateChangedEvent(credentialRecord, null)
 
     return { credentialRecord, message }
   }
@@ -360,13 +352,8 @@ export class V1CredentialService extends CredentialService {
 
       // Save record
       await this.credentialRepository.save(credentialRecord)
-      this.eventEmitter.emit<CredentialStateChangedEvent>({
-        type: CredentialEventTypes.CredentialStateChanged,
-        payload: {
-          credentialRecord,
-          previousState: null,
-        },
-      })
+      this.emitStateChangedEvent(credentialRecord, null)
+
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
@@ -403,7 +390,6 @@ export class V1CredentialService extends CredentialService {
           attributes: preview.attributes,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V1,
     }
 
     const { attachment: offersAttach } = await this.formatService.createOffer(options)
@@ -537,13 +523,8 @@ export class V1CredentialService extends CredentialService {
     const { credentialRecord, message } = await this.createOfferProcessing(template, credentialOptions.connection)
 
     await this.credentialRepository.save(credentialRecord)
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
-    })
+    this.emitStateChangedEvent(credentialRecord, null)
+
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: message,
       role: DidCommMessageRole.Sender,
@@ -644,13 +625,7 @@ export class V1CredentialService extends CredentialService {
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
       })
-      this.eventEmitter.emit<CredentialStateChangedEvent>({
-        type: CredentialEventTypes.CredentialStateChanged,
-        payload: {
-          credentialRecord,
-          previousState: null,
-        },
-      })
+      this.emitStateChangedEvent(credentialRecord, null)
     }
 
     return credentialRecord
@@ -679,7 +654,6 @@ export class V1CredentialService extends CredentialService {
           attributes: credentialPreview.attributes,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V1,
     }
 
     const { attachment: offersAttach } = await this.formatService.createOffer(options)

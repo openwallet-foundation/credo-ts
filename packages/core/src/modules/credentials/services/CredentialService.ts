@@ -42,6 +42,8 @@ import type { V2RequestCredentialMessage } from './../protocol/v2/messages/V2Req
 import type { CredentialRepository } from './../repository'
 import type { RevocationService } from './RevocationService'
 
+import { JsonTransformer } from '../../../utils'
+
 import { CredentialEventTypes } from './../CredentialEvents'
 import { CredentialState } from './../CredentialState'
 
@@ -211,14 +213,21 @@ export abstract class CredentialService {
     credentialRecord.state = newState
     await this.credentialRepository.update(credentialRecord)
 
+    this.emitStateChangedEvent(credentialRecord, previousState)
+  }
+
+  protected emitStateChangedEvent(credentialRecord: CredentialExchangeRecord, previousState: CredentialState | null) {
+    const clonedCredential = JsonTransformer.clone(credentialRecord)
+
     this.eventEmitter.emit<CredentialStateChangedEvent>({
       type: CredentialEventTypes.CredentialStateChanged,
       payload: {
-        credentialRecord,
+        credentialRecord: clonedCredential,
         previousState: previousState,
       },
     })
   }
+
   /**
    * Retrieve a credential record by id
    *
