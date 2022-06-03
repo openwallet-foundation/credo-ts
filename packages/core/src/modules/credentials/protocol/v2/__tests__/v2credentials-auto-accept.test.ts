@@ -328,7 +328,7 @@ describe('credentials', () => {
             },
           },
         },
-        state: CredentialState.Done,
+        state: CredentialState.CredentialReceived,
       })
 
       expect(faberCredentialRecord).toMatchObject({
