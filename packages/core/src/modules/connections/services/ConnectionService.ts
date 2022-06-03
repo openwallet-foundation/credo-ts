@@ -181,13 +181,7 @@ export class ConnectionService {
     })
 
     await this.connectionRepository.update(connectionRecord)
-    this.eventEmitter.emit<ConnectionStateChangedEvent>({
-      type: ConnectionEventTypes.ConnectionStateChanged,
-      payload: {
-        connectionRecord,
-        previousState: null,
-      },
-    })
+    this.emitStateChangedEvent(connectionRecord, null)
 
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} end`, connectionRecord)
     return connectionRecord
@@ -509,10 +503,17 @@ export class ConnectionService {
     connectionRecord.state = newState
     await this.connectionRepository.update(connectionRecord)
 
+    this.emitStateChangedEvent(connectionRecord, previousState)
+  }
+
+  private emitStateChangedEvent(connectionRecord: ConnectionRecord, previousState: DidExchangeState | null) {
+    // Connection record in event should be static
+    const clonedConnection = JsonTransformer.clone(connectionRecord)
+
     this.eventEmitter.emit<ConnectionStateChangedEvent>({
       type: ConnectionEventTypes.ConnectionStateChanged,
       payload: {
-        connectionRecord,
+        connectionRecord: clonedConnection,
         previousState,
       },
     })
