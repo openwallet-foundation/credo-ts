@@ -3,7 +3,7 @@ import { MessageValidator } from '../../utils/MessageValidator'
 
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator'
 
-const validTransport = async (transportJson: Record<string, unknown>) =>
+const validTransport = (transportJson: Record<string, unknown>) =>
   MessageValidator.validate(JsonTransformer.fromJSON(transportJson, TransportDecorator))
 const expectValid = (transportJson: Record<string, unknown>) =>
   expect(validTransport(transportJson)).resolves.toBeUndefined()
@@ -37,7 +37,7 @@ const invalid = {
 }
 
 describe('Decorators | TransportDecorator', () => {
-  it('should correctly transform Json to TransportDecorator class', async () => {
+  it('should correctly transform Json to TransportDecorator class', () => {
     const decorator = JsonTransformer.fromJSON(valid.thread, TransportDecorator)
 
     expect(decorator.returnRoute).toBe(valid.thread.return_route)

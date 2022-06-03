@@ -115,6 +115,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       throw new AriesFrameworkError('Missing indy credential proposal data payload')
     }
     const credProposal = JsonTransformer.fromJSON(credProposalJson, CredPropose)
+    await MessageValidator.validate(credProposal)
 
     if (credProposal.credentialDefinitionId) {
       options.credentialFormats = {
@@ -453,16 +454,10 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     )
 
     if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      const areProposalsValid = this.areProposalValuesValid(
-        handlerOptions.credentialRecord,
-        handlerOptions.messageAttributes
+      return (
+        this.areProposalValuesValid(handlerOptions.credentialRecord, handlerOptions.messageAttributes) &&
+        this.areProposalAndOfferDefinitionIdEqual(handlerOptions.proposalAttachment, handlerOptions.offerAttachment)
       )
-      void this.areProposalAndOfferDefinitionIdEqual(
-        handlerOptions.proposalAttachment,
-        handlerOptions.offerAttachment
-      ).then((areProposalAndOfferDefIdEqual) => {
-        return areProposalsValid && areProposalAndOfferDefIdEqual
-      })
     }
     return false
   }
@@ -483,13 +478,11 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       throw new AriesFrameworkError(`Missing Request Attachment for Credential Record ${options.credentialRecord.id}`)
     }
     if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      void this.isRequestDefinitionIdValid(
+      return this.isRequestDefinitionIdValid(
         options.requestAttachment,
         options.offerAttachment,
         options.proposalAttachment
-      ).then((res) => {
-        return res
-      })
+      )
     }
     return false
   }
@@ -527,7 +520,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     return false
   }
 
-  private async areProposalAndOfferDefinitionIdEqual(proposalAttachment?: Attachment, offerAttachment?: Attachment) {
+  private areProposalAndOfferDefinitionIdEqual(proposalAttachment?: Attachment, offerAttachment?: Attachment) {
     const credOffer = offerAttachment?.getDataAsJson<CredOffer>()
     let credPropose = proposalAttachment?.getDataAsJson<CredPropose>()
     credPropose = JsonTransformer.fromJSON(credPropose, CredPropose)
@@ -571,7 +564,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     CredentialUtils.checkAttributesMatch(schema, preview)
   }
 
-  private async isRequestDefinitionIdValid(
+  private isRequestDefinitionIdValid(
     requestAttachment: Attachment,
     offerAttachment?: Attachment,
     proposeAttachment?: Attachment

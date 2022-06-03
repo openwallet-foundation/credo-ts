@@ -104,7 +104,7 @@ const didDocumentInstance = new DidDocument({
 })
 
 describe('Did | DidDocument', () => {
-  it('should correctly transforms Json to DidDocument class', async () => {
+  it('should correctly transforms Json to DidDocument class', () => {
     const didDocument = JsonTransformer.fromJSON(didExample123Fixture, DidDocument, { validate: false })
 
     // Check other properties

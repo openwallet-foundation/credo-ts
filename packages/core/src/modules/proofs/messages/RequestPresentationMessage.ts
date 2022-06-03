@@ -60,6 +60,8 @@ export class RequestPresentationMessage extends AgentMessage {
     )
     // Extract proof request from attachment
     const proofRequestJson = attachment?.getDataAsJson<ProofRequest>() ?? null
-    return JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
+    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
+
+    return proofRequest
   }
 }

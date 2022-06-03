@@ -50,7 +50,7 @@ describe('convertToNewInvitation', () => {
     })
   })
 
-  it('throws an error when no did and serviceEndpoint/routingKeys are present in the connection invitation', async () => {
+  it('throws an error when no did and serviceEndpoint/routingKeys are present in the connection invitation', () => {
     const connectionInvitation = JsonTransformer.fromJSON(
       {
         '@id': 'd88ff8fd-6c43-4683-969e-11a87a572cf2',

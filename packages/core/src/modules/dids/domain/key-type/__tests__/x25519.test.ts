@@ -55,7 +55,7 @@ describe('x25519', () => {
     expect(keyDidX25519.supportedVerificationMethodTypes).toMatchObject(['X25519KeyAgreementKey2019'])
   })
 
-  it('returns key for X25519KeyAgreementKey2019 verification method', async () => {
+  it('returns key for X25519KeyAgreementKey2019 verification method', () => {
     const verificationMethod = JsonTransformer.fromJSON(didKeyX25519Fixture.keyAgreement[0], VerificationMethod)
 
     const key = keyDidX25519.getKeyFromVerificationMethod(verificationMethod)
@@ -63,13 +63,11 @@ describe('x25519', () => {
     expect(key.fingerprint).toBe(TEST_X25519_FINGERPRINT)
   })
 
-  it('throws an error if an invalid verification method is passed', async () => {
+  it('throws an error if an invalid verification method is passed', () => {
     const verificationMethod = JsonTransformer.fromJSON(didKeyX25519Fixture.keyAgreement[0], VerificationMethod)
 
     verificationMethod.type = 'SomeRandomType'
 
-    await expect(async () => keyDidX25519.getKeyFromVerificationMethod(verificationMethod)).rejects.toThrowError(
-      'Invalid verification method passed'
-    )
+    expect(() => keyDidX25519.getKeyFromVerificationMethod(verificationMethod)).toThrowError()
   })
 })

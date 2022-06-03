@@ -46,7 +46,7 @@ const data = {
 const dataInstance = new AttachmentData(data)
 
 describe('Decorators | Attachment', () => {
-  it('should correctly transform Json to Attachment class', async () => {
+  it('should correctly transform Json to Attachment class', () => {
     const decorator = JsonTransformer.fromJSON(mockJson, Attachment)
 
     expect(decorator.id).toBe(mockJson['@id'])

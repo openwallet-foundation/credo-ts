@@ -38,7 +38,7 @@ function IsStringOrVerificationMethod(validationOptions?: ValidationOptions): Pr
 function VerificationMethodTransformer() {
   return Transform(({ value, type }: { value?: Array<string | { type: string }>; type: TransformationType }) => {
     if (type === TransformationType.PLAIN_TO_CLASS) {
-      return value?.map(async (auth) => {
+      return value?.map((auth) => {
         // referenced verification method
         if (typeof auth === 'string') {
           return String(auth)

@@ -35,11 +35,11 @@ describe('0.1-0.2 | Mediation', () => {
   describe('migrateMediationRecordToV0_2()', () => {
     it('should fetch all records and apply the needed updates ', async () => {
       const records: MediationRecord[] = [
-        await getMediationRecord({
+        getMediationRecord({
           role: MediationRole.Mediator,
           endpoint: 'firstEndpoint',
         }),
-        await getMediationRecord({
+        getMediationRecord({
           role: MediationRole.Recipient,
           endpoint: 'secondEndpoint',
         }),
@@ -57,7 +57,7 @@ describe('0.1-0.2 | Mediation', () => {
       // Check second object is transformed correctly
       expect(mediationRepository.update).toHaveBeenNthCalledWith(
         2,
-        await getMediationRecord({
+        getMediationRecord({
           role: MediationRole.Mediator,
           endpoint: 'secondEndpoint',
         })
@@ -78,7 +78,7 @@ describe('0.1-0.2 | Mediation', () => {
 
   describe('updateMediationRole()', () => {
     it(`should update the role to ${MediationRole.Mediator} if no endpoint exists on the record and mediationRoleUpdateStrategy is 'recipientIfEndpoint'`, async () => {
-      const mediationRecord = await getMediationRecord({
+      const mediationRecord = getMediationRecord({
         role: MediationRole.Recipient,
       })
 
@@ -92,7 +92,7 @@ describe('0.1-0.2 | Mediation', () => {
     })
 
     it(`should update the role to ${MediationRole.Recipient} if an endpoint exists on the record and mediationRoleUpdateStrategy is 'recipientIfEndpoint'`, async () => {
-      const mediationRecord = await getMediationRecord({
+      const mediationRecord = getMediationRecord({
         role: MediationRole.Mediator,
         endpoint: 'something',
       })
@@ -108,11 +108,11 @@ describe('0.1-0.2 | Mediation', () => {
     })
 
     it(`should not update the role if mediationRoleUpdateStrategy is 'doNotChange'`, async () => {
-      const mediationRecordMediator = await getMediationRecord({
+      const mediationRecordMediator = getMediationRecord({
         role: MediationRole.Mediator,
         endpoint: 'something',
       })
-      const mediationRecordRecipient = await getMediationRecord({
+      const mediationRecordRecipient = getMediationRecord({
         role: MediationRole.Recipient,
         endpoint: 'something',
       })
@@ -137,7 +137,7 @@ describe('0.1-0.2 | Mediation', () => {
     })
 
     it(`should update the role to ${MediationRole.Recipient} if mediationRoleUpdateStrategy is 'allRecipient'`, async () => {
-      const mediationRecord = await getMediationRecord({
+      const mediationRecord = getMediationRecord({
         role: MediationRole.Mediator,
         endpoint: 'something',
       })
@@ -153,7 +153,7 @@ describe('0.1-0.2 | Mediation', () => {
     })
 
     it(`should update the role to ${MediationRole.Mediator} if mediationRoleUpdateStrategy is 'allMediator'`, async () => {
-      const mediationRecord = await getMediationRecord({
+      const mediationRecord = getMediationRecord({
         role: MediationRole.Recipient,
         endpoint: 'something',
       })
@@ -170,7 +170,7 @@ describe('0.1-0.2 | Mediation', () => {
   })
 })
 
-async function getMediationRecord({ role, endpoint }: { role: MediationRole; endpoint?: string }) {
+function getMediationRecord({ role, endpoint }: { role: MediationRole; endpoint?: string }) {
   return JsonTransformer.fromJSON(
     {
       role,

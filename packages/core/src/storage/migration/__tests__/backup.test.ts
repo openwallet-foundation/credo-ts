@@ -106,7 +106,7 @@ describe('UpdateAssistant | Backup', () => {
 
     // Add 0.1 data and set version to 0.1
     for (const credentialRecord of aliceCredentialRecords) {
-      await credentialRepository.save(await credentialRecord)
+      await credentialRepository.save(credentialRecord)
     }
     await storageUpdateService.setCurrentStorageVersion('0.1')
 

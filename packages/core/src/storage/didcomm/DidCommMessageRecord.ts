@@ -87,9 +87,9 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
     }
   }
 
-  public async getMessageInstance<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>(
+  public getMessageInstance<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>(
     messageClass: MessageClass
-  ): Promise<InstanceType<MessageClass>> {
+  ): InstanceType<MessageClass> {
     const messageType = parseMessageType(this.message['@type'] as string)
 
     if (!canHandleMessageType(messageClass, messageType)) {

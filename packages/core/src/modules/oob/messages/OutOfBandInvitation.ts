@@ -162,7 +162,7 @@ export class OutOfBandInvitation extends AgentMessage {
 function OutOfBandServiceTransformer() {
   return Transform(({ value, type }: { value: Array<string | { type: string }>; type: TransformationType }) => {
     if (type === TransformationType.PLAIN_TO_CLASS) {
-      return value.map(async (service) => {
+      return value.map((service) => {
         // did
         if (typeof service === 'string') return new String(service)
 
