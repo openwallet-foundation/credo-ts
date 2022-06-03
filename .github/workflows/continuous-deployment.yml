@@ -27,6 +27,9 @@ jobs:
         with:
           node-version: 16
 
+      - name: Login into SICPA GH resitry
+        run: npm config set //npm.pkg.github.com/:_authToken ${{ secrets.SICPA_GITHUB_TOKEN }}
+
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
