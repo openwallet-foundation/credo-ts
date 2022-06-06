@@ -2,12 +2,13 @@ import { JsonTransformer } from '../../../../../utils'
 import didKeyEd25519 from '../../../__tests__/__fixtures__/didKeyEd25519.json'
 import { DidDocument, Key } from '../../../domain'
 import { DidPeer, PeerDidNumAlgo } from '../DidPeer'
-import didPeer0z6MkMultibase from './__fixtures__/didPeer0z6MkMultibase.json'
+import { didDocumentToNumAlgo2Did } from '../peerDidNumAlgo2'
+
 import didPeer0z6MkBase58 from './__fixtures__/didPeer0z6MkBase58.json'
-import didPeer2Ez6LSbysBase58 from './__fixtures__/didPeer2Ez6LSbysBase58.json'
+import didPeer0z6MkMultibase from './__fixtures__/didPeer0z6MkMultibase.json'
 import didPeer1zQmR from './__fixtures__/didPeer1zQmR.json'
 import didPeer1zQmZ from './__fixtures__/didPeer1zQmZ.json'
-import { didDocumentToNumAlgo2Did } from '../peerDidNumAlgo2'
+import didPeer2Ez6LSbysBase58 from './__fixtures__/didPeer2Ez6LSbysBase58.json'
 
 describe('DidPeer', () => {
   test('transforms a did document into a valid method 1 did', () => {

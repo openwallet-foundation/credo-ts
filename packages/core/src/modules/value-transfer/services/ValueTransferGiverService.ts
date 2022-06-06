@@ -115,7 +115,6 @@ export class ValueTransferGiverService {
       state: ValueTransferState.RequestReceived,
       threadId: requestWitnessedMessage.thid,
       valueTransferMessage,
-      requestWitnessedMessage,
       getter: valueTransferMessage.getterId,
       witness: valueTransferMessage.witnessId,
       giver: valueTransferMessage.giverId,
@@ -185,7 +184,6 @@ export class ValueTransferGiverService {
       from: giver,
       to: record.witnessDid,
       thid: record.threadId,
-      body: {},
       attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
@@ -281,7 +279,6 @@ export class ValueTransferGiverService {
       from: record.giverDid,
       to: record.witnessDid,
       thid: record.threadId,
-      body: {},
       attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 

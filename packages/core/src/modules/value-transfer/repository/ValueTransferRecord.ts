@@ -9,7 +9,7 @@ import { Type } from 'class-transformer'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { ProblemReportMessage, RequestMessage, RequestWitnessedMessage } from '../messages'
+import { ProblemReportMessage } from '../messages'
 
 export type CustomValueTransferTags = TagsBase
 export type DefaultValueTransferTags = {
@@ -30,13 +30,11 @@ export interface ValueTransferStorageProps {
   getter: string
   giver?: string
   witness?: string
+  valueTransferMessage: ValueTransferMessage
+  problemReportMessage?: ProblemReportMessage
+  receipt?: ValueTransferMessage
 
   tags?: CustomValueTransferTags
-  valueTransferMessage: ValueTransferMessage
-  requestMessage?: RequestMessage
-  requestWitnessedMessage?: RequestWitnessedMessage
-  receipt?: ValueTransferMessage
-  problemReportMessage?: ProblemReportMessage
 }
 
 export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, CustomValueTransferTags> {
@@ -52,12 +50,6 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
 
   @Type(() => ValueTransferMessage)
   public valueTransferMessage!: ValueTransferMessage
-
-  @Type(() => RequestMessage)
-  public requestMessage?: RequestMessage
-
-  @Type(() => RequestWitnessedMessage)
-  public requestWitnessedMessage?: RequestWitnessedMessage
 
   @Type(() => ValueTransferMessage)
   public receipt?: ValueTransferMessage
@@ -83,8 +75,6 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       this.role = props.role
       this.state = props.state
       this.valueTransferMessage = props.valueTransferMessage
-      this.requestMessage = props.requestMessage
-      this.requestWitnessedMessage = props.requestWitnessedMessage
       this.receipt = props.receipt
       this.problemReportMessage = props.problemReportMessage
       this.autoAcceptValueTransfer = props.autoAcceptValueTransfer
@@ -101,6 +91,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       threadId: this.threadId,
       txnId: this.valueTransferMessage?.txnId,
       role: this.role,
+      state: this.state,
     }
   }
 

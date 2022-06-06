@@ -19,7 +19,7 @@ export type DIDCommV2MessageParams = {
   expires_time?: number
   from_prior?: string
   attachments?: Array<Attachment>
-  body: any
+  body?: any
 }
 
 export class DIDCommV2BaseMessage {
@@ -82,7 +82,7 @@ export class DIDCommV2BaseMessage {
       this.expires_time = options.expires_time
       this.from_prior = options.from_prior
       this.attachments = options.attachments
-      this.body = options.body
+      this.body = options.body || {}
     }
   }
 

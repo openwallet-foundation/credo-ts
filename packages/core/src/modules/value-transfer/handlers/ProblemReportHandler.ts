@@ -17,8 +17,8 @@ export class ProblemReportHandler implements Handler<typeof DIDCommV2Message> {
     const { message, record } = await this.valueTransferService.processProblemReport(messageContext)
     if (message && messageContext.message.to?.length) {
       messageContext.message.to[0] === record.getterDid
-        ? await this.valueTransferService.sendMessageToGetter(message, record)
-        : await this.valueTransferService.sendMessageToGiver(message, record)
+        ? await this.valueTransferService.sendMessageToGetter(message)
+        : await this.valueTransferService.sendMessageToGiver(message)
     }
   }
 }

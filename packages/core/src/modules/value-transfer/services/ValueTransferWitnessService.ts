@@ -163,7 +163,6 @@ export class ValueTransferWitnessService {
       from: state.publicDid,
       to: giverDid,
       thid: requestMessage.id,
-      body: {},
       attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
@@ -173,7 +172,6 @@ export class ValueTransferWitnessService {
       state: ValueTransferState.RequestSent,
       threadId: requestMessage.id,
       valueTransferMessage: message,
-      requestMessage,
       getter: valueTransferMessage.getterId,
       giver: giverDid,
       witness: state.publicDid,
@@ -251,7 +249,6 @@ export class ValueTransferWitnessService {
       ...requestAcceptedMessage,
       from: record.witnessDid,
       to: record.getterDid,
-      body: {},
       attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
@@ -326,7 +323,6 @@ export class ValueTransferWitnessService {
       ...cashAcceptedMessage,
       from: record.witnessDid,
       to: record.giverDid,
-      body: {},
       attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
@@ -447,14 +443,12 @@ export class ValueTransferWitnessService {
       from: record.witnessDid,
       to: record.getterDid,
       thid: record.threadId,
-      body: {},
       attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
     const giverReceiptMessage = new GiverReceiptMessage({
       from: record.witnessDid,
       to: record.giverDid,
-      body: {},
       thid: record.threadId,
       attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })

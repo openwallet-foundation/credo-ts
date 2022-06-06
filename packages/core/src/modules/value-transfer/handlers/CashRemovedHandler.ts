@@ -28,18 +28,15 @@ export class CashRemovedHandler implements Handler<typeof DIDCommV2Message> {
 
     // if message is Problem Report -> also send it to Giver as well
     if (message.type === ProblemReportMessage.type) {
-      await Promise.all([
-        this.valueTransferService.sendMessageToGetter(message, record),
-        this.valueTransferService.sendMessageToGiver(message, record),
-      ])
+      await this.valueTransferService.sendProblemReportToGetterAndGiver(message, record)
       return
     }
 
     const { getterReceiptMessage, giverReceiptMessage } = await this.valueTransferWitnessService.createReceipt(record)
 
     await Promise.all([
-      this.valueTransferService.sendMessageToGetter(getterReceiptMessage, record),
-      this.valueTransferService.sendMessageToGiver(giverReceiptMessage, record),
+      this.valueTransferService.sendMessageToGetter(getterReceiptMessage),
+      this.valueTransferService.sendMessageToGiver(giverReceiptMessage),
     ])
     return
   }

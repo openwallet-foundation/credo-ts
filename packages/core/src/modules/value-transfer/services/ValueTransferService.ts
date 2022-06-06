@@ -200,20 +200,30 @@ export class ValueTransferService {
     return firstValueFrom(subject)
   }
 
-  public async sendMessageToWitness(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.setRecipient(record?.witnessDid)
+  public async sendProblemReportToGetterAndGiver(message: ProblemReportMessage, record?: ValueTransferRecord) {
+    const getterProblemReport = new ProblemReportMessage({
+      ...message,
+      to: record?.getterDid,
+    })
+    const giverProblemReport = new ProblemReportMessage({
+      ...message,
+      to: record?.giverDid,
+    })
+
+    await Promise.all([this.sendMessageToGetter(getterProblemReport), this.sendMessageToGiver(giverProblemReport)])
+  }
+
+  public async sendMessageToWitness(message: DIDCommV2Message) {
     const witnessTransport = this.config.valueTransferConfig?.witnessTransport
     return this.sendMessage(message, witnessTransport)
   }
 
-  public async sendMessageToGiver(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.setRecipient(record?.giverDid)
+  public async sendMessageToGiver(message: DIDCommV2Message) {
     const giverTransport = this.config.valueTransferConfig?.giverTransport
     return this.sendMessage(message, giverTransport)
   }
 
-  public async sendMessageToGetter(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.setRecipient(record?.getterDid)
+  public async sendMessageToGetter(message: DIDCommV2Message) {
     const getterTransport = this.config.valueTransferConfig?.getterTransport
     return this.sendMessage(message, getterTransport)
   }

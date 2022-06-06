@@ -104,7 +104,6 @@ export class ValueTransferGetterService {
     const requestMessage = new RequestMessage({
       from: getter,
       to: witness,
-      body: {},
       attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
@@ -114,7 +113,6 @@ export class ValueTransferGetterService {
       state: ValueTransferState.RequestSent,
       threadId: requestMessage.id,
       valueTransferMessage: message,
-      requestMessage,
       getter: getter,
       witness: witness,
       giver: giver,
@@ -219,7 +217,6 @@ export class ValueTransferGetterService {
       from: record.getterDid,
       to: record.witnessDid,
       thid: record.threadId,
-      body: {},
       attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
     })
 
