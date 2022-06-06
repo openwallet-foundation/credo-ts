@@ -32,11 +32,11 @@ export class CashRemovedHandler implements Handler<typeof DIDCommV2Message> {
       return
     }
 
-    const { getterReceiptMessage, giverReceiptMessage } = await this.valueTransferWitnessService.createReceipt(record)
+    const { getterMessage, giverMessage } = await this.valueTransferWitnessService.createReceipt(record)
 
     await Promise.all([
-      this.valueTransferService.sendMessageToGetter(getterReceiptMessage),
-      this.valueTransferService.sendMessageToGiver(giverReceiptMessage),
+      this.valueTransferService.sendMessageToGetter(getterMessage),
+      this.valueTransferService.sendMessageToGiver(giverMessage),
     ])
     return
   }

@@ -408,8 +408,8 @@ export class ValueTransferWitnessService {
    */
   public async createReceipt(record: ValueTransferRecord): Promise<{
     record: ValueTransferRecord
-    getterReceiptMessage: GetterReceiptMessage | ProblemReportMessage
-    giverReceiptMessage: GiverReceiptMessage | ProblemReportMessage
+    getterMessage: GetterReceiptMessage | ProblemReportMessage
+    giverMessage: GiverReceiptMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     record.assertState(ValueTransferState.CashRemovalReceived)
@@ -419,23 +419,27 @@ export class ValueTransferWitnessService {
     const { error, message } = await this.witness.createReceipt(record.valueTransferMessage)
     if (error || !message) {
       // VTP message verification failed
-      const problemReport = new ProblemReportMessage({
+      const getterProblemReport = new ProblemReportMessage({
         from: record.witnessDid,
         to: record.getterDid,
         pthid: record.threadId,
         body: {
-          code: error?.code || 'invalid-payment-request',
-          comment: `Payment creation failed. Error: ${error}`,
+          code: error?.code || 'invalid-state',
+          comment: `Receipt creation failed. Error: ${error}`,
         },
+      })
+      const giverProblemReport = new ProblemReportMessage({
+        ...getterProblemReport,
+        to: record.giverDid,
       })
 
       // Update Value Transfer record
-      record.problemReportMessage = problemReport
+      record.problemReportMessage = getterProblemReport
       await this.valueTransferService.updateState(record, ValueTransferState.Failed)
       return {
         record,
-        getterReceiptMessage: problemReport,
-        giverReceiptMessage: problemReport,
+        getterMessage: getterProblemReport,
+        giverMessage: giverProblemReport,
       }
     }
 
@@ -458,6 +462,6 @@ export class ValueTransferWitnessService {
     record.receipt = message
 
     await this.valueTransferService.updateState(record, ValueTransferState.Completed)
-    return { record, getterReceiptMessage, giverReceiptMessage }
+    return { record, getterMessage: getterReceiptMessage, giverMessage: giverReceiptMessage }
   }
 }
