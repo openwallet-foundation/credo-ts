@@ -1,4 +1,6 @@
+import type { Query } from '../../../../storage/StorageService'
 import type { SignPresentationOptions, VerifyPresentationOptions } from '../../../vc/models/W3cCredentialServiceOptions'
+import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
 import type { W3cPresentation } from '../../../vc/models/presentation/W3Presentation'
 import type {
   AutoSelectCredentialOptions,
@@ -33,7 +35,6 @@ import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 import { KeyEncoding, ProofPurpose, ProofType, Status, PEXv1 } from '@sphereon/pex'
 import { Lifecycle, scoped } from 'tsyringe'
 
-import jsonld from '../../../../../types/jsonld'
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
@@ -418,24 +419,23 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const presentationDefinition = requestMessageJson.presentationDefinition
 
-    const expandedTypes = await jsonld.expand(JsonTransformer.toJSON(presentationDefinition), {
-      documentLoader: this.w3cCredentialService.documentLoader,
-    })
-
     let uriList: string[] = []
     for (const inputDescriptor of presentationDefinition.input_descriptors) {
       uriList = [...uriList, ...inputDescriptor.schema.map((s) => s.uri)]
     }
 
-    const credentialsByContext = await this.w3cCredentialService.findCredentialsByQuery({
-      contexts: uriList,
-    })
+    const query = []
+    for (const inputDescriptor of presentationDefinition.input_descriptors) {
+      for (const schema of inputDescriptor.schema) {
+        const innerQuery: Query<W3cCredentialRecord> = {}
+        innerQuery.$or = [{ expandedType: [schema.uri] }, { contexts: [schema.uri] }]
+        query.push(innerQuery)
+      }
+    }
 
-    const credentialsByExpandedType = await this.w3cCredentialService.findCredentialsByQuery({
-      expandedTypes: expandedTypes,
+    const credentials = await this.w3cCredentialService.findCredentialsByQuery({
+      $or: [...query],
     })
-
-    const credentials = [...credentialsByContext, ...credentialsByExpandedType]
 
     const pexCredentials = credentials.map((c) => JsonTransformer.toJSON(c) as IVerifiableCredential)
 

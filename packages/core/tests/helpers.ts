@@ -868,41 +868,43 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
   const holderKey = Key.fromPublicKeyBase58(holderDidInfo.verkey, KeyType.Ed25519)
   const holderDidKey: DidKey = new DidKey(holderKey)
 
-  // const vcDriversLicense = {
-  //   description: 'Government of Example Permanent Resident Card.',
-  //   expirationDate: '2029-12-03T12:19:52Z',
-  //   issuanceDate: '2019-12-03T12:19:52Z',
-  //   id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
-  //   name: 'Permanent Resident Card',
-  //   identifier: '83627465',
-  //   credentialSubject: {
-  //     birthDate: '1958-07-17',
-  //     lprCategory: 'C09',
-  //     lprNumber: '999-999-999',
-  //     image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-  //     type: ['PermanentResident', 'Person'],
-  //     commuterClassification: 'C1',
-  //     familyName: 'SMITH',
-  //     id: holderDidKey.did,
-  //     givenName: 'JANE',
-  //     gender: 'Female',
-  //     residentSince: '2015-01-01',
-  //     birthCountry: 'Bahamas',
-  //   },
-  //   type: ['VerifiableCredential', 'PermanentResidentCard'],
-  //   '@context': [
-  //     'https://www.w3.org/2018/credentials/v1',
-  //     'https://w3id.org/security/suites/ed25519-2020/v1',
-  //     'https://w3id.org/citizenship/v1',
-  //   ],
-  //   issuer: issuerDidKey.did,
-  // }
+  const vcDriversLicense = {
+    description: 'Government of Example Permanent Resident Card.',
+    expirationDate: '2029-12-03T12:19:52Z',
+    issuanceDate: '2019-12-03T12:19:52Z',
+    id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+    name: 'Permanent Resident Card',
+    identifier: '83627465',
+    credentialSubject: {
+      birthDate: '1958-07-17',
+      lprCategory: 'C09',
+      lprNumber: '999-999-999',
+      image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+      type: ['PermanentResident', 'Person'],
+      commuterClassification: 'C1',
+      familyName: 'SMITH',
+      id: holderDidKey.did,
+      givenName: 'JANE',
+      gender: 'Female',
+      residentSince: '2015-01-01',
+      birthCountry: 'Bahamas',
+    },
+    type: ['VerifiableCredential', 'PermanentResidentCard'],
+    '@context': [
+      'https://www.w3.org/2018/credentials/v1',
+      'https://w3id.org/security/suites/ed25519-2020/v1',
+      'https://w3id.org/citizenship/v1',
+    ],
+    issuer: issuerDidKey.did,
+  }
 
   const vcPermanentResidenceCard = {
-    identifier: '83627465',
-    name: 'Permanent Resident Card',
-    type: ['PermanentResidentCard', 'VerifiableCredential'],
+    description: 'Government of Example Permanent Resident Card.',
+    expirationDate: '2029-12-03T12:19:52Z',
+    issuanceDate: '2019-12-03T12:19:52Z',
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465dsdsdsd',
+    name: 'Permanent Resident Card',
+    identifier: '83627465',
     credentialSubject: {
       birthCountry: 'Bahamas',
       id: holderDidKey.did,
@@ -917,9 +919,7 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
       lprCategory: 'C09',
       image: 'data:image/png;base64,iVBORw0KGgokJggg==',
     },
-    expirationDate: '2029-12-03T12:19:52Z',
-    description: 'Government of Example Permanent Resident Card.',
-    issuanceDate: '2019-12-03T12:19:52Z',
+    type: ['PermanentResidentCard', 'VerifiableCredential'],
     '@context': [
       'https://www.w3.org/2018/credentials/v1',
       'https://w3id.org/citizenship/v1',
@@ -928,9 +928,8 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
     issuer: issuerDidKey.did,
   }
 
-  // const credential: W3cCredential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
   const credential: W3cCredential = JsonTransformer.fromJSON(vcPermanentResidenceCard, W3cCredential)
-  // const credentialDriversLicense: W3cCredential = JsonTransformer.fromJSON(vcDriversLicense, W3cCredential)
+  const credentialDriversLicense: W3cCredential = JsonTransformer.fromJSON(vcDriversLicense, W3cCredential)
 
   const signCredentialOptions: SignCredentialOptions = {
     credential,
@@ -938,11 +937,11 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
     verificationMethod: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
   }
 
-  // const signCredentialOptionsDriversLicense: SignCredentialOptions = {
-  //   credential: credentialDriversLicense,
-  //   proofType: 'Ed25519Signature2018',
-  //   verificationMethod: issuerDidKey.keyId,
-  // }
+  const signCredentialOptionsDriversLicense: SignCredentialOptions = {
+    credential: credentialDriversLicense,
+    proofType: 'Ed25519Signature2018',
+    verificationMethod: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
+  }
 
   const issuerReplay = new ReplaySubject<CredentialStateChangedEvent>()
   const holderReplay = new ReplaySubject<CredentialStateChangedEvent>()
@@ -965,16 +964,16 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
 
   let issuerCredentialRecord = await faberAgent.credentials.offerCredential(offerOptions)
 
-  // const offerOptionsDL: OfferCredentialOptions = {
-  //   comment: 'some comment about credential',
-  //   connectionId: faberConnection.id,
-  //   credentialFormats: {
-  //     jsonld: signCredentialOptionsDriversLicense,
-  //   },
-  //   protocolVersion: CredentialProtocolVersion.V2,
-  // }
+  const offerOptionsDL: OfferCredentialOptions = {
+    comment: 'some comment about credential',
+    connectionId: faberConnection.id,
+    credentialFormats: {
+      jsonld: signCredentialOptionsDriversLicense,
+    },
+    protocolVersion: CredentialProtocolVersion.V2,
+  }
 
-  // let issuerCredentialRecordDL = await faberAgent.credentials.offerCredential(offerOptions)
+  let issuerCredentialRecordDL = await faberAgent.credentials.offerCredential(offerOptionsDL)
 
   await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
@@ -985,16 +984,16 @@ export async function setupV2ProofsTest(faberName: string, aliceName: string, au
     state: CredentialState.Done,
   })
 
-  // // Because we use auto-accept it can take a while to have the whole credential flow finished
-  // // Both parties need to interact with the ledger and sign/verify the credential
-  // await waitForCredentialRecordSubject(holderReplay, {
-  //   threadId: issuerCredentialRecordDL.threadId,
-  //   state: CredentialState.Done,
-  // })
-  // issuerCredentialRecordDL = await waitForCredentialRecordSubject(issuerReplay, {
-  //   threadId: issuerCredentialRecordDL.threadId,
-  //   state: CredentialState.Done,
-  // })
+  // Because we use auto-accept it can take a while to have the whole credential flow finished
+  // Both parties need to interact with the ledger and sign/verify the credential
+  await waitForCredentialRecordSubject(holderReplay, {
+    threadId: issuerCredentialRecordDL.threadId,
+    state: CredentialState.Done,
+  })
+  issuerCredentialRecordDL = await waitForCredentialRecordSubject(issuerReplay, {
+    threadId: issuerCredentialRecordDL.threadId,
+    state: CredentialState.Done,
+  })
 
   const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
   const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
