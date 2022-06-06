@@ -402,7 +402,6 @@ export class V2CredentialService extends CredentialService {
       acceptFormats = formats
       options = {
         credentialFormats: proposalOptions.credentialFormats,
-        protocolVersion: CredentialProtocolVersion.V2,
         comment: proposalOptions.comment,
       }
     } else {
@@ -582,7 +581,7 @@ export class V2CredentialService extends CredentialService {
    * or send a credential. It will only update the existing credential record with
    * the information from the credential request message. Use {@link createCredential}
    * after calling this method to create a credential.
-   *
+   *z
    * @param messageContext The message context containing a v2 credential request message
    * @returns credential record associated with the credential request message
    *

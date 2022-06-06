@@ -11,7 +11,6 @@ import type {
 import type { CredPropose } from '../../../formats/models/CredPropose'
 import type { Schema } from 'indy-sdk'
 
-import { AriesFrameworkError } from '../../../../../../src/error/AriesFrameworkError'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { sleep } from '../../../../../utils/sleep'
@@ -329,7 +328,7 @@ describe('credentials', () => {
             },
           },
         },
-        state: CredentialState.Done,
+        state: CredentialState.CredentialReceived,
       })
 
       expect(faberCredentialRecord).toMatchObject({

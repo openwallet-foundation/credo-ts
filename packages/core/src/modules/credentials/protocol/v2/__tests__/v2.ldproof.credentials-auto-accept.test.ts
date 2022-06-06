@@ -171,7 +171,7 @@ describe('credentials', () => {
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {},
-        state: CredentialState.Done,
+        state: CredentialState.CredentialReceived,
       })
       expect(faberCredentialRecord).toMatchObject({
         type: CredentialExchangeRecord.type,
@@ -289,7 +289,7 @@ describe('credentials', () => {
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {},
-        state: CredentialState.Done,
+        state: CredentialState.CredentialReceived,
       })
 
       expect(faberCredentialRecord).toMatchObject({
@@ -357,7 +357,7 @@ describe('credentials', () => {
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {},
-        state: CredentialState.Done,
+        state: CredentialState.CredentialReceived,
       })
 
       expect(faberCredentialRecord).toMatchObject({

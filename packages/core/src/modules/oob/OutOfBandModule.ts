@@ -1,9 +1,9 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
+import type { Key } from '../../crypto'
 import type { Logger } from '../../logger'
 import type { ConnectionRecord, Routing } from '../../modules/connections'
 import type { PlaintextMessage } from '../../types'
-import type { Key } from '../dids'
 import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
 import { parseUrl } from 'query-string'
@@ -19,10 +19,10 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import {
-  DidExchangeState,
-  HandshakeProtocol,
   ConnectionInvitationMessage,
   ConnectionsModule,
+  DidExchangeState,
+  HandshakeProtocol,
 } from '../../modules/connections'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'

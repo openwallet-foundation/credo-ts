@@ -52,6 +52,7 @@ export interface ServiceOfferCredentialOptions {
   credentialRecordId?: string
   connection?: ConnectionRecord
   attachId?: string
+  proposalAttachment?: Attachment
   credentialFormats: FormatServiceAcceptProposeCredentialFormats
 }
 

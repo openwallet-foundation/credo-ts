@@ -222,14 +222,13 @@ describe('Indy CredentialFormatService', () => {
     beforeEach(async () => {
       offerOptions = {
         comment: 'some comment',
-        connectionId: connection.id,
+        connection,
         credentialFormats: {
           indy: {
             attributes: credentialPreview.attributes,
             credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
           },
         },
-        protocolVersion: CredentialProtocolVersion.V2,
       }
 
       const credPropose = {
