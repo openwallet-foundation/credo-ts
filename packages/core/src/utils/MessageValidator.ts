@@ -16,7 +16,9 @@ export class MessageValidator {
   }
   // eslint-disable-next-line @typescript-eslint/ban-types
   public static validateSync<T extends object>(
-    classInstance: T, // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    classInstance: T & {},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Class: { new (...args: any[]): T }
   ) {
     // NOTE: validateSync (strangely) return an Array of errors so we
@@ -30,6 +32,6 @@ export class MessageValidator {
     } else if (errors.length !== 0) {
       throw new ClassValidationError('An unknown validation error occurred.', { classType: typeof Class })
     }
-    return
+    return errors as T
   }
 }
