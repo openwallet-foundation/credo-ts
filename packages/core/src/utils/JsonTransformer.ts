@@ -2,9 +2,6 @@ import type { Validate } from 'class-validator'
 
 import { instanceToPlain, plainToInstance, instanceToInstance } from 'class-transformer'
 
-import { ClassValidationError } from '../error/ClassValidationError'
-import { isValidationErrorArray } from '../error/ValidationErrorUtils'
-
 import { MessageValidator } from './MessageValidator'
 
 interface Validate {
@@ -33,17 +30,9 @@ export class JsonTransformer {
       if (plainInstance === undefined || plainInstance === null) {
         return plainInstance
       }
-      const errors = MessageValidator.validateSync(plainInstance)
-      // NOTE: validateSync (strangely) return an Array of errors so we
-      // have to transform that into an error of choice and throw that.
-      if (isValidationErrorArray(errors)) {
-        throw new ClassValidationError('Failed to validate class.', {
-          classType: typeof Class,
-          validationErrors: errors,
-        })
-      } else if (errors.length !== 0) {
-        throw new ClassValidationError('An unknown validation error occurred.', { classType: typeof Class })
-      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      MessageValidator.validateSync(plainInstance, Class as any)
+
       return plainInstance as T
     }
   }
