@@ -1,6 +1,5 @@
 import type { ValidationError } from 'class-validator'
 
-import { ClassValidationError } from '../../../error/ClassValidationError'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'

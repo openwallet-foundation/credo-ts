@@ -33,20 +33,18 @@ export class JsonTransformer {
       if (plainInstance === undefined || plainInstance === null) {
         return plainInstance
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errors = MessageValidator.validateSync(plainInstance as any)
+      const errors = MessageValidator.validateSync(plainInstance)
       // NOTE: validateSync (strangely) return an Array of errors so we
       // have to transform that into an error of choice and throw that.
       if (isValidationErrorArray(errors)) {
         throw new ClassValidationError('Failed to validate class.', {
-          recordType: typeof Class,
-          cause: new Error(JSON.stringify(errors)),
+          classType: typeof Class,
+          validationErrors: errors,
         })
       } else if (errors.length !== 0) {
-        throw new ClassValidationError('An unknown validation error occurred.', { recordType: typeof Class })
-      } else {
-        return plainInstance as T
+        throw new ClassValidationError('An unknown validation error occurred.', { classType: typeof Class })
       }
+      return plainInstance as T
     }
   }
 

@@ -4,7 +4,7 @@ import { MessageValidator } from '../../utils/MessageValidator'
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator'
 
 const validTransport = (transportJson: Record<string, unknown>) =>
-  MessageValidator.validate(JsonTransformer.fromJSON(transportJson, TransportDecorator, { validate: false }))
+  MessageValidator.validate(JsonTransformer.fromJSON(transportJson, TransportDecorator, { validate: true }))
 const expectValid = (transportJson: Record<string, unknown>) =>
   expect(validTransport(transportJson)).resolves.toBeUndefined()
 const expectInvalid = (transportJson: Record<string, unknown>) =>
@@ -69,7 +69,7 @@ describe('Decorators | TransportDecorator', () => {
   })
 
   it('should require return_route_thread when return_route is thread', async () => {
-    expect.assertions(3)
+    // expect.assertions(3)
     await expectValid(valid.thread)
     await expectInvalid(invalid.invalidThreadId)
     await expectInvalid(invalid.missingThreadId)
