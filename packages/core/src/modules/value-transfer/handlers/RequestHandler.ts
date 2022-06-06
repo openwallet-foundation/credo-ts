@@ -24,7 +24,7 @@ export class RequestHandler implements Handler<typeof DIDCommV2Message> {
   }
 
   public async handle(messageContext: HandlerInboundMessage<RequestHandler>) {
-    const { record, message } = await this.valueTransferWitnessService.processRequest(messageContext)
+    const { message } = await this.valueTransferWitnessService.processRequest(messageContext)
     if (message.type === ProblemReportMessage.type) {
       return this.valueTransferService.sendMessageToGetter(message)
     }

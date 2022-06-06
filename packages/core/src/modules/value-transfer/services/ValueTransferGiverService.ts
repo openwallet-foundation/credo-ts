@@ -157,8 +157,12 @@ export class ValueTransferGiverService {
       throw new AriesFrameworkError(`Not enough notes to pay: ${record.valueTransferMessage.amount}`)
     }
 
-    const { error, message } = await this.giver.acceptPaymentRequest(giver, record.valueTransferMessage, notesToSpend)
-    if (error || !message) {
+    const { error, message, delta } = await this.giver.acceptPaymentRequest(
+      giver,
+      record.valueTransferMessage,
+      notesToSpend
+    )
+    if (error || !message || !delta) {
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({
         from: giver,
@@ -184,7 +188,7 @@ export class ValueTransferGiverService {
       from: giver,
       to: record.witnessDid,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
+      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
@@ -207,7 +211,7 @@ export class ValueTransferGiverService {
     messageContext: InboundMessageContext<CashAcceptedWitnessedMessage>
   ): Promise<{
     record: ValueTransferRecord
-    message: CashAcceptedWitnessedMessage | ProblemReportMessage
+    message: CashRemovedMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: cashAcceptedWitnessedMessage } = messageContext
@@ -217,8 +221,8 @@ export class ValueTransferGiverService {
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.RequestAcceptanceSent)
 
-    const valueTransferMessage = cashAcceptedWitnessedMessage.valueTransferMessage
-    if (!valueTransferMessage) {
+    const valueTransferDelta = cashAcceptedWitnessedMessage.valueTransferDelta
+    if (!valueTransferDelta) {
       const problemReport = new ProblemReportMessage({
         from: record.giverDid,
         to: record.witnessDid,
@@ -231,32 +235,9 @@ export class ValueTransferGiverService {
       return { record, message: problemReport }
     }
 
-    // Update Value Transfer record and raise event
-    record.valueTransferMessage = valueTransferMessage
-    await this.valueTransferService.updateState(record, ValueTransferState.CashAcceptanceReceived)
-    return { record, message: cashAcceptedWitnessedMessage }
-  }
-
-  /**
-   * Remove cash as Giver from the Wallet.
-   *
-   * @param record Value Transfer record containing Cash Acceptance message to handle.
-   *
-   * @returns
-   *    * Value Transfer record
-   *    * Cash Removed Message
-   */
-  public async removeCash(record: ValueTransferRecord): Promise<{
-    record: ValueTransferRecord
-    message: CashRemovedMessage | ProblemReportMessage
-  }> {
-    // Verify that we are in appropriate state to perform action
-    record.assertRole(ValueTransferRole.Giver)
-    record.assertState(ValueTransferState.CashAcceptanceReceived)
-
     // Call VTP package to remove cash
-    const { error, message } = await this.giver.signReceipt(record.valueTransferMessage)
-    if (error || !message) {
+    const { error, message, delta } = await this.giver.signReceipt(record.valueTransferMessage, valueTransferDelta)
+    if (error || !message || !delta) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
         from: record.giverDid,
@@ -279,11 +260,12 @@ export class ValueTransferGiverService {
       from: record.giverDid,
       to: record.witnessDid,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
+      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
     record.valueTransferMessage = message
+
     await this.valueTransferService.updateState(record, ValueTransferState.CashRemovalSent)
     return { record, message: cashRemovedMessage }
   }
@@ -310,8 +292,8 @@ export class ValueTransferGiverService {
     record.assertState(ValueTransferState.CashRemovalSent)
     record.assertRole(ValueTransferRole.Giver)
 
-    const valueTransferMessage = receiptMessage.valueTransferMessage
-    if (!valueTransferMessage) {
+    const valueTransferDelta = receiptMessage.valueTransferDelta
+    if (!valueTransferDelta) {
       const problemReport = new ProblemReportMessage({
         pthid: record.threadId,
         body: {
@@ -323,7 +305,7 @@ export class ValueTransferGiverService {
     }
 
     // Call VTP to process Receipt
-    const { error, message } = await this.giver.processReceipt(valueTransferMessage)
+    const { error, message } = await this.giver.processReceipt(record.valueTransferMessage, valueTransferDelta)
     if (error || !message) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({

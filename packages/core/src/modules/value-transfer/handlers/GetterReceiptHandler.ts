@@ -14,6 +14,5 @@ export class GetterReceiptHandler implements Handler<typeof DIDCommV2Message> {
 
   public async handle(messageContext: HandlerInboundMessage<GetterReceiptHandler>) {
     await this.valueTransferGetterService.processReceipt(messageContext)
-    return
   }
 }

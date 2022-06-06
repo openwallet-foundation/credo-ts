@@ -24,15 +24,7 @@ export class CashRemovedHandler implements Handler<typeof DIDCommV2Message> {
   }
 
   public async handle(messageContext: HandlerInboundMessage<CashRemovedHandler>) {
-    const { record, message } = await this.valueTransferWitnessService.processCashRemoved(messageContext)
-
-    // if message is Problem Report -> also send it to Giver as well
-    if (message.type === ProblemReportMessage.type) {
-      await this.valueTransferService.sendProblemReportToGetterAndGiver(message, record)
-      return
-    }
-
-    const { getterMessage, giverMessage } = await this.valueTransferWitnessService.createReceipt(record)
+    const { giverMessage, getterMessage } = await this.valueTransferWitnessService.processCashRemoved(messageContext)
 
     await Promise.all([
       this.valueTransferService.sendMessageToGetter(getterMessage),
