@@ -38,8 +38,8 @@ export class ValueTransferStateService implements StorageInterface {
     record.previousHash = state.previousHash
     record.wallet = state.wallet
     record.proposedNextWallet = state.proposedNextWallet
-    this.valueTransferStateRecord = record
     await this.valueTransferStateRepository.update(record)
+    this.valueTransferStateRecord = record
   }
 
   public async getWitnessState(): Promise<WitnessState> {
@@ -52,7 +52,7 @@ export class ValueTransferStateService implements StorageInterface {
   public async storeWitnessState(state: WitnessState): Promise<void> {
     const record = await this.witnessStateRepository.getSingleByQuery({})
     record.stateAccumulator = state.stateAccumulator
-    this.witnessStateRecord = record
     await this.witnessStateRepository.update(record)
+    this.witnessStateRecord = record
   }
 }

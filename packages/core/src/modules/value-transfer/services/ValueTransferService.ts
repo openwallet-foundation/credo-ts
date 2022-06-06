@@ -21,7 +21,7 @@ import { DidService } from '../../dids/services/DidService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
-import { ProblemReportMessage } from '../messages/ProblemReportMessage'
+import { ProblemReportMessage } from '../messages'
 import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
@@ -149,7 +149,7 @@ export class ValueTransferService {
         pthid: problemReportMessage.pthid,
       })
 
-      record.problemReportMessage = forwardedProblemReportMessage
+      record.problemReportMessage = problemReportMessage
       await this.updateState(record, ValueTransferState.Failed)
       return {
         record,
@@ -157,31 +157,12 @@ export class ValueTransferService {
       }
     }
     if (record.role === ValueTransferRole.Getter) {
-      if (record.state === ValueTransferState.CashAcceptanceSent) {
-        // If Getter has already accepted the cash -> he needs to rollback the state
-        // TODO: implement deleteCash in value transfer
-        // const { error, message } = await this.valueTransfer.getter().deleteCash(record.cashAcceptedMessage)
-        // if (error || !message) {
-        //   throw new AriesFrameworkError(`Getter: Failed to delete cash: ${error?.message}`)
-        // }
-      }
+      // If Getter has already accepted the cash -> he needs to rollback the state
+      await this.valueTransfer.getter().abortTransaction()
     }
     if (record.role === ValueTransferRole.Giver) {
-      if (record.state === ValueTransferState.RequestAcceptanceSent) {
-        // If Giver has already accepted the request and marked the cash for spending -> he needs to free the cash
-        // TODO: implement freeCash in value transfer
-        // const { error, message } = await this.valueTransfer.giver().freeCash(record.requestAcceptedMessage)
-        // if (error || !message) {
-        //   throw new AriesFrameworkError(`Giver: Failed to free cash: ${error?.message}`)
-        // }
-      }
-      if (record.state === ValueTransferState.CashRemovalSent) {
-        // If Giver has already accepted the request and marked the cash for spending -> he needs to free the cash
-        // const { error, message } = await this.valueTransfer.giver().freeCash(record.cashRemovedMessage)
-        // if (error || !message) {
-        //   throw new AriesFrameworkError(`Giver: Failed to free cash: ${error?.message}`)
-        // }
-      }
+      // If Giver has already accepted the request and marked the cash for spending -> he needs to free the cash
+      await this.valueTransfer.giver().abortTransaction()
     }
 
     // Update Value Transfer record and raise event
@@ -220,19 +201,19 @@ export class ValueTransferService {
   }
 
   public async sendMessageToWitness(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.to = record?.witnessDid ? [record.witnessDid] : undefined
+    message.setRecipient(record?.witnessDid)
     const witnessTransport = this.config.valueTransferConfig?.witnessTransport
     return this.sendMessage(message, witnessTransport)
   }
 
   public async sendMessageToGiver(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.to = record?.giverDid ? [record.giverDid] : undefined
+    message.setRecipient(record?.giverDid)
     const giverTransport = this.config.valueTransferConfig?.giverTransport
     return this.sendMessage(message, giverTransport)
   }
 
   public async sendMessageToGetter(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.to = record?.getterDid ? [record.getterDid] : undefined
+    message.setRecipient(record?.getterDid)
     const getterTransport = this.config.valueTransferConfig?.getterTransport
     return this.sendMessage(message, getterTransport)
   }

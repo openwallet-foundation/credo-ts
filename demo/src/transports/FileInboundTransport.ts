@@ -36,7 +36,7 @@ export class FileInboundTransport implements InboundTransport {
           }
         }
       }
-      await sleep(1500)
+      await sleep(1000)
     }
   }
 
