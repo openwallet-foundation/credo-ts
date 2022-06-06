@@ -4,6 +4,7 @@ import type { State, StorageInterface, WitnessState } from '@sicpa-dlab/value-tr
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { Buffer } from '../../../utils'
 import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 import { WitnessStateRepository } from '../repository/WitnessStateRepository'
@@ -26,16 +27,20 @@ export class ValueTransferStateService implements StorageInterface {
     this.witnessStateRepository = witnessStateRepository
   }
 
-  public async getState(): Promise<ValueTransferStateRecord> {
+  public async getState(): Promise<State> {
     if (!this.valueTransferStateRecord) {
       this.valueTransferStateRecord = await this.valueTransferStateRepository.getSingleByQuery({})
     }
-    return this.valueTransferStateRecord
+    return {
+      previousHash: Uint8Array.from(Buffer.from(this.valueTransferStateRecord.previousHash, 'hex')),
+      wallet: this.valueTransferStateRecord.wallet,
+      proposedNextWallet: this.valueTransferStateRecord.proposedNextWallet,
+    }
   }
 
   public async storeState(state: State): Promise<void> {
     const record = await this.valueTransferStateRepository.getSingleByQuery({})
-    record.previousHash = state.previousHash
+    record.previousHash = Buffer.from(state.previousHash).toString('hex')
     record.wallet = state.wallet
     record.proposedNextWallet = state.proposedNextWallet
     await this.valueTransferStateRepository.update(record)
@@ -46,7 +51,9 @@ export class ValueTransferStateService implements StorageInterface {
     if (!this.witnessStateRecord) {
       this.witnessStateRecord = await this.witnessStateRepository.getSingleByQuery({})
     }
-    return this.witnessStateRecord
+    return {
+      stateAccumulator: this.witnessStateRecord.stateAccumulator,
+    }
   }
 
   public async storeWitnessState(state: WitnessState): Promise<void> {

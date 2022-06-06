@@ -25,7 +25,7 @@ export class ValueTransferBaseMessage extends DIDCommV2Message {
   public body!: ValueTransferMessageBody
 
   public static createValueTransferBase64Attachment(message: ValueTransferMessage): Attachment {
-    return ValueTransferBaseMessage.createBase64Attachment(
+    return ValueTransferBaseMessage.createJSONAttachment(
       VALUE_TRANSFER_ATTACHMENT_ID,
       JsonTransformer.serialize(message)
     )

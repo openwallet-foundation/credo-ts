@@ -15,13 +15,13 @@ export type ValueTransferStateTags = RecordTags<ValueTransferStateRecord>
 export interface ValueTransferStateProps {
   id?: string
   publicDid?: string
-  previousHash: Uint8Array
+  previousHash: string
   wallet: Wallet
   proposedNextWallet?: Wallet
 }
 
 export class ValueTransferStateRecord extends BaseRecord<DefaultValueTransferStateTags, CustomValueTransferStateTags> {
-  public previousHash!: Uint8Array
+  public previousHash!: string
 
   @Type(() => Wallet)
   @ValidateNested()

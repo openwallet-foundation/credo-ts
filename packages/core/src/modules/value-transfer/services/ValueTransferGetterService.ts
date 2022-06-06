@@ -85,7 +85,7 @@ export class ValueTransferGetterService {
     message: RequestMessage
   }> {
     // Get payment public DID from the storage or generate a new one if requested
-    const state = await this.valueTransferStateService.getState()
+    const state = await this.valueTransferStateRepository.getState()
     const getter =
       usePublicDid && state.publicDid ? state.publicDid : (await this.didService.createDID(DidType.PeerDid)).id
 

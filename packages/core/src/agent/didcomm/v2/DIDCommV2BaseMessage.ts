@@ -90,6 +90,16 @@ export class DIDCommV2BaseMessage {
     return uuid()
   }
 
+  public static createJSONAttachment(id: string, message: any): Attachment {
+    return {
+      id: id,
+      media_type: ATTACHMENT_MEDIA_TYPE,
+      data: {
+        json: message,
+      },
+    }
+  }
+
   public static createBase64Attachment(id: string, message: any): Attachment {
     return {
       id: id,

@@ -110,7 +110,7 @@ export class ValueTransferService {
 
         const record = new ValueTransferStateRecord({
           publicDid: publicDid?.id,
-          previousHash: new Uint8Array(),
+          previousHash: '',
           wallet,
         })
         await this.valueTransferStateRepository.save(record)
