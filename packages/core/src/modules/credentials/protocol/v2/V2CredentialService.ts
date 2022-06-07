@@ -143,16 +143,6 @@ export class V2CredentialService extends CredentialService {
       associatedRecordId: credentialRecord.id,
     })
 
-    for (const formatService of formats) {
-      const options: ServiceAcceptProposalOptions = {
-        credentialRecordId: credentialRecord.id,
-        credentialFormats: {},
-      }
-      options.proposalAttachment = formatService.getAttachment(
-        proposalMessage.formats,
-        proposalMessage.messageAttachment
-      )
-    }
     return { credentialRecord, message: proposalMessage }
   }
 
