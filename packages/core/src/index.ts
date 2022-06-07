@@ -2,7 +2,6 @@
 import 'reflect-metadata'
 
 export { Agent } from './agent/Agent'
-export { BaseEvent } from './agent/Events'
 export { EventEmitter } from './agent/EventEmitter'
 export { Handler, HandlerInboundMessage } from './agent/Handler'
 export { InboundMessageContext } from './agent/models/InboundMessageContext'
@@ -33,10 +32,15 @@ export * from './modules/proofs'
 export * from './modules/connections'
 export * from './modules/ledger'
 export * from './modules/routing'
+export * from './modules/question-answer'
+export * from './modules/oob'
 export * from './utils/JsonTransformer'
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
+export { parseMessageType, IsValidMessageType } from './utils/messageType'
+
+export * from './agent/Events'
 
 const utils = {
   uuid,

@@ -1,4 +1,7 @@
 export * from './Connection'
 export * from './ConnectionRole'
 export * from './ConnectionState'
+export * from './DidExchangeState'
+export * from './DidExchangeRole'
+export * from './HandshakeProtocol'
 export * from './did'

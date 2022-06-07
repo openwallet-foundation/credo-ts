@@ -1,4 +1,4 @@
-import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
+import type { CredentialExchangeRecord, ProofRecord } from '@aries-framework/core'
 
 import { clear } from 'console'
 import { textSync } from 'figlet'
@@ -42,7 +42,7 @@ export class AliceInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.alice.connectionRecordFaberId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    if (this.alice.outOfBandId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
 
     const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
     return inquirer.prompt([this.inquireOptions(reducedOption)])
@@ -69,7 +69,7 @@ export class AliceInquirer extends BaseInquirer {
     await this.processAnswer()
   }
 
-  public async acceptCredentialOffer(credentialRecord: CredentialRecord) {
+  public async acceptCredentialOffer(credentialRecord: CredentialExchangeRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.CredentialOfferTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.alice.agent.credentials.declineOffer(credentialRecord.id)

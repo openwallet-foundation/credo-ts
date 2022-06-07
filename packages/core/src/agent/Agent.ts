@@ -19,8 +19,11 @@ import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
+import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsModule'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
+import { OutOfBandModule } from '../modules/oob/OutOfBandModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
+import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { StorageUpdateService } from '../storage'
@@ -54,13 +57,16 @@ export class Agent {
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
   public readonly basicMessages: BasicMessagesModule
+  public readonly genericRecords: GenericRecordsModule
   public readonly ledger: LedgerModule
+  public readonly questionAnswer!: QuestionAnswerModule
   public readonly credentials: CredentialsModule
   public readonly mediationRecipient: RecipientModule
   public readonly mediator: MediatorModule
   public readonly discovery: DiscoverFeaturesModule
   public readonly dids: DidsModule
   public readonly wallet: WalletModule
+  public readonly oob!: OutOfBandModule
 
   public constructor(
     initialConfig: InitConfig,
@@ -119,17 +125,20 @@ export class Agent {
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
     this.basicMessages = this.container.resolve(BasicMessagesModule)
+    this.questionAnswer = this.container.resolve(QuestionAnswerModule)
+    this.genericRecords = this.container.resolve(GenericRecordsModule)
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
     this.dids = this.container.resolve(DidsModule)
     this.wallet = this.container.resolve(WalletModule)
+    this.oob = this.container.resolve(OutOfBandModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
       .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
       .pipe(
         takeUntil(this.agentConfig.stop$),
-        concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message))
+        concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message, { connection: e.payload.connection }))
       )
       .subscribe()
   }
@@ -224,7 +233,9 @@ export class Agent {
     // Also requests mediation ans sets as default mediator
     // Because this requires the connections module, we do this in the agent constructor
     if (mediatorConnectionsInvite) {
-      await this.mediationRecipient.provision(mediatorConnectionsInvite)
+      this.logger.debug('Provision mediation with invitation', { mediatorConnectionsInvite })
+      const mediationConnection = await this.getMediationConnection(mediatorConnectionsInvite)
+      await this.mediationRecipient.provision(mediationConnection)
     }
 
     await this.mediationRecipient.initialize()
@@ -254,7 +265,7 @@ export class Agent {
   }
 
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
-    return await this.messageReceiver.receiveMessage(inboundMessage, session)
+    return await this.messageReceiver.receiveMessage(inboundMessage, { session })
   }
 
   public get injectionContainer() {
@@ -263,5 +274,34 @@ export class Agent {
 
   public get config() {
     return this.agentConfig
+  }
+
+  private async getMediationConnection(mediatorInvitationUrl: string) {
+    const outOfBandInvitation = await this.oob.parseInvitation(mediatorInvitationUrl)
+    const outOfBandRecord = await this.oob.findByInvitationId(outOfBandInvitation.id)
+    const [connection] = outOfBandRecord ? await this.connections.findAllByOutOfBandId(outOfBandRecord.id) : []
+
+    if (!connection) {
+      this.logger.debug('Mediation connection does not exist, creating connection')
+      // We don't want to use the current default mediator when connecting to another mediator
+      const routing = await this.mediationRecipient.getRouting({ useDefaultMediator: false })
+
+      this.logger.debug('Routing created', routing)
+      const { connectionRecord: newConnection } = await this.oob.receiveInvitation(outOfBandInvitation, {
+        routing,
+      })
+      this.logger.debug(`Mediation invitation processed`, { outOfBandInvitation })
+
+      if (!newConnection) {
+        throw new AriesFrameworkError('No connection record to provision mediation.')
+      }
+
+      return this.connections.returnWhenIsConnected(newConnection.id)
+    }
+
+    if (!connection.isReady) {
+      return this.connections.returnWhenIsConnected(connection.id)
+    }
+    return connection
   }
 }

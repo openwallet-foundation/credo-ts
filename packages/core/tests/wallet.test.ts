@@ -2,19 +2,14 @@ import { tmpdir } from 'os'
 import path from 'path'
 
 import { Agent } from '../src/agent/Agent'
+import { BasicMessageRepository, BasicMessageRecord, BasicMessageRole } from '../src/modules/basic-messages'
 import { KeyDerivationMethod } from '../src/types'
 import { uuid } from '../src/utils/uuid'
+import { WalletInvalidKeyError } from '../src/wallet/error'
+import { WalletDuplicateError } from '../src/wallet/error/WalletDuplicateError'
+import { WalletNotFoundError } from '../src/wallet/error/WalletNotFoundError'
 
 import { getBaseConfig } from './helpers'
-
-import {
-  BasicMessageRecord,
-  BasicMessageRepository,
-  BasicMessageRole,
-  WalletDuplicateError,
-  WalletInvalidKeyError,
-  WalletNotFoundError,
-} from '@aries-framework/core'
 
 const aliceConfig = getBaseConfig('wallet-tests-Alice')
 const bobConfig = getBaseConfig('wallet-tests-Bob')

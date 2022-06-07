@@ -2,16 +2,16 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, '**-pre']
     types: [opened, synchronize, reopened, labeled]
   push:
-    branches: [main]
+    branches: [main, '**-pre']
   workflow_dispatch:
 
 env:
   TEST_AGENT_PUBLIC_DID_SEED: 000000000000000000000000Trustee9
   GENESIS_TXN_PATH: network/genesis/local-genesis.txn
-  LD_LIBRARY_PATH: /home/runner/work/aries-framework-javascript/indy-sdk/experimental/plugins/postgres_storage/target/release # for Linux
+  LIB_INDY_STRG_POSTGRES: /home/runner/work/aries-framework-javascript/indy-sdk/experimental/plugins/postgres_storage/target/release # for Linux
 
 # Make sure we're not running multiple release steps at the same time as this can give issues with determining the next npm version to release.
 # Ideally we only add this to the 'release' job so it doesn't limit PR runs, but github can't guarantee the job order in that case:
@@ -68,8 +68,11 @@ jobs:
       - name: Prettier
         run: yarn check-format
 
-      - name: Compile
+      - name: Check Types
         run: yarn check-types
+
+      - name: Compile
+        run: yarn build
 
   integration-test:
     runs-on: ubuntu-20.04
@@ -77,7 +80,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x, 17.x]
+        node-version: [12.x, 14.x, 16.x, 17.x, 18.x]
 
     steps:
       - name: Checkout aries-framework-javascript

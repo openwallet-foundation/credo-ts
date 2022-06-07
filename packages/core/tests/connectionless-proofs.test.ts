@@ -7,7 +7,8 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { CredentialPreview } from '../src/modules/credentials'
+import { HandshakeProtocol } from '../src/modules/connections'
+import { V1CredentialPreview } from '../src/modules/credentials'
 import {
   PredicateType,
   ProofState,
@@ -17,7 +18,9 @@ import {
   AutoAcceptProof,
   ProofEventTypes,
 } from '../src/modules/proofs'
+import { MediatorPickupStrategy } from '../src/modules/routing'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
+import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 
 import {
@@ -177,7 +180,7 @@ describe('Present Proof', () => {
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const credentialPreview = CredentialPreview.fromRecord({
+    const credentialPreview = V1CredentialPreview.fromRecord({
       name: 'John',
       age: '99',
     })
@@ -199,31 +202,43 @@ describe('Present Proof', () => {
 
     // Initialize mediator
     const mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(mediatorMessages, subjectMap))
+    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const faberMediationInvitation = await mediatorAgent.connections.createConnection()
-    const aliceMediationInvitation = await mediatorAgent.connections.createConnection()
+    const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+      label: 'faber invitation',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
+
+    const aliceMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+      label: 'alice invitation',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
 
     const faberConfig = getBaseConfig(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: faberMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+        domain: 'https://example.com',
+      }),
+      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
     const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      // logger: new TestLogger(LogLevel.test),
-      mediatorConnectionsInvite: aliceMediationInvitation.invitation.toUrl({ domain: 'https://example.com' }),
+      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+        domain: 'https://example.com',
+      }),
+      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
     const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(faberMessages, subjectMap))
+    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     await faberAgent.initialize()
 
     const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(aliceMessages, subjectMap))
+    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     await aliceAgent.initialize()
 
@@ -327,5 +342,12 @@ describe('Present Proof', () => {
       threadId: faberProofRecord.threadId,
       state: ProofState.Done,
     })
+
+    // We want to stop the mediator polling before the agent is shutdown.
+    // FIXME: add a way to stop mediator polling from the public api, and make sure this is
+    // being handled in the agent shutdown so we don't get any errors with wallets being closed.
+    faberAgent.config.stop$.next(true)
+    aliceAgent.config.stop$.next(true)
+    await sleep(2000)
   })
 })

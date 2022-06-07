@@ -16,9 +16,9 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
-import { checkProofRequestForDuplicates } from '../../../utils'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { checkProofRequestForDuplicates } from '../../../utils/indyProofRequest'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
@@ -129,10 +129,7 @@ export class ProofService {
       autoAcceptProof: config?.autoAcceptProof,
     })
     await this.proofRepository.save(proofRecord)
-    this.eventEmitter.emit<ProofStateChangedEvent>({
-      type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: null },
-    })
+    this.emitStateChangedEvent(proofRecord, null)
 
     return { message: proposalMessage, proofRecord }
   }
@@ -229,13 +226,7 @@ export class ProofService {
 
       // Save record
       await this.proofRepository.save(proofRecord)
-      this.eventEmitter.emit<ProofStateChangedEvent>({
-        type: ProofEventTypes.ProofStateChanged,
-        payload: {
-          proofRecord,
-          previousState: null,
-        },
-      })
+      this.emitStateChangedEvent(proofRecord, null)
     }
 
     return proofRecord
@@ -335,10 +326,7 @@ export class ProofService {
     })
 
     await this.proofRepository.save(proofRecord)
-    this.eventEmitter.emit<ProofStateChangedEvent>({
-      type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: null },
-    })
+    this.emitStateChangedEvent(proofRecord, null)
 
     return { message: requestPresentationMessage, proofRecord }
   }
@@ -403,10 +391,7 @@ export class ProofService {
 
       // Save in repository
       await this.proofRepository.save(proofRecord)
-      this.eventEmitter.emit<ProofStateChangedEvent>({
-        type: ProofEventTypes.ProofStateChanged,
-        payload: { proofRecord, previousState: null },
-      })
+      this.emitStateChangedEvent(proofRecord, null)
     }
 
     return proofRecord
@@ -730,7 +715,7 @@ export class ProofService {
     for (const credentialId of credentialIds) {
       // Get the credentialRecord that matches the ID
 
-      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
+      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialIds: [credentialId] })
 
       if (credentialRecord.linkedAttachments) {
         // Get the credentials that have a hashlink as value and are requested
@@ -1093,9 +1078,18 @@ export class ProofService {
     proofRecord.state = newState
     await this.proofRepository.update(proofRecord)
 
+    this.emitStateChangedEvent(proofRecord, previousState)
+  }
+
+  private emitStateChangedEvent(proofRecord: ProofRecord, previousState: ProofState | null) {
+    const clonedProof = JsonTransformer.clone(proofRecord)
+
     this.eventEmitter.emit<ProofStateChangedEvent>({
       type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: previousState },
+      payload: {
+        proofRecord: clonedProof,
+        previousState: previousState,
+      },
     })
   }
 

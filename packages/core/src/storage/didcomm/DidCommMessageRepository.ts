@@ -1,10 +1,11 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
+import type { AgentMessage, ConstructableAgentMessage } from '../../agent/AgentMessage'
 import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../../constants'
+import { parseMessageType } from '../../utils/messageType'
 import { Repository } from '../Repository'
 import { StorageService } from '../StorageService'
 
@@ -27,9 +28,13 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
   }
 
   public async saveOrUpdateAgentMessage(options: SaveAgentMessageOptions) {
+    const { messageName, protocolName, protocolMajorVersion } = parseMessageType(options.agentMessage.type)
+
     const record = await this.findSingleByQuery({
       associatedRecordId: options.associatedRecordId,
-      messageType: options.agentMessage.type,
+      messageName: messageName,
+      protocolName: protocolName,
+      protocolMajorVersion: String(protocolMajorVersion),
     })
 
     if (record) {
@@ -42,24 +47,28 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
     await this.saveAgentMessage(options)
   }
 
-  public async getAgentMessage<MessageClass extends typeof AgentMessage = typeof AgentMessage>({
+  public async getAgentMessage<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>({
     associatedRecordId,
     messageClass,
   }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass>> {
     const record = await this.getSingleByQuery({
       associatedRecordId,
-      messageType: messageClass.type,
+      messageName: messageClass.type.messageName,
+      protocolName: messageClass.type.protocolName,
+      protocolMajorVersion: String(messageClass.type.protocolMajorVersion),
     })
 
     return record.getMessageInstance(messageClass)
   }
-  public async findAgentMessage<MessageClass extends typeof AgentMessage = typeof AgentMessage>({
+  public async findAgentMessage<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>({
     associatedRecordId,
     messageClass,
   }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass> | null> {
     const record = await this.findSingleByQuery({
       associatedRecordId,
-      messageType: messageClass.type,
+      messageName: messageClass.type.messageName,
+      protocolName: messageClass.type.protocolName,
+      protocolMajorVersion: String(messageClass.type.protocolMajorVersion),
     })
 
     return record?.getMessageInstance(messageClass) ?? null

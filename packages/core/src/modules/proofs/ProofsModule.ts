@@ -199,8 +199,8 @@ export class ProofsModule {
     const routing = await this.mediationRecipientService.getRouting()
     message.service = new ServiceDecorator({
       serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.verkey],
-      routingKeys: routing.routingKeys,
+      recipientKeys: [routing.recipientKey.publicKeyBase58],
+      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
     })
 
     // Save ~service decorator to record (to remember our verkey)
@@ -245,8 +245,8 @@ export class ProofsModule {
       const routing = await this.mediationRecipientService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
 
       const recipientService = proofRecord.requestMessage.service
@@ -258,8 +258,8 @@ export class ProofsModule {
 
       await this.messageSender.sendMessageToService({
         message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
 
@@ -305,12 +305,12 @@ export class ProofsModule {
     // Use ~service decorator otherwise
     else if (proofRecord.requestMessage?.service && proofRecord.presentationMessage?.service) {
       const recipientService = proofRecord.presentationMessage?.service
-      const ourService = proofRecord.requestMessage?.service
+      const ourService = proofRecord.requestMessage.service
 
       await this.messageSender.sendMessageToService({
         message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
     }

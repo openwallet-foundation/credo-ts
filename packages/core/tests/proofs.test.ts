@@ -106,7 +106,6 @@ describe('Present Proof', () => {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
     })
-
     expect(JsonTransformer.toJSON(faberProofRecord)).toMatchObject({
       createdAt: expect.any(String),
       state: ProofState.PresentationReceived,
@@ -279,7 +278,7 @@ describe('Present Proof', () => {
             mimeType: 'application/json',
           },
         ],
-        attachments: [
+        appendedAttachments: [
           {
             id: 'zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
             filename: 'picture-of-a-cat.png',
