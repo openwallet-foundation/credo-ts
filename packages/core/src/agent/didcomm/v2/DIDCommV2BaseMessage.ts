@@ -19,7 +19,7 @@ export type DIDCommV2MessageParams = {
   expires_time?: number
   from_prior?: string
   attachments?: Array<Attachment>
-  body?: any
+  body?: unknown
 }
 
 export class DIDCommV2BaseMessage {
@@ -66,7 +66,7 @@ export class DIDCommV2BaseMessage {
   @IsOptional()
   public from_prior?: string
 
-  public body!: any
+  public body!: unknown
 
   @IsOptional()
   public attachments?: Array<Attachment>
@@ -90,7 +90,7 @@ export class DIDCommV2BaseMessage {
     return uuid()
   }
 
-  public static createJSONAttachment(id: string, message: any): Attachment {
+  public static createJSONAttachment<T>(id: string, message: T): Attachment {
     return {
       id: id,
       media_type: ATTACHMENT_MEDIA_TYPE,
@@ -100,7 +100,8 @@ export class DIDCommV2BaseMessage {
     }
   }
 
-  public static createBase64Attachment(id: string, message: any): Attachment {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public static createBase64Attachment<T>(id: string, message: T): Attachment {
     return {
       id: id,
       media_type: ATTACHMENT_MEDIA_TYPE,
@@ -110,11 +111,12 @@ export class DIDCommV2BaseMessage {
     }
   }
 
-  public getAttachmentDataAsJson(id: string): any {
+  public getAttachmentDataAsJson(id: string) {
     if (!this.attachments) return null
     const attachment = this.attachments?.find((attachment) => attachment.id === id)
     if (!attachment) return null
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = attachment.data as any // FIXME: didcomm package doesn't provide convenient way to process attachment
     if (typeof data.base64 === 'string') {
       return JsonEncoder.fromBase64(data.base64)

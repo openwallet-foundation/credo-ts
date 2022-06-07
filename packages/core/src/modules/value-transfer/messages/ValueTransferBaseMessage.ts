@@ -1,7 +1,7 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 import type { Attachment } from 'didcomm'
 
-import { ValueTransferDelta, ValueTransferMessage } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { ValueTransferMessage, ValueTransferDelta } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
 import { IsInstance, ValidateNested } from 'class-validator'
 
@@ -36,20 +36,20 @@ export class ValueTransferBaseMessage extends DIDCommV2Message {
   }
 
   public get valueTransferMessage(): ValueTransferMessage | null {
-    // Extract value transfer message from attachment
-    const attachment = this.getAttachmentDataAsJson(VALUE_TRANSFER_ATTACHMENT_ID)
-    if (!attachment) return null
-    return typeof attachment === 'string'
-      ? JsonTransformer.deserialize(attachment, ValueTransferMessage)
-      : JsonTransformer.fromJSON(attachment, ValueTransferMessage)
+    return this.attachedMessage(ValueTransferMessage)
   }
 
   public get valueTransferDelta(): ValueTransferDelta | null {
+    return this.attachedMessage(ValueTransferDelta)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public attachedMessage<T>(Class: { new (...args: any[]): T }): T | null {
     // Extract value transfer message from attachment
     const attachment = this.getAttachmentDataAsJson(VALUE_TRANSFER_ATTACHMENT_ID)
     if (!attachment) return null
     return typeof attachment === 'string'
-      ? JsonTransformer.deserialize(attachment, ValueTransferDelta)
-      : JsonTransformer.fromJSON(attachment, ValueTransferDelta)
+      ? JsonTransformer.deserialize(attachment, Class)
+      : JsonTransformer.fromJSON(attachment, Class)
   }
 }
