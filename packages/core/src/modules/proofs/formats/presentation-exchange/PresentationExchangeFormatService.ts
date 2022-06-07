@@ -400,6 +400,8 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     const pex: PEXv1 = new PEXv1()
     pex.evaluatePresentation(requestMessage.presentationDefinition, verifiablePresentation)
 
+    // check the results
+
     const verifyPresentationOptions: VerifyPresentationOptions = {
       presentation: w3cVerifiablePresentation,
       proofType: proof.type,
