@@ -4,7 +4,7 @@ import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferService } from '../services'
 import type { ValueTransferWitnessService } from '../services/ValueTransferWitnessService'
 
-import { CashRemovedMessage, ProblemReportMessage } from '../messages'
+import { CashRemovedMessage } from '../messages'
 
 export class CashRemovedHandler implements Handler<typeof DIDCommV2Message> {
   private agentConfig: AgentConfig

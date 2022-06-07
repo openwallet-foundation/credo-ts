@@ -32,23 +32,24 @@ export class ValueTransferBaseMessage extends DIDCommV2Message {
   }
 
   public static createValueTransferJSONAttachment(message: ValueTransferDelta | ValueTransferMessage): Attachment {
-    return ValueTransferBaseMessage.createJSONAttachment(
-      VALUE_TRANSFER_ATTACHMENT_ID,
-      JsonTransformer.serialize(message)
-    )
+    return ValueTransferBaseMessage.createJSONAttachment(VALUE_TRANSFER_ATTACHMENT_ID, JsonTransformer.toJSON(message))
   }
 
   public get valueTransferMessage(): ValueTransferMessage | null {
     // Extract value transfer message from attachment
     const attachment = this.getAttachmentDataAsJson(VALUE_TRANSFER_ATTACHMENT_ID)
     if (!attachment) return null
-    return JsonTransformer.deserialize(attachment, ValueTransferMessage)
+    return typeof attachment === 'string'
+      ? JsonTransformer.deserialize(attachment, ValueTransferMessage)
+      : JsonTransformer.fromJSON(attachment, ValueTransferMessage)
   }
 
   public get valueTransferDelta(): ValueTransferDelta | null {
     // Extract value transfer message from attachment
     const attachment = this.getAttachmentDataAsJson(VALUE_TRANSFER_ATTACHMENT_ID)
     if (!attachment) return null
-    return JsonTransformer.deserialize(attachment, ValueTransferDelta)
+    return typeof attachment === 'string'
+      ? JsonTransformer.deserialize(attachment, ValueTransferDelta)
+      : JsonTransformer.fromJSON(attachment, ValueTransferDelta)
   }
 }

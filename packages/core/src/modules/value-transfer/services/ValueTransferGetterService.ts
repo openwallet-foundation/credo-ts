@@ -249,6 +249,7 @@ export class ValueTransferGetterService {
         },
       })
 
+      await this.getter.abortTransaction()
       record.problemReportMessage = problemReportMessage
 
       await this.valueTransferService.updateState(record, ValueTransferState.Failed)
