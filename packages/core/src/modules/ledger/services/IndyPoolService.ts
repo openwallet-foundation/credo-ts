@@ -41,6 +41,7 @@ export class IndyPoolService {
    */
   public async connectToPools() {
     const handleArray: number[] = []
+    // Sequentially connect to pools so we don't use up too many resources connecting in parallel
     for (const pool of this.pools) {
       this.logger.debug(`Connecting to pool: ${pool.id}`)
       const poolHandle = await pool.connect()
