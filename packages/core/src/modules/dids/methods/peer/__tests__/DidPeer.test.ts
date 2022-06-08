@@ -1,58 +1,16 @@
 import { JsonTransformer } from '../../../../../utils'
-import didKeyBls12381g1 from '../../../__tests__/__fixtures__/didKeyBls12381g1.json'
-import didKeyBls12381g1g2 from '../../../__tests__/__fixtures__/didKeyBls12381g1g2.json'
-import didKeyBls12381g2 from '../../../__tests__/__fixtures__/didKeyBls12381g2.json'
 import didKeyEd25519 from '../../../__tests__/__fixtures__/didKeyEd25519.json'
-import didKeyX25519 from '../../../__tests__/__fixtures__/didKeyX25519.json'
 import { DidDocument, Key } from '../../../domain'
 import { DidPeer, PeerDidNumAlgo } from '../DidPeer'
+import { didDocumentToNumAlgo2Did } from '../peerDidNumAlgo2'
 
+import didPeer0z6MkBase58 from './__fixtures__/didPeer0z6MkBase58.json'
+import didPeer0z6MkMultibase from './__fixtures__/didPeer0z6MkMultibase.json'
 import didPeer1zQmR from './__fixtures__/didPeer1zQmR.json'
 import didPeer1zQmZ from './__fixtures__/didPeer1zQmZ.json'
-import didPeer2Ez6L from './__fixtures__/didPeer2Ez6L.json'
+import didPeer2Ez6LSbysBase58 from './__fixtures__/didPeer2Ez6LSbysBase58.json'
 
 describe('DidPeer', () => {
-  test('transforms a key correctly into a peer did method 0 did document', async () => {
-    const didDocuments = [didKeyEd25519, didKeyBls12381g1, didKeyX25519, didKeyBls12381g1g2, didKeyBls12381g2]
-
-    for (const didDocument of didDocuments) {
-      const key = Key.fromFingerprint(didDocument.id.split(':')[2])
-
-      const didPeer = DidPeer.fromKey(key)
-      const expectedDidPeerDocument = JSON.parse(
-        JSON.stringify(didDocument).replace(new RegExp('did:key:', 'g'), 'did:peer:0')
-      )
-
-      expect(didPeer.didDocument.toJSON()).toMatchObject(expectedDidPeerDocument)
-    }
-  })
-
-  test('transforms a method 2 did correctly into a did document', () => {
-    expect(DidPeer.fromDid(didPeer2Ez6L.id).didDocument.toJSON()).toMatchObject(didPeer2Ez6L)
-  })
-
-  test('transforms a method 0 did correctly into a did document', () => {
-    const didDocuments = [didKeyEd25519, didKeyBls12381g1, didKeyX25519, didKeyBls12381g1g2, didKeyBls12381g2]
-
-    for (const didDocument of didDocuments) {
-      const didPeer = DidPeer.fromDid(didDocument.id.replace('did:key:', 'did:peer:0'))
-      const expectedDidPeerDocument = JSON.parse(
-        JSON.stringify(didDocument).replace(new RegExp('did:key:', 'g'), 'did:peer:0')
-      )
-
-      expect(didPeer.didDocument.toJSON()).toMatchObject(expectedDidPeerDocument)
-    }
-  })
-
-  test('transforms a did document into a valid method 2 did', () => {
-    const didPeer2 = DidPeer.fromDidDocument(
-      JsonTransformer.fromJSON(didPeer2Ez6L, DidDocument),
-      PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
-    )
-
-    expect(didPeer2.did).toBe(didPeer2Ez6L.id)
-  })
-
   test('transforms a did document into a valid method 1 did', () => {
     const didPeer1 = DidPeer.fromDidDocument(
       JsonTransformer.fromJSON(didPeer1zQmR, DidDocument),
@@ -90,8 +48,72 @@ describe('DidPeer', () => {
     const peerDidNumAlgo2 =
       'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.Vz6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V.Vz6MkgoLTnTypo3tDRwCkZXSccTPHRLhF4ZnjhueYAFpEX6vg.SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCIsInIiOlsiZGlkOmV4YW1wbGU6c29tZW1lZGlhdG9yI3NvbWVrZXkiXSwiYSI6WyJkaWRjb21tL3YyIiwiZGlkY29tbS9haXAyO2Vudj1yZmM1ODciXX0'
     expect(DidPeer.fromDid(peerDidNumAlgo2).numAlgo).toBe(PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
-    expect(DidPeer.fromDidDocument(JsonTransformer.fromJSON(didPeer2Ez6L, DidDocument)).numAlgo).toBe(
+    expect(DidPeer.fromDidDocument(JsonTransformer.fromJSON(didPeer2Ez6LSbysBase58, DidDocument)).numAlgo).toBe(
       PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
     )
+  })
+
+  test('transforms a method 0 did correctly into a did document', async () => {
+    const didDocuments = [didPeer0z6MkBase58, didPeer0z6MkMultibase]
+
+    for (const didDocument of didDocuments) {
+      const didPeer = DidPeer.fromDid(didDocument.id)
+      const expected = didDocument
+      const actual = didPeer.didDocument
+
+      expect(expected.authentication[0].id).toBe(actual.verificationMethod[0].id)
+      expect(expected.authentication[0].controller).toBe(actual.verificationMethod[0].controller)
+      expect(expected.authentication[0].type).toBe(actual.verificationMethod[0].type)
+    }
+  })
+
+  // TODO: uncomment multibase peerDids after multibase implementation
+  test('transforms a method 2 did correctly into a did document', async () => {
+    const didDocuments = [
+      // didPeer2Ez6LMultibaseMinimalServices,
+      // didPeer2Ez6LMultibaseNoServices,
+      didPeer2Ez6LSbysBase58,
+      // didPeer2Ez6LSbysMultibase,
+    ]
+
+    for (const didDocument of didDocuments) {
+      const didPeer = DidPeer.fromDid(didDocument.id)
+      const expected = didDocument
+      const actual = didPeer.didDocument
+
+      expect(actual).toMatchObject(expected)
+    }
+  })
+
+  // TODO: uncomment multibase peerDids after multibase implementation
+  test('transforms a did doc correctly into a numalgo2 did', async () => {
+    const didDocuments = [
+      // didPeer2Ez6LMultibaseMinimalServices,
+      // didPeer2Ez6LMultibaseNoServices,
+      didPeer2Ez6LSbysBase58,
+      // didPeer2Ez6LSbysMultibase,
+    ]
+
+    for (const didDocument of didDocuments) {
+      const didDocObj = JsonTransformer.fromJSON(didDocument, DidDocument)
+      const didPeer = didDocumentToNumAlgo2Did(didDocObj)
+      const expected = didDocObj.id
+      const actual = didPeer
+
+      expect(actual).toBe(expected)
+    }
+  })
+
+  test('transforms a key correctly into a numalgo0 did', async () => {
+    const keys = ['z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V']
+
+    for (const key of keys) {
+      const keyObj = Key.fromFingerprint(key)
+      const didPeer = DidPeer.fromKey(keyObj)
+      const expected = key
+      const actual = didPeer.did.split(':')[2].substring(1)
+
+      expect(actual).toBe(expected)
+    }
   })
 })

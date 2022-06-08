@@ -4,7 +4,7 @@ import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferService } from '../services'
 import type { ValueTransferWitnessService } from '../services/ValueTransferWitnessService'
 
-import { CashRemovedMessage, ProblemReportMessage } from '../messages'
+import { CashRemovedMessage } from '../messages'
 
 export class CashRemovedHandler implements Handler<typeof DIDCommV2Message> {
   private agentConfig: AgentConfig
@@ -24,22 +24,11 @@ export class CashRemovedHandler implements Handler<typeof DIDCommV2Message> {
   }
 
   public async handle(messageContext: HandlerInboundMessage<CashRemovedHandler>) {
-    const { record, message } = await this.valueTransferWitnessService.processCashRemoved(messageContext)
-
-    // if message is Problem Report -> also send it to Giver as well
-    if (message.type === ProblemReportMessage.type) {
-      await Promise.all([
-        this.valueTransferService.sendMessageToGetter(message, record),
-        this.valueTransferService.sendMessageToGiver(message, record),
-      ])
-      return
-    }
-
-    const { getterReceiptMessage, giverReceiptMessage } = await this.valueTransferWitnessService.createReceipt(record)
+    const { giverMessage, getterMessage } = await this.valueTransferWitnessService.processCashRemoved(messageContext)
 
     await Promise.all([
-      this.valueTransferService.sendMessageToGetter(getterReceiptMessage, record),
-      this.valueTransferService.sendMessageToGiver(giverReceiptMessage, record),
+      this.valueTransferService.sendMessageToGetter(getterMessage),
+      this.valueTransferService.sendMessageToGiver(giverMessage),
     ])
     return
   }

@@ -42,4 +42,8 @@ export class DIDCommV2Message extends DIDCommV2BaseMessage implements DIDCommMes
   public is<C extends typeof DIDCommV2Message>(Class: C): this is InstanceType<C> {
     return this.type === Class.type
   }
+
+  public setRecipient(to?: string) {
+    this.to = to ? [to] : undefined
+  }
 }

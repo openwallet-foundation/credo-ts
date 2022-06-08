@@ -87,7 +87,7 @@ export class ValueTransferModule {
     )
 
     // Send Payment Request to Witness
-    await this.valueTransferService.sendMessageToWitness(message, record)
+    await this.valueTransferService.sendMessageToWitness(message)
     return { message, record }
   }
 
@@ -109,7 +109,7 @@ export class ValueTransferModule {
     const { message, record: updatedRecord } = await this.valueTransferGiverService.acceptRequest(record)
 
     // Send Payment Request Acceptance to Witness
-    await this.valueTransferService.sendMessageToWitness(message, record)
+    await this.valueTransferService.sendMessageToWitness(message)
 
     return { record: updatedRecord, message }
   }

@@ -11,7 +11,7 @@ import { parseDid } from '../../domain/parse'
 import { didDocumentToNumAlgo2Did, didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
 
 const PEER_DID_REGEX = new RegExp(
-  '^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))+(.(S)[0-9a-zA-Z=]*)?)))$'
+  '^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{46,47}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{46,47}))+(.(S)[0-9a-zA-Z=]*)?)))$'
 )
 
 export const enum PeerDidNumAlgo {
@@ -27,7 +27,7 @@ function getNumAlgoFromPeerDid(did: string) {
 export class DidPeer {
   private readonly parsedDid: ParsedDid
 
-  // If numAlgo 1 is used, the did document always has a did document
+  // If numAlgo 1 is used, the did always has a did document
   private readonly _didDocument?: DidDocument
 
   private constructor({ didDocument, did }: { did: string; didDocument?: DidDocument }) {

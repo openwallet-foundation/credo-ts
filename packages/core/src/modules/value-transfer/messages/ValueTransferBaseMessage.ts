@@ -1,7 +1,9 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 import type { Attachment } from 'didcomm'
 
-import { ValueTransferMessage } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { ValueTransferMessage, ValueTransferDelta } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Type } from 'class-transformer'
+import { IsInstance, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 import { JsonTransformer } from '../../../utils'
@@ -17,16 +19,37 @@ export class ValueTransferBaseMessage extends DIDCommV2Message {
     super(options)
   }
 
+  @Type(() => ValueTransferMessageBody)
+  @ValidateNested()
+  @IsInstance(ValueTransferMessageBody)
   public body!: ValueTransferMessageBody
 
-  public static createValueTransferBase64Attachment(message: ValueTransferMessage): Attachment {
-    return ValueTransferBaseMessage.createBase64Attachment(VALUE_TRANSFER_ATTACHMENT_ID, message)
+  public static createValueTransferBase64Attachment(message: ValueTransferDelta | ValueTransferMessage): Attachment {
+    return ValueTransferBaseMessage.createBase64Attachment(
+      VALUE_TRANSFER_ATTACHMENT_ID,
+      JsonTransformer.serialize(message)
+    )
+  }
+
+  public static createValueTransferJSONAttachment(message: ValueTransferDelta | ValueTransferMessage): Attachment {
+    return ValueTransferBaseMessage.createJSONAttachment(VALUE_TRANSFER_ATTACHMENT_ID, JsonTransformer.toJSON(message))
   }
 
   public get valueTransferMessage(): ValueTransferMessage | null {
+    return this.attachedMessage(ValueTransferMessage)
+  }
+
+  public get valueTransferDelta(): ValueTransferDelta | null {
+    return this.attachedMessage(ValueTransferDelta)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public attachedMessage<T>(Class: { new (...args: any[]): T }): T | null {
     // Extract value transfer message from attachment
-    const valueTransferMessage = this.getAttachmentDataAsJson(VALUE_TRANSFER_ATTACHMENT_ID)
-    if (!valueTransferMessage) return null
-    return JsonTransformer.fromJSON(valueTransferMessage, ValueTransferMessage)
+    const attachment = this.getAttachmentDataAsJson(VALUE_TRANSFER_ATTACHMENT_ID)
+    if (!attachment) return null
+    return typeof attachment === 'string'
+      ? JsonTransformer.deserialize(attachment, Class)
+      : JsonTransformer.fromJSON(attachment, Class)
   }
 }

@@ -1,8 +1,9 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { RequestWitnessedMessage, CashAcceptedWitnessedMessage, GiverReceiptMessage } from '../messages'
+import type { Giver } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -22,7 +23,6 @@ import { ValueTransferStateService } from './ValueTransferStateService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferGiverService {
-  private valueTransfer: ValueTransfer
   private valueTransferRepository: ValueTransferRepository
   private valueTransferService: ValueTransferService
   private valueTransferCryptoService: ValueTransferCryptoService
@@ -31,6 +31,7 @@ export class ValueTransferGiverService {
   private connectionService: ConnectionService
   private didService: DidService
   private eventEmitter: EventEmitter
+  private giver: Giver
 
   public constructor(
     valueTransferRepository: ValueTransferRepository,
@@ -51,15 +52,13 @@ export class ValueTransferGiverService {
     this.didService = didService
     this.eventEmitter = eventEmitter
 
-    this.valueTransfer = new ValueTransfer(
+    this.giver = new ValueTransfer(
       {
         crypto: this.valueTransferCryptoService,
         storage: this.valueTransferStateService,
       },
-      {
-        sparseTree: verifiableNoteProofConfig,
-      }
-    )
+      {}
+    ).giver()
   }
 
   /**
@@ -116,7 +115,6 @@ export class ValueTransferGiverService {
       state: ValueTransferState.RequestReceived,
       threadId: requestWitnessedMessage.thid,
       valueTransferMessage,
-      requestWitnessedMessage,
       getter: valueTransferMessage.getterId,
       witness: valueTransferMessage.witnessId,
       giver: valueTransferMessage.giverId,
@@ -152,19 +150,19 @@ export class ValueTransferGiverService {
       : (await this.didService.createDID(DidType.PeerDid)).id
 
     // Call VTP to accept payment request
-    const { error: pickNotesError, notes: notesToSpend } = await this.valueTransfer
-      .giver()
-      .pickNotesToSpend(record.valueTransferMessage.amount)
+    const { error: pickNotesError, notes: notesToSpend } = await this.giver.pickNotesToSpend(
+      record.valueTransferMessage.amount
+    )
     if (pickNotesError || !notesToSpend) {
-      throw new AriesFrameworkError(
-        `Not enough notes for covering requested amount: ${record.valueTransferMessage.amount}`
-      )
+      throw new AriesFrameworkError(`Not enough notes to pay: ${record.valueTransferMessage.amount}`)
     }
 
-    const { error, message } = await this.valueTransfer
-      .giver()
-      .acceptPaymentRequest(giver, record.valueTransferMessage, notesToSpend)
-    if (error || !message) {
+    const { error, message, delta } = await this.giver.acceptPaymentRequest(
+      giver,
+      record.valueTransferMessage,
+      notesToSpend
+    )
+    if (error || !message || !delta) {
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({
         from: giver,
@@ -190,8 +188,7 @@ export class ValueTransferGiverService {
       from: giver,
       to: record.witnessDid,
       thid: record.threadId,
-      body: {},
-      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
+      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
@@ -214,7 +211,7 @@ export class ValueTransferGiverService {
     messageContext: InboundMessageContext<CashAcceptedWitnessedMessage>
   ): Promise<{
     record: ValueTransferRecord
-    message: CashAcceptedWitnessedMessage | ProblemReportMessage
+    message: CashRemovedMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: cashAcceptedWitnessedMessage } = messageContext
@@ -224,11 +221,11 @@ export class ValueTransferGiverService {
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.RequestAcceptanceSent)
 
-    const valueTransferMessage = cashAcceptedWitnessedMessage.valueTransferMessage
-    if (!valueTransferMessage) {
+    const valueTransferDelta = cashAcceptedWitnessedMessage.valueTransferDelta
+    if (!valueTransferDelta) {
       const problemReport = new ProblemReportMessage({
-        from: record.witnessDid,
-        to: record.giverDid,
+        from: record.giverDid,
+        to: record.witnessDid,
         pthid: record.threadId,
         body: {
           code: 'e.p.req.bad-cash-acceptance',
@@ -238,36 +235,13 @@ export class ValueTransferGiverService {
       return { record, message: problemReport }
     }
 
-    // Update Value Transfer record and raise event
-    record.valueTransferMessage = valueTransferMessage
-    await this.valueTransferService.updateState(record, ValueTransferState.CashAcceptanceReceived)
-    return { record, message: cashAcceptedWitnessedMessage }
-  }
-
-  /**
-   * Remove cash as Giver from the Wallet.
-   *
-   * @param record Value Transfer record containing Cash Acceptance message to handle.
-   *
-   * @returns
-   *    * Value Transfer record
-   *    * Cash Removed Message
-   */
-  public async removeCash(record: ValueTransferRecord): Promise<{
-    record: ValueTransferRecord
-    message: CashRemovedMessage | ProblemReportMessage
-  }> {
-    // Verify that we are in appropriate state to perform action
-    record.assertRole(ValueTransferRole.Giver)
-    record.assertState(ValueTransferState.CashAcceptanceReceived)
-
     // Call VTP package to remove cash
-    const { error, message } = await this.valueTransfer.giver().removeCash(record.valueTransferMessage)
-    if (error || !message) {
+    const { error, message, delta } = await this.giver.signReceipt(record.valueTransferMessage, valueTransferDelta)
+    if (error || !message || !delta) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
-        from: record.witnessDid,
-        to: record.giverDid,
+        from: record.giverDid,
+        to: record.witnessDid,
         pthid: record.threadId,
         body: {
           code: error?.code || 'invalid-cash-accepted',
@@ -275,6 +249,7 @@ export class ValueTransferGiverService {
         },
       })
 
+      await this.giver.abortTransaction()
       // Update Value Transfer record
       record.problemReportMessage = problemReportMessage
       await this.valueTransferService.updateState(record, ValueTransferState.Failed)
@@ -286,12 +261,12 @@ export class ValueTransferGiverService {
       from: record.giverDid,
       to: record.witnessDid,
       thid: record.threadId,
-      body: {},
-      attachments: [ValueTransferBaseMessage.createValueTransferBase64Attachment(message)],
+      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
     record.valueTransferMessage = message
+
     await this.valueTransferService.updateState(record, ValueTransferState.CashRemovalSent)
     return { record, message: cashRemovedMessage }
   }
@@ -318,8 +293,8 @@ export class ValueTransferGiverService {
     record.assertState(ValueTransferState.CashRemovalSent)
     record.assertRole(ValueTransferRole.Giver)
 
-    const valueTransferMessage = receiptMessage.valueTransferMessage
-    if (!valueTransferMessage) {
+    const valueTransferDelta = receiptMessage.valueTransferDelta
+    if (!valueTransferDelta) {
       const problemReport = new ProblemReportMessage({
         pthid: record.threadId,
         body: {
@@ -331,7 +306,7 @@ export class ValueTransferGiverService {
     }
 
     // Call VTP to process Receipt
-    const { error, message } = await this.valueTransfer.giver().processReceipt(valueTransferMessage)
+    const { error, message } = await this.giver.processReceipt(record.valueTransferMessage, valueTransferDelta)
     if (error || !message) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
@@ -342,6 +317,7 @@ export class ValueTransferGiverService {
         },
       })
 
+      await this.giver.abortTransaction()
       record.problemReportMessage = problemReportMessage
       await this.valueTransferService.updateState(record, ValueTransferState.Failed)
       return { record, message: problemReportMessage }

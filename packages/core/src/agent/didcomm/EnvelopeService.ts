@@ -88,6 +88,7 @@ export class EnvelopeService {
           plaintextMessage: decryptedMessageContext.plaintextMessage,
           sender: decryptedMessageContext.senderKey,
           recipient: decryptedMessageContext.recipientKey,
+          version: DIDCommVersion.V1,
         }
       } else {
         const decryptedMessageContext = await this.didCommV2EnvelopeService.unpackMessage(message.message)
@@ -95,6 +96,7 @@ export class EnvelopeService {
           plaintextMessage: decryptedMessageContext.plaintextMessage,
           sender: decryptedMessageContext.senderKid,
           recipient: decryptedMessageContext.recipientKid,
+          version: DIDCommVersion.V1,
         }
       }
     }
@@ -104,6 +106,7 @@ export class EnvelopeService {
         plaintextMessage: decryptedMessageContext.plaintextMessage,
         sender: decryptedMessageContext.senderKid,
         recipient: decryptedMessageContext.recipientKid,
+        version: DIDCommVersion.V1,
       }
     }
     return {

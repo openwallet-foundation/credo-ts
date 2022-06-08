@@ -5,7 +5,7 @@ import type { Transport } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 
-import { ValueTransfer, verifiableNoteProofConfig } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -21,7 +21,7 @@ import { DidService } from '../../dids/services/DidService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
-import { ProblemReportMessage } from '../messages/ProblemReportMessage'
+import { ProblemReportMessage } from '../messages'
 import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
@@ -73,9 +73,7 @@ export class ValueTransferService {
         crypto: this.valueTransferCryptoService,
         storage: this.valueTransferStateService,
       },
-      {
-        sparseTree: verifiableNoteProofConfig,
-      }
+      {}
     )
   }
 
@@ -103,16 +101,27 @@ export class ValueTransferService {
       const state = await this.valueTransferStateRepository.findSingleByQuery({})
 
       if (!state) {
+        let wallet = new Wallet()
+
+        if (config.verifiableNotes?.length) {
+          const res = wallet.receiveNotes(new Set(config.verifiableNotes))
+          wallet = res[1]
+        }
+
         const record = new ValueTransferStateRecord({
           publicDid: publicDid?.id,
           previousHash: '',
-          verifiableNotes: [],
+          wallet,
         })
         await this.valueTransferStateRepository.save(record)
-      }
+      } else {
+        if (config.verifiableNotes?.length) {
+          if (!state.wallet.amount()) {
+            state.wallet.receiveNotes(new Set(config.verifiableNotes))
+          }
 
-      if (!state?.verifiableNotes?.length && config.verifiableNotes) {
-        await this.valueTransfer.giver().addCash(config.verifiableNotes)
+          await this.valueTransferStateRepository.update(state)
+        }
       }
     }
   }
@@ -140,39 +149,20 @@ export class ValueTransferService {
         pthid: problemReportMessage.pthid,
       })
 
-      record.problemReportMessage = forwardedProblemReportMessage
+      record.problemReportMessage = problemReportMessage
       await this.updateState(record, ValueTransferState.Failed)
       return {
         record,
-        message: problemReportMessage,
+        message: forwardedProblemReportMessage,
       }
     }
     if (record.role === ValueTransferRole.Getter) {
-      if (record.state === ValueTransferState.CashAcceptanceSent) {
-        // If Getter has already accepted the cash -> he needs to rollback the state
-        // TODO: implement deleteCash in value transfer
-        // const { error, message } = await this.valueTransfer.getter().deleteCash(record.cashAcceptedMessage)
-        // if (error || !message) {
-        //   throw new AriesFrameworkError(`Getter: Failed to delete cash: ${error?.message}`)
-        // }
-      }
+      // If Getter has already accepted the cash -> he needs to rollback the state
+      await this.valueTransfer.getter().abortTransaction()
     }
     if (record.role === ValueTransferRole.Giver) {
-      if (record.state === ValueTransferState.RequestAcceptanceSent) {
-        // If Giver has already accepted the request and marked the cash for spending -> he needs to free the cash
-        // TODO: implement freeCash in value transfer
-        // const { error, message } = await this.valueTransfer.giver().freeCash(record.requestAcceptedMessage)
-        // if (error || !message) {
-        //   throw new AriesFrameworkError(`Giver: Failed to free cash: ${error?.message}`)
-        // }
-      }
-      if (record.state === ValueTransferState.CashRemovalSent) {
-        // If Giver has already accepted the request and marked the cash for spending -> he needs to free the cash
-        // const { error, message } = await this.valueTransfer.giver().freeCash(record.cashRemovedMessage)
-        // if (error || !message) {
-        //   throw new AriesFrameworkError(`Giver: Failed to free cash: ${error?.message}`)
-        // }
-      }
+      // If Giver has already accepted the request and marked the cash for spending -> he needs to free the cash
+      await this.valueTransfer.giver().abortTransaction()
     }
 
     // Update Value Transfer record and raise event
@@ -210,20 +200,30 @@ export class ValueTransferService {
     return firstValueFrom(subject)
   }
 
-  public async sendMessageToWitness(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.to = record?.witnessDid ? [record.witnessDid] : undefined
+  public async sendProblemReportToGetterAndGiver(message: ProblemReportMessage, record?: ValueTransferRecord) {
+    const getterProblemReport = new ProblemReportMessage({
+      ...message,
+      to: record?.getterDid,
+    })
+    const giverProblemReport = new ProblemReportMessage({
+      ...message,
+      to: record?.giverDid,
+    })
+
+    await Promise.all([this.sendMessageToGetter(getterProblemReport), this.sendMessageToGiver(giverProblemReport)])
+  }
+
+  public async sendMessageToWitness(message: DIDCommV2Message) {
     const witnessTransport = this.config.valueTransferConfig?.witnessTransport
     return this.sendMessage(message, witnessTransport)
   }
 
-  public async sendMessageToGiver(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.to = record?.giverDid ? [record.giverDid] : undefined
+  public async sendMessageToGiver(message: DIDCommV2Message) {
     const giverTransport = this.config.valueTransferConfig?.giverTransport
     return this.sendMessage(message, giverTransport)
   }
 
-  public async sendMessageToGetter(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    message.to = record?.getterDid ? [record.getterDid] : undefined
+  public async sendMessageToGetter(message: DIDCommV2Message) {
     const getterTransport = this.config.valueTransferConfig?.getterTransport
     return this.sendMessage(message, getterTransport)
   }
@@ -236,7 +236,7 @@ export class ValueTransferService {
 
   public async getBalance(): Promise<number> {
     const state = await this.valueTransferStateService.getState()
-    return state.verifiableNotes.length
+    return state.wallet.amount()
   }
 
   public async getByThread(threadId: string): Promise<ValueTransferRecord> {
