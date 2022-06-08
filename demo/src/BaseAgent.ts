@@ -1,5 +1,4 @@
-import type { InboundTransport, InitConfig, OutboundTransport } from '@aries-framework/core'
-import type { ValueTransferConfig } from '@aries-framework/core/src/types'
+import type { InboundTransport, InitConfig, OutboundTransport, ValueTransferConfig } from '@aries-framework/core'
 
 import { Agent, AutoAcceptCredential, AutoAcceptProof, HttpOutboundTransport } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'

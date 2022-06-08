@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/react-native",
+  "name": "@sicpa-dlab/aries-framework-react-native",
   "main": "build/index",
   "types": "build/index",
   "version": "0.1.0",
@@ -8,12 +8,12 @@
   ],
   "license": "Apache-2.0",
   "publishConfig": {
-    "access": "public"
+    "registry": "https://npm.pkg.github.com"
   },
   "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/react-native",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/sicpa-dlab/aries-framework-javascript/",
     "directory": "packages/react-native"
   },
   "scripts": {
@@ -24,14 +24,14 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.1.0",
+    "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core",
     "@azure/core-asynciterator-polyfill": "^1.0.0",
     "events": "^3.3.0"
   },
   "devDependencies": {
+    "@sicpa-dlab/didcomm-react-native": "^0.0.2",
     "@types/indy-sdk-react-native": "npm:@types/indy-sdk@^1.16.16",
     "@types/react-native": "^0.64.10",
-    "@sicpa-dlab/didcomm-react-native": "^0.0.2",
     "indy-sdk-react-native": "^0.1.16",
     "react": "17.0.1",
     "react-native": "0.64.2",
