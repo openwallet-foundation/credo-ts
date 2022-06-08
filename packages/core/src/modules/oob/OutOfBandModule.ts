@@ -1,12 +1,11 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
-import type { ConnectionRecord, Routing } from '../../modules/connections'
+import type { ConnectionRecord, Routing, ConnectionInvitationMessage } from '../../modules/connections'
 import type { PlaintextMessage } from '../../types'
 import type { Key } from '../dids'
 import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
-import { parseUrl } from 'query-string'
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -18,15 +17,11 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
-import {
-  DidExchangeState,
-  HandshakeProtocol,
-  ConnectionInvitationMessage,
-  ConnectionsModule,
-} from '../../modules/connections'
+import { DidExchangeState, HandshakeProtocol, ConnectionsModule } from '../../modules/connections'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
+import { parseInvitationUrl } from '../../utils/parseInvitation'
 import { DidKey } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
 import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
@@ -280,18 +275,8 @@ export class OutOfBandModule {
    *
    * @returns OutOfBandInvitation
    */
-  public async parseInvitation(invitationUrl: string) {
-    const parsedUrl = parseUrl(invitationUrl).query
-    if (parsedUrl['oob']) {
-      const outOfBandInvitation = await OutOfBandInvitation.fromUrl(invitationUrl)
-      return outOfBandInvitation
-    } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
-      const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
-      return convertToNewInvitation(invitation)
-    }
-    throw new AriesFrameworkError(
-      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`.'
-    )
+  public async parseInvitation(invitationUrl: string): Promise<OutOfBandInvitation> {
+    return await parseInvitationUrl(invitationUrl)
   }
 
   /**
