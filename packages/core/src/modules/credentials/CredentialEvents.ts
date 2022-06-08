@@ -1,5 +1,5 @@
 import type { BaseEvent } from '../../agent/Events'
-import type { CredentialState } from './CredentialState'
+import type { CredentialState } from './models/CredentialState'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 
 export enum CredentialEventTypes {

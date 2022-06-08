@@ -1,2 +1,2 @@
 export * from './CredentialService'
-export * from './RevocationService'
+export * from '../protocol/revocation-notification/services/RevocationNotificationService'
