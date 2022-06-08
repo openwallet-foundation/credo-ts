@@ -2,7 +2,8 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { DidRepository } from '../../dids/repository'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { OfferCredentialOptions, ProposeCredentialOptions } from '../CredentialsModuleOptions'
+import type { ServiceOfferCredentialOptions } from '../CredentialServiceOptions'
+import type { ProposeCredentialOptions } from '../CredentialsModuleOptions'
 
 import { Agent } from '../../../../src/agent/Agent'
 import { Dispatcher } from '../../../../src/agent/Dispatcher'
@@ -225,19 +226,18 @@ describe('CredentialService', () => {
   })
 
   describe('createCredentialOffer', () => {
-    let offerOptions: OfferCredentialOptions
+    let offerOptions: ServiceOfferCredentialOptions
 
     beforeEach(async () => {
       offerOptions = {
         comment: 'some comment',
-        connectionId: connection.id,
+        connection,
         credentialFormats: {
           indy: {
             attributes: credentialPreview.attributes,
             credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
           },
         },
-        protocolVersion: CredentialProtocolVersion.V1,
       }
     })
 

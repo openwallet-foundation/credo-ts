@@ -23,7 +23,7 @@ export function rfc0160StateFromDidExchangeState(didExchangeState: DidExchangeSt
     [DidExchangeState.RequestSent]: ConnectionState.Requested,
     [DidExchangeState.ResponseReceived]: ConnectionState.Responded,
     [DidExchangeState.ResponseSent]: ConnectionState.Responded,
-    [DidExchangeState.Completed]: DidExchangeState.Completed,
+    [DidExchangeState.Completed]: ConnectionState.Complete,
   }
 
   return stateMapping[didExchangeState]

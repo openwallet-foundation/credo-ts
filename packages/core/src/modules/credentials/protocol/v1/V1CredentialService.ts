@@ -3,7 +3,6 @@ import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ConnectionRecord } from '../../../connections'
-import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
   ServiceAcceptCredentialOptions,
   CredentialOfferTemplate,
@@ -16,13 +15,11 @@ import type {
 import type {
   AcceptProposalOptions,
   NegotiateProposalOptions,
-  OfferCredentialOptions,
   ProposeCredentialOptions,
   RequestCredentialOptions,
 } from '../../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../../formats/CredentialFormatService'
 import type { HandlerAutoAcceptOptions } from '../../formats/models/CredentialFormatServiceOptions'
-import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type { CredOffer } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -38,13 +35,13 @@ import { ConnectionService } from '../../../connections/services'
 import { DidResolverService } from '../../../dids'
 import { MediationRecipientService } from '../../../routing'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
-import { CredentialEventTypes } from '../../CredentialEvents'
 import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
 import { CredentialState } from '../../CredentialState'
 import { CredentialUtils } from '../../CredentialUtils'
 import { composeAutoAccept } from '../../composeAutoAccept'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
+import { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord } from '../../repository'
 import { CredentialService, RevocationService } from '../../services'
 
@@ -125,7 +122,11 @@ export class V1CredentialService extends CredentialService {
       throw new AriesFrameworkError('Missing credPropose data payload in createProposal')
     }
     if (proposal.credentialFormats.indy?.attributes) {
-      credentialProposal = new V1CredentialPreview({ attributes: proposal.credentialFormats.indy?.attributes })
+      credentialProposal = new V1CredentialPreview({
+        attributes: proposal.credentialFormats.indy?.attributes.map(
+          (attribute) => new CredentialPreviewAttribute(attribute)
+        ),
+      })
     }
 
     const config: CredentialProposeOptions = {
@@ -174,13 +175,7 @@ export class V1CredentialService extends CredentialService {
       associatedRecordId: credentialRecord.id,
     })
 
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
-    })
+    this.emitStateChangedEvent(credentialRecord, null)
 
     return { credentialRecord, message }
   }
@@ -357,13 +352,8 @@ export class V1CredentialService extends CredentialService {
 
       // Save record
       await this.credentialRepository.save(credentialRecord)
-      this.eventEmitter.emit<CredentialStateChangedEvent>({
-        type: CredentialEventTypes.CredentialStateChanged,
-        payload: {
-          credentialRecord,
-          previousState: null,
-        },
-      })
+      this.emitStateChangedEvent(credentialRecord, null)
+
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
@@ -400,7 +390,6 @@ export class V1CredentialService extends CredentialService {
           attributes: preview.attributes,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V1,
     }
 
     const { attachment: offersAttach } = await this.formatService.createOffer(options)
@@ -472,7 +461,9 @@ export class V1CredentialService extends CredentialService {
       throw new AriesFrameworkError('Missing attributes in V1 Negotiate Offer Options')
     }
     const credentialPreview = new V1CredentialPreview({
-      attributes: credentialOptions.credentialFormats.indy?.attributes,
+      attributes: credentialOptions.credentialFormats.indy?.attributes.map(
+        (attribute) => new CredentialPreviewAttribute(attribute)
+      ),
     })
     const options: CredentialProposeOptions = {
       credentialProposal: credentialPreview,
@@ -506,13 +497,8 @@ export class V1CredentialService extends CredentialService {
    *
    */
   public async createOffer(
-    credentialOptions: OfferCredentialOptions
+    credentialOptions: ServiceOfferCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
-    // connection id can be undefined in connection-less scenario
-    const connection = credentialOptions.connectionId
-      ? await this.connectionService.getById(credentialOptions.connectionId)
-      : undefined
-
     const indy = credentialOptions.credentialFormats.indy
 
     if (!indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
@@ -524,7 +510,7 @@ export class V1CredentialService extends CredentialService {
     }
 
     const preview: V1CredentialPreview = new V1CredentialPreview({
-      attributes: indy.attributes,
+      attributes: indy.attributes.map((attribute) => new CredentialPreviewAttribute(attribute)),
     })
 
     const template: CredentialOfferTemplate = {
@@ -534,16 +520,11 @@ export class V1CredentialService extends CredentialService {
       linkedAttachments: indy.linkedAttachments,
     }
 
-    const { credentialRecord, message } = await this.createOfferProcessing(template, connection)
+    const { credentialRecord, message } = await this.createOfferProcessing(template, credentialOptions.connection)
 
     await this.credentialRepository.save(credentialRecord)
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
-    })
+    this.emitStateChangedEvent(credentialRecord, null)
+
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: message,
       role: DidCommMessageRole.Sender,
@@ -644,13 +625,7 @@ export class V1CredentialService extends CredentialService {
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
       })
-      this.eventEmitter.emit<CredentialStateChangedEvent>({
-        type: CredentialEventTypes.CredentialStateChanged,
-        payload: {
-          credentialRecord,
-          previousState: null,
-        },
-      })
+      this.emitStateChangedEvent(credentialRecord, null)
     }
 
     return credentialRecord
@@ -679,7 +654,6 @@ export class V1CredentialService extends CredentialService {
           attributes: credentialPreview.attributes,
         },
       },
-      protocolVersion: CredentialProtocolVersion.V1,
     }
 
     const { attachment: offersAttach } = await this.formatService.createOffer(options)

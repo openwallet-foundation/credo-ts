@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { ConnectionService } from '../../connections/services/ConnectionService'
 import type { DidRepository } from '../../dids/repository'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type { OfferCredentialOptions } from '../CredentialsModuleOptions'
+import type { ServiceOfferCredentialOptions } from '../CredentialServiceOptions'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 
 import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -20,7 +20,6 @@ import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../ledger/services'
 import { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import { CredentialEventTypes } from '../CredentialEvents'
-import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
 import { CredentialState } from '../CredentialState'
 import { IndyCredentialFormatService } from '../formats/indy/IndyCredentialFormatService'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
@@ -131,25 +130,25 @@ describe('CredentialService', () => {
     mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
   })
   describe('createCredentialOffer', () => {
-    let offerOptions: OfferCredentialOptions
+    let offerOptions: ServiceOfferCredentialOptions
 
     beforeEach(async () => {
       offerOptions = {
         comment: 'some comment',
-        connectionId: connection.id,
+        connection,
         credentialFormats: {
           indy: {
             attributes: credentialPreview.attributes,
             credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
           },
         },
-        protocolVersion: CredentialProtocolVersion.V1,
       }
     })
 
     test(`creates credential record in ${CredentialState.OfferSent} state with offer, thread ID`, async () => {
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
 
+      // when
       await credentialService.createOffer(offerOptions)
 
       // then
@@ -161,8 +160,8 @@ describe('CredentialService', () => {
         id: expect.any(String),
         createdAt: expect.any(Date),
         threadId: createdCredentialRecord.threadId,
-        connectionId: connection.id,
         state: CredentialState.OfferSent,
+        connectionId: connection.id,
       })
     })
 

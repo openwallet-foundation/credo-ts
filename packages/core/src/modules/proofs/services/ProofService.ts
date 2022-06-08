@@ -129,10 +129,7 @@ export class ProofService {
       autoAcceptProof: config?.autoAcceptProof,
     })
     await this.proofRepository.save(proofRecord)
-    this.eventEmitter.emit<ProofStateChangedEvent>({
-      type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: null },
-    })
+    this.emitStateChangedEvent(proofRecord, null)
 
     return { message: proposalMessage, proofRecord }
   }
@@ -229,13 +226,7 @@ export class ProofService {
 
       // Save record
       await this.proofRepository.save(proofRecord)
-      this.eventEmitter.emit<ProofStateChangedEvent>({
-        type: ProofEventTypes.ProofStateChanged,
-        payload: {
-          proofRecord,
-          previousState: null,
-        },
-      })
+      this.emitStateChangedEvent(proofRecord, null)
     }
 
     return proofRecord
@@ -335,10 +326,7 @@ export class ProofService {
     })
 
     await this.proofRepository.save(proofRecord)
-    this.eventEmitter.emit<ProofStateChangedEvent>({
-      type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: null },
-    })
+    this.emitStateChangedEvent(proofRecord, null)
 
     return { message: requestPresentationMessage, proofRecord }
   }
@@ -403,10 +391,7 @@ export class ProofService {
 
       // Save in repository
       await this.proofRepository.save(proofRecord)
-      this.eventEmitter.emit<ProofStateChangedEvent>({
-        type: ProofEventTypes.ProofStateChanged,
-        payload: { proofRecord, previousState: null },
-      })
+      this.emitStateChangedEvent(proofRecord, null)
     }
 
     return proofRecord
@@ -1093,9 +1078,18 @@ export class ProofService {
     proofRecord.state = newState
     await this.proofRepository.update(proofRecord)
 
+    this.emitStateChangedEvent(proofRecord, previousState)
+  }
+
+  private emitStateChangedEvent(proofRecord: ProofRecord, previousState: ProofState | null) {
+    const clonedProof = JsonTransformer.clone(proofRecord)
+
     this.eventEmitter.emit<ProofStateChangedEvent>({
       type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: previousState },
+      payload: {
+        proofRecord: clonedProof,
+        previousState: previousState,
+      },
     })
   }
 

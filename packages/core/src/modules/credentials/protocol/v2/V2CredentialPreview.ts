@@ -52,6 +52,7 @@ export class V2CredentialPreview {
           value,
         })
     )
+
     return new V2CredentialPreview({
       attributes,
     })

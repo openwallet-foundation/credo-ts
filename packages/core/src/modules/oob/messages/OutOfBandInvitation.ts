@@ -153,7 +153,7 @@ export class OutOfBandInvitation extends AgentMessage {
   // TODO: this only takes into account inline didcomm services, won't work for public dids
   public getRecipientKeys(): Key[] {
     return this.services
-      .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
+      .filter((s): s is OutOfBandDidCommService => typeof s !== 'string' && !(s instanceof String))
       .map((s) => s.recipientKeys)
       .reduce((acc, curr) => [...acc, ...curr], [])
       .map((didKey) => DidKey.fromDid(didKey).key)

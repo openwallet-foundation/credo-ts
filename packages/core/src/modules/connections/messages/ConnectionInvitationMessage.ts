@@ -126,7 +126,6 @@ export class ConnectionInvitationMessage extends AgentMessage {
   public static async fromUrl(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl['c_i'] ?? parsedUrl['d_m']
-
     try {
       if (typeof encodedInvitation === 'string') {
         const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
