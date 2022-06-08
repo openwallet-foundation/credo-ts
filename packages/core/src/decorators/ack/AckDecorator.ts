@@ -15,7 +15,9 @@ export class AckDecorator {
     }
   }
 
+  // pre-aip 2 the on value was not defined yet. We interpret this as
+  // the value being set to on receipt
   @IsEnum(AckValues, { each: true })
   @IsArray()
-  public on!: AckValues[]
+  public on: AckValues[] = [AckValues.Receipt]
 }
