@@ -244,16 +244,11 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     const credentialAsJson = options.credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
 
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
+    await MessageValidator.validate(credential)
 
     const verifiableCredential: W3cCredentialRecord = await this.w3cCredentialService.storeCredential({
       record: credential,
     })
-
-    if (!verifiableCredential.credential.id) {
-      throw new AriesFrameworkError(
-        `JsonLd processCredential - Missing credential id in verifiable credential for record id ${credentialRecord.id}`
-      )
-    }
     credentialRecord.credentials.push({
       credentialRecordType: CredentialFormatType.JsonLd,
       credentialRecordId: verifiableCredential.id,
