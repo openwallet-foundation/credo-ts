@@ -263,7 +263,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
    * @param messageAttachment the attachment containing the payload
    * @returns The Attachment if found or undefined
    */
-  public getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {    
+  public getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
     const formatId = formats.find((f) => jsonldFormatIds.includes(f.format))
     const attachment = messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
     return attachment
@@ -283,29 +283,15 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     return false
   }
 
-  private areCredentialsEqual(message1: AttachmentData, message2: AttachmentData): boolean {
-    return JSON.stringify(message1) === JSON.stringify(message2)
-  }
+  private areCredentialsEqual = (message1: AttachmentData, message2: AttachmentData) => {
+    const obj1: any = JSON.stringify(message1)
+    const obj2: any = JSON.stringify(message2)
 
-  private arePreviousCredentialsEqual(
-    request: AttachmentData,
-    proposal?: AttachmentData,
-    offer?: AttachmentData
-  ): boolean {
-    if (!request) {
-      return false
-    }
-    if (proposal || offer) {
-      const previousCredential = offer ? offer : proposal
+    const keys1 = Object.keys(obj1)
+    const keys2 = Object.keys(obj2)
 
-      if (previousCredential) {
-        if (this.areCredentialsEqual(previousCredential, request)) {
-          return true
-        }
-        return true
-      }
-    }
-    return false
+    //return true when the two json objects have same length and all the properties has same value key by key
+    return keys1.length === keys2.length && Object.keys(obj1).every((key) => obj1[key] == obj2[key])
   }
 
   public shouldAutoRespondToRequest(options: HandlerAutoAcceptOptions): boolean {
@@ -315,11 +301,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
       throw new AriesFrameworkError(`Missing Request Attachment for Credential Record ${options.credentialRecord.id}`)
     }
     if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      return this.arePreviousCredentialsEqual(
-        options.requestAttachment.data,
-        options.offerAttachment?.data,
-        options.proposalAttachment?.data
-      )
+      const previousCredential = options.offerAttachment ?? options.proposalAttachment
+      if (!previousCredential) return false
+
+      return this.areCredentialsEqual(previousCredential.data, options.requestAttachment.data)
     }
     return false
   }
