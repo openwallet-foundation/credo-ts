@@ -113,7 +113,7 @@ export class CredentialsModule implements CredentialsModule {
     this.logger.debug(`Initializing Credentials Module for agent ${this.agentConfig.label}`)
   }
 
-  public getService(protocolVersion: CredentialProtocolVersion): CredentialService {
+  public getService(protocolVersion: CredentialProtocolVersion = CredentialProtocolVersion.V1): CredentialService {
     return this.serviceMap[protocolVersion]
   }
 
