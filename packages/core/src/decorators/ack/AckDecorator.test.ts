@@ -46,6 +46,12 @@ describe('Decorators | AckDecoratorExtension', () => {
     } catch (e) {
       caughtError = e
     }
+    expect(caughtError.message.includes('An instance of TestMessage has failed the validation')).toBeTruthy()
+    expect(caughtError.message.includes('property id has failed the following constraints: matches')).toBeTruthy()
+    expect(caughtError.message.includes('- property type has failed the following constraints: matches')).toBeTruthy()
+    expect(
+      caughtError.message.includes('property pleaseAck.on has failed the following constraints: isArray, isEnum')
+    ).toBeTruthy()
     expect(caughtError.validationErrors).toMatchObject([
       {
         children: [],
