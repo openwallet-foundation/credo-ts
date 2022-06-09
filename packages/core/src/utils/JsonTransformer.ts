@@ -31,7 +31,7 @@ export class JsonTransformer {
 
     //  validateSync is not happy with null/undefined. Return it to keep returning the same as previous versions without validation
     if (instance === undefined || instance === null) {
-      throw new ClassValidationError('Cannot validate instance being `${instance}`', { classType: typeof instance })
+      throw new ClassValidationError('Cannot validate instance of ', { classType: typeof instance })
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     MessageValidator.validateSync(instance, Class as any)

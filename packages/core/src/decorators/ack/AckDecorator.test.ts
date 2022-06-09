@@ -1,5 +1,3 @@
-import { wordSize } from 'bn.js'
-
 import { BaseMessage } from '../../agent/BaseMessage'
 import { ClassValidationError } from '../../error/ClassValidationError'
 import { JsonTransformer } from '../../utils/JsonTransformer'

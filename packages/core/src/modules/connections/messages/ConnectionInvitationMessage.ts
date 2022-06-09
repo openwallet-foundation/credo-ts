@@ -120,7 +120,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
    * @throws Error when url can not be decoded to JSON, or decoded message is not a valid `ConnectionInvitationMessage`
    * @throws Error when the url does not contain c_i or d_m as parameter
    */
-  public static async fromUrl(invitationUrl: string) {
+  public static fromUrl(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl['c_i'] ?? parsedUrl['d_m']
 

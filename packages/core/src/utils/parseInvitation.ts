@@ -12,13 +12,13 @@ import { OutOfBandInvitation } from '../modules/oob/messages'
  *
  * @returns OutOfBandInvitation
  */
-export const parseInvitationUrl = async (invitationUrl: string): Promise<OutOfBandInvitation> => {
+export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation => {
   const parsedUrl = parseUrl(invitationUrl).query
   if (parsedUrl['oob']) {
-    const outOfBandInvitation = await OutOfBandInvitation.fromUrl(invitationUrl)
+    const outOfBandInvitation = OutOfBandInvitation.fromUrl(invitationUrl)
     return outOfBandInvitation
   } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
-    const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
+    const invitation = ConnectionInvitationMessage.fromUrl(invitationUrl)
     return convertToNewInvitation(invitation)
   }
   throw new AriesFrameworkError(
