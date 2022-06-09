@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { LinkedAttachment } from '../../utils/LinkedAttachment'
+import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
 import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
 import type {
   AcceptOfferOptions,
@@ -8,10 +9,10 @@ import type {
   AcceptRequestOptions,
   NegotiateOfferOptions,
   NegotiateProposalOptions,
-  OfferCredentialOptions,
   RequestCredentialOptions,
 } from './CredentialsModuleOptions'
-import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttributes'
+import type { FormatServiceAcceptProposeCredentialFormats } from './formats/models/CredentialFormatServiceOptions'
+import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttribute'
 import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
 import type { ProposeCredentialMessageOptions } from './protocol/v1/messages'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
@@ -45,10 +46,13 @@ export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
   }
 }
 
-export interface ServiceOfferCredentialOptions extends OfferCredentialOptions {
-  connectionId?: string
+export interface ServiceOfferCredentialOptions {
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+  credentialRecordId?: string
+  connection?: ConnectionRecord
   attachId?: string
-  // offerAttachment?: Attachment
+  credentialFormats: FormatServiceAcceptProposeCredentialFormats
 }
 
 export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {

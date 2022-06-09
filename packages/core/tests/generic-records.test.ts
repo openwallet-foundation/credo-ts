@@ -4,7 +4,7 @@ import { Agent } from '../src/agent/Agent'
 
 import { getBaseConfig } from './helpers'
 
-const aliceConfig = getBaseConfig('Agents Alice', {
+const aliceConfig = getBaseConfig('Generic Records Alice', {
   endpoints: ['rxjs:alice'],
 })
 

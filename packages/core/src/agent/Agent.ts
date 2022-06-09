@@ -23,6 +23,7 @@ import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsM
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { OutOfBandModule } from '../modules/oob/OutOfBandModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
+import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { StorageUpdateService } from '../storage'
@@ -58,6 +59,7 @@ export class Agent {
   public readonly basicMessages: BasicMessagesModule
   public readonly genericRecords: GenericRecordsModule
   public readonly ledger: LedgerModule
+  public readonly questionAnswer!: QuestionAnswerModule
   public readonly credentials: CredentialsModule
   public readonly mediationRecipient: RecipientModule
   public readonly mediator: MediatorModule
@@ -123,6 +125,7 @@ export class Agent {
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
     this.basicMessages = this.container.resolve(BasicMessagesModule)
+    this.questionAnswer = this.container.resolve(QuestionAnswerModule)
     this.genericRecords = this.container.resolve(GenericRecordsModule)
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
@@ -231,8 +234,8 @@ export class Agent {
     // Because this requires the connections module, we do this in the agent constructor
     if (mediatorConnectionsInvite) {
       this.logger.debug('Provision mediation with invitation', { mediatorConnectionsInvite })
-      const mediatonConnection = await this.getMediationConnection(mediatorConnectionsInvite)
-      await this.mediationRecipient.provision(mediatonConnection)
+      const mediationConnection = await this.getMediationConnection(mediatorConnectionsInvite)
+      await this.mediationRecipient.provision(mediationConnection)
     }
 
     await this.mediationRecipient.initialize()

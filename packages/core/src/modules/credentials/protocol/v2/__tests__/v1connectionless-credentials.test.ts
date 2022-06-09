@@ -94,11 +94,15 @@ describe('credentials', () => {
       connectionId: '',
     }
     // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(
-      offerOptions
-    )
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer(offerOptions)
 
-    await aliceAgent.receiveMessage(message.toJSON())
+    const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberCredentialRecord.id,
+      message,
+      domain: 'https://a-domain.com',
+    })
+
+    await aliceAgent.receiveMessage(offerMessage.toJSON())
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
@@ -190,12 +194,16 @@ describe('credentials', () => {
       connectionId: '',
     }
     // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOutOfBandOffer(
-      offerOptions
-    )
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer(offerOptions)
+
+    const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberCredentialRecord.id,
+      message,
+      domain: 'https://a-domain.com',
+    })
 
     // Receive Message
-    await aliceAgent.receiveMessage(message.toJSON())
+    await aliceAgent.receiveMessage(offerMessage.toJSON())
 
     // Wait for it to be processed
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {

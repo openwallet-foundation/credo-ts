@@ -67,16 +67,13 @@ export class DidExchangeRequestHandler implements Handler {
       )
     }
 
-    // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
-    let routing
-    if (outOfBandRecord.reusable) {
-      routing = await this.mediationRecipientService.getRouting()
-    }
-
-    const connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, outOfBandRecord, routing)
+    const connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, outOfBandRecord)
 
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       // TODO We should add an option to not pass routing and therefore do not rotate keys and use the keys from the invitation
+      // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
+      const routing = outOfBandRecord.reusable ? await this.mediationRecipientService.getRouting() : undefined
+
       const message = await this.didExchangeProtocol.createResponse(connectionRecord, outOfBandRecord, routing)
       return createOutboundMessage(connectionRecord, message, outOfBandRecord)
     }

@@ -30,7 +30,7 @@ const logger = testLogger
 const TransportServiceMock = TransportService as jest.MockedClass<typeof TransportService>
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 
-class DummyOutboundTransport implements OutboundTransport {
+class DummyHttpOutboundTransport implements OutboundTransport {
   public start(): Promise<void> {
     throw new Error('Method not implemented.')
   }
@@ -40,6 +40,22 @@ class DummyOutboundTransport implements OutboundTransport {
   }
 
   public supportedSchemes: string[] = ['https']
+
+  public sendMessage() {
+    return Promise.resolve()
+  }
+}
+
+class DummyWsOutboundTransport implements OutboundTransport {
+  public start(): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+
+  public stop(): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+
+  public supportedSchemes: string[] = ['wss']
 
   public sendMessage() {
     return Promise.resolve()
@@ -60,7 +76,7 @@ describe('MessageSender', () => {
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
 
   const didResolverService = new DidResolverServiceMock()
-  const didResolverServiceResolveMock = mockFunction(didResolverService.resolve)
+  const didResolverServiceResolveMock = mockFunction(didResolverService.resolveDidDocument)
 
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
@@ -107,7 +123,7 @@ describe('MessageSender', () => {
       TransportServiceMock.mockClear()
       DidResolverServiceMock.mockClear()
 
-      outboundTransport = new DummyOutboundTransport()
+      outboundTransport = new DummyHttpOutboundTransport()
       messageRepository = new InMemoryMessageRepository(getAgentConfig('MessageSender'))
       messageSender = new MessageSender(
         enveloperService,
@@ -127,12 +143,10 @@ describe('MessageSender', () => {
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
       transportServiceHasInboundEndpoint.mockReturnValue(true)
 
-      const didDocumentInstance = getMockDidDocument({ service: [firstDidCommService, secondDidCommService] })
-      didResolverServiceResolveMock.mockResolvedValue({
-        didDocument: didDocumentInstance,
-        didResolutionMetadata: {},
-        didDocumentMetadata: {},
+      const didDocumentInstance = getMockDidDocument({
+        service: [firstDidCommService, secondDidCommService],
       })
+      didResolverServiceResolveMock.mockResolvedValue(didDocumentInstance)
     })
 
     afterEach(() => {
@@ -146,11 +160,7 @@ describe('MessageSender', () => {
     test('throw error when there is no service or queue', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
-      didResolverServiceResolveMock.mockResolvedValue({
-        didDocument: getMockDidDocument({ service: [] }),
-        didResolutionMetadata: {},
-        didDocumentMetadata: {},
-      })
+      didResolverServiceResolveMock.mockResolvedValue(getMockDidDocument({ service: [] }))
 
       await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(
         `Message is undeliverable to connection test-123 (Test 123)`
@@ -196,13 +206,9 @@ describe('MessageSender', () => {
     test("throws an error if connection.theirDid starts with 'did:' but the resolver can't resolve the did document", async () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
-      didResolverServiceResolveMock.mockResolvedValue({
-        didDocument: null,
-        didResolutionMetadata: {
-          error: 'notFound',
-        },
-        didDocumentMetadata: {},
-      })
+      didResolverServiceResolveMock.mockRejectedValue(
+        new Error(`Unable to resolve did document for did '${connection.theirDid}': notFound`)
+      )
 
       await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrowError(
         `Unable to resolve did document for did '${connection.theirDid}': notFound`
@@ -297,6 +303,11 @@ describe('MessageSender', () => {
       expect(sendMessageToServiceSpy).toHaveBeenCalledTimes(2)
       expect(sendMessageSpy).toHaveBeenCalledTimes(2)
     })
+
+    test('throw error when message endpoint is not supported by outbound transport schemes', async () => {
+      messageSender.registerOutboundTransport(new DummyWsOutboundTransport())
+      await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(/Message is undeliverable to connection/)
+    })
   })
 
   describe('sendMessageToService', () => {
@@ -309,7 +320,7 @@ describe('MessageSender', () => {
     const senderKey = Key.fromFingerprint('z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th')
 
     beforeEach(() => {
-      outboundTransport = new DummyOutboundTransport()
+      outboundTransport = new DummyHttpOutboundTransport()
       messageSender = new MessageSender(
         enveloperService,
         transportService,
@@ -373,11 +384,22 @@ describe('MessageSender', () => {
       })
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
     })
+
+    test('throw error when message endpoint is not supported by outbound transport schemes', async () => {
+      messageSender.registerOutboundTransport(new DummyWsOutboundTransport())
+      await expect(
+        messageSender.sendMessageToService({
+          message: new TestMessage(),
+          senderKey,
+          service,
+        })
+      ).rejects.toThrow(/Unable to send message to service/)
+    })
   })
 
   describe('packMessage', () => {
     beforeEach(() => {
-      outboundTransport = new DummyOutboundTransport()
+      outboundTransport = new DummyHttpOutboundTransport()
       messageRepository = new InMemoryMessageRepository(getAgentConfig('PackMessage'))
       messageSender = new MessageSender(
         enveloperService,

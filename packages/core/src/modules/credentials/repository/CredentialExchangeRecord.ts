@@ -12,7 +12,7 @@ import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttributes'
+import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 import { CredentialInfo } from '../protocol/v1/models/CredentialInfo'
 
 import { CredentialMetadataKeys } from './CredentialMetadataTypes'
@@ -47,7 +47,6 @@ export type DefaultCredentialTags = {
 export interface CredentialRecordBinding {
   credentialRecordType: CredentialFormatType
   credentialRecordId: string
-  credentialId?: string
 }
 
 export class CredentialExchangeRecord extends BaseRecord<
@@ -62,7 +61,7 @@ export class CredentialExchangeRecord extends BaseRecord<
   public revocationNotification?: RevocationNotification
   public errorMessage?: string
   public protocolVersion!: CredentialProtocolVersion
-  public credentials!: CredentialRecordBinding[]
+  public credentials: CredentialRecordBinding[] = []
 
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]
@@ -76,7 +75,6 @@ export class CredentialExchangeRecord extends BaseRecord<
 
   public constructor(props: CredentialExchangeRecordProps) {
     super()
-
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
@@ -91,24 +89,20 @@ export class CredentialExchangeRecord extends BaseRecord<
       this.linkedAttachments = props.linkedAttachments
       this.revocationNotification = props.revocationNotification
       this.errorMessage = props.errorMessage
-      this.credentials = props.credentials ?? []
+      this.credentials = props.credentials || []
     }
   }
 
   public getTags() {
     const metadata = this.metadata.get(CredentialMetadataKeys.IndyCredential)
-    let credentialIds: string[] = []
-
-    if (this.credentials) {
-      credentialIds = this.credentials.map((c) => c.credentialRecordId)
-    }
+    const ids = this.credentials.map((c) => c.credentialRecordId)
 
     return {
       ...this._tags,
       threadId: this.threadId,
       connectionId: this.connectionId,
       state: this.state,
-      credentialIds: credentialIds,
+      credentialIds: ids,
       indyRevocationRegistryId: metadata?.indyRevocationRegistryId,
       indyCredentialRevocationId: metadata?.indyCredentialRevocationId,
     }
@@ -132,7 +126,7 @@ export class CredentialExchangeRecord extends BaseRecord<
     })
   }
 
-  public assertVersion(version: string) {
+  public assertProtocolVersion(version: string) {
     if (this.protocolVersion != version) {
       throw new AriesFrameworkError(
         `Credential record has invalid protocol version ${this.protocolVersion}. Expected version ${version}`

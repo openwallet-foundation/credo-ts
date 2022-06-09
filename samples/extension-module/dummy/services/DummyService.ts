@@ -1,7 +1,7 @@
 import type { DummyStateChangedEvent } from './DummyEvents'
 import type { ConnectionRecord, InboundMessageContext } from '@aries-framework/core'
 
-import { EventEmitter } from '@aries-framework/core'
+import { JsonTransformer, EventEmitter } from '@aries-framework/core'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { DummyRequestMessage, DummyResponseMessage } from '../messages'
@@ -41,13 +41,7 @@ export class DummyService {
 
     await this.dummyRepository.save(record)
 
-    this.eventEmitter.emit<DummyStateChangedEvent>({
-      type: DummyEventTypes.StateChanged,
-      payload: {
-        dummyRecord: record,
-        previousState: null,
-      },
-    })
+    this.emitStateChangedEvent(record, null)
 
     return { record, message }
   }
@@ -85,13 +79,7 @@ export class DummyService {
 
     await this.dummyRepository.save(record)
 
-    this.eventEmitter.emit<DummyStateChangedEvent>({
-      type: DummyEventTypes.StateChanged,
-      payload: {
-        dummyRecord: record,
-        previousState: null,
-      },
-    })
+    this.emitStateChangedEvent(record, null)
 
     return record
   }
@@ -168,9 +156,16 @@ export class DummyService {
     dummyRecord.state = newState
     await this.dummyRepository.update(dummyRecord)
 
+    this.emitStateChangedEvent(dummyRecord, previousState)
+  }
+
+  private emitStateChangedEvent(dummyRecord: DummyRecord, previousState: DummyState | null) {
+    // we need to clone the dummy record to avoid mutating records after they're emitted in an event
+    const clonedDummyRecord = JsonTransformer.clone(dummyRecord)
+
     this.eventEmitter.emit<DummyStateChangedEvent>({
       type: DummyEventTypes.StateChanged,
-      payload: { dummyRecord, previousState: previousState },
+      payload: { dummyRecord: clonedDummyRecord, previousState: previousState },
     })
   }
 }

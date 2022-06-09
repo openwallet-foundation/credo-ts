@@ -137,7 +137,7 @@ export class RecipientModule {
     })
   }
 
-  private async openWebSocketAndPickUp(mediator: MediationRecord) {
+  private async openWebSocketAndPickUp(mediator: MediationRecord, pickupStrategy: MediatorPickupStrategy) {
     let interval = 50
 
     // Listens to Outbound websocket closed events and will reopen the websocket connection
@@ -162,17 +162,20 @@ export class RecipientModule {
           `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
         )
         try {
-          await this.openMediationWebSocket(mediator)
-          if (mediator.pickupStrategy === MediatorPickupStrategy.PickUpV2) {
+          if (pickupStrategy === MediatorPickupStrategy.PickUpV2) {
             // Start Pickup v2 protocol to receive messages received while websocket offline
             await this.sendStatusRequest({ mediatorId: mediator.id })
+          } else {
+            await this.openMediationWebSocket(mediator)
           }
         } catch (error) {
           this.logger.warn('Unable to re-open websocket connection to mediator', { error })
         }
       })
     try {
-      await this.openMediationWebSocket(mediator)
+      if (pickupStrategy === MediatorPickupStrategy.Implicit) {
+        await this.openMediationWebSocket(mediator)
+      }
     } catch (error) {
       this.logger.warn('Unable to open websocket connection to mediator', { error })
     }
@@ -186,7 +189,7 @@ export class RecipientModule {
     switch (mediatorPickupStrategy) {
       case MediatorPickupStrategy.PickUpV2:
         this.agentConfig.logger.info(`Starting pickup of messages from mediator '${mediator.id}'`)
-        await this.openWebSocketAndPickUp(mediator)
+        await this.openWebSocketAndPickUp(mediator, mediatorPickupStrategy)
         await this.sendStatusRequest({ mediatorId: mediator.id })
         break
       case MediatorPickupStrategy.PickUpV1: {
@@ -203,7 +206,7 @@ export class RecipientModule {
         // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
         // such as WebSockets to work
         this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
-        await this.openWebSocketAndPickUp(mediator)
+        await this.openWebSocketAndPickUp(mediator, mediatorPickupStrategy)
         break
       default:
         this.agentConfig.logger.info(

@@ -1,4 +1,4 @@
-import { checkProofRequestForDuplicates } from '..'
+import { checkProofRequestForDuplicates } from '../indyProofRequest'
 
 import {
   AriesFrameworkError,

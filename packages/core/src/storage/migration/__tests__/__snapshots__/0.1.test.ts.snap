@@ -17,7 +17,6 @@ Object {
       "_tags": Object {},
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.577Z",
-      "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
       "id": "1-4e4f-41d9-94c4-f49351b811f1",
       "mediatorId": undefined,
       "metadata": Object {},
@@ -77,7 +76,6 @@ Object {
       "_tags": Object {},
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.608Z",
-      "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
       "id": "2-4e4f-41d9-94c4-f49351b811f1",
       "mediatorId": undefined,
       "metadata": Object {},
@@ -137,7 +135,6 @@ Object {
       "_tags": Object {},
       "autoAcceptConnection": false,
       "createdAt": "2022-04-30T13:02:21.628Z",
-      "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
       "id": "3-4e4f-41d9-94c4-f49351b811f1",
       "mediatorId": undefined,
       "metadata": Object {},
@@ -197,7 +194,6 @@ Object {
       "_tags": Object {},
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.635Z",
-      "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
       "id": "4-4e4f-41d9-94c4-f49351b811f1",
       "mediatorId": undefined,
       "metadata": Object {},
@@ -257,7 +253,6 @@ Object {
       "_tags": Object {},
       "autoAcceptConnection": false,
       "createdAt": "2022-04-30T13:02:21.641Z",
-      "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
       "id": "5-4e4f-41d9-94c4-f49351b811f1",
       "mediatorId": undefined,
       "metadata": Object {},
@@ -316,7 +311,6 @@ Object {
     "value": Object {
       "autoAcceptConnection": true,
       "createdAt": "2022-04-30T13:02:21.646Z",
-      "did": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
       "id": "6-4e4f-41d9-94c4-f49351b811f1",
       "mediatorId": undefined,
       "metadata": Object {},
@@ -376,7 +370,6 @@ Object {
       "_tags": Object {},
       "autoAcceptConnection": true,
       "createdAt": "2022-04-30T13:02:21.653Z",
-      "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
       "id": "7-4e4f-41d9-94c4-f49351b811f1",
       "mediatorId": undefined,
       "metadata": Object {},
@@ -1603,6 +1596,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "574b2a37-1db1-4af1-a3bf-35c6cb9e1d7a",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -1714,6 +1708,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "5f2b7bc7-edfd-47e7-a1d4-aae050df2c4a",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -1842,6 +1837,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "ad644d8a-48a2-4c55-b46d-7a7f1a9278c7",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -1953,6 +1949,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "c7e0a752-7f1c-41c0-b0ae-a68c2d97ca8c",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -2075,6 +2072,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "574b2a37-1db1-4af1-a3bf-35c6cb9e1d7a",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -2186,6 +2184,7 @@ Object {
           "thid": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
         },
       },
+      "credentials": Array [],
       "id": "5f2b7bc7-edfd-47e7-a1d4-aae050df2c4a",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -2314,6 +2313,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "ad644d8a-48a2-4c55-b46d-7a7f1a9278c7",
       "metadata": Object {
         "_internal/indyCredential": Object {
@@ -2425,6 +2425,7 @@ Object {
           "thid": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
         },
       },
+      "credentials": Array [],
       "id": "c7e0a752-7f1c-41c0-b0ae-a68c2d97ca8c",
       "metadata": Object {
         "_internal/indyCredential": Object {

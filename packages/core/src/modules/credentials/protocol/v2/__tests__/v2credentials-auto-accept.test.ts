@@ -150,7 +150,7 @@ describe('credentials', () => {
             },
           },
         },
-        state: CredentialState.Done,
+        state: CredentialState.CredentialReceived,
       })
       expect(faberCredentialRecord).toMatchObject({
         type: CredentialExchangeRecord.type,
@@ -211,7 +211,6 @@ describe('credentials', () => {
       const options: AcceptProposalOptions = {
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Offer',
-        protocolVersion: CredentialProtocolVersion.V2,
         credentialFormats: {
           indy: {
             attributes: [],
@@ -245,7 +244,7 @@ describe('credentials', () => {
             },
           },
         },
-        state: CredentialState.Done,
+        state: CredentialState.CredentialReceived,
       })
 
       expect(faberCredentialRecord).toMatchObject({
@@ -333,7 +332,7 @@ describe('credentials', () => {
               },
             },
           },
-          state: CredentialState.Done,
+          state: CredentialState.CredentialReceived,
         })
 
         expect(faberCredentialRecord).toMatchObject({

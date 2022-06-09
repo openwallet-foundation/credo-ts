@@ -1,9 +1,9 @@
 import type { BaseRecord, TagsBase } from '../packages/core/src/storage/BaseRecord'
-import type { StorageService, BaseRecordConstructor } from '../packages/core/src/storage/StorageService'
+import type { StorageService, BaseRecordConstructor, Query } from '../packages/core/src/storage/StorageService'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
-import { RecordNotFoundError, RecordDuplicateError, JsonTransformer } from '@aries-framework/core'
+import { RecordNotFoundError, RecordDuplicateError, JsonTransformer, AriesFrameworkError } from '@aries-framework/core'
 
 interface StorageRecord {
   value: Record<string, unknown>
@@ -97,10 +97,13 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
   }
 
   /** @inheritDoc */
-  public async findByQuery(
-    recordClass: BaseRecordConstructor<T>,
-    query: Partial<ReturnType<T['getTags']>>
-  ): Promise<T[]> {
+  public async findByQuery(recordClass: BaseRecordConstructor<T>, query: Query<T>): Promise<T[]> {
+    if (query.$and || query.$or || query.$not) {
+      throw new AriesFrameworkError(
+        'Advanced wallet query features $and, $or or $not not supported in in memory storage'
+      )
+    }
+
     const records = Object.values(this.records)
       .filter((record) => {
         const tags = record.tags as TagsBase

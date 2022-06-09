@@ -148,7 +148,7 @@ describe('credentials', () => {
             credentialRecordId: expect.any(String),
           },
         ],
-        state: CredentialState.Done,
+        state: CredentialState.CredentialReceived,
       })
       expect(faberCredentialRecord).toMatchObject({
         type: CredentialExchangeRecord.type,
@@ -213,7 +213,6 @@ describe('credentials', () => {
             attributes: credentialPreview.attributes,
           },
         },
-        protocolVersion: CredentialProtocolVersion.V1,
       }
       testLogger.test('Faber sends credential offer to Alice')
       options.credentialRecordId = faberCredentialExchangeRecord.id
@@ -250,7 +249,7 @@ describe('credentials', () => {
             credentialRecordId: expect.any(String),
           },
         ],
-        state: CredentialState.Done,
+        state: CredentialState.CredentialReceived,
       })
 
       expect(faberCredentialExchangeRecord).toMatchObject({
@@ -345,7 +344,7 @@ describe('credentials', () => {
               credentialRecordId: expect.any(String),
             },
           ],
-          state: CredentialState.Done,
+          state: CredentialState.CredentialReceived,
         })
 
         expect(faberCredentialExchangeRecord).toMatchObject({
