@@ -34,11 +34,12 @@ import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
 import { CredentialFormatSpec } from '../models/CredentialFormatServiceOptions'
 
+const jsonldFormatIds = ['aries/ld-proof-vc@1.0', 'aries/ld-proof-vc-detail@v1.0']
+
 @scoped(Lifecycle.ContainerScoped)
 export class JsonLdCredentialFormatService extends CredentialFormatService {
   protected credentialRepository: CredentialRepository // protected as in base class
   private w3cCredentialService: W3cCredentialService
-
   public constructor(
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
@@ -242,9 +243,9 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
       )
     }
     const credentialAsJson = options.credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
+    await MessageValidator.validate(credentialAsJson)
 
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
-    await MessageValidator.validate(credential)
 
     const verifiableCredential: W3cCredentialRecord = await this.w3cCredentialService.storeCredential({
       record: credential,
@@ -262,8 +263,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
    * @param messageAttachment the attachment containing the payload
    * @returns The Attachment if found or undefined
    */
-  public getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {
-    const formatId = formats.find((f) => f.format.includes('aries'))
+  public getAttachment(formats: CredentialFormatSpec[], messageAttachment: Attachment[]): Attachment | undefined {    
+    const formatId = formats.find((f) => jsonldFormatIds.includes(f.format))
     const attachment = messageAttachment?.find((attachment) => attachment.id === formatId?.attachId)
     return attachment
   }

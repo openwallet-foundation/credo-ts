@@ -16,6 +16,7 @@ import { KeyType } from '../../../../../crypto'
 import { Key } from '../../../../../crypto/Key'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { DidKey } from '../../../../../modules/dids'
+import { Ed25519Signature2018Fixtures } from '../../../../../modules/vc/__tests__/fixtures'
 import { W3cCredential } from '../../../../../modules/vc/models'
 import { JsonTransformer } from '../../../../../utils'
 import { sleep } from '../../../../../utils/sleep'
@@ -52,37 +53,37 @@ describe('credentials', () => {
       const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
       issuerDidKey = new DidKey(issuerKey)
       verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
-      const inputDoc = {
-        '@context': [
-          'https://www.w3.org/2018/credentials/v1',
-          'https://w3id.org/citizenship/v1',
-          'https://w3id.org/security/bbs/v1',
-        ],
-        id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
-        type: ['VerifiableCredential', 'PermanentResidentCard'],
-        issuer: issuerDidKey.did,
-        identifier: '83627465',
-        name: 'Permanent Resident Card',
-        description: 'Government of Example Permanent Resident Card.',
-        issuanceDate: '2019-12-03T12:19:52Z',
-        expirationDate: '2029-12-03T12:19:52Z',
-        credentialSubject: {
-          id: 'did:example:b34ca6cd37bbf23',
-          type: ['PermanentResident', 'Person'],
-          givenName: 'JOHN',
-          familyName: 'SMITH',
-          gender: 'Male',
-          image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-          residentSince: '2015-01-01',
-          lprCategory: 'C09',
-          lprNumber: '999-999-999',
-          commuterClassification: 'C1',
-          birthCountry: 'Bahamas',
-          birthDate: '1958-07-17',
-        },
-      }
+      // const inputDoc = {
+      //   '@context': [
+      //     'https://www.w3.org/2018/credentials/v1',
+      //     'https://w3id.org/citizenship/v1',
+      //     'https://w3id.org/security/bbs/v1',
+      //   ],
+      //   id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+      //   type: ['VerifiableCredential', 'PermanentResidentCard'],
+      //   issuer: issuerDidKey.did,
+      //   identifier: '83627465',
+      //   name: 'Permanent Resident Card',
+      //   description: 'Government of Example Permanent Resident Card.',
+      //   issuanceDate: '2019-12-03T12:19:52Z',
+      //   expirationDate: '2029-12-03T12:19:52Z',
+      //   credentialSubject: {
+      //     id: 'did:example:b34ca6cd37bbf23',
+      //     type: ['PermanentResident', 'Person'],
+      //     givenName: 'JOHN',
+      //     familyName: 'SMITH',
+      //     gender: 'Male',
+      //     image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+      //     residentSince: '2015-01-01',
+      //     lprCategory: 'C09',
+      //     lprNumber: '999-999-999',
+      //     commuterClassification: 'C1',
+      //     birthCountry: 'Bahamas',
+      //     birthDate: '1958-07-17',
+      //   },
+      // }
 
-      credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
+      credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
 
       signCredentialOptions = {
         credential,
@@ -195,38 +196,7 @@ describe('credentials', () => {
       const issuerDidInfo = await wallet.createDid({ seed })
       const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
       issuerDidKey = new DidKey(issuerKey)
-
-      const inputDoc = {
-        '@context': [
-          'https://www.w3.org/2018/credentials/v1',
-          'https://w3id.org/citizenship/v1',
-          'https://w3id.org/security/bbs/v1',
-        ],
-        id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
-        type: ['VerifiableCredential', 'PermanentResidentCard'],
-        issuer: issuerDidKey.did,
-        identifier: '83627465',
-        name: 'Permanent Resident Card',
-        description: 'Government of Example Permanent Resident Card.',
-        issuanceDate: '2019-12-03T12:19:52Z',
-        expirationDate: '2029-12-03T12:19:52Z',
-        credentialSubject: {
-          id: 'did:example:b34ca6cd37bbf23',
-          type: ['PermanentResident', 'Person'],
-          givenName: 'JOHN',
-          familyName: 'SMITH',
-          gender: 'Male',
-          image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-          residentSince: '2015-01-01',
-          lprCategory: 'C09',
-          lprNumber: '999-999-999',
-          commuterClassification: 'C1',
-          birthCountry: 'Bahamas',
-          birthDate: '1958-07-17',
-        },
-      }
-
-      credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
+      credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
 
       signCredentialOptions = {
         credential,
