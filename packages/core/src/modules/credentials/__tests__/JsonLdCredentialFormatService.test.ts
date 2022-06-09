@@ -18,6 +18,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { uuid } from '../../../utils/uuid'
 import { DidExchangeState } from '../../connections/models/DidExchangeState'
 import { W3cCredentialService } from '../../vc'
 import { Ed25519Signature2018Fixtures } from '../../vc/__tests__/fixtures'
@@ -225,7 +226,7 @@ describe('JsonLd CredentialFormatService', () => {
 
       // then
       expect(attachment).toMatchObject({
-        id: 'ld_proof',
+        id: uuid(),
         description: undefined,
         filename: undefined,
         mimeType: 'application/json',
@@ -242,7 +243,7 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       expect(format).toMatchObject({
-        attachId: 'ld_proof',
+        attachId: uuid(),
         format: 'aries/ld-proof-vc-detail@v1.0',
       })
     })

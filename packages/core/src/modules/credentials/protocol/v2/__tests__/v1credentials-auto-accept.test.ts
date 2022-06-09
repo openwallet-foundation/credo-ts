@@ -144,7 +144,7 @@ describe('credentials', () => {
         },
         credentials: [
           {
-            credentialRecordType: 'Indy',
+            credentialRecordType: 'indy',
             credentialRecordId: expect.any(String),
           },
         ],
@@ -245,7 +245,7 @@ describe('credentials', () => {
         },
         credentials: [
           {
-            credentialRecordType: 'Indy',
+            credentialRecordType: 'indy',
             credentialRecordId: expect.any(String),
           },
         ],
@@ -340,7 +340,7 @@ describe('credentials', () => {
           },
           credentials: [
             {
-              credentialRecordType: 'Indy',
+              credentialRecordType: 'indy',
               credentialRecordId: expect.any(String),
             },
           ],

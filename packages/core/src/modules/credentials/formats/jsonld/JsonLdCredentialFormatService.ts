@@ -20,9 +20,10 @@ import type {
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../../../../../src/error'
-import { JsonTransformer } from '../../../../../src/utils/JsonTransformer'
 import { uuid } from '../../../../../src/utils/uuid'
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../../utils/MessageValidator'
 import { W3cCredentialService } from '../../../vc'
 import { W3cVerifiableCredential, W3cCredential } from '../../../vc/models'
 import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
@@ -71,14 +72,14 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
    * @param options the options needed to accept the proposal
    */
   public async processProposal(options: ServiceAcceptProposalOptions): Promise<void> {
-    const credPropose = options.proposalAttachment?.getDataAsJson<SignCredentialOptions>()
-
-    if (!credPropose) {
-      throw new AriesFrameworkError('Missing jsonld credential proposal data payload')
+    const credProposalJson = options.proposalAttachment?.getDataAsJson<SignCredentialOptions>()
+    if (!credProposalJson) {
+      throw new AriesFrameworkError('Missing indy credential proposal data payload')
     }
+    await MessageValidator.validate(credProposalJson)
 
     options.credentialFormats = {
-      jsonld: credPropose,
+      jsonld: credProposalJson,
     }
   }
 

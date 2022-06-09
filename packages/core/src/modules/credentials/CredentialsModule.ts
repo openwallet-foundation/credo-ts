@@ -149,8 +149,6 @@ export class CredentialsModule implements CredentialsModule {
 
     await this.messageSender.sendMessage(outboundMessage)
 
-    credentialRecord.protocolVersion = version
-
     return credentialRecord
   }
 
@@ -353,7 +351,6 @@ export class CredentialsModule implements CredentialsModule {
     const outboundMessage = createOutboundMessage(connection, message)
 
     await this.messageSender.sendMessage(outboundMessage)
-    credentialRecord.protocolVersion = version
 
     return credentialRecord
   }

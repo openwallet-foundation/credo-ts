@@ -73,7 +73,7 @@ export class V2CredentialService extends CredentialService {
   private indyCredentialFormatService!: IndyCredentialFormatService
   private jsonldCredentialFormatService!: JsonLdCredentialFormatService
   private serviceFormatMap: {
-    Indy: IndyCredentialFormatService
+    indy: IndyCredentialFormatService
     jsonld: JsonLdCredentialFormatService
   }
 
@@ -152,14 +152,6 @@ export class V2CredentialService extends CredentialService {
       associatedRecordId: credentialRecord.id,
     })
 
-    for (const format of formats) {
-      const options: ServiceAcceptProposalOptions = {
-        credentialRecordId: credentialRecord.id,
-        credentialFormats: {},
-      }
-      options.proposalAttachment = format.getAttachment(proposalMessage.formats, proposalMessage.messageAttachment)
-      await format.processProposal(options, credentialRecord)
-    }
     return { credentialRecord, message: proposalMessage }
   }
 
