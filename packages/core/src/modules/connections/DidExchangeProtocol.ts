@@ -479,7 +479,7 @@ export class DidExchangeProtocol {
     const payload = JsonEncoder.toBuffer(json)
     const { isValid, signerVerkeys } = await this.jwsService.verifyJws({ jws, payload })
 
-    const didDocument = JsonTransformer.fromJSON(json, DidDocument, { validate: false })
+    const didDocument = JsonTransformer.fromJSON(json, DidDocument, { validate: true })
     const didDocumentKeysBase58 = didDocument.authentication
       ?.map((authentication) => {
         const verificationMethod =

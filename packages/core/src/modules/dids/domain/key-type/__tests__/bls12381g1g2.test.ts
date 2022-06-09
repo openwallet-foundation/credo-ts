@@ -71,7 +71,7 @@ describe('bls12381g1g2', () => {
     const verificationMethod = JsonTransformer.fromJSON(
       keyBls12381g1g2Fixture.verificationMethod[0],
       VerificationMethod,
-      { validate: false }
+      { validate: true }
     )
 
     expect(() => keyDidBls12381g1g2.getKeyFromVerificationMethod(verificationMethod)).toThrowError(

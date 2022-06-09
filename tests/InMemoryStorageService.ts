@@ -21,7 +21,7 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
   }
 
   private recordToInstance(record: StorageRecord, recordClass: BaseRecordConstructor<T>): T {
-    const instance = JsonTransformer.fromJSON<T>(record.value, recordClass, { validate: false })
+    const instance = JsonTransformer.fromJSON<T>(record.value, recordClass, { validate: true })
     instance.id = record.id
     instance.replaceTags(record.tags as TagsBase)
 

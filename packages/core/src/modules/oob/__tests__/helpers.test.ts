@@ -59,7 +59,7 @@ describe('convertToNewInvitation', () => {
         imageUrl: 'https://my-image.com',
       },
       ConnectionInvitationMessage,
-      { validate: false }
+      { validate: true }
     )
 
     expect(() => convertToNewInvitation(connectionInvitation)).toThrowError(
