@@ -57,10 +57,14 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
    *
    */
   public async createProposal(options: ProposeCredentialOptions): Promise<FormatServiceProposeAttachmentFormats> {
+    if (!options.credentialFormats.jsonld) {
+      throw new AriesFrameworkError('Missing proposal payload in create proposal json ld')
+    }
     const format = new CredentialFormatSpec({
       attachId: 'ld_proof',
       format: 'aries/ld-proof-vc-detail@v1.0',
     })
+    await MessageValidator.validate(options.credentialFormats.jsonld)
 
     const attachment: Attachment = this.getFormatData(options.credentialFormats.jsonld, format.attachId)
     return { format, attachment }
@@ -166,6 +170,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     if (!credOffer) {
       credOffer = options.offerAttachment.getDataAsJson<SignCredentialOptions>()
     }
+    await MessageValidator.validate(credOffer)
+
     const requestAttach: Attachment = this.getFormatData(credOffer, formats.attachId)
 
     return { format: formats, attachment: requestAttach }
