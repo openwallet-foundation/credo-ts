@@ -134,12 +134,16 @@ export class ValueTransferModule {
     return this.valueTransferService.getBalance()
   }
 
-  public async getById(recordId: string): Promise<ValueTransferRecord> {
-    return this.valueTransferService.getById(recordId)
+  public getAll(): Promise<ValueTransferRecord[]> {
+    return this.valueTransferService.getAll()
   }
 
   public async findAllByQuery(query: Partial<ValueTransferTags>) {
     return this.valueTransferService.findAllByQuery(query)
+  }
+
+  public async getById(recordId: string): Promise<ValueTransferRecord> {
+    return this.valueTransferService.getById(recordId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
