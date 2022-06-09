@@ -89,7 +89,7 @@ export interface FormatServiceRequestCredentialOptions extends ServiceRequestCre
       credDef: CredDef
     }
   }
-  jsonld?: W3cCredential
+  jsonld?: SignCredentialOptions
 }
 
 export interface FormatServiceOfferCredentialFormats {

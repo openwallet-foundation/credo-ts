@@ -126,8 +126,12 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
    * @param credentialRecord the credential record for the message exchange
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void> {
-    return Promise.resolve()
+  public async processOffer(attachment: Attachment, credentialRecord: CredentialExchangeRecord): Promise<void> {
+    const credOfferJson = attachment?.getDataAsJson<SignCredentialOptions>()
+    if (!credOfferJson) {
+      throw new AriesFrameworkError('Missing indy credential offer data payload')
+    }
+    await MessageValidator.validate(credOfferJson)
   }
 
   /**
@@ -157,10 +161,12 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     // Use offer attachment as the credential if present
     // otherwise use the credential format payload passed in the options object
 
-    const credOffer = options.offerAttachment.getDataAsJson<SignCredentialOptions>()
-    const attachment = credOffer ? credOffer : options.jsonld?.credentialSubject
+    let credOffer = options.jsonld
 
-    const requestAttach: Attachment = this.getFormatData(attachment, formats.attachId)
+    if (!credOffer) {
+      credOffer = options.offerAttachment.getDataAsJson<SignCredentialOptions>()
+    }
+    const requestAttach: Attachment = this.getFormatData(credOffer, formats.attachId)
 
     return { format: formats, attachment: requestAttach }
   }
