@@ -123,7 +123,7 @@ describe('OutOfBandInvitation', () => {
         ],
       }
 
-      // expect.assertions(1)
+      expect.assertions(1)
       try {
         await OutOfBandInvitation.fromJson(json)
       } catch (error) {

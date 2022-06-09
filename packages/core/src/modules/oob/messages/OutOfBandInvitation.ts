@@ -85,7 +85,7 @@ export class OutOfBandInvitation extends AgentMessage {
   }
 
   public static async fromJson(json: Record<string, unknown>) {
-    const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation, { validate: true })
+    const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation, { validate: false })
     await MessageValidator.validate(invitation)
     return invitation
   }

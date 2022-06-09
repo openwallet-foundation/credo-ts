@@ -2,6 +2,8 @@ import type { Validate } from 'class-validator'
 
 import { instanceToPlain, plainToInstance, instanceToInstance } from 'class-transformer'
 
+import { ClassValidationError } from '../error/ClassValidationError'
+
 import { MessageValidator } from './MessageValidator'
 
 interface Validate {
@@ -20,21 +22,21 @@ export class JsonTransformer {
     json: any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Class: { new (...args: any[]): T },
-    options: Validate = { validate: true }
+    { validate = true }: Validate = {}
   ): T {
-    if (!options.validate) {
-      return plainToInstance(Class, json, { exposeDefaultValues: true })
-    } else {
-      const plainInstance = plainToInstance(Class, json, { exposeDefaultValues: true })
-      //  validateSync is not happy with null/undefined. Return it to keep returning the same as previous versions without validation
-      if (plainInstance === undefined || plainInstance === null) {
-        return plainInstance
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      MessageValidator.validateSync(plainInstance, Class as any)
+    const instance = plainToInstance(Class, json, { exposeDefaultValues: true })
 
-      return plainInstance as T
+    // Skip validation
+    if (!validate) return instance
+
+    //  validateSync is not happy with null/undefined. Return it to keep returning the same as previous versions without validation
+    if (instance === undefined || instance === null) {
+      throw new ClassValidationError('Cannot validate instance being `${instance}`', { classType: typeof instance })
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    MessageValidator.validateSync(instance, Class as any)
+
+    return instance
   }
 
   public static clone<T>(classInstance: T): T {

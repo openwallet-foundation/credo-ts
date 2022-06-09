@@ -261,7 +261,6 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
           return
         }
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       throw new IndySdkError(error, `Searching '${type}' records for query '${JSON.stringify(query)}' failed`)
     }

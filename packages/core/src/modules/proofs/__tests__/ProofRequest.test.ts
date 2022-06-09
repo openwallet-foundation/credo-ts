@@ -69,5 +69,12 @@ describe('ProofRequest', () => {
     }
 
     expect(() => JsonTransformer.fromJSON(proofRequest, ProofRequest)).toThrowError(ClassValidationError)
+    let caughtError
+    try {
+      JsonTransformer.fromJSON(proofRequest, ProofRequest)
+    } catch (e) {
+      caughtError = e
+    }
+    expect(caughtError.validationErrors).toHaveLength(2)
   })
 })
