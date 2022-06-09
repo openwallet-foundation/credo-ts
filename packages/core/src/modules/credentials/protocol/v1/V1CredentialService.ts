@@ -22,6 +22,7 @@ import type { CredentialFormatService } from '../../formats/CredentialFormatServ
 import type { HandlerAutoAcceptOptions } from '../../formats/models/CredentialFormatServiceOptions'
 import type { CredOffer } from 'indy-sdk'
 
+import { off } from 'process'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
@@ -853,12 +854,10 @@ export class V1CredentialService extends CredentialService {
       )
     }
 
-    const { attachment: credentialsAttach } = await this.formatService.createCredential(
-      options,
-      record,
-      requestAttachment,
-      offerAttachment
-    )
+    options.requestAttachment = requestAttachment
+    options.offerAttachment = offerAttachment
+
+    const { attachment: credentialsAttach } = await this.formatService.createCredential(options, record)
     if (!credentialsAttach) {
       throw new AriesFrameworkError(`Failed to create attachment for request; credential record = ${record.id}`)
     }

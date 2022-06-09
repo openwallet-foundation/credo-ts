@@ -436,13 +436,9 @@ describe('Indy CredentialFormatService', () => {
       // given
 
       // when
-
-      const { format, attachment } = await indyFormatService.createCredential(
-        serviceOptions,
-        credentialRecord,
-        requestAttachment,
-        offerAttachment
-      )
+      serviceOptions.requestAttachment = requestAttachment
+      serviceOptions.offerAttachment = offerAttachment
+      const { format, attachment } = await indyFormatService.createCredential(serviceOptions, credentialRecord)
 
       expect(attachment).toMatchObject({
         id: 'libindy-cred-0',

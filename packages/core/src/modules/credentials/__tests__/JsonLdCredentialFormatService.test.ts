@@ -13,6 +13,8 @@ import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2
 import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
 import type { CredentialRepository } from '../repository/CredentialRepository'
 
+import { off } from 'process'
+
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
@@ -352,12 +354,9 @@ describe('JsonLd CredentialFormatService', () => {
 
       // when
 
-      const { format, attachment } = await jsonldFormatService.createCredential(
-        serviceOptions,
-        credentialRecord,
-        requestAttachment,
-        offerAttachment
-      )
+      serviceOptions.requestAttachment = requestAttachment
+      serviceOptions.offerAttachment = offerAttachment
+      const { format, attachment } = await jsonldFormatService.createCredential(serviceOptions, credentialRecord)
 
       //then
       expect(issuerSpy).toHaveBeenCalledTimes(1)

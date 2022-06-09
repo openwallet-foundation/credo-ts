@@ -366,9 +366,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   public async createCredential(
     options: ServiceAcceptRequestOptions,
-    record: CredentialExchangeRecord,
-    requestAttachment: Attachment,
-    offerAttachment?: Attachment
+    record: CredentialExchangeRecord
   ): Promise<FormatServiceCredentialAttachmentFormats> {
     // Assert credential attributes
     const credentialAttributes = record.credentialAttributes
@@ -379,8 +377,8 @@ export class IndyCredentialFormatService extends CredentialFormatService {
       )
     }
 
-    const credOffer = offerAttachment?.getDataAsJson<CredOffer>()
-    const credRequest = requestAttachment?.getDataAsJson<CredReq>()
+    const credOffer = options.offerAttachment?.getDataAsJson<CredOffer>()
+    const credRequest = options.requestAttachment?.getDataAsJson<CredReq>()
 
     if (!credOffer || !credRequest) {
       throw new AriesFrameworkError('Missing CredOffer or CredReq in createCredential')

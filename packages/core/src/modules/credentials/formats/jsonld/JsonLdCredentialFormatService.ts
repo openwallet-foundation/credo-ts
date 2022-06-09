@@ -189,10 +189,9 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
    */
   public async createCredential(
     options: ServiceAcceptRequestOptions,
-    record: CredentialExchangeRecord,
-    requestAttachment: Attachment
+    record: CredentialExchangeRecord
   ): Promise<FormatServiceCredentialAttachmentFormats> {
-    if (!requestAttachment || !requestAttachment?.data?.base64) {
+    if (!options.requestAttachment || !options.requestAttachment?.getDataAsJson()) {
       throw new AriesFrameworkError(
         `Missing request attachment from request message, credential record id = ${record.id}`
       )
@@ -207,7 +206,12 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
 
     // sign credential here. credential to be signed is received as the request attachment
     // (attachment in the request message from holder to issuer)
-    const credentialOptions = requestAttachment?.getDataAsJson<SignCredentialOptions>()
+    const credentialOptions = options.requestAttachment?.getDataAsJson<SignCredentialOptions>()
+
+    if (credentialOptions.credentialStatus) {
+      throw new AriesFrameworkError('Credential Status is not currently supported')
+    }
+
     const signCredentialOptions: SignCredentialOptions = {
       credential: JsonTransformer.fromJSON(credentialOptions.credential, W3cCredential),
       proofType: credentialOptions.proofType,

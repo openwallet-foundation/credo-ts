@@ -289,12 +289,9 @@ export class CredentialMessageBuilder {
 
       const offerAttachment = formatService.getAttachment(offerMessage.formats, offerMessage.messageAttachment)
 
-      const { format, attachment } = await formatService.createCredential(
-        serviceOptions,
-        record,
-        requestAttachment,
-        offerAttachment
-      )
+      serviceOptions.requestAttachment = requestAttachment
+      serviceOptions.offerAttachment = offerAttachment
+      const { format, attachment } = await formatService.createCredential(serviceOptions, record)
 
       formats.push(format)
       credentialAttachments.push(attachment)
