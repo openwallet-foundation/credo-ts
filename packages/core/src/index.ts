@@ -23,6 +23,7 @@ export type { Wallet } from './wallet/Wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
 
+import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid } from './utils/uuid'
 
 export * from './transport'
@@ -32,6 +33,7 @@ export * from './modules/proofs'
 export * from './modules/connections'
 export * from './modules/ledger'
 export * from './modules/routing'
+export * from './modules/question-answer'
 export * from './modules/oob'
 export * from './utils/JsonTransformer'
 export * from './logger'
@@ -43,6 +45,7 @@ export * from './agent/Events'
 
 const utils = {
   uuid,
+  parseInvitationUrl,
 }
 
 export { utils }
