@@ -1,6 +1,7 @@
 import type { IndyLedgerService } from '../../ledger'
 
 import { getAgentConfig } from '../../../../tests/helpers'
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { KeyType } from '../../../crypto'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer } from '../../../utils'
@@ -23,6 +24,7 @@ describe('peer dids', () => {
   let didRepository: DidRepository
   let didResolverService: DidResolverService
   let wallet: IndyWallet
+  let eventEmitter: EventEmitter
 
   beforeEach(async () => {
     wallet = new IndyWallet(config)
@@ -30,7 +32,8 @@ describe('peer dids', () => {
     await wallet.createAndOpen(config.walletConfig!)
 
     const storageService = new IndyStorageService<DidRecord>(wallet, config)
-    didRepository = new DidRepository(storageService)
+    eventEmitter = new EventEmitter(config)
+    didRepository = new DidRepository(storageService, eventEmitter)
 
     // Mocking IndyLedgerService as we're only interested in the did:peer resolver
     didResolverService = new DidResolverService(config, {} as unknown as IndyLedgerService, didRepository)
