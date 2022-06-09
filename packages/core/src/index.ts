@@ -41,6 +41,7 @@ export * from './logger'
 export * from './error'
 export * from './wallet/error'
 export { parseMessageType, IsValidMessageType } from './utils/messageType'
+export { filterByRecordType } from './utils/operators'
 
 export * from './agent/Events'
 
