@@ -69,31 +69,6 @@ export class MediationRecipientService {
     this.messageSender = messageSender
   }
 
-  public async requestStatus(
-    config: {
-      mediatorId?: string
-      recipientKey?: string
-    } = {}
-  ) {
-    let mediator
-    let mediatorRecord
-
-    if (config.mediatorId) {
-      const record = await this.getById(config.mediatorId)
-      mediator = await this.connectionService.findById(record.connectionId)
-    } else {
-      mediatorRecord = await this.findDefaultMediator()
-      if (mediatorRecord) mediator = await this.connectionService.getById(mediatorRecord.connectionId)
-    }
-
-    const { recipientKey } = config
-    const statusRequest = new StatusRequestMessage({
-      recipientKey,
-    })
-    if (!mediator) throw new AriesFrameworkError('Could not find mediator connection')
-    return this.messageSender.sendMessage(createOutboundMessage(mediator, statusRequest))
-  }
-
   public async createStatusRequest(
     mediationRecord: MediationRecord,
     config: {

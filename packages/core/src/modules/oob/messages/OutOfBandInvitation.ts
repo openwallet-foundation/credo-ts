@@ -98,7 +98,7 @@ export class OutOfBandInvitation extends AgentMessage {
       response = await fetch(invitationUrl, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
       })
     } catch (error) {
@@ -174,13 +174,7 @@ export class OutOfBandInvitation extends AgentMessage {
   public readonly goal?: string
 
   public readonly accept?: string[]
-  @Transform(
-    ({ value }) =>
-      value.map((protocol: string) => {
-        return replaceLegacyDidSovPrefix(protocol)
-      }),
-    { toClassOnly: true }
-  )
+  @Transform(({ value }) => value.map(replaceLegacyDidSovPrefix), { toClassOnly: true })
   @Expose({ name: 'handshake_protocols' })
   public handshakeProtocols?: HandshakeProtocol[]
 
