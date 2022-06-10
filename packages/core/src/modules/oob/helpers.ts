@@ -37,7 +37,7 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
 
 export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
   // Taking first service, as we can only include one service in a legacy invitation.
-  const [service] = newInvitation.services
+  const [service] = newInvitation.getServices()
 
   let options
   if (typeof service === 'string') {

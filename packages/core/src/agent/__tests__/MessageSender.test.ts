@@ -1,9 +1,8 @@
 import type { ConnectionRecord } from '../../modules/connections'
-import type { DidDocumentService } from '../../modules/dids'
+import type { DidDocumentService, ResolvedDidCommService } from '../../modules/dids'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
 import type { OutboundMessage, EncryptedMessage } from '../../types'
-import type { ResolvedDidCommService } from '../MessageSender'
 
 import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
@@ -12,6 +11,7 @@ import { KeyType } from '../../crypto'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { Key, DidDocument, VerificationMethod } from '../../modules/dids'
 import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Service'
+import { verkeyToInstanceOfKey } from '../../modules/dids/helpers'
 import { DidResolverService } from '../../modules/dids/services/DidResolverService'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
@@ -77,6 +77,7 @@ describe('MessageSender', () => {
 
   const didResolverService = new DidResolverServiceMock()
   const didResolverServiceResolveMock = mockFunction(didResolverService.resolveDidDocument)
+  const didResolverServiceResolveDidServicesMock = mockFunction(didResolverService.resolveServicesFromDid)
 
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
@@ -147,6 +148,10 @@ describe('MessageSender', () => {
         service: [firstDidCommService, secondDidCommService],
       })
       didResolverServiceResolveMock.mockResolvedValue(didDocumentInstance)
+      didResolverServiceResolveDidServicesMock.mockResolvedValue([
+        getMockResolvedDidService(firstDidCommService),
+        getMockResolvedDidService(secondDidCommService),
+      ])
     })
 
     afterEach(() => {
@@ -161,6 +166,7 @@ describe('MessageSender', () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
       didResolverServiceResolveMock.mockResolvedValue(getMockDidDocument({ service: [] }))
+      didResolverServiceResolveDidServicesMock.mockResolvedValue([])
 
       await expect(messageSender.sendMessage(outboundMessage)).rejects.toThrow(
         `Message is undeliverable to connection test-123 (Test 123)`
@@ -186,14 +192,14 @@ describe('MessageSender', () => {
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
     })
 
-    test("resolves the did document using the did resolver if connection.theirDid starts with 'did:'", async () => {
+    test("resolves the did service using the did resolver if connection.theirDid starts with 'did:'", async () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
       await messageSender.sendMessage(outboundMessage)
 
-      expect(didResolverServiceResolveMock).toHaveBeenCalledWith(connection.theirDid)
+      expect(didResolverServiceResolveDidServicesMock).toHaveBeenCalledWith(connection.theirDid)
       expect(sendMessageSpy).toHaveBeenCalledWith({
         connectionId: 'test-123',
         payload: encryptedMessage,
@@ -453,4 +459,13 @@ function getMockDidDocument({ service }: { service: DidDocumentService[] }) {
       }),
     ],
   })
+}
+
+function getMockResolvedDidService(service: DidDocumentService): ResolvedDidCommService {
+  return {
+    id: service.id,
+    serviceEndpoint: service.serviceEndpoint,
+    recipientKeys: [verkeyToInstanceOfKey('EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d')],
+    routingKeys: [],
+  }
 }

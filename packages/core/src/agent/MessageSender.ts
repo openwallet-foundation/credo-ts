@@ -1,5 +1,5 @@
 import type { ConnectionRecord } from '../modules/connections'
-import type { DidDocument, Key } from '../modules/dids'
+import type { DidDocument, Key, ResolvedDidCommService } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
@@ -11,10 +11,8 @@ import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
-import { keyReferenceToKey } from '../modules/dids'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
-import { DidCommV1Service, IndyAgentService } from '../modules/dids/domain/service'
-import { didKeyToInstanceOfKey, verkeyToInstanceOfKey } from '../modules/dids/helpers'
+import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { inject, injectable } from '../plugins'
 import { MessageRepository } from '../storage/MessageRepository'
@@ -23,13 +21,6 @@ import { getProtocolScheme } from '../utils/uri'
 
 import { EnvelopeService } from './EnvelopeService'
 import { TransportService } from './TransportService'
-
-export interface ResolvedDidCommService {
-  id: string
-  serviceEndpoint: string
-  recipientKeys: Key[]
-  routingKeys: Key[]
-}
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -342,49 +333,6 @@ export class MessageSender {
     throw new AriesFrameworkError(`Unable to send message to service: ${service.serviceEndpoint}`)
   }
 
-  private async retrieveServicesFromDid(did: string) {
-    this.logger.debug(`Resolving services for did ${did}.`)
-    const didDocument = await this.didResolverService.resolveDidDocument(did)
-
-    const didCommServices: ResolvedDidCommService[] = []
-
-    // FIXME: we currently retrieve did documents for all didcomm services in the did document, and we don't have caching
-    // yet so this will re-trigger ledger resolves for each one. Should we only resolve the first service, then the second service, etc...?
-    for (const didCommService of didDocument.didCommServices) {
-      if (didCommService instanceof IndyAgentService) {
-        // IndyAgentService (DidComm v0) has keys encoded as raw publicKeyBase58 (verkeys)
-        didCommServices.push({
-          id: didCommService.id,
-          recipientKeys: didCommService.recipientKeys.map(verkeyToInstanceOfKey),
-          routingKeys: didCommService.routingKeys?.map(verkeyToInstanceOfKey) || [],
-          serviceEndpoint: didCommService.serviceEndpoint,
-        })
-      } else if (didCommService instanceof DidCommV1Service) {
-        // Resolve dids to DIDDocs to retrieve routingKeys
-        const routingKeys = []
-        for (const routingKey of didCommService.routingKeys ?? []) {
-          const routingDidDocument = await this.didResolverService.resolveDidDocument(routingKey)
-          routingKeys.push(keyReferenceToKey(routingDidDocument, routingKey))
-        }
-
-        // Dereference recipientKeys
-        const recipientKeys = didCommService.recipientKeys.map((recipientKey) =>
-          keyReferenceToKey(didDocument, recipientKey)
-        )
-
-        // DidCommV1Service has keys encoded as key references
-        didCommServices.push({
-          id: didCommService.id,
-          recipientKeys,
-          routingKeys,
-          serviceEndpoint: didCommService.serviceEndpoint,
-        })
-      }
-    }
-
-    return didCommServices
-  }
-
   private async retrieveServicesByConnection(
     connection: ConnectionRecord,
     transportPriority?: TransportPriorityOptions,
@@ -399,14 +347,15 @@ export class MessageSender {
 
     if (connection.theirDid) {
       this.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
-      didCommServices = await this.retrieveServicesFromDid(connection.theirDid)
+      didCommServices = await this.didResolverService.resolveServicesFromDid(connection.theirDid)
     } else if (outOfBand) {
       this.logger.debug(`Resolving services from out-of-band record ${outOfBand?.id}.`)
       if (connection.isRequester) {
-        for (const service of outOfBand.outOfBandInvitation.services) {
+        for (const service of outOfBand.outOfBandInvitation.getServices()) {
           // Resolve dids to DIDDocs to retrieve services
           if (typeof service === 'string') {
-            didCommServices = await this.retrieveServicesFromDid(service)
+            this.logger.debug(`Resolving services for did ${service}.`)
+            didCommServices = await this.didResolverService.resolveServicesFromDid(service)
           } else {
             // Out of band inline service contains keys encoded as did:key references
             didCommServices.push({

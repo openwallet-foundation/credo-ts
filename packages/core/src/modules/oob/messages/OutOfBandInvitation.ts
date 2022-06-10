@@ -89,7 +89,7 @@ export class OutOfBandInvitation extends AgentMessage {
   }
 
   public get invitationDids() {
-    const dids = this.services.map((didOrService) => {
+    const dids = this.getServices().map((didOrService) => {
       if (typeof didOrService === 'string') {
         return didOrService
       }
@@ -100,11 +100,19 @@ export class OutOfBandInvitation extends AgentMessage {
 
   // TODO: this only takes into account inline didcomm services, won't work for public dids
   public getRecipientKeys(): Key[] {
-    return this.services
-      .filter((s): s is OutOfBandDidCommService => typeof s !== 'string' && !(s instanceof String))
+    return this.getServices()
+      .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
       .map((s) => s.recipientKeys)
       .reduce((acc, curr) => [...acc, ...curr], [])
       .map((didKey) => DidKey.fromDid(didKey).key)
+  }
+
+  // shorthand for services without the need to deal with the String DIDs
+  public getServices(): Array<OutOfBandDidCommService | string> {
+    return this.services.map((service) => {
+      if (service instanceof String) return service.toString()
+      return service
+    })
   }
 
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
@@ -141,7 +149,8 @@ export class OutOfBandInvitation extends AgentMessage {
   @OutOfBandServiceTransformer()
   @IsStringOrInstance(OutOfBandDidCommService, { each: true })
   @ValidateNested({ each: true })
-  public services!: Array<OutOfBandDidCommService | string>
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  private services!: Array<OutOfBandDidCommService | string | String>
 
   /**
    * Custom property. It is not part of the RFC.
@@ -152,13 +161,8 @@ export class OutOfBandInvitation extends AgentMessage {
 }
 
 /**
- * Decorator that transforms authentication json to corresponding class instances
- *
- * @example
- * class Example {
- *   VerificationMethodTransformer()
- *   private authentication: VerificationMethod
- * }
+ * Decorator that transforms services json to corresponding class instances
+ * @note Because of ValidateNested limitation, this produces instances of String for DID services except plain js string
  */
 function OutOfBandServiceTransformer() {
   return Transform(({ value, type }: { value: Array<string | { type: string }>; type: TransformationType }) => {

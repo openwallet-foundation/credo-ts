@@ -24,7 +24,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
 import { parseInvitationUrl, parseInvitationShortUrl } from '../../utils/parseInvitation'
-import { DidKey } from '../dids'
+import { DidKey, DidResolverService } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
 import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { RoutingService } from '../routing/services/RoutingService'
@@ -89,6 +89,7 @@ export class OutOfBandModule {
   private eventEmitter: EventEmitter
   private agentConfig: AgentConfig
   private logger: Logger
+  private didResolverService: DidResolverService
 
   public constructor(
     dispatcher: Dispatcher,
@@ -98,7 +99,8 @@ export class OutOfBandModule {
     connectionsModule: ConnectionsModule,
     didCommMessageRepository: DidCommMessageRepository,
     messageSender: MessageSender,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    didResolverService: DidResolverService
   ) {
     this.dispatcher = dispatcher
     this.agentConfig = agentConfig
@@ -109,6 +111,7 @@ export class OutOfBandModule {
     this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
+    this.didResolverService = didResolverService
     this.registerHandlers(dispatcher)
   }
 
@@ -403,7 +406,8 @@ export class OutOfBandModule {
 
     const { outOfBandInvitation } = outOfBandRecord
     const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, routing } = config
-    const { handshakeProtocols, services } = outOfBandInvitation
+    const { handshakeProtocols } = outOfBandInvitation
+    const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
 
     const existingConnection = await this.findExistingConnection(services)
@@ -583,13 +587,12 @@ export class OutOfBandModule {
 
     // TODO: for each did we should look for a connection with the invitation did OR a connection with theirDid that matches the service did
     for (const didOrService of services) {
-      // We need to check if the service is an instance of string because of limitations from class-validator
-      if (typeof didOrService === 'string' || didOrService instanceof String) {
-        // TODO await this.connectionsModule.findByTheirDid()
-        throw new AriesFrameworkError('Dids are not currently supported in out-of-band invitation services attribute.')
+      let did: string
+      if (typeof didOrService === 'string') {
+        did = didOrService
+      } else {
+        did = outOfBandServiceToNumAlgo2Did(didOrService)
       }
-
-      const did = outOfBandServiceToNumAlgo2Did(didOrService)
       const connections = await this.connectionsModule.findByInvitationDid(did)
       this.logger.debug(`Retrieved ${connections.length} connections for invitation did ${did}`)
 
@@ -644,19 +647,34 @@ export class OutOfBandModule {
 
     this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
+    let serviceEndpoint: string | undefined
+    let recipientKeys: string[] | undefined
+    let routingKeys: string[] = []
+
     // The framework currently supports only older OOB messages with `~service` decorator.
     // TODO: support receiving messages with other services so we don't have to transform the service
     // to ~service decorator
     const [service] = services
 
     if (typeof service === 'string') {
-      throw new AriesFrameworkError('Dids are not currently supported in out-of-band invitation services attribute.')
+      const didDocument = await this.didResolverService.resolveDidDocument(service)
+      const documentService = didDocument?.service?.[0]
+      serviceEndpoint = documentService?.serviceEndpoint
+      recipientKeys = didDocument?.recipientKeys?.map((key) => key.publicKeyBase58)
+    } else {
+      serviceEndpoint = service.serviceEndpoint
+      recipientKeys = service.recipientKeys.map(didKeyToVerkey)
+      routingKeys = service.routingKeys?.map(didKeyToVerkey) || []
+    }
+
+    if (!serviceEndpoint || !recipientKeys) {
+      throw new AriesFrameworkError('Service not found')
     }
 
     const serviceDecorator = new ServiceDecorator({
-      recipientKeys: service.recipientKeys.map(didKeyToVerkey),
-      routingKeys: service.routingKeys?.map(didKeyToVerkey) || [],
-      serviceEndpoint: service.serviceEndpoint,
+      recipientKeys,
+      routingKeys,
+      serviceEndpoint,
     })
 
     plaintextMessage['~service'] = JsonTransformer.toJSON(serviceDecorator)

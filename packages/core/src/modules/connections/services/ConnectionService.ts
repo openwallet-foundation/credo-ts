@@ -109,6 +109,19 @@ export class ConnectionService {
       didDoc,
     })
 
+    const { label, imageUrl } = config
+    const connectionRequest = new ConnectionRequestMessage({
+      label: label ?? this.config.label,
+      did: didDoc.id,
+      didDoc,
+      imageUrl: imageUrl ?? this.config.connectionImageUrl,
+    })
+
+    connectionRequest.setThread({
+      threadId: connectionRequest.id,
+      parentThreadId: outOfBandInvitation.id,
+    })
+
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
       role: DidExchangeRole.Requester,
@@ -121,22 +134,9 @@ export class ConnectionService {
       outOfBandId: outOfBandRecord.id,
       invitationDid,
       imageUrl: outOfBandInvitation.imageUrl,
+      threadId: connectionRequest.id,
     })
 
-    const { label, imageUrl, autoAcceptConnection } = config
-
-    const connectionRequest = new ConnectionRequestMessage({
-      label: label ?? this.config.label,
-      did: didDoc.id,
-      didDoc,
-      imageUrl: imageUrl ?? this.config.connectionImageUrl,
-    })
-
-    if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
-      connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
-    }
-
-    connectionRecord.threadId = connectionRequest.id
     await this.updateState(connectionRecord, DidExchangeState.RequestSent)
 
     return {
@@ -205,9 +205,9 @@ export class ConnectionService {
     const didDoc = routing
       ? this.createDidDoc(routing)
       : this.createDidDocFromOutOfBandDidCommServices(
-          outOfBandRecord.outOfBandInvitation.services.filter(
-            (s): s is OutOfBandDidCommService => typeof s !== 'string'
-          )
+          outOfBandRecord.outOfBandInvitation
+            .getServices()
+            .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
         )
 
     const { did: peerDid } = await this.createDid({
@@ -257,7 +257,7 @@ export class ConnectionService {
    */
   public async processResponse(
     messageContext: InboundMessageContext<ConnectionResponseMessage>,
-    outOfBandRecord: OutOfBandRecord
+    invitationRecipientKeys: Key[]
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionResponseMessage.type.messageTypeUri} start`, messageContext)
     const { connection: connectionRecord, message, recipientKey, senderKey } = messageContext
@@ -290,9 +290,7 @@ export class ConnectionService {
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
     // as the recipient key(s) in the connection invitation message
     const signerVerkey = message.connectionSig.signer
-
-    const invitationKey = Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58
-
+    const invitationKey = invitationRecipientKeys[0]?.publicKeyBase58
     if (signerVerkey !== invitationKey) {
       throw new ConnectionProblemReportError(
         `Connection object in connection response message is not signed with same key as recipient key in invitation expected='${invitationKey}' received='${signerVerkey}'`,

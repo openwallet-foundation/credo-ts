@@ -7,6 +7,7 @@ import type { ConnectionService } from '../services/ConnectionService'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../../error'
+import { Key } from '../../dids'
 import { ConnectionResponseMessage } from '../messages'
 
 export class ConnectionResponseHandler implements Handler {
@@ -66,8 +67,26 @@ export class ConnectionResponseHandler implements Handler {
     }
 
     messageContext.connection = connectionRecord
-    // The presence of outOfBandRecord is not mandatory when the old connection invitation is used
-    const connection = await this.connectionService.processResponse(messageContext, outOfBandRecord)
+
+    const invitationRecipientKeys = outOfBandRecord
+      .getTags()
+      .recipientKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint))
+    // for OOB public dids, recipientKeyFingerprints tag is empty, resolve services (and keys) from did
+    if (!invitationRecipientKeys.length) {
+      const publicDidServicesArray = await Promise.all(
+        outOfBandRecord.outOfBandInvitation
+          .getServices()
+          .filter((s): s is string => typeof s === 'string')
+          .map((serviceDid) => this.didResolverService.resolveServicesFromDid(serviceDid))
+      )
+      publicDidServicesArray.forEach((servicesArray) => {
+        servicesArray.forEach((service) => {
+          invitationRecipientKeys.push(...service.recipientKeys)
+        })
+      })
+    }
+
+    const connection = await this.connectionService.processResponse(messageContext, invitationRecipientKeys)
 
     // TODO: should we only send ping message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the ping. So for now we'll only do it
