@@ -27,7 +27,7 @@ export class JsonTransformer {
     const instance = plainToInstance(Class, json, { exposeDefaultValues: true })
 
     // Skip validation
-    if (!validate) return instance
+    if (!validate === true) return instance
 
     //  validateSync is not happy with null/undefined. Return it to keep returning the same as previous versions without validation
     if (instance === undefined || instance === null) {
@@ -56,8 +56,8 @@ export class JsonTransformer {
     jsonString: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Class: { new (...args: any[]): T },
-    options?: Validate
+    { validate = true }: Validate = {}
   ): T {
-    return this.fromJSON(JSON.parse(jsonString), Class, options)
+    return this.fromJSON(JSON.parse(jsonString), Class, { validate: validate })
   }
 }

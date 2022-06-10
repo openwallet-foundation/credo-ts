@@ -3,7 +3,7 @@ import type { ValidationError } from 'class-validator'
 import { AriesFrameworkError } from './AriesFrameworkError'
 
 export class ClassValidationError extends AriesFrameworkError {
-  public validationErrors?: ValidationError[] | undefined
+  public validationErrors: ValidationError[]
 
   public validationErrorsToString() {
     return this.validationErrors?.map((error) => error.toString(true)).join('\n') ?? ''
@@ -15,6 +15,6 @@ export class ClassValidationError extends AriesFrameworkError {
   ) {
     const validationErrorsStringified = validationErrors?.map((error) => error.toString()).join('\n')
     super(`${classType}: ${message}\n${validationErrorsStringified}`, { cause })
-    this.validationErrors = validationErrors
+    this.validationErrors = validationErrors ?? []
   }
 }

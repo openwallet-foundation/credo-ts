@@ -108,7 +108,7 @@ describe('ConnectionInvitationMessage', () => {
     it('should throw error if url does not contain `c_i` or `d_m`', () => {
       const invitationUrl = 'https://example.com?param=123'
 
-      expect(ConnectionInvitationMessage.fromUrl(invitationUrl)).rejects.toThrowError()
+      expect(() => ConnectionInvitationMessage.fromUrl(invitationUrl)).toThrowError()
     })
   })
 })

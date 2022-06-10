@@ -523,10 +523,13 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   private areProposalAndOfferDefinitionIdEqual(proposalAttachment?: Attachment, offerAttachment?: Attachment) {
     const credOffer = offerAttachment?.getDataAsJson<CredOffer>()
     let credPropose = proposalAttachment?.getDataAsJson<CredPropose>()
+    if (!credOffer || !credPropose) {
+      return false
+    }
     credPropose = JsonTransformer.fromJSON(credPropose, CredPropose, { validate: true })
 
-    const proposalCredentialDefinitionId = credPropose?.credentialDefinitionId
-    const offerCredentialDefinitionId = credOffer?.cred_def_id
+    const proposalCredentialDefinitionId = credPropose.credentialDefinitionId
+    const offerCredentialDefinitionId = credOffer.cred_def_id
     return proposalCredentialDefinitionId === offerCredentialDefinitionId
   }
 
@@ -571,7 +574,9 @@ export class IndyCredentialFormatService extends CredentialFormatService {
   ) {
     const indyCredentialRequest = requestAttachment?.getDataAsJson<CredReq>()
     let indyCredentialProposal = proposeAttachment?.getDataAsJson<CredPropose>()
-    indyCredentialProposal = JsonTransformer.fromJSON(indyCredentialProposal, CredPropose, { validate: true })
+    if (indyCredentialProposal) {
+      indyCredentialProposal = JsonTransformer.fromJSON(indyCredentialProposal, CredPropose, { validate: true })
+    }
 
     const indyCredentialOffer = offerAttachment?.getDataAsJson<CredOffer>()
 
