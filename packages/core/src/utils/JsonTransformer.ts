@@ -29,7 +29,6 @@ export class JsonTransformer {
     // Skip validation
     if (!validate === true) return instance
 
-    //  validateSync is not happy with null/undefined. Return it to keep returning the same as previous versions without validation
     if (instance === undefined || instance === null) {
       throw new ClassValidationError('Cannot validate instance of ', { classType: typeof instance })
     }
