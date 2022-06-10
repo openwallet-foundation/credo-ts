@@ -126,7 +126,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
 
     if (typeof encodedInvitation === 'string') {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
-      const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage, { validate: true })
+      const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
       return invitation
     } else {

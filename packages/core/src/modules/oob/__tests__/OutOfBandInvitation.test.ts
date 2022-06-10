@@ -1,5 +1,4 @@
 import type { ClassValidationError } from '../../../error/ClassValidationError'
-import type { ValidationError } from 'class-validator'
 
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -18,7 +17,7 @@ describe('OutOfBandInvitation', () => {
         goal: 'To issue a Faber College Graduate credential',
         handshake_protocols: ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0'],
       }
-      const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation, { validate: true })
+      const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation)
       const invitationUrl = invitation.toUrl({
         domain,
       })

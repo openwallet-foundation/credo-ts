@@ -892,7 +892,7 @@ export class ProofService {
    *
    */
   public async verifyProof(proofJson: IndyProof, proofRequest: ProofRequest): Promise<boolean> {
-    const proof = JsonTransformer.fromJSON(proofJson, PartialProof, { validate: true })
+    const proof = JsonTransformer.fromJSON(proofJson, PartialProof)
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
       if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
@@ -1001,7 +1001,7 @@ export class ProofService {
           return c.credentialInfo
         }
         const credentialInfo = await this.indyHolderService.getCredential(c.credentialId)
-        return JsonTransformer.fromJSON(credentialInfo, IndyCredentialInfo, { validate: true })
+        return JsonTransformer.fromJSON(credentialInfo, IndyCredentialInfo)
       })
     )
 
@@ -1027,7 +1027,7 @@ export class ProofService {
       attributeReferent,
     })
 
-    return JsonTransformer.fromJSON(credentialsJson, Credential, { validate: true }) as unknown as Credential[]
+    return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
   }
 
   private async getRevocationStatusForRequestedItem({

@@ -114,7 +114,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (!credProposalJson) {
       throw new AriesFrameworkError('Missing indy credential proposal data payload')
     }
-    const credProposal = JsonTransformer.fromJSON(credProposalJson, CredPropose, { validate: true })
+    const credProposal = JsonTransformer.fromJSON(credProposalJson, CredPropose)
     await MessageValidator.validate(credProposal)
 
     if (credProposal.credentialDefinitionId) {
@@ -526,7 +526,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     if (!credOffer || !credPropose) {
       return false
     }
-    credPropose = JsonTransformer.fromJSON(credPropose, CredPropose, { validate: true })
+    credPropose = JsonTransformer.fromJSON(credPropose, CredPropose)
 
     const proposalCredentialDefinitionId = credPropose.credentialDefinitionId
     const offerCredentialDefinitionId = credOffer.cred_def_id
@@ -575,7 +575,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     const indyCredentialRequest = requestAttachment?.getDataAsJson<CredReq>()
     let indyCredentialProposal = proposeAttachment?.getDataAsJson<CredPropose>()
     if (indyCredentialProposal) {
-      indyCredentialProposal = JsonTransformer.fromJSON(indyCredentialProposal, CredPropose, { validate: true })
+      indyCredentialProposal = JsonTransformer.fromJSON(indyCredentialProposal, CredPropose)
     }
 
     const indyCredentialOffer = offerAttachment?.getDataAsJson<CredOffer>()

@@ -96,6 +96,6 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
       throw new AriesFrameworkError('Provided message class type does not match type of stored message')
     }
 
-    return JsonTransformer.fromJSON(this.message, messageClass, { validate: true }) as InstanceType<MessageClass>
+    return JsonTransformer.fromJSON(this.message, messageClass) as InstanceType<MessageClass>
   }
 }

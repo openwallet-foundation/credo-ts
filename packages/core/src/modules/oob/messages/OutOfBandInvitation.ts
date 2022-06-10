@@ -84,7 +84,7 @@ export class OutOfBandInvitation extends AgentMessage {
   }
 
   public static fromJson(json: Record<string, unknown>) {
-    return JsonTransformer.fromJSON(json, OutOfBandInvitation, { validate: true })
+    return JsonTransformer.fromJSON(json, OutOfBandInvitation)
   }
 
   public get invitationDids() {
@@ -164,7 +164,7 @@ function OutOfBandServiceTransformer() {
         if (typeof service === 'string') return new String(service)
 
         // inline didcomm service
-        return JsonTransformer.fromJSON(service, OutOfBandDidCommService, { validate: true })
+        return JsonTransformer.fromJSON(service, OutOfBandDidCommService)
       })
     } else if (type === TransformationType.CLASS_TO_PLAIN) {
       return value.map((service) =>

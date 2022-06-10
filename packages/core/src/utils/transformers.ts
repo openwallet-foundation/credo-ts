@@ -34,7 +34,7 @@ export function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
         return Object.entries(value).reduce(
           (accumulator, [key, attribute]) => ({
             ...accumulator,
-            [key]: JsonTransformer.fromJSON(attribute, Class, { validate: true }),
+            [key]: JsonTransformer.fromJSON(attribute, Class),
           }),
           {}
         )

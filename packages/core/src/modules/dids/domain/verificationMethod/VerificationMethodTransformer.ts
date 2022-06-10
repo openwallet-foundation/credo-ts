@@ -45,7 +45,7 @@ function VerificationMethodTransformer() {
         }
 
         // embedded verification method
-        return JsonTransformer.fromJSON(auth, VerificationMethod, { validate: true })
+        return JsonTransformer.fromJSON(auth, VerificationMethod)
       })
     } else if (type === TransformationType.CLASS_TO_PLAIN) {
       return value?.map((auth) => (typeof auth === 'string' ? auth : JsonTransformer.toJSON(auth)))
