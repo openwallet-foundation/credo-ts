@@ -134,6 +134,26 @@ export class ValueTransferModule {
     return this.valueTransferService.getBalance()
   }
 
+  /**
+   * Try to abort value transfer protocol
+   *
+   * @returns void
+   */
+  public async abortTransaction(recordId: string): Promise<{
+    record: ValueTransferRecord
+    message: ProblemReportMessage | undefined
+  }> {
+    // Get Value Transfer record
+    const record = await this.valueTransferService.getById(recordId)
+
+    // Abort transaction
+    const { message } = await this.valueTransferService.abortTransaction(record)
+    // Send Payment Request Acceptance to Witness
+    if (message) await this.valueTransferService.sendMessageToWitness(message)
+
+    return { record, message }
+  }
+
   public getAll(): Promise<ValueTransferRecord[]> {
     return this.valueTransferService.getAll()
   }

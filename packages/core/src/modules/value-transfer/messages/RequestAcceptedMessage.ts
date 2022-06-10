@@ -11,7 +11,7 @@ export class RequestAcceptedMessage extends ValueTransferBaseMessage {
 
   @Equals(RequestAcceptedMessage.type)
   public readonly type = RequestAcceptedMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/request-accepted'
+  public static readonly type = 'https://didcomm.org/vtp/1.0/step-5'
 
   @IsString()
   public thid!: string

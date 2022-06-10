@@ -171,6 +171,40 @@ export class ValueTransferService {
     return { record }
   }
 
+  public async abortTransaction(record: ValueTransferRecord): Promise<{
+    record: ValueTransferRecord
+    message?: ProblemReportMessage
+  }> {
+    if (record.role === ValueTransferRole.Witness) {
+      // TODO: discuss weather Witness can abort transaction
+      return { record }
+    }
+
+    let from = undefined
+
+    if (record.role === ValueTransferRole.Giver) {
+      await this.valueTransfer.giver().abortTransaction()
+      from = record.giverDid
+    } else if (record.role === ValueTransferRole.Getter) {
+      await this.valueTransfer.getter().abortTransaction()
+      from = record.getterDid
+    }
+
+    const problemReport = new ProblemReportMessage({
+      from,
+      to: record.witnessDid,
+      pthid: record.threadId,
+      body: {
+        code: 'e.p.transaction-aborted',
+        comment: `Transaction aborted by ${from}`,
+      },
+    })
+
+    record.problemReportMessage = problemReport
+    await this.updateState(record, ValueTransferState.Failed)
+    return { record, message: problemReport }
+  }
+
   public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {
     const isCompleted = (record: ValueTransferRecord) => {
       return (
