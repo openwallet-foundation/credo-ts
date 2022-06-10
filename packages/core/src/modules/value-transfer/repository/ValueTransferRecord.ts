@@ -30,6 +30,7 @@ export interface ValueTransferStorageProps {
   getter: string
   giver?: string
   witness?: string
+  amount: number
   valueTransferMessage: ValueTransferMessage
   problemReportMessage?: ProblemReportMessage
   receipt?: ValueTransferMessage
@@ -41,6 +42,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   public witnessDid?: string
   public getterDid?: string
   public giverDid?: string
+  public amount?: number
 
   public threadId!: string
 
@@ -70,6 +72,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       this.createdAt = props.createdAt ?? new Date()
       this.witnessDid = props.witness
       this.getterDid = props.getter
+      this.amount = props.amount
       this.giverDid = props.giver
       this.threadId = props.threadId
       this.role = props.role

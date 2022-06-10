@@ -175,6 +175,7 @@ export class ValueTransferWitnessService {
       getter: valueTransferMessage.getterId,
       giver: giverDid,
       witness: state.publicDid,
+      amount: valueTransferMessage.amount,
     })
 
     await this.valueTransferRepository.save(record)

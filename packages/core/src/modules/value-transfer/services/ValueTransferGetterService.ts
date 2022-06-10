@@ -116,6 +116,7 @@ export class ValueTransferGetterService {
       getter: getter,
       witness: witness,
       giver: giver,
+      amount: amount,
     })
 
     await this.valueTransferRepository.save(record)

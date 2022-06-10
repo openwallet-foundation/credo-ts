@@ -11,7 +11,7 @@ export class RequestWitnessedMessage extends ValueTransferBaseMessage {
 
   @Equals(RequestWitnessedMessage.type)
   public readonly type = RequestWitnessedMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/payment-request-witnessed'
+  public static readonly type = 'https://didcomm.org/vtp/1.0/step-3'
 
   @IsString()
   public thid!: string

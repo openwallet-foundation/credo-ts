@@ -11,7 +11,7 @@ export class GiverReceiptMessage extends ValueTransferBaseMessage {
 
   @Equals(GiverReceiptMessage.type)
   public readonly type = GiverReceiptMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/giver-receipt'
+  public static readonly type = 'https://didcomm.org/vtp/1.0/step-15'
 
   @IsString()
   public thid!: string

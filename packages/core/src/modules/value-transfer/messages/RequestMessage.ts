@@ -11,5 +11,5 @@ export class RequestMessage extends ValueTransferBaseMessage {
 
   @Equals(RequestMessage.type)
   public readonly type = RequestMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/payment-request'
+  public static readonly type = 'https://didcomm.org/vtp/1.0/step-1'
 }

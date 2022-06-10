@@ -11,7 +11,7 @@ export class CashAcceptedMessage extends ValueTransferBaseMessage {
 
   @Equals(CashAcceptedMessage.type)
   public readonly type = CashAcceptedMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/cash-accepted'
+  public static readonly type = 'https://didcomm.org/vtp/1.0/step-9'
 
   @IsString()
   public thid!: string
