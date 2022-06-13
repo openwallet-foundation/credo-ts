@@ -83,7 +83,11 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     }
   })
 
-  it(`should correctly update the metadata in credential records`, async () => {
+  it(`should correctly update credential records and create didcomm records`, async () => {
+    // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
+    let uuidCounter = 1
+    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+
     const aliceCredentialRecordsString = readFileSync(
       path.join(__dirname, '__fixtures__/alice-4-credentials-0.1.json'),
       'utf8'
@@ -136,9 +140,15 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
 
     await agent.shutdown()
     await agent.wallet.delete()
+
+    uuidSpy.mockReset()
   })
 
-  it(`should correctly update the metadata in credential records with auto update`, async () => {
+  it(`should correctly update the credential records and create didcomm records with auto update`, async () => {
+    // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
+    let uuidCounter = 1
+    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+
     const aliceCredentialRecordsString = readFileSync(
       path.join(__dirname, '__fixtures__/alice-4-credentials-0.1.json'),
       'utf8'
@@ -179,6 +189,8 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
 
     await agent.shutdown()
     await agent.wallet.delete()
+
+    uuidSpy.mockReset()
   })
 
   it(`should correctly update the connection record and create the did and oob records`, async () => {

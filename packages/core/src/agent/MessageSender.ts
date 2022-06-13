@@ -337,9 +337,10 @@ export class MessageSender {
         this.logger.warn('Service does not have valid protocolScheme.')
       } else if (transport.supportedSchemes.includes(protocolScheme)) {
         await transport.sendMessage(outboundPackage)
-        break
+        return
       }
     }
+    throw new AriesFrameworkError(`Unable to send message to service: ${service.serviceEndpoint}`)
   }
 
   private async retrieveServicesFromDid(did: string) {
