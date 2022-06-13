@@ -1,5 +1,5 @@
 import type { Logger } from '../../../logger'
-import type { AcceptanceMechanisms, AuthorAgreement, IndyPool } from '../IndyPool'
+import type { AcceptanceMechanisms, AuthorAgreement, IndyPool, TransactionAuthorAgreement } from '../IndyPool'
 import type {
   default as Indy,
   CredDef,
@@ -419,10 +419,11 @@ export class IndyLedgerService {
   private async submitWriteRequest(
     pool: IndyPool,
     request: LedgerRequest,
-    signDid: string
+    signDid: string,
+    taa?: TransactionAuthorAgreement
   ): Promise<LedgerWriteReplyResponse> {
     try {
-      const requestWithTaa = await this.appendTaa(pool, request)
+      const requestWithTaa = await this.appendTaa(pool, request, taa)
       const signedRequestWithTaa = await this.signRequest(signDid, requestWithTaa)
 
       const response = await pool.submitWriteRequest(signedRequestWithTaa)
@@ -451,7 +452,7 @@ export class IndyLedgerService {
     }
   }
 
-  private async appendTaa(pool: IndyPool, request: Indy.LedgerRequest) {
+  private async appendTaa(pool: IndyPool, request: Indy.LedgerRequest, taa?: TransactionAuthorAgreement) {
     try {
       const authorAgreement = await this.getTransactionAuthorAgreement(pool)
 
@@ -459,13 +460,26 @@ export class IndyLedgerService {
       if (authorAgreement == null) {
         return request
       }
+      // Ledger has taa but user has not specified which one to use
+      if (!taa) {
+        throw new Error('Please, specify a transaction author agreement with version and acceptance mechanism.')
+      }
+      // Throw an error if the pool doesn't have the specified version and acceptance mechanism
+      if (
+        authorAgreement.acceptanceMechanisms.version !== taa.version ||
+        !(taa.acceptanceMechanism in authorAgreement.acceptanceMechanisms.aml)
+      ) {
+        throw new Error(
+          `Unable to satisfy matching TAA with mechanism ${taa.acceptanceMechanism} and version ${taa.version} in pool.`
+        )
+      }
 
       const requestWithTaa = await this.indy.appendTxnAuthorAgreementAcceptanceToRequest(
         request,
         authorAgreement.text,
-        authorAgreement.version,
+        taa.version,
         authorAgreement.digest,
-        this.getFirstAcceptanceMechanism(authorAgreement),
+        taa.acceptanceMechanism,
         // Current time since epoch
         // We can't use ratification_ts, as it must be greater than 1499906902
         Math.floor(new Date().getTime() / 1000)
