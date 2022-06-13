@@ -21,19 +21,19 @@ export class JsonTransformer {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     json: any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Class: { new (...args: any[]): T },
+    cls: { new (...args: any[]): T },
     { validate = true }: Validate = {}
   ): T {
-    const instance = plainToInstance(Class, json, { exposeDefaultValues: true })
+    const instance = plainToInstance(cls, json, { exposeDefaultValues: true })
 
     // Skip validation
-    if (!validate === true) return instance
+    if (!validate) return instance
 
-    if (instance === undefined || instance === null) {
-      throw new ClassValidationError('Cannot validate instance of ', { classType: typeof instance })
+    if (!instance) {
+      throw new ClassValidationError('Cannot validate instance of ', { classType: Object.getPrototypeOf(cls).name })
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    MessageValidator.validateSync(instance, Class as any)
+    MessageValidator.validateSync(instance, cls as any)
 
     return instance
   }
@@ -54,9 +54,9 @@ export class JsonTransformer {
   public static deserialize<T>(
     jsonString: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Class: { new (...args: any[]): T },
+    cls: { new (...args: any[]): T },
     { validate = true }: Validate = {}
   ): T {
-    return this.fromJSON(JSON.parse(jsonString), Class, { validate: validate })
+    return this.fromJSON(JSON.parse(jsonString), cls, { validate })
   }
 }

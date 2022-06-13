@@ -32,50 +32,45 @@ describe('Decorators | AckDecoratorExtension', () => {
           '@id': undefined,
           '@type': undefined,
         },
-        TestMessage,
-        {
-          validate: true,
-        }
+        TestMessage
       )
 
     expect(() => transformed()).toThrow(ClassValidationError)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let caughtError: any
     try {
       transformed()
     } catch (e) {
-      caughtError = e
+      const caughtError = e as ClassValidationError
+      expect(caughtError.message).toEqual(
+        'AckDecoratorExtension: Failed to validate class.\nAn instance of TestMessage has failed the validation:\n - property id has failed the following constraints: matches \n\nAn instance of TestMessage has failed the validation:\n - property type has failed the following constraints: matches \n'
+      )
+      expect(caughtError.validationErrors).toMatchObject([
+        {
+          children: [],
+          constraints: {
+            matches: 'id must match /[-_./a-zA-Z0-9]{8,64}/ regular expression',
+          },
+          property: 'id',
+          target: {
+            pleaseAck: {
+              on: ['RECEIPT'],
+            },
+          },
+          value: undefined,
+        },
+        {
+          children: [],
+          constraints: {
+            matches: 'type must match /(.*?)([a-zA-Z0-9._-]+)\\/(\\d[^/]*)\\/([a-zA-Z0-9._-]+)$/ regular expression',
+          },
+          property: 'type',
+          target: {
+            pleaseAck: {
+              on: ['RECEIPT'],
+            },
+          },
+          value: undefined,
+        },
+      ])
     }
-    expect(caughtError.message.includes('An instance of TestMessage has failed the validation')).toBeTruthy()
-    expect(caughtError.message.includes('property id has failed the following constraints: matches')).toBeTruthy()
-    expect(caughtError.message.includes('- property type has failed the following constraints: matches')).toBeTruthy()
-    expect(caughtError.validationErrors).toMatchObject([
-      {
-        children: [],
-        constraints: {
-          matches: 'id must match /[-_./a-zA-Z0-9]{8,64}/ regular expression',
-        },
-        property: 'id',
-        target: {
-          pleaseAck: {
-            on: ['RECEIPT'],
-          },
-        },
-        value: undefined,
-      },
-      {
-        children: [],
-        constraints: {
-          matches: 'type must match /(.*?)([a-zA-Z0-9._-]+)\\/(\\d[^/]*)\\/([a-zA-Z0-9._-]+)$/ regular expression',
-        },
-        property: 'type',
-        target: {
-          pleaseAck: {
-            on: ['RECEIPT'],
-          },
-        },
-        value: undefined,
-      },
-    ])
   })
 })

@@ -16,7 +16,7 @@ export class ClassValidationError extends AriesFrameworkError {
     const validationErrorsStringified = validationErrors?.map((error) => error.toString()).join('\n')
     super(
       `${classType}: ${message}
-    ${validationErrorsStringified}`,
+${validationErrorsStringified}`,
       { cause }
     )
     this.validationErrors = validationErrors ?? []

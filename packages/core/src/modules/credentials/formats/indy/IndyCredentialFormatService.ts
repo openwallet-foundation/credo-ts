@@ -528,9 +528,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
     }
     credPropose = JsonTransformer.fromJSON(credPropose, CredPropose)
 
-    const proposalCredentialDefinitionId = credPropose.credentialDefinitionId
-    const offerCredentialDefinitionId = credOffer.cred_def_id
-    return proposalCredentialDefinitionId === offerCredentialDefinitionId
+    return credPropose.credentialDefinitionId === credOffer.cred_def_id
   }
 
   private areCredentialValuesValid(credentialRecord: CredentialExchangeRecord, credentialAttachment: Attachment) {

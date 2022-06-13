@@ -700,9 +700,7 @@ export class ProofService {
       //Get credentialInfo
       if (!requestedAttribute.credentialInfo) {
         const indyCredentialInfo = await this.indyHolderService.getCredential(requestedAttribute.credentialId)
-        requestedAttribute.credentialInfo = JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo, {
-          validate: true,
-        })
+        requestedAttribute.credentialInfo = JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo)
       }
 
       // Find the attributes that have a hashlink as a value

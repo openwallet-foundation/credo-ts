@@ -43,7 +43,7 @@ describe('AgentMessage', () => {
 
       const message = JsonTransformer.fromJSON(json, CustomProtocolMessage)
 
-      await expect(message).toBeInstanceOf(CustomProtocolMessage)
+      expect(message).toBeInstanceOf(CustomProtocolMessage)
     })
 
     it('successfully validates if the message type minor version is higher than the supported message type', () => {
@@ -57,42 +57,42 @@ describe('AgentMessage', () => {
       expect(message).toBeInstanceOf(CustomProtocolMessage)
     })
 
-    it('throws a validation error if the message type major version differs from the supported message type', async () => {
+    it('throws a validation error if the message type major version differs from the supported message type', () => {
       const json = {
         '@id': 'd61c7e3d-d4af-469b-8d42-33fd14262e17',
         '@type': 'https://didcomm.org/fake-protocol/2.0/message',
       }
 
       expect(() => JsonTransformer.fromJSON(json, CustomProtocolMessage)).toThrowError(ClassValidationError)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let thrownError: any
       try {
         JsonTransformer.fromJSON(json, CustomProtocolMessage)
-      } catch (e) {
-        thrownError = e
+      } catch (error) {
+        const thrownError = error as ClassValidationError
+        expect(thrownError.message).toEqual(
+          'AgentMessage: Failed to validate class.\nAn instance of CustomProtocolMessage has failed the validation:\n - property type has failed the following constraints: isValidMessageType \n'
+        )
+        expect(thrownError.validationErrors).toMatchObject([
+          {
+            target: {
+              appendedAttachments: undefined,
+              id: 'd61c7e3d-d4af-469b-8d42-33fd14262e17',
+              l10n: undefined,
+              pleaseAck: undefined,
+              service: undefined,
+              thread: undefined,
+              timing: undefined,
+              transport: undefined,
+              type: 'https://didcomm.org/fake-protocol/2.0/message',
+            },
+            value: 'https://didcomm.org/fake-protocol/2.0/message',
+            property: 'type',
+            children: [],
+            constraints: {
+              isValidMessageType: 'type does not match the expected message type (only minor version may be lower)',
+            },
+          },
+        ])
       }
-      expect(thrownError.message).toContain('Failed to validate class.')
-      expect(thrownError.validationErrors).toMatchObject([
-        {
-          target: {
-            appendedAttachments: undefined,
-            id: 'd61c7e3d-d4af-469b-8d42-33fd14262e17',
-            l10n: undefined,
-            pleaseAck: undefined,
-            service: undefined,
-            thread: undefined,
-            timing: undefined,
-            transport: undefined,
-            type: 'https://didcomm.org/fake-protocol/2.0/message',
-          },
-          value: 'https://didcomm.org/fake-protocol/2.0/message',
-          property: 'type',
-          children: [],
-          constraints: {
-            isValidMessageType: 'type does not match the expected message type (only minor version may be lower)',
-          },
-        },
-      ])
     })
   })
 })
