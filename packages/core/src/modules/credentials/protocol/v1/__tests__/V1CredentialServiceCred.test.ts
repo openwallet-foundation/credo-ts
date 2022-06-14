@@ -19,7 +19,6 @@ import { uuid } from '../../../../../utils/uuid'
 import { AckStatus } from '../../../../common'
 import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
-import { IndyLedgerService } from '../../../../ledger/services/IndyLedgerService'
 import { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { credDef, credReq } from '../../../__tests__/fixtures'
@@ -46,7 +45,6 @@ import {
 
 // Mock classes
 jest.mock('../../../repository/CredentialRepository')
-jest.mock('../../../../ledger/services/IndyLedgerService')
 jest.mock('../../../formats/indy/IndyCredentialFormatService')
 jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
 jest.mock('../../../../routing/services/MediationRecipientService')
@@ -55,7 +53,6 @@ jest.mock('../../../../../agent/Dispatcher')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
-const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyCredentialFormatServiceMock = IndyCredentialFormatService as jest.Mock<IndyCredentialFormatService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
@@ -65,7 +62,6 @@ const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 const mediationRecipientService = new MediationRecipientServiceMock()
-const indyLedgerService = new IndyLedgerServiceMock()
 const indyCredentialFormatService = new IndyCredentialFormatServiceMock()
 const dispatcher = new DispatcherMock()
 const connectionService = new ConnectionServiceMock()
@@ -129,6 +125,7 @@ const credentialIssueMessage = new V1IssueCredentialMessage({
   credentialAttachments: [offerAttachment],
 })
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getAgentMessageMock = async (options: GetAgentMessageOptions<any>) => {
   if (options.messageClass === V1ProposeCredentialMessage) {
     return credentialProposalMessage

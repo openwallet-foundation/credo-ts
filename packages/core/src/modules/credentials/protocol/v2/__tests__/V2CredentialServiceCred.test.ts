@@ -151,6 +151,7 @@ const credentialIssueMessage = new V2IssueCredentialMessage({
 })
 credentialIssueMessage.setThread({ threadId: 'somethreadid' })
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getAgentMessageMock = async (options: GetAgentMessageOptions<any>) => {
   if (options.messageClass === V2ProposeCredentialMessage) {
     return credentialProposalMessage
@@ -685,8 +686,6 @@ describe('CredentialService', () => {
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.OfferReceived,
       })
-
-      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
 
       // given
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialRecord)

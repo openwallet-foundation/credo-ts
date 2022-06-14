@@ -3,7 +3,7 @@ import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { CreateOfferOptions, CreateProposalOptions } from '../../../CredentialServiceOptions'
 import type { IndyCredentialFormat } from '../../../formats/indy/IndyCredentialFormat'
 
-import { getAgentConfig, getBaseConfig, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
+import { getAgentConfig, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
@@ -63,11 +63,6 @@ const connection = getMockConnection({
 const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
-})
-
-const badCredentialPreview = V1CredentialPreview.fromRecord({
-  test: 'credential',
-  error: 'yes',
 })
 
 const offerAttachment = new Attachment({

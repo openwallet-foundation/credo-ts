@@ -2,9 +2,7 @@ import type { Agent } from '../../../../agent/Agent'
 import type { CredentialMetadata, CredentialExchangeRecord } from '../../../../modules/credentials'
 import type { JsonObject } from '../../../../types'
 
-import { CredentialProtocolVersion } from '../../../../modules/credentials/CredentialProtocolVersion'
-import { CredentialState } from '../../../../modules/credentials/CredentialState'
-import { CredentialFormatType } from '../../../../modules/credentials/CredentialsModuleOptions'
+import { CredentialState } from '../../../../modules/credentials/models/CredentialState'
 import { CredentialMetadataKeys } from '../../../../modules/credentials/repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../../../../modules/credentials/repository/CredentialRepository'
 import { Metadata } from '../../../Metadata'
@@ -184,8 +182,8 @@ export async function migrateInternalCredentialRecordProperties(
   )
 
   if (!credentialRecord.protocolVersion) {
-    agent.config.logger.debug(`Setting protocolVersion to ${CredentialProtocolVersion.V1}`)
-    credentialRecord.protocolVersion = CredentialProtocolVersion.V1
+    agent.config.logger.debug(`Setting protocolVersion to v1`)
+    credentialRecord.protocolVersion = 'v1'
   }
 
   const untypedCredentialRecord = credentialRecord as unknown as JsonObject
@@ -195,7 +193,7 @@ export async function migrateInternalCredentialRecordProperties(
     credentialRecord.credentials = [
       {
         credentialRecordId: untypedCredentialRecord.credentialId as string,
-        credentialRecordType: CredentialFormatType.Indy,
+        credentialRecordType: 'indy',
       },
     ]
 
