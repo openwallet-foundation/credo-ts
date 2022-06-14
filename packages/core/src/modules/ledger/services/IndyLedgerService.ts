@@ -22,6 +22,7 @@ import {
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
+import { LedgerError } from '../error/LedgerError'
 
 import { IndyPoolService } from './IndyPoolService'
 
@@ -462,7 +463,7 @@ export class IndyLedgerService {
       }
       // Ledger has taa but user has not specified which one to use
       if (!taa) {
-        throw new Error(
+        throw new LedgerError(
           `Please, specify a transaction author agreement with version and acceptance mechanism. ${JSON.stringify(
             authorAgreement
           )}`
@@ -478,9 +479,9 @@ export class IndyLedgerService {
         const errMessage = `Unable to satisfy matching TAA with mechanism ${JSON.stringify(
           taa.acceptanceMechanism
         )} and version ${JSON.stringify(taa.version)} in pool.\n Found ${JSON.stringify(
-          authorAgreement.acceptanceMechanisms.aml
-        )}`
-        throw new Error(errMessage)
+          Object.keys(authorAgreement.acceptanceMechanisms.aml)
+        )} and version ${authorAgreement.acceptanceMechanisms.version} in pool.`
+        throw new LedgerError(errMessage)
       }
 
       const requestWithTaa = await this.indy.appendTxnAuthorAgreementAcceptanceToRequest(
