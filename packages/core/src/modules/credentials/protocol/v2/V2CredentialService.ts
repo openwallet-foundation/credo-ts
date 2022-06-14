@@ -841,13 +841,13 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
 
     // not all formats use the proposal and preview, we only check if they're present on
     // either or both of the messages
-    if (proposalMessage.credentialProposal || offerMessage.credentialPreview) {
+    if (proposalMessage.credentialPreview || offerMessage.credentialPreview) {
       // if one of the message doesn't have a preview, we should not auto accept
-      if (!proposalMessage.credentialProposal || !offerMessage.credentialPreview) return false
+      if (!proposalMessage.credentialPreview || !offerMessage.credentialPreview) return false
 
       // Check if preview values match
       return arePreviewAttributesEqual(
-        proposalMessage.credentialProposal.attributes,
+        proposalMessage.credentialPreview.attributes,
         offerMessage.credentialPreview.attributes
       )
     }
@@ -899,13 +899,13 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
 
     // not all formats use the proposal and preview, we only check if they're present on
     // either or both of the messages
-    if (proposalMessage.credentialProposal || offerMessage.credentialPreview) {
+    if (proposalMessage.credentialPreview || offerMessage.credentialPreview) {
       // if one of the message doesn't have a preview, we should not auto accept
-      if (!proposalMessage.credentialProposal || !offerMessage.credentialPreview) return false
+      if (!proposalMessage.credentialPreview || !offerMessage.credentialPreview) return false
 
       // Check if preview values match
       return arePreviewAttributesEqual(
-        proposalMessage.credentialProposal.attributes,
+        proposalMessage.credentialPreview.attributes,
         offerMessage.credentialPreview.attributes
       )
     }
