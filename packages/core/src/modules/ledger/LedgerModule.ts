@@ -1,3 +1,4 @@
+import type { TransactionAuthorAgreement } from './IndyPool'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
 import type { NymRole } from 'indy-sdk'
 
@@ -26,28 +27,34 @@ export class LedgerModule {
     await this.ledgerService.connectToPools()
   }
 
-  public async registerPublicDid(did: string, verkey: string, alias: string, role?: NymRole) {
+  public async registerPublicDid(
+    did: string,
+    verkey: string,
+    alias: string,
+    role?: NymRole,
+    taa?: TransactionAuthorAgreement
+  ) {
     const myPublicDid = this.wallet.publicDid?.did
 
     if (!myPublicDid) {
       throw new AriesFrameworkError('Agent has no public DID.')
     }
 
-    return this.ledgerService.registerPublicDid(myPublicDid, did, verkey, alias, role)
+    return this.ledgerService.registerPublicDid(myPublicDid, did, verkey, alias, role, taa)
   }
 
   public async getPublicDid(did: string) {
     return this.ledgerService.getPublicDid(did)
   }
 
-  public async registerSchema(schema: SchemaTemplate) {
+  public async registerSchema(schema: SchemaTemplate, taa?: TransactionAuthorAgreement) {
     const did = this.wallet.publicDid?.did
 
     if (!did) {
       throw new AriesFrameworkError('Agent has no public DID.')
     }
 
-    return this.ledgerService.registerSchema(did, schema)
+    return this.ledgerService.registerSchema(did, schema, taa)
   }
 
   public async getSchema(id: string) {
@@ -55,7 +62,8 @@ export class LedgerModule {
   }
 
   public async registerCredentialDefinition(
-    credentialDefinitionTemplate: Omit<CredentialDefinitionTemplate, 'signatureType'>
+    credentialDefinitionTemplate: Omit<CredentialDefinitionTemplate, 'signatureType'>,
+    taa?: TransactionAuthorAgreement
   ) {
     const did = this.wallet.publicDid?.did
 
@@ -63,10 +71,14 @@ export class LedgerModule {
       throw new AriesFrameworkError('Agent has no public DID.')
     }
 
-    return this.ledgerService.registerCredentialDefinition(did, {
-      ...credentialDefinitionTemplate,
-      signatureType: 'CL',
-    })
+    return this.ledgerService.registerCredentialDefinition(
+      did,
+      {
+        ...credentialDefinitionTemplate,
+        signatureType: 'CL',
+      },
+      taa
+    )
   }
 
   public async getCredentialDefinition(id: string) {

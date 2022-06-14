@@ -5,6 +5,7 @@ import type {
   AcceptRequestOptions,
   OfferCredentialOptions,
 } from '../../../CredentialsModuleOptions'
+import type { TransactionAuthorAgreement } from '@aries-framework/core'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -59,7 +60,8 @@ describe('credentials', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const { definition, schema } = await prepareForIssuance(faberAgent, ['name', 'age'])
+    const taa: TransactionAuthorAgreement = { version: '1', acceptanceMechanism: 'accept' }
+    const { definition, schema } = await prepareForIssuance(faberAgent, ['name', 'age'], taa)
     credDefId = definition.id
     credSchemaId = schema.id
 

@@ -1,3 +1,5 @@
+import type { TransactionAuthorAgreement } from '../src/modules/ledger/IndyPool'
+
 import { promises } from 'fs'
 import * as indy from 'indy-sdk'
 
@@ -68,7 +70,8 @@ describe('ledger', () => {
     const faberWallet = faberAgent.injectionContainer.resolve(IndyWallet)
     const didInfo = await faberWallet.createDid()
 
-    const result = await faberAgent.ledger.registerPublicDid(didInfo.did, didInfo.verkey, 'alias', 'TRUST_ANCHOR')
+    const taa: TransactionAuthorAgreement = { version: '1', acceptanceMechanism: 'accept' }
+    const result = await faberAgent.ledger.registerPublicDid(didInfo.did, didInfo.verkey, 'alias', 'TRUST_ANCHOR', taa)
 
     expect(result).toEqual(didInfo.did)
   })
@@ -85,7 +88,8 @@ describe('ledger', () => {
       version: '1.0',
     }
 
-    const schema = await faberAgent.ledger.registerSchema(schemaTemplate)
+    const taa: TransactionAuthorAgreement = { version: '1', acceptanceMechanism: 'accept' }
+    const schema = await faberAgent.ledger.registerSchema(schemaTemplate, taa)
     schemaId = schema.id
 
     await sleep(2000)
@@ -118,7 +122,8 @@ describe('ledger', () => {
       supportRevocation: true,
     }
 
-    const credentialDefinition = await faberAgent.ledger.registerCredentialDefinition(credentialDefinitionTemplate)
+    const taa: TransactionAuthorAgreement = { version: '1', acceptanceMechanism: 'accept' }
+    const credentialDefinition = await faberAgent.ledger.registerCredentialDefinition(credentialDefinitionTemplate, taa)
 
     await sleep(2000)
 

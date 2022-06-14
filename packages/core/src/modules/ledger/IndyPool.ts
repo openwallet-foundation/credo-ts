@@ -10,7 +10,7 @@ import { LedgerError } from './error/LedgerError'
 import { isLedgerRejectResponse, isLedgerReqnackResponse } from './ledgerUtil'
 
 export interface TransactionAuthorAgreement {
-  version: `${number}.${number}`
+  version: `${number}.${number}` | `${number}`
   acceptanceMechanism: string
 }
 

@@ -56,7 +56,8 @@ export class IndyLedgerService {
     targetDid: string,
     verkey: string,
     alias: string,
-    role?: NymRole
+    role?: NymRole,
+    taa?: TransactionAuthorAgreement
   ) {
     const pool = this.indyPoolService.ledgerWritePool
 
@@ -65,7 +66,7 @@ export class IndyLedgerService {
 
       const request = await this.indy.buildNymRequest(submitterDid, targetDid, verkey, alias, role || null)
 
-      const response = await this.submitWriteRequest(pool, request, submitterDid)
+      const response = await this.submitWriteRequest(pool, request, submitterDid, taa)
 
       this.logger.debug(`Registered public did '${targetDid}' on ledger '${pool.id}'`, {
         response,
@@ -123,7 +124,11 @@ export class IndyLedgerService {
     }
   }
 
-  public async registerSchema(did: string, schemaTemplate: SchemaTemplate): Promise<Schema> {
+  public async registerSchema(
+    did: string,
+    schemaTemplate: SchemaTemplate,
+    taa?: TransactionAuthorAgreement
+  ): Promise<Schema> {
     const pool = this.indyPoolService.ledgerWritePool
 
     try {
@@ -133,7 +138,7 @@ export class IndyLedgerService {
 
       const request = await this.indy.buildSchemaRequest(did, schema)
 
-      const response = await this.submitWriteRequest(pool, request, did)
+      const response = await this.submitWriteRequest(pool, request, did, taa)
       this.logger.debug(`Registered schema '${schema.id}' on ledger '${pool.id}'`, {
         response,
         schema,
@@ -187,7 +192,8 @@ export class IndyLedgerService {
 
   public async registerCredentialDefinition(
     did: string,
-    credentialDefinitionTemplate: CredentialDefinitionTemplate
+    credentialDefinitionTemplate: CredentialDefinitionTemplate,
+    taa?: TransactionAuthorAgreement
   ): Promise<CredDef> {
     const pool = this.indyPoolService.ledgerWritePool
 
@@ -208,7 +214,7 @@ export class IndyLedgerService {
 
       const request = await this.indy.buildCredDefRequest(did, credentialDefinition)
 
-      const response = await this.submitWriteRequest(pool, request, did)
+      const response = await this.submitWriteRequest(pool, request, did, taa)
 
       this.logger.debug(`Registered credential definition '${credentialDefinition.id}' on ledger '${pool.id}'`, {
         response,
@@ -462,16 +468,25 @@ export class IndyLedgerService {
       }
       // Ledger has taa but user has not specified which one to use
       if (!taa) {
-        throw new Error('Please, specify a transaction author agreement with version and acceptance mechanism.')
+        throw new Error(
+          `Please, specify a transaction author agreement with version and acceptance mechanism. ${JSON.stringify(
+            authorAgreement
+          )}`
+        )
       }
+
       // Throw an error if the pool doesn't have the specified version and acceptance mechanism
       if (
         authorAgreement.acceptanceMechanisms.version !== taa.version ||
         !(taa.acceptanceMechanism in authorAgreement.acceptanceMechanisms.aml)
       ) {
-        throw new Error(
-          `Unable to satisfy matching TAA with mechanism ${taa.acceptanceMechanism} and version ${taa.version} in pool.`
-        )
+        // Throw an error with a helpful message
+        const errMessage = `Unable to satisfy matching TAA with mechanism ${JSON.stringify(
+          taa.acceptanceMechanism
+        )} and version ${JSON.stringify(taa.version)} in pool.\n Found ${JSON.stringify(
+          authorAgreement.acceptanceMechanisms.aml
+        )}`
+        throw new Error(errMessage)
       }
 
       const requestWithTaa = await this.indy.appendTxnAuthorAgreementAcceptanceToRequest(
