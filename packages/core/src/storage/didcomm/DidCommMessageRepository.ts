@@ -4,6 +4,7 @@ import type { DidCommMessageRole } from './DidCommMessageRole'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
+import { EventEmitter } from '../../agent/EventEmitter'
 import { InjectionSymbols } from '../../constants'
 import { parseMessageType } from '../../utils/messageType'
 import { Repository } from '../Repository'
@@ -13,8 +14,11 @@ import { DidCommMessageRecord } from './DidCommMessageRecord'
 
 @scoped(Lifecycle.ContainerScoped)
 export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
-  public constructor(@inject(InjectionSymbols.StorageService) storageService: StorageService<DidCommMessageRecord>) {
-    super(DidCommMessageRecord, storageService)
+  public constructor(
+    @inject(InjectionSymbols.StorageService) storageService: StorageService<DidCommMessageRecord>,
+    eventEmitter: EventEmitter
+  ) {
+    super(DidCommMessageRecord, storageService, eventEmitter)
   }
 
   public async saveAgentMessage({ role, agentMessage, associatedRecordId }: SaveAgentMessageOptions) {
