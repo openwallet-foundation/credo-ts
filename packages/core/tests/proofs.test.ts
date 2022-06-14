@@ -365,6 +365,6 @@ describe('Present Proof', () => {
         requestedAttributes: attributes,
         requestedPredicates: predicates,
       })
-    ).rejects.toThrowError(`The proof request contains duplicate items: age`)
+    ).rejects.toThrowError('The proof request contains duplicate predicates and attributes: age')
   })
 })

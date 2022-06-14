@@ -54,7 +54,7 @@ export class V1IssueCredentialMessage extends AgentMessage {
     return credentialJson
   }
 
-  public getAttachmentById(id: string): Attachment | undefined {
-    return this.credentialAttachments?.find((attachment) => attachment.id == id)
+  public getCredentialAttachmentById(id: string): Attachment | undefined {
+    return this.credentialAttachments.find((attachment) => attachment.id == id)
   }
 }
