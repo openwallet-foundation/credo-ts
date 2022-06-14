@@ -15,7 +15,6 @@ import type {
 } from '../src'
 import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
 import type { CredentialOfferTemplate } from '../src/modules/credentials/protocol'
-import type { TransactionAuthorAgreement } from '../src/modules/ledger/IndyPool'
 import type { Schema, CredDef } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -81,6 +80,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
         id: `pool-${name}`,
         isProduction: false,
         genesisPath,
+        transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
       },
     ],
     logger: new TestLogger(LogLevel.error, name),
@@ -326,27 +326,22 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
   return [agentAConnection, agentBConnection]
 }
 
-export async function registerSchema(
-  agent: Agent,
-  schemaTemplate: SchemaTemplate,
-  taa?: TransactionAuthorAgreement
-): Promise<Schema> {
-  const schema = await agent.ledger.registerSchema(schemaTemplate, taa)
+export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {
+  const schema = await agent.ledger.registerSchema(schemaTemplate)
   testLogger.test(`created schema with id ${schema.id}`, schema)
   return schema
 }
 
 export async function registerDefinition(
   agent: Agent,
-  definitionTemplate: CredentialDefinitionTemplate,
-  taa?: TransactionAuthorAgreement
+  definitionTemplate: CredentialDefinitionTemplate
 ): Promise<CredDef> {
-  const credentialDefinition = await agent.ledger.registerCredentialDefinition(definitionTemplate, taa)
+  const credentialDefinition = await agent.ledger.registerCredentialDefinition(definitionTemplate)
   testLogger.test(`created credential definition with id ${credentialDefinition.id}`, credentialDefinition)
   return credentialDefinition
 }
 
-export async function prepareForIssuance(agent: Agent, attributes: string[], taa?: TransactionAuthorAgreement) {
+export async function prepareForIssuance(agent: Agent, attributes: string[]) {
   const publicDid = agent.publicDid?.did
 
   if (!publicDid) {
@@ -355,26 +350,18 @@ export async function prepareForIssuance(agent: Agent, attributes: string[], taa
 
   await ensurePublicDidIsOnLedger(agent, publicDid)
 
-  const schema = await registerSchema(
-    agent,
-    {
-      attributes,
-      name: `schema-${uuid()}`,
-      version: '1.0',
-    },
-    taa
-  )
+  const schema = await registerSchema(agent, {
+    attributes,
+    name: `schema-${uuid()}`,
+    version: '1.0',
+  })
 
-  const definition = await registerDefinition(
-    agent,
-    {
-      schema,
-      signatureType: 'CL',
-      supportRevocation: false,
-      tag: 'default',
-    },
-    taa
-  )
+  const definition = await registerDefinition(agent, {
+    schema,
+    signatureType: 'CL',
+    supportRevocation: false,
+    tag: 'default',
+  })
 
   return {
     schema,
@@ -637,11 +624,10 @@ export async function setupCredentialTests(
   aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await aliceAgent.initialize()
 
-  const taa: TransactionAuthorAgreement = { version: '1', acceptanceMechanism: 'accept' }
   const {
     schema,
     definition: { id: credDefId },
-  } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'], taa)
+  } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
 
   const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
 
@@ -683,8 +669,7 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await aliceAgent.initialize()
 
-  const taa: TransactionAuthorAgreement = { version: '1', acceptanceMechanism: 'accept' }
-  const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'], taa)
+  const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
 
   const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
   expect(agentAConnection.isReady).toBe(true)

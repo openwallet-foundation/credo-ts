@@ -1,5 +1,4 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { TransactionAuthorAgreement } from '../src/modules/ledger/IndyPool'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
 
 import { Subject, ReplaySubject } from 'rxjs'
@@ -245,8 +244,7 @@ describe('Present Proof', () => {
 
     agents = [aliceAgent, faberAgent, mediatorAgent]
 
-    const taa: TransactionAuthorAgreement = { version: '1', acceptanceMechanism: 'accept' }
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'], taa)
+    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
 
     const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
     expect(faberConnection.isReady).toBe(true)

@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
-import type { TransactionAuthorAgreement } from '../src/modules/ledger/IndyPool'
 import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
@@ -78,9 +77,7 @@ describe('out of band', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const taa: TransactionAuthorAgreement = { version: '1', acceptanceMechanism: 'accept' }
-
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'], taa)
+    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
 
     credentialTemplate = {
       protocolVersion: CredentialProtocolVersion.V1,

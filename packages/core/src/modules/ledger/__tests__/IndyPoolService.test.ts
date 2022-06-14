@@ -21,26 +21,31 @@ const pools: IndyPoolConfig[] = [
     id: 'sovrinMain',
     isProduction: true,
     genesisTransactions: 'xxx',
+    transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
     id: 'sovrinBuilder',
     isProduction: false,
     genesisTransactions: 'xxx',
+    transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
     id: 'sovrinStaging',
     isProduction: false,
     genesisTransactions: 'xxx',
+    transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
     id: 'indicioMain',
     isProduction: true,
     genesisTransactions: 'xxx',
+    transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
     id: 'bcovrinTest',
     isProduction: false,
     genesisTransactions: 'xxx',
+    transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
 ]
 

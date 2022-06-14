@@ -1,4 +1,3 @@
-import type { TransactionAuthorAgreement } from '../packages/core/src/modules/ledger/IndyPool'
 import type { Agent } from '@aries-framework/core'
 
 import { sleep } from '../packages/core/src/utils/sleep'
@@ -42,9 +41,8 @@ export async function e2eTest({
   const [recipientSenderConnection, senderRecipientConnection] = await makeConnection(recipientAgent, senderAgent)
   expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
 
-  const taa: TransactionAuthorAgreement = { version: '1', acceptanceMechanism: 'accept' }
   // Issue credential from sender to recipient
-  const { definition } = await prepareForIssuance(senderAgent, ['name', 'age', 'dateOfBirth'], taa)
+  const { definition } = await prepareForIssuance(senderAgent, ['name', 'age', 'dateOfBirth'])
   const { holderCredential, issuerCredential } = await issueCredential({
     issuerAgent: senderAgent,
     holderAgent: recipientAgent,
