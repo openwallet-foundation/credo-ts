@@ -72,6 +72,13 @@ export class Giver extends BaseAgent {
     await this.waitForPayment()
   }
 
+  public async abortPaymentRequest(valueTransferRecord: ValueTransferRecord) {
+    const { record } = await this.agent.valueTransfer.abortTransaction(valueTransferRecord.id)
+    this.valueTransferRecordId = record.id
+    console.log(redText('\nPayment request rejected!\n'))
+    console.log(record.problemReportMessage)
+  }
+
   public async exit() {
     console.log(Output.Exit)
     await this.agent.shutdown()

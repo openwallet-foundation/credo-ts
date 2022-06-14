@@ -67,7 +67,7 @@ export class GiverInquirer extends BaseInquirer {
     console.log(greenText(`\nCurrent balance: ${balance}`))
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.PaymentRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      return
+      await this.giver.abortPaymentRequest(valueTransferRecord)
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.giver.acceptPaymentRequest(valueTransferRecord)
     }

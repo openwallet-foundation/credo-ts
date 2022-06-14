@@ -1,6 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
-import type { RequestAcceptedWitnessedMessage, GetterReceiptMessage } from '../messages'
+import type { GetterReceiptMessage, RequestAcceptedWitnessedMessage } from '../messages'
 import type { Getter } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -16,7 +16,7 @@ import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
 import { CashAcceptedMessage, ProblemReportMessage, RequestMessage } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
-import { ValueTransferRecord, ValueTransferRepository } from '../repository'
+import { ValueTransferRecord, ValueTransferRecordStatus, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
@@ -117,6 +117,7 @@ export class ValueTransferGetterService {
       witness: witness,
       giver: giver,
       amount: amount,
+      status: ValueTransferRecordStatus.Pending,
     })
 
     await this.valueTransferRepository.save(record)
@@ -180,7 +181,7 @@ export class ValueTransferGetterService {
 
       // Update Value Transfer record
       record.problemReportMessage = problemReportMessage
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed)
+      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
       return {
         record,
         message: problemReportMessage,
@@ -201,7 +202,11 @@ export class ValueTransferGetterService {
     record.witnessDid = message.witnessId
     record.giverDid = message.giverId
 
-    await this.valueTransferService.updateState(record, ValueTransferState.CashAcceptanceSent)
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.CashAcceptanceSent,
+      ValueTransferRecordStatus.Active
+    )
     return { record, message: cashAcceptedMessage }
   }
 
@@ -253,7 +258,7 @@ export class ValueTransferGetterService {
       await this.getter.abortTransaction()
       record.problemReportMessage = problemReportMessage
 
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed)
+      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
       return { record, message: problemReportMessage }
     }
 
@@ -261,7 +266,11 @@ export class ValueTransferGetterService {
     record.valueTransferMessage = message
     record.receipt = message
 
-    await this.valueTransferService.updateState(record, ValueTransferState.Completed)
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.Completed,
+      ValueTransferRecordStatus.Finished
+    )
     return { record, message: getterReceiptMessage }
   }
 }

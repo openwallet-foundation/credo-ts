@@ -1,6 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
-import type { RequestMessage, RequestAcceptedMessage, CashAcceptedMessage, CashRemovedMessage } from '../messages'
+import type { CashAcceptedMessage, CashRemovedMessage, RequestAcceptedMessage, RequestMessage } from '../messages'
 import type { Witness } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -25,7 +25,7 @@ import {
   RequestWitnessedMessage,
 } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
-import { ValueTransferRecord, ValueTransferRepository } from '../repository'
+import { ValueTransferRecord, ValueTransferRecordStatus, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 
@@ -170,6 +170,7 @@ export class ValueTransferWitnessService {
     const record = new ValueTransferRecord({
       role: ValueTransferRole.Witness,
       state: ValueTransferState.RequestSent,
+      status: ValueTransferRecordStatus.Pending,
       threadId: requestMessage.id,
       valueTransferMessage: message,
       getter: valueTransferMessage.getterId,
@@ -244,7 +245,7 @@ export class ValueTransferWitnessService {
 
       // Update Value Transfer record
       record.problemReportMessage = problemReportMessage
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed)
+      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
       return { record, message: problemReportMessage }
     }
 
@@ -260,7 +261,11 @@ export class ValueTransferWitnessService {
     record.valueTransferMessage = message
     record.giverDid = message.giverId
 
-    await this.valueTransferService.updateState(record, ValueTransferState.RequestAcceptanceSent)
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.RequestAcceptanceSent,
+      ValueTransferRecordStatus.Active
+    )
     return { record, message: requestAcceptedWitnessedMessage }
   }
 
@@ -321,7 +326,7 @@ export class ValueTransferWitnessService {
 
       // Update Value Transfer record
       record.problemReportMessage = problemReportMessage
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed)
+      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
       return { record, message: problemReportMessage }
     }
 
@@ -335,7 +340,11 @@ export class ValueTransferWitnessService {
 
     // Update Value Transfer record
     record.valueTransferMessage = message
-    await this.valueTransferService.updateState(record, ValueTransferState.CashAcceptanceSent)
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.CashAcceptanceSent,
+      ValueTransferRecordStatus.Active
+    )
     return { record, message: cashAcceptedWitnessedMessage }
   }
 
@@ -403,7 +412,7 @@ export class ValueTransferWitnessService {
 
       // Update Value Transfer record
       record.problemReportMessage = getterProblemReport
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed)
+      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
       return {
         record,
         getterMessage: getterProblemReport,
@@ -429,7 +438,11 @@ export class ValueTransferWitnessService {
     record.valueTransferMessage = receipt
     record.receipt = receipt
 
-    await this.valueTransferService.updateState(record, ValueTransferState.Completed)
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.Completed,
+      ValueTransferRecordStatus.Finished
+    )
     return { record, getterMessage: getterReceiptMessage, giverMessage: giverReceiptMessage }
   }
 }

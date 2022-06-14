@@ -19,6 +19,12 @@ export type DefaultValueTransferTags = {
 
 export type ValueTransferTags = RecordTags<ValueTransferRecord>
 
+export enum ValueTransferRecordStatus {
+  Pending = 'pending',
+  Active = 'active',
+  Finished = 'finished',
+}
+
 export interface ValueTransferStorageProps {
   id?: string
   role: ValueTransferRole
@@ -35,6 +41,7 @@ export interface ValueTransferStorageProps {
   problemReportMessage?: ProblemReportMessage
   receipt?: ValueTransferMessage
 
+  status?: ValueTransferRecordStatus
   tags?: CustomValueTransferTags
 }
 
@@ -49,6 +56,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   public role!: ValueTransferRole
 
   public state!: ValueTransferState
+  public status?: ValueTransferRecordStatus
 
   @Type(() => ValueTransferMessage)
   public valueTransferMessage!: ValueTransferMessage
@@ -77,6 +85,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       this.threadId = props.threadId
       this.role = props.role
       this.state = props.state
+      this.status = props.status
       this.valueTransferMessage = props.valueTransferMessage
       this.receipt = props.receipt
       this.problemReportMessage = props.problemReportMessage
@@ -95,6 +104,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       txnId: this.valueTransferMessage?.txnId,
       role: this.role,
       state: this.state,
+      status: this.status,
     }
   }
 
