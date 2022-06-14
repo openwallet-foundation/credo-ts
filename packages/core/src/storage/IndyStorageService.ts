@@ -65,9 +65,14 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     const transformedTags: { [key: string]: string | undefined } = {}
 
     for (const [key, value] of Object.entries(tags)) {
+      // If the value is of type null we use the value undefined
+      // Indy doesn't support null as a value
+      if (value === null) {
+        transformedTags[key] = undefined
+      }
       // If the value is a boolean use the indy
       // '1' or '0' syntax
-      if (isBoolean(value)) {
+      else if (isBoolean(value)) {
         transformedTags[key] = value ? '1' : '0'
       }
       // If the value is 1 or 0, we need to add something to the value, otherwise

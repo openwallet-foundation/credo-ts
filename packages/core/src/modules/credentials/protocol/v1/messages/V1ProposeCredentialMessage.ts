@@ -6,7 +6,8 @@ import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { indyDidRegex, schemaIdRegex, schemaVersionRegex, credDefIdRegex } from '../../../../../utils'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { V1CredentialPreview } from '../V1CredentialPreview'
+
+import { V1CredentialPreview } from './V1CredentialPreview'
 
 export interface ProposeCredentialMessageOptions {
   id?: string

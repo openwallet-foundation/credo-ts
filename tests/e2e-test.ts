@@ -49,12 +49,12 @@ export async function e2eTest({
     issuerConnectionId: senderRecipientConnection.id,
     credentialTemplate: {
       credentialDefinitionId: definition.id,
-      preview: V1CredentialPreview.fromRecord({
+      attributes: V1CredentialPreview.fromRecord({
         name: 'John',
         age: '25',
         // year month day
         dateOfBirth: '19950725',
-      }),
+      }).attributes,
     },
   })
 
