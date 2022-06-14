@@ -44,7 +44,7 @@
     },
     {
       "id": "did:sov:WJz9mHyW9BZksioQnRsrAo#didcomm-1",
-      "type": "DIDComm",
+      "type": "DIDCommMessaging",
       "serviceEndpoint": "https://agent.com",
       "accept": ["didcomm/v2"],
       "routingKeys": ["routingKey1", "routingKey2"]
