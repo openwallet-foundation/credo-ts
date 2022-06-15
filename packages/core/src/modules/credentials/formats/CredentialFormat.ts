@@ -34,6 +34,5 @@ export interface CredentialFormat {
     acceptOffer: unknown
     createRequest: unknown
     acceptRequest: unknown
-    createCredential: unknown
   }
 }
