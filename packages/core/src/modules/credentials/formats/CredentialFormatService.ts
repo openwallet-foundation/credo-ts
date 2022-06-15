@@ -35,7 +35,7 @@ export abstract class CredentialFormatService<CF extends CredentialFormat = Cred
 
   // proposal methods
   abstract createProposal(options: FormatCreateProposalOptions<CF>): Promise<FormatCreateProposalReturn>
-  abstract processProposal(options: FormatProcessOptions): void
+  abstract processProposal(options: FormatProcessOptions): Promise<void>
   abstract acceptProposal(options: FormatAcceptProposalOptions<CF>): Promise<FormatCreateOfferReturn>
 
   // offer methods

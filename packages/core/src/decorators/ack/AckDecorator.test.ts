@@ -1,6 +1,7 @@
 import { BaseMessage } from '../../agent/BaseMessage'
 import { ClassValidationError } from '../../error/ClassValidationError'
 import { JsonTransformer } from '../../utils/JsonTransformer'
+import { MessageValidator } from '../../utils/MessageValidator'
 import { Compose } from '../../utils/mixins'
 
 import { AckDecorated } from './AckDecoratorExtension'
@@ -22,6 +23,60 @@ describe('Decorators | AckDecoratorExtension', () => {
         on: ['RECEIPT'],
       },
     })
+  })
+
+  test('transforms Json to AckDecorator class', () => {
+    const transformed = JsonTransformer.fromJSON(
+      {
+        '~please_ack': {},
+        '@id': '7517433f-1150-46f2-8495-723da61b872a',
+        '@type': 'https://didcomm.org/test-protocol/1.0/test-message',
+      },
+      TestMessage
+    )
+
+    expect(transformed).toEqual({
+      id: '7517433f-1150-46f2-8495-723da61b872a',
+      type: 'https://didcomm.org/test-protocol/1.0/test-message',
+      pleaseAck: {
+        on: ['RECEIPT'],
+      },
+    })
+    expect(transformed).toBeInstanceOf(TestMessage)
+  })
+
+  // this covers the pre-aip 2 please ack decorator
+  test('sets `on` value to `receipt` if `on` is not present in ack decorator', () => {
+    const transformed = JsonTransformer.fromJSON(
+      {
+        '~please_ack': {},
+        '@id': '7517433f-1150-46f2-8495-723da61b872a',
+        '@type': 'https://didcomm.org/test-protocol/1.0/test-message',
+      },
+      TestMessage
+    )
+
+    expect(transformed).toEqual({
+      id: '7517433f-1150-46f2-8495-723da61b872a',
+      type: 'https://didcomm.org/test-protocol/1.0/test-message',
+      pleaseAck: {
+        on: ['RECEIPT'],
+      },
+    })
+    expect(transformed).toBeInstanceOf(TestMessage)
+  })
+
+  test('successfully validates please ack decorator', async () => {
+    const transformedWithDefault = JsonTransformer.fromJSON(
+      {
+        '~please_ack': {},
+        '@id': '7517433f-1150-46f2-8495-723da61b872a',
+        '@type': 'https://didcomm.org/test-protocol/1.0/test-message',
+      },
+      TestMessage
+    )
+
+    expect(MessageValidator.validateSync(transformedWithDefault, TestMessage)).toBeUndefined()
   })
 
   test('transforms Json to AckDecorator class', () => {

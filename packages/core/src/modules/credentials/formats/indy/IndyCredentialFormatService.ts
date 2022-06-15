@@ -133,7 +133,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     return { format, attachment, previewAttributes }
   }
 
-  public processProposal({ attachment }: FormatProcessOptions): void {
+  public async processProposal({ attachment }: FormatProcessOptions): Promise<void> {
     const credProposalJson = attachment.getDataAsJson()
 
     if (!credProposalJson) {
@@ -141,7 +141,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     }
 
     const credProposal = JsonTransformer.fromJSON(credProposalJson, IndyCredPropose)
-    return MessageValidator.validateSync(credProposal, IndyCredPropose)
+    MessageValidator.validateSync(credProposal, IndyCredPropose)
   }
 
   public async acceptProposal({
