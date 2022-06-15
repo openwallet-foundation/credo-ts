@@ -85,9 +85,7 @@ export const FORMAT_KEYS: FormatKeys = {
 
 export interface FormatServiceRequestCredentialOptions extends ServiceRequestCredentialOptions {
   indy?: {
-    credentialDefinition?: {
-      credDef: CredDef
-    }
+    credentialDefinitionId: string
   }
   jsonld?: SignCredentialOptions
 }

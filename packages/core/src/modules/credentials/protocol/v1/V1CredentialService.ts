@@ -785,10 +785,12 @@ export class V1CredentialService extends CredentialService {
       previousSentMessage: offerMessage ?? undefined,
     })
 
-    const requestOptions: RequestCredentialOptions = {
-      connectionId: messageContext.connection?.id,
+    const requestAttachment = requestMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+
+    if (requestAttachment) {
+      await this.formatService.processRequest(requestAttachment)
     }
-    await this.formatService.processRequest(requestOptions, credentialRecord)
+    await this.formatService.processRequest(requestAttachment)
 
     this.logger.trace('Credential record found when processing credential request', credentialRecord)
     await this.didCommMessageRepository.saveAgentMessage({

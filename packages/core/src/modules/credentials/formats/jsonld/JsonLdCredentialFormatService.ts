@@ -308,6 +308,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     }
     return false
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private areCredentialValuesValid(_credentialRecord: CredentialExchangeRecord, _credentialAttachment: Attachment) {
     return true // temporary until we have the credential attributes to compare with credential attachment
   }
@@ -323,10 +324,16 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     return false
   }
 
-  public processRequest(_options: RequestCredentialOptions, _credentialRecord: CredentialExchangeRecord): void {
-    throw new Error('Method not implemented.')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public async processRequest(requestAttachment: Attachment): Promise<void> {
+    const credRequestJson = requestAttachment?.getDataAsJson<SignCredentialOptions>()
+    if (!credRequestJson) {
+      throw new AriesFrameworkError('Missing indy credential request data payload')
+    }
+    await MessageValidator.validate(credRequestJson)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async deleteCredentialById(credentialRecordId: string): Promise<void> {
     throw new Error('Method not implemented.')
   }

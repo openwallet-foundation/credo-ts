@@ -239,9 +239,7 @@ export class IndyCredentialFormatService extends CredentialFormatService {
    */
   public async processRequest(
     /* eslint-disable @typescript-eslint/no-unused-vars */
-    _options: RequestCredentialOptions,
-    _credentialRecord: CredentialExchangeRecord
-    /* eslint-enable @typescript-eslint/no-unused-vars */
+    requestAttachment: Attachment
   ): Promise<void> {
     // not needed for Indy
   }
