@@ -12,6 +12,7 @@ import type {
   ProofRecord,
   ProofStateChangedEvent,
   ValueTransferStateChangedEvent,
+  ValueTransferRecord,
 } from '@aries-framework/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
@@ -23,13 +24,12 @@ import {
   ProofEventTypes,
   ProofState,
   ValueTransferEventTypes,
-  ValueTransferRecord,
   ValueTransferState,
 } from '@aries-framework/core'
+import { JsonEncoder } from '@aries-framework/core/build/utils/JsonEncoder'
 import { ui } from 'inquirer'
 
 import { Color, purpleText } from './OutputClass'
-import { JsonEncoder } from '@aries-framework/core/build/utils/JsonEncoder'
 
 export class Listener {
   public on: boolean

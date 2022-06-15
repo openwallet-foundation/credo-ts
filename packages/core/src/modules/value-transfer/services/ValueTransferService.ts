@@ -144,8 +144,8 @@ export class ValueTransferService {
     if (record.role === ValueTransferRole.Witness) {
       // When Witness receives Problem Report he needs to forward this to the 3rd party
       const forwardedProblemReportMessage = new ProblemReportMessage({
-        from: record.witnessDid,
-        to: messageContext.message.from === record.getterDid ? record.giverDid : record.getterDid,
+        from: record.witness?.did,
+        to: messageContext.message.from === record.getter?.did ? record.giver?.did : record.getter?.did,
         body: problemReportMessage.body,
         pthid: problemReportMessage.pthid,
       })
@@ -196,15 +196,15 @@ export class ValueTransferService {
 
     if (record.role === ValueTransferRole.Giver) {
       await this.valueTransfer.giver().abortTransaction()
-      from = record.giverDid || (await this.didService.createDID(DidType.PeerDid)).id
+      from = record.giver?.did || (await this.didService.createDID(DidType.PeerDid)).id
     } else if (record.role === ValueTransferRole.Getter) {
       await this.valueTransfer.getter().abortTransaction()
-      from = record.getterDid
+      from = record.getter?.did
     }
 
     const problemReport = new ProblemReportMessage({
       from,
-      to: record.witnessDid,
+      to: record.witness?.did,
       pthid: record.threadId,
       body: {
         code: 'e.p.transaction-aborted',
@@ -264,11 +264,11 @@ export class ValueTransferService {
   public async sendProblemReportToGetterAndGiver(message: ProblemReportMessage, record?: ValueTransferRecord) {
     const getterProblemReport = new ProblemReportMessage({
       ...message,
-      to: record?.getterDid,
+      to: record?.getter?.did,
     })
     const giverProblemReport = new ProblemReportMessage({
       ...message,
-      to: record?.giverDid,
+      to: record?.giver?.did,
     })
 
     await Promise.all([this.sendMessageToGetter(getterProblemReport), this.sendMessageToGiver(giverProblemReport)])

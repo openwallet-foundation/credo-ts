@@ -10,6 +10,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { DidResolverService, DidService, DidType } from '../../dids'
+import { DidInfo, WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
@@ -30,6 +31,7 @@ export class ValueTransferGiverService {
   private didResolverService: DidResolverService
   private connectionService: ConnectionService
   private didService: DidService
+  private wellKnownService: WellKnownService
   private eventEmitter: EventEmitter
   private giver: Giver
 
@@ -41,6 +43,7 @@ export class ValueTransferGiverService {
     didResolverService: DidResolverService,
     connectionService: ConnectionService,
     didService: DidService,
+    wellKnownService: WellKnownService,
     eventEmitter: EventEmitter
   ) {
     this.valueTransferRepository = valueTransferRepository
@@ -50,6 +53,7 @@ export class ValueTransferGiverService {
     this.didResolverService = didResolverService
     this.connectionService = connectionService
     this.didService = didService
+    this.wellKnownService = wellKnownService
     this.eventEmitter = eventEmitter
 
     this.giver = new ValueTransfer(
@@ -109,6 +113,10 @@ export class ValueTransferGiverService {
       }
     }
 
+    const getterInfo = await this.wellKnownService.resolve(valueTransferMessage.getterId)
+    const witnessInfo = new DidInfo({ did: valueTransferMessage.witnessId })
+    const giverInfo = valueTransferMessage.isGiverSet ? new DidInfo({ did: valueTransferMessage.giverId }) : undefined
+
     // Create Value Transfer record and raise event
     const record = new ValueTransferRecord({
       role: ValueTransferRole.Giver,
@@ -116,10 +124,9 @@ export class ValueTransferGiverService {
       status: ValueTransferRecordStatus.Pending,
       threadId: requestWitnessedMessage.thid,
       valueTransferMessage,
-      getter: valueTransferMessage.getterId,
-      witness: valueTransferMessage.witnessId,
-      giver: valueTransferMessage.isGiverSet ? valueTransferMessage.giverId : undefined,
-      amount: valueTransferMessage.amount,
+      getter: getterInfo,
+      witness: witnessInfo,
+      giver: giverInfo,
     })
 
     await this.valueTransferRepository.save(record)
@@ -147,7 +154,7 @@ export class ValueTransferGiverService {
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.RequestReceived)
 
-    const giver = record.giverDid ? record.giverDid : (await this.didService.createDID(DidType.PeerDid)).id
+    const giverDid = record.giver ? record.giver.did : (await this.didService.createDID(DidType.PeerDid)).id
 
     const activeTransaction = await this.valueTransferService.getActiveTransaction()
     if (activeTransaction.record) {
@@ -165,15 +172,15 @@ export class ValueTransferGiverService {
     }
 
     const { error, message, delta } = await this.giver.acceptPaymentRequest(
-      giver,
+      giverDid,
       record.valueTransferMessage,
       notesToSpend
     )
     if (error || !message || !delta) {
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({
-        from: giver,
-        to: record.witnessDid,
+        from: giverDid,
+        to: record.witness?.did,
         pthid: record.threadId,
         body: {
           code: error?.code || 'invalid-payment-request',
@@ -192,14 +199,14 @@ export class ValueTransferGiverService {
 
     // VTP message verification succeed
     const requestAcceptedMessage = new RequestAcceptedMessage({
-      from: giver,
-      to: record.witnessDid,
+      from: giverDid,
+      to: record.witness?.did,
       thid: record.threadId,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
-    record.giverDid = giver
+    record.giver = new DidInfo({ did: giverDid })
     record.valueTransferMessage = message
     await this.valueTransferService.updateState(
       record,
@@ -235,8 +242,8 @@ export class ValueTransferGiverService {
     const valueTransferDelta = cashAcceptedWitnessedMessage.valueTransferDelta
     if (!valueTransferDelta) {
       const problemReport = new ProblemReportMessage({
-        from: record.giverDid,
-        to: record.witnessDid,
+        from: record.giver?.did,
+        to: record.witness?.did,
         pthid: record.threadId,
         body: {
           code: 'e.p.req.bad-cash-acceptance',
@@ -251,8 +258,8 @@ export class ValueTransferGiverService {
     if (error || !message || !delta) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
-        from: record.giverDid,
-        to: record.witnessDid,
+        from: record.giver?.did,
+        to: record.witness?.did,
         pthid: record.threadId,
         body: {
           code: error?.code || 'invalid-cash-accepted',
@@ -269,8 +276,8 @@ export class ValueTransferGiverService {
 
     // VTP message verification succeed
     const cashRemovedMessage = new CashRemovedMessage({
-      from: record.giverDid,
-      to: record.witnessDid,
+      from: record.giver?.did,
+      to: record.witness?.did,
       thid: record.threadId,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
     })

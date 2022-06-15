@@ -13,6 +13,7 @@ import { Wallet } from '../../../wallet'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
+import { DidInfo } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
@@ -166,6 +167,10 @@ export class ValueTransferWitnessService {
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
     })
 
+    const getterInfo = new DidInfo({ did: valueTransferMessage.getterId })
+    const giverInfo = giverDid ? new DidInfo({ did: giverDid }) : undefined
+    const witnessInfo = new DidInfo({ did: state.publicDid })
+
     // Create Value Transfer record and raise event
     const record = new ValueTransferRecord({
       role: ValueTransferRole.Witness,
@@ -173,10 +178,9 @@ export class ValueTransferWitnessService {
       status: ValueTransferRecordStatus.Pending,
       threadId: requestMessage.id,
       valueTransferMessage: message,
-      getter: valueTransferMessage.getterId,
-      giver: giverDid,
-      witness: state.publicDid,
-      amount: valueTransferMessage.amount,
+      getter: getterInfo,
+      giver: giverInfo,
+      witness: witnessInfo,
     })
 
     await this.valueTransferRepository.save(record)
@@ -214,8 +218,8 @@ export class ValueTransferWitnessService {
     const valueTransferDelta = requestAcceptedMessage.valueTransferDelta
     if (!valueTransferDelta) {
       const problemReport = new ProblemReportMessage({
-        from: record.witnessDid,
-        to: record.giverDid,
+        from: record.witness?.did,
+        to: record.giver?.did,
         pthid: requestAcceptedMessage.thid,
         body: {
           code: 'invalid-payment-acceptance',
@@ -234,7 +238,7 @@ export class ValueTransferWitnessService {
     if (error || !message || !delta) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
-        from: record.witnessDid,
+        from: record.witness?.did,
         to: sender,
         pthid: requestAcceptedMessage.thid,
         body: {
@@ -252,14 +256,14 @@ export class ValueTransferWitnessService {
     // VTP message verification succeed
     const requestAcceptedWitnessedMessage = new RequestAcceptedWitnessedMessage({
       ...requestAcceptedMessage,
-      from: record.witnessDid,
-      to: record.getterDid,
+      from: record.witness?.did,
+      to: record.getter?.did,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
     record.valueTransferMessage = message
-    record.giverDid = message.giverId
+    record.giver = new DidInfo({ did: message.giverId })
 
     await this.valueTransferService.updateState(
       record,
@@ -295,8 +299,8 @@ export class ValueTransferWitnessService {
     const valueTransferDelta = cashAcceptedMessage.valueTransferDelta
     if (!valueTransferDelta) {
       const problemReport = new ProblemReportMessage({
-        from: record.witnessDid,
-        to: record.giverDid,
+        from: record.witness?.did,
+        to: record.giver?.did,
         pthid: cashAcceptedMessage.thid,
         body: {
           code: 'invalid-cash-acceptance',
@@ -315,8 +319,8 @@ export class ValueTransferWitnessService {
     if (error || !message || !delta) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
-        from: record.witnessDid,
-        to: record.giverDid,
+        from: record.witness?.did,
+        to: record.giver?.did,
         pthid: cashAcceptedMessage.thid,
         body: {
           code: error?.code || 'invalid-cash-acceptance',
@@ -333,8 +337,8 @@ export class ValueTransferWitnessService {
     // VTP message verification succeed
     const cashAcceptedWitnessedMessage = new CashAcceptedWitnessedMessage({
       ...cashAcceptedMessage,
-      from: record.witnessDid,
-      to: record.giverDid,
+      from: record.witness?.did,
+      to: record.giver?.did,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
     })
 
@@ -372,8 +376,8 @@ export class ValueTransferWitnessService {
     const valueTransferDelta = cashRemovedMessage.valueTransferDelta
     if (!valueTransferDelta) {
       const getterProblemReport = new ProblemReportMessage({
-        from: record.witnessDid,
-        to: record.giverDid,
+        from: record.witness?.did,
+        to: record.giver?.did,
         pthid: cashRemovedMessage.thid,
         body: {
           code: 'invalid-cash-removal',
@@ -382,7 +386,7 @@ export class ValueTransferWitnessService {
       })
       const giverProblemReport = new ProblemReportMessage({
         ...getterProblemReport,
-        to: record.giverDid,
+        to: record.giver?.did,
       })
       return { record, getterMessage: getterProblemReport, giverMessage: giverProblemReport }
     }
@@ -397,8 +401,8 @@ export class ValueTransferWitnessService {
     if (error || !receipt || !getterDelta || !giverDelta) {
       // VTP message verification failed
       const getterProblemReport = new ProblemReportMessage({
-        from: record.witnessDid,
-        to: record.getterDid,
+        from: record.witness?.did,
+        to: record.getter?.did,
         pthid: record.threadId,
         body: {
           code: error?.code || 'invalid-state',
@@ -407,7 +411,7 @@ export class ValueTransferWitnessService {
       })
       const giverProblemReport = new ProblemReportMessage({
         ...getterProblemReport,
-        to: record.giverDid,
+        to: record.giver?.did,
       })
 
       // Update Value Transfer record
@@ -421,15 +425,15 @@ export class ValueTransferWitnessService {
     }
 
     const getterReceiptMessage = new GetterReceiptMessage({
-      from: record.witnessDid,
-      to: record.getterDid,
+      from: record.witness?.did,
+      to: record.getter?.did,
       thid: record.threadId,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(getterDelta)],
     })
 
     const giverReceiptMessage = new GiverReceiptMessage({
-      from: record.witnessDid,
-      to: record.giverDid,
+      from: record.witness?.did,
+      to: record.giver?.did,
       thid: record.threadId,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(giverDelta)],
     })

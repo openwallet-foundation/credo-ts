@@ -1,8 +1,7 @@
-import * as zlib from 'zlib'
-var compressjs = require('compressjs')
-import { Agent, AgentConfig, Logger, OutboundPackage, OutboundTransport } from '@aries-framework/core'
+import type { FileSystem, Agent, Logger, OutboundPackage, OutboundTransport } from '@aries-framework/core'
+
+import { AgentConfig } from '@aries-framework/core'
 import { JsonEncoder } from '@aries-framework/core/build/utils/JsonEncoder'
-import type { FileSystem } from '@aries-framework/core'
 
 export class FileOutboundTransport implements OutboundTransport {
   private agent!: Agent

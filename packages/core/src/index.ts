@@ -22,6 +22,7 @@ export { InjectionSymbols } from './constants'
 export type { Wallet } from './wallet/Wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
+export { DIDCommV1Message, DIDCommV2Message } from './agent/didcomm'
 
 import { uuid } from './utils/uuid'
 

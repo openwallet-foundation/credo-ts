@@ -11,6 +11,7 @@ import { AriesFrameworkError } from '../../../error'
 import { ConnectionService } from '../../connections'
 import { DidType } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
+import { DidInfo, WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
@@ -32,6 +33,7 @@ export class ValueTransferGetterService {
   private valueTransferStateService: ValueTransferStateService
   private connectionService: ConnectionService
   private didService: DidService
+  private wellKnownService: WellKnownService
   private eventEmitter: EventEmitter
   private getter: Getter
 
@@ -42,6 +44,7 @@ export class ValueTransferGetterService {
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferStateService,
     didService: DidService,
+    wellKnownService: WellKnownService,
     connectionService: ConnectionService,
     eventEmitter: EventEmitter
   ) {
@@ -51,6 +54,7 @@ export class ValueTransferGetterService {
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
     this.didService = didService
+    this.wellKnownService = wellKnownService
     this.connectionService = connectionService
     this.eventEmitter = eventEmitter
 
@@ -107,16 +111,19 @@ export class ValueTransferGetterService {
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
     })
 
+    const getterInfo = await this.wellKnownService.resolve(getter)
+    const witnessInfo = witness ? new DidInfo({ did: witness }) : undefined
+    const giverInfo = await this.wellKnownService.resolve(giver)
+
     // Create Value Transfer record and raise event
     const record = new ValueTransferRecord({
       role: ValueTransferRole.Getter,
       state: ValueTransferState.RequestSent,
       threadId: requestMessage.id,
       valueTransferMessage: message,
-      getter: getter,
-      witness: witness,
-      giver: giver,
-      amount: amount,
+      getter: getterInfo,
+      witness: witnessInfo,
+      giver: giverInfo,
       status: ValueTransferRecordStatus.Pending,
     })
 
@@ -154,7 +161,7 @@ export class ValueTransferGetterService {
     const valueTransferDelta = requestAcceptedWitnessedMessage.valueTransferDelta
     if (!valueTransferDelta) {
       const problemReport = new ProblemReportMessage({
-        from: record.getterDid,
+        from: record.getter?.did,
         to: requestAcceptedWitnessedMessage.from,
         pthid: record.threadId,
         body: {
@@ -170,8 +177,8 @@ export class ValueTransferGetterService {
     if (error || !message || !delta) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
-        from: record.getterDid,
-        to: record.witnessDid,
+        from: record.getter?.did,
+        to: record.witness?.did,
         pthid: record.threadId,
         body: {
           code: error?.code || 'invalid-request-acceptance',
@@ -190,17 +197,21 @@ export class ValueTransferGetterService {
 
     // VTP message verification succeed
     const cashAcceptedMessage = new CashAcceptedMessage({
-      from: record.getterDid,
-      to: record.witnessDid,
+      from: record.getter?.did,
+      to: record.witness?.did,
       thid: record.threadId,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
     // Update Value Transfer record and raise event
+
+    const witnessInfo = record.witness?.did ? record.witness : new DidInfo({ did: message.witnessId })
+    const giverInfo = record.giver?.did ? record.giver : await this.wellKnownService.resolve(message.giverId)
+
     record.valueTransferMessage = message
-    record.witnessDid = message.witnessId
-    record.giverDid = message.giverId
+    record.witness = witnessInfo
+    record.giver = giverInfo
 
     await this.valueTransferService.updateState(
       record,

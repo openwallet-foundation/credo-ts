@@ -1,4 +1,5 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
+import type { DidInfo } from '../../well-known'
 import type { AutoAcceptValueTransfer } from '../ValueTransferAutoAcceptType'
 import type { ValueTransferRole } from '../ValueTransferRole'
 import type { ValueTransferState } from '../ValueTransferState'
@@ -33,10 +34,9 @@ export interface ValueTransferStorageProps {
   createdAt?: Date
   autoAcceptValueTransfer?: AutoAcceptValueTransfer
 
-  getter: string
-  giver?: string
-  witness?: string
-  amount: number
+  getter?: DidInfo
+  giver?: DidInfo
+  witness?: DidInfo
   valueTransferMessage: ValueTransferMessage
   problemReportMessage?: ProblemReportMessage
   receipt?: ValueTransferMessage
@@ -46,10 +46,9 @@ export interface ValueTransferStorageProps {
 }
 
 export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, CustomValueTransferTags> {
-  public witnessDid?: string
-  public getterDid?: string
-  public giverDid?: string
-  public amount?: number
+  public witness?: DidInfo
+  public getter?: DidInfo
+  public giver?: DidInfo
 
   public threadId!: string
 
@@ -78,10 +77,9 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this.witnessDid = props.witness
-      this.getterDid = props.getter
-      this.amount = props.amount
-      this.giverDid = props.giver
+      this.witness = props.witness
+      this.getter = props.getter
+      this.giver = props.giver
       this.threadId = props.threadId
       this.role = props.role
       this.state = props.state
@@ -97,15 +95,19 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   public getTags() {
     return {
       ...this._tags,
-      witnessDid: this.witnessDid,
-      getterDid: this.getterDid,
-      giverDid: this.giverDid,
+      witnessDid: this.witness?.did,
+      getterDid: this.getter?.did,
+      giverDid: this.giver?.did,
       threadId: this.threadId,
       txnId: this.valueTransferMessage?.txnId,
       role: this.role,
       state: this.state,
       status: this.status,
     }
+  }
+
+  public get givenTotal() {
+    return this.valueTransferMessage.payment.given_total
   }
 
   public assertRole(expectedRoles: ValueTransferRole | ValueTransferRole[]) {

@@ -1,5 +1,4 @@
-import type { InboundTransport, Agent } from '@aries-framework/core'
-import type { FileSystem } from '@aries-framework/core'
+import type { InboundTransport, Agent, FileSystem } from '@aries-framework/core'
 
 import { AgentConfig } from '@aries-framework/core'
 import { JsonEncoder } from '@aries-framework/core/build/utils/JsonEncoder'

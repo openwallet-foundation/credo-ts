@@ -1,3 +1,5 @@
+import type { ValueTransferRecord } from '@aries-framework/core'
+
 import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
@@ -6,7 +8,6 @@ import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Giver } from './Giver'
 import { Listener } from './Listener'
 import { greenText, Title } from './OutputClass'
-import { ValueTransferRecord } from '@aries-framework/core'
 
 export const runFaber = async () => {
   clear()
