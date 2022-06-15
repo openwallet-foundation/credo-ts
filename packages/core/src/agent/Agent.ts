@@ -23,6 +23,7 @@ import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsM
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { OutOfBandModule } from '../modules/oob/OutOfBandModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
+import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { StorageUpdateService } from '../storage'
@@ -58,6 +59,7 @@ export class Agent {
   public readonly basicMessages: BasicMessagesModule
   public readonly genericRecords: GenericRecordsModule
   public readonly ledger: LedgerModule
+  public readonly questionAnswer!: QuestionAnswerModule
   public readonly credentials: CredentialsModule
   public readonly mediationRecipient: RecipientModule
   public readonly mediator: MediatorModule
@@ -118,11 +120,12 @@ export class Agent {
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
-    this.credentials = this.container.resolve(CredentialsModule)
+    this.credentials = this.container.resolve(CredentialsModule) as CredentialsModule
     this.proofs = this.container.resolve(ProofsModule)
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
     this.basicMessages = this.container.resolve(BasicMessagesModule)
+    this.questionAnswer = this.container.resolve(QuestionAnswerModule)
     this.genericRecords = this.container.resolve(GenericRecordsModule)
     this.ledger = this.container.resolve(LedgerModule)
     this.discovery = this.container.resolve(DiscoverFeaturesModule)
