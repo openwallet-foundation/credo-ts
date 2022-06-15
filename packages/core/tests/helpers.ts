@@ -80,6 +80,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
         id: `pool-${name}`,
         isProduction: false,
         genesisPath,
+        transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
       },
     ],
     // TODO: determine the log level based on an environment variable. This will make it
