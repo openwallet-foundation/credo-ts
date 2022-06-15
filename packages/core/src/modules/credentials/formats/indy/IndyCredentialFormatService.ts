@@ -49,6 +49,7 @@ import { IndyCredPropose } from './models/IndyCredPropose'
 const INDY_CRED_ABSTRACT = 'hlindy/cred-abstract@v2.0'
 const INDY_CRED_REQUEST = 'hlindy/cred-req@v2.0'
 const INDY_CRED_FILTER = 'hlindy/cred-filter@v2.0'
+const INDY_CRED = 'hlindy/cred@v2.0'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyCredentialFormatService extends CredentialFormatService<IndyCredentialFormat> {
@@ -302,7 +303,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
 
     const format = new CredentialFormatSpec({
       attachId,
-      format: INDY_CRED_ABSTRACT,
+      format: INDY_CRED,
     })
 
     const attachment = this.getFormatData(credential, format.attachId)
@@ -355,7 +356,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   }
 
   public supportsFormat(format: string): boolean {
-    const supportedFormats = [INDY_CRED_ABSTRACT, INDY_CRED_REQUEST, INDY_CRED_FILTER]
+    const supportedFormats = [INDY_CRED_ABSTRACT, INDY_CRED_REQUEST, INDY_CRED_FILTER, INDY_CRED]
 
     return supportedFormats.includes(format)
   }
