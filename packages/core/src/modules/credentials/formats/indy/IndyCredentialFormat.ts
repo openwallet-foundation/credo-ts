@@ -31,13 +31,13 @@ export interface IndyAcceptOfferFormat {
  */
 export interface IndyOfferCredentialFormat {
   credentialDefinitionId: string
-  attributes: CredentialPreviewAttribute[]
+  attributes: CredentialPreviewAttributeOptions[]
   linkedAttachments?: LinkedAttachment[]
 }
 
 export interface IndyIssueCredentialFormat {
   credentialDefinitionId?: string
-  attributes?: CredentialPreviewAttribute[]
+  attributes?: CredentialPreviewAttributeOptions[]
 }
 
 export interface IndyCredentialFormat extends CredentialFormat {
@@ -50,6 +50,5 @@ export interface IndyCredentialFormat extends CredentialFormat {
     acceptOffer: IndyAcceptOfferFormat
     createRequest: never // cannot start from createRequest
     acceptRequest: Record<string, never> // empty object
-    createCredential: IndyIssueCredentialFormat
   }
 }
