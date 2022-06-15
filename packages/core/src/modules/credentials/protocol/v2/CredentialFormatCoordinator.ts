@@ -67,7 +67,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormat[]> {
       formats,
       proposalAttachments,
       comment: comment,
-      credentialProposal: credentialPreview,
+      credentialPreview,
     })
 
     message.setThread({ threadId: credentialRecord.threadId })
@@ -130,7 +130,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormat[]> {
     // NOTE: We set the credential attributes from the proposal on the record as we've 'accepted' them
     // and can now use them to create the offer in the format services. It may be overwritten later on
     // if the user provided other attributes in the credentialFormats array.
-    credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
+    credentialRecord.credentialAttributes = proposalMessage.credentialPreview?.attributes
 
     for (const formatService of formatServices) {
       const proposalAttachment = this.getAttachmentForService(
