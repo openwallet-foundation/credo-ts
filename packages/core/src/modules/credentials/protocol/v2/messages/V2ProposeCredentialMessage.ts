@@ -13,7 +13,7 @@ export interface V2ProposeCredentialMessageProps {
   formats: CredentialFormatSpec[]
   proposalAttachments: Attachment[]
   comment?: string
-  credentialProposal?: V2CredentialPreview
+  credentialPreview?: V2CredentialPreview
   attachments?: Attachment[]
 }
 
@@ -23,7 +23,7 @@ export class V2ProposeCredentialMessage extends AgentMessage {
     if (props) {
       this.id = props.id ?? this.generateId()
       this.comment = props.comment
-      this.credentialProposal = props.credentialProposal
+      this.credentialPreview = props.credentialPreview
       this.formats = props.formats
       this.proposalAttachments = props.proposalAttachments
       this.appendedAttachments = props.attachments
@@ -39,12 +39,12 @@ export class V2ProposeCredentialMessage extends AgentMessage {
   public readonly type = V2ProposeCredentialMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/issue-credential/2.0/propose-credential')
 
-  @Expose({ name: 'credential_proposal' })
+  @Expose({ name: 'credential_preview' })
   @Type(() => V2CredentialPreview)
   @ValidateNested()
   @IsOptional()
   @IsInstance(V2CredentialPreview)
-  public credentialProposal?: V2CredentialPreview
+  public credentialPreview?: V2CredentialPreview
 
   @Expose({ name: 'filters~attach' })
   @Type(() => Attachment)
