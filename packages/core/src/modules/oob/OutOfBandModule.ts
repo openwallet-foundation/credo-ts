@@ -276,7 +276,7 @@ export class OutOfBandModule {
    * @returns OutOfBandInvitation
    */
   public async parseInvitation(invitationUrl: string): Promise<OutOfBandInvitation> {
-    return await parseInvitationUrl(invitationUrl)
+    return await parseInvitationUrl(invitationUrl, this.agentConfig.agentDependencies)
   }
 
   /**
