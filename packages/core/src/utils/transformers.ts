@@ -59,7 +59,26 @@ export function MetadataTransformer() {
     }
 
     if (type === TransformationType.CLASS_TO_CLASS) {
-      return value
+      return new Metadata({ ...value.data })
+    }
+  })
+}
+
+/**
+ * Decorator that transforms to and from a date instance.
+ */
+export function DateTransformer() {
+  return Transform(({ value, type }) => {
+    if (type === TransformationType.CLASS_TO_PLAIN) {
+      return value.toISOString()
+    }
+
+    if (type === TransformationType.PLAIN_TO_CLASS) {
+      return new Date(value)
+    }
+
+    if (type === TransformationType.CLASS_TO_CLASS) {
+      return new Date(value.getTime())
     }
   })
 }

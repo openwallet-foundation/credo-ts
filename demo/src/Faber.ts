@@ -2,13 +2,7 @@ import type { ConnectionRecord } from '@aries-framework/core'
 import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import {
-  CredentialProtocolVersion,
-  V1CredentialPreview,
-  AttributeFilter,
-  ProofAttributeInfo,
-  utils,
-} from '@aries-framework/core'
+import { V1CredentialPreview, AttributeFilter, ProofAttributeInfo, utils } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
@@ -106,7 +100,7 @@ export class Faber extends BaseAgent {
 
     await this.agent.credentials.offerCredential({
       connectionId: connectionRecord.id,
-      protocolVersion: CredentialProtocolVersion.V1,
+      protocolVersion: 'v1',
       credentialFormats: {
         indy: {
           attributes: credentialPreview.attributes,
