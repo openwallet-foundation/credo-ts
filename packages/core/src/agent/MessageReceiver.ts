@@ -2,7 +2,6 @@ import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
 import type { PlaintextMessage, EncryptedMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
 import type { DecryptedMessageContext } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 
@@ -17,6 +16,7 @@ import { MessageValidator } from '../utils/MessageValidator'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
 import { AgentConfig } from './AgentConfig'
+import { AgentMessage } from './AgentMessage'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
 import { MessageSender } from './MessageSender'
@@ -168,7 +168,7 @@ export class MessageReceiver {
     let message: AgentMessage
     try {
       message = await this.transformMessage(plaintextMessage)
-      await this.validateMessage(message)
+      this.validateMessage(message)
     } catch (error) {
       if (connection) await this.sendProblemReportMessage(error.message, connection, plaintextMessage)
       throw error
@@ -216,18 +216,8 @@ export class MessageReceiver {
    * Validate an AgentMessage instance.
    * @param message agent message to validate
    */
-  private async validateMessage(message: AgentMessage) {
-    try {
-      await MessageValidator.validate(message)
-    } catch (error) {
-      this.logger.error(`Error validating message ${message.type}`, {
-        errors: error,
-        message: message.toJSON(),
-      })
-      throw new ProblemReportError(`Error validating message ${message.type}`, {
-        problemCode: ProblemReportReason.MessageParseFailure,
-      })
-    }
+  private validateMessage(message: AgentMessage) {
+    return MessageValidator.validateSync(message, AgentMessage)
   }
 
   /**

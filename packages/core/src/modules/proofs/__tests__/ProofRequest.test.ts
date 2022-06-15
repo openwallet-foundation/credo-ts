@@ -36,7 +36,7 @@ describe('ProofRequest', () => {
       ProofRequest
     )
 
-    expect(MessageValidator.validate(proofRequest)).resolves.not.toThrow()
+    expect(() => MessageValidator.validateSync(proofRequest, ProofRequest)).not.toThrow()
   })
 
   it('should throw an error if the proof request json contains an invalid structure', async () => {
@@ -69,12 +69,11 @@ describe('ProofRequest', () => {
     }
 
     expect(() => JsonTransformer.fromJSON(proofRequest, ProofRequest)).toThrowError(ClassValidationError)
-    let caughtError
     try {
       JsonTransformer.fromJSON(proofRequest, ProofRequest)
     } catch (e) {
-      caughtError = e
+      const caughtError = e as ClassValidationError
+      expect(caughtError.validationErrors).toHaveLength(2)
     }
-    expect(caughtError.validationErrors).toHaveLength(2)
   })
 })

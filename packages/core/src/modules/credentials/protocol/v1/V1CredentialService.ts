@@ -209,7 +209,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
         previousSentMessage: offerCredentialMessage ?? undefined,
       })
 
-      await this.formatService.processProposal({
+      this.formatService.processProposal({
         credentialRecord,
         attachment: this.rfc0592ProposalAttachmentFromV1ProposeMessage(proposalMessage),
       })
