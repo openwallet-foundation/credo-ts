@@ -1,6 +1,6 @@
 {
   "name": "afj-extension-module-sample",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "repository": {
     "type": "git",
@@ -13,8 +13,8 @@
     "responder": "ts-node responder.ts"
   },
   "devDependencies": {
-    "@aries-framework/core": "^0.1.0",
-    "@aries-framework/node": "^0.1.0",
+    "@aries-framework/core": "1.0.1",
+    "@aries-framework/node": "1.0.1",
     "ts-node": "^10.4.0"
   },
   "dependencies": {
