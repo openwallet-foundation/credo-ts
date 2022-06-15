@@ -1,10 +1,12 @@
 import type { CredentialPreviewOptions } from '../../../models/CredentialPreviewAttribute'
 
-import { Expose, Type } from 'class-transformer'
+import { Expose, Transform, Type } from 'class-transformer'
 import { Equals, IsInstance, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttribute'
+import { IsValidMessageType, parseMessageType } from '../../../../..'
+import { replaceLegacyDidSovPrefix } from '../../../../../utils/messageType'
 
 /**
  * Credential preview inner message class.
@@ -21,9 +23,12 @@ export class V2CredentialPreview {
   }
 
   @Expose({ name: '@type' })
-  @Equals(V2CredentialPreview.type)
-  public type = V2CredentialPreview.type
-  public static type = 'https://didcomm.org/issue-credential/2.0/credential-preview'
+  @IsValidMessageType(V2CredentialPreview.type)
+  @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
+    toClassOnly: true,
+  })
+  public readonly type = V2CredentialPreview.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/2.0/credential-preview')
 
   @Type(() => CredentialPreviewAttribute)
   @ValidateNested({ each: true })
