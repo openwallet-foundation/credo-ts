@@ -84,9 +84,7 @@ export class MessageSender {
   }
 
   private async sendMessageToSession(session: TransportSession, message: AgentMessage) {
-    this.logger.debug(`Existing ${session.type} transport session has been found.`, {
-      keys: session.keys,
-    })
+    this.logger.debug(`Existing ${session.type} transport session has been found.`)
     if (!session.keys) {
       throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
     }
