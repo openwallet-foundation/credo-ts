@@ -103,7 +103,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     const indyFormat = credentialFormats.indy
 
     if (!indyFormat) {
-      throw new AriesFrameworkError('Missing indy payload createProposal')
+      throw new AriesFrameworkError('Missing indy payload in createProposal')
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -353,7 +353,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     })
 
     credentialRecord.credentials.push({
-      credentialRecordType: 'indy',
+      credentialRecordType: this.credentialRecordType,
       credentialRecordId: credentialId,
     })
   }
@@ -362,23 +362,6 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     const supportedFormats = [INDY_CRED_ABSTRACT, INDY_CRED_REQUEST, INDY_CRED_FILTER, INDY_CRED]
 
     return supportedFormats.includes(format)
-  }
-
-  /**
-   * Gets the attachment object for a given attachId. We need to get out the correct attachId for
-   * indy and then find the corresponding attachment (if there is one)
-   * @param formats the formats object containing the attachId
-   * @param messageAttachments the attachments containing the payload
-   * @returns The Attachment if found or undefined
-   *
-   */
-  public getAttachment(formats: CredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
-    const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachId)
-    const supportedAttachments = messageAttachments.filter((attachment) =>
-      supportedAttachmentIds.includes(attachment.id)
-    )
-
-    return supportedAttachments[0]
   }
 
   public async deleteCredentialById(credentialRecordId: string): Promise<void> {
