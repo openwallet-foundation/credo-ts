@@ -296,10 +296,13 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       credentialRequest,
       credentialValues: IndyCredentialUtils.convertAttributesToValues(credentialAttributes),
     })
-    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
-      indyCredentialRevocationId: credentialRevocationId,
-      indyRevocationRegistryId: credential.rev_reg_id,
-    })
+
+    if (credential.rev_reg_id) {
+      credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
+        indyCredentialRevocationId: credentialRevocationId,
+        indyRevocationRegistryId: credential.rev_reg_id,
+      })
+    }
 
     const format = new CredentialFormatSpec({
       attachId,
@@ -348,6 +351,16 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       credentialDefinition,
       revocationRegistryDefinition: revocationRegistry?.revocationRegistryDefinition,
     })
+
+    // If the credential is revocable, store the revocation identifiers in the credential record
+    if (indyCredential.rev_reg_id) {
+      const credential = await this.indyHolderService.getCredential(credentialId)
+
+      credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
+        indyCredentialRevocationId: credential.cred_rev_id,
+        indyRevocationRegistryId: indyCredential.rev_reg_id,
+      })
+    }
 
     credentialRecord.credentials.push({
       credentialRecordType: 'indy',
