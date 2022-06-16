@@ -4,6 +4,7 @@ import type { Dispatcher } from '../../../agent/Dispatcher'
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { DidCommMessageRepository } from '../../../storage'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type {
@@ -30,6 +31,7 @@ import { CredentialEventTypes } from './../CredentialEvents'
 
 export abstract class CredentialService<CFs extends CredentialFormat[]> {
   protected credentialRepository: CredentialRepository
+  protected didCommMessageRepository: DidCommMessageRepository
   protected eventEmitter: EventEmitter
   protected dispatcher: Dispatcher
   protected agentConfig: AgentConfig
@@ -37,11 +39,13 @@ export abstract class CredentialService<CFs extends CredentialFormat[]> {
 
   public constructor(
     credentialRepository: CredentialRepository,
+    didCommMessageRepository: DidCommMessageRepository,
     eventEmitter: EventEmitter,
     dispatcher: Dispatcher,
     agentConfig: AgentConfig
   ) {
     this.credentialRepository = credentialRepository
+    this.didCommMessageRepository = didCommMessageRepository
     this.eventEmitter = eventEmitter
     this.dispatcher = dispatcher
     this.agentConfig = agentConfig
@@ -190,11 +194,21 @@ export abstract class CredentialService<CFs extends CredentialFormat[]> {
     await this.credentialRepository.delete(credentialRecord)
 
     const deleteAssociatedCredentials = options?.deleteAssociatedCredentials ?? true
+    const deleteAssociatedDidCommMessages = options?.deleteAssociatedDidCommMessages ?? true
 
     if (deleteAssociatedCredentials) {
       for (const credential of credentialRecord.credentials) {
         const formatService = this.getFormatServiceForRecordType(credential.credentialRecordType)
         await formatService.deleteCredentialById(credential.credentialRecordId)
+      }
+    }
+
+    if (deleteAssociatedDidCommMessages) {
+      const didCommMessages = await this.didCommMessageRepository.findByQuery({
+        associatedRecordId: credentialRecord.id,
+      })
+      for (const msgRecord of didCommMessages) {
+        await this.didCommMessageRepository.delete(msgRecord)
       }
     }
   }

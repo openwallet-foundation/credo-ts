@@ -72,4 +72,5 @@ export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessag
 
 export interface DeleteCredentialOptions {
   deleteAssociatedCredentials: boolean
+  deleteAssociatedDidCommMessages: boolean
 }
