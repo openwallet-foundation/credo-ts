@@ -870,6 +870,7 @@ describe('V1CredentialService', () => {
       await credentialService.delete(credentialRecord)
 
       expect(deleteCredentialMock).toHaveBeenNthCalledWith(1, credentialRecord.credentials[0].credentialRecordId)
+      expect(didCommMessageRepository.delete).toHaveBeenCalledTimes(3)
     })
   })
 
