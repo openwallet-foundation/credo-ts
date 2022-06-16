@@ -49,6 +49,7 @@ import { IndyCredPropose } from './models/IndyCredPropose'
 const INDY_CRED_ABSTRACT = 'hlindy/cred-abstract@v2.0'
 const INDY_CRED_REQUEST = 'hlindy/cred-req@v2.0'
 const INDY_CRED_FILTER = 'hlindy/cred-filter@v2.0'
+const INDY_CRED = 'hlindy/cred@v2.0'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyCredentialFormatService extends CredentialFormatService<IndyCredentialFormat> {
@@ -295,14 +296,17 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       credentialRequest,
       credentialValues: IndyCredentialUtils.convertAttributesToValues(credentialAttributes),
     })
-    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
-      indyCredentialRevocationId: credentialRevocationId,
-      indyRevocationRegistryId: credential.rev_reg_id,
-    })
+
+    if (credential.rev_reg_id) {
+      credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
+        indyCredentialRevocationId: credentialRevocationId,
+        indyRevocationRegistryId: credential.rev_reg_id,
+      })
+    }
 
     const format = new CredentialFormatSpec({
       attachId,
-      format: INDY_CRED_ABSTRACT,
+      format: INDY_CRED,
     })
 
     const attachment = this.getFormatData(credential, format.attachId)
@@ -348,6 +352,16 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       revocationRegistryDefinition: revocationRegistry?.revocationRegistryDefinition,
     })
 
+    // If the credential is revocable, store the revocation identifiers in the credential record
+    if (indyCredential.rev_reg_id) {
+      const credential = await this.indyHolderService.getCredential(credentialId)
+
+      credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
+        indyCredentialRevocationId: credential.cred_rev_id,
+        indyRevocationRegistryId: indyCredential.rev_reg_id,
+      })
+    }
+
     credentialRecord.credentials.push({
       credentialRecordType: 'indy',
       credentialRecordId: credentialId,
@@ -355,7 +369,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   }
 
   public supportsFormat(format: string): boolean {
-    const supportedFormats = [INDY_CRED_ABSTRACT, INDY_CRED_REQUEST, INDY_CRED_FILTER]
+    const supportedFormats = [INDY_CRED_ABSTRACT, INDY_CRED_REQUEST, INDY_CRED_FILTER, INDY_CRED]
 
     return supportedFormats.includes(format)
   }
