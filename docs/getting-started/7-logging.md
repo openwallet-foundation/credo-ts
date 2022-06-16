@@ -72,14 +72,12 @@ agentDependencies.indy.setDefaultLogger('trace')
 
 // OR
 
-agentDependencies.indy.setLogger(
-  (level, target, message, modulePath, file, line) => {
-    console.log('libindy said:', level, target, message, modulePath, file, line)
-  }
-)
+agentDependencies.indy.setLogger((level, target, message, modulePath, file, line) => {
+  console.log('libindy said:', level, target, message, modulePath, file, line)
+})
 ```
 
->WARNING: You can only set the logger once. Call indy_set_default_logger, indy_set_logger, not both. Once it's been set, libindy won't let you change it.
+> WARNING: You can only set the logger once. Call indy_set_default_logger, indy_set_logger, not both. Once it's been set, libindy won't let you change it.
 
-You can also set the environement variable `RUST_LOG` to log at specified log levels. 
+You can also set the environement variable `RUST_LOG` to log at specified log levels.
 See https://crates.io/crates/env_logger for more information.
