@@ -1,7 +1,5 @@
 import { Transform } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
-// eslint-disable-next-line import/no-extraneous-dependencies
-import fetch from 'node-fetch'
 import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../../../agent/AgentMessage'

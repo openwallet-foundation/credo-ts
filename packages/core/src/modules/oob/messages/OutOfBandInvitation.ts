@@ -4,8 +4,6 @@ import type { Key } from '../../dids'
 
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
-// eslint-disable-next-line import/no-extraneous-dependencies
-import fetch from 'node-fetch'
 import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../../../agent/AgentMessage'

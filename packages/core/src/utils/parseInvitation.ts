@@ -30,15 +30,15 @@ const fromShortUrl = async (invitationUrl: string, dependencies: AgentDependenci
   clearTimeout(id)
   if (response) {
     if (response.headers.get('Content-Type') === 'application/json' && response.ok) {
-      const inviatationJson = await response.json()
-      if (inviatationJson['@type'] === OutOfBandInvitation.type) {
-        const invitation = JsonTransformer.fromJSON(inviatationJson, OutOfBandInvitation)
+      const invitationJson = await response.json()
+      if (invitationJson['@type'].includes('out-of-band')) {
+        const invitation = JsonTransformer.fromJSON(invitationJson, OutOfBandInvitation)
 
         await MessageValidator.validate(invitation)
 
         return invitation
       } else {
-        const invitation = JsonTransformer.fromJSON(inviatationJson, ConnectionInvitationMessage)
+        const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
         await MessageValidator.validate(invitation)
 
