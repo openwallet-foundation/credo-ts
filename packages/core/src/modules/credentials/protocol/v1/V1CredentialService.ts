@@ -61,7 +61,6 @@ import { V1CredentialPreview } from './messages/V1CredentialPreview'
 export class V1CredentialService extends CredentialService<[IndyCredentialFormat]> {
   private connectionService: ConnectionService
   private formatService: IndyCredentialFormatService
-  private didCommMessageRepository: DidCommMessageRepository
   private mediationRecipientService: MediationRecipientService
 
   public constructor(
@@ -74,7 +73,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     credentialRepository: CredentialRepository,
     formatService: IndyCredentialFormatService
   ) {
-    super(credentialRepository, eventEmitter, dispatcher, agentConfig)
+    super(credentialRepository, didCommMessageRepository, eventEmitter, dispatcher, agentConfig)
     this.connectionService = connectionService
     this.formatService = formatService
     this.didCommMessageRepository = didCommMessageRepository
