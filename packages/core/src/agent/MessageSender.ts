@@ -3,6 +3,7 @@ import type { DidDocument, Key } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
+import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 
@@ -21,7 +22,6 @@ import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 import { getProtocolScheme } from '../utils/uri'
 
-import { AgentMessage } from './AgentMessage'
 import { EnvelopeService } from './EnvelopeService'
 import { TransportService } from './TransportService'
 
@@ -313,7 +313,7 @@ export class MessageSender {
     }
 
     try {
-      MessageValidator.validateSync(message, AgentMessage)
+      MessageValidator.validateSync(message)
     } catch (error) {
       this.logger.error(
         `Aborting sending outbound message ${message.type} to ${service.serviceEndpoint}. Message validation failed`,

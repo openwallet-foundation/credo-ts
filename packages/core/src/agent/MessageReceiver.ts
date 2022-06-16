@@ -2,6 +2,7 @@ import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
 import type { PlaintextMessage, EncryptedMessage } from '../types'
+import type { AgentMessage } from './AgentMessage'
 import type { DecryptedMessageContext } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 
@@ -12,11 +13,9 @@ import { ConnectionsModule } from '../modules/connections'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { isValidJweStructure } from '../utils/JWE'
 import { JsonTransformer } from '../utils/JsonTransformer'
-import { MessageValidator } from '../utils/MessageValidator'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
 import { AgentConfig } from './AgentConfig'
-import { AgentMessage } from './AgentMessage'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
 import { MessageSender } from './MessageSender'
@@ -168,7 +167,6 @@ export class MessageReceiver {
     let message: AgentMessage
     try {
       message = await this.transformMessage(plaintextMessage)
-      this.validateMessage(message)
     } catch (error) {
       if (connection) await this.sendProblemReportMessage(error.message, connection, plaintextMessage)
       throw error
@@ -209,15 +207,19 @@ export class MessageReceiver {
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage
-    return JsonTransformer.fromJSON(message, MessageClass)
-  }
-
-  /**
-   * Validate an AgentMessage instance.
-   * @param message agent message to validate
-   */
-  private validateMessage(message: AgentMessage) {
-    return MessageValidator.validateSync(message, AgentMessage)
+    let messageTransformed: AgentMessage
+    try {
+      messageTransformed = JsonTransformer.fromJSON(message, MessageClass)
+    } catch (error) {
+      this.logger.error(`Error validating message ${message.type}`, {
+        errors: error,
+        message: JSON.stringify(message),
+      })
+      throw new ProblemReportError(`Error validating message ${message.type}`, {
+        problemCode: ProblemReportReason.MessageParseFailure,
+      })
+    }
+    return messageTransformed
   }
 
   /**

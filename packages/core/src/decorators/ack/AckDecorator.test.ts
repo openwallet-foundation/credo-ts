@@ -76,7 +76,7 @@ describe('Decorators | AckDecoratorExtension', () => {
       TestMessage
     )
 
-    expect(MessageValidator.validateSync(transformedWithDefault, TestMessage)).toBeUndefined()
+    expect(MessageValidator.validateSync(transformedWithDefault)).toBeUndefined()
   })
 
   test('transforms Json to AckDecorator class', () => {
@@ -96,7 +96,7 @@ describe('Decorators | AckDecoratorExtension', () => {
     } catch (e) {
       const caughtError = e as ClassValidationError
       expect(caughtError.message).toEqual(
-        'AckDecoratorExtension: Failed to validate class.\nAn instance of TestMessage has failed the validation:\n - property id has failed the following constraints: matches \n\nAn instance of TestMessage has failed the validation:\n - property type has failed the following constraints: matches \n'
+        'TestMessage: Failed to validate class.\nAn instance of TestMessage has failed the validation:\n - property id has failed the following constraints: matches \n\nAn instance of TestMessage has failed the validation:\n - property type has failed the following constraints: matches \n'
       )
       expect(caughtError.validationErrors).toMatchObject([
         {

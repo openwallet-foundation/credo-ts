@@ -36,7 +36,7 @@ describe('ProofRequest', () => {
       ProofRequest
     )
 
-    expect(() => MessageValidator.validateSync(proofRequest, ProofRequest)).not.toThrow()
+    expect(() => MessageValidator.validateSync(proofRequest)).not.toThrow()
   })
 
   it('should throw an error if the proof request json contains an invalid structure', async () => {

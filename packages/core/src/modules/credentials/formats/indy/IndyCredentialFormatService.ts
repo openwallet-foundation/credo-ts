@@ -112,7 +112,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     const proposal = new IndyCredPropose(indyCredentialProposal)
 
     try {
-      MessageValidator.validateSync(proposal, IndyCredPropose)
+      MessageValidator.validateSync(proposal)
     } catch (error) {
       throw new AriesFrameworkError(`Invalid proposal supplied: ${indyCredentialProposal} in Indy Format Service`)
     }
@@ -142,7 +142,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     }
 
     const credProposal = JsonTransformer.fromJSON(credProposalJson, IndyCredPropose)
-    MessageValidator.validateSync(credProposal, IndyCredPropose)
+    MessageValidator.validateSync(credProposal)
   }
 
   public async acceptProposal({

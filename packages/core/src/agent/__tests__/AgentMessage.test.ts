@@ -69,7 +69,7 @@ describe('AgentMessage', () => {
       } catch (error) {
         const thrownError = error as ClassValidationError
         expect(thrownError.message).toEqual(
-          'AgentMessage: Failed to validate class.\nAn instance of CustomProtocolMessage has failed the validation:\n - property type has failed the following constraints: isValidMessageType \n'
+          'CustomProtocolMessage: Failed to validate class.\nAn instance of CustomProtocolMessage has failed the validation:\n - property type has failed the following constraints: isValidMessageType \n'
         )
         expect(thrownError.validationErrors).toMatchObject([
           {

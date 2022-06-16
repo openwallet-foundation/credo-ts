@@ -1,3 +1,4 @@
+import { ClassValidationError } from '../../error/ClassValidationError'
 import { ConnectionInvitationMessage } from '../../modules/connections'
 import { MessageValidator } from '../MessageValidator'
 
@@ -10,7 +11,7 @@ describe('MessageValidator', () => {
         label: 'test-label',
       })
 
-      expect(MessageValidator.validateSync(invitation, ConnectionInvitationMessage)).toBeUndefined()
+      expect(MessageValidator.validateSync(invitation)).toBeUndefined()
     })
     it('throws an error for invalid class instance', () => {
       const invitation = new ConnectionInvitationMessage({
@@ -18,9 +19,9 @@ describe('MessageValidator', () => {
         id: 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
         label: 'test-label',
       })
-      invitation.did = 'jnsjcd'
+      invitation.did = undefined
 
-      expect(MessageValidator.validateSync(invitation, ConnectionInvitationMessage)).toThrow
+      expect(() => MessageValidator.validateSync(invitation)).toThrow(ClassValidationError)
     })
   })
 })

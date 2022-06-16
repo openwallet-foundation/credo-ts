@@ -5,7 +5,7 @@ import { MessageValidator } from '../../utils/MessageValidator'
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator'
 
 const validTransport = (transportJson: Record<string, unknown>) =>
-  MessageValidator.validateSync(JsonTransformer.fromJSON(transportJson, TransportDecorator), TransportDecorator)
+  MessageValidator.validateSync(JsonTransformer.fromJSON(transportJson, TransportDecorator))
 const expectValid = (transportJson: Record<string, unknown>) => expect(validTransport(transportJson)).toBeUndefined()
 const expectInvalid = (transportJson: Record<string, unknown>) =>
   expect(() => validTransport(transportJson)).toThrowError(ClassValidationError)

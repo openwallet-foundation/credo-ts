@@ -13,8 +13,6 @@ describe('ConnectionRequestMessage', () => {
     // @ts-ignore
     delete connectionRequest.connection
 
-    expect(() => MessageValidator.validateSync(connectionRequest, ConnectionRequestMessage)).toThrowError(
-      ClassValidationError
-    )
+    expect(() => MessageValidator.validateSync(connectionRequest)).toThrowError(ClassValidationError)
   })
 })

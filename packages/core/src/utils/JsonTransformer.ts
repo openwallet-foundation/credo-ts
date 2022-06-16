@@ -33,7 +33,7 @@ export class JsonTransformer {
       throw new ClassValidationError('Cannot validate instance of ', { classType: Object.getPrototypeOf(cls).name })
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    MessageValidator.validateSync(instance, cls as any)
+    MessageValidator.validateSync(instance)
 
     return instance
   }
