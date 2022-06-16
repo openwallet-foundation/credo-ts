@@ -1,5 +1,5 @@
 import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
-import type { CredentialPreviewAttributeOptions, CredentialPreviewAttribute } from '../../models'
+import type { CredentialPreviewAttributeOptions } from '../../models'
 import type { CredentialFormat } from '../CredentialFormat'
 import type { IndyCredProposeOptions } from './models/IndyCredPropose'
 
