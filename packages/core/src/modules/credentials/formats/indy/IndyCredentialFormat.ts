@@ -2,6 +2,7 @@ import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import type { CredentialPreviewAttributeOptions } from '../../models'
 import type { CredentialFormat } from '../CredentialFormat'
 import type { IndyCredProposeOptions } from './models/IndyCredPropose'
+import type * as Indy from 'indy-sdk'
 
 /**
  * This defines the module payload for calling CredentialsModule.createProposal
@@ -50,5 +51,20 @@ export interface IndyCredentialFormat extends CredentialFormat {
     acceptOffer: IndyAcceptOfferFormat
     createRequest: never // cannot start from createRequest
     acceptRequest: Record<string, never> // empty object
+  }
+  // Format data is based on RFC 0592
+  // https://github.com/hyperledger/aries-rfcs/tree/main/features/0592-indy-attachments
+  formatData: {
+    proposal: {
+      schema_issuer_did?: string
+      schema_name?: string
+      schema_version?: string
+      schema_id?: string
+      issuer_did?: string
+      cred_def_id?: string
+    }
+    offer: Indy.CredOffer
+    request: Indy.CredReq
+    credential: Indy.Cred
   }
 }

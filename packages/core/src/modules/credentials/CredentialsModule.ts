@@ -12,6 +12,7 @@ import type {
   ProposeCredentialOptions,
   ServiceMap,
   CreateOfferOptions,
+  GetFormatDataReturn,
 } from './CredentialsModuleOptions'
 import type { CredentialFormat } from './formats'
 import type { IndyCredentialFormat } from './formats/indy/IndyCredentialFormat'
@@ -69,6 +70,7 @@ export interface CredentialsModule<CFs extends CredentialFormat[], CSs extends C
   getById(credentialRecordId: string): Promise<CredentialExchangeRecord>
   findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
   deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void>
+  getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFs>>
 }
 
 @scoped(Lifecycle.ContainerScoped)
@@ -504,6 +506,13 @@ export class CredentialsModule<
         `Cannot accept credential without connectionId or ~service decorator on credential message.`
       )
     }
+  }
+
+  public async getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFs>> {
+    const credentialRecord = await this.getById(credentialRecordId)
+    const service = this.getService(credentialRecord.protocolVersion)
+
+    return service.getFormatData(credentialRecordId)
   }
 
   /**

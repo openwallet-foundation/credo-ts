@@ -19,6 +19,7 @@ import type {
   AcceptOfferOptions,
   AcceptRequestOptions,
   AcceptCredentialOptions,
+  GetFormatDataReturn,
 } from '../CredentialServiceOptions'
 import type { CredentialFormat, CredentialFormatService } from '../formats'
 import type { CredentialProtocolVersion } from '../models/CredentialProtocolVersion'
@@ -88,6 +89,7 @@ export abstract class CredentialService<CFs extends CredentialFormat[]> {
   abstract findOfferMessage(credentialExchangeId: string): Promise<AgentMessage | null>
   abstract findRequestMessage(credentialExchangeId: string): Promise<AgentMessage | null>
   abstract findCredentialMessage(credentialExchangeId: string): Promise<AgentMessage | null>
+  abstract getFormatData(credentialExchangeId: string): Promise<GetFormatDataReturn<CFs>>
 
   /**
    * Decline a credential offer

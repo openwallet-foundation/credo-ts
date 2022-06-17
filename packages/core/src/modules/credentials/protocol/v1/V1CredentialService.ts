@@ -12,6 +12,8 @@ import type {
   NegotiateOfferOptions,
   NegotiateProposalOptions,
 } from '../../CredentialServiceOptions'
+import type { GetFormatDataReturn } from '../../CredentialsModuleOptions'
+import type { CredentialFormat } from '../../formats'
 import type { IndyCredentialFormat } from '../../formats/indy/IndyCredentialFormat'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -210,7 +212,11 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
 
       await this.formatService.processProposal({
         credentialRecord,
-        attachment: this.rfc0592ProposalAttachmentFromV1ProposeMessage(proposalMessage),
+        attachment: new Attachment({
+          data: new AttachmentData({
+            json: JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage)),
+          }),
+        }),
       })
 
       // Update record
@@ -279,7 +285,11 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialFormats,
       credentialRecord,
-      proposalAttachment: this.rfc0592ProposalAttachmentFromV1ProposeMessage(proposalMessage),
+      proposalAttachment: new Attachment({
+        data: new AttachmentData({
+          json: JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage)),
+        }),
+      }),
     })
 
     if (!previewAttributes) {
@@ -1045,6 +1055,47 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     })
   }
 
+  public async getFormatData(credentialExchangeId: string): Promise<GetFormatDataReturn<CredentialFormat[]>> {
+    // TODO: we could looking at fetching all record using a single query and then filtering based on the type of the message.
+    const [proposalMessage, offerMessage, requestMessage, credentialMessage] = await Promise.all([
+      this.findProposalMessage(credentialExchangeId),
+      this.findOfferMessage(credentialExchangeId),
+      this.findRequestMessage(credentialExchangeId),
+      this.findCredentialMessage(credentialExchangeId),
+    ])
+
+    const indyProposal = proposalMessage
+      ? JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage))
+      : undefined
+
+    const indyOffer = offerMessage?.indyCredentialOffer ?? undefined
+    const indyRequest = requestMessage?.indyCredentialRequest ?? undefined
+    const indyCredential = credentialMessage?.indyCredential ?? undefined
+
+    return {
+      proposal: proposalMessage
+        ? {
+            indy: indyProposal,
+          }
+        : undefined,
+      offer: offerMessage
+        ? {
+            indy: indyOffer,
+          }
+        : undefined,
+      request: requestMessage
+        ? {
+            indy: indyRequest,
+          }
+        : undefined,
+      credential: credentialMessage
+        ? {
+            indy: indyCredential,
+          }
+        : undefined,
+    }
+  }
+
   protected registerHandlers() {
     this.dispatcher.registerHandler(new V1ProposeCredentialHandler(this, this.agentConfig))
     this.dispatcher.registerHandler(
@@ -1063,7 +1114,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     this.dispatcher.registerHandler(new V1CredentialProblemReportHandler(this))
   }
 
-  private rfc0592ProposalAttachmentFromV1ProposeMessage(proposalMessage: V1ProposeCredentialMessage) {
+  private rfc0592ProposalFromV1ProposeMessage(proposalMessage: V1ProposeCredentialMessage) {
     const indyCredentialProposal = new IndyCredPropose({
       credentialDefinitionId: proposalMessage.credentialDefinitionId,
       schemaId: proposalMessage.schemaId,
@@ -1073,11 +1124,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
       schemaVersion: proposalMessage.schemaVersion,
     })
 
-    return new Attachment({
-      data: new AttachmentData({
-        json: JsonTransformer.toJSON(indyCredentialProposal),
-      }),
-    })
+    return indyCredentialProposal
   }
 
   private assertOnlyIndyFormat(credentialFormats: Record<string, unknown>) {

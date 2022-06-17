@@ -4,6 +4,34 @@ import type { CredentialFormat, CredentialFormatPayload } from './formats'
 import type { AutoAcceptCredential } from './models/CredentialAutoAcceptType'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 
+export type FormatDataMessagePayload<
+  CFs extends CredentialFormat[] = CredentialFormat[],
+  M extends keyof CredentialFormat['formatData'] = keyof CredentialFormat['formatData']
+> = {
+  [CredentialFormat in CFs[number] as CredentialFormat['formatKey']]?: CredentialFormat['formatData'][M]
+}
+
+/**
+ * Get format data return value. Each key holds a mapping of credential format key to format data.
+ *
+ * @example
+ * ```
+ * {
+ *   proposal: {
+ *     indy: {
+ *       cred_def_id: string
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export type GetFormatDataReturn<CFs extends CredentialFormat[] = CredentialFormat[]> = {
+  proposal?: FormatDataMessagePayload<CFs, 'proposal'>
+  offer?: FormatDataMessagePayload<CFs, 'offer'>
+  request?: FormatDataMessagePayload<CFs, 'request'>
+  credential?: FormatDataMessagePayload<CFs, 'credential'>
+}
+
 export interface CreateProposalOptions<CFs extends CredentialFormat[]> {
   connection: ConnectionRecord
   credentialFormats: CredentialFormatPayload<CFs, 'createProposal'>

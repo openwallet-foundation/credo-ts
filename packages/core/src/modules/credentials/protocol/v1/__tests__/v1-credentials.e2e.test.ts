@@ -180,5 +180,63 @@ describe('v1 credentials', () => {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.Done,
     })
+
+    const formatData = await aliceAgent.credentials.getFormatData(aliceCredentialRecord.id)
+
+    expect(formatData).toMatchObject({
+      proposal: {
+        indy: {
+          schema_issuer_did: expect.any(String),
+          schema_id: expect.any(String),
+          schema_name: expect.any(String),
+          schema_version: expect.any(String),
+          cred_def_id: expect.any(String),
+          issuer_did: expect.any(String),
+        },
+      },
+      offer: {
+        indy: {
+          schema_id: expect.any(String),
+          cred_def_id: expect.any(String),
+          key_correctness_proof: expect.any(Object),
+          nonce: expect.any(String),
+        },
+      },
+      request: {
+        indy: {
+          prover_did: expect.any(String),
+          cred_def_id: expect.any(String),
+          blinded_ms: expect.any(Object),
+          blinded_ms_correctness_proof: expect.any(Object),
+          nonce: expect.any(String),
+        },
+      },
+      credential: {
+        indy: {
+          schema_id: expect.any(String),
+          cred_def_id: expect.any(String),
+          rev_reg_id: null,
+          values: {
+            age: { raw: '99', encoded: '99' },
+            profile_picture: {
+              raw: 'profile picture',
+              encoded: '28661874965215723474150257281172102867522547934697168414362313592277831163345',
+            },
+            name: {
+              raw: 'John',
+              encoded: '76355713903561865866741292988746191972523015098789458240077478826513114743258',
+            },
+            'x-ray': {
+              raw: 'some x-ray',
+              encoded: '43715611391396952879378357808399363551139229809726238083934532929974486114650',
+            },
+          },
+          signature: expect.any(Object),
+          signature_correctness_proof: expect.any(Object),
+          rev_reg: null,
+          witness: null,
+        },
+      },
+    })
   })
 })
