@@ -35,8 +35,7 @@ import { MessageValidator } from '../../../../utils/MessageValidator'
 import { ObjectCheck } from '../../../../utils/objectCheck'
 import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
-import { CredentialUtils } from '../../../credentials'
-import { Credential, IndyCredentialInfo } from '../../../credentials/protocol/v1/models'
+import { IndyCredential, IndyCredentialInfo, IndyCredentialUtils } from '../../../credentials'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import { PartialProof } from '../../protocol/v1/models'
@@ -263,10 +262,10 @@ export class IndyProofFormatService extends ProofFormatService {
     const proof = JsonTransformer.fromJSON(proofJson, PartialProof)
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
-      if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
+      if (!IndyCredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
         throw new InvalidEncodedValueError(
           `The encoded value for '${referent}' is invalid. ` +
-            `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
+            `Expected '${IndyCredentialUtils.encode(attribute.raw)}'. ` +
             `Actual '${attribute.encoded}'`
         )
       }
@@ -367,7 +366,7 @@ export class IndyProofFormatService extends ProofFormatService {
     const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 
     for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
-      let credentialMatch: Credential[] = []
+      let credentialMatch: IndyCredential[] = []
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
       // If we have exactly one credential, or no proposal to pick preferences
@@ -396,7 +395,7 @@ export class IndyProofFormatService extends ProofFormatService {
       }
 
       retrievedCredentials.requestedAttributes[referent] = await Promise.all(
-        credentialMatch.map(async (credential: Credential) => {
+        credentialMatch.map(async (credential: IndyCredential) => {
           const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem({
             proofRequest,
             requestedItem: requestedAttribute,
@@ -459,13 +458,13 @@ export class IndyProofFormatService extends ProofFormatService {
   private async getCredentialsForProofRequest(
     proofRequest: ProofRequest,
     attributeReferent: string
-  ): Promise<Credential[]> {
+  ): Promise<IndyCredential[]> {
     const credentialsJson = await this.indyHolderService.getCredentialsForProofRequest({
       proofRequest: proofRequest.toJSON(),
       attributeReferent,
     })
 
-    return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
+    return JsonTransformer.fromJSON(credentialsJson, IndyCredential) as unknown as IndyCredential[]
   }
 
   public async autoSelectCredentialsForProofRequest(
@@ -585,7 +584,7 @@ export class IndyProofFormatService extends ProofFormatService {
   }: {
     proofRequest: ProofRequest
     requestedItem: ProofAttributeInfo | ProofPredicateInfo
-    credential: Credential
+    credential: IndyCredential
   }) {
     const requestNonRevoked = requestedItem.nonRevoked ?? proofRequest.nonRevoked
     const credentialRevocationId = credential.credentialInfo.credentialRevocationId

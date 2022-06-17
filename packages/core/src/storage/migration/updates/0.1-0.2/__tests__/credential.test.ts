@@ -3,7 +3,6 @@ import type { CredentialRecordBinding } from '../../../../../../src/modules/cred
 import { CredentialExchangeRecord, CredentialState } from '../../../../../../src/modules/credentials'
 import { getAgentConfig, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
-import { CredentialFormatType } from '../../../../../modules/credentials/CredentialsModuleOptions'
 import { CredentialRepository } from '../../../../../modules/credentials/repository/CredentialRepository'
 import { JsonTransformer } from '../../../../../utils'
 import { DidCommMessageRole } from '../../../../didcomm'
@@ -83,7 +82,7 @@ describe('0.1-0.2 | Credential', () => {
         credentials: [
           {
             credentialRecordId: 'credentialId1',
-            credentialRecordType: 'Indy',
+            credentialRecordType: 'indy',
           },
         ],
         protocolVersion: 'v1',
@@ -234,7 +233,7 @@ describe('0.1-0.2 | Credential', () => {
         credentials: [
           {
             credentialRecordId: 'theCredentialId',
-            credentialRecordType: 'Indy',
+            credentialRecordType: 'indy',
           },
         ],
       })
@@ -266,7 +265,7 @@ describe('0.1-0.2 | Credential', () => {
         credentials: [
           {
             credentialRecordId: 'theCredentialRecordId',
-            credentialRecordType: CredentialFormatType.Indy,
+            credentialRecordType: 'indy',
           },
         ],
         proposalMessage,
@@ -315,7 +314,7 @@ describe('0.1-0.2 | Credential', () => {
         credentials: [
           {
             credentialRecordId: 'theCredentialRecordId',
-            credentialRecordType: CredentialFormatType.Indy,
+            credentialRecordType: 'indy',
           },
         ],
       })
@@ -331,7 +330,7 @@ describe('0.1-0.2 | Credential', () => {
         credentials: [
           {
             credentialRecordId: 'theCredentialRecordId',
-            credentialRecordType: CredentialFormatType.Indy,
+            credentialRecordType: 'indy',
           },
         ],
         proposalMessage,
@@ -365,7 +364,7 @@ describe('0.1-0.2 | Credential', () => {
         credentials: [
           {
             credentialRecordId: 'theCredentialRecordId',
-            credentialRecordType: CredentialFormatType.Indy,
+            credentialRecordType: 'indy',
           },
         ],
       })
@@ -434,7 +433,7 @@ describe('0.1-0.2 | Credential', () => {
         credentials: [
           {
             credentialRecordId: 'theCredentialRecordId',
-            credentialRecordType: CredentialFormatType.Indy,
+            credentialRecordType: 'indy',
           },
         ],
       })
@@ -498,10 +497,12 @@ function getCredential({
   metadata?: Record<string, unknown>
   credentialId?: string
   protocolVersion?: string
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   proposalMessage?: any
   offerMessage?: any
   requestMessage?: any
   credentialMessage?: any
+  /* eslint-enable @typescript-eslint/no-explicit-any */
   state?: CredentialState
   credentials?: CredentialRecordBinding[]
   id?: string

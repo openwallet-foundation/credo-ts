@@ -1,25 +1,68 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
-import type { Attachment } from '../../decorators/attachment/Attachment'
-import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
-import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
-import type {
-  AcceptOfferOptions,
-  AcceptProposalOptions,
-  AcceptRequestOptions,
-  NegotiateOfferOptions,
-  NegotiateProposalOptions,
-  RequestCredentialOptions,
-} from './CredentialsModuleOptions'
-import type { FormatServiceAcceptProposeCredentialFormats } from './formats/models/CredentialFormatServiceOptions'
-import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttribute'
-import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
-import type { ProposeCredentialMessageOptions } from './protocol/v1/messages'
+import type { CredentialFormat, CredentialFormatPayload } from './formats'
+import type { AutoAcceptCredential } from './models/CredentialAutoAcceptType'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 
-export interface IndyCredentialPreview {
-  credentialDefinitionId?: string
-  attributes?: CredentialPreviewAttribute[]
+export interface CreateProposalOptions<CFs extends CredentialFormat[]> {
+  connection: ConnectionRecord
+  credentialFormats: CredentialFormatPayload<CFs, 'createProposal'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface AcceptProposalOptions<CFs extends CredentialFormat[]> {
+  credentialRecord: CredentialExchangeRecord
+  credentialFormats?: CredentialFormatPayload<CFs, 'acceptProposal'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface NegotiateProposalOptions<CFs extends CredentialFormat[]> {
+  credentialRecord: CredentialExchangeRecord
+  credentialFormats: CredentialFormatPayload<CFs, 'createOffer'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface CreateOfferOptions<CFs extends CredentialFormat[]> {
+  // Create offer can also be used for connection-less, so connection is optional
+  connection?: ConnectionRecord
+  credentialFormats: CredentialFormatPayload<CFs, 'createOffer'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface AcceptOfferOptions<CFs extends CredentialFormat[]> {
+  credentialRecord: CredentialExchangeRecord
+  credentialFormats?: CredentialFormatPayload<CFs, 'acceptOffer'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface NegotiateOfferOptions<CFs extends CredentialFormat[]> {
+  credentialRecord: CredentialExchangeRecord
+  credentialFormats: CredentialFormatPayload<CFs, 'createProposal'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface CreateRequestOptions<CFs extends CredentialFormat[]> {
+  connection: ConnectionRecord
+  credentialFormats: CredentialFormatPayload<CFs, 'createRequest'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface AcceptRequestOptions<CFs extends CredentialFormat[]> {
+  credentialRecord: CredentialExchangeRecord
+  credentialFormats?: CredentialFormatPayload<CFs, 'acceptRequest'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface AcceptCredentialOptions {
+  credentialRecord: CredentialExchangeRecord
 }
 
 export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
@@ -27,65 +70,7 @@ export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessag
   credentialRecord: CredentialExchangeRecord
 }
 
-export interface CredentialOfferTemplate {
-  credentialDefinitionId: string
-  comment?: string
-  preview: V1CredentialPreview
-  autoAcceptCredential?: AutoAcceptCredential
-  attachments?: Attachment[]
-  linkedAttachments?: LinkedAttachment[]
-}
-
-export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
-  attachId?: string
-  credentialFormats: {
-    indy?: IndyCredentialPreview
-    jsonld?: {
-      // todo
-    }
-  }
-}
-
-export interface ServiceOfferCredentialOptions {
-  autoAcceptCredential?: AutoAcceptCredential
-  comment?: string
-  credentialRecordId?: string
-  connection?: ConnectionRecord
-  attachId?: string
-  credentialFormats: FormatServiceAcceptProposeCredentialFormats
-}
-
-export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {
-  offerAttachment?: Attachment
-  proposalAttachment?: Attachment
-}
-
-export interface ServiceAcceptRequestOptions extends AcceptRequestOptions {
-  attachId?: string
-}
-export interface ServiceNegotiateProposalOptions extends NegotiateProposalOptions {
-  offerAttachment?: Attachment
-}
-
-export interface ServiceNegotiateOfferOptions extends NegotiateOfferOptions {
-  offerAttachment?: Attachment
-}
-
-export interface ServiceRequestCredentialOptions extends RequestCredentialOptions {
-  attachId?: string
-  offerAttachment?: Attachment
-  requestAttachment?: Attachment
-}
-
-export interface ServiceAcceptCredentialOptions {
-  credentialAttachment?: Attachment
-}
-
-export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id'> & {
-  linkedAttachments?: LinkedAttachment[]
-  autoAcceptCredential?: AutoAcceptCredential
-}
-
 export interface DeleteCredentialOptions {
   deleteAssociatedCredentials: boolean
+  deleteAssociatedDidCommMessages: boolean
 }
