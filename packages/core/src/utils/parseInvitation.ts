@@ -1,4 +1,5 @@
 import type { AgentDependencies } from '../agent/AgentDependencies'
+import type { Response } from 'node-fetch'
 
 import { parseUrl } from 'query-string'
 
@@ -11,8 +12,7 @@ import { JsonEncoder } from './JsonEncoder'
 import { JsonTransformer } from './JsonTransformer'
 import { MessageValidator } from './MessageValidator'
 
-//This currently does not follow the RFC because of issues with fetch, currently uses a janky work around
-const fromShortUrl = async (invitationUrl: string, dependencies: AgentDependencies): Promise<OutOfBandInvitation> => {
+const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependencies) => {
   // eslint-disable-next-line no-restricted-globals
   const abortController = new AbortController()
   const id = setTimeout(() => abortController.abort(), 15000)
@@ -28,6 +28,11 @@ const fromShortUrl = async (invitationUrl: string, dependencies: AgentDependenci
     throw new AriesFrameworkError('Get request failed on provided Url')
   }
   clearTimeout(id)
+  return response
+}
+
+//This currently does not follow the RFC because of issues with fetch, currently uses a janky work around
+export const fromShortUrl = async (response: Response): Promise<OutOfBandInvitation> => {
   if (response) {
     if (response.headers.get('Content-Type') === 'application/json' && response.ok) {
       const invitationJson = await response.json()
@@ -96,7 +101,7 @@ export const parseInvitationUrl = async (
     return convertToNewInvitation(invitation)
   } else {
     try {
-      return fromShortUrl(invitationUrl, dependencies)
+      return fromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
     } catch (error) {
       throw new AriesFrameworkError(
         'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`, or be valid shortened URL'
