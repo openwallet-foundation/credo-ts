@@ -218,7 +218,10 @@ describe('v2 credentials', () => {
     const holderService = aliceAgent.injectionContainer.resolve(IndyHolderService)
 
     const deleteCredentialSpy = jest.spyOn(holderService, 'deleteCredential')
-    await aliceAgent.credentials.deleteById(holderCredential.id, { deleteAssociatedCredentials: true })
+    await aliceAgent.credentials.deleteById(holderCredential.id, {
+      deleteAssociatedCredentials: true,
+      deleteAssociatedDidCommMessages: true,
+    })
     expect(deleteCredentialSpy).toHaveBeenNthCalledWith(1, holderCredential.credentials[0].credentialRecordId)
 
     return expect(aliceAgent.credentials.getById(holderCredential.id)).rejects.toThrowError(

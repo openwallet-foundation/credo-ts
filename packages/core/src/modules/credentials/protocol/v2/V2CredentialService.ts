@@ -62,7 +62,7 @@ import {
 export class V2CredentialService<CFs extends CredentialFormat[] = CredentialFormat[]> extends CredentialService<CFs> {
   private connectionService: ConnectionService
   private credentialFormatCoordinator: CredentialFormatCoordinator<CFs>
-  private didCommMessageRepository: DidCommMessageRepository
+  protected didCommMessageRepository: DidCommMessageRepository
   private mediationRecipientService: MediationRecipientService
   private formatServiceMap: { [key: string]: CredentialFormatService }
 
@@ -77,7 +77,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     indyCredentialFormatService: IndyCredentialFormatService,
     jsonLdCredentialFormatService: JsonLdCredentialFormatService
   ) {
-    super(credentialRepository, eventEmitter, dispatcher, agentConfig)
+    super(credentialRepository, didCommMessageRepository, eventEmitter, dispatcher, agentConfig)
     this.connectionService = connectionService
     this.didCommMessageRepository = didCommMessageRepository
     this.mediationRecipientService = mediationRecipientService
