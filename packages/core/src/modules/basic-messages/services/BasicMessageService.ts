@@ -6,6 +6,7 @@ import type { BasicMessageTags } from '../repository'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { JsonTransformer } from '../../../utils'
 import { BasicMessageEventTypes } from '../BasicMessageEvents'
 import { BasicMessageRole } from '../BasicMessageRole'
 import { BasicMessage } from '../messages'
@@ -33,10 +34,7 @@ export class BasicMessageService {
     })
 
     await this.basicMessageRepository.save(basicMessageRecord)
-    this.eventEmitter.emit<BasicMessageStateChangedEvent>({
-      type: BasicMessageEventTypes.BasicMessageStateChanged,
-      payload: { message: basicMessage, basicMessageRecord },
-    })
+    this.emitStateChangedEvent(basicMessageRecord, basicMessage)
 
     return basicMessage
   }
@@ -53,9 +51,14 @@ export class BasicMessageService {
     })
 
     await this.basicMessageRepository.save(basicMessageRecord)
+    this.emitStateChangedEvent(basicMessageRecord, message)
+  }
+
+  private emitStateChangedEvent(basicMessageRecord: BasicMessageRecord, basicMessage: BasicMessage) {
+    const clonedBasicMessageRecord = JsonTransformer.clone(basicMessageRecord)
     this.eventEmitter.emit<BasicMessageStateChangedEvent>({
       type: BasicMessageEventTypes.BasicMessageStateChanged,
-      payload: { message, basicMessageRecord },
+      payload: { message: basicMessage, basicMessageRecord: clonedBasicMessageRecord },
     })
   }
 

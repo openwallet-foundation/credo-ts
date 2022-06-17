@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
+import type { CreateOfferOptions } from '../src/modules/credentials'
+import type { IndyCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
@@ -9,6 +10,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
+import { Key } from '../src/modules/dids'
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
@@ -26,8 +28,7 @@ import {
   AutoAcceptCredential,
   CredentialState,
   V1CredentialPreview,
-  CredentialProtocolVersion,
-} from '@aries-framework/core' // Maybe it's not bad to import from package?
+} from '@aries-framework/core'
 
 const faberConfig = getBaseConfig('Faber Agent OOB', {
   endpoints: ['rxjs:faber'],
@@ -56,7 +57,7 @@ describe('out of band', () => {
 
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credentialTemplate: OfferCredentialOptions
+  let credentialTemplate: CreateOfferOptions<[IndyCredentialFormat]>
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -79,7 +80,7 @@ describe('out of band', () => {
     const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
 
     credentialTemplate = {
-      protocolVersion: CredentialProtocolVersion.V1,
+      protocolVersion: 'v1',
       credentialFormats: {
         indy: {
           attributes: V1CredentialPreview.fromRecord({
@@ -327,6 +328,19 @@ describe('out of band', () => {
 
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+    })
+
+    test('make a connection based on old connection invitation with multiple endpoints uses first endpoint for invitation', async () => {
+      const { invitation } = await faberAgent.oob.createLegacyInvitation({
+        ...makeConnectionConfig,
+        routing: {
+          endpoints: ['https://endpoint-1.com', 'https://endpoint-2.com'],
+          routingKeys: [Key.fromFingerprint('z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE')],
+          recipientKey: Key.fromFingerprint('z6MkuXrzmDjBoy7r9LA1Czjv9eQXMGr9gt6JBH8zPUMKkCQH'),
+        },
+      })
+
+      expect(invitation.serviceEndpoint).toBe('https://endpoint-1.com')
     })
 
     test('process credential offer requests based on OOB message', async () => {

@@ -84,9 +84,7 @@ export class MessageSender {
   }
 
   private async sendMessageToSession(session: TransportSession, message: AgentMessage) {
-    this.logger.debug(`Existing ${session.type} transport session has been found.`, {
-      keys: session.keys,
-    })
+    this.logger.debug(`Existing ${session.type} transport session has been found.`)
     if (!session.keys) {
       throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
     }
@@ -337,9 +335,10 @@ export class MessageSender {
         this.logger.warn('Service does not have valid protocolScheme.')
       } else if (transport.supportedSchemes.includes(protocolScheme)) {
         await transport.sendMessage(outboundPackage)
-        break
+        return
       }
     }
+    throw new AriesFrameworkError(`Unable to send message to service: ${service.serviceEndpoint}`)
   }
 
   private async retrieveServicesFromDid(did: string) {

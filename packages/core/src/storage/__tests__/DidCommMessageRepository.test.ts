@@ -1,4 +1,5 @@
-import { mockFunction } from '../../../tests/helpers'
+import { getAgentConfig, mockFunction } from '../../../tests/helpers'
+import { EventEmitter } from '../../agent/EventEmitter'
 import { ConnectionInvitationMessage } from '../../modules/connections'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { IndyStorageService } from '../IndyStorageService'
@@ -19,10 +20,12 @@ const invitationJson = {
 describe('Repository', () => {
   let repository: DidCommMessageRepository
   let storageMock: IndyStorageService<DidCommMessageRecord>
+  let eventEmitter: EventEmitter
 
   beforeEach(async () => {
     storageMock = new StorageMock()
-    repository = new DidCommMessageRepository(storageMock)
+    eventEmitter = new EventEmitter(getAgentConfig('DidCommMessageRepositoryTest'))
+    repository = new DidCommMessageRepository(storageMock, eventEmitter)
   })
 
   const getRecord = ({ id }: { id?: string } = {}) => {

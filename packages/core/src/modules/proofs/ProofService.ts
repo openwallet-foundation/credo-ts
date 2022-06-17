@@ -30,6 +30,8 @@ import type {
 } from './models/SharedOptions'
 import type { ProofRecord, ProofRepository } from './repository'
 
+import { JsonTransformer } from '../../utils/JsonTransformer'
+
 import { ProofEventTypes } from './ProofEvents'
 
 export abstract class ProofService {
@@ -73,9 +75,18 @@ export abstract class ProofService {
     proofRecord.state = newState
     await this.proofRepository.update(proofRecord)
 
+    this.emitStateChangedEvent(proofRecord, previousState)
+  }
+
+  protected emitStateChangedEvent(proofRecord: ProofRecord, previousState: ProofState | null) {
+    const clonedProof = JsonTransformer.clone(proofRecord)
+
     this.eventEmitter.emit<ProofStateChangedEvent>({
       type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: previousState },
+      payload: {
+        proofRecord: clonedProof,
+        previousState: previousState,
+      },
     })
   }
 
