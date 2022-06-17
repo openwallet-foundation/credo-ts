@@ -125,13 +125,18 @@ export class CredentialMessageBuilder {
 
     for (const formatService of formatServices) {
       const { attachment, preview, format } = await formatService.createOffer(options)
-
       if (preview && preview.attributes.length > 0) credentialPreview.attributes = preview.attributes
 
       formats.push(format)
       offerAttachments.push(attachment)
 
       await formatService.processOffer(attachment, credentialRecord)
+    }
+    if (!credentialPreview.attributes) {
+      const prev = new V2CredentialPreview({
+        attributes: [],
+      })
+      credentialPreview.attributes = prev.attributes
     }
 
     const messageProps: V2OfferCredentialMessageOptions = {

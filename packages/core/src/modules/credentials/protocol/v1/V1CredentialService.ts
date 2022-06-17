@@ -790,7 +790,6 @@ export class V1CredentialService extends CredentialService {
     if (requestAttachment) {
       await this.formatService.processRequest(requestAttachment)
     }
-    await this.formatService.processRequest(requestAttachment)
 
     this.logger.trace('Credential record found when processing credential request', credentialRecord)
     await this.didCommMessageRepository.saveAgentMessage({

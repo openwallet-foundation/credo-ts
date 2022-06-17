@@ -3,7 +3,7 @@ import type { ConnectionService } from '../../connections/services/ConnectionSer
 import type { DidRepository } from '../../dids/repository'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { AcceptRequestOptions, RequestCredentialOptions } from '../CredentialsModuleOptions'
-import type {
+import {
   CredentialFormatSpec,
   FormatServiceRequestCredentialFormats,
 } from '../formats/models/CredentialFormatServiceOptions'
@@ -129,10 +129,11 @@ const offerOptions: V2OfferCredentialMessageOptions = {
   offerAttachments: [offerAttachment],
   replacementId: undefined,
 }
-const requestFormat: CredentialFormatSpec = {
+
+const requestFormat = new CredentialFormatSpec({
   attachId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   format: 'hlindy/cred-req@v2.0',
-}
+})
 
 const requestOptions: V2RequestCredentialMessageOptions = {
   id: '',

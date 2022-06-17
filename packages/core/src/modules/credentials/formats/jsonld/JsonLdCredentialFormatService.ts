@@ -118,9 +118,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService {
     const offersAttach: Attachment = this.getFormatData(messageAttachment, attachmentId)
 
     // need to provide an empty preview as per the spec
-    const preview = new V2CredentialPreview({
-      attributes: [],
-    })
+    const preview = undefined
 
     return { format: formats, preview, attachment: offersAttach }
   }
