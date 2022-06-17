@@ -1,12 +1,7 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
 import type { SignCredentialOptions } from '../../../../vc/models/W3cCredentialServiceOptions'
-import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
-import type {
-  AcceptProposalOptions,
-  AcceptRequestOptions,
-  ProposeCredentialOptions,
-} from '../../../CredentialsModuleOptions'
+import type { AcceptRequestOptions } from '../../../CredentialsModuleOptions'
 
 import { Key } from '../../../../../../src/crypto/Key'
 import { DidKey } from '../../../../../../src/modules/dids'
@@ -15,13 +10,11 @@ import { setupCredentialTests, waitForCredentialRecord } from '../../../../../..
 import testLogger from '../../../../../../tests/logger'
 import { KeyType } from '../../../../../crypto/KeyType'
 import { DidCommMessageRepository } from '../../../../../storage'
-import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
-import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
-import { CredentialState } from '../../../CredentialState'
+import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import { V2CredentialPreview } from '../V2CredentialPreview'
+import { V2CredentialPreview } from '../messages'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
@@ -102,24 +95,18 @@ describe('credentials', () => {
 
   test('Alice starts with V2 (ld format, Ed25519 signature) credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
-    // set the propose options
 
-    const proposeOptions: ProposeCredentialOptions = {
+    const credentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
       connectionId: aliceConnection.id,
-      protocolVersion: CredentialProtocolVersion.V2,
+      protocolVersion: 'v2',
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
       comment: 'v2 propose credential test for W3C Credentials',
-    }
-    testLogger.test('Alice sends (v2, Indy) credential proposal to Faber')
+    })
 
-    const credentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.proposeCredential(
-      proposeOptions
-    )
-
-    expect(credentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-    expect(credentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
+    expect(credentialExchangeRecord.connectionId).toEqual(aliceConnection.id)
+    expect(credentialExchangeRecord.protocolVersion).toEqual('v2')
     expect(credentialExchangeRecord.state).toEqual(CredentialState.ProposalSent)
     expect(credentialExchangeRecord.threadId).not.toBeNull()
 
@@ -129,15 +116,14 @@ describe('credentials', () => {
       state: CredentialState.ProposalReceived,
     })
 
-    const options: AcceptProposalOptions = {
+    testLogger.test('Faber sends credential offer to Alice')
+    await faberAgent.credentials.acceptProposal({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
-    }
-    testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.credentials.acceptProposal(options)
+    })
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -193,18 +179,15 @@ describe('credentials', () => {
       throw new Error('Missing Connection Id')
     }
 
-    const acceptOfferOptions: ServiceAcceptOfferOptions = {
+    const offerCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer({
       credentialRecordId: aliceCredentialRecord.id,
       credentialFormats: {
         jsonld: undefined,
       },
-    }
-    const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
-      acceptOfferOptions
-    )
+    })
 
-    expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-    expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
+    expect(offerCredentialExchangeRecord.connectionId).toEqual(aliceConnection.id)
+    expect(offerCredentialExchangeRecord.protocolVersion).toEqual('v2')
     expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
     expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
 
@@ -229,7 +212,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
+    await aliceAgent.credentials.acceptCredential({ credentialRecordId: aliceCredentialRecord.id })
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
@@ -301,32 +284,22 @@ describe('credentials', () => {
       schemaId: '1560364003',
       issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
       credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
-      payload: {
-        schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-        schemaName: 'ahoy',
-        schemaVersion: '1.0',
-        schemaId: '1560364003',
-        issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-      },
     }
-    const multiFormatProposal: ProposeCredentialOptions = {
+
+    testLogger.test('Alice sends (v2, Indy) credential proposal to Faber')
+
+    const credentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
       connectionId: aliceConnection.id,
-      protocolVersion: CredentialProtocolVersion.V2,
+      protocolVersion: 'v2',
       credentialFormats: {
         indy: testAttributes,
         jsonld: signCredentialOptions,
       },
       comment: 'v2 propose credential test',
-    }
+    })
 
-    testLogger.test('Alice sends (v2, Indy) credential proposal to Faber')
-
-    const credentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.proposeCredential(
-      multiFormatProposal
-    )
-
-    expect(credentialExchangeRecord.connectionId).toEqual(multiFormatProposal.connectionId)
-    expect(credentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
+    expect(credentialExchangeRecord.connectionId).toEqual(aliceConnection.id)
+    expect(credentialExchangeRecord.protocolVersion).toEqual('v2')
     expect(credentialExchangeRecord.state).toEqual(CredentialState.ProposalSent)
     expect(credentialExchangeRecord.threadId).not.toBeNull()
 
@@ -336,7 +309,8 @@ describe('credentials', () => {
       state: CredentialState.ProposalReceived,
     })
 
-    const options: AcceptProposalOptions = {
+    testLogger.test('Faber sends credential offer to Alice')
+    await faberAgent.credentials.acceptProposal({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Offer',
       credentialFormats: {
@@ -346,9 +320,7 @@ describe('credentials', () => {
         },
         jsonld: signCredentialOptions,
       },
-    }
-    testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.credentials.acceptProposal(options)
+    })
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -356,7 +328,7 @@ describe('credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+    didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
 
     const offerMessage = await didCommMessageRepository.findAgentMessage({
       associatedRecordId: faberCredentialRecord.id,
@@ -416,19 +388,13 @@ describe('credentials', () => {
     if (!aliceCredentialRecord.connectionId) {
       throw new Error('Missing Connection Id')
     }
-    const acceptOfferOptions: ServiceAcceptOfferOptions = {
-      credentialRecordId: aliceCredentialRecord.id,
-      credentialFormats: {
-        indy: undefined,
-        jsonld: undefined,
-      },
-    }
-    const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
-      acceptOfferOptions
-    )
 
-    expect(offerCredentialExchangeRecord.connectionId).toEqual(multiFormatProposal.connectionId)
-    expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
+    const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer({
+      credentialRecordId: aliceCredentialRecord.id,
+    })
+
+    expect(offerCredentialExchangeRecord.connectionId).toEqual(aliceConnection.id)
+    expect(offerCredentialExchangeRecord.protocolVersion).toEqual('v2')
     expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
     expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
 
@@ -453,7 +419,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
+    await aliceAgent.credentials.acceptCredential({ credentialRecordId: aliceCredentialRecord.id })
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
@@ -469,50 +435,49 @@ describe('credentials', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    const credentialMessage = await didCommMessageRepository.findAgentMessage({
+    const credentialMessage = await didCommMessageRepository.getAgentMessage({
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2IssueCredentialMessage,
     })
 
-    if (credentialMessage?.messageAttachment[1].data.base64) {
-      const w3cCredential = JsonEncoder.fromBase64(credentialMessage?.messageAttachment[1].data.base64)
-      expect(JsonTransformer.toJSON(w3cCredential)).toMatchObject({
-        context: [
-          'https://www.w3.org/2018/credentials/v1',
-          'https://w3id.org/citizenship/v1',
-          'https://w3id.org/security/bbs/v1',
-        ],
-        id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
-        type: ['VerifiableCredential', 'PermanentResidentCard'],
-        issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-        identifier: '83627465',
-        name: 'Permanent Resident Card',
-        description: 'Government of Example Permanent Resident Card.',
-        issuanceDate: '2019-12-03T12:19:52Z',
-        expirationDate: '2029-12-03T12:19:52Z',
-        credentialSubject: {
-          id: 'did:example:b34ca6cd37bbf23',
-          type: ['PermanentResident', 'Person'],
-          givenName: 'JOHN',
-          familyName: 'SMITH',
-          gender: 'Male',
-          image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-          residentSince: '2015-01-01',
-          lprCategory: 'C09',
-          lprNumber: '999-999-999',
-          commuterClassification: 'C1',
-          birthCountry: 'Bahamas',
-          birthDate: '1958-07-17',
-        },
-        proof: {
-          type: 'Ed25519Signature2018',
-          created: expect.any(String),
-          verificationMethod:
-            'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-          proofPurpose: 'assertionMethod',
-        },
-      })
-    }
+    const w3cCredential = credentialMessage.credentialAttachments[1].getDataAsJson()
+
+    expect(w3cCredential).toMatchObject({
+      context: [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://w3id.org/citizenship/v1',
+        'https://w3id.org/security/bbs/v1',
+      ],
+      id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+      type: ['VerifiableCredential', 'PermanentResidentCard'],
+      issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      identifier: '83627465',
+      name: 'Permanent Resident Card',
+      description: 'Government of Example Permanent Resident Card.',
+      issuanceDate: '2019-12-03T12:19:52Z',
+      expirationDate: '2029-12-03T12:19:52Z',
+      credentialSubject: {
+        id: 'did:example:b34ca6cd37bbf23',
+        type: ['PermanentResident', 'Person'],
+        givenName: 'JOHN',
+        familyName: 'SMITH',
+        gender: 'Male',
+        image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+        residentSince: '2015-01-01',
+        lprCategory: 'C09',
+        lprNumber: '999-999-999',
+        commuterClassification: 'C1',
+        birthCountry: 'Bahamas',
+        birthDate: '1958-07-17',
+      },
+      proof: {
+        type: 'Ed25519Signature2018',
+        created: expect.any(String),
+        verificationMethod:
+          'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        proofPurpose: 'assertionMethod',
+      },
+    })
 
     expect(JsonTransformer.toJSON(credentialMessage)).toMatchObject({
       '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',
@@ -521,7 +486,7 @@ describe('credentials', () => {
       formats: [
         {
           attach_id: expect.any(String),
-          format: 'hlindy/cred-abstract@v2.0',
+          format: 'hlindy/cred@v2.0',
         },
         {
           attach_id: expect.any(String),

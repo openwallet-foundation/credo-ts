@@ -17,6 +17,7 @@ import { MediationRecipientService } from '../../../../routing/services/Mediatio
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { credDef, schema } from '../../../__tests__/fixtures'
 import { IndyCredentialFormatService } from '../../../formats/indy/IndyCredentialFormatService'
+import { JsonLdCredentialFormatService } from '../../../formats/jsonld/JsonLdCredentialFormatService'
 import { CredentialFormatSpec } from '../../../models'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -29,6 +30,7 @@ import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 jest.mock('../../../repository/CredentialRepository')
 jest.mock('../../../../ledger/services/IndyLedgerService')
 jest.mock('../../../formats/indy/IndyCredentialFormatService')
+jest.mock('../../../formats/jsonld/JsonLdCredentialFormatService')
 jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
 jest.mock('../../../../routing/services/MediationRecipientService')
 jest.mock('../../../../connections/services/ConnectionService')
@@ -38,6 +40,7 @@ jest.mock('../../../../../agent/Dispatcher')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyCredentialFormatServiceMock = IndyCredentialFormatService as jest.Mock<IndyCredentialFormatService>
+const JsonLdCredentialFormatServiceMock = JsonLdCredentialFormatService as jest.Mock<JsonLdCredentialFormatService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
@@ -48,12 +51,17 @@ const didCommMessageRepository = new DidCommMessageRepositoryMock()
 const mediationRecipientService = new MediationRecipientServiceMock()
 const indyLedgerService = new IndyLedgerServiceMock()
 const indyCredentialFormatService = new IndyCredentialFormatServiceMock()
+const jsonLdCredentialFormatService = new JsonLdCredentialFormatServiceMock()
 const dispatcher = new DispatcherMock()
 const connectionService = new ConnectionServiceMock()
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 indyCredentialFormatService.formatKey = 'indy'
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+jsonLdCredentialFormatService.formatKey = 'jsonld'
 
 const connection = getMockConnection({
   id: '123',
@@ -101,7 +109,8 @@ describe('V2CredentialServiceOffer', () => {
       dispatcher,
       eventEmitter,
       credentialRepository,
-      indyCredentialFormatService
+      indyCredentialFormatService,
+      jsonLdCredentialFormatService
     )
   })
 

@@ -15,6 +15,7 @@ import type {
 } from './CredentialsModuleOptions'
 import type { CredentialFormat } from './formats'
 import type { IndyCredentialFormat } from './formats/indy/IndyCredentialFormat'
+import type { JsonLdCredentialFormat } from './formats/jsonld/JsonLdCredentialFormat'
 import type { CredentialProtocolVersion } from './models/CredentialProtocolVersion'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 import type { CredentialService } from './services/CredentialService'
@@ -73,7 +74,7 @@ export interface CredentialsModule<CFs extends CredentialFormat[], CSs extends C
 
 @scoped(Lifecycle.ContainerScoped)
 export class CredentialsModule<
-  CFs extends CredentialFormat[] = [IndyCredentialFormat],
+  CFs extends CredentialFormat[] = [IndyCredentialFormat, JsonLdCredentialFormat],
   CSs extends CredentialService<CFs>[] = [V1CredentialService, V2CredentialService<CFs>]
 > implements CredentialsModule<CFs, CSs>
 {

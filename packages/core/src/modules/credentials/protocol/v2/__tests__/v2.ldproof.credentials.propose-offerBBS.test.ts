@@ -1,8 +1,7 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { SignCredentialOptions } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
 import type { ConnectionRecord } from '../../../../connections'
-import type { ServiceAcceptOfferOptions } from '../../../CredentialServiceOptions'
-import type { AcceptProposalOptions, ProposeCredentialOptions } from '../../../CredentialsModuleOptions'
+import type { AcceptProposalOptions } from '../../../CredentialsModuleOptions'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -10,12 +9,10 @@ import { KeyType } from '../../../../../crypto/KeyType'
 import { DidKey } from '../../../../../modules/dids'
 import { BbsBlsSignature2020Fixtures } from '../../../../../modules/vc/__tests__/fixtures'
 import { DidCommMessageRepository } from '../../../../../storage'
-import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../../../wallet/IndyWallet'
 import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
-import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
-import { CredentialState } from '../../../CredentialState'
+import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
@@ -64,22 +61,20 @@ describe('credentials, BBS+ signature', () => {
       proofType: 'BbsBlsSignature2020',
       verificationMethod,
     }
-    const proposeOptions: ProposeCredentialOptions = {
+
+    testLogger.test('Alice sends (v2, Indy) credential proposal to Faber')
+
+    const credentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
       connectionId: aliceConnection.id,
-      protocolVersion: CredentialProtocolVersion.V2,
+      protocolVersion: 'v2',
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
       comment: 'v2 propose credential test for W3C Credentials',
-    }
-    testLogger.test('Alice sends (v2, Indy) credential proposal to Faber')
+    })
 
-    const credentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.proposeCredential(
-      proposeOptions
-    )
-
-    expect(credentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-    expect(credentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
+    expect(credentialExchangeRecord.connectionId).toEqual(aliceConnection.id)
+    expect(credentialExchangeRecord.protocolVersion).toEqual('v2')
     expect(credentialExchangeRecord.state).toEqual(CredentialState.ProposalSent)
     expect(credentialExchangeRecord.threadId).not.toBeNull()
 
@@ -152,18 +147,16 @@ describe('credentials, BBS+ signature', () => {
     if (!aliceCredentialRecord.connectionId) {
       throw new Error('Missing Connection Id')
     }
-    const acceptOfferOptions: ServiceAcceptOfferOptions = {
+
+    const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer({
       credentialRecordId: aliceCredentialRecord.id,
       credentialFormats: {
         jsonld: undefined,
       },
-    }
-    const offerCredentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(
-      acceptOfferOptions
-    )
+    })
 
-    expect(offerCredentialExchangeRecord.connectionId).toEqual(proposeOptions.connectionId)
-    expect(offerCredentialExchangeRecord.protocolVersion).toEqual(CredentialProtocolVersion.V2)
+    expect(offerCredentialExchangeRecord.connectionId).toEqual(aliceConnection.id)
+    expect(offerCredentialExchangeRecord.protocolVersion).toEqual('v2')
     expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
     expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
 
@@ -184,7 +177,7 @@ describe('credentials, BBS+ signature', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
+    await aliceAgent.credentials.acceptCredential({ credentialRecordId: aliceCredentialRecord.id })
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
@@ -200,52 +193,51 @@ describe('credentials, BBS+ signature', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    const credentialMessage = await didCommMessageRepository.findAgentMessage({
+    const credentialMessage = await didCommMessageRepository.getAgentMessage({
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2IssueCredentialMessage,
     })
 
-    if (credentialMessage?.messageAttachment[0].data.base64) {
-      const w3cCredential = JsonEncoder.fromBase64(credentialMessage?.messageAttachment[0].data.base64)
-      expect(JsonTransformer.toJSON(w3cCredential)).toMatchObject({
-        context: [
-          'https://www.w3.org/2018/credentials/v1',
-          'https://w3id.org/citizenship/v1',
-          'https://w3id.org/security/bbs/v1',
-        ],
-        id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
-        type: ['VerifiableCredential', 'PermanentResidentCard'],
-        issuer:
-          'did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa',
-        identifier: '83627465',
-        name: 'Permanent Resident Card',
-        description: 'Government of Example Permanent Resident Card.',
-        issuanceDate: '2019-12-03T12:19:52Z',
-        expirationDate: '2029-12-03T12:19:52Z',
-        credentialSubject: {
-          id: 'did:example:b34ca6cd37bbf23',
-          type: ['PermanentResident', 'Person'],
-          givenName: 'JOHN',
-          familyName: 'SMITH',
-          gender: 'Male',
-          image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-          residentSince: '2015-01-01',
-          lprCategory: 'C09',
-          lprNumber: '999-999-999',
-          commuterClassification: 'C1',
-          birthCountry: 'Bahamas',
-          birthDate: '1958-07-17',
-        },
-        proof: {
-          type: 'BbsBlsSignature2020',
-          created: expect.any(String),
-          verificationMethod:
-            'did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa#zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa',
-          proofPurpose: 'assertionMethod',
-          proofValue: expect.any(String),
-        },
-      })
-    }
+    const w3cCredential = credentialMessage.credentialAttachments[0].getDataAsJson()
+
+    expect(w3cCredential).toMatchObject({
+      context: [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://w3id.org/citizenship/v1',
+        'https://w3id.org/security/bbs/v1',
+      ],
+      id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+      type: ['VerifiableCredential', 'PermanentResidentCard'],
+      issuer:
+        'did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa',
+      identifier: '83627465',
+      name: 'Permanent Resident Card',
+      description: 'Government of Example Permanent Resident Card.',
+      issuanceDate: '2019-12-03T12:19:52Z',
+      expirationDate: '2029-12-03T12:19:52Z',
+      credentialSubject: {
+        id: 'did:example:b34ca6cd37bbf23',
+        type: ['PermanentResident', 'Person'],
+        givenName: 'JOHN',
+        familyName: 'SMITH',
+        gender: 'Male',
+        image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+        residentSince: '2015-01-01',
+        lprCategory: 'C09',
+        lprNumber: '999-999-999',
+        commuterClassification: 'C1',
+        birthCountry: 'Bahamas',
+        birthDate: '1958-07-17',
+      },
+      proof: {
+        type: 'BbsBlsSignature2020',
+        created: expect.any(String),
+        verificationMethod:
+          'did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa#zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa',
+        proofPurpose: 'assertionMethod',
+        proofValue: expect.any(String),
+      },
+    })
 
     expect(JsonTransformer.toJSON(credentialMessage)).toMatchObject({
       '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',
