@@ -26,7 +26,7 @@ import {
   RequestWitnessedMessage,
 } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
-import { ValueTransferRecord, ValueTransferRecordStatus, ValueTransferRepository } from '../repository'
+import { ValueTransferRecord, ValueTransferTransactionStatus, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 
@@ -175,7 +175,7 @@ export class ValueTransferWitnessService {
     const record = new ValueTransferRecord({
       role: ValueTransferRole.Witness,
       state: ValueTransferState.RequestSent,
-      status: ValueTransferRecordStatus.Pending,
+      status: ValueTransferTransactionStatus.Pending,
       threadId: requestMessage.id,
       valueTransferMessage: message,
       getter: getterInfo,
@@ -249,7 +249,11 @@ export class ValueTransferWitnessService {
 
       // Update Value Transfer record
       record.problemReportMessage = problemReportMessage
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
+      await this.valueTransferService.updateState(
+        record,
+        ValueTransferState.Failed,
+        ValueTransferTransactionStatus.Finished
+      )
       return { record, message: problemReportMessage }
     }
 
@@ -268,7 +272,7 @@ export class ValueTransferWitnessService {
     await this.valueTransferService.updateState(
       record,
       ValueTransferState.RequestAcceptanceSent,
-      ValueTransferRecordStatus.Active
+      ValueTransferTransactionStatus.InProgress
     )
     return { record, message: requestAcceptedWitnessedMessage }
   }
@@ -330,7 +334,11 @@ export class ValueTransferWitnessService {
 
       // Update Value Transfer record
       record.problemReportMessage = problemReportMessage
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
+      await this.valueTransferService.updateState(
+        record,
+        ValueTransferState.Failed,
+        ValueTransferTransactionStatus.Finished
+      )
       return { record, message: problemReportMessage }
     }
 
@@ -347,7 +355,7 @@ export class ValueTransferWitnessService {
     await this.valueTransferService.updateState(
       record,
       ValueTransferState.CashAcceptanceSent,
-      ValueTransferRecordStatus.Active
+      ValueTransferTransactionStatus.InProgress
     )
     return { record, message: cashAcceptedWitnessedMessage }
   }
@@ -416,7 +424,11 @@ export class ValueTransferWitnessService {
 
       // Update Value Transfer record
       record.problemReportMessage = getterProblemReport
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
+      await this.valueTransferService.updateState(
+        record,
+        ValueTransferState.Failed,
+        ValueTransferTransactionStatus.Finished
+      )
       return {
         record,
         getterMessage: getterProblemReport,
@@ -445,7 +457,7 @@ export class ValueTransferWitnessService {
     await this.valueTransferService.updateState(
       record,
       ValueTransferState.Completed,
-      ValueTransferRecordStatus.Finished
+      ValueTransferTransactionStatus.Finished
     )
     return { record, getterMessage: getterReceiptMessage, giverMessage: giverReceiptMessage }
   }

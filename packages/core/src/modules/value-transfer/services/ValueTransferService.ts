@@ -23,7 +23,7 @@ import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
 import { ProblemReportMessage } from '../messages'
-import { ValueTransferRecordStatus, ValueTransferRepository } from '../repository'
+import { ValueTransferTransactionStatus, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 import { WitnessStateRecord } from '../repository/WitnessStateRecord'
@@ -151,7 +151,7 @@ export class ValueTransferService {
       })
 
       record.problemReportMessage = problemReportMessage
-      await this.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
+      await this.updateState(record, ValueTransferState.Failed, ValueTransferTransactionStatus.Finished)
       return {
         record,
         message: forwardedProblemReportMessage,
@@ -168,7 +168,7 @@ export class ValueTransferService {
 
     // Update Value Transfer record and raise event
     record.problemReportMessage = problemReportMessage
-    await this.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
+    await this.updateState(record, ValueTransferState.Failed, ValueTransferTransactionStatus.Finished)
     return { record }
   }
 
@@ -214,21 +214,23 @@ export class ValueTransferService {
 
     record.problemReportMessage = problemReport
 
-    await this.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
+    await this.updateState(record, ValueTransferState.Failed, ValueTransferTransactionStatus.Finished)
     return { record, message: problemReport }
   }
 
   public async getPendingTransactions(): Promise<{
     records?: ValueTransferRecord[] | null
   }> {
-    const records = await this.valueTransferRepository.findByQuery({ status: ValueTransferRecordStatus.Pending })
+    const records = await this.valueTransferRepository.findByQuery({ status: ValueTransferTransactionStatus.Pending })
     return { records }
   }
 
   public async getActiveTransaction(): Promise<{
     record?: ValueTransferRecord | null
   }> {
-    const record = await this.valueTransferRepository.findSingleByQuery({ status: ValueTransferRecordStatus.Active })
+    const record = await this.valueTransferRepository.findSingleByQuery({
+      status: ValueTransferTransactionStatus.InProgress,
+    })
     return { record }
   }
 
@@ -316,7 +318,11 @@ export class ValueTransferService {
     return this.valueTransferRepository.findByQuery(query)
   }
 
-  public async updateState(record: ValueTransferRecord, state: ValueTransferState, status: ValueTransferRecordStatus) {
+  public async updateState(
+    record: ValueTransferRecord,
+    state: ValueTransferState,
+    status: ValueTransferTransactionStatus
+  ) {
     const previousState = record.state
     record.state = state
     record.status = status

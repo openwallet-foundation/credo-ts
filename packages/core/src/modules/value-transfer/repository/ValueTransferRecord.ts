@@ -20,9 +20,9 @@ export type DefaultValueTransferTags = {
 
 export type ValueTransferTags = RecordTags<ValueTransferRecord>
 
-export enum ValueTransferRecordStatus {
+export enum ValueTransferTransactionStatus {
   Pending = 'pending',
-  Active = 'active',
+  InProgress = 'in-progress',
   Finished = 'finished',
 }
 
@@ -41,7 +41,7 @@ export interface ValueTransferStorageProps {
   problemReportMessage?: ProblemReportMessage
   receipt?: ValueTransferMessage
 
-  status?: ValueTransferRecordStatus
+  status?: ValueTransferTransactionStatus
   tags?: CustomValueTransferTags
 }
 
@@ -55,7 +55,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   public role!: ValueTransferRole
 
   public state!: ValueTransferState
-  public status?: ValueTransferRecordStatus
+  public status?: ValueTransferTransactionStatus
 
   @Type(() => ValueTransferMessage)
   public valueTransferMessage!: ValueTransferMessage

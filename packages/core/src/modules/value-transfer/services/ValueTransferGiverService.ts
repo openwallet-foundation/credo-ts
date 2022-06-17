@@ -16,7 +16,7 @@ import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
 import { CashRemovedMessage, ProblemReportMessage, RequestAcceptedMessage } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
-import { ValueTransferRecord, ValueTransferRecordStatus, ValueTransferRepository } from '../repository'
+import { ValueTransferRecord, ValueTransferTransactionStatus, ValueTransferRepository } from '../repository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferService } from './ValueTransferService'
@@ -121,7 +121,7 @@ export class ValueTransferGiverService {
     const record = new ValueTransferRecord({
       role: ValueTransferRole.Giver,
       state: ValueTransferState.RequestReceived,
-      status: ValueTransferRecordStatus.Pending,
+      status: ValueTransferTransactionStatus.Pending,
       threadId: requestWitnessedMessage.thid,
       valueTransferMessage,
       getter: getterInfo,
@@ -190,7 +190,11 @@ export class ValueTransferGiverService {
 
       // Update Value Transfer record
       record.problemReportMessage = problemReport
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
+      await this.valueTransferService.updateState(
+        record,
+        ValueTransferState.Failed,
+        ValueTransferTransactionStatus.Finished
+      )
       return {
         record,
         message: problemReport,
@@ -211,7 +215,7 @@ export class ValueTransferGiverService {
     await this.valueTransferService.updateState(
       record,
       ValueTransferState.RequestAcceptanceSent,
-      ValueTransferRecordStatus.Active
+      ValueTransferTransactionStatus.InProgress
     )
     return { record, message: requestAcceptedMessage }
   }
@@ -270,7 +274,11 @@ export class ValueTransferGiverService {
       await this.giver.abortTransaction()
       // Update Value Transfer record
       record.problemReportMessage = problemReportMessage
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
+      await this.valueTransferService.updateState(
+        record,
+        ValueTransferState.Failed,
+        ValueTransferTransactionStatus.Finished
+      )
       return { record, message: problemReportMessage }
     }
 
@@ -288,7 +296,7 @@ export class ValueTransferGiverService {
     await this.valueTransferService.updateState(
       record,
       ValueTransferState.CashSignatureSent,
-      ValueTransferRecordStatus.Active
+      ValueTransferTransactionStatus.InProgress
     )
     return { record, message: cashRemovedMessage }
   }
@@ -321,14 +329,18 @@ export class ValueTransferGiverService {
 
       // Update Value Transfer record
       record.problemReportMessage = problemReportMessage
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
+      await this.valueTransferService.updateState(
+        record,
+        ValueTransferState.Failed,
+        ValueTransferTransactionStatus.Finished
+      )
       return { record }
     }
 
     await this.valueTransferService.updateState(
       record,
       ValueTransferState.WaitingReceipt,
-      ValueTransferRecordStatus.Active
+      ValueTransferTransactionStatus.Finished
     )
     return { record }
   }
@@ -352,8 +364,14 @@ export class ValueTransferGiverService {
 
     const record = await this.valueTransferRepository.getByThread(receiptMessage.thid)
 
-    record.assertState(ValueTransferState.CashSignatureSent)
+    record.assertState(ValueTransferState.WaitingReceipt)
     record.assertRole(ValueTransferRole.Giver)
+
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.ReceiptReceived,
+      ValueTransferTransactionStatus.InProgress
+    )
 
     const valueTransferDelta = receiptMessage.valueTransferDelta
     if (!valueTransferDelta) {
@@ -381,7 +399,11 @@ export class ValueTransferGiverService {
 
       await this.giver.abortTransaction()
       record.problemReportMessage = problemReportMessage
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
+      await this.valueTransferService.updateState(
+        record,
+        ValueTransferState.Failed,
+        ValueTransferTransactionStatus.Finished
+      )
       return { record, message: problemReportMessage }
     }
 
@@ -392,7 +414,7 @@ export class ValueTransferGiverService {
     await this.valueTransferService.updateState(
       record,
       ValueTransferState.Completed,
-      ValueTransferRecordStatus.Finished
+      ValueTransferTransactionStatus.Finished
     )
     return { record, message: receiptMessage }
   }
