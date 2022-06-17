@@ -472,7 +472,7 @@ describe('Present Proof', () => {
     }
 
     await expect(faberAgent.proofs.requestProof(requestProofsOptions)).rejects.toThrowError(
-      `The proof request contains duplicate items: age`
+      `The proof request contains duplicate predicates and attributes: age`
     )
   })
 

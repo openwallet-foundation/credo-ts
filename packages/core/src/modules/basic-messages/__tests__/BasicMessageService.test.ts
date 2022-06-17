@@ -42,8 +42,8 @@ describe('BasicMessageService', () => {
     let eventEmitter: EventEmitter
 
     beforeEach(() => {
-      basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService)
       eventEmitter = new EventEmitter(agentConfig)
+      basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService, eventEmitter)
       basicMessageService = new BasicMessageService(basicMessageRepository, eventEmitter)
     })
 

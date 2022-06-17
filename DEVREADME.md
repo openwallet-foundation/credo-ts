@@ -18,6 +18,18 @@ If you're using the setup as described in this document, you don't need to provi
   - If using the local or default genesis, use the same seed you used for the `add-did-from-seed` command from the [ledger setup](#setup-ledger) in the previous step. (default is `000000000000000000000000Trustee9`)
   - If using the BuilderNet genesis, make sure your seed is registered on the BuilderNet using [selfserve.sovrin.org](https://selfserve.sovrin.org/) and you have read and accepted the associated [Transaction Author Agreement](https://github.com/sovrin-foundation/sovrin/blob/master/TAA/TAA.md). We are not responsible for any unwanted consequences of using the BuilderNet.
 
+### Setup Postgres
+
+> Note: Setup the postgres plugin first from here [docs](./docs/postgres-plugin-setup)
+
+```sh
+# Get postgres docker image
+docker pull postgres
+
+# Run postgres in docker
+docker run --name postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+```
+
 ### Setup Ledger
 
 For testing we've added a setup to this repo that allows you to quickly setup an indy ledger.
@@ -54,6 +66,18 @@ If you're not using the ledger setup from above, make sure you pass the correct 
 
 ```sh
 GENESIS_TXN_PATH=network/genesis/local-genesis.txn TEST_AGENT_PUBLIC_DID_SEED=000000000000000000000000Trustee9 yarn test
+```
+
+Locally, you might want to run the tests without postgres tests. You can do that by ignoring the tests:
+
+```sh
+yarn test --testPathIgnorePatterns ./packages/core/tests/postgres.test.ts -u
+```
+
+In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client. On a Unix system with default setup you achieve this by running:
+
+```sh
+rm -rf ~/.indy-client
 ```
 
 ## Usage with Docker

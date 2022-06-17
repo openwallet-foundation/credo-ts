@@ -1,5 +1,5 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
-import type { RevocationInterval } from '../../credentials/protocol/v1/models/RevocationInterval'
+import { IndyRevocationInterval } from '../../credentials'
 import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
 import type { RequestProofFormats } from '../models/SharedOptions'
 import type { RequestedAttribute, RequestedPredicate } from '../protocol/v1/models'
@@ -24,7 +24,7 @@ export interface IndyRequestProofFormat {
   name: string
   version: string
   nonce: string
-  nonRevoked?: RevocationInterval
+  nonRevoked?: IndyRevocationInterval
   ver?: '1.0' | '2.0'
   requestedAttributes?: Record<string, ProofAttributeInfo> | Map<string, ProofAttributeInfo>
   requestedPredicates?: Record<string, ProofPredicateInfo> | Map<string, ProofPredicateInfo>

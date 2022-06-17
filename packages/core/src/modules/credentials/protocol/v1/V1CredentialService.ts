@@ -1,53 +1,42 @@
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { ConnectionRecord } from '../../../connections'
-import type { CredentialStateChangedEvent } from '../../CredentialEvents'
 import type {
-  ServiceAcceptCredentialOptions,
-  CredentialOfferTemplate,
-  CredentialProposeOptions,
-  CredentialProtocolMsgReturnType,
-  ServiceAcceptRequestOptions,
-  ServiceRequestCredentialOptions,
-  ServiceOfferCredentialOptions,
-} from '../../CredentialServiceOptions'
-import type {
+  AcceptCredentialOptions,
+  AcceptOfferOptions,
   AcceptProposalOptions,
+  AcceptRequestOptions,
+  CreateOfferOptions,
+  CreateProposalOptions,
+  CredentialProtocolMsgReturnType,
+  NegotiateOfferOptions,
   NegotiateProposalOptions,
-  ProposeCredentialOptions,
-  RequestCredentialOptions,
-} from '../../CredentialsModuleOptions'
-import type { CredentialFormatService } from '../../formats/CredentialFormatService'
-import type { HandlerAutoAcceptOptions } from '../../formats/models/CredentialFormatServiceOptions'
-import type { CredOffer } from 'indy-sdk'
+} from '../../CredentialServiceOptions'
+import type { IndyCredentialFormat } from '../../formats/indy/IndyCredentialFormat'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
+import { JsonTransformer } from '../../../../utils'
 import { isLinkedAttachment } from '../../../../utils/attachment'
+import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services'
-import { DidResolverService } from '../../../dids'
 import { MediationRecipientService } from '../../../routing'
-import { AutoAcceptCredential } from '../../CredentialAutoAcceptType'
-import { CredentialEventTypes } from '../../CredentialEvents'
-import { CredentialProtocolVersion } from '../../CredentialProtocolVersion'
-import { CredentialState } from '../../CredentialState'
-import { CredentialUtils } from '../../CredentialUtils'
-import { composeAutoAccept } from '../../composeAutoAccept'
-import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
-import { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
-import { CredentialRepository, CredentialMetadataKeys, CredentialExchangeRecord } from '../../repository'
-import { CredentialService, RevocationService } from '../../services'
+import { IndyCredPropose } from '../../formats/indy/models'
+import { AutoAcceptCredential } from '../../models/CredentialAutoAcceptType'
+import { CredentialState } from '../../models/CredentialState'
+import { CredentialExchangeRecord, CredentialRepository } from '../../repository'
+import { CredentialService } from '../../services'
+import { composeAutoAccept } from '../../util/composeAutoAccept'
+import { arePreviewAttributesEqual } from '../../util/previewAttributes'
 
-import { V1CredentialPreview } from './V1CredentialPreview'
 import {
   V1CredentialAckHandler,
   V1CredentialProblemReportHandler,
@@ -55,23 +44,24 @@ import {
   V1OfferCredentialHandler,
   V1ProposeCredentialHandler,
   V1RequestCredentialHandler,
-  V1RevocationNotificationHandler,
 } from './handlers'
 import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
-  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-  V1ProposeCredentialMessage,
-  V1IssueCredentialMessage,
-  V1RequestCredentialMessage,
-  V1OfferCredentialMessage,
+  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   V1CredentialAckMessage,
+  V1IssueCredentialMessage,
+  V1OfferCredentialMessage,
+  V1ProposeCredentialMessage,
+  V1RequestCredentialMessage,
 } from './messages'
+import { V1CredentialPreview } from './messages/V1CredentialPreview'
 
 @scoped(Lifecycle.ContainerScoped)
-export class V1CredentialService extends CredentialService {
+export class V1CredentialService extends CredentialService<[IndyCredentialFormat]> {
   private connectionService: ConnectionService
   private formatService: IndyCredentialFormatService
+  private mediationRecipientService: MediationRecipientService
 
   public constructor(
     connectionService: ConnectionService,
@@ -81,95 +71,88 @@ export class V1CredentialService extends CredentialService {
     dispatcher: Dispatcher,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
-    formatService: IndyCredentialFormatService,
-    revocationService: RevocationService,
-    didResolver: DidResolverService
+    formatService: IndyCredentialFormatService
   ) {
-    super(
-      credentialRepository,
-      eventEmitter,
-      dispatcher,
-      agentConfig,
-      mediationRecipientService,
-      didCommMessageRepository,
-      revocationService,
-      didResolver
-    )
+    super(credentialRepository, didCommMessageRepository, eventEmitter, dispatcher, agentConfig)
     this.connectionService = connectionService
     this.formatService = formatService
-    this.didResolver = didResolver
+    this.didCommMessageRepository = didCommMessageRepository
+    this.mediationRecipientService = mediationRecipientService
+
+    this.registerHandlers()
+  }
+
+  /**
+   * The version of the issue credential protocol this service supports
+   */
+  public readonly version = 'v1'
+
+  public getFormatServiceForRecordType(credentialRecordType: IndyCredentialFormat['credentialRecordType']) {
+    if (credentialRecordType !== this.formatService.credentialRecordType) {
+      throw new AriesFrameworkError(
+        `Unsupported credential record type ${credentialRecordType} for v1 issue credential protocol (need ${this.formatService.credentialRecordType})`
+      )
+    }
+
+    return this.formatService
   }
 
   /**
    * Create a {@link ProposeCredentialMessage} not bound to an existing credential exchange.
    * To create a proposal as response to an existing credential exchange, use {@link createProposalAsResponse}.
    *
-   * @param proposal The object containing config options
+   * @param options The object containing config options
    * @returns Object containing proposal message and associated credential record
    *
    */
-  public async createProposal(
-    proposal: ProposeCredentialOptions
-  ): Promise<CredentialProtocolMsgReturnType<V1ProposeCredentialMessage>> {
-    const connection = await this.connectionService.getById(proposal.connectionId)
-    connection.assertReady()
-    if (!proposal.credentialFormats.indy || Object.keys(proposal.credentialFormats).length !== 1) {
-      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
-    }
-    let credentialProposal: V1CredentialPreview | undefined
+  public async createProposal({
+    connection,
+    credentialFormats,
+    comment,
+    autoAcceptCredential,
+  }: CreateProposalOptions<[IndyCredentialFormat]>): Promise<CredentialProtocolMsgReturnType<AgentMessage>> {
+    this.assertOnlyIndyFormat(credentialFormats)
 
-    const credPropose = proposal.credentialFormats.indy?.payload
-
-    if (!credPropose) {
-      throw new AriesFrameworkError('Missing credPropose data payload in createProposal')
-    }
-    if (proposal.credentialFormats.indy?.attributes) {
-      credentialProposal = new V1CredentialPreview({
-        attributes: proposal.credentialFormats.indy?.attributes.map(
-          (attribute) => new CredentialPreviewAttribute(attribute)
-        ),
-      })
+    if (!credentialFormats.indy) {
+      throw new AriesFrameworkError('Missing indy credential format in v1 create proposal call.')
     }
 
-    const config: CredentialProposeOptions = {
-      ...credPropose,
-      comment: proposal.comment,
-      credentialProposal: credentialProposal,
-      linkedAttachments: proposal.credentialFormats.indy?.linkedAttachments,
-    }
-
-    const options = { ...config }
-
-    // call create proposal for validation of the proposal and addition of linked attachments
-    const { attachment: filtersAttach } = await this.formatService.createProposal(proposal)
-
-    if (!filtersAttach) {
-      throw new AriesFrameworkError('Missing filters attach in Proposal')
-    }
-    options.attachments = []
-    options.attachments?.push(filtersAttach)
-
-    // Create message
-    const message = new V1ProposeCredentialMessage(options ?? {})
+    // TODO: linked attachments are broken currently. We never include them in the messages.
+    // The linking with previews does work, so it shouldn't be too much work to re-enable this.
+    const { linkedAttachments } = credentialFormats.indy
 
     // Create record
     const credentialRecord = new CredentialExchangeRecord({
       connectionId: connection.id,
-      threadId: message.threadId,
+      threadId: uuid(),
       state: CredentialState.ProposalSent,
-      linkedAttachments: config?.linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
-      credentialAttributes: message.credentialProposal?.attributes,
-      autoAcceptCredential: config?.autoAcceptCredential,
-      protocolVersion: CredentialProtocolVersion.V1,
-      credentials: [],
+      linkedAttachments: linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
+      autoAcceptCredential: autoAcceptCredential,
+      protocolVersion: 'v1',
     })
 
-    // Set the metadata
-    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-      schemaId: options.schemaId,
-      credentialDefinitionId: options.credentialDefinitionId,
+    // call create proposal for validation of the proposal and addition of linked attachments
+    const { previewAttributes, attachment } = await this.formatService.createProposal({
+      credentialFormats,
+      credentialRecord,
     })
-    await this.credentialRepository.save(credentialRecord)
+
+    // Transform the attachment into the attachment payload and use that to construct the v1 message
+    const indyCredentialProposal = JsonTransformer.fromJSON(attachment.getDataAsJson(), IndyCredPropose)
+
+    const credentialProposal = previewAttributes
+      ? new V1CredentialPreview({
+          attributes: previewAttributes,
+        })
+      : undefined
+
+    // Create message
+    const message = new V1ProposeCredentialMessage({
+      ...indyCredentialProposal,
+      id: credentialRecord.threadId,
+      credentialProposal,
+      comment,
+    })
 
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: message,
@@ -177,123 +160,13 @@ export class V1CredentialService extends CredentialService {
       associatedRecordId: credentialRecord.id,
     })
 
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
-    })
+    credentialRecord.credentialAttributes = previewAttributes
+    await this.credentialRepository.save(credentialRecord)
+    this.emitStateChangedEvent(credentialRecord, null)
 
     return { credentialRecord, message }
   }
 
-  /**
-   * Processing an incoming credential message and create a credential offer as a response
-   * @param proposal The object containing config options
-   * @param credentialRecord the credential exchange record for this proposal
-   * @returns Object containing proposal message and associated credential record
-   */
-  public async acceptProposal(
-    options: AcceptProposalOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
-    if (!options.credentialFormats.indy || Object.keys(options.credentialFormats).length !== 1) {
-      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
-    }
-    const proposalCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: credentialRecord.id,
-      messageClass: V1ProposeCredentialMessage,
-    })
-
-    if (!proposalCredentialMessage?.credentialProposal) {
-      throw new AriesFrameworkError(
-        `Credential record with id ${options.credentialRecordId} is missing required credential proposal`
-      )
-    }
-
-    if (!options.credentialFormats) {
-      throw new AriesFrameworkError('Missing credential formats in V1 acceptProposal')
-    }
-
-    const credentialDefinitionId =
-      options.credentialFormats.indy?.credentialDefinitionId ?? proposalCredentialMessage.credentialDefinitionId
-
-    if (!credentialDefinitionId) {
-      throw new AriesFrameworkError(
-        'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
-      )
-    }
-    const { message } = await this.createOfferAsResponse(credentialRecord, {
-      preview: proposalCredentialMessage.credentialProposal,
-      credentialDefinitionId,
-      comment: options.comment,
-      autoAcceptCredential: options.autoAcceptCredential,
-      attachments: credentialRecord.linkedAttachments,
-    })
-
-    return { credentialRecord, message }
-  }
-
-  /**
-   * Negotiate a credential proposal as issuer (by sending a credential offer message) to the connection
-   * associated with the credential record.
-   *
-   * @param credentialOptions configuration for the offer see {@link NegotiateProposalOptions}
-   * @param credentialRecord the credential exchange record for this proposal
-   * @returns Credential record associated with the credential offer and the corresponding new offer message
-   *
-   */
-  public async negotiateProposal(
-    credentialOptions: NegotiateProposalOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
-    if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
-        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
-      )
-    }
-    if (!credentialOptions.credentialFormats.indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
-      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
-    }
-
-    const credentialProposalMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: credentialRecord.id,
-      messageClass: V1ProposeCredentialMessage,
-    })
-
-    if (!credentialProposalMessage?.credentialProposal) {
-      throw new AriesFrameworkError(
-        `Credential record with id ${credentialOptions.credentialRecordId} is missing required credential proposal`
-      )
-    }
-
-    const credentialDefinitionId =
-      credentialOptions.credentialFormats.indy?.credentialDefinitionId ??
-      credentialProposalMessage.credentialDefinitionId
-
-    if (!credentialDefinitionId) {
-      throw new AriesFrameworkError(
-        'Missing required credential definition id. If credential proposal message contains no credential definition id it must be passed to config.'
-      )
-    }
-
-    if (!credentialOptions?.credentialFormats.indy?.attributes) {
-      throw new AriesFrameworkError('No proposal attributes in the negotiation options!')
-    }
-    const newCredentialProposal = new V1CredentialPreview({
-      attributes: credentialOptions?.credentialFormats.indy?.attributes,
-    })
-
-    const { message } = await this.createOfferAsResponse(credentialRecord, {
-      preview: newCredentialProposal,
-      credentialDefinitionId,
-      comment: credentialOptions.comment,
-      autoAcceptCredential: credentialOptions.autoAcceptCredential,
-      attachments: credentialRecord.linkedAttachments,
-    })
-    return { credentialRecord, message }
-  }
   /**
    * Process a received {@link ProposeCredentialMessage}. This will not accept the credential proposal
    * or send a credential offer. It will only create a new, or update the existing credential record with
@@ -307,15 +180,18 @@ export class V1CredentialService extends CredentialService {
   public async processProposal(
     messageContext: InboundMessageContext<V1ProposeCredentialMessage>
   ): Promise<CredentialExchangeRecord> {
-    let credentialRecord: CredentialExchangeRecord
     const { message: proposalMessage, connection } = messageContext
 
-    this.logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
+    this.logger.debug(`Processing credential proposal with message id ${proposalMessage.id}`)
 
-    try {
-      // Credential record already exists
-      credentialRecord = await this.getByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
+    let credentialRecord = await this.findByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
+
+    // Credential record already exists, this is a response to an earlier message sent by us
+    if (credentialRecord) {
+      this.logger.debug('Credential record already exists for incoming proposal')
+
       // Assert
+      credentialRecord.assertProtocolVersion('v1')
       credentialRecord.assertState(CredentialState.OfferSent)
 
       const proposalCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
@@ -332,27 +208,27 @@ export class V1CredentialService extends CredentialService {
         previousSentMessage: offerCredentialMessage ?? undefined,
       })
 
+      await this.formatService.processProposal({
+        credentialRecord,
+        attachment: this.rfc0592ProposalAttachmentFromV1ProposeMessage(proposalMessage),
+      })
+
       // Update record
       await this.updateState(credentialRecord, CredentialState.ProposalReceived)
-      await this.didCommMessageRepository.saveAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
       })
-    } catch {
+    } else {
+      this.logger.debug('Credential record does not exists yet for incoming proposal')
+
       // No credential record exists with thread id
       credentialRecord = new CredentialExchangeRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
-        credentialAttributes: proposalMessage.credentialProposal?.attributes,
         state: CredentialState.ProposalReceived,
-        protocolVersion: CredentialProtocolVersion.V1,
-        credentials: [],
-      })
-
-      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-        schemaId: proposalMessage.schemaId,
-        credentialDefinitionId: proposalMessage.credentialDefinitionId,
+        protocolVersion: 'v1',
       })
 
       // Assert
@@ -360,13 +236,8 @@ export class V1CredentialService extends CredentialService {
 
       // Save record
       await this.credentialRepository.save(credentialRecord)
-      this.eventEmitter.emit<CredentialStateChangedEvent>({
-        type: CredentialEventTypes.CredentialStateChanged,
-        payload: {
-          credentialRecord,
-          previousState: null,
-        },
-      })
+      this.emitStateChangedEvent(credentialRecord, null)
+
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
@@ -377,123 +248,114 @@ export class V1CredentialService extends CredentialService {
   }
 
   /**
-   * Create a {@link OfferCredentialMessage} as response to a received credential proposal.
-   * To create an offer not bound to an existing credential exchange, use {@link createOffer}.
-   *
-   * @param credentialRecord The credential record for which to create the credential offer
-   * @param credentialTemplate The credential template to use for the offer
-   * @returns Object containing offer message and associated credential record
-   *
+   * Processing an incoming credential message and create a credential offer as a response
+   * @param options The object containing config options
+   * @returns Object containing proposal message and associated credential record
    */
-  public async createOfferAsResponse(
-    credentialRecord: CredentialExchangeRecord,
-    credentialTemplate: CredentialOfferTemplate
-  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
+  public async acceptProposal({
+    credentialRecord,
+    credentialFormats,
+    comment,
+    autoAcceptCredential,
+  }: AcceptProposalOptions<[IndyCredentialFormat]>): Promise<
+    CredentialProtocolMsgReturnType<V1OfferCredentialMessage>
+  > {
     // Assert
+    credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.ProposalReceived)
+    if (credentialFormats) this.assertOnlyIndyFormat(credentialFormats)
 
-    // Create message
-    const { credentialDefinitionId, comment, preview, attachments } = credentialTemplate
-
-    const options: ServiceOfferCredentialOptions = {
-      attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-      credentialFormats: {
-        indy: {
-          credentialDefinitionId,
-          attributes: preview.attributes,
-        },
-      },
-      protocolVersion: CredentialProtocolVersion.V1,
-    }
-
-    const { attachment: offersAttach } = await this.formatService.createOffer(options)
-
-    if (!offersAttach) {
-      throw new AriesFrameworkError('No offer attachment for credential')
-    }
-
-    const credOffer = offersAttach.getDataAsJson<CredOffer>()
-
-    if (!offersAttach) {
-      throw new AriesFrameworkError('Missing offers attach in Offer')
-    }
-
-    const offerMessage = new V1OfferCredentialMessage({
-      comment,
-      offerAttachments: [offersAttach],
-      credentialPreview: preview,
-      attachments,
-    })
-
-    offerMessage.setThread({
-      threadId: credentialRecord.threadId,
-    })
-
-    credentialRecord.credentialAttributes = preview.attributes
-    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-      schemaId: credOffer.schema_id,
-      credentialDefinitionId: credOffer.cred_def_id,
-    })
-    credentialRecord.linkedAttachments = attachments?.filter((attachment) => isLinkedAttachment(attachment))
-    credentialRecord.autoAcceptCredential =
-      credentialTemplate.autoAcceptCredential ?? credentialRecord.autoAcceptCredential
-
-    await this.updateState(credentialRecord, CredentialState.OfferSent)
-
-    await this.didCommMessageRepository.saveAgentMessage({
-      agentMessage: offerMessage,
-      role: DidCommMessageRole.Sender,
+    const proposalMessage = await this.didCommMessageRepository.getAgentMessage({
       associatedRecordId: credentialRecord.id,
+      messageClass: V1ProposeCredentialMessage,
     })
-    return { message: offerMessage, credentialRecord }
-  }
-  /**
-   * Process a received {@link RequestCredentialMessage}. This will not accept the credential request
-   * or send a credential. It will only update the existing credential record with
-   * the information from the credential request message. Use {@link createCredential}
-   * after calling this method to create a credential.
-   *
-   * @param messageContext The message context containing a credential request message
-   * @returns credential record associated with the credential request message
-   *
-   */
 
-  public async negotiateOffer(
-    credentialOptions: ProposeCredentialOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialProtocolMsgReturnType<V1ProposeCredentialMessage>> {
-    if (!credentialRecord.connectionId) {
-      throw new AriesFrameworkError(
-        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
-      )
-    }
-    if (!credentialOptions.credentialFormats.indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
-      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
-    }
+    // NOTE: We set the credential attributes from the proposal on the record as we've 'accepted' them
+    // and can now use them to create the offer in the format services. It may be overwritten later on
+    // if the user provided other attributes in the credentialFormats array.
+    credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
 
-    if (!credentialOptions.credentialFormats.indy?.attributes) {
-      throw new AriesFrameworkError('Missing attributes in V1 Negotiate Offer Options')
-    }
-    const credentialPreview = new V1CredentialPreview({
-      attributes: credentialOptions.credentialFormats.indy?.attributes.map(
-        (attribute) => new CredentialPreviewAttribute(attribute)
-      ),
+    const { attachment, previewAttributes } = await this.formatService.acceptProposal({
+      attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+      credentialFormats,
+      credentialRecord,
+      proposalAttachment: this.rfc0592ProposalAttachmentFromV1ProposeMessage(proposalMessage),
     })
-    const options: CredentialProposeOptions = {
-      credentialProposal: credentialPreview,
+
+    if (!previewAttributes) {
+      throw new AriesFrameworkError('Missing required credential preview attributes from indy format service')
     }
 
-    credentialRecord.assertState(CredentialState.OfferReceived)
-
-    // Create message
-    const message = new V1ProposeCredentialMessage(options ?? {})
+    const message = new V1OfferCredentialMessage({
+      comment,
+      offerAttachments: [attachment],
+      credentialPreview: new V1CredentialPreview({
+        attributes: previewAttributes,
+      }),
+      attachments: credentialRecord.linkedAttachments,
+    })
 
     message.setThread({ threadId: credentialRecord.threadId })
 
-    // Update record
-    credentialRecord.credentialAttributes = message.credentialProposal?.attributes
-    await this.updateState(credentialRecord, CredentialState.ProposalSent)
-    await this.didCommMessageRepository.saveAgentMessage({
+    credentialRecord.credentialAttributes = previewAttributes
+    credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+    await this.updateState(credentialRecord, CredentialState.OfferSent)
+
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: message,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
+
+    return { credentialRecord, message }
+  }
+
+  /**
+   * Negotiate a credential proposal as issuer (by sending a credential offer message) to the connection
+   * associated with the credential record.
+   *
+   * @param options configuration for the offer see {@link NegotiateProposalOptions}
+   * @returns Credential record associated with the credential offer and the corresponding new offer message
+   *
+   */
+  public async negotiateProposal({
+    credentialFormats,
+    credentialRecord,
+    comment,
+    autoAcceptCredential,
+  }: NegotiateProposalOptions<[IndyCredentialFormat]>): Promise<
+    CredentialProtocolMsgReturnType<V1OfferCredentialMessage>
+  > {
+    // Assert
+    credentialRecord.assertProtocolVersion('v1')
+    credentialRecord.assertState(CredentialState.ProposalReceived)
+    if (credentialFormats) this.assertOnlyIndyFormat(credentialFormats)
+
+    const { attachment, previewAttributes } = await this.formatService.createOffer({
+      attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+      credentialFormats,
+      credentialRecord,
+    })
+
+    if (!previewAttributes) {
+      throw new AriesFrameworkError('Missing required credential preview attributes from indy format service')
+    }
+
+    const message = new V1OfferCredentialMessage({
+      comment,
+      offerAttachments: [attachment],
+      credentialPreview: new V1CredentialPreview({
+        attributes: previewAttributes,
+      }),
+      attachments: credentialRecord.linkedAttachments,
+    })
+    message.setThread({ threadId: credentialRecord.threadId })
+
+    credentialRecord.credentialAttributes = previewAttributes
+    credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+    await this.updateState(credentialRecord, CredentialState.OfferSent)
+
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
       agentMessage: message,
       role: DidCommMessageRole.Sender,
       associatedRecordId: credentialRecord.id,
@@ -506,50 +368,67 @@ export class V1CredentialService extends CredentialService {
    * Create a {@link OfferCredentialMessage} not bound to an existing credential exchange.
    * To create an offer as response to an existing credential exchange, use {@link V1CredentialService#createOfferAsResponse}.
    *
-   * @param credentialOptions The options containing config params for creating the credential offer
+   * @param options The options containing config params for creating the credential offer
    * @returns Object containing offer message and associated credential record
    *
    */
-  public async createOffer(
-    credentialOptions: ServiceOfferCredentialOptions
-  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
-    const indy = credentialOptions.credentialFormats.indy
+  public async createOffer({
+    credentialFormats,
+    autoAcceptCredential,
+    comment,
+    connection,
+  }: CreateOfferOptions<[IndyCredentialFormat]>): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
+    // Assert
+    if (credentialFormats) this.assertOnlyIndyFormat(credentialFormats)
 
-    if (!indy || Object.keys(credentialOptions.credentialFormats).length !== 1) {
-      throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
+    if (!credentialFormats.indy) {
+      throw new AriesFrameworkError('Missing indy credential format data for v1 create offer')
     }
 
-    if (!indy.attributes || !indy.credentialDefinitionId) {
-      throw new AriesFrameworkError('Missing properties from OfferCredentialOptions object: cannot create Offer!')
-    }
-
-    const preview: V1CredentialPreview = new V1CredentialPreview({
-      attributes: indy.attributes.map((attribute) => new CredentialPreviewAttribute(attribute)),
+    // Create record
+    const credentialRecord = new CredentialExchangeRecord({
+      connectionId: connection?.id,
+      threadId: uuid(),
+      linkedAttachments: credentialFormats.indy.linkedAttachments?.map(
+        (linkedAttachments) => linkedAttachments.attachment
+      ),
+      state: CredentialState.OfferSent,
+      autoAcceptCredential,
+      protocolVersion: 'v1',
     })
 
-    const template: CredentialOfferTemplate = {
-      ...credentialOptions,
-      preview: preview,
-      credentialDefinitionId: indy.credentialDefinitionId,
-      linkedAttachments: indy.linkedAttachments,
+    const { attachment, previewAttributes } = await this.formatService.createOffer({
+      attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+      credentialFormats,
+      credentialRecord,
+    })
+
+    if (!previewAttributes) {
+      throw new AriesFrameworkError('Missing required credential preview from indy format service')
     }
 
-    const { credentialRecord, message } = await this.createOfferProcessing(template, credentialOptions.connection)
-
-    await this.credentialRepository.save(credentialRecord)
-    this.eventEmitter.emit<CredentialStateChangedEvent>({
-      type: CredentialEventTypes.CredentialStateChanged,
-      payload: {
-        credentialRecord,
-        previousState: null,
-      },
+    // Construct offer message
+    const message = new V1OfferCredentialMessage({
+      id: credentialRecord.threadId,
+      credentialPreview: new V1CredentialPreview({
+        attributes: previewAttributes,
+      }),
+      comment,
+      offerAttachments: [attachment],
+      attachments: credentialFormats.indy.linkedAttachments?.map((linkedAttachments) => linkedAttachments.attachment),
     })
+
     await this.didCommMessageRepository.saveAgentMessage({
+      associatedRecordId: credentialRecord.id,
       agentMessage: message,
       role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
     })
-    return { credentialRecord, message }
+
+    credentialRecord.credentialAttributes = previewAttributes
+    await this.credentialRepository.save(credentialRecord)
+    this.emitStateChangedEvent(credentialRecord, null)
+
+    return { message, credentialRecord }
   }
 
   /**
@@ -565,24 +444,20 @@ export class V1CredentialService extends CredentialService {
   public async processOffer(
     messageContext: HandlerInboundMessage<V1OfferCredentialHandler>
   ): Promise<CredentialExchangeRecord> {
-    let credentialRecord: CredentialExchangeRecord
     const { message: offerMessage, connection } = messageContext
 
     this.logger.debug(`Processing credential offer with id ${offerMessage.id}`)
 
-    const indyCredentialOffer = offerMessage.indyCredentialOffer
+    let credentialRecord = await this.findByThreadAndConnectionId(offerMessage.threadId, connection?.id)
 
-    if (!indyCredentialOffer) {
-      throw new CredentialProblemReportError(
-        `Missing required base64 or json encoded attachment data for credential offer with thread id ${offerMessage.threadId}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
+    const offerAttachment = offerMessage.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    if (!offerAttachment) {
+      throw new AriesFrameworkError(
+        `Indy attachment with id ${INDY_CREDENTIAL_OFFER_ATTACHMENT_ID} not found in offer message`
       )
     }
 
-    try {
-      // Credential record already exists
-      credentialRecord = await this.getByThreadAndConnectionId(offerMessage.threadId, connection?.id)
-
+    if (credentialRecord) {
       const proposalCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
         associatedRecordId: credentialRecord.id,
         messageClass: V1ProposeCredentialMessage,
@@ -593,185 +468,196 @@ export class V1CredentialService extends CredentialService {
       })
 
       // Assert
+      credentialRecord.assertProtocolVersion('v1')
       credentialRecord.assertState(CredentialState.ProposalSent)
       this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
         previousReceivedMessage: offerCredentialMessage ?? undefined,
         previousSentMessage: proposalCredentialMessage ?? undefined,
       })
 
-      credentialRecord.linkedAttachments = offerMessage.appendedAttachments?.filter(isLinkedAttachment)
-
-      const attachment = offerCredentialMessage
-        ? offerCredentialMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
-        : undefined
-      if (attachment) {
-        await this.formatService.processOffer(attachment, credentialRecord)
-      }
-
-      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-        schemaId: indyCredentialOffer.schema_id,
-        credentialDefinitionId: indyCredentialOffer.cred_def_id,
+      await this.formatService.processOffer({
+        credentialRecord,
+        attachment: offerAttachment,
       })
 
-      await this.updateState(credentialRecord, CredentialState.OfferReceived)
-      await this.didCommMessageRepository.saveAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
         agentMessage: offerMessage,
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
       })
-    } catch {
+      await this.updateState(credentialRecord, CredentialState.OfferReceived)
+
+      return credentialRecord
+    } else {
       // No credential record exists with thread id
       credentialRecord = new CredentialExchangeRecord({
         connectionId: connection?.id,
         threadId: offerMessage.id,
         credentialAttributes: offerMessage.credentialPreview.attributes,
         state: CredentialState.OfferReceived,
-        protocolVersion: CredentialProtocolVersion.V1,
-        credentials: [],
+        protocolVersion: 'v1',
       })
 
-      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-        schemaId: indyCredentialOffer.schema_id,
-        credentialDefinitionId: indyCredentialOffer.cred_def_id,
-      })
       // Assert
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
+      await this.formatService.processOffer({
+        credentialRecord,
+        attachment: offerAttachment,
+      })
+
       // Save in repository
-      await this.credentialRepository.save(credentialRecord)
       await this.didCommMessageRepository.saveAgentMessage({
         agentMessage: offerMessage,
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialRecord.id,
       })
-      this.eventEmitter.emit<CredentialStateChangedEvent>({
-        type: CredentialEventTypes.CredentialStateChanged,
-        payload: {
-          credentialRecord,
-          previousState: null,
-        },
-      })
+      await this.credentialRepository.save(credentialRecord)
+      this.emitStateChangedEvent(credentialRecord, null)
+
+      return credentialRecord
     }
-
-    return credentialRecord
-  }
-
-  private async createOfferProcessing(
-    credentialTemplate: CredentialOfferTemplate,
-    connectionRecord?: ConnectionRecord
-  ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
-    // Assert
-    connectionRecord?.assertReady()
-
-    // Create message
-    const { credentialDefinitionId, comment, preview, linkedAttachments } = credentialTemplate
-
-    // Create and link credential to attachment
-    const credentialPreview = linkedAttachments
-      ? CredentialUtils.createAndLinkAttachmentsToPreview(linkedAttachments, preview)
-      : preview
-
-    const options: ServiceOfferCredentialOptions = {
-      attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-      credentialFormats: {
-        indy: {
-          credentialDefinitionId,
-          attributes: credentialPreview.attributes,
-        },
-      },
-      protocolVersion: CredentialProtocolVersion.V1,
-    }
-
-    const { attachment: offersAttach } = await this.formatService.createOffer(options)
-
-    if (!offersAttach) {
-      throw new AriesFrameworkError('Missing offers attach in Offer')
-    }
-
-    // Construct offer message
-    const offerMessage = new V1OfferCredentialMessage({
-      comment,
-      offerAttachments: [offersAttach],
-      credentialPreview,
-      attachments: linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
-    })
-
-    // Create record
-    const credentialRecord = new CredentialExchangeRecord({
-      connectionId: connectionRecord?.id,
-      threadId: offerMessage.id,
-      credentialAttributes: credentialPreview.attributes,
-      linkedAttachments: linkedAttachments?.map((linkedAttachments) => linkedAttachments.attachment),
-      state: CredentialState.OfferSent,
-      autoAcceptCredential: credentialTemplate.autoAcceptCredential,
-      protocolVersion: CredentialProtocolVersion.V1,
-      credentials: [],
-    })
-
-    const offer = offersAttach.getDataAsJson<CredOffer>()
-    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-      credentialDefinitionId: credentialDefinitionId,
-      schemaId: offer.schema_id,
-    })
-
-    return { message: offerMessage, credentialRecord }
   }
 
   /**
    * Create a {@link RequestCredentialMessage} as response to a received credential offer.
    *
-   * @param record The credential record for which to create the credential request
-   * @param options Additional configuration to use for the credential request
+   * @param options configuration to use for the credential request
    * @returns Object containing request message and associated credential record
    *
    */
-  public async createRequest(
-    record: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions
-  ): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
+  public async acceptOffer({
+    credentialRecord,
+    credentialFormats,
+    comment,
+    autoAcceptCredential,
+  }: AcceptOfferOptions<[IndyCredentialFormat]>): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
-    record.assertState(CredentialState.OfferReceived)
+    credentialRecord.assertProtocolVersion('v1')
+    credentialRecord.assertState(CredentialState.OfferReceived)
 
-    const offerCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: record.id,
+    const offerMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
       messageClass: V1OfferCredentialMessage,
     })
 
-    // remove
-    if (!offerCredentialMessage) {
-      throw new CredentialProblemReportError(`Missing required credential offer with thread id ${record.threadId}`, {
-        problemCode: CredentialProblemReportReason.IssuanceAbandoned,
-      })
+    const offerAttachment = offerMessage.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    if (!offerAttachment) {
+      throw new AriesFrameworkError(
+        `Indy attachment with id ${INDY_CREDENTIAL_OFFER_ATTACHMENT_ID} not found in offer message`
+      )
     }
 
-    const attachment = offerCredentialMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
-    if (attachment) {
-      options.offerAttachment = attachment
-    } else {
-      throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
-    }
-    options.attachId = INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
-    const { attachment: requestAttach } = await this.formatService.createRequest(options, record)
-    if (!requestAttach) {
-      throw new AriesFrameworkError(`Failed to create attachment for request; credential record = ${record.id}`)
-    }
+    const { attachment } = await this.formatService.acceptOffer({
+      credentialRecord,
+      credentialFormats,
+      attachId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
+      offerAttachment,
+    })
 
     const requestMessage = new V1RequestCredentialMessage({
-      comment: options?.comment,
-      requestAttachments: [requestAttach],
-      attachments: offerCredentialMessage?.appendedAttachments?.filter((attachment) => isLinkedAttachment(attachment)),
+      comment,
+      requestAttachments: [attachment],
+      attachments: offerMessage.appendedAttachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
-    requestMessage.setThread({ threadId: record.threadId })
+    requestMessage.setThread({ threadId: credentialRecord.threadId })
 
-    record.autoAcceptCredential = options?.autoAcceptCredential ?? record.autoAcceptCredential
-
-    record.linkedAttachments = offerCredentialMessage?.appendedAttachments?.filter((attachment) =>
+    credentialRecord.credentialAttributes = offerMessage.credentialPreview.attributes
+    credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+    credentialRecord.linkedAttachments = offerMessage.appendedAttachments?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
-    await this.updateState(record, CredentialState.RequestSent)
 
-    return { message: requestMessage, credentialRecord: record }
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: requestMessage,
+      associatedRecordId: credentialRecord.id,
+      role: DidCommMessageRole.Sender,
+    })
+    await this.updateState(credentialRecord, CredentialState.RequestSent)
+
+    return { message: requestMessage, credentialRecord }
   }
+
+  /**
+   * Process a received {@link RequestCredentialMessage}. This will not accept the credential request
+   * or send a credential. It will only update the existing credential record with
+   * the information from the credential request message. Use {@link createCredential}
+   * after calling this method to create a credential.
+   *
+   * @param messageContext The message context containing a credential request message
+   * @returns credential record associated with the credential request message
+   *
+   */
+  public async negotiateOffer({
+    credentialFormats,
+    credentialRecord,
+    autoAcceptCredential,
+    comment,
+  }: NegotiateOfferOptions<[IndyCredentialFormat]>): Promise<CredentialProtocolMsgReturnType<AgentMessage>> {
+    // Assert
+    credentialRecord.assertProtocolVersion('v1')
+    credentialRecord.assertState(CredentialState.OfferReceived)
+    this.assertOnlyIndyFormat(credentialFormats)
+    if (!credentialRecord.connectionId) {
+      throw new AriesFrameworkError(
+        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
+      )
+    }
+
+    if (!credentialFormats.indy) {
+      throw new AriesFrameworkError('Missing indy credential format in v1 create proposal call.')
+    }
+
+    const { linkedAttachments } = credentialFormats.indy
+
+    // call create proposal for validation of the proposal and addition of linked attachments
+    // As the format is different for v1 of the issue credential protocol we won't be using the attachment
+    const { previewAttributes, attachment } = await this.formatService.createProposal({
+      credentialFormats,
+      credentialRecord,
+    })
+
+    // Transform the attachment into the attachment payload and use that to construct the v1 message
+    const indyCredentialProposal = JsonTransformer.fromJSON(attachment.getDataAsJson(), IndyCredPropose)
+
+    const credentialProposal = previewAttributes
+      ? new V1CredentialPreview({
+          attributes: previewAttributes,
+        })
+      : undefined
+
+    // Create message
+    const message = new V1ProposeCredentialMessage({
+      ...indyCredentialProposal,
+      credentialProposal,
+      comment,
+    })
+
+    message.setThread({ threadId: credentialRecord.threadId })
+
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      agentMessage: message,
+      role: DidCommMessageRole.Sender,
+      associatedRecordId: credentialRecord.id,
+    })
+
+    // Update record
+    credentialRecord.credentialAttributes = previewAttributes
+    credentialRecord.linkedAttachments = linkedAttachments?.map((attachment) => attachment.attachment)
+    credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+    await this.updateState(credentialRecord, CredentialState.ProposalSent)
+
+    return { credentialRecord, message }
+  }
+
+  /**
+   * Starting from a request is not supported in v1 of the issue credential protocol
+   * because indy doesn't allow to start from a request
+   */
+  public async createRequest(): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
+    throw new AriesFrameworkError('Starting from a request is not supported for v1 issue credential protocol')
+  }
+
   /**
    * Process a received {@link IssueCredentialMessage}. This will not accept the credential
    * or send a credential acknowledgement. It will only update the existing credential record with
@@ -783,7 +669,6 @@ export class V1CredentialService extends CredentialService {
    * @returns credential record associated with the issue credential message
    *
    */
-
   public async processRequest(
     messageContext: InboundMessageContext<V1RequestCredentialMessage>
   ): Promise<CredentialExchangeRecord> {
@@ -792,6 +677,7 @@ export class V1CredentialService extends CredentialService {
     this.logger.debug(`Processing credential request with id ${requestMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(requestMessage.threadId, connection?.id)
+    this.logger.trace('Credential record found when processing credential request', credentialRecord)
 
     const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
@@ -803,108 +689,98 @@ export class V1CredentialService extends CredentialService {
     })
 
     // Assert
+    credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.OfferSent)
-
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
       previousReceivedMessage: proposalMessage ?? undefined,
       previousSentMessage: offerMessage ?? undefined,
     })
 
-    const requestOptions: RequestCredentialOptions = {
-      connectionId: messageContext.connection?.id,
-    }
-    await this.formatService.processRequest(requestOptions, credentialRecord)
+    const requestAttachment = requestMessage.getRequestAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
 
-    this.logger.trace('Credential record found when processing credential request', credentialRecord)
+    if (!requestAttachment) {
+      throw new AriesFrameworkError(
+        `Indy attachment with id ${INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID} not found in request message`
+      )
+    }
+
+    await this.formatService.processRequest({
+      credentialRecord,
+      attachment: requestAttachment,
+    })
+
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: requestMessage,
       role: DidCommMessageRole.Receiver,
       associatedRecordId: credentialRecord.id,
     })
+
     await this.updateState(credentialRecord, CredentialState.RequestReceived)
+
     return credentialRecord
   }
+
   /**
    * Create a {@link IssueCredentialMessage} as response to a received credential request.
    *
-   * @param record The credential record for which to create the credential
-   * @param options Additional configuration to use for the credential
    * @returns Object containing issue credential message and associated credential record
    *
    */
-  public async createCredential(
-    record: CredentialExchangeRecord,
-    options: ServiceAcceptRequestOptions
-  ): Promise<CredentialProtocolMsgReturnType<V1IssueCredentialMessage>> {
+  public async acceptRequest({
+    credentialRecord,
+    credentialFormats,
+    comment,
+    autoAcceptCredential,
+  }: AcceptRequestOptions<[IndyCredentialFormat]>): Promise<CredentialProtocolMsgReturnType<V1IssueCredentialMessage>> {
     // Assert
-    record.assertState(CredentialState.RequestReceived)
-    const offerMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: record.id,
+    credentialRecord.assertProtocolVersion('v1')
+    credentialRecord.assertState(CredentialState.RequestReceived)
+
+    const offerMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
       messageClass: V1OfferCredentialMessage,
     })
-    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: record.id,
+    const requestMessage = await this.didCommMessageRepository.getAgentMessage({
+      associatedRecordId: credentialRecord.id,
       messageClass: V1RequestCredentialMessage,
     })
-    // Assert offer message
-    if (!offerMessage) {
+
+    const offerAttachment = offerMessage.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    const requestAttachment = requestMessage.getRequestAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
+
+    if (!offerAttachment || !requestAttachment) {
       throw new AriesFrameworkError(
-        `Missing credential offer for credential exchange with thread id ${record.threadId}`
+        `Missing data payload in offer or request attachment in credential Record ${credentialRecord.id}`
       )
     }
 
-    if (!requestMessage) {
-      throw new AriesFrameworkError(`Missing request message in credential Record ${record.id}`)
-    }
-    let offerAttachment: Attachment | undefined
-
-    if (offerMessage) {
-      offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
-    } else {
-      throw new AriesFrameworkError(`Missing data payload in attachment in credential Record ${record.id}`)
-    }
-    const requestAttachment = requestMessage.getAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
-
-    if (!requestAttachment) {
-      throw new AriesFrameworkError('Missing requestAttachment in v1 createCredential')
-    }
-    options.attachId = INDY_CREDENTIAL_ATTACHMENT_ID
-
-    // Assert credential attributes
-    const credentialAttributes = record.credentialAttributes
-    if (!credentialAttributes) {
-      throw new CredentialProblemReportError(
-        `Missing required credential attribute values on credential record with id ${record.id}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-      )
-    }
-
-    const { attachment: credentialsAttach } = await this.formatService.createCredential(
-      options,
-      record,
+    const { attachment: credentialsAttach } = await this.formatService.acceptRequest({
+      credentialRecord,
       requestAttachment,
-      offerAttachment
-    )
-    if (!credentialsAttach) {
-      throw new AriesFrameworkError(`Failed to create attachment for request; credential record = ${record.id}`)
-    }
+      offerAttachment,
+      attachId: INDY_CREDENTIAL_ATTACHMENT_ID,
+      credentialFormats,
+    })
 
     const issueMessage = new V1IssueCredentialMessage({
-      comment: options?.comment,
+      comment,
       credentialAttachments: [credentialsAttach],
-      attachments:
-        offerMessage?.appendedAttachments?.filter((attachment) => isLinkedAttachment(attachment)) ||
-        requestMessage?.appendedAttachments?.filter((attachment: Attachment) => isLinkedAttachment(attachment)),
+      attachments: credentialRecord.linkedAttachments,
     })
-    issueMessage.setThread({
-      threadId: record.threadId,
-    })
+
+    issueMessage.setThread({ threadId: credentialRecord.threadId })
     issueMessage.setPleaseAck()
 
-    record.autoAcceptCredential = options?.autoAcceptCredential ?? record.autoAcceptCredential
+    await this.didCommMessageRepository.saveAgentMessage({
+      agentMessage: issueMessage,
+      associatedRecordId: credentialRecord.id,
+      role: DidCommMessageRole.Sender,
+    })
 
-    await this.updateState(record, CredentialState.CredentialIssued)
-    return { message: issueMessage, credentialRecord: record }
+    credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
+    await this.updateState(credentialRecord, CredentialState.CredentialIssued)
+
+    return { message: issueMessage, credentialRecord }
   }
 
   /**
@@ -931,57 +807,35 @@ export class V1CredentialService extends CredentialService {
       associatedRecordId: credentialRecord.id,
       messageClass: V1OfferCredentialMessage,
     })
-    // Assert
-    credentialRecord.assertState(CredentialState.RequestSent)
 
+    // Assert
+    credentialRecord.assertProtocolVersion('v1')
+    credentialRecord.assertState(CredentialState.RequestSent)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
       previousReceivedMessage: offerCredentialMessage ?? undefined,
       previousSentMessage: requestCredentialMessage ?? undefined,
     })
 
-    const credentialRequestMetadata = credentialRecord.metadata.get(CredentialMetadataKeys.IndyRequest)
-
-    if (!credentialRequestMetadata) {
-      throw new CredentialProblemReportError(
-        `Missing required request metadata for credential with id ${credentialRecord.id}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-      )
-    }
-
-    const indyCredential = issueMessage.indyCredential
-    if (!indyCredential) {
-      throw new CredentialProblemReportError(
-        `Missing required base64 or json encoded attachment data for credential with thread id ${issueMessage.threadId}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
-      )
-    }
-
-    // get the revocation registry and pass it to the process (store) credential method
-    const issueAttachment = issueMessage.getAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
+    const issueAttachment = issueMessage.getCredentialAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
     if (!issueAttachment) {
-      throw new AriesFrameworkError('Missing credential attachment in processCredential')
-    }
-    const options: ServiceAcceptCredentialOptions = {
-      credentialAttachment: issueAttachment,
+      throw new AriesFrameworkError('Missing indy credential attachment in processCredential')
     }
 
-    await this.formatService.processCredential(options, credentialRecord)
+    await this.formatService.processCredential({
+      attachment: issueAttachment,
+      credentialRecord,
+    })
 
-    await this.updateState(credentialRecord, CredentialState.CredentialReceived)
     await this.didCommMessageRepository.saveAgentMessage({
       agentMessage: issueMessage,
       role: DidCommMessageRole.Receiver,
       associatedRecordId: credentialRecord.id,
     })
+
+    await this.updateState(credentialRecord, CredentialState.CredentialReceived)
+
     return credentialRecord
   }
-  /**
-   * Process a received {@link CredentialAckMessage}.
-   *
-   * @param messageContext The message context containing a credential acknowledgement message
-   * @returns credential record associated with the credential acknowledgement message
-   *
-   */
 
   /**
    * Create a {@link CredentialAckMessage} as response to a received credential.
@@ -990,9 +844,10 @@ export class V1CredentialService extends CredentialService {
    * @returns Object containing credential acknowledgement message and associated credential record
    *
    */
-  public async createAck(
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialProtocolMsgReturnType<V1CredentialAckMessage>> {
+  public async acceptCredential({
+    credentialRecord,
+  }: AcceptCredentialOptions): Promise<CredentialProtocolMsgReturnType<V1CredentialAckMessage>> {
+    credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.CredentialReceived)
 
     // Create message
@@ -1005,28 +860,38 @@ export class V1CredentialService extends CredentialService {
 
     return { message: ackMessage, credentialRecord }
   }
+
+  /**
+   * Process a received {@link CredentialAckMessage}.
+   *
+   * @param messageContext The message context containing a credential acknowledgement message
+   * @returns credential record associated with the credential acknowledgement message
+   *
+   */
   public async processAck(
     messageContext: InboundMessageContext<V1CredentialAckMessage>
   ): Promise<CredentialExchangeRecord> {
-    const { message: credentialAckMessage, connection } = messageContext
+    const { message: ackMessage, connection } = messageContext
 
-    this.logger.debug(`Processing credential ack with id ${credentialAckMessage.id}`)
+    this.logger.debug(`Processing credential ack with id ${ackMessage.id}`)
 
-    const credentialRecord = await this.getByThreadAndConnectionId(credentialAckMessage.threadId, connection?.id)
+    const credentialRecord = await this.getByThreadAndConnectionId(ackMessage.threadId, connection?.id)
 
-    const requestCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
+    const requestCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V1RequestCredentialMessage,
     })
-    const issueCredentialMessage = await this.didCommMessageRepository.findAgentMessage({
+    const issueCredentialMessage = await this.didCommMessageRepository.getAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V1IssueCredentialMessage,
     })
+
     // Assert
+    credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.CredentialIssued)
     this.connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: requestCredentialMessage ?? undefined,
-      previousSentMessage: issueCredentialMessage ?? undefined,
+      previousReceivedMessage: requestCredentialMessage,
+      previousSentMessage: issueCredentialMessage,
     })
 
     // Update record
@@ -1035,17 +900,159 @@ export class V1CredentialService extends CredentialService {
     return credentialRecord
   }
 
-  public registerHandlers() {
-    this.dispatcher.registerHandler(
-      new V1ProposeCredentialHandler(this, this.agentConfig, this.didCommMessageRepository)
+  // AUTO RESPOND METHODS
+  public async shouldAutoRespondToProposal(options: {
+    credentialRecord: CredentialExchangeRecord
+    proposalMessage: V1ProposeCredentialMessage
+  }): Promise<boolean> {
+    const { credentialRecord, proposalMessage } = options
+    const autoAccept = composeAutoAccept(credentialRecord.autoAcceptCredential, this.agentConfig.autoAcceptCredentials)
+
+    // Handle always / never cases
+    if (autoAccept === AutoAcceptCredential.Always) return true
+    if (autoAccept === AutoAcceptCredential.Never) return false
+
+    const offerMessage = await this.findOfferMessage(credentialRecord.id)
+
+    // Do not auto accept if missing properties
+    if (!offerMessage || !offerMessage.credentialPreview) return false
+    if (!proposalMessage.credentialProposal || !proposalMessage.credentialDefinitionId) return false
+
+    const credentialOfferJson = offerMessage.indyCredentialOffer
+
+    // Check if credential definition id matches
+    if (!credentialOfferJson) return false
+    if (credentialOfferJson.cred_def_id !== proposalMessage.credentialDefinitionId) return false
+
+    // Check if preview values match
+    return arePreviewAttributesEqual(
+      proposalMessage.credentialProposal.attributes,
+      offerMessage.credentialPreview.attributes
     )
+  }
+
+  public async shouldAutoRespondToOffer(options: {
+    credentialRecord: CredentialExchangeRecord
+    offerMessage: V1OfferCredentialMessage
+  }) {
+    const { credentialRecord, offerMessage } = options
+    const autoAccept = composeAutoAccept(credentialRecord.autoAcceptCredential, this.agentConfig.autoAcceptCredentials)
+
+    // Handle always / never cases
+    if (autoAccept === AutoAcceptCredential.Always) return true
+    if (autoAccept === AutoAcceptCredential.Never) return false
+
+    const proposalMessage = await this.findProposalMessage(credentialRecord.id)
+
+    // Do not auto accept if missing properties
+    if (!offerMessage.credentialPreview) return false
+    if (!proposalMessage || !proposalMessage.credentialProposal || !proposalMessage.credentialDefinitionId) return false
+
+    const credentialOfferJson = offerMessage.indyCredentialOffer
+
+    // Check if credential definition id matches
+    if (!credentialOfferJson) return false
+    if (credentialOfferJson.cred_def_id !== proposalMessage.credentialDefinitionId) return false
+
+    // Check if preview values match
+    return arePreviewAttributesEqual(
+      proposalMessage.credentialProposal.attributes,
+      offerMessage.credentialPreview.attributes
+    )
+  }
+
+  public async shouldAutoRespondToRequest(options: {
+    credentialRecord: CredentialExchangeRecord
+    requestMessage: V1RequestCredentialMessage
+  }) {
+    const { credentialRecord, requestMessage } = options
+    const autoAccept = composeAutoAccept(credentialRecord.autoAcceptCredential, this.agentConfig.autoAcceptCredentials)
+
+    // Handle always / never cases
+    if (autoAccept === AutoAcceptCredential.Always) return true
+    if (autoAccept === AutoAcceptCredential.Never) return false
+
+    const offerMessage = await this.findOfferMessage(credentialRecord.id)
+    if (!offerMessage) return false
+
+    const offerAttachment = offerMessage.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+    const requestAttachment = requestMessage.getRequestAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
+
+    if (!offerAttachment || !requestAttachment) return false
+
+    return this.formatService.shouldAutoRespondToRequest({
+      credentialRecord,
+      offerAttachment,
+      requestAttachment,
+    })
+  }
+
+  public async shouldAutoRespondToCredential(options: {
+    credentialRecord: CredentialExchangeRecord
+    credentialMessage: V1IssueCredentialMessage
+  }) {
+    const { credentialRecord, credentialMessage } = options
+    const autoAccept = composeAutoAccept(credentialRecord.autoAcceptCredential, this.agentConfig.autoAcceptCredentials)
+
+    // Handle always / never cases
+    if (autoAccept === AutoAcceptCredential.Always) return true
+    if (autoAccept === AutoAcceptCredential.Never) return false
+
+    const requestMessage = await this.findRequestMessage(credentialRecord.id)
+    const offerMessage = await this.findOfferMessage(credentialRecord.id)
+
+    const credentialAttachment = credentialMessage.getCredentialAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
+    if (!credentialAttachment) return false
+
+    const requestAttachment = requestMessage?.getRequestAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
+    if (!requestAttachment) return false
+
+    const offerAttachment = offerMessage?.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+
+    return this.formatService.shouldAutoRespondToCredential({
+      credentialRecord,
+      credentialAttachment,
+      requestAttachment,
+      offerAttachment,
+    })
+  }
+
+  public async findProposalMessage(credentialExchangeId: string) {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialExchangeId,
+      messageClass: V1ProposeCredentialMessage,
+    })
+  }
+
+  public async findOfferMessage(credentialExchangeId: string) {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialExchangeId,
+      messageClass: V1OfferCredentialMessage,
+    })
+  }
+
+  public async findRequestMessage(credentialExchangeId: string) {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialExchangeId,
+      messageClass: V1RequestCredentialMessage,
+    })
+  }
+
+  public async findCredentialMessage(credentialExchangeId: string) {
+    return await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: credentialExchangeId,
+      messageClass: V1IssueCredentialMessage,
+    })
+  }
+
+  protected registerHandlers() {
+    this.dispatcher.registerHandler(new V1ProposeCredentialHandler(this, this.agentConfig))
     this.dispatcher.registerHandler(
       new V1OfferCredentialHandler(
         this,
         this.agentConfig,
         this.mediationRecipientService,
-        this.didCommMessageRepository,
-        this.didResolver
+        this.didCommMessageRepository
       )
     )
     this.dispatcher.registerHandler(
@@ -1054,180 +1061,33 @@ export class V1CredentialService extends CredentialService {
     this.dispatcher.registerHandler(new V1IssueCredentialHandler(this, this.agentConfig, this.didCommMessageRepository))
     this.dispatcher.registerHandler(new V1CredentialAckHandler(this))
     this.dispatcher.registerHandler(new V1CredentialProblemReportHandler(this))
-
-    this.dispatcher.registerHandler(new V1RevocationNotificationHandler(this.revocationService))
   }
 
-  /**
-   *
-   * Get the version of Issue Credentials according to AIP1.0 or AIP2.0
-   * @returns the version of this credential service
-   */
-  public getVersion(): CredentialProtocolVersion {
-    return CredentialProtocolVersion.V1
-  }
+  private rfc0592ProposalAttachmentFromV1ProposeMessage(proposalMessage: V1ProposeCredentialMessage) {
+    const indyCredentialProposal = new IndyCredPropose({
+      credentialDefinitionId: proposalMessage.credentialDefinitionId,
+      schemaId: proposalMessage.schemaId,
+      issuerDid: proposalMessage.issuerDid,
+      schemaIssuerDid: proposalMessage.schemaIssuerDid,
+      schemaName: proposalMessage.schemaName,
+      schemaVersion: proposalMessage.schemaVersion,
+    })
 
-  /**
-   * Negotiate a credential offer as holder (by sending a credential proposal message) to the connection
-   * associated with the credential record.
-   *
-   * @param credentialOptions configuration for the offer see {@link NegotiateProposalOptions}
-   * @param credentialRecord the credential exchange record for this proposal
-   * @returns Credential record associated with the credential offer and the corresponding new offer message
-   *
-   */
-
-  // AUTO RESPOND METHODS
-  public shouldAutoRespondToCredential(
-    credentialRecord: CredentialExchangeRecord,
-    credentialMessage: V1IssueCredentialMessage
-  ): boolean {
-    const formatService: CredentialFormatService = this.getFormatService()
-
-    let credentialAttachment: Attachment | undefined
-    if (credentialMessage) {
-      credentialAttachment = credentialMessage.getAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
-    }
-    const handlerOptions: HandlerAutoAcceptOptions = {
-      credentialRecord,
-      autoAcceptType: this.agentConfig.autoAcceptCredentials,
-      credentialAttachment,
-    }
-
-    const shouldAutoReturn =
-      this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
-      credentialRecord.autoAcceptCredential === AutoAcceptCredential.Always ||
-      formatService.shouldAutoRespondToCredential(handlerOptions)
-
-    return shouldAutoReturn
-  }
-
-  public async shouldAutoRespondToProposal(handlerOptions: HandlerAutoAcceptOptions): Promise<boolean> {
-    const autoAccept = composeAutoAccept(
-      handlerOptions.credentialRecord.autoAcceptCredential,
-      handlerOptions.autoAcceptType
-    )
-
-    if (autoAccept === AutoAcceptCredential.ContentApproved) {
-      return (
-        this.areProposalValuesValid(handlerOptions.credentialRecord, handlerOptions.messageAttributes) &&
-        this.areProposalAndOfferDefinitionIdEqual(handlerOptions.credentialDefinitionId, handlerOptions.offerAttachment)
-      )
-    }
-    return false
-  }
-  private areProposalValuesValid(
-    credentialRecord: CredentialExchangeRecord,
-    proposeMessageAttributes?: CredentialPreviewAttribute[]
-  ) {
-    const { credentialAttributes } = credentialRecord
-
-    if (proposeMessageAttributes && credentialAttributes) {
-      const proposeValues = CredentialUtils.convertAttributesToValues(proposeMessageAttributes)
-      const defaultValues = CredentialUtils.convertAttributesToValues(credentialAttributes)
-      if (CredentialUtils.checkValuesMatch(proposeValues, defaultValues)) {
-        return true
-      }
-    }
-    return false
-  }
-  private areProposalAndOfferDefinitionIdEqual(proposalCredentialDefinitionId?: string, offerAttachment?: Attachment) {
-    let credOffer: CredOffer | undefined
-
-    if (offerAttachment) {
-      credOffer = offerAttachment.getDataAsJson<CredOffer>()
-    }
-    const offerCredentialDefinitionId = credOffer?.cred_def_id
-    return proposalCredentialDefinitionId === offerCredentialDefinitionId
-  }
-  public shouldAutoRespondToRequest(
-    credentialRecord: CredentialExchangeRecord,
-    requestMessage: V1RequestCredentialMessage,
-    proposeMessage?: V1ProposeCredentialMessage,
-    offerMessage?: V1OfferCredentialMessage
-  ): boolean {
-    const formatService: CredentialFormatService = this.getFormatService()
-
-    let proposalAttachment, offerAttachment, requestAttachment: Attachment | undefined
-
-    if (offerMessage) {
-      offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
-    }
-    if (requestMessage) {
-      requestAttachment = requestMessage.getAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
-    }
-    const handlerOptions: HandlerAutoAcceptOptions = {
-      credentialRecord,
-      autoAcceptType: this.agentConfig.autoAcceptCredentials,
-      proposalAttachment,
-      offerAttachment,
-      requestAttachment,
-    }
-    const shouldAutoReturn =
-      this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
-      credentialRecord.autoAcceptCredential === AutoAcceptCredential.Always ||
-      formatService.shouldAutoRespondToRequest(handlerOptions)
-
-    return shouldAutoReturn
-  }
-
-  public shouldAutoRespondToOffer(
-    credentialRecord: CredentialExchangeRecord,
-    offerMessage: V1OfferCredentialMessage,
-    proposeMessage?: V1ProposeCredentialMessage
-  ): boolean {
-    const formatService: CredentialFormatService = this.getFormatService()
-    let proposalAttachment: Attachment | undefined
-
-    const offerAttachment = offerMessage.getAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
-    if (proposeMessage && proposeMessage.appendedAttachments) {
-      proposalAttachment = proposeMessage.getAttachment()
-    }
-    const offerValues = offerMessage.credentialPreview?.attributes
-
-    const handlerOptions: HandlerAutoAcceptOptions = {
-      credentialRecord,
-      autoAcceptType: this.agentConfig.autoAcceptCredentials,
-      messageAttributes: offerValues,
-      proposalAttachment,
-      offerAttachment,
-    }
-    const shouldAutoReturn =
-      this.agentConfig.autoAcceptCredentials === AutoAcceptCredential.Always ||
-      credentialRecord.autoAcceptCredential === AutoAcceptCredential.Always ||
-      formatService.shouldAutoRespondToProposal(handlerOptions)
-
-    return shouldAutoReturn
-  }
-
-  // REPOSITORY METHODS
-
-  public async getOfferMessage(id: string): Promise<AgentMessage | null> {
-    return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: id,
-      messageClass: V1OfferCredentialMessage,
+    return new Attachment({
+      data: new AttachmentData({
+        json: JsonTransformer.toJSON(indyCredentialProposal),
+      }),
     })
   }
 
-  public async getRequestMessage(id: string): Promise<AgentMessage | null> {
-    return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: id,
-      messageClass: V1RequestCredentialMessage,
-    })
-  }
+  private assertOnlyIndyFormat(credentialFormats: Record<string, unknown>) {
+    const formatKeys = Object.keys(credentialFormats)
 
-  public async getCredentialMessage(id: string): Promise<AgentMessage | null> {
-    return await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: id,
-      messageClass: V1IssueCredentialMessage,
-    })
-  }
+    // It's fine to not have any formats in some cases, if indy is required the method that calls this should check for this
+    if (formatKeys.length === 0) return
 
-  public getFormats(): CredentialFormatService[] {
-    throw new Error('Method not implemented.')
-  }
-
-  public getFormatService(): CredentialFormatService {
-    return this.formatService
+    if (formatKeys.length !== 1 || !formatKeys.includes('indy')) {
+      throw new AriesFrameworkError('Only indy credential format is supported for issue credential v1 protocol')
+    }
   }
 }

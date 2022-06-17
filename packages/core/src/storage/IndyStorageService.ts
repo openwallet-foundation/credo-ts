@@ -1,5 +1,5 @@
 import type { BaseRecord, TagsBase } from './BaseRecord'
-import type { StorageService, BaseRecordConstructor } from './StorageService'
+import type { StorageService, BaseRecordConstructor, Query } from './StorageService'
 import type { default as Indy, WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
 
 import { scoped, Lifecycle } from 'tsyringe'
@@ -65,9 +65,14 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     const transformedTags: { [key: string]: string | undefined } = {}
 
     for (const [key, value] of Object.entries(tags)) {
+      // If the value is of type null we use the value undefined
+      // Indy doesn't support null as a value
+      if (value === null) {
+        transformedTags[key] = undefined
+      }
       // If the value is a boolean use the indy
       // '1' or '0' syntax
-      if (isBoolean(value)) {
+      else if (isBoolean(value)) {
         transformedTags[key] = value ? '1' : '0'
       }
       // If the value is 1 or 0, we need to add something to the value, otherwise
@@ -90,6 +95,31 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     }
 
     return transformedTags
+  }
+
+  /**
+   * Transforms the search query into a wallet query compatible with indy WQL.
+   *
+   * The format used by AFJ is almost the same as the indy query, with the exception of
+   * the encoding of values, however this is handled by the {@link IndyStorageService.transformToRecordTagValues}
+   * method.
+   */
+  private indyQueryFromSearchQuery(query: Query<T>): Record<string, unknown> {
+    // eslint-disable-next-line prefer-const
+    let { $and, $or, $not, ...tags } = query
+
+    $and = ($and as Query<T>[] | undefined)?.map((q) => this.indyQueryFromSearchQuery(q))
+    $or = ($or as Query<T>[] | undefined)?.map((q) => this.indyQueryFromSearchQuery(q))
+    $not = $not ? this.indyQueryFromSearchQuery($not as Query<T>) : undefined
+
+    const indyQuery = {
+      ...this.transformFromRecordTagValues(tags as unknown as TagsBase),
+      $and,
+      $or,
+      $not,
+    }
+
+    return indyQuery
   }
 
   private recordToInstance(record: WalletRecord, recordClass: BaseRecordConstructor<T>): T {
@@ -191,11 +221,8 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   }
 
   /** @inheritDoc */
-  public async findByQuery(
-    recordClass: BaseRecordConstructor<T>,
-    query: Partial<ReturnType<T['getTags']>>
-  ): Promise<T[]> {
-    const indyQuery = this.transformFromRecordTagValues(query as unknown as TagsBase)
+  public async findByQuery(recordClass: BaseRecordConstructor<T>, query: Query<T>): Promise<T[]> {
+    const indyQuery = this.indyQueryFromSearchQuery(query)
 
     const recordIterator = this.search(recordClass.type, indyQuery, IndyStorageService.DEFAULT_QUERY_OPTIONS)
     const records = []

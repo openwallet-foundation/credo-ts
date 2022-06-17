@@ -4,15 +4,16 @@ import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
-import { V2CredentialPreview } from '../V2CredentialPreview'
+import { CredentialFormatSpec } from '../../../models'
+
+import { V2CredentialPreview } from './V2CredentialPreview'
 
 export interface V2ProposeCredentialMessageProps {
   id?: string
   formats: CredentialFormatSpec[]
-  filtersAttach: Attachment[]
+  proposalAttachments: Attachment[]
   comment?: string
-  credentialProposal?: V2CredentialPreview
+  credentialPreview?: V2CredentialPreview
   attachments?: Attachment[]
 }
 
@@ -22,9 +23,9 @@ export class V2ProposeCredentialMessage extends AgentMessage {
     if (props) {
       this.id = props.id ?? this.generateId()
       this.comment = props.comment
-      this.credentialProposal = props.credentialProposal
+      this.credentialPreview = props.credentialPreview
       this.formats = props.formats
-      this.messageAttachment = props.filtersAttach
+      this.proposalAttachments = props.proposalAttachments
       this.appendedAttachments = props.attachments
     }
   }
@@ -38,12 +39,12 @@ export class V2ProposeCredentialMessage extends AgentMessage {
   public readonly type = V2ProposeCredentialMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/issue-credential/2.0/propose-credential')
 
-  @Expose({ name: 'credential_proposal' })
+  @Expose({ name: 'credential_preview' })
   @Type(() => V2CredentialPreview)
   @ValidateNested()
   @IsOptional()
   @IsInstance(V2CredentialPreview)
-  public credentialProposal?: V2CredentialPreview
+  public credentialPreview?: V2CredentialPreview
 
   @Expose({ name: 'filters~attach' })
   @Type(() => Attachment)
@@ -52,7 +53,7 @@ export class V2ProposeCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public messageAttachment!: Attachment[]
+  public proposalAttachments!: Attachment[]
 
   /**
    * Human readable information about this Credential Proposal,
@@ -61,4 +62,8 @@ export class V2ProposeCredentialMessage extends AgentMessage {
   @IsOptional()
   @IsString()
   public comment?: string
+
+  public getProposalAttachmentById(id: string): Attachment | undefined {
+    return this.proposalAttachments.find((attachment) => attachment.id == id)
+  }
 }

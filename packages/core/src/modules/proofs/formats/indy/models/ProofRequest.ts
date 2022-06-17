@@ -1,11 +1,11 @@
 import type { IndyProofRequest } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
-import { IsString, ValidateNested, IsOptional, IsIn, IsInstance } from 'class-validator'
+import { IsIn, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IsMap } from '../../../../../utils/transformers'
-import { RevocationInterval } from '../../../../credentials'
+import { IndyRevocationInterval } from '../../../../credentials'
 import { ProofAttributeInfo } from '../../../protocol/v1/models/ProofAttributeInfo'
 import { ProofPredicateInfo } from '../../../protocol/v1/models/ProofPredicateInfo'
 
@@ -13,7 +13,7 @@ export interface ProofRequestOptions {
   name: string
   version: string
   nonce: string
-  nonRevoked?: RevocationInterval
+  nonRevoked?: IndyRevocationInterval
   ver?: '1.0' | '2.0'
   requestedAttributes?: Record<string, ProofAttributeInfo> | Map<string, ProofAttributeInfo>
   requestedPredicates?: Record<string, ProofPredicateInfo> | Map<string, ProofPredicateInfo>
@@ -70,10 +70,10 @@ export class ProofRequest {
 
   @Expose({ name: 'non_revoked' })
   @ValidateNested()
-  @Type(() => RevocationInterval)
+  @Type(() => IndyRevocationInterval)
   @IsOptional()
-  @IsInstance(RevocationInterval)
-  public nonRevoked?: RevocationInterval
+  @IsInstance(IndyRevocationInterval)
+  public nonRevoked?: IndyRevocationInterval
 
   @IsIn(['1.0', '2.0'])
   @IsOptional()

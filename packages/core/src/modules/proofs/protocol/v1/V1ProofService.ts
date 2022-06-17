@@ -3,7 +3,6 @@ import type { Dispatcher } from '../../../../agent/Dispatcher'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
-import type { ProofStateChangedEvent } from '../../ProofEvents'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { IndyProposeProofFormat } from '../../formats/IndyProofFormatsServiceOptions'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
@@ -39,10 +38,9 @@ import { Wallet } from '../../../../wallet'
 import { AckStatus } from '../../../common/messages/AckMessage'
 import { ConnectionService } from '../../../connections'
 import { CredentialRepository } from '../../../credentials'
-import { IndyCredentialInfo } from '../../../credentials/protocol/v1/models'
+import { IndyCredentialInfo } from '../../../credentials/formats/indy/models/IndyCredentialInfo'
 import { IndyHolderService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
-import { ProofEventTypes } from '../../ProofEvents'
 import { ProofService } from '../../ProofService'
 import { ProofsUtils } from '../../ProofsUtil'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
@@ -147,10 +145,7 @@ export class V1ProofService extends ProofService {
     })
 
     await this.proofRepository.save(proofRecord)
-    this.eventEmitter.emit<ProofStateChangedEvent>({
-      type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: null },
-    })
+    this.emitStateChangedEvent(proofRecord, null)
 
     return { proofRecord, message: proposalMessage }
   }
@@ -242,13 +237,7 @@ export class V1ProofService extends ProofService {
       })
 
       await this.proofRepository.save(proofRecord)
-      this.eventEmitter.emit<ProofStateChangedEvent>({
-        type: ProofEventTypes.ProofStateChanged,
-        payload: {
-          proofRecord,
-          previousState: null,
-        },
-      })
+      this.emitStateChangedEvent(proofRecord, null)
     }
 
     return proofRecord
@@ -323,10 +312,7 @@ export class V1ProofService extends ProofService {
     })
 
     await this.proofRepository.save(proofRecord)
-    this.eventEmitter.emit<ProofStateChangedEvent>({
-      type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: null },
-    })
+    this.emitStateChangedEvent(proofRecord, null)
 
     return { message: requestPresentationMessage, proofRecord }
   }
@@ -404,10 +390,7 @@ export class V1ProofService extends ProofService {
 
       // Save in repository
       await this.proofRepository.save(proofRecord)
-      this.eventEmitter.emit<ProofStateChangedEvent>({
-        type: ProofEventTypes.ProofStateChanged,
-        payload: { proofRecord, previousState: null },
-      })
+      this.emitStateChangedEvent(proofRecord, null)
     }
 
     return proofRecord
