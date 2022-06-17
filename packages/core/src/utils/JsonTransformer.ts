@@ -22,7 +22,7 @@ export class JsonTransformer {
     json: any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cls: { new (...args: any[]): T },
-    { validate }: Validate = { validate: true }
+    { validate = true }: Validate = {}
   ): T {
     const instance = plainToInstance(cls, json, { exposeDefaultValues: true })
 
