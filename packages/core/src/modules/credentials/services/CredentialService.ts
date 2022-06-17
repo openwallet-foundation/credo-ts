@@ -2,138 +2,92 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { Dispatcher } from '../../../agent/Dispatcher'
 import type { EventEmitter } from '../../../agent/EventEmitter'
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { DidCommMessageRepository } from '../../../storage'
-import type { MediationRecipientService } from '../../routing'
-import type { CredentialFormatService } from '../formats/CredentialFormatService'
-import type { DidResolverService } from './../../dids/services/DidResolverService'
-import type { CredentialStateChangedEvent } from './../CredentialEvents'
-import type { CredentialProtocolVersion } from './../CredentialProtocolVersion'
+import type { ProblemReportMessage } from '../../problem-reports'
+import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type {
+  CreateProposalOptions,
   CredentialProtocolMsgReturnType,
   DeleteCredentialOptions,
-  ServiceOfferCredentialOptions,
-  ServiceRequestCredentialOptions,
-} from './../CredentialServiceOptions'
-import type {
   AcceptProposalOptions,
-  AcceptRequestOptions,
-  CredentialFormatType,
-  NegotiateOfferOptions,
   NegotiateProposalOptions,
-  ProposeCredentialOptions,
-} from './../CredentialsModuleOptions'
-import type { CredentialFormats, HandlerAutoAcceptOptions } from './../formats/models/CredentialFormatServiceOptions'
-import type {
-  V1CredentialProblemReportMessage,
-  V1IssueCredentialMessage,
-  V1OfferCredentialMessage,
-  V1ProposeCredentialMessage,
-  V1RequestCredentialMessage,
-} from './../protocol/v1/messages'
-import type { V2CredentialProblemReportMessage } from './../protocol/v2/messages/V2CredentialProblemReportMessage'
-import type { V2IssueCredentialMessage } from './../protocol/v2/messages/V2IssueCredentialMessage'
-import type { V2OfferCredentialMessage } from './../protocol/v2/messages/V2OfferCredentialMessage'
-import type { V2ProposeCredentialMessage } from './../protocol/v2/messages/V2ProposeCredentialMessage'
-import type { V2RequestCredentialMessage } from './../protocol/v2/messages/V2RequestCredentialMessage'
+  CreateOfferOptions,
+  NegotiateOfferOptions,
+  CreateRequestOptions,
+  AcceptOfferOptions,
+  AcceptRequestOptions,
+  AcceptCredentialOptions,
+} from '../CredentialServiceOptions'
+import type { CredentialFormat, CredentialFormatService } from '../formats'
+import type { CredentialProtocolVersion } from '../models/CredentialProtocolVersion'
 import type { CredentialExchangeRecord, CredentialRepository } from './../repository'
-import type { RevocationService } from './RevocationService'
 
 import { JsonTransformer } from '../../../utils'
+import { CredentialState } from '../models/CredentialState'
 
 import { CredentialEventTypes } from './../CredentialEvents'
-import { CredentialState } from './../CredentialState'
 
-export abstract class CredentialService {
+export abstract class CredentialService<CFs extends CredentialFormat[]> {
   protected credentialRepository: CredentialRepository
+  protected didCommMessageRepository: DidCommMessageRepository
   protected eventEmitter: EventEmitter
   protected dispatcher: Dispatcher
   protected agentConfig: AgentConfig
-  protected mediationRecipientService: MediationRecipientService
-  protected didCommMessageRepository: DidCommMessageRepository
   protected logger: Logger
-  protected revocationService: RevocationService
-  protected didResolver: DidResolverService
 
   public constructor(
     credentialRepository: CredentialRepository,
+    didCommMessageRepository: DidCommMessageRepository,
     eventEmitter: EventEmitter,
     dispatcher: Dispatcher,
-    agentConfig: AgentConfig,
-    mediationRecipientService: MediationRecipientService,
-    didCommMessageRepository: DidCommMessageRepository,
-    revocationService: RevocationService,
-    didResolver: DidResolverService
+    agentConfig: AgentConfig
   ) {
     this.credentialRepository = credentialRepository
+    this.didCommMessageRepository = didCommMessageRepository
     this.eventEmitter = eventEmitter
     this.dispatcher = dispatcher
     this.agentConfig = agentConfig
-    this.mediationRecipientService = mediationRecipientService
-    this.didCommMessageRepository = didCommMessageRepository
     this.logger = this.agentConfig.logger
-    this.revocationService = revocationService
-    this.didResolver = didResolver
-
-    this.registerHandlers()
   }
 
-  abstract getVersion(): CredentialProtocolVersion
+  abstract readonly version: CredentialProtocolVersion
 
-  abstract getFormats(cred: CredentialFormats): CredentialFormatService[]
+  abstract getFormatServiceForRecordType(
+    credentialRecordType: CFs[number]['credentialRecordType']
+  ): CredentialFormatService<CFs[number]>
 
   // methods for proposal
-  abstract createProposal(proposal: ProposeCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  abstract processProposal(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
-  abstract acceptProposal(
-    proposal: AcceptProposalOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract createProposal(options: CreateProposalOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  abstract acceptProposal(options: AcceptProposalOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   abstract negotiateProposal(
-    options: NegotiateProposalOptions,
-    credentialRecord: CredentialExchangeRecord
+    options: NegotiateProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for offer
-  abstract createOffer(options: ServiceOfferCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  abstract processOffer(messageContext: HandlerInboundMessage<Handler>): Promise<CredentialExchangeRecord>
+  abstract createOffer(options: CreateOfferOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract processOffer(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  abstract acceptOffer(options: AcceptOfferOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract negotiateOffer(options: NegotiateOfferOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for request
-  abstract createRequest(
-    credentialRecord: CredentialExchangeRecord,
-    options: ServiceRequestCredentialOptions
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract createRequest(options: CreateRequestOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  abstract acceptRequest(options: AcceptRequestOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
+  // methods for issue
+  abstract processCredential(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  abstract acceptCredential(options: AcceptCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+
+  // methods for ack
   abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
 
-  abstract negotiateOffer(
-    options: NegotiateOfferOptions,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-
-  // methods for issue
-
-  abstract processRequest(
-    messageContext: InboundMessageContext<V1RequestCredentialMessage | V2RequestCredentialMessage>
-  ): Promise<CredentialExchangeRecord>
-
-  // methods for issue
-  abstract createCredential(
-    credentialRecord: CredentialExchangeRecord,
-    options?: AcceptRequestOptions
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-
-  abstract processCredential(
-    messageContext: InboundMessageContext<V1IssueCredentialMessage | V2IssueCredentialMessage>
-  ): Promise<CredentialExchangeRecord>
-
-  abstract createAck(credentialRecord: CredentialExchangeRecord): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-
-  abstract registerHandlers(): void
-
-  abstract getFormatService(credentialFormatType?: CredentialFormatType): CredentialFormatService
+  abstract findProposalMessage(credentialExchangeId: string): Promise<AgentMessage | null>
+  abstract findOfferMessage(credentialExchangeId: string): Promise<AgentMessage | null>
+  abstract findRequestMessage(credentialExchangeId: string): Promise<AgentMessage | null>
+  abstract findCredentialMessage(credentialExchangeId: string): Promise<AgentMessage | null>
 
   /**
    * Decline a credential offer
@@ -146,15 +100,15 @@ export abstract class CredentialService {
 
     return credentialRecord
   }
+
   /**
-   * Process a received {@link ProblemReportMessage}.
+   * Process a received credential {@link ProblemReportMessage}.
    *
    * @param messageContext The message context containing a credential problem report message
    * @returns credential record associated with the credential problem report message
-   *
    */
   public async processProblemReport(
-    messageContext: InboundMessageContext<V1CredentialProblemReportMessage | V2CredentialProblemReportMessage>
+    messageContext: InboundMessageContext<ProblemReportMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: credentialProblemReportMessage } = messageContext
 
@@ -173,32 +127,6 @@ export abstract class CredentialService {
     return credentialRecord
   }
 
-  abstract shouldAutoRespondToProposal(options: HandlerAutoAcceptOptions): Promise<boolean>
-
-  abstract shouldAutoRespondToOffer(
-    credentialRecord: CredentialExchangeRecord,
-    offerMessage: V1OfferCredentialMessage | V2OfferCredentialMessage,
-    proposeMessage?: V1ProposeCredentialMessage | V2ProposeCredentialMessage
-  ): boolean
-
-  abstract shouldAutoRespondToRequest(
-    credentialRecord: CredentialExchangeRecord,
-    requestMessage: V1RequestCredentialMessage | V2RequestCredentialMessage,
-    proposeMessage?: V1ProposeCredentialMessage | V2ProposeCredentialMessage,
-    offerMessage?: V1OfferCredentialMessage | V2OfferCredentialMessage
-  ): boolean
-
-  abstract shouldAutoRespondToCredential(
-    credentialRecord: CredentialExchangeRecord,
-    credentialMessage: V1IssueCredentialMessage | V2IssueCredentialMessage
-  ): boolean
-
-  abstract getOfferMessage(id: string): Promise<AgentMessage | null>
-
-  abstract getRequestMessage(id: string): Promise<AgentMessage | null>
-
-  abstract getCredentialMessage(id: string): Promise<AgentMessage | null>
-
   /**
    * Update the record to a new state and emit an state changed event. Also updates the record
    * in storage.
@@ -208,6 +136,10 @@ export abstract class CredentialService {
    *
    */
   public async updateState(credentialRecord: CredentialExchangeRecord, newState: CredentialState) {
+    this.logger.debug(
+      `Updating credential record ${credentialRecord.id} to state ${newState} (previous=${credentialRecord.state})`
+    )
+
     const previousState = credentialRecord.state
     credentialRecord.state = newState
     await this.credentialRepository.update(credentialRecord)
@@ -262,11 +194,21 @@ export abstract class CredentialService {
     await this.credentialRepository.delete(credentialRecord)
 
     const deleteAssociatedCredentials = options?.deleteAssociatedCredentials ?? true
+    const deleteAssociatedDidCommMessages = options?.deleteAssociatedDidCommMessages ?? true
 
     if (deleteAssociatedCredentials) {
       for (const credential of credentialRecord.credentials) {
-        const formatService: CredentialFormatService = this.getFormatService(credential.credentialRecordType)
+        const formatService = this.getFormatServiceForRecordType(credential.credentialRecordType)
         await formatService.deleteCredentialById(credential.credentialRecordId)
+      }
+    }
+
+    if (deleteAssociatedDidCommMessages) {
+      const didCommMessages = await this.didCommMessageRepository.findByQuery({
+        associatedRecordId: credentialRecord.id,
+      })
+      for (const didCommMessage of didCommMessages) {
+        await this.didCommMessageRepository.delete(didCommMessage)
       }
     }
   }
@@ -282,6 +224,23 @@ export abstract class CredentialService {
    */
   public getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<CredentialExchangeRecord> {
     return this.credentialRepository.getSingleByQuery({
+      connectionId,
+      threadId,
+    })
+  }
+
+  /**
+   * Find a credential record by connection id and thread id, returns null if not found
+   *
+   * @param connectionId The connection id
+   * @param threadId The thread id
+   * @returns The credential record
+   */
+  public findByThreadAndConnectionId(
+    threadId: string,
+    connectionId?: string
+  ): Promise<CredentialExchangeRecord | null> {
+    return this.credentialRepository.findSingleByQuery({
       connectionId,
       threadId,
     })

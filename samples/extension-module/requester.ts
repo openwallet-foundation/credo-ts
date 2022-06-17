@@ -38,11 +38,11 @@ const run = async () => {
 
   // Connect to responder using its invitation endpoint
   const invitationUrl = await (await agentDependencies.fetch(`http://localhost:${port}/invitation`)).text()
-  const { connectionRecord: connection } = await agent.oob.receiveInvitationFromUrl(invitationUrl)
-  if (!connection) {
+  const { connectionRecord } = await agent.oob.receiveInvitationFromUrl(invitationUrl)
+  if (!connectionRecord) {
     throw new AriesFrameworkError('Connection record for out-of-band invitation was not created.')
   }
-  await agent.connections.returnWhenIsConnected(connection.id)
+  await agent.connections.returnWhenIsConnected(connectionRecord.id)
 
   // Create observable for Response Received event
   const observable = agent.events.observable<DummyStateChangedEvent>(DummyEventTypes.StateChanged)
@@ -58,7 +58,7 @@ const run = async () => {
     .subscribe(subject)
 
   // Send a dummy request and wait for response
-  const record = await dummyModule.request(connection)
+  const record = await dummyModule.request(connectionRecord.id)
   agent.config.logger.info(`Request received for Dummy Record: ${record.id}`)
 
   const dummyRecord = await firstValueFrom(subject)

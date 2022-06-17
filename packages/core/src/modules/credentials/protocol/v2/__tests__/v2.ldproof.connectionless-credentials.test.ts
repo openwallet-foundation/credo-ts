@@ -1,11 +1,7 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { SignCredentialOptions } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type {
-  AcceptOfferOptions,
-  AcceptRequestOptions,
-  OfferCredentialOptions,
-} from '../../../CredentialsModuleOptions'
+import type { AcceptRequestOptions } from '../../../CredentialsModuleOptions'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -21,8 +17,7 @@ import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { W3cCredential } from '../../../../vc/models/'
 import { CredentialEventTypes } from '../../../CredentialEvents'
-import { CredentialProtocolVersion } from '../../../CredentialProtocolVersion'
-import { CredentialState } from '../../../CredentialState'
+import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository'
 
 const faberConfig = getBaseConfig('Faber LD connection-less Credentials V2', {
@@ -129,16 +124,14 @@ describe('credentials', () => {
   test('Faber starts with V2 W3C connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    const offerOptions: OfferCredentialOptions = {
+    // eslint-disable-next-line prefer-const
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
       comment: 'V2 Out of Band offer (W3C)',
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
-      protocolVersion: CredentialProtocolVersion.V2,
-      connectionId: '',
-    }
-    // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer(offerOptions)
+      protocolVersion: 'v2',
+    })
 
     const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
@@ -153,12 +146,10 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential request to Faber')
-    const acceptOfferOptions: AcceptOfferOptions = {
-      credentialRecordId: aliceCredentialRecord.id,
-    }
-    aliceCredentialRecord.protocolVersion = CredentialProtocolVersion.V2
 
-    const credentialRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
+    const credentialRecord = await aliceAgent.credentials.acceptOffer({
+      credentialRecordId: aliceCredentialRecord.id,
+    })
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -180,7 +171,9 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential(aliceCredentialRecord.id)
+    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential({
+      credentialRecordId: aliceCredentialRecord.id,
+    })
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
