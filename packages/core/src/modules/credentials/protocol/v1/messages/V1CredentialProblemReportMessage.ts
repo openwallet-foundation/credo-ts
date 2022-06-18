@@ -3,7 +3,7 @@ import type { ProblemReportMessageOptions } from '../../../../problem-reports/me
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { ProblemReportMessage } from '../../../../problem-reports/messages/ProblemReportMessage'
 
-export type CredentialProblemReportMessageOptions = ProblemReportMessageOptions
+export type V1CredentialProblemReportMessageOptions = ProblemReportMessageOptions
 
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md
@@ -13,7 +13,7 @@ export class V1CredentialProblemReportMessage extends ProblemReportMessage {
    * Create new CredentialProblemReportMessage instance.
    * @param options
    */
-  public constructor(options: CredentialProblemReportMessageOptions) {
+  public constructor(options: V1CredentialProblemReportMessageOptions) {
     super(options)
   }
 

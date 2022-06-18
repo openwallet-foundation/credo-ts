@@ -9,7 +9,7 @@ import { IsValidMessageType, parseMessageType } from '../../../../../utils/messa
 
 import { V1CredentialPreview } from './V1CredentialPreview'
 
-export interface ProposeCredentialMessageOptions {
+export interface V1ProposeCredentialMessageOptions {
   id?: string
   comment?: string
   credentialProposal?: V1CredentialPreview
@@ -28,7 +28,7 @@ export interface ProposeCredentialMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#propose-credential
  */
 export class V1ProposeCredentialMessage extends AgentMessage {
-  public constructor(options: ProposeCredentialMessageOptions) {
+  public constructor(options: V1ProposeCredentialMessageOptions) {
     super()
 
     if (options) {
