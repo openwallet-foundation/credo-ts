@@ -37,7 +37,7 @@ interface BaseOptions {
  */
 export interface ProposeCredentialOptions<
   CFs extends CredentialFormat[] = CredentialFormat[],
-  CSs extends CredentialService<CFs>[] = CredentialService<CredentialFormat[]>[]
+  CSs extends CredentialService[] = CredentialService[]
 > extends BaseOptions {
   connectionId: string
   protocolVersion: ProtocolVersionType<CFs, CSs>
@@ -67,7 +67,7 @@ export interface NegotiateProposalOptions<CFs extends CredentialFormat[] = Crede
  */
 export interface CreateOfferOptions<
   CFs extends CredentialFormat[] = CredentialFormat[],
-  CSs extends CredentialService<CFs>[] = CredentialService<CredentialFormat[]>[]
+  CSs extends CredentialService[] = CredentialService[]
 > extends BaseOptions {
   protocolVersion: ProtocolVersionType<CFs, CSs>
   credentialFormats: CredentialFormatPayload<CFs, 'createOffer'>
@@ -78,7 +78,7 @@ export interface CreateOfferOptions<
  */
 export interface OfferCredentialOptions<
   CFs extends CredentialFormat[] = CredentialFormat[],
-  CSs extends CredentialService<CFs>[] = CredentialService<CredentialFormat[]>[]
+  CSs extends CredentialService[] = CredentialService[]
 > extends BaseOptions,
     CreateOfferOptions<CFs, CSs> {
   connectionId: string
