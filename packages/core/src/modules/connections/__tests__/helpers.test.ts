@@ -100,4 +100,32 @@ describe('convertToNewDidDocument', () => {
       }),
     ])
   })
+
+  test('will use ; as an id mark instead of # if the # is missing in a service id', () => {
+    const oldDocument = new DidDoc({
+      id: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
+      authentication: [],
+      publicKey: [],
+      service: [
+        new IndyAgentService({
+          id: 'did:sov:SKJVx2kn373FNgvff1SbJo;service-1',
+          serviceEndpoint: 'did:sov:SKJVx2kn373FNgvff1SbJo',
+          recipientKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+          routingKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+          priority: 5,
+        }),
+      ],
+    })
+    const newDocument = convertToNewDidDocument(oldDocument)
+
+    expect(newDocument.service).toEqual([
+      new IndyAgentService({
+        id: '#service-1',
+        serviceEndpoint: 'did:sov:SKJVx2kn373FNgvff1SbJo',
+        recipientKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+        routingKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+        priority: 5,
+      }),
+    ])
+  })
 })

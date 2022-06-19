@@ -82,8 +82,14 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
 }
 
 function normalizeId(fullId: string): `#${string}` {
-  const [, id] = fullId.split('#')
+  // Some old dids use `;` as the delimiter for the id. If we can't find a `#`
+  // and a `;` exists, we will parse everything after `;` as the id.
+  if (!fullId.includes('#') && fullId.includes(';')) {
+    const [, id] = fullId.split(';')
+    return `#${id ?? fullId}`
+  }
 
+  const [, id] = fullId.split('#')
   return `#${id ?? fullId}`
 }
 
