@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 
 import { JsonTransformer } from '../../..'
-import { getAgentConfig } from '../../../../tests/helpers'
+import { getAgentConfig, mockFunction } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
 import { Key } from '../../../crypto/Key'
 import { IndyWallet } from '../../../wallet/IndyWallet'
@@ -11,9 +11,11 @@ import { DidRepository } from '../../dids/repository'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { W3cCredentialService } from '../W3cCredentialService'
 import { orArrayToArray } from '../jsonldUtil'
+import jsonld from '../libraries/jsonld'
 import { purposes } from '../libraries/jsonld-signatures'
 import { W3cCredential, W3cVerifiableCredential } from '../models'
 import { LinkedDataProof } from '../models/LinkedDataProof'
+import { W3cCredentialRecord } from '../models/credential/W3cCredentialRecord'
 import { W3cCredentialRepository } from '../models/credential/W3cCredentialRepository'
 import { W3cPresentation } from '../models/presentation/W3Presentation'
 import { W3cVerifiablePresentation } from '../models/presentation/W3cVerifiablePresentation'
@@ -29,6 +31,19 @@ const DidRepositoryMock = DidRepository as unknown as jest.Mock<DidRepository>
 
 jest.mock('../models/credential/W3cCredentialRepository')
 const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
+
+// Helper func
+const credentialRecordFactory = async (credential: W3cVerifiableCredential) => {
+  const expandedTypes = (
+    await jsonld.expand(JsonTransformer.toJSON(credential), { documentLoader: customDocumentLoader })
+  )[0]['@type']
+
+  // Create an instance of the w3cCredentialRecord
+  return new W3cCredentialRecord({
+    tags: { expandedTypes: orArrayToArray<string>(expandedTypes) },
+    credential: credential,
+  })
+}
 
 describe('W3cCredentialService', () => {
   let wallet: IndyWallet
@@ -249,27 +264,62 @@ describe('W3cCredentialService', () => {
         expect(result.verified).toBe(true)
       })
     })
-    describe('storeCredential', () => {
-      it('should store a credential', async () => {
+    describe('Credential Storage', () => {
+      let w3cCredentialRecord: W3cCredentialRecord
+
+      beforeEach(async () => {
         const credential = JsonTransformer.fromJSON(
           Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
           W3cVerifiableCredential
         )
 
-        const w3cCredentialRecord = await w3cCredentialService.storeCredential({ record: credential })
+        w3cCredentialRecord = await credentialRecordFactory(credential)
 
-        expect(w3cCredentialRecord).toMatchObject({
-          type: 'W3cCredentialRecord',
-          id: expect.any(String),
-          createdAt: expect.any(Date),
-          credential: expect.any(W3cVerifiableCredential),
+        mockFunction(w3cCredentialRepository.getById).mockResolvedValue(w3cCredentialRecord)
+        mockFunction(w3cCredentialRepository.getAll).mockResolvedValue([w3cCredentialRecord])
+      })
+      describe('storeCredential', () => {
+        it('should store a credential and expand the tags correctly', async () => {
+          const credential = JsonTransformer.fromJSON(
+            Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+            W3cVerifiableCredential
+          )
+
+          w3cCredentialRecord = await w3cCredentialService.storeCredential({ credential: credential })
+
+          expect(w3cCredentialRecord).toMatchObject({
+            type: 'W3cCredentialRecord',
+            id: expect.any(String),
+            createdAt: expect.any(Date),
+            credential: expect.any(W3cVerifiableCredential),
+          })
+
+          expect(w3cCredentialRecord.getTags()).toMatchObject({
+            expandedTypes: [
+              'https://www.w3.org/2018/credentials#VerifiableCredential',
+              'https://example.org/examples#UniversityDegreeCredential',
+            ],
+          })
         })
+      })
+      describe('getAllCredentialRecords', () => {
+        it('should retrieve all W3cCredentialRecords', async () => {
+          const credential = JsonTransformer.fromJSON(
+            Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+            W3cVerifiableCredential
+          )
+          await w3cCredentialService.storeCredential({ credential: credential })
 
-        expect(w3cCredentialRecord.getTags()).toMatchObject({
-          expandedTypes: [
-            'https://www.w3.org/2018/credentials#VerifiableCredential',
-            'https://example.org/examples#UniversityDegreeCredential',
-          ],
+          const records = await w3cCredentialService.getAllCredentialRecords()
+
+          expect(records.length).toEqual(1)
+        })
+      })
+      describe('getCredentialRecordById', () => {
+        it('should retrieve a W3cCredentialRecord by id', async () => {
+          const credential = await w3cCredentialService.getCredentialRecordById(w3cCredentialRecord.id)
+
+          expect(credential.id).toEqual(w3cCredentialRecord.id)
         })
       })
     })
