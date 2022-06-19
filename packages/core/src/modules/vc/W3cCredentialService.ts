@@ -321,13 +321,13 @@ export class W3cCredentialService {
   public async storeCredential(options: StoreCredentialOptions): Promise<W3cCredentialRecord> {
     // Get the expanded types
     const expandedTypes = (
-      await jsonld.expand(JsonTransformer.toJSON(options.record), { documentLoader: this.documentLoader })
+      await jsonld.expand(JsonTransformer.toJSON(options.credential), { documentLoader: this.documentLoader })
     )[0]['@type']
 
     // Create an instance of the w3cCredentialRecord
     const w3cCredentialRecord = new W3cCredentialRecord({
       tags: { expandedTypes: orArrayToArray<string>(expandedTypes) },
-      credential: options.record,
+      credential: options.credential,
     })
 
     // Store the w3c credential record
@@ -336,23 +336,27 @@ export class W3cCredentialService {
     return w3cCredentialRecord
   }
 
-  public async getAllCredentials(): Promise<W3cVerifiableCredential[]> {
-    const allRecords = await this.w3cCredentialRepository.getAll()
-    return allRecords.map((record) => record.credential)
+  public async removeCredentialRecord(id: string) {
+    const cred = await this.w3cCredentialRepository.getById(id)
+    await this.w3cCredentialRepository.delete(cred)
   }
 
-  public async getCredentialById(id: string): Promise<W3cVerifiableCredential> {
-    return (await this.w3cCredentialRepository.getById(id)).credential
+  public async getAllCredentialRecords(): Promise<W3cCredentialRecord[]> {
+    return await this.w3cCredentialRepository.getAll()
   }
 
-  public async findCredentialsByQuery(
+  public async getCredentialRecordById(id: string): Promise<W3cCredentialRecord> {
+    return await this.w3cCredentialRepository.getById(id)
+  }
+
+  public async findCredentialRecordsByQuery(
     query: Parameters<typeof W3cCredentialRepository.prototype.findByQuery>[0]
   ): Promise<W3cVerifiableCredential[]> {
     const result = await this.w3cCredentialRepository.findByQuery(query)
     return result.map((record) => record.credential)
   }
 
-  public async findSingleCredentialByQuery(
+  public async findCredentialRecordByQuery(
     query: Parameters<typeof W3cCredentialRepository.prototype.findSingleByQuery>[0]
   ): Promise<W3cVerifiableCredential | undefined> {
     const result = await this.w3cCredentialRepository.findSingleByQuery(query)
