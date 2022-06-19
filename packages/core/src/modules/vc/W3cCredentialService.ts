@@ -1,5 +1,6 @@
 import type { AgentContext } from '../../agent/context'
 import type { Key } from '../../crypto/Key'
+import type { Query } from '../../storage/StorageService'
 import type { DocumentLoader } from './jsonldUtil'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
@@ -348,7 +349,7 @@ export class W3cCredentialService {
     // Create an instance of the w3cCredentialRecord
     const w3cCredentialRecord = new W3cCredentialRecord({
       tags: { expandedTypes: orArrayToArray<string>(expandedTypes) },
-      credential: options.record,
+      credential: options.credential,
     })
 
     // Store the w3c credential record
@@ -357,26 +358,30 @@ export class W3cCredentialService {
     return w3cCredentialRecord
   }
 
-  public async getAllCredentials(agentContext: AgentContext): Promise<W3cVerifiableCredential[]> {
-    const allRecords = await this.w3cCredentialRepository.getAll(agentContext)
-    return allRecords.map((record) => record.credential)
+  public async removeCredentialRecord(agentContext: AgentContext, id: string) {
+    const cred = await this.w3cCredentialRepository.getById(agentContext, id)
+    await this.w3cCredentialRepository.delete(agentContext, cred)
   }
 
-  public async getCredentialById(agentContext: AgentContext, id: string): Promise<W3cVerifiableCredential> {
-    return (await this.w3cCredentialRepository.getById(agentContext, id)).credential
+  public async getAllCredentialRecords(agentContext: AgentContext): Promise<W3cCredentialRecord[]> {
+    return await this.w3cCredentialRepository.getAll(agentContext)
   }
 
-  public async findCredentialsByQuery(
+  public async getCredentialRecordById(agentContext: AgentContext, id: string): Promise<W3cCredentialRecord> {
+    return await this.w3cCredentialRepository.getById(agentContext, id)
+  }
+
+  public async findCredentialRecordsByQuery(
     agentContext: AgentContext,
-    query: Parameters<typeof W3cCredentialRepository.prototype.findByQuery>[1]
+    query: Query<W3cCredentialRecord>
   ): Promise<W3cVerifiableCredential[]> {
     const result = await this.w3cCredentialRepository.findByQuery(agentContext, query)
     return result.map((record) => record.credential)
   }
 
-  public async findSingleCredentialByQuery(
+  public async findCredentialRecordByQuery(
     agentContext: AgentContext,
-    query: Parameters<typeof W3cCredentialRepository.prototype.findSingleByQuery>[1]
+    query: Query<W3cCredentialRecord>
   ): Promise<W3cVerifiableCredential | undefined> {
     const result = await this.w3cCredentialRepository.findSingleByQuery(agentContext, query)
     return result?.credential
