@@ -19,9 +19,9 @@ import type {
   AcceptOfferOptions,
   AcceptRequestOptions,
   AcceptCredentialOptions,
+  GetFormatDataReturn,
 } from '../CredentialServiceOptions'
 import type { CredentialFormat, CredentialFormatService } from '../formats'
-import type { CredentialProtocolVersion } from '../models/CredentialProtocolVersion'
 import type { CredentialExchangeRecord, CredentialRepository } from './../repository'
 
 import { JsonTransformer } from '../../../utils'
@@ -52,7 +52,7 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
     this.logger = this.agentConfig.logger
   }
 
-  abstract readonly version: CredentialProtocolVersion
+  abstract readonly version: string
 
   abstract getFormatServiceForRecordType(
     credentialRecordType: CFs[number]['credentialRecordType']
@@ -88,6 +88,7 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
   abstract findOfferMessage(credentialExchangeId: string): Promise<AgentMessage | null>
   abstract findRequestMessage(credentialExchangeId: string): Promise<AgentMessage | null>
   abstract findCredentialMessage(credentialExchangeId: string): Promise<AgentMessage | null>
+  abstract getFormatData(credentialExchangeId: string): Promise<GetFormatDataReturn<CFs>>
 
   /**
    * Decline a credential offer

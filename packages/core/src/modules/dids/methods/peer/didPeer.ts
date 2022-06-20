@@ -8,7 +8,7 @@ export function isValidPeerDid(did: string): boolean {
   return isValid
 }
 
-export const enum PeerDidNumAlgo {
+export enum PeerDidNumAlgo {
   InceptionKeyWithoutDoc = 0,
   GenesisDoc = 1,
   MultipleInceptionKeyWithoutDoc = 2,

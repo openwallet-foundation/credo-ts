@@ -16,10 +16,10 @@ import type {
   FindRequestMessageReturn,
   FindCredentialMessageReturn,
   FindProposalMessageReturn,
+  GetFormatDataReturn,
 } from './CredentialsModuleOptions'
 import type { CredentialFormat } from './formats'
 import type { IndyCredentialFormat } from './formats/indy/IndyCredentialFormat'
-import type { CredentialProtocolVersion } from './models/CredentialProtocolVersion'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 import type { CredentialService } from './services/CredentialService'
 
@@ -73,6 +73,7 @@ export interface CredentialsModule<CFs extends CredentialFormat[], CSs extends C
   getById(credentialRecordId: string): Promise<CredentialExchangeRecord>
   findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
   deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void>
+  getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFs>>
 
   // DidComm Message Records
   findProposalMessage(credentialExchangeId: string): Promise<FindProposalMessageReturn<CSs>>
@@ -129,7 +130,7 @@ export class CredentialsModule<
     this.logger.debug(`Initializing Credentials Module for agent ${this.agentConfig.label}`)
   }
 
-  public getService<PVT extends CredentialProtocolVersion>(protocolVersion: PVT): CredentialService<CFs> {
+  public getService<PVT extends CredentialService['version']>(protocolVersion: PVT): CredentialService<CFs> {
     if (!this.serviceMap[protocolVersion]) {
       throw new AriesFrameworkError(`No credential service registered for protocol version ${protocolVersion}`)
     }
@@ -514,6 +515,13 @@ export class CredentialsModule<
         `Cannot accept credential without connectionId or ~service decorator on credential message.`
       )
     }
+  }
+
+  public async getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFs>> {
+    const credentialRecord = await this.getById(credentialRecordId)
+    const service = this.getService(credentialRecord.protocolVersion)
+
+    return service.getFormatData(credentialRecordId)
   }
 
   /**

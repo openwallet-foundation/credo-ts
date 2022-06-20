@@ -39,7 +39,7 @@ export async function migrateCredentialRecordToV0_2(agent: Agent) {
   }
 }
 
-export const enum CredentialRole {
+export enum CredentialRole {
   Issuer,
   Holder,
 }
