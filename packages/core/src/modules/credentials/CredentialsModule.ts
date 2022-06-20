@@ -16,7 +16,6 @@ import type {
 } from './CredentialsModuleOptions'
 import type { CredentialFormat } from './formats'
 import type { IndyCredentialFormat } from './formats/indy/IndyCredentialFormat'
-import type { CredentialProtocolVersion } from './models/CredentialProtocolVersion'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 import type { CredentialService } from './services/CredentialService'
 
@@ -121,7 +120,7 @@ export class CredentialsModule<
     this.logger.debug(`Initializing Credentials Module for agent ${this.agentConfig.label}`)
   }
 
-  public getService<PVT extends CredentialProtocolVersion>(protocolVersion: PVT): CredentialService<CFs> {
+  public getService<PVT extends CredentialService['version']>(protocolVersion: PVT): CredentialService<CFs> {
     if (!this.serviceMap[protocolVersion]) {
       throw new AriesFrameworkError(`No credential service registered for protocol version ${protocolVersion}`)
     }

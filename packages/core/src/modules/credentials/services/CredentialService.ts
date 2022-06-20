@@ -22,7 +22,6 @@ import type {
   GetFormatDataReturn,
 } from '../CredentialServiceOptions'
 import type { CredentialFormat, CredentialFormatService } from '../formats'
-import type { CredentialProtocolVersion } from '../models/CredentialProtocolVersion'
 import type { CredentialExchangeRecord, CredentialRepository } from './../repository'
 
 import { JsonTransformer } from '../../../utils'
@@ -30,7 +29,7 @@ import { CredentialState } from '../models/CredentialState'
 
 import { CredentialEventTypes } from './../CredentialEvents'
 
-export abstract class CredentialService<CFs extends CredentialFormat[]> {
+export abstract class CredentialService<CFs extends CredentialFormat[] = CredentialFormat[]> {
   protected credentialRepository: CredentialRepository
   protected didCommMessageRepository: DidCommMessageRepository
   protected eventEmitter: EventEmitter
@@ -53,7 +52,7 @@ export abstract class CredentialService<CFs extends CredentialFormat[]> {
     this.logger = this.agentConfig.logger
   }
 
-  abstract readonly version: CredentialProtocolVersion
+  abstract readonly version: string
 
   abstract getFormatServiceForRecordType(
     credentialRecordType: CFs[number]['credentialRecordType']
