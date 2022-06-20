@@ -1,6 +1,10 @@
+import type { GetFormatDataReturn } from './CredentialServiceOptions'
 import type { CredentialFormat, CredentialFormatPayload } from './formats'
 import type { AutoAcceptCredential } from './models/CredentialAutoAcceptType'
 import type { CredentialService } from './services'
+
+// re-export GetFormatDataReturn type from service, as it is also used in the module
+export type { GetFormatDataReturn }
 
 /**
  * Get the supported protocol versions based on the provided credential services.
