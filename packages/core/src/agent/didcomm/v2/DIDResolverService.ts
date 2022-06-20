@@ -1,10 +1,7 @@
-import type { VerificationMethod } from '../../../modules/dids'
 import type { DIDDoc, DIDResolver } from 'didcomm'
-
 import { Lifecycle, scoped } from 'tsyringe'
-
 import { AriesFrameworkError } from '../../../error'
-import { DidResolverService } from '../../../modules/dids'
+import { DidCommService, DidCommV2Service, DidResolverService, IndyAgentService, VerificationMethod } from '../../../modules/dids'
 
 @scoped(Lifecycle.ContainerScoped)
 export class DIDResolverService implements DIDResolver {
@@ -26,13 +23,28 @@ export class DIDResolverService implements DIDResolver {
 
     const services = result.didDocument.service.map((service) => ({
       id: service.id,
-      kind: {
-        DIDCommMessaging: {
-          service_endpoint: service.serviceEndpoint,
-          accept: [],
-          route_keys: [],
-        },
-      },
+      kind: service instanceof DidCommService || service instanceof DidCommV2Service
+        ? {
+          "DIDCommMessaging": {
+            service_endpoint: service.serviceEndpoint,
+            accept: service.accept || [],
+            route_keys: service.routingKeys || [],
+          }
+        }
+        : service instanceof IndyAgentService
+          ? {
+            "DIDCommMessaging": {
+              service_endpoint: service.serviceEndpoint,
+              accept: [],
+              route_keys: service.routingKeys || [],
+            }
+          }
+          : {
+            "Other": {
+              type: service.type,
+              serviceEndpoint: service.serviceEndpoint,
+            }
+          }
     }))
 
     const didDod: DIDDoc = {

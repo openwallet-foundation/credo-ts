@@ -108,8 +108,8 @@ export class IndyDidResolver implements DidResolver {
           })
         )
 
-        // If 'DIDComm' included in types, add DIDComm v2 entry
-        if (types?.includes('DIDComm')) {
+        // If 'DIDCommMessaging' included in types, add DIDComm v2 entry
+        if (types?.includes('DIDCommMessaging')) {
           builder
             .addService(
               new DidCommV2Service({

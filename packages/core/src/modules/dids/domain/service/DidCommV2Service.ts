@@ -12,7 +12,7 @@ export class DidCommV2Service extends DidDocumentService {
     }
   }
 
-  public static type = 'DIDComm'
+  public static type = 'DIDCommMessaging'
 
   @IsString({ each: true })
   @IsOptional()
