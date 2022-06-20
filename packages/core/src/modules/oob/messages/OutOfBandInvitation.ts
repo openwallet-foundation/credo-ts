@@ -11,7 +11,7 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 import { IsStringOrInstance } from '../../../utils/validators'
 import { DidKey } from '../../dids'
 import { outOfBandServiceToNumAlgo2Did } from '../../dids/methods/peer/peerDidNumAlgo2'
@@ -106,6 +106,9 @@ export class OutOfBandInvitation extends AgentMessage {
       .map((didKey) => DidKey.fromDid(didKey).key)
   }
 
+  @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
+    toClassOnly: true,
+  })
   @IsValidMessageType(OutOfBandInvitation.type)
   public readonly type = OutOfBandInvitation.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/out-of-band/1.1/invitation')
@@ -119,6 +122,7 @@ export class OutOfBandInvitation extends AgentMessage {
 
   public readonly accept?: string[]
 
+  @Transform(({ value }) => value?.map(replaceLegacyDidSovPrefix), { toClassOnly: true })
   @Expose({ name: 'handshake_protocols' })
   public handshakeProtocols?: HandshakeProtocol[]
 

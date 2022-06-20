@@ -116,7 +116,47 @@ describe('OutOfBandInvitation', () => {
       }
     })
 
-    test('throw validation error when incorrect service object present in services attribute', () => {
+    test('transforms legacy prefix message @type and handshake_protocols to https://didcomm.org prefix', () => {
+      const json = {
+        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.1/invitation',
+        '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
+        label: 'Faber College',
+        goal_code: 'issue-vc',
+        goal: 'To issue a Faber College Graduate credential',
+        handshake_protocols: [
+          'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/didexchange/1.0',
+          'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0',
+        ],
+        services: ['did:sov:123'],
+      }
+
+      const invitation = OutOfBandInvitation.fromJson(json)
+
+      expect(invitation.type).toBe('https://didcomm.org/out-of-band/1.1/invitation')
+      expect(invitation.handshakeProtocols).toEqual([
+        'https://didcomm.org/didexchange/1.0',
+        'https://didcomm.org/connections/1.0',
+      ])
+    })
+
+    // Check if options @Transform for legacy did:sov prefix doesn't fail if handshake_protocols is not present
+    test('should successfully transform if no handshake_protocols is present', () => {
+      const json = {
+        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.1/invitation',
+        '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
+        label: 'Faber College',
+        goal_code: 'issue-vc',
+        goal: 'To issue a Faber College Graduate credential',
+        services: ['did:sov:123'],
+      }
+
+      const invitation = OutOfBandInvitation.fromJson(json)
+
+      expect(invitation.type).toBe('https://didcomm.org/out-of-band/1.1/invitation')
+      expect(invitation.handshakeProtocols).toBeUndefined()
+    })
+
+    test('throw validation error when incorrect service object present in services attribute', async () => {
       const json = {
         '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
         '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
