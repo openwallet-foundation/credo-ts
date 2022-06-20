@@ -150,7 +150,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     const message = new V1ProposeCredentialMessage({
       ...indyCredentialProposal,
       id: credentialRecord.threadId,
-      credentialPreview,
+      credentialPreview: credentialProposal,
       comment,
     })
 
@@ -629,7 +629,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     // Create message
     const message = new V1ProposeCredentialMessage({
       ...indyCredentialProposal,
-      credentialPreview,
+      credentialPreview: credentialProposal,
       comment,
     })
 
