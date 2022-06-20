@@ -1,40 +1,28 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { SignCredentialOptions } from '../../vc/models/W3cCredentialServiceOptions'
-import type {
-  ServiceAcceptRequestOptions,
-  ServiceOfferCredentialOptions,
-  ServiceRequestCredentialOptions,
-} from '../CredentialServiceOptions'
-import type { ProposeCredentialOptions } from '../CredentialsModuleOptions'
 import type { CredentialFormatService } from '../formats'
+import type { JsonLdCredentialFormat } from '../formats/jsonld/JsonLdCredentialFormat'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
-import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
 import type { CredentialRepository } from '../repository/CredentialRepository'
 
-import { off } from 'process'
-
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
+import { getAgentConfig, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { uuid } from '../../../utils/uuid'
-import { DidExchangeState } from '../../connections/models/DidExchangeState'
 import { W3cCredentialService } from '../../vc'
 import { Ed25519Signature2018Fixtures } from '../../vc/__tests__/fixtures'
 import { W3cVerifiableCredential } from '../../vc/models'
 import { W3cCredential } from '../../vc/models/credential/W3cCredential'
 import { W3cCredentialRecord } from '../../vc/models/credential/W3cCredentialRecord'
-import { CredentialProtocolVersion } from '../CredentialProtocolVersion'
-import { CredentialState } from '../CredentialState'
-import { CredentialFormatType } from '../CredentialsModuleOptions'
 import { JsonLdCredentialFormatService } from '../formats/jsonld/JsonLdCredentialFormatService'
+import { CredentialState } from '../models'
 import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID } from '../protocol/v1/messages'
-import { V2CredentialPreview } from '../protocol/v2/V2CredentialPreview'
+import { V2CredentialPreview } from '../protocol/v2/messages'
 import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
-import { CredentialMetadataKeys } from '../repository'
 import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 
 import { credReq } from './fixtures'
@@ -49,15 +37,9 @@ const vcJson = {
     ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED.credentialSubject,
     alumniOf: 'oops',
   },
-  id: 'foo',
 }
 
 const vc = JsonTransformer.fromJSON(vcJson, W3cVerifiableCredential)
-
-const connection = getMockConnection({
-  id: '123',
-  state: DidExchangeState.Completed,
-})
 
 const credentialPreview = V2CredentialPreview.fromRecord({
   name: 'John',
@@ -89,7 +71,6 @@ const credentialAttachment = new Attachment({
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockCredentialRecord = ({
   state,
-  metadata,
   threadId,
   connectionId,
   tags,
@@ -97,7 +78,6 @@ const mockCredentialRecord = ({
   credentialAttributes,
 }: {
   state?: CredentialState
-  metadata?: IndyCredentialMetadata & { indyRequest: Record<string, unknown> }
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string
@@ -126,27 +106,12 @@ const mockCredentialRecord = ({
     threadId: threadId ?? offerMessage.id,
     connectionId: connectionId ?? '123',
     tags,
-    protocolVersion: CredentialProtocolVersion.V2,
+    protocolVersion: 'v2',
   })
-
-  if (metadata?.indyRequest) {
-    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, { ...metadata.indyRequest })
-  }
-
-  if (metadata?.schemaId) {
-    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
-      schemaId: metadata.schemaId,
-    })
-  }
-
-  if (metadata?.credentialDefinitionId) {
-    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
-      credentialDefinitionId: metadata.credentialDefinitionId,
-    })
-  }
 
   return credentialRecord
 }
+
 const inputDoc = {
   '@context': [
     'https://www.w3.org/2018/credentials/v1',
@@ -179,79 +144,35 @@ const inputDoc = {
 const verificationMethod = `8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K#8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K`
 const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
 
+const signCredentialOptions: SignCredentialOptions = {
+  credential,
+  proofType: 'Ed25519Signature2018',
+  verificationMethod,
+}
+
 let credentialRepository: CredentialRepository
-let jsonldFormatService: CredentialFormatService
+let jsonldFormatService: CredentialFormatService<JsonLdCredentialFormat>
 let eventEmitter: EventEmitter
 let agentConfig: AgentConfig
-let credentialRecord: CredentialExchangeRecord
 let w3cCredentialService: W3cCredentialService
-let signCredentialOptions: SignCredentialOptions
 
 describe('JsonLd CredentialFormatService', () => {
   beforeEach(async () => {
     agentConfig = getAgentConfig('JsonLdCredentialFormatServiceTest')
     eventEmitter = new EventEmitter(agentConfig)
     w3cCredentialService = new W3cCredentialServiceMock()
-    signCredentialOptions = {
-      credential,
-      proofType: 'Ed25519Signature2018',
-      verificationMethod,
-    }
     jsonldFormatService = new JsonLdCredentialFormatService(credentialRepository, eventEmitter, w3cCredentialService)
   })
 
   describe('Create JsonLd Credential Proposal / Offer', () => {
-    let offerOptions: ServiceOfferCredentialOptions
-    let proposeOptions: ProposeCredentialOptions
-
-    beforeEach(async () => {
-      proposeOptions = {
-        connectionId: connection.id,
-        protocolVersion: CredentialProtocolVersion.V2,
-        credentialFormats: {
-          jsonld: signCredentialOptions,
-        },
-        comment: 'v2 propose credential test for W3C Credentials',
-      }
-      offerOptions = {
-        comment: 'V2 Out of Band offer (W3C)',
-        credentialFormats: {
-          jsonld: signCredentialOptions,
-        },
-        connection,
-      }
-    })
-
     test(`Creates JsonLd Credential Proposal`, async () => {
       // when
-      const { attachment, format } = await jsonldFormatService.createProposal(proposeOptions)
-
-      // then
-      expect(attachment).toMatchObject({
-        id: uuid(),
-        description: undefined,
-        filename: undefined,
-        mimeType: 'application/json',
-        lastmodTime: undefined,
-        byteCount: undefined,
-        data: {
-          base64:
-            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwicHJvb2ZUeXBlIjoiRWQyNTUxOVNpZ25hdHVyZTIwMTgiLCJ2ZXJpZmljYXRpb25NZXRob2QiOiI4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyM4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyJ9',
-          json: undefined,
-          links: undefined,
-          jws: undefined,
-          sha256: undefined,
+      const { attachment, format } = await jsonldFormatService.createProposal({
+        credentialRecord: mockCredentialRecord(),
+        credentialFormats: {
+          jsonld: signCredentialOptions,
         },
       })
-
-      expect(format).toMatchObject({
-        attachId: uuid(),
-        format: 'aries/ld-proof-vc-detail@v1.0',
-      })
-    })
-    test(`Creates JsonLd Credential Offer`, async () => {
-      // when
-      const { attachment, preview, format } = await jsonldFormatService.createOffer(offerOptions)
 
       // then
       expect(attachment).toMatchObject({
@@ -271,10 +192,40 @@ describe('JsonLd CredentialFormatService', () => {
         },
       })
 
-      expect(preview).toMatchObject({
-        type: 'https://didcomm.org/issue-credential/2.0/credential-preview',
-        attributes: [],
+      expect(format).toMatchObject({
+        attachId: expect.any(String),
+        format: 'aries/ld-proof-vc-detail@v1.0',
       })
+    })
+
+    test(`Creates JsonLd Credential Offer`, async () => {
+      // when
+      const { attachment, previewAttributes, format } = await jsonldFormatService.createOffer({
+        credentialFormats: {
+          jsonld: signCredentialOptions,
+        },
+        credentialRecord: mockCredentialRecord(),
+      })
+
+      // then
+      expect(attachment).toMatchObject({
+        id: expect.any(String),
+        description: undefined,
+        filename: undefined,
+        mimeType: 'application/json',
+        lastmodTime: undefined,
+        byteCount: undefined,
+        data: {
+          base64:
+            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwicHJvb2ZUeXBlIjoiRWQyNTUxOVNpZ25hdHVyZTIwMTgiLCJ2ZXJpZmljYXRpb25NZXRob2QiOiI4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyM4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyJ9',
+          json: undefined,
+          links: undefined,
+          jws: undefined,
+          sha256: undefined,
+        },
+      })
+
+      expect(previewAttributes).toBeUndefined()
 
       expect(format).toMatchObject({
         attachId: expect.any(String),
@@ -283,27 +234,20 @@ describe('JsonLd CredentialFormatService', () => {
     })
   })
 
-  describe('Create Credential Request', () => {
-    beforeEach(() => {
-      credentialRecord = mockCredentialRecord({
-        state: CredentialState.OfferReceived,
-        threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
-        connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
-      })
-    })
-
+  describe('Accept Credential Offer', () => {
     test('returns credential request message base on existing credential offer message', async () => {
-      // given
-      const options: ServiceRequestCredentialOptions = {
-        connectionId: credentialRecord.connectionId,
-        comment: 'credential request comment',
+      // when
+      const { attachment, format } = await jsonldFormatService.acceptOffer({
         credentialFormats: {
-          jsonld: signCredentialOptions,
+          jsonld: undefined,
         },
         offerAttachment,
-      }
-      // when
-      const { attachment, format } = await jsonldFormatService.createRequest(options, credentialRecord)
+        credentialRecord: mockCredentialRecord({
+          state: CredentialState.OfferReceived,
+          threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
+          connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
+        }),
+      })
 
       // then
       expect(attachment).toMatchObject({
@@ -329,37 +273,27 @@ describe('JsonLd CredentialFormatService', () => {
     })
   })
 
-  describe('Create (Issue) Credential', () => {
+  describe('Accept Request', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
-    let credentialRecord: CredentialExchangeRecord
-    let serviceOptions: ServiceAcceptRequestOptions
 
-    beforeEach(() => {
-      credentialRecord = mockCredentialRecord({
+    test('Creates a credential', async () => {
+      // given
+      mockFunction(w3cCredentialService.signCredential).mockReturnValue(Promise.resolve(vc))
+
+      const credentialRecord = mockCredentialRecord({
         state: CredentialState.RequestReceived,
         threadId,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
-      serviceOptions = {
-        credentialRecordId: credentialRecord.id,
-        comment: 'V2 JsonLd Credential',
-      }
-      mockFunction(w3cCredentialService.signCredential).mockReturnValue(Promise.resolve(vc))
-    })
-
-    test('Creates a credential', async () => {
-      // given
-      const issuerSpy = jest.spyOn(w3cCredentialService, 'signCredential')
-
-      // when
-
-      serviceOptions.requestAttachment = requestAttachment
-      serviceOptions.offerAttachment = offerAttachment
-      const { format, attachment } = await jsonldFormatService.createCredential(serviceOptions, credentialRecord)
+      const { format, attachment } = await jsonldFormatService.acceptRequest({
+        credentialRecord,
+        requestAttachment,
+        offerAttachment,
+      })
 
       //then
-      expect(issuerSpy).toHaveBeenCalledTimes(1)
+      expect(w3cCredentialService.signCredential).toHaveBeenCalledTimes(1)
 
       expect(attachment).toMatchObject({
         id: expect.any(String),
@@ -384,11 +318,11 @@ describe('JsonLd CredentialFormatService', () => {
   })
 
   describe('Process Credential', () => {
-    beforeEach(() => {
-      credentialRecord = mockCredentialRecord({
+    test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
+      const credentialRecord = mockCredentialRecord({
         state: CredentialState.RequestSent,
       })
-      const props = {
+      const w3c = new W3cCredentialRecord({
         id: 'foo',
         createdAt: new Date(),
         credential: vc,
@@ -398,22 +332,18 @@ describe('JsonLd CredentialFormatService', () => {
             'https://example.org/examples#UniversityDegreeCredential',
           ],
         },
-      }
-      const w3c = new W3cCredentialRecord(props)
-      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
-    })
+      })
 
-    test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
       // given
-      const issuerSpy = jest.spyOn(w3cCredentialService, 'storeCredential')
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
 
       // when
-      await jsonldFormatService.processCredential({ credentialAttachment }, credentialRecord)
+      await jsonldFormatService.processCredential({ attachment: credentialAttachment, credentialRecord })
 
       // then
-      expect(issuerSpy).toHaveBeenCalledTimes(1)
+      expect(w3cCredentialService.storeCredential).toHaveBeenCalledTimes(1)
       expect(credentialRecord.credentials.length).toBe(1)
-      expect(credentialRecord.credentials[0].credentialRecordType).toBe(CredentialFormatType.JsonLd)
+      expect(credentialRecord.credentials[0].credentialRecordType).toBe('w3c')
       expect(credentialRecord.credentials[0].credentialRecordId).toBe('foo')
     })
   })

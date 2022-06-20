@@ -9,11 +9,17 @@ import { isIndyError } from '../../utils/indyError'
 import { LedgerError } from './error/LedgerError'
 import { isLedgerRejectResponse, isLedgerReqnackResponse } from './ledgerUtil'
 
+export interface TransactionAuthorAgreement {
+  version: `${number}.${number}` | `${number}`
+  acceptanceMechanism: string
+}
+
 export interface IndyPoolConfig {
   genesisPath?: string
   genesisTransactions?: string
   id: string
   isProduction: boolean
+  transactionAuthorAgreement?: TransactionAuthorAgreement
 }
 
 export class IndyPool {

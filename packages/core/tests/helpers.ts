@@ -13,42 +13,41 @@ import type {
   ProofStateChangedEvent,
   SchemaTemplate,
 } from '../src'
-import type { AcceptOfferOptions, OfferCredentialOptions } from '../src/modules/credentials/CredentialsModuleOptions'
-import type { CredentialOfferTemplate } from '../src/modules/credentials/protocol'
-import type { Schema, CredDef } from 'indy-sdk'
+import type { AcceptOfferOptions } from '../src/modules/credentials/CredentialsModuleOptions'
+import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
+import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
 import path from 'path'
-import { firstValueFrom, Subject, ReplaySubject } from 'rxjs'
+import { firstValueFrom, ReplaySubject, Subject } from 'rxjs'
 import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
-  HandshakeProtocol,
-  DidExchangeState,
-  DidExchangeRole,
-  LogLevel,
+  Agent,
   AgentConfig,
   AriesFrameworkError,
   BasicMessageEventTypes,
   ConnectionRecord,
   CredentialEventTypes,
-  CredentialState,
+  DidExchangeRole,
+  DidExchangeState,
+  HandshakeProtocol,
+  LogLevel,
   PredicateType,
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
   ProofEventTypes,
   ProofState,
-  Agent,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { AutoAcceptCredential } from '../src/modules/credentials/CredentialAutoAcceptType'
-import { CredentialProtocolVersion } from '../src/modules/credentials/CredentialProtocolVersion'
-import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/V1CredentialPreview'
+import { AutoAcceptCredential } from '../src/modules/credentials/models/CredentialAutoAcceptType'
+import { CredentialState } from '../src/modules/credentials/models/CredentialState'
+import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/messages/V1CredentialPreview'
 import { DidCommV1Service, DidKey } from '../src/modules/dids'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
@@ -75,14 +74,18 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     },
     publicDidSeed,
     autoAcceptConnections: true,
+    connectToIndyLedgersOnStartup: false,
     indyLedgers: [
       {
         id: `pool-${name}`,
         isProduction: false,
         genesisPath,
+        transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
       },
     ],
-    logger: new TestLogger(LogLevel.error, name),
+    // TODO: determine the log level based on an environment variable. This will make it
+    // possible to run e.g. failed github actions in debug mode for extra logs
+    logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
   }
 
@@ -111,6 +114,7 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
     },
     publicDidSeed,
     autoAcceptConnections: true,
+    autoUpdateStorageOnStartup: false,
     indyLedgers: [
       {
         id: `pool-${name}`,
@@ -118,7 +122,7 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
         genesisPath,
       },
     ],
-    logger: new TestLogger(LogLevel.error, name),
+    logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
   }
 
@@ -393,7 +397,7 @@ export async function issueCredential({
   issuerAgent: Agent
   issuerConnectionId: string
   holderAgent: Agent
-  credentialTemplate: Omit<CredentialOfferTemplate, 'autoAcceptCredential'>
+  credentialTemplate: IndyOfferCredentialFormat
 }) {
   const issuerReplay = new ReplaySubject<CredentialStateChangedEvent>()
   const holderReplay = new ReplaySubject<CredentialStateChangedEvent>()
@@ -405,20 +409,19 @@ export async function issueCredential({
     .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
     .subscribe(holderReplay)
 
-  const offerOptions: OfferCredentialOptions = {
+  let issuerCredentialRecord = await issuerAgent.credentials.offerCredential({
     comment: 'some comment about credential',
     connectionId: issuerConnectionId,
-    protocolVersion: CredentialProtocolVersion.V1,
+    protocolVersion: 'v1',
     credentialFormats: {
       indy: {
-        attributes: credentialTemplate.preview.attributes,
+        attributes: credentialTemplate.attributes,
         credentialDefinitionId: credentialTemplate.credentialDefinitionId,
         linkedAttachments: credentialTemplate.linkedAttachments,
       },
     },
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-  }
-  let issuerCredentialRecord = await issuerAgent.credentials.offerCredential(offerOptions)
+  })
 
   let holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
@@ -456,7 +459,7 @@ export async function issueConnectionLessCredential({
 }: {
   issuerAgent: Agent
   holderAgent: Agent
-  credentialTemplate: Omit<CredentialOfferTemplate, 'autoAcceptCredential'>
+  credentialTemplate: IndyOfferCredentialFormat
 }) {
   const issuerReplay = new ReplaySubject<CredentialStateChangedEvent>()
   const holderReplay = new ReplaySubject<CredentialStateChangedEvent>()
@@ -468,20 +471,18 @@ export async function issueConnectionLessCredential({
     .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
     .subscribe(holderReplay)
 
-  const offerOptions: OfferCredentialOptions = {
+  // eslint-disable-next-line prefer-const
+  let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOffer({
     comment: 'V1 Out of Band offer',
-    protocolVersion: CredentialProtocolVersion.V1,
+    protocolVersion: 'v1',
     credentialFormats: {
       indy: {
-        attributes: credentialTemplate.preview.attributes,
+        attributes: credentialTemplate.attributes,
         credentialDefinitionId: credentialTemplate.credentialDefinitionId,
       },
     },
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-    connectionId: '',
-  }
-  // eslint-disable-next-line prefer-const
-  let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOffer(offerOptions)
+  })
 
   const { message: offerMessage } = await issuerAgent.oob.createLegacyConnectionlessInvitation({
     recordId: issuerCredentialRecord.id,
@@ -706,8 +707,7 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     holderAgent: aliceAgent,
     credentialTemplate: {
       credentialDefinitionId: definition.id,
-      comment: 'some comment about credential',
-      preview: credentialPreview,
+      attributes: credentialPreview.attributes,
       linkedAttachments: [
         new LinkedAttachment({
           name: 'image_0',

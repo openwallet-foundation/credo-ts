@@ -4,7 +4,7 @@
 
 To start using Aries Framework JavaScript in NodeJS some platform specific dependencies are required.
 
-1. Install [NodeJS](https://nodejs.org) (v12+) and [Python 3](https://www.python.org/downloads/)
+1. Install [NodeJS](https://nodejs.org) (v14+, 16+ LTS recommended) and [Python 3](https://www.python.org/downloads/)
 2. Install [Libindy](https://github.com/hyperledger/indy-sdk) for your platform.
    - [macOS with Apple Silicon](../docs/libindy/macos-apple.md)
    - [macOS with Intel](../docs/libindy/macos-intel.md)

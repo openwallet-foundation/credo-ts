@@ -49,7 +49,10 @@ export class HttpInboundTransport implements InboundTransport {
         }
       } catch (error) {
         config.logger.error(`Error processing inbound message: ${error.message}`, error)
-        res.status(500).send('Error processing message')
+
+        if (!res.headersSent) {
+          res.status(500).send('Error processing message')
+        }
       } finally {
         transportService.removeSession(session)
       }

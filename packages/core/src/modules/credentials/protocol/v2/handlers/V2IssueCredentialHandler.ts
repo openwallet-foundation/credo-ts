@@ -6,7 +6,6 @@ import type { CredentialExchangeRecord } from '../../../repository/CredentialExc
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
@@ -26,43 +25,40 @@ export class V2IssueCredentialHandler implements Handler {
     this.agentConfig = agentConfig
     this.didCommMessageRepository = didCommMessageRepository
   }
-  public async handle(messageContext: InboundMessageContext<V2IssueCredentialMessage>) {
+  public async handle(messageContext: InboundMessageContext<V2IssueCredentialMessage>) {   
     const credentialRecord = await this.credentialService.processCredential(messageContext)
-    const credentialMessage = await this.didCommMessageRepository.findAgentMessage({
-      associatedRecordId: credentialRecord.id,
-      messageClass: V2IssueCredentialMessage,
+
+    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToCredential({
+      credentialRecord,
+      credentialMessage: messageContext.message,
     })
+
+    if (shouldAutoRespond) {
+      return await this.acceptCredential(credentialRecord, messageContext)
+    }
+  }
+
+  private async acceptCredential(
+    credentialRecord: CredentialExchangeRecord,
+    messageContext: HandlerInboundMessage<V2IssueCredentialHandler>
+  ) {
+    this.agentConfig.logger.info(
+      `Automatically sending acknowledgement with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
+    )
 
     const requestMessage = await this.didCommMessageRepository.findAgentMessage({
       associatedRecordId: credentialRecord.id,
       messageClass: V2RequestCredentialMessage,
     })
 
-    if (!credentialMessage) {
-      throw new AriesFrameworkError(`Missing credential message from credential record ${credentialRecord.id}`)
-    }
-
-    const shouldAutoRespond = this.credentialService.shouldAutoRespondToCredential(credentialRecord, credentialMessage)
-    if (shouldAutoRespond) {
-      return await this.createAck(credentialRecord, messageContext, requestMessage ?? undefined, credentialMessage)
-    }
-  }
-
-  private async createAck(
-    record: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<V2IssueCredentialHandler>,
-    requestMessage?: V2RequestCredentialMessage,
-    credentialMessage?: V2IssueCredentialMessage
-  ) {
-    this.agentConfig.logger.info(
-      `Automatically sending acknowledgement with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
-    )
-    const { message } = await this.credentialService.createAck(record)
+    const { message } = await this.credentialService.acceptCredential({
+      credentialRecord,
+    })
 
     if (messageContext.connection) {
       return createOutboundMessage(messageContext.connection, message)
-    } else if (requestMessage?.service && credentialMessage?.service) {
-      const recipientService = credentialMessage.service
+    } else if (requestMessage?.service && messageContext.message.service) {
+      const recipientService = messageContext.message.service
       const ourService = requestMessage.service
 
       return createOutboundServiceMessage({

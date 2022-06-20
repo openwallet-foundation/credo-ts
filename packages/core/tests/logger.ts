@@ -55,6 +55,8 @@ export class TestLogger extends BaseLogger {
   private log(level: Exclude<LogLevel, LogLevel.off>, message: string, data?: Record<string, any>): void {
     const tsLogLevel = this.tsLogLevelMap[level]
 
+    if (this.logLevel === LogLevel.off) return
+
     if (data) {
       this.logger[tsLogLevel](message, JSON.parse(JSON.stringify(data, replaceError, 2)))
     } else {

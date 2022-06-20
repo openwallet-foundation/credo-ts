@@ -1,31 +1,59 @@
+import type { EventEmitter } from '../agent/EventEmitter'
 import type { BaseRecord } from './BaseRecord'
+import type { RecordSavedEvent, RecordUpdatedEvent, RecordDeletedEvent } from './RepositoryEvents'
 import type { BaseRecordConstructor, Query, StorageService } from './StorageService'
 
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
+
+import { RepositoryEventTypes } from './RepositoryEvents'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class Repository<T extends BaseRecord<any, any, any>> {
   private storageService: StorageService<T>
   private recordClass: BaseRecordConstructor<T>
+  private eventEmitter: EventEmitter
 
-  public constructor(recordClass: BaseRecordConstructor<T>, storageService: StorageService<T>) {
+  public constructor(
+    recordClass: BaseRecordConstructor<T>,
+    storageService: StorageService<T>,
+    eventEmitter: EventEmitter
+  ) {
     this.storageService = storageService
     this.recordClass = recordClass
+    this.eventEmitter = eventEmitter
   }
 
   /** @inheritDoc {StorageService#save} */
   public async save(record: T): Promise<void> {
-    return this.storageService.save(record)
+    await this.storageService.save(record)
+    this.eventEmitter.emit<RecordSavedEvent<T>>({
+      type: RepositoryEventTypes.RecordSaved,
+      payload: {
+        record,
+      },
+    })
   }
 
   /** @inheritDoc {StorageService#update} */
   public async update(record: T): Promise<void> {
-    return this.storageService.update(record)
+    await this.storageService.update(record)
+    this.eventEmitter.emit<RecordUpdatedEvent<T>>({
+      type: RepositoryEventTypes.RecordUpdated,
+      payload: {
+        record,
+      },
+    })
   }
 
   /** @inheritDoc {StorageService#delete} */
   public async delete(record: T): Promise<void> {
-    return this.storageService.delete(record)
+    await this.storageService.delete(record)
+    this.eventEmitter.emit<RecordDeletedEvent<T>>({
+      type: RepositoryEventTypes.RecordDeleted,
+      payload: {
+        record,
+      },
+    })
   }
 
   /** @inheritDoc {StorageService#getById} */

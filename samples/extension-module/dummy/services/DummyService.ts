@@ -68,11 +68,11 @@ export class DummyService {
    *
    */
   public async processRequest(messageContext: InboundMessageContext<DummyRequestMessage>) {
-    const connectionRecord = messageContext.connection
+    const connectionRecord = messageContext.assertReadyConnection()
 
     // Create record
     const record = new DummyRecord({
-      connectionId: connectionRecord?.id,
+      connectionId: connectionRecord.id,
       threadId: messageContext.message.id,
       state: DummyState.RequestReceived,
     })
@@ -92,10 +92,12 @@ export class DummyService {
    *
    */
   public async processResponse(messageContext: InboundMessageContext<DummyResponseMessage>) {
-    const { connection, message } = messageContext
+    const { message } = messageContext
+
+    const connection = messageContext.assertReadyConnection()
 
     // Dummy record already exists
-    const record = await this.findByThreadAndConnectionId(message.threadId, connection?.id)
+    const record = await this.findByThreadAndConnectionId(message.threadId, connection.id)
 
     if (record) {
       // Check current state
