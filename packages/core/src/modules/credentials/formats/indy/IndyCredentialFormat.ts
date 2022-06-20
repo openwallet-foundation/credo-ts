@@ -2,7 +2,7 @@ import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import type { CredentialPreviewAttributeOptions } from '../../models'
 import type { CredentialFormat } from '../CredentialFormat'
 import type { IndyCredProposeOptions } from './models/IndyCredPropose'
-import type * as Indy from 'indy-sdk'
+import type { Cred, CredOffer, CredReq } from 'indy-sdk'
 
 /**
  * This defines the module payload for calling CredentialsModule.createProposal
@@ -63,8 +63,8 @@ export interface IndyCredentialFormat extends CredentialFormat {
       issuer_did?: string
       cred_def_id?: string
     }
-    offer: Indy.CredOffer
-    request: Indy.CredReq
-    credential: Indy.Cred
+    offer: CredOffer
+    request: CredReq
+    credential: Cred
   }
 }
