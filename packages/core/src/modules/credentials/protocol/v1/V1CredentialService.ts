@@ -150,7 +150,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     const message = new V1ProposeCredentialMessage({
       ...indyCredentialProposal,
       id: credentialRecord.threadId,
-      credentialProposal,
+      credentialPreview,
       comment,
     })
 
@@ -273,7 +273,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     // NOTE: We set the credential attributes from the proposal on the record as we've 'accepted' them
     // and can now use them to create the offer in the format services. It may be overwritten later on
     // if the user provided other attributes in the credentialFormats array.
-    credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
+    credentialRecord.credentialAttributes = proposalMessage.credentialPreview?.attributes
 
     const { attachment, previewAttributes } = await this.formatService.acceptProposal({
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
@@ -629,7 +629,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     // Create message
     const message = new V1ProposeCredentialMessage({
       ...indyCredentialProposal,
-      credentialProposal,
+      credentialPreview,
       comment,
     })
 
@@ -916,7 +916,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
 
     // Do not auto accept if missing properties
     if (!offerMessage || !offerMessage.credentialPreview) return false
-    if (!proposalMessage.credentialProposal || !proposalMessage.credentialDefinitionId) return false
+    if (!proposalMessage.credentialPreview || !proposalMessage.credentialDefinitionId) return false
 
     const credentialOfferJson = offerMessage.indyCredentialOffer
 
@@ -926,7 +926,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
 
     // Check if preview values match
     return arePreviewAttributesEqual(
-      proposalMessage.credentialProposal.attributes,
+      proposalMessage.credentialPreview.attributes,
       offerMessage.credentialPreview.attributes
     )
   }
@@ -946,7 +946,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
 
     // Do not auto accept if missing properties
     if (!offerMessage.credentialPreview) return false
-    if (!proposalMessage || !proposalMessage.credentialProposal || !proposalMessage.credentialDefinitionId) return false
+    if (!proposalMessage || !proposalMessage.credentialPreview || !proposalMessage.credentialDefinitionId) return false
 
     const credentialOfferJson = offerMessage.indyCredentialOffer
 
@@ -956,7 +956,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
 
     // Check if preview values match
     return arePreviewAttributesEqual(
-      proposalMessage.credentialProposal.attributes,
+      proposalMessage.credentialPreview.attributes,
       offerMessage.credentialPreview.attributes
     )
   }

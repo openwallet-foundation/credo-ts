@@ -7,8 +7,13 @@ import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import { V1CredentialPreview } from '../messages/V1CredentialPreview'
-import { V1OfferCredentialMessage } from '../messages/V1OfferCredentialMessage'
+import {
+  V1ProposeCredentialMessage,
+  V1RequestCredentialMessage,
+  V1IssueCredentialMessage,
+  V1OfferCredentialMessage,
+  V1CredentialPreview,
+} from '../messages'
 
 describe('v1 credentials', () => {
   let faberAgent: Agent
@@ -91,12 +96,12 @@ describe('v1 credentials', () => {
     })
 
     const didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
-    const offerMessage = await didCommMessageRepository.findAgentMessage({
+    const offerMessageRecord = await didCommMessageRepository.findAgentMessage({
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V1OfferCredentialMessage,
     })
 
-    expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
+    expect(JsonTransformer.toJSON(offerMessageRecord)).toMatchObject({
       '@id': expect.any(String),
       '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
       comment: 'V1 Indy Proposal',
@@ -180,5 +185,15 @@ describe('v1 credentials', () => {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.Done,
     })
+
+    const proposalMessage = await aliceAgent.credentials.findProposalMessage(aliceCredentialRecord.id)
+    const offerMessage = await aliceAgent.credentials.findOfferMessage(aliceCredentialRecord.id)
+    const requestMessage = await aliceAgent.credentials.findRequestMessage(aliceCredentialRecord.id)
+    const credentialMessage = await aliceAgent.credentials.findCredentialMessage(aliceCredentialRecord.id)
+
+    expect(proposalMessage).toBeInstanceOf(V1ProposeCredentialMessage)
+    expect(offerMessage).toBeInstanceOf(V1OfferCredentialMessage)
+    expect(requestMessage).toBeInstanceOf(V1RequestCredentialMessage)
+    expect(credentialMessage).toBeInstanceOf(V1IssueCredentialMessage)
   })
 })

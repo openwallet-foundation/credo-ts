@@ -69,6 +69,12 @@ export interface CredentialsModule<CFs extends CredentialFormat[], CSs extends C
   getById(credentialRecordId: string): Promise<CredentialExchangeRecord>
   findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
   deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void>
+
+  // DidComm Message Records
+  findProposalMessage(credentialExchangeId: string): Promise<ReturnType<CSs[number]['findProposalMessage']>>
+  findOfferMessage(credentialExchangeId: string): Promise<ReturnType<CSs[number]['findOfferMessage']>>
+  findRequestMessage(credentialExchangeId: string): Promise<ReturnType<CSs[number]['findRequestMessage']>>
+  findCredentialMessage(credentialExchangeId: string): Promise<ReturnType<CSs[number]['findCredentialMessage']>>
 }
 
 @scoped(Lifecycle.ContainerScoped)
@@ -547,5 +553,39 @@ export class CredentialsModule<
     const credentialRecord = await this.getById(credentialId)
     const service = this.getService(credentialRecord.protocolVersion)
     return service.delete(credentialRecord, options)
+  }
+
+  public async findProposalMessage(
+    credentialExchangeId: string
+  ): Promise<ReturnType<CSs[number]['findProposalMessage']>> {
+    const credentialExchangeRecord = await this.getById(credentialExchangeId)
+    const service = this.getService(credentialExchangeRecord.protocolVersion)
+
+    return service.findProposalMessage(credentialExchangeId)
+  }
+
+  public async findOfferMessage(credentialExchangeId: string): Promise<ReturnType<CSs[number]['findProposalMessage']>> {
+    const credentialExchangeRecord = await this.getById(credentialExchangeId)
+    const service = this.getService(credentialExchangeRecord.protocolVersion)
+
+    return service.findOfferMessage(credentialExchangeId)
+  }
+
+  public async findRequestMessage(
+    credentialExchangeId: string
+  ): Promise<ReturnType<CSs[number]['findProposalMessage']>> {
+    const credentialExchangeRecord = await this.getById(credentialExchangeId)
+    const service = this.getService(credentialExchangeRecord.protocolVersion)
+
+    return service.findRequestMessage(credentialExchangeId)
+  }
+
+  public async findCredentialMessage(
+    credentialExchangeId: string
+  ): Promise<ReturnType<CSs[number]['findProposalMessage']>> {
+    const credentialExchangeRecord = await this.getById(credentialExchangeId)
+    const service = this.getService(credentialExchangeRecord.protocolVersion)
+
+    return service.findCredentialMessage(credentialExchangeId)
   }
 }
