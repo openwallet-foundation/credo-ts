@@ -503,7 +503,6 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
       credentialRecord = new CredentialExchangeRecord({
         connectionId: connection?.id,
         threadId: offerMessage.id,
-        credentialAttributes: offerMessage.credentialPreview.attributes,
         state: CredentialState.OfferReceived,
         protocolVersion: 'v1',
       })
