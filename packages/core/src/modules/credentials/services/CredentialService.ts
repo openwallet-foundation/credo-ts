@@ -29,7 +29,7 @@ import { CredentialState } from '../models/CredentialState'
 
 import { CredentialEventTypes } from './../CredentialEvents'
 
-export abstract class CredentialService<CFs extends CredentialFormat[]> {
+export abstract class CredentialService<CFs extends CredentialFormat[] = CredentialFormat[]> {
   protected credentialRepository: CredentialRepository
   protected didCommMessageRepository: DidCommMessageRepository
   protected eventEmitter: EventEmitter
