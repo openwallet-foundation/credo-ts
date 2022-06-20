@@ -87,7 +87,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
    */
   public readonly version = 'v1'
 
-  public getFormatServiceForRecordType(credentialRecordType: IndyCredentialFormat['credentialRecordType']) {
+  public getFormatServiceForRecordType(credentialRecordType: string) {
     if (credentialRecordType !== this.formatService.credentialRecordType) {
       throw new AriesFrameworkError(
         `Unsupported credential record type ${credentialRecordType} for v1 issue credential protocol (need ${this.formatService.credentialRecordType})`

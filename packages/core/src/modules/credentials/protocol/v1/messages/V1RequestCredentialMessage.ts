@@ -9,7 +9,7 @@ import { IsValidMessageType, parseMessageType } from '../../../../../utils/messa
 
 export const INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID = 'libindy-cred-request-0'
 
-interface RequestCredentialMessageOptions {
+export interface V1RequestCredentialMessageOptions {
   id?: string
   comment?: string
   requestAttachments: Attachment[]
@@ -17,7 +17,7 @@ interface RequestCredentialMessageOptions {
 }
 
 export class V1RequestCredentialMessage extends AgentMessage {
-  public constructor(options: RequestCredentialMessageOptions) {
+  public constructor(options: V1RequestCredentialMessageOptions) {
     super()
 
     if (options) {
