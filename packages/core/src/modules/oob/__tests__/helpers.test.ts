@@ -58,12 +58,12 @@ describe('convertToNewInvitation', () => {
         label: 'a-label',
         imageUrl: 'https://my-image.com',
       },
-      ConnectionInvitationMessage
+      ConnectionInvitationMessage,
+      // Don't validate because we want this to be mal-formatted
+      { validate: false }
     )
 
-    expect(() => convertToNewInvitation(connectionInvitation)).toThrowError(
-      'Missing required serviceEndpoint, routingKeys and/or did fields in connection invitation'
-    )
+    expect(() => convertToNewInvitation(connectionInvitation)).toThrowError()
   })
 })
 
