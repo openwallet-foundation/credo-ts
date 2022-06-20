@@ -3,10 +3,7 @@ import type { ConnectionService } from '../../connections/services/ConnectionSer
 import type { DidRepository } from '../../dids/repository'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { AcceptRequestOptions, RequestCredentialOptions } from '../CredentialsModuleOptions'
-import {
-  CredentialFormatSpec,
-  FormatServiceRequestCredentialFormats,
-} from '../formats/models/CredentialFormatServiceOptions'
+import type { FormatServiceRequestCredentialFormats } from '../formats/models/CredentialFormatServiceOptions'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 import type { IndyCredentialMetadata } from '../protocol/v1/models/CredentialInfo'
 import type { V2IssueCredentialMessageProps } from '../protocol/v2/messages/V2IssueCredentialMessage'
@@ -36,6 +33,7 @@ import { CredentialUtils } from '../CredentialUtils'
 import { CredentialFormatType } from '../CredentialsModuleOptions'
 import { CredentialProblemReportReason } from '../errors/CredentialProblemReportReason'
 import { IndyCredentialFormatService } from '../formats'
+import { CredentialFormatSpec } from '../formats/models/CredentialFormatServiceOptions'
 import { V1CredentialPreview } from '../protocol/v1/V1CredentialPreview'
 import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
