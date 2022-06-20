@@ -128,4 +128,46 @@ describe('convertToNewDidDocument', () => {
       }),
     ])
   })
+
+  test('will only split on the first ; or # and leave the other ones in place as id values', () => {
+    const oldDocument = new DidDoc({
+      id: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
+      authentication: [],
+      publicKey: [],
+      service: [
+        new IndyAgentService({
+          id: 'did:sov:SKJVx2kn373FNgvff1SbJo;service-1;something-extra',
+          serviceEndpoint: 'did:sov:SKJVx2kn373FNgvff1SbJo',
+          recipientKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+          routingKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+          priority: 5,
+        }),
+        new IndyAgentService({
+          id: 'did:sov:SKJVx2kn373FNgvff1SbJo#service-2#something-extra',
+          serviceEndpoint: 'did:sov:SKJVx2kn373FNgvff1SbJo',
+          recipientKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+          routingKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+          priority: 5,
+        }),
+      ],
+    })
+    const newDocument = convertToNewDidDocument(oldDocument)
+
+    expect(newDocument.service).toEqual([
+      new IndyAgentService({
+        id: '#service-1;something-extra',
+        serviceEndpoint: 'did:sov:SKJVx2kn373FNgvff1SbJo',
+        recipientKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+        routingKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+        priority: 5,
+      }),
+      new IndyAgentService({
+        id: '#service-2#something-extra',
+        serviceEndpoint: 'did:sov:SKJVx2kn373FNgvff1SbJo',
+        recipientKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+        routingKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
+        priority: 5,
+      }),
+    ])
+  })
 })

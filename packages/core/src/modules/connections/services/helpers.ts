@@ -85,12 +85,13 @@ function normalizeId(fullId: string): `#${string}` {
   // Some old dids use `;` as the delimiter for the id. If we can't find a `#`
   // and a `;` exists, we will parse everything after `;` as the id.
   if (!fullId.includes('#') && fullId.includes(';')) {
-    const [, id] = fullId.split(';')
-    return `#${id ?? fullId}`
+    const [, ...ids] = fullId.split(';')
+
+    return `#${ids.join(';')}`
   }
 
-  const [, id] = fullId.split('#')
-  return `#${id ?? fullId}`
+  const [, ...ids] = fullId.split('#')
+  return `#${ids.length ? ids.join('#') : fullId}`
 }
 
 function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
