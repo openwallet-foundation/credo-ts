@@ -1073,11 +1073,13 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     const indyCredential = credentialMessage?.indyCredential ?? undefined
 
     return {
+      proposalAttributes: proposalMessage?.credentialProposal?.attributes,
       proposal: proposalMessage
         ? {
             indy: indyProposal,
           }
         : undefined,
+      offerAttributes: offerMessage?.credentialPreview?.attributes,
       offer: offerMessage
         ? {
             indy: indyOffer,

@@ -1083,7 +1083,10 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
       credential: [credentialMessage?.formats, credentialMessage?.credentialAttachments],
     } as const
 
-    const formatData: GetFormatDataReturn = {}
+    const formatData: GetFormatDataReturn = {
+      proposalAttributes: proposalMessage?.credentialPreview?.attributes,
+      offerAttributes: offerMessage?.credentialPreview?.attributes,
+    }
 
     // We loop through all of the message keys as defined above
     for (const [messageKey, [formats, attachments]] of Object.entries(messages)) {
@@ -1102,7 +1105,8 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
         messageFormatData[formatService.formatKey] = attachment.getDataAsJson()
       }
 
-      formatData[messageKey as keyof GetFormatDataReturn] = messageFormatData
+      formatData[messageKey as Exclude<keyof GetFormatDataReturn, 'proposalAttributes' | 'offerAttributes'>] =
+        messageFormatData
     }
 
     return formatData

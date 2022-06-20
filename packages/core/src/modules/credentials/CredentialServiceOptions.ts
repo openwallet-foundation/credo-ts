@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
 import type { CredentialFormat, CredentialFormatPayload } from './formats'
+import type { CredentialPreviewAttributeOptions } from './models'
 import type { AutoAcceptCredential } from './models/CredentialAutoAcceptType'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 
@@ -26,8 +27,10 @@ export type FormatDataMessagePayload<
  * ```
  */
 export type GetFormatDataReturn<CFs extends CredentialFormat[] = CredentialFormat[]> = {
+  proposalAttributes?: CredentialPreviewAttributeOptions[]
   proposal?: FormatDataMessagePayload<CFs, 'proposal'>
   offer?: FormatDataMessagePayload<CFs, 'offer'>
+  offerAttributes?: CredentialPreviewAttributeOptions[]
   request?: FormatDataMessagePayload<CFs, 'request'>
   credential?: FormatDataMessagePayload<CFs, 'credential'>
 }

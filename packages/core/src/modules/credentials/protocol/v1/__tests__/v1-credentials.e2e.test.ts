@@ -184,6 +184,28 @@ describe('v1 credentials', () => {
     const formatData = await aliceAgent.credentials.getFormatData(aliceCredentialRecord.id)
 
     expect(formatData).toMatchObject({
+      proposalAttributes: [
+        {
+          name: 'name',
+          mimeType: 'text/plain',
+          value: 'John',
+        },
+        {
+          name: 'age',
+          mimeType: 'text/plain',
+          value: '99',
+        },
+        {
+          name: 'x-ray',
+          mimeType: 'text/plain',
+          value: 'some x-ray',
+        },
+        {
+          name: 'profile_picture',
+          mimeType: 'text/plain',
+          value: 'profile picture',
+        },
+      ],
       proposal: {
         indy: {
           schema_issuer_did: expect.any(String),
@@ -202,6 +224,28 @@ describe('v1 credentials', () => {
           nonce: expect.any(String),
         },
       },
+      offerAttributes: [
+        {
+          name: 'name',
+          mimeType: 'text/plain',
+          value: 'John',
+        },
+        {
+          name: 'age',
+          mimeType: 'text/plain',
+          value: '99',
+        },
+        {
+          name: 'x-ray',
+          mimeType: 'text/plain',
+          value: 'some x-ray',
+        },
+        {
+          name: 'profile_picture',
+          mimeType: 'text/plain',
+          value: 'profile picture',
+        },
+      ],
       request: {
         indy: {
           prover_did: expect.any(String),
