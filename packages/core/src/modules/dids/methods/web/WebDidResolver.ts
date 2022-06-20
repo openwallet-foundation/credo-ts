@@ -5,7 +5,6 @@ import { Resolver } from 'did-resolver'
 import * as didWeb from 'web-did-resolver'
 
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../../utils/MessageValidator'
 import { DidDocument } from '../../domain'
 
 export class WebDidResolver implements DidResolver {
@@ -29,7 +28,6 @@ export class WebDidResolver implements DidResolver {
     let didDocument = null
     if (result.didDocument) {
       didDocument = JsonTransformer.fromJSON(result.didDocument, DidDocument)
-      await MessageValidator.validate(didDocument)
     }
 
     return {
