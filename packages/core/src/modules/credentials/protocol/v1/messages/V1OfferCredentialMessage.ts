@@ -11,7 +11,7 @@ import { V1CredentialPreview } from './V1CredentialPreview'
 
 export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
 
-export interface OfferCredentialMessageOptions {
+export interface V1OfferCredentialMessageOptions {
   id?: string
   comment?: string
   offerAttachments: Attachment[]
@@ -25,7 +25,7 @@ export interface OfferCredentialMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#offer-credential
  */
 export class V1OfferCredentialMessage extends AgentMessage {
-  public constructor(options: OfferCredentialMessageOptions) {
+  public constructor(options: V1OfferCredentialMessageOptions) {
     super()
 
     if (options) {
