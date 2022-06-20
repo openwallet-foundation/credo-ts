@@ -6,6 +6,13 @@ import type { CredentialService } from './services'
 // re-export GetFormatDataReturn type from service, as it is also used in the module
 export type { GetFormatDataReturn }
 
+export type FindProposalMessageReturn<CSs extends CredentialService[]> = ReturnType<CSs[number]['findProposalMessage']>
+export type FindOfferMessageReturn<CSs extends CredentialService[]> = ReturnType<CSs[number]['findOfferMessage']>
+export type FindRequestMessageReturn<CSs extends CredentialService[]> = ReturnType<CSs[number]['findRequestMessage']>
+export type FindCredentialMessageReturn<CSs extends CredentialService[]> = ReturnType<
+  CSs[number]['findCredentialMessage']
+>
+
 /**
  * Get the supported protocol versions based on the provided credential services.
  */
