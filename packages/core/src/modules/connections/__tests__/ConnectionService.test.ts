@@ -124,6 +124,17 @@ describe('ConnectionService', () => {
       expect(message.label).toBe('Custom label')
     })
 
+    it('returns a connection record containing image url', async () => {
+      expect.assertions(1)
+
+      const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse, imageUrl: connectionImageUrl })
+      const config = { label: 'Custom label', routing: myRouting }
+
+      const { connectionRecord } = await connectionService.createRequest(outOfBand, config)
+
+      expect(connectionRecord.imageUrl).toBe(connectionImageUrl)
+    })
+
     it('returns a connection request message containing a custom image url', async () => {
       expect.assertions(1)
 
