@@ -25,7 +25,10 @@ describe('Decorators | ServiceDecoratorExtension', () => {
   })
 
   test('transforms Json to ServiceDecorator class', () => {
-    const transformed = JsonTransformer.fromJSON({ '~service': service }, TestMessage)
+    const transformed = JsonTransformer.fromJSON(
+      { '@id': 'randomID', '@type': 'https://didcomm.org/fake-protocol/1.5/message', '~service': service },
+      TestMessage
+    )
 
     expect(transformed.service).toEqual(service)
     expect(transformed).toBeInstanceOf(TestMessage)
