@@ -2,6 +2,7 @@
 
 - [Configuration](#configuration)
   - [Pool Selector Algorithm](#pool-selector-algorithm)
+  - [iOS Multiple Ledgers Troubleshooting](#ios-multiple-ledgers-troubleshooting)
 
 ## Configuration
 
