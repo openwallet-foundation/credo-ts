@@ -120,6 +120,7 @@ export class ConnectionService {
       autoAcceptConnection: config?.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
       invitationDid,
+      imageUrl: outOfBandInvitation.imageUrl,
     })
 
     const { label, imageUrl, autoAcceptConnection } = config
