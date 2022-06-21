@@ -1,3 +1,3 @@
 export * from './Crypto'
-export * from './StablelibCrypto'
+export * from './MixedCrypto'
 export * from './types'

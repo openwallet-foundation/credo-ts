@@ -25,10 +25,8 @@
   "dependencies": {
     "@multiformats/base-x": "^4.0.1",
     "@sicpa-dlab/value-transfer-protocol-ts": "0.0.17",
-    "@stablelib/aes": "^1.0.1",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",
-    "@stablelib/x25519": "^1.0.2",
     "@stablelib/uuid": "^1.0.1",
     "@types/indy-sdk": "^1.16.16",
     "@types/node-fetch": "^2.5.10",
