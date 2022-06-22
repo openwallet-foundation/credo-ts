@@ -68,6 +68,18 @@ If you're not using the ledger setup from above, make sure you pass the correct 
 GENESIS_TXN_PATH=network/genesis/local-genesis.txn TEST_AGENT_PUBLIC_DID_SEED=000000000000000000000000Trustee9 yarn test
 ```
 
+Locally, you might want to run the tests without postgres tests. You can do that by ignoring the tests:
+
+```sh
+yarn test --testPathIgnorePatterns ./packages/core/tests/postgres.test.ts -u
+```
+
+In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client. On a Unix system with default setup you achieve this by running:
+
+```sh
+rm -rf ~/.indy-client
+```
+
 ## Usage with Docker
 
 If you don't want to install the libindy dependencies yourself, or want a clean environment when running the framework or tests you can use docker.

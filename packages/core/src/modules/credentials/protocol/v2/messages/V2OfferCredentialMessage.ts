@@ -4,8 +4,9 @@ import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
-import { V2CredentialPreview } from '../V2CredentialPreview'
+import { CredentialFormatSpec } from '../../../models'
+
+import { V2CredentialPreview } from './V2CredentialPreview'
 
 export interface V2OfferCredentialMessageOptions {
   id?: string
@@ -24,7 +25,7 @@ export class V2OfferCredentialMessage extends AgentMessage {
       this.comment = options.comment
       this.formats = options.formats
       this.credentialPreview = options.credentialPreview
-      this.messageAttachment = options.offerAttachments
+      this.offerAttachments = options.offerAttachments
     }
   }
 
@@ -55,10 +56,14 @@ export class V2OfferCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public messageAttachment!: Attachment[]
+  public offerAttachments!: Attachment[]
 
   @Expose({ name: 'replacement_id' })
   @IsString()
   @IsOptional()
   public replacementId?: string
+
+  public getOfferAttachmentById(id: string): Attachment | undefined {
+    return this.offerAttachments.find((attachment) => attachment.id == id)
+  }
 }

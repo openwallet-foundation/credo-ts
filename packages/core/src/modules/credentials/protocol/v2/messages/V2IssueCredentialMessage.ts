@@ -4,13 +4,13 @@ import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { CredentialFormatSpec } from '../../../formats/models/CredentialFormatServiceOptions'
+import { CredentialFormatSpec } from '../../../models'
 
 export interface V2IssueCredentialMessageProps {
   id?: string
   comment?: string
   formats: CredentialFormatSpec[]
-  credentialsAttach: Attachment[]
+  credentialAttachments: Attachment[]
 }
 
 export class V2IssueCredentialMessage extends AgentMessage {
@@ -21,7 +21,7 @@ export class V2IssueCredentialMessage extends AgentMessage {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
       this.formats = options.formats
-      this.messageAttachment = options.credentialsAttach
+      this.credentialAttachments = options.credentialAttachments
     }
   }
   @Type(() => CredentialFormatSpec)
@@ -45,5 +45,9 @@ export class V2IssueCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public messageAttachment!: Attachment[]
+  public credentialAttachments!: Attachment[]
+
+  public getCredentialAttachmentById(id: string): Attachment | undefined {
+    return this.credentialAttachments.find((attachment) => attachment.id == id)
+  }
 }

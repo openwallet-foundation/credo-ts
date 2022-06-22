@@ -9,18 +9,13 @@ import {
   ProofRequest,
 } from '@aries-framework/core'
 
-export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
-
 describe('Present Proof', () => {
-  let credDefId: string
+  const credDefId = '9vPXgSpQJPkJEALbLXueBp:3:CL:57753:tag1'
+  const nonce = 'testtesttest12345'
 
-  beforeAll(() => {
-    credDefId = '9vPXgSpQJPkJEALbLXueBp:3:CL:57753:tag1'
-  })
-
-  test('attribute names match, same cred def filter', () => {
+  test('attribute names match', () => {
     const attributes = {
-      name: new ProofAttributeInfo({
+      age1: new ProofAttributeInfo({
         name: 'age',
         restrictions: [
           new AttributeFilter({
@@ -28,7 +23,7 @@ describe('Present Proof', () => {
           }),
         ],
       }),
-      age: new ProofAttributeInfo({
+      age2: new ProofAttributeInfo({
         name: 'age',
         restrictions: [
           new AttributeFilter({
@@ -38,8 +33,6 @@ describe('Present Proof', () => {
       }),
     }
 
-    const nonce = 'testtesttest12345'
-
     const proofRequest = new ProofRequest({
       name: 'proof-request',
       version: '1.0',
@@ -47,12 +40,12 @@ describe('Present Proof', () => {
       requestedAttributes: attributes,
     })
 
-    expect(() => checkProofRequestForDuplicates(proofRequest)).toThrowError(AriesFrameworkError)
+    expect(() => checkProofRequestForDuplicates(proofRequest)).not.toThrow()
   })
 
-  test('attribute names match with predicates name, same cred def filter', () => {
+  test('attribute names match with predicates name', () => {
     const attributes = {
-      name: new ProofAttributeInfo({
+      attrib: new ProofAttributeInfo({
         name: 'age',
         restrictions: [
           new AttributeFilter({
@@ -63,7 +56,7 @@ describe('Present Proof', () => {
     }
 
     const predicates = {
-      age: new ProofPredicateInfo({
+      predicate: new ProofPredicateInfo({
         name: 'age',
         predicateType: PredicateType.GreaterThanOrEqualTo,
         predicateValue: 50,
@@ -74,8 +67,6 @@ describe('Present Proof', () => {
         ],
       }),
     }
-
-    const nonce = 'testtesttest12345'
 
     const proofRequest = new ProofRequest({
       name: 'proof-request',

@@ -450,7 +450,7 @@ Object {
       "credentials": Array [
         Object {
           "credentialRecordId": "a77114e1-c812-4bff-a53c-3d5003fcc278",
-          "credentialRecordType": "Indy",
+          "credentialRecordType": "indy",
         },
       ],
       "id": "5f2b7bc7-edfd-47e7-a1d4-aae050df2c4a",
@@ -742,7 +742,7 @@ Object {
       "credentials": Array [
         Object {
           "credentialRecordId": "19c1f29f-d2df-486c-b8c6-950c403fa7d9",
-          "credentialRecordType": "Indy",
+          "credentialRecordType": "indy",
         },
       ],
       "id": "c7e0a752-7f1c-41c0-b0ae-a68c2d97ca8c",
@@ -2763,7 +2763,7 @@ Object {
       "credentials": Array [
         Object {
           "credentialRecordId": "a77114e1-c812-4bff-a53c-3d5003fcc278",
-          "credentialRecordType": "Indy",
+          "credentialRecordType": "indy",
         },
       ],
       "id": "5f2b7bc7-edfd-47e7-a1d4-aae050df2c4a",
@@ -3055,7 +3055,7 @@ Object {
       "credentials": Array [
         Object {
           "credentialRecordId": "19c1f29f-d2df-486c-b8c6-950c403fa7d9",
-          "credentialRecordType": "Indy",
+          "credentialRecordType": "indy",
         },
       ],
       "id": "c7e0a752-7f1c-41c0-b0ae-a68c2d97ca8c",

@@ -9,7 +9,6 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { HandshakeProtocol } from '../src/modules/connections/models/HandshakeProtocol'
-import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/V1CredentialPreview'
 import {
   PredicateType,
   ProofState,
@@ -33,6 +32,7 @@ import {
   waitForProofRecordSubject,
 } from './helpers'
 import testLogger from './logger'
+import { V1CredentialPreview } from '../src'
 
 describe('Present Proof', () => {
   let agents: Agent[]
@@ -290,8 +290,7 @@ describe('Present Proof', () => {
       holderAgent: aliceAgent,
       credentialTemplate: {
         credentialDefinitionId: definition.id,
-        comment: 'some comment about credential',
-        preview: credentialPreview,
+        attributes: credentialPreview.attributes,
         linkedAttachments: [
           new LinkedAttachment({
             name: 'image_0',

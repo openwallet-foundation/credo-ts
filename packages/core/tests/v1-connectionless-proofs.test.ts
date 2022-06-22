@@ -289,8 +289,7 @@ describe('Present Proof', () => {
       holderAgent: aliceAgent,
       credentialTemplate: {
         credentialDefinitionId: definition.id,
-        comment: 'some comment about credential',
-        preview: credentialPreview,
+        attributes: credentialPreview.attributes,
         linkedAttachments: [
           new LinkedAttachment({
             name: 'image_0',

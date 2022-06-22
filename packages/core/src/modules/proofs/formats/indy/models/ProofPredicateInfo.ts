@@ -1,7 +1,6 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsEnum, IsInstance, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator'
-
-import { RevocationInterval } from '../../../../credentials'
+import { IndyRevocationInterval } from '../../../../credentials'
 import { AttributeFilter } from '../../../protocol/v1/models/AttributeFilter'
 import { PredicateType } from '../../../protocol/v1/models/PredicateType'
 
@@ -29,10 +28,10 @@ export class ProofPredicateInfo {
 
   @Expose({ name: 'non_revoked' })
   @ValidateNested()
-  @Type(() => RevocationInterval)
+  @Type(() => IndyRevocationInterval)
   @IsOptional()
-  @IsInstance(RevocationInterval)
-  public nonRevoked?: RevocationInterval
+  @IsInstance(IndyRevocationInterval)
+  public nonRevoked?: IndyRevocationInterval
 
   @ValidateNested({ each: true })
   @Type(() => AttributeFilter)
