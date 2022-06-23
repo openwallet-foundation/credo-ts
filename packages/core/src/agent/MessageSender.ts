@@ -314,7 +314,7 @@ export class MessageSender {
     }
 
     try {
-      await MessageValidator.validate(message)
+      MessageValidator.validateSync(message)
     } catch (error) {
       this.logger.error(
         `Aborting sending outbound message ${message.type} to ${service.serviceEndpoint}. Message validation failed`,

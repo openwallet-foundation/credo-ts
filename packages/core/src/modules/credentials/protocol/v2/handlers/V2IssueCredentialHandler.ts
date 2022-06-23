@@ -25,7 +25,7 @@ export class V2IssueCredentialHandler implements Handler {
     this.agentConfig = agentConfig
     this.didCommMessageRepository = didCommMessageRepository
   }
-  public async handle(messageContext: InboundMessageContext<V2IssueCredentialMessage>) {   
+  public async handle(messageContext: InboundMessageContext<V2IssueCredentialMessage>) {
     const credentialRecord = await this.credentialService.processCredential(messageContext)
 
     const shouldAutoRespond = await this.credentialService.shouldAutoRespondToCredential({

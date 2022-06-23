@@ -1,5 +1,5 @@
 import type { Agent } from '../../../../../agent/Agent'
-import type { SignCredentialOptions } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
+import type { SignCredentialOptionsRFC0593 } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
 import type { ConnectionRecord } from '../../../../connections'
 import type { AcceptOfferOptions, AcceptProposalOptions } from '../../../CredentialsModuleOptions'
 
@@ -29,7 +29,7 @@ describe('credentials', () => {
   let issuerDidKey: DidKey
   let verificationMethod: string
   let credential: W3cCredential
-  let signCredentialOptions: SignCredentialOptions
+  let signCredentialOptions: SignCredentialOptionsRFC0593
 
   describe('Auto accept on `always`', () => {
     const seed = 'testseed000000000000000000000001'
@@ -49,7 +49,10 @@ describe('credentials', () => {
 
       signCredentialOptions = {
         credential,
-        proofType: 'Ed25519Signature2018',
+        options: {
+          proofType: 'Ed25519Signature2018',
+          proofPurpose: 'assertionMethod',
+        },
         verificationMethod,
       }
     })
@@ -161,7 +164,10 @@ describe('credentials', () => {
 
       signCredentialOptions = {
         credential,
-        proofType: 'Ed25519Signature2018',
+        options: {
+          proofType: 'Ed25519Signature2018',
+          proofPurpose: 'assertionMethod',
+        },
         verificationMethod,
       }
     })

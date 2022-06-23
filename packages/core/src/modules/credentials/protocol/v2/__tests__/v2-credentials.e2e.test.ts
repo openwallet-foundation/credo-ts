@@ -9,8 +9,13 @@ import { JsonTransformer } from '../../../../../utils'
 import { IndyHolderService } from '../../../../indy/services/IndyHolderService'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import { V2CredentialPreview } from '../messages/V2CredentialPreview'
-import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
+import {
+  V2IssueCredentialMessage,
+  V2ProposeCredentialMessage,
+  V2RequestCredentialMessage,
+  V2CredentialPreview,
+  V2OfferCredentialMessage,
+} from '../messages'
 
 const credentialPreview = V2CredentialPreview.fromRecord({
   name: 'John',
@@ -474,6 +479,117 @@ describe('v2 credentials', () => {
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.CredentialReceived,
+    })
+
+    const proposalMessage = await aliceAgent.credentials.findProposalMessage(aliceCredentialRecord.id)
+    const offerMessage = await aliceAgent.credentials.findOfferMessage(aliceCredentialRecord.id)
+    const requestMessage = await aliceAgent.credentials.findRequestMessage(aliceCredentialRecord.id)
+    const credentialMessage = await aliceAgent.credentials.findCredentialMessage(aliceCredentialRecord.id)
+
+    expect(proposalMessage).toBeInstanceOf(V2ProposeCredentialMessage)
+    expect(offerMessage).toBeInstanceOf(V2OfferCredentialMessage)
+    expect(requestMessage).toBeInstanceOf(V2RequestCredentialMessage)
+    expect(credentialMessage).toBeInstanceOf(V2IssueCredentialMessage)
+
+    const formatData = await aliceAgent.credentials.getFormatData(aliceCredentialRecord.id)
+    expect(formatData).toMatchObject({
+      proposalAttributes: [
+        {
+          name: 'name',
+          mimeType: 'text/plain',
+          value: 'John',
+        },
+        {
+          name: 'age',
+          mimeType: 'text/plain',
+          value: '99',
+        },
+        {
+          name: 'x-ray',
+          mimeType: 'text/plain',
+          value: 'another x-ray value',
+        },
+        {
+          name: 'profile_picture',
+          mimeType: 'text/plain',
+          value: 'another profile picture',
+        },
+      ],
+      proposal: {
+        indy: {
+          schema_issuer_did: expect.any(String),
+          schema_id: expect.any(String),
+          schema_name: expect.any(String),
+          schema_version: expect.any(String),
+          cred_def_id: expect.any(String),
+          issuer_did: expect.any(String),
+        },
+      },
+      offer: {
+        indy: {
+          schema_id: expect.any(String),
+          cred_def_id: expect.any(String),
+          key_correctness_proof: expect.any(Object),
+          nonce: expect.any(String),
+        },
+      },
+      offerAttributes: [
+        {
+          name: 'name',
+          mimeType: 'text/plain',
+          value: 'John',
+        },
+        {
+          name: 'age',
+          mimeType: 'text/plain',
+          value: '99',
+        },
+        {
+          name: 'x-ray',
+          mimeType: 'text/plain',
+          value: 'some x-ray',
+        },
+        {
+          name: 'profile_picture',
+          mimeType: 'text/plain',
+          value: 'profile picture',
+        },
+      ],
+      request: {
+        indy: {
+          prover_did: expect.any(String),
+          cred_def_id: expect.any(String),
+          blinded_ms: expect.any(Object),
+          blinded_ms_correctness_proof: expect.any(Object),
+          nonce: expect.any(String),
+        },
+      },
+      credential: {
+        indy: {
+          schema_id: expect.any(String),
+          cred_def_id: expect.any(String),
+          rev_reg_id: null,
+          values: {
+            age: { raw: '99', encoded: '99' },
+            profile_picture: {
+              raw: 'profile picture',
+              encoded: '28661874965215723474150257281172102867522547934697168414362313592277831163345',
+            },
+            name: {
+              raw: 'John',
+              encoded: '76355713903561865866741292988746191972523015098789458240077478826513114743258',
+            },
+            'x-ray': {
+              raw: 'some x-ray',
+              encoded: '43715611391396952879378357808399363551139229809726238083934532929974486114650',
+            },
+          },
+          signature: expect.any(Object),
+          signature_correctness_proof: expect.any(Object),
+          rev_reg: null,
+          witness: null,
+        },
+      },
     })
   })
 

@@ -263,8 +263,8 @@ export class OutOfBandModule {
    * @param config configuration of how out-of-band invitation should be processed
    * @returns out-of-band record and connection record if one has been created
    */
-  public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig = {}) {
-    const message = await this.parseInvitation(invitationUrl)
+  public receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig = {}) {
+    const message = this.parseInvitation(invitationUrl)
     return this.receiveInvitation(message, config)
   }
 
@@ -275,8 +275,8 @@ export class OutOfBandModule {
    *
    * @returns OutOfBandInvitation
    */
-  public async parseInvitation(invitationUrl: string): Promise<OutOfBandInvitation> {
-    return await parseInvitationUrl(invitationUrl)
+  public parseInvitation(invitationUrl: string): OutOfBandInvitation {
+    return parseInvitationUrl(invitationUrl)
   }
 
   /**
