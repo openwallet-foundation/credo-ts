@@ -3,11 +3,11 @@ import { IsObject, IsOptional, IsString } from 'class-validator'
 
 import { W3cCredential } from '../../../vc/models/credential/W3cCredential'
 
+import { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
+
 export interface JsonLdCredentialOptions {
   credential: W3cCredential
-  options: {
-    proofType: string
-  }
+  options: JsonLdOptionsRFC0593
   verificationMethod: string
 }
 
@@ -32,7 +32,7 @@ export class JsonLdCredential {
 
   @Expose({ name: 'options' })
   @IsObject()
-  public options!: unknown
+  public options!: JsonLdOptionsRFC0593
 
   @Expose({ name: 'verificationMethod' })
   @IsString()

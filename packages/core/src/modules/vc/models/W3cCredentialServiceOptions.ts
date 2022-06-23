@@ -1,5 +1,6 @@
 import type { JsonObject } from '../../../types'
 import type { SingleOrArray } from '../../../utils/type'
+import type { JsonLdOptionsRFC0593 } from '../../credentials/formats/jsonld/JsonLdOptionsRFC0593'
 import type { ProofPurpose } from '../proof-purposes/ProofPurpose'
 import type { W3cCredential } from './credential/W3cCredential'
 import type { W3cVerifiableCredential } from './credential/W3cVerifiableCredential'
@@ -20,18 +21,12 @@ export interface SignCredentialOptions {
 }
 
 // FIXME move this into the jsonld format service
+
+// feel free to rename this, the RFC suffix is useful during dev
+
 export interface SignCredentialOptionsRFC0593 {
   credential: W3cCredential
-  options: {
-    proofPurpose: string
-    created?: string
-    domain?: string
-    challenge?: string
-    credentialStatus?: {
-      type: string
-    }
-    proofType: string
-  }
+  options: JsonLdOptionsRFC0593
   verificationMethod: string
 }
 

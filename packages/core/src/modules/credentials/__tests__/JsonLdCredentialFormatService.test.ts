@@ -344,5 +344,40 @@ describe('JsonLd CredentialFormatService', () => {
       expect(credentialRecord.credentials[0].credentialRecordType).toBe('w3c')
       expect(credentialRecord.credentials[0].credentialRecordId).toBe('foo')
     })
+
+    test('are credentials equal', async () => {
+      const message1 = new Attachment({
+        id: 'cdb0669b-7cd6-46bc-b1c7-7034f86083ac',
+        mimeType: 'application/json',
+        data: new AttachmentData({
+          base64: JsonEncoder.toBase64(inputDoc),
+        }),
+      })
+
+      const message2 = new Attachment({
+        id: '9a8ff4fb-ac86-478f-b7f9-fbf3f9cc60e6',
+        mimeType: 'application/json',
+        data: new AttachmentData({
+          base64: JsonEncoder.toBase64(inputDoc),
+        }),
+      })
+      // console.log("QUACK message1 = ", message1)
+
+      let areCredentialsEqual = jsonldFormatService.areCredentialsEqual(message1, message2)
+      expect(areCredentialsEqual).toBe(true)
+
+      const inputDoc2 = {
+        '@context': [
+          'https://www.w3.org/2018/credentials/v1',
+          'https://w3id.org/citizenship/v1',
+          'https://w3id.org/security/bbs/v1',
+        ],
+      }
+      message2.data = new AttachmentData({
+        base64: JsonEncoder.toBase64(inputDoc2),
+      })
+      areCredentialsEqual = jsonldFormatService.areCredentialsEqual(message1, message2)
+      expect(areCredentialsEqual).toBe(false)
+    })
   })
 })

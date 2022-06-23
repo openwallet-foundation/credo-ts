@@ -313,13 +313,4 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // https://github.com/hyperledger/aries-cloudagent-python/blob/main/aries_cloudagent/protocols/issue_credential/v2_0/formats/ld_proof/handler.py#L492
     return true // temporary to get the tests to pass
   }
-
-  private areCredentialsEqual = (message1: Attachment, message2: Attachment) => {
-    // FIXME: this implementation doesn't make sense. We can't loop over stringified objects...
-    const obj1: any = message1.getDataAsJson()
-    const obj2: any = message2.getDataAsJson()
-
-    const retVal = deepEqual(obj1, obj2)
-    return retVal
-  }
 }
