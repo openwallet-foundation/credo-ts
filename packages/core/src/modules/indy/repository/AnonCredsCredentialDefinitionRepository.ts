@@ -16,7 +16,7 @@ export class AnonCredCredentialDefinitionRepository extends Repository<AnonCreds
     super(AnonCredsCredentialDefinitionRecord, storageService, eventEmitter)
   }
 
-  public async getBySchemaId(credentialDefinitionId: string) {
+  public async getByCredentialDefinitionId(credentialDefinitionId: string) {
     return this.getSingleByQuery({ credentialDefinitionId: credentialDefinitionId })
   }
 }

@@ -4,6 +4,8 @@ import type { LedgerReadReplyResponse, LedgerWriteReplyResponse } from 'indy-sdk
 import { getAgentConfig, mockFunction } from '../../../../tests/helpers'
 import { CacheRepository } from '../../../cache/CacheRepository'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+import { AnonCredCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
+import { AnonCredSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyPool } from '../IndyPool'
 import { IndyLedgerService } from '../services/IndyLedgerService'
@@ -13,6 +15,14 @@ jest.mock('../services/IndyPoolService')
 const IndyPoolServiceMock = IndyPoolService as jest.Mock<IndyPoolService>
 jest.mock('../../indy/services/IndyIssuerService')
 const IndyIssuerServiceMock = IndyIssuerService as jest.Mock<IndyIssuerService>
+
+jest.mock('../../indy/repository/AnonCredentialDefinitionRepository')
+const AnonCredCredentialDefinitionRepositoryMock =
+  AnonCredCredentialDefinitionRepository as jest.Mock<AnonCredCredentialDefinitionRepository>
+
+jest.mock('../../indy/repository/AnonCredsSchemaRepository')
+const AnonCredSchemaRepositoryMock = AnonCredSchemaRepository as jest.Mock<AnonCredSchemaRepository>
+
 jest.mock('../../../cache/CacheRepository')
 const CacheRepositoryMock = CacheRepository as jest.Mock<CacheRepository>
 
@@ -34,6 +44,8 @@ describe('IndyLedgerService', () => {
   let cacheRepository: CacheRepository
   let indyIssuerService: IndyIssuerService
   let ledgerService: IndyLedgerService
+  let anonCredCredentialDefinitionRepository: AnonCredCredentialDefinitionRepository
+  let anonCredSchemaRepository: AnonCredSchemaRepository
 
   beforeAll(async () => {
     wallet = new IndyWallet(config)
@@ -50,6 +62,8 @@ describe('IndyLedgerService', () => {
     mockFunction(cacheRepository.findById).mockResolvedValue(null)
     indyIssuerService = new IndyIssuerServiceMock()
     poolService = new IndyPoolServiceMock()
+    anonCredCredentialDefinitionRepository = new AnonCredCredentialDefinitionRepositoryMock()
+    anonCredSchemaRepository = new AnonCredSchemaRepositoryMock()
     const pool = new IndyPool(config, pools[0])
     jest.spyOn(pool, 'submitWriteRequest').mockResolvedValue({} as LedgerWriteReplyResponse)
     jest.spyOn(pool, 'submitReadRequest').mockResolvedValue({} as LedgerReadReplyResponse)
@@ -58,7 +72,14 @@ describe('IndyLedgerService', () => {
     // @ts-ignore
     poolService.ledgerWritePool = pool
 
-    ledgerService = new IndyLedgerService(wallet, config, indyIssuerService, poolService)
+    ledgerService = new IndyLedgerService(
+      wallet,
+      anonCredCredentialDefinitionRepository,
+      anonCredSchemaRepository,
+      config,
+      indyIssuerService,
+      poolService
+    )
   })
 
   describe('LedgerServiceWrite', () => {
@@ -118,7 +139,14 @@ describe('IndyLedgerService', () => {
       poolService.ledgerWritePool.authorAgreement = undefined
       poolService.ledgerWritePool.config.transactionAuthorAgreement = undefined
 
-      ledgerService = new IndyLedgerService(wallet, config, indyIssuerService, poolService)
+      ledgerService = new IndyLedgerService(
+        wallet,
+        anonCredCredentialDefinitionRepository,
+        anonCredSchemaRepository,
+        config,
+        indyIssuerService,
+        poolService
+      )
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       jest.spyOn(ledgerService, 'getTransactionAuthorAgreement').mockResolvedValue({

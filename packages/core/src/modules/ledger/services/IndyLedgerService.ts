@@ -21,6 +21,8 @@ import {
 } from '../../../utils/did'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+import { AnonCredCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
+import { AnonCredSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { LedgerError } from '../error/LedgerError'
 
@@ -30,6 +32,8 @@ import { IndyPoolService } from './IndyPoolService'
 export class IndyLedgerService {
   private wallet: IndyWallet
   private indy: typeof Indy
+  private anonCredCredentialDefinitionRepository: AnonCredCredentialDefinitionRepository
+  private anonCredSchemaRepository: AnonCredSchemaRepository
   private logger: Logger
 
   private indyIssuer: IndyIssuerService
@@ -37,11 +41,15 @@ export class IndyLedgerService {
 
   public constructor(
     wallet: IndyWallet,
+    anonCredCredentialDefinitionRepository: AnonCredCredentialDefinitionRepository,
+    anonCredSchemaRepository: AnonCredSchemaRepository,
     agentConfig: AgentConfig,
     indyIssuer: IndyIssuerService,
     indyPoolService: IndyPoolService
   ) {
     this.wallet = wallet
+    this.anonCredCredentialDefinitionRepository = anonCredCredentialDefinitionRepository
+    this.anonCredSchemaRepository = anonCredSchemaRepository
     this.indy = agentConfig.agentDependencies.indy
     this.logger = agentConfig.logger
     this.indyIssuer = indyIssuer
@@ -130,17 +138,26 @@ export class IndyLedgerService {
     try {
       this.logger.debug(`Register schema on ledger '${pool.id}' with did '${did}'`, schemaTemplate)
       const { name, attributes, version } = schemaTemplate
-      const schema = await this.indyIssuer.createSchema({ originDid: did, name, version, attributes })
+      const schemaId = `${did}:2:${name}:${version}`
 
-      const request = await this.indy.buildSchemaRequest(did, schema)
+      const anonCredSchema = await this.anonCredSchemaRepository.getBySchemaId(schemaId)
 
-      const response = await this.submitWriteRequest(pool, request, did)
-      this.logger.debug(`Registered schema '${schema.id}' on ledger '${pool.id}'`, {
-        response,
-        schema,
-      })
+      let schema
+      if (anonCredSchema) {
+        schema = await this.getSchema(schemaId)
+      } else {
+        schema = await this.indyIssuer.createSchema({ originDid: did, name, version, attributes })
 
-      schema.seqNo = response.result.txnMetadata.seqNo
+        const request = await this.indy.buildSchemaRequest(did, schema)
+
+        const response = await this.submitWriteRequest(pool, request, did)
+        this.logger.debug(`Registered schema '${schema.id}' on ledger '${pool.id}'`, {
+          response,
+          schema,
+        })
+
+        schema.seqNo = response.result.txnMetadata.seqNo
+      }
 
       return schema
     } catch (error) {
@@ -199,22 +216,33 @@ export class IndyLedgerService {
       )
       const { schema, tag, signatureType, supportRevocation } = credentialDefinitionTemplate
 
-      const credentialDefinition = await this.indyIssuer.createCredentialDefinition({
-        issuerDid: did,
-        schema,
-        tag,
-        signatureType,
-        supportRevocation,
-      })
+      const credentialDefinitionId = `${did}:3:CL:${schema.seqNo}:${tag}`
 
-      const request = await this.indy.buildCredDefRequest(did, credentialDefinition)
+      const anonCredentialDefinition = await this.anonCredCredentialDefinitionRepository.getByCredentialDefinitionId(
+        credentialDefinitionId
+      )
 
-      const response = await this.submitWriteRequest(pool, request, did)
+      let credentialDefinition
+      if (anonCredentialDefinition) {
+        credentialDefinition = await this.getCredentialDefinition(credentialDefinitionId)
+      } else {
+        credentialDefinition = await this.indyIssuer.createCredentialDefinition({
+          issuerDid: did,
+          schema,
+          tag,
+          signatureType,
+          supportRevocation,
+        })
 
-      this.logger.debug(`Registered credential definition '${credentialDefinition.id}' on ledger '${pool.id}'`, {
-        response,
-        credentialDefinition: credentialDefinition,
-      })
+        const request = await this.indy.buildCredDefRequest(did, credentialDefinition)
+
+        const response = await this.submitWriteRequest(pool, request, did)
+
+        this.logger.debug(`Registered credential definition '${credentialDefinition.id}' on ledger '${pool.id}'`, {
+          response,
+          credentialDefinition: credentialDefinition,
+        })
+      }
 
       return credentialDefinition
     } catch (error) {
