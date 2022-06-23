@@ -9,8 +9,13 @@ import { JsonTransformer } from '../../../../../utils'
 import { IndyHolderService } from '../../../../indy/services/IndyHolderService'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import { V2CredentialPreview } from '../messages/V2CredentialPreview'
-import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
+import {
+  V2IssueCredentialMessage,
+  V2ProposeCredentialMessage,
+  V2RequestCredentialMessage,
+  V2CredentialPreview,
+  V2OfferCredentialMessage,
+} from '../messages'
 
 const credentialPreview = V2CredentialPreview.fromRecord({
   name: 'John',
@@ -476,8 +481,17 @@ describe('v2 credentials', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    const formatData = await aliceAgent.credentials.getFormatData(aliceCredentialRecord.id)
+    const proposalMessage = await aliceAgent.credentials.findProposalMessage(aliceCredentialRecord.id)
+    const offerMessage = await aliceAgent.credentials.findOfferMessage(aliceCredentialRecord.id)
+    const requestMessage = await aliceAgent.credentials.findRequestMessage(aliceCredentialRecord.id)
+    const credentialMessage = await aliceAgent.credentials.findCredentialMessage(aliceCredentialRecord.id)
 
+    expect(proposalMessage).toBeInstanceOf(V2ProposeCredentialMessage)
+    expect(offerMessage).toBeInstanceOf(V2OfferCredentialMessage)
+    expect(requestMessage).toBeInstanceOf(V2RequestCredentialMessage)
+    expect(credentialMessage).toBeInstanceOf(V2IssueCredentialMessage)
+
+    const formatData = await aliceAgent.credentials.getFormatData(aliceCredentialRecord.id)
     expect(formatData).toMatchObject({
       proposalAttributes: [
         {
