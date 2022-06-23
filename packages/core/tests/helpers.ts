@@ -277,6 +277,7 @@ export function getMockOutOfBand({
   state,
   reusable,
   reuseConnectionId,
+  imageUrl,
 }: {
   label?: string
   serviceEndpoint?: string
@@ -286,9 +287,11 @@ export function getMockOutOfBand({
   state?: OutOfBandState
   reusable?: boolean
   reuseConnectionId?: string
+  imageUrl?: string
 } = {}) {
   const options = {
     label: label ?? 'label',
+    imageUrl: imageUrl ?? undefined,
     accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
     handshakeProtocols: [HandshakeProtocol.DidExchange],
     services: [

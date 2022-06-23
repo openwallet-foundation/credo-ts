@@ -12,6 +12,8 @@ import type {
   NegotiateOfferOptions,
   NegotiateProposalOptions,
 } from '../../CredentialServiceOptions'
+import type { GetFormatDataReturn } from '../../CredentialsModuleOptions'
+import type { CredentialFormat } from '../../formats'
 import type { IndyCredentialFormat } from '../../formats/indy/IndyCredentialFormat'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -87,7 +89,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
    */
   public readonly version = 'v1'
 
-  public getFormatServiceForRecordType(credentialRecordType: IndyCredentialFormat['credentialRecordType']) {
+  public getFormatServiceForRecordType(credentialRecordType: string) {
     if (credentialRecordType !== this.formatService.credentialRecordType) {
       throw new AriesFrameworkError(
         `Unsupported credential record type ${credentialRecordType} for v1 issue credential protocol (need ${this.formatService.credentialRecordType})`
@@ -150,7 +152,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     const message = new V1ProposeCredentialMessage({
       ...indyCredentialProposal,
       id: credentialRecord.threadId,
-      credentialProposal,
+      credentialPreview: credentialProposal,
       comment,
     })
 
@@ -210,7 +212,11 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
 
       await this.formatService.processProposal({
         credentialRecord,
-        attachment: this.rfc0592ProposalAttachmentFromV1ProposeMessage(proposalMessage),
+        attachment: new Attachment({
+          data: new AttachmentData({
+            json: JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage)),
+          }),
+        }),
       })
 
       // Update record
@@ -273,13 +279,17 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     // NOTE: We set the credential attributes from the proposal on the record as we've 'accepted' them
     // and can now use them to create the offer in the format services. It may be overwritten later on
     // if the user provided other attributes in the credentialFormats array.
-    credentialRecord.credentialAttributes = proposalMessage.credentialProposal?.attributes
+    credentialRecord.credentialAttributes = proposalMessage.credentialPreview?.attributes
 
     const { attachment, previewAttributes } = await this.formatService.acceptProposal({
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialFormats,
       credentialRecord,
-      proposalAttachment: this.rfc0592ProposalAttachmentFromV1ProposeMessage(proposalMessage),
+      proposalAttachment: new Attachment({
+        data: new AttachmentData({
+          json: JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage)),
+        }),
+      }),
     })
 
     if (!previewAttributes) {
@@ -629,7 +639,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     // Create message
     const message = new V1ProposeCredentialMessage({
       ...indyCredentialProposal,
-      credentialProposal,
+      credentialPreview: credentialProposal,
       comment,
     })
 
@@ -916,7 +926,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
 
     // Do not auto accept if missing properties
     if (!offerMessage || !offerMessage.credentialPreview) return false
-    if (!proposalMessage.credentialProposal || !proposalMessage.credentialDefinitionId) return false
+    if (!proposalMessage.credentialPreview || !proposalMessage.credentialDefinitionId) return false
 
     const credentialOfferJson = offerMessage.indyCredentialOffer
 
@@ -926,7 +936,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
 
     // Check if preview values match
     return arePreviewAttributesEqual(
-      proposalMessage.credentialProposal.attributes,
+      proposalMessage.credentialPreview.attributes,
       offerMessage.credentialPreview.attributes
     )
   }
@@ -946,7 +956,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
 
     // Do not auto accept if missing properties
     if (!offerMessage.credentialPreview) return false
-    if (!proposalMessage || !proposalMessage.credentialProposal || !proposalMessage.credentialDefinitionId) return false
+    if (!proposalMessage || !proposalMessage.credentialPreview || !proposalMessage.credentialDefinitionId) return false
 
     const credentialOfferJson = offerMessage.indyCredentialOffer
 
@@ -956,7 +966,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
 
     // Check if preview values match
     return arePreviewAttributesEqual(
-      proposalMessage.credentialProposal.attributes,
+      proposalMessage.credentialPreview.attributes,
       offerMessage.credentialPreview.attributes
     )
   }
@@ -1045,6 +1055,49 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     })
   }
 
+  public async getFormatData(credentialExchangeId: string): Promise<GetFormatDataReturn<CredentialFormat[]>> {
+    // TODO: we could looking at fetching all record using a single query and then filtering based on the type of the message.
+    const [proposalMessage, offerMessage, requestMessage, credentialMessage] = await Promise.all([
+      this.findProposalMessage(credentialExchangeId),
+      this.findOfferMessage(credentialExchangeId),
+      this.findRequestMessage(credentialExchangeId),
+      this.findCredentialMessage(credentialExchangeId),
+    ])
+
+    const indyProposal = proposalMessage
+      ? JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage))
+      : undefined
+
+    const indyOffer = offerMessage?.indyCredentialOffer ?? undefined
+    const indyRequest = requestMessage?.indyCredentialRequest ?? undefined
+    const indyCredential = credentialMessage?.indyCredential ?? undefined
+
+    return {
+      proposalAttributes: proposalMessage?.credentialPreview?.attributes,
+      proposal: proposalMessage
+        ? {
+            indy: indyProposal,
+          }
+        : undefined,
+      offerAttributes: offerMessage?.credentialPreview?.attributes,
+      offer: offerMessage
+        ? {
+            indy: indyOffer,
+          }
+        : undefined,
+      request: requestMessage
+        ? {
+            indy: indyRequest,
+          }
+        : undefined,
+      credential: credentialMessage
+        ? {
+            indy: indyCredential,
+          }
+        : undefined,
+    }
+  }
+
   protected registerHandlers() {
     this.dispatcher.registerHandler(new V1ProposeCredentialHandler(this, this.agentConfig))
     this.dispatcher.registerHandler(
@@ -1063,7 +1116,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     this.dispatcher.registerHandler(new V1CredentialProblemReportHandler(this))
   }
 
-  private rfc0592ProposalAttachmentFromV1ProposeMessage(proposalMessage: V1ProposeCredentialMessage) {
+  private rfc0592ProposalFromV1ProposeMessage(proposalMessage: V1ProposeCredentialMessage) {
     const indyCredentialProposal = new IndyCredPropose({
       credentialDefinitionId: proposalMessage.credentialDefinitionId,
       schemaId: proposalMessage.schemaId,
@@ -1073,11 +1126,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
       schemaVersion: proposalMessage.schemaVersion,
     })
 
-    return new Attachment({
-      data: new AttachmentData({
-        json: JsonTransformer.toJSON(indyCredentialProposal),
-      }),
-    })
+    return indyCredentialProposal
   }
 
   private assertOnlyIndyFormat(credentialFormats: Record<string, unknown>) {

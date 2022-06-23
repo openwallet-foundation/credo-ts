@@ -35,4 +35,10 @@ export interface CredentialFormat {
     createRequest: unknown
     acceptRequest: unknown
   }
+  formatData: {
+    proposal: unknown
+    offer: unknown
+    request: unknown
+    credential: unknown
+  }
 }

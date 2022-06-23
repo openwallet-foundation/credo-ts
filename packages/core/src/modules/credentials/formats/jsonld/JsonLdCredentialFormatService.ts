@@ -74,7 +74,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     const jsonLdCredential = new JsonLdCredential(jsonLdFormat)
-    await MessageValidator.validate(jsonLdCredential)
+    await MessageValidator.validateSync(jsonLdCredential)
 
     // FIXME: this doesn't follow RFC0593
 
@@ -99,7 +99,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // FIXME: validating an interface doesn't work.
 
     const messageToValidate = new JsonLdCredential(credProposalJson)
-    await MessageValidator.validate(messageToValidate)
+    await MessageValidator.validateSync(messageToValidate)
   }
 
   public async acceptProposal({
@@ -159,7 +159,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     // FIXME: validating an interface doesn't work.
-    await MessageValidator.validate(credentialOfferJson)
+    await MessageValidator.validateSync(credentialOfferJson)
   }
 
   public async acceptOffer({
@@ -204,7 +204,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     // FIXME: validating an interface doesn't work.
-    await MessageValidator.validate(jsonLdFormat)
+    await MessageValidator.validateSync(jsonLdFormat)
 
     // FIXME: SignCredentialOptions doesn't follow RFC0593
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
@@ -221,7 +221,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     // FIXME: validating an interface doesn't work.
-    await MessageValidator.validate(requestJson)
+    await MessageValidator.validateSync(requestJson)
   }
 
   public async acceptRequest({
@@ -267,7 +267,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   public async processCredential({ credentialRecord, attachment }: FormatProcessOptions): Promise<void> {
     const credentialAsJson = attachment.getDataAsJson<W3cVerifiableCredential>()
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
-    await MessageValidator.validate(credential)
+    await MessageValidator.validateSync(credential)
 
     // FIXME: we should verify the signature of the credential here to make sure we can work
     // with the credential we received.

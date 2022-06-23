@@ -3,7 +3,7 @@
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0023-did-exchange/README.md#errors
  */
-export const enum DidExchangeProblemReportReason {
+export enum DidExchangeProblemReportReason {
   RequestNotAccepted = 'request_not_accepted',
   RequestProcessingError = 'request_processing_error',
   ResponseNotAccepted = 'response_not_accepted',
