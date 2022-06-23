@@ -8,7 +8,7 @@ import { StorageService } from '../../../storage/StorageService'
 import { AnonCredsCredentialDefinitionRecord } from './AnonCredsCredentialDefinitionRecord'
 
 @scoped(Lifecycle.ContainerScoped)
-export class AnonCredCredentialDefinitionRepository extends Repository<AnonCredsCredentialDefinitionRecord> {
+export class AnonCredsCredentialDefinitionRepository extends Repository<AnonCredsCredentialDefinitionRecord> {
   public constructor(
     @inject(InjectionSymbols.StorageService) storageService: StorageService<AnonCredsCredentialDefinitionRecord>,
     eventEmitter: EventEmitter

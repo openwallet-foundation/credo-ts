@@ -4,8 +4,8 @@ import type { LedgerReadReplyResponse, LedgerWriteReplyResponse } from 'indy-sdk
 import { getAgentConfig, mockFunction } from '../../../../tests/helpers'
 import { CacheRepository } from '../../../cache/CacheRepository'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { AnonCredCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
-import { AnonCredSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
+import { AnonCredsCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
+import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyPool } from '../IndyPool'
 import { IndyLedgerService } from '../services/IndyLedgerService'
@@ -16,12 +16,12 @@ const IndyPoolServiceMock = IndyPoolService as jest.Mock<IndyPoolService>
 jest.mock('../../indy/services/IndyIssuerService')
 const IndyIssuerServiceMock = IndyIssuerService as jest.Mock<IndyIssuerService>
 
-jest.mock('../../indy/repository/AnonCredentialDefinitionRepository')
-const AnonCredCredentialDefinitionRepositoryMock =
-  AnonCredCredentialDefinitionRepository as jest.Mock<AnonCredCredentialDefinitionRepository>
+jest.mock('../../indy/repository/AnonCredsCredentialDefinitionRepository')
+const AnonCredsCredentialDefinitionRepositoryMock =
+  AnonCredsCredentialDefinitionRepository as jest.Mock<AnonCredsCredentialDefinitionRepository>
 
 jest.mock('../../indy/repository/AnonCredsSchemaRepository')
-const AnonCredSchemaRepositoryMock = AnonCredSchemaRepository as jest.Mock<AnonCredSchemaRepository>
+const AnonCredsSchemaRepositoryMock = AnonCredsSchemaRepository as jest.Mock<AnonCredsSchemaRepository>
 
 jest.mock('../../../cache/CacheRepository')
 const CacheRepositoryMock = CacheRepository as jest.Mock<CacheRepository>
@@ -44,8 +44,8 @@ describe('IndyLedgerService', () => {
   let cacheRepository: CacheRepository
   let indyIssuerService: IndyIssuerService
   let ledgerService: IndyLedgerService
-  let anonCredCredentialDefinitionRepository: AnonCredCredentialDefinitionRepository
-  let anonCredSchemaRepository: AnonCredSchemaRepository
+  let anonCredsCredentialDefinitionRepository: AnonCredsCredentialDefinitionRepository
+  let anonCredsSchemaRepository: AnonCredsSchemaRepository
 
   beforeAll(async () => {
     wallet = new IndyWallet(config)
@@ -62,8 +62,8 @@ describe('IndyLedgerService', () => {
     mockFunction(cacheRepository.findById).mockResolvedValue(null)
     indyIssuerService = new IndyIssuerServiceMock()
     poolService = new IndyPoolServiceMock()
-    anonCredCredentialDefinitionRepository = new AnonCredCredentialDefinitionRepositoryMock()
-    anonCredSchemaRepository = new AnonCredSchemaRepositoryMock()
+    anonCredsCredentialDefinitionRepository = new AnonCredsCredentialDefinitionRepositoryMock()
+    anonCredsSchemaRepository = new AnonCredsSchemaRepositoryMock()
     const pool = new IndyPool(config, pools[0])
     jest.spyOn(pool, 'submitWriteRequest').mockResolvedValue({} as LedgerWriteReplyResponse)
     jest.spyOn(pool, 'submitReadRequest').mockResolvedValue({} as LedgerReadReplyResponse)
@@ -74,8 +74,8 @@ describe('IndyLedgerService', () => {
 
     ledgerService = new IndyLedgerService(
       wallet,
-      anonCredCredentialDefinitionRepository,
-      anonCredSchemaRepository,
+      anonCredsCredentialDefinitionRepository,
+      anonCredsSchemaRepository,
       config,
       indyIssuerService,
       poolService
@@ -141,8 +141,8 @@ describe('IndyLedgerService', () => {
 
       ledgerService = new IndyLedgerService(
         wallet,
-        anonCredCredentialDefinitionRepository,
-        anonCredSchemaRepository,
+        anonCredsCredentialDefinitionRepository,
+        anonCredsSchemaRepository,
         config,
         indyIssuerService,
         poolService

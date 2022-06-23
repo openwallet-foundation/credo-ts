@@ -10,10 +10,12 @@ import type {
   Schema,
 } from 'indy-sdk'
 
+import { isInstance } from 'class-validator'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error/IndySdkError'
+import { RecordNotFoundError } from '../../../error/RecordNotFoundError'
 import {
   didFromSchemaId,
   didFromCredentialDefinitionId,
@@ -21,8 +23,8 @@ import {
 } from '../../../utils/did'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { AnonCredCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
-import { AnonCredSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
+import { AnonCredsCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
+import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { LedgerError } from '../error/LedgerError'
 
@@ -32,8 +34,8 @@ import { IndyPoolService } from './IndyPoolService'
 export class IndyLedgerService {
   private wallet: IndyWallet
   private indy: typeof Indy
-  private anonCredCredentialDefinitionRepository: AnonCredCredentialDefinitionRepository
-  private anonCredSchemaRepository: AnonCredSchemaRepository
+  private anonCredsCredentialDefinitionRepository: AnonCredsCredentialDefinitionRepository
+  private anonCredsSchemaRepository: AnonCredsSchemaRepository
   private logger: Logger
 
   private indyIssuer: IndyIssuerService
@@ -41,15 +43,15 @@ export class IndyLedgerService {
 
   public constructor(
     wallet: IndyWallet,
-    anonCredCredentialDefinitionRepository: AnonCredCredentialDefinitionRepository,
-    anonCredSchemaRepository: AnonCredSchemaRepository,
+    anonCredsCredentialDefinitionRepository: AnonCredsCredentialDefinitionRepository,
+    anonCredsSchemaRepository: AnonCredsSchemaRepository,
     agentConfig: AgentConfig,
     indyIssuer: IndyIssuerService,
     indyPoolService: IndyPoolService
   ) {
     this.wallet = wallet
-    this.anonCredCredentialDefinitionRepository = anonCredCredentialDefinitionRepository
-    this.anonCredSchemaRepository = anonCredSchemaRepository
+    this.anonCredsCredentialDefinitionRepository = anonCredsCredentialDefinitionRepository
+    this.anonCredsSchemaRepository = anonCredsSchemaRepository
     this.indy = agentConfig.agentDependencies.indy
     this.logger = agentConfig.logger
     this.indyIssuer = indyIssuer
@@ -140,12 +142,15 @@ export class IndyLedgerService {
       const { name, attributes, version } = schemaTemplate
       const schemaId = `${did}:2:${name}:${version}`
 
-      const anonCredSchema = await this.anonCredSchemaRepository.getBySchemaId(schemaId)
-
       let schema
-      if (anonCredSchema) {
+      try {
+        await this.anonCredsSchemaRepository.getBySchemaId(schemaId)
         schema = await this.getSchema(schemaId)
-      } else {
+      } catch (e) {
+        if (!isInstance(e, RecordNotFoundError)) {
+          // We have encountered an error other than the one expected
+          throw e
+        }
         schema = await this.indyIssuer.createSchema({ originDid: did, name, version, attributes })
 
         const request = await this.indy.buildSchemaRequest(did, schema)
@@ -218,14 +223,15 @@ export class IndyLedgerService {
 
       const credentialDefinitionId = `${did}:3:CL:${schema.seqNo}:${tag}`
 
-      const anonCredentialDefinition = await this.anonCredCredentialDefinitionRepository.getByCredentialDefinitionId(
-        credentialDefinitionId
-      )
-
       let credentialDefinition
-      if (anonCredentialDefinition) {
+      try {
+        await this.anonCredsCredentialDefinitionRepository.getByCredentialDefinitionId(credentialDefinitionId)
         credentialDefinition = await this.getCredentialDefinition(credentialDefinitionId)
-      } else {
+      } catch (e) {
+        if (!isInstance(e, RecordNotFoundError)) {
+          // We have encountered an error other than the one expected
+          throw e
+        }
         credentialDefinition = await this.indyIssuer.createCredentialDefinition({
           issuerDid: did,
           schema,
