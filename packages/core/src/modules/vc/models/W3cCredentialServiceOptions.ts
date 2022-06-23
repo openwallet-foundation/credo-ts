@@ -19,6 +19,22 @@ export interface SignCredentialOptions {
   }
 }
 
+// FIXME move this into the jsonld format service
+export interface SignCredentialOptionsRFC0593 {
+  credential: W3cCredential
+  options: {
+    proofPurpose: string
+    created?: string
+    domain?: string
+    challenge?: string
+    credentialStatus?: {
+      type: string
+    }
+    proofType: string
+  }
+  verificationMethod: string
+}
+
 export interface VerifyCredentialOptions {
   credential: W3cVerifiableCredential
   proofPurpose?: ProofPurpose

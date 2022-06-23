@@ -1,5 +1,5 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import type { SignCredentialOptions } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
+import type { SignCredentialOptionsRFC0593 } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { AcceptRequestOptions } from '../../../CredentialsModuleOptions'
 
@@ -30,7 +30,7 @@ const aliceConfig = getBaseConfig('Alice LD connection-less Credentials V2', {
 
 let wallet: IndyWallet
 let credential: W3cCredential
-let signCredentialOptions: SignCredentialOptions
+let signCredentialOptions: SignCredentialOptionsRFC0593
 
 describe('credentials', () => {
   let faberAgent: Agent
@@ -109,7 +109,10 @@ describe('credentials', () => {
 
     signCredentialOptions = {
       credential,
-      proofType: 'Ed25519Signature2018',
+      options: {
+        proofType: 'Ed25519Signature2018',
+        proofPurpose: 'assertionMethod',
+      },
       verificationMethod,
     }
   })

@@ -1,5 +1,5 @@
 import type { Agent } from '../../../../../agent/Agent'
-import type { SignCredentialOptions } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
+import type { SignCredentialOptionsRFC0593 } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
 import type { ConnectionRecord } from '../../../../connections'
 import type { AcceptProposalOptions } from '../../../CredentialsModuleOptions'
 
@@ -25,7 +25,7 @@ let faberCredentialRecord: CredentialExchangeRecord
 let wallet: IndyWallet
 let issuerDidKey: DidKey
 let didCommMessageRepository: DidCommMessageRepository
-let signCredentialOptions: SignCredentialOptions
+let signCredentialOptions: SignCredentialOptionsRFC0593
 let verificationMethod: string
 const seed = 'testseed000000000000000000000001'
 describe('credentials, BBS+ signature', () => {
@@ -58,7 +58,10 @@ describe('credentials, BBS+ signature', () => {
 
     signCredentialOptions = {
       credential,
-      proofType: 'BbsBlsSignature2020',
+      options: {
+        proofType: 'BbsBlsSignature2020',
+        proofPurpose: 'assertionMethod',
+      },
       verificationMethod,
     }
 

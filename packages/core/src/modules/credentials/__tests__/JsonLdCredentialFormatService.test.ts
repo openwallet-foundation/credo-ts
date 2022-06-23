@@ -1,5 +1,5 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { SignCredentialOptions } from '../../vc/models/W3cCredentialServiceOptions'
+import type { SignCredentialOptionsRFC0593 } from '../../vc/models/W3cCredentialServiceOptions'
 import type { CredentialFormatService } from '../formats'
 import type { JsonLdCredentialFormat } from '../formats/jsonld/JsonLdCredentialFormat'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
@@ -12,7 +12,6 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
-import { uuid } from '../../../utils/uuid'
 import { W3cCredentialService } from '../../vc'
 import { Ed25519Signature2018Fixtures } from '../../vc/__tests__/fixtures'
 import { W3cVerifiableCredential } from '../../vc/models'
@@ -24,8 +23,6 @@ import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID } from '../protocol/v1/messages'
 import { V2CredentialPreview } from '../protocol/v2/messages'
 import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
-
-import { credReq } from './fixtures'
 
 jest.mock('../../vc/W3cCredentialService')
 
@@ -51,13 +48,6 @@ const offerAttachment = new Attachment({
   data: new AttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
-  }),
-})
-
-const requestAttachment = new Attachment({
-  mimeType: 'application/json',
-  data: new AttachmentData({
-    base64: JsonEncoder.toBase64(credReq),
   }),
 })
 
@@ -144,12 +134,20 @@ const inputDoc = {
 const verificationMethod = `8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K#8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K`
 const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
 
-const signCredentialOptions: SignCredentialOptions = {
+const signCredentialOptions: SignCredentialOptionsRFC0593 = {
   credential,
-  proofType: 'Ed25519Signature2018',
+  options: {
+    proofPurpose: 'assertionMethod',
+    proofType: 'Ed25519Signature2018',
+  },
   verificationMethod,
 }
-
+const requestAttachment = new Attachment({
+  mimeType: 'application/json',
+  data: new AttachmentData({
+    base64: JsonEncoder.toBase64(signCredentialOptions),
+  }),
+})
 let credentialRepository: CredentialRepository
 let jsonldFormatService: CredentialFormatService<JsonLdCredentialFormat>
 let eventEmitter: EventEmitter
@@ -184,7 +182,7 @@ describe('JsonLd CredentialFormatService', () => {
         byteCount: undefined,
         data: {
           base64:
-            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwicHJvb2ZUeXBlIjoiRWQyNTUxOVNpZ25hdHVyZTIwMTgiLCJ2ZXJpZmljYXRpb25NZXRob2QiOiI4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyM4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyJ9',
+            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwib3B0aW9ucyI6eyJwcm9vZlB1cnBvc2UiOiJhc3NlcnRpb25NZXRob2QiLCJwcm9vZlR5cGUiOiJFZDI1NTE5U2lnbmF0dXJlMjAxOCJ9LCJ2ZXJpZmljYXRpb25NZXRob2QiOiI4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyM4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyJ9',
           json: undefined,
           links: undefined,
           jws: undefined,
@@ -217,7 +215,7 @@ describe('JsonLd CredentialFormatService', () => {
         byteCount: undefined,
         data: {
           base64:
-            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwicHJvb2ZUeXBlIjoiRWQyNTUxOVNpZ25hdHVyZTIwMTgiLCJ2ZXJpZmljYXRpb25NZXRob2QiOiI4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyM4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyJ9',
+            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwib3B0aW9ucyI6eyJwcm9vZlB1cnBvc2UiOiJhc3NlcnRpb25NZXRob2QiLCJwcm9vZlR5cGUiOiJFZDI1NTE5U2lnbmF0dXJlMjAxOCJ9LCJ2ZXJpZmljYXRpb25NZXRob2QiOiI4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyM4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyJ9',
           json: undefined,
           links: undefined,
           jws: undefined,

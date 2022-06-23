@@ -1,6 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
-import type { SignCredentialOptions } from '../../../../vc/models/W3cCredentialServiceOptions'
+import type { SignCredentialOptionsRFC0593 } from '../../../../vc/models/W3cCredentialServiceOptions'
 import type { AcceptRequestOptions } from '../../../CredentialsModuleOptions'
 
 import { Key } from '../../../../../../src/crypto/Key'
@@ -62,7 +62,7 @@ describe('credentials', () => {
 
   const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
 
-  let signCredentialOptions: SignCredentialOptions
+  let signCredentialOptions: SignCredentialOptionsRFC0593
 
   const seed = 'testseed000000000000000000000001'
 
@@ -79,7 +79,10 @@ describe('credentials', () => {
     verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
     signCredentialOptions = {
       credential,
-      proofType: 'Ed25519Signature2018',
+      options: {
+        proofType: 'Ed25519Signature2018',
+        proofPurpose: 'assertionMethod',
+      },
       verificationMethod,
     }
   })

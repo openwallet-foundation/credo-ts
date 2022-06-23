@@ -7,8 +7,8 @@ import type {
   FormatCreateReturn,
   FormatProcessOptions,
 } from '..'
-import type { AttachmentData } from '../../../../decorators/attachment/Attachment'
-import type { SignCredentialOptions } from '../../../vc/models/W3cCredentialServiceOptions'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { SignCredentialOptionsRFC0593 } from '../../../vc/models/W3cCredentialServiceOptions'
 import type {
   FormatAcceptRequestOptions,
   FormatAutoRespondOfferOptions,
@@ -25,11 +25,14 @@ import { AriesFrameworkError } from '../../../../../src/error'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
+import { deepEqual } from '../../../../utils/objEqual'
 import { W3cCredentialService } from '../../../vc'
 import { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
+
+import { JsonLdCredential } from './JsonLdCredentialOptions'
 
 const JSONLD_VC_DETAIL = 'aries/ld-proof-vc-detail@v1.0'
 const JSONLD_VC = 'aries/ld-proof-vc@1.0'
@@ -70,11 +73,14 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createProposal')
     }
 
-    // FIXME: validating an interface doesn't work.
-    await MessageValidator.validate(jsonLdFormat)
+    const jsonLdCredential = new JsonLdCredential(jsonLdFormat)
+    await MessageValidator.validate(jsonLdCredential)
 
     // FIXME: this doesn't follow RFC0593
-    const attachment = this.getFormatData(credentialFormats.jsonld, format.attachId)
+
+    const rfc0593 = credentialFormats.jsonld
+
+    const attachment = this.getFormatData(rfc0593, format.attachId)
     return { format, attachment }
   }
 
@@ -84,14 +90,16 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    */
   public async processProposal({ attachment }: FormatProcessOptions): Promise<void> {
     // FIXME: SignCredentialOptions doesn't follow RFC0593
-    const credProposalJson = attachment.getDataAsJson<SignCredentialOptions>()
+    const credProposalJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
     if (!credProposalJson) {
       throw new AriesFrameworkError('Missing jsonld credential proposal data payload')
     }
 
     // FIXME: validating an interface doesn't work.
-    await MessageValidator.validate(credProposalJson)
+
+    const messageToValidate = new JsonLdCredential(credProposalJson)
+    await MessageValidator.validate(messageToValidate)
   }
 
   public async acceptProposal({
@@ -107,7 +115,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     const jsonLdFormat = credentialFormats?.jsonld
 
-    const credentialProposal = proposalAttachment.getDataAsJson<SignCredentialOptions>()
+    const credentialProposal = proposalAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
     // FIXME: SignCredentialOptions doesn't follow RFC0593
     const offerData = jsonLdFormat ?? credentialProposal
@@ -144,7 +152,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
   public async processOffer({ attachment }: FormatProcessOptions) {
     // FIXME: SignCredentialOptions doesn't follow RFC0593
-    const credentialOfferJson = attachment.getDataAsJson<SignCredentialOptions>()
+    const credentialOfferJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
     if (!credentialOfferJson) {
       throw new AriesFrameworkError('Missing jsonld credential offer data payload')
@@ -163,7 +171,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     // FIXME: SignCredentialOptions doesn't follow RFC0593
     // FIXME: Add validation of the jsonLdFormat data (if present)
-    const credentialOffer = offerAttachment.getDataAsJson<SignCredentialOptions>()
+    const credentialOffer = offerAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
     const requestData = jsonLdFormat ?? credentialOffer
 
     const format = new CredentialFormatSpec({
@@ -206,7 +214,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
   public async processRequest({ attachment }: FormatProcessOptions): Promise<void> {
     // FIXME: SignCredentialOptions doesn't follow RFC0593
-    const requestJson = attachment.getDataAsJson<SignCredentialOptions>()
+    const requestJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
     if (!requestJson) {
       throw new AriesFrameworkError('Missing jsonld credential request data payload')
@@ -225,16 +233,12 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     // sign credential here. credential to be signed is received as the request attachment
     // (attachment in the request message from holder to issuer)
-    const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptions>()
+    const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
     // FIXME: Need to transform from json to class instance
     // FIXME: SignCredentialOptions doesn't follow RFC0593
     // FIXME: Add validation of the jsonLdFormat data (if present)
     const credentialData = jsonLdFormat ?? credentialRequest
-
-    if (credentialData.credentialStatus) {
-      throw new AriesFrameworkError('Credential Status is not currently supported')
-    }
     const format = new CredentialFormatSpec({
       attachId,
       format: JSONLD_VC,
@@ -242,9 +246,12 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     // FIXME: we're not using all properties from the interface. If we're not using them,
     // they shouldn't be in the interface.
+    if (!credentialData.verificationMethod) {
+      throw new AriesFrameworkError('Missing verification method in credential data')
+    }
     const verifiableCredential = await this.w3cCredentialService.signCredential({
       credential: JsonTransformer.fromJSON(credentialData.credential, W3cCredential),
-      proofType: credentialData.proofType,
+      proofType: credentialData.options.proofType,
       verificationMethod: credentialData.verificationMethod,
     })
 
@@ -289,15 +296,15 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   }
 
   public shouldAutoRespondToProposal({ offerAttachment, proposalAttachment }: FormatAutoRespondProposalOptions) {
-    return this.areCredentialsEqual(proposalAttachment.data, offerAttachment.data)
+    return this.areCredentialsEqual(proposalAttachment, offerAttachment)
   }
 
   public shouldAutoRespondToOffer({ offerAttachment, proposalAttachment }: FormatAutoRespondOfferOptions) {
-    return this.areCredentialsEqual(proposalAttachment.data, offerAttachment.data)
+    return this.areCredentialsEqual(proposalAttachment, offerAttachment)
   }
 
   public shouldAutoRespondToRequest({ offerAttachment, requestAttachment }: FormatAutoRespondRequestOptions) {
-    return this.areCredentialsEqual(offerAttachment.data, requestAttachment.data)
+    return this.areCredentialsEqual(offerAttachment, requestAttachment)
   }
 
   public shouldAutoRespondToCredential() {
@@ -307,15 +314,12 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     return true // temporary to get the tests to pass
   }
 
-  private areCredentialsEqual = (message1: AttachmentData, message2: AttachmentData) => {
+  private areCredentialsEqual = (message1: Attachment, message2: Attachment) => {
     // FIXME: this implementation doesn't make sense. We can't loop over stringified objects...
-    const obj1: any = JSON.stringify(message1)
-    const obj2: any = JSON.stringify(message2)
+    const obj1: any = message1.getDataAsJson()
+    const obj2: any = message2.getDataAsJson()
 
-    const keys1 = Object.keys(obj1)
-    const keys2 = Object.keys(obj2)
-
-    // return true when the two json objects have same length and all the properties has same value key by key
-    return keys1.length === keys2.length && Object.keys(obj1).every((key) => obj1[key] == obj2[key])
+    const retVal = deepEqual(obj1, obj2)
+    return retVal
   }
 }
