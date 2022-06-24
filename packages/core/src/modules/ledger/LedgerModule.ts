@@ -6,6 +6,8 @@ import { inject, scoped, Lifecycle } from 'tsyringe'
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { Wallet } from '../../wallet/Wallet'
+import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
+import { AnonCredsSchemaRepository } from '../indy/repository/AnonCredsSchemaRepository'
 
 import { IndyLedgerService } from './services'
 
@@ -13,10 +15,19 @@ import { IndyLedgerService } from './services'
 export class LedgerModule {
   private ledgerService: IndyLedgerService
   private wallet: Wallet
+  private anonCredsCredentialDefinitionRepository: AnonCredsCredentialDefinitionRepository
+  private anonCredsSchemaRepository: AnonCredsSchemaRepository
 
-  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, ledgerService: IndyLedgerService) {
+  public constructor(
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
+    ledgerService: IndyLedgerService,
+    anonCredsCredentialDefinitionRepository: AnonCredsCredentialDefinitionRepository,
+    anonCredsSchemaRepository: AnonCredsSchemaRepository
+  ) {
     this.ledgerService = ledgerService
     this.wallet = wallet
+    this.anonCredsCredentialDefinitionRepository = anonCredsCredentialDefinitionRepository
+    this.anonCredsSchemaRepository = anonCredsSchemaRepository
   }
 
   /**
@@ -47,6 +58,13 @@ export class LedgerModule {
       throw new AriesFrameworkError('Agent has no public DID.')
     }
 
+    const schemaId = `${did}:2:${schema.name}:${schema.version}`
+
+    const anonSchema = await this.anonCredsSchemaRepository.findBySchemaId(schemaId)
+    if (anonSchema) {
+      return await this.getSchema(anonSchema.getTags().schemaId)
+    }
+
     return this.ledgerService.registerSchema(did, schema)
   }
 
@@ -61,6 +79,14 @@ export class LedgerModule {
 
     if (!did) {
       throw new AriesFrameworkError('Agent has no public DID.')
+    }
+
+    const credentialDefinitionId = `${did}:3:CL:${credentialDefinitionTemplate.schema.seqNo}:${credentialDefinitionTemplate.tag}`
+    const anonCredDef = await this.anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId(
+      credentialDefinitionTemplate.schema.id
+    )
+    if (anonCredDef) {
+      return await this.getCredentialDefinition(credentialDefinitionId)
     }
 
     return this.ledgerService.registerCredentialDefinition(did, {

@@ -10,12 +10,10 @@ import type {
   Schema,
 } from 'indy-sdk'
 
-import { isInstance } from 'class-validator'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error/IndySdkError'
-import { RecordNotFoundError } from '../../../error/RecordNotFoundError'
 import {
   didFromSchemaId,
   didFromCredentialDefinitionId,
@@ -23,9 +21,6 @@ import {
 } from '../../../utils/did'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { schema } from '../../credentials/__tests__/fixtures'
-import { AnonCredsCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
-import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { LedgerError } from '../error/LedgerError'
 
@@ -35,8 +30,6 @@ import { IndyPoolService } from './IndyPoolService'
 export class IndyLedgerService {
   private wallet: IndyWallet
   private indy: typeof Indy
-  private anonCredsCredentialDefinitionRepository: AnonCredsCredentialDefinitionRepository
-  private anonCredsSchemaRepository: AnonCredsSchemaRepository
   private logger: Logger
 
   private indyIssuer: IndyIssuerService
@@ -44,15 +37,11 @@ export class IndyLedgerService {
 
   public constructor(
     wallet: IndyWallet,
-    anonCredsCredentialDefinitionRepository: AnonCredsCredentialDefinitionRepository,
-    anonCredsSchemaRepository: AnonCredsSchemaRepository,
     agentConfig: AgentConfig,
     indyIssuer: IndyIssuerService,
     indyPoolService: IndyPoolService
   ) {
     this.wallet = wallet
-    this.anonCredsCredentialDefinitionRepository = anonCredsCredentialDefinitionRepository
-    this.anonCredsSchemaRepository = anonCredsSchemaRepository
     this.indy = agentConfig.agentDependencies.indy
     this.logger = agentConfig.logger
     this.indyIssuer = indyIssuer
@@ -141,12 +130,6 @@ export class IndyLedgerService {
     try {
       this.logger.debug(`Register schema on ledger '${pool.id}' with did '${did}'`, schemaTemplate)
       const { name, attributes, version } = schemaTemplate
-      const schemaId = `${did}:2:${name}:${version}`
-
-      const anonSchema = await this.anonCredsSchemaRepository.findBySchemaId(schemaId)
-      if (anonSchema) {
-        return await this.getSchema(anonSchema.getTags().schemaId)
-      }
 
       const schema = await this.indyIssuer.createSchema({ originDid: did, name, version, attributes })
 
@@ -217,14 +200,6 @@ export class IndyLedgerService {
       )
       const { schema, tag, signatureType, supportRevocation } = credentialDefinitionTemplate
 
-      const credentialDefinitionId = `${did}:3:CL:${schema.seqNo}:${tag}`
-
-      const anonCredDef = await this.anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId(
-        credentialDefinitionId
-      )
-      if (anonCredDef) {
-        return await this.getCredentialDefinition(anonCredDef.getTags().credentialDefinitionId)
-      }
       const credentialDefinition = await this.indyIssuer.createCredentialDefinition({
         issuerDid: did,
         schema,
