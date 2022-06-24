@@ -1,42 +1,41 @@
-import type { TagsBase } from '../../../storage/BaseRecord'
-import type { GenericRecordTags } from '../../generic-records/repository/GenericRecord'
+import type { Schema } from 'indy-sdk'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { didFromSchemaId } from '../../../utils/did'
 
 export interface AnonCredsSchemaRecordProps {
-  schemaId: string
-  schemaIssuerDid?: string
-  schemaName?: string
-  schemaVersion?: string
+  schema: Schema
 }
 
-export class AnonCredsSchemaRecord extends BaseRecord<GenericRecordTags> {
+export type DefaultAnonCredsSchemaTags = {
+  schemaId: string
+  schemaIssuerDid: string
+  schemaName: string
+  schemaVersion: string
+}
+
+export class AnonCredsSchemaRecord extends BaseRecord<DefaultAnonCredsSchemaTags> {
   public content!: Record<string, unknown>
 
   public static readonly type = 'AnonCredsSchemaRecord'
   public readonly type = AnonCredsSchemaRecord.type
-  public readonly schemaId: string | undefined
-  public readonly schemaIssuerDid: string | undefined
-  public readonly schemaName: string | undefined
-  public readonly schemaVersion: string | undefined
+  public readonly schema!: Schema
 
   public constructor(props: AnonCredsSchemaRecordProps) {
     super()
 
     if (props) {
-      this.schemaId = props.schemaId
-      this.schemaIssuerDid = props.schemaIssuerDid
-      this.schemaName = props.schemaName
-      this.schemaVersion = props.schemaVersion
+      this.schema = props.schema
     }
   }
 
-  public getTags(): TagsBase {
+  public getTags() {
     return {
-      schemaId: this.schemaId,
-      schemaIssuerId: this.schemaIssuerDid,
-      schemaName: this.schemaName,
-      schemaVersion: this.schemaVersion,
+      ...this._tags,
+      schemaId: this.schema.id,
+      schemaIssuerDid: didFromSchemaId(this.schema.id),
+      schemaName: this.schema.name,
+      schemaVersion: this.schema.version,
     }
   }
 }

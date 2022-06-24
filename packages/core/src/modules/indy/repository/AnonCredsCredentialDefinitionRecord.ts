@@ -1,42 +1,41 @@
-import type { TagsBase } from '../../../storage/BaseRecord'
-import type { GenericRecordTags } from '../../generic-records/repository/GenericRecord'
+import type { CredDef } from 'indy-sdk'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { didFromCredentialDefinitionId } from '../../../utils/did'
 
 export interface AnonCredsCredentialDefinitionRecordProps {
+  credentialDefinition: CredDef
+}
+
+export type DefaultAnonCredsCredentialDefinitionTags = {
   credentialDefinitionId: string
   issuerDid?: string
   schemaId?: string
   tag?: string
 }
 
-export class AnonCredsCredentialDefinitionRecord extends BaseRecord<GenericRecordTags> {
+export class AnonCredsCredentialDefinitionRecord extends BaseRecord<DefaultAnonCredsCredentialDefinitionTags> {
   public content!: Record<string, unknown>
 
-  public static readonly type = 'AnonCredsSchemaRecord'
+  public static readonly type = 'AnonCredsCredentialDefinitionRecord'
   public readonly type = AnonCredsCredentialDefinitionRecord.type
-  public readonly credentialDefinitionId: string | undefined
-  public readonly issuerDid: string | undefined
-  public readonly schemaId: string | undefined
-  public readonly tag: string | undefined
+  public readonly credentialDefinition!: CredDef
 
   public constructor(props: AnonCredsCredentialDefinitionRecordProps) {
     super()
 
     if (props) {
-      this.credentialDefinitionId = props.credentialDefinitionId
-      this.issuerDid = props.issuerDid
-      this.schemaId = props.schemaId
-      this.tag = props.tag
+      this.credentialDefinition = props.credentialDefinition
     }
   }
 
-  public getTags(): TagsBase {
+  public getTags() {
     return {
-      credentialDefinitionId: this.credentialDefinitionId,
-      issuerDid: this.issuerDid,
-      schemaId: this.schemaId,
-      tag: this.tag,
+      ...this._tags,
+      credentialDefinitionId: this.credentialDefinition.id,
+      issuerDid: didFromCredentialDefinitionId(this.credentialDefinition.id),
+      schemaId: this.credentialDefinition.schemaId,
+      tag: this.credentialDefinition.tag,
     }
   }
 }
