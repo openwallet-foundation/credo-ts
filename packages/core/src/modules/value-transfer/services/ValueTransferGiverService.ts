@@ -287,10 +287,50 @@ export class ValueTransferGiverService {
 
     await this.valueTransferService.updateState(
       record,
-      ValueTransferState.CashRemovalSent,
+      ValueTransferState.CashSignatureSent,
       ValueTransferRecordStatus.Active
     )
     return { record, message: cashRemovedMessage }
+  }
+
+  /**
+   * Remove cash committed for spending from the wallet.
+   * This function must be called once the signature delta was successfully sent.
+   *
+   * @returns void
+   */
+  public async removeCash(record: ValueTransferRecord): Promise<{
+    record: ValueTransferRecord
+  }> {
+    record.assertRole(ValueTransferRole.Giver)
+    record.assertState(ValueTransferState.CashSignatureSent)
+
+    // Call VTP package to remove cash
+    const { error } = await this.giver.removeCash()
+    if (error) {
+      // VTP cash removal failed
+      const problemReportMessage = new ProblemReportMessage({
+        from: record.giver?.did,
+        to: record.witness?.did,
+        pthid: record.threadId,
+        body: {
+          code: error?.code || 'unable-to-remove-cash',
+          comment: `Failed to remove cash from the wallet. Error: ${error}`,
+        },
+      })
+
+      // Update Value Transfer record
+      record.problemReportMessage = problemReportMessage
+      await this.valueTransferService.updateState(record, ValueTransferState.Failed, ValueTransferRecordStatus.Finished)
+      return { record }
+    }
+
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.WaitingReceipt,
+      ValueTransferRecordStatus.Active
+    )
+    return { record }
   }
 
   /**
@@ -312,7 +352,7 @@ export class ValueTransferGiverService {
 
     const record = await this.valueTransferRepository.getByThread(receiptMessage.thid)
 
-    record.assertState(ValueTransferState.CashRemovalSent)
+    record.assertState(ValueTransferState.CashSignatureSent)
     record.assertRole(ValueTransferRole.Giver)
 
     const valueTransferDelta = receiptMessage.valueTransferDelta
