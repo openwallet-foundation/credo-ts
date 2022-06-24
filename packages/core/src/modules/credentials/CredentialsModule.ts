@@ -520,7 +520,7 @@ export class CredentialsModule<
 
   /**
    * Send problem report message for a credential record
-   * @param proofRecordId  The id of the credential record for which to send problem report
+   * @param credentialRecordId The id of the credential record for which to send problem report
    * @param message message to send
    * @returns credential record associated with the credential problem report message
    */
