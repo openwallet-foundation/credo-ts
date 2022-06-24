@@ -2,7 +2,7 @@
   "name": "@aries-framework/react-native",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "files": [
     "build"
   ],
@@ -24,7 +24,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.1.0",
+    "@aries-framework/core": "0.2.0",
     "@azure/core-asynciterator-polyfill": "^1.0.0",
     "events": "^3.3.0"
   },
