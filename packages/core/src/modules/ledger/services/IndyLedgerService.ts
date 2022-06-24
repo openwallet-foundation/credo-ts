@@ -23,6 +23,7 @@ import {
 } from '../../../utils/did'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+import { schema } from '../../credentials/__tests__/fixtures'
 import { AnonCredsCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
@@ -142,27 +143,22 @@ export class IndyLedgerService {
       const { name, attributes, version } = schemaTemplate
       const schemaId = `${did}:2:${name}:${version}`
 
-      let schema
-      try {
-        await this.anonCredsSchemaRepository.getBySchemaId(schemaId)
-        schema = await this.getSchema(schemaId)
-      } catch (e) {
-        if (!isInstance(e, RecordNotFoundError)) {
-          // We have encountered an error other than the one expected
-          throw e
-        }
-        schema = await this.indyIssuer.createSchema({ originDid: did, name, version, attributes })
-
-        const request = await this.indy.buildSchemaRequest(did, schema)
-
-        const response = await this.submitWriteRequest(pool, request, did)
-        this.logger.debug(`Registered schema '${schema.id}' on ledger '${pool.id}'`, {
-          response,
-          schema,
-        })
-
-        schema.seqNo = response.result.txnMetadata.seqNo
+      const anonSchema = await this.anonCredsSchemaRepository.findBySchemaId(schemaId)
+      if (anonSchema) {
+        return await this.getSchema(anonSchema.getTags().schemaId)
       }
+
+      const schema = await this.indyIssuer.createSchema({ originDid: did, name, version, attributes })
+
+      const request = await this.indy.buildSchemaRequest(did, schema)
+
+      const response = await this.submitWriteRequest(pool, request, did)
+      this.logger.debug(`Registered schema '${schema.id}' on ledger '${pool.id}'`, {
+        response,
+        schema,
+      })
+
+      schema.seqNo = response.result.txnMetadata.seqNo
 
       return schema
     } catch (error) {
@@ -223,32 +219,28 @@ export class IndyLedgerService {
 
       const credentialDefinitionId = `${did}:3:CL:${schema.seqNo}:${tag}`
 
-      let credentialDefinition
-      try {
-        await this.anonCredsCredentialDefinitionRepository.getByCredentialDefinitionId(credentialDefinitionId)
-        credentialDefinition = await this.getCredentialDefinition(credentialDefinitionId)
-      } catch (e) {
-        if (!isInstance(e, RecordNotFoundError)) {
-          // We have encountered an error other than the one expected
-          throw e
-        }
-        credentialDefinition = await this.indyIssuer.createCredentialDefinition({
-          issuerDid: did,
-          schema,
-          tag,
-          signatureType,
-          supportRevocation,
-        })
-
-        const request = await this.indy.buildCredDefRequest(did, credentialDefinition)
-
-        const response = await this.submitWriteRequest(pool, request, did)
-
-        this.logger.debug(`Registered credential definition '${credentialDefinition.id}' on ledger '${pool.id}'`, {
-          response,
-          credentialDefinition: credentialDefinition,
-        })
+      const anonCredDef = await this.anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId(
+        credentialDefinitionId
+      )
+      if (anonCredDef) {
+        return await this.getCredentialDefinition(anonCredDef.getTags().credentialDefinitionId)
       }
+      const credentialDefinition = await this.indyIssuer.createCredentialDefinition({
+        issuerDid: did,
+        schema,
+        tag,
+        signatureType,
+        supportRevocation,
+      })
+
+      const request = await this.indy.buildCredDefRequest(did, credentialDefinition)
+
+      const response = await this.submitWriteRequest(pool, request, did)
+
+      this.logger.debug(`Registered credential definition '${credentialDefinition.id}' on ledger '${pool.id}'`, {
+        response,
+        credentialDefinition: credentialDefinition,
+      })
 
       return credentialDefinition
     } catch (error) {
