@@ -67,6 +67,7 @@ export interface CredentialsModule<CFs extends CredentialFormat[], CSs extends C
 
   // Credential
   acceptCredential(options: AcceptCredentialOptions): Promise<CredentialExchangeRecord>
+  sendProblemReport(credentialRecordId: string, message: string): Promise<CredentialExchangeRecord>
 
   // Record Methods
   getAll(): Promise<CredentialExchangeRecord[]>
@@ -515,6 +516,30 @@ export class CredentialsModule<
         `Cannot accept credential without connectionId or ~service decorator on credential message.`
       )
     }
+  }
+
+  /**
+   * Send problem report message for a credential record
+   * @param proofRecordId  The id of the credential record for which to send problem report
+   * @param message message to send
+   * @returns credential record associated with the credential problem report message
+   */
+  public async sendProblemReport(credentialRecordId: string, message: string) {
+    const credentialRecord = await this.getById(credentialRecordId)
+    if (!credentialRecord.connectionId) {
+      throw new AriesFrameworkError(`No connectionId found for credential record '${credentialRecord.id}'.`)
+    }
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
+
+    const service = this.getService(credentialRecord.protocolVersion)
+    const problemReportMessage = service.createProblemReport(message)
+    problemReportMessage.setThread({
+      threadId: credentialRecord.threadId,
+    })
+    const outboundMessage = createOutboundMessage(connection, problemReportMessage)
+    await this.messageSender.sendMessage(outboundMessage)
+
+    return credentialRecord
   }
 
   public async getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFs>> {

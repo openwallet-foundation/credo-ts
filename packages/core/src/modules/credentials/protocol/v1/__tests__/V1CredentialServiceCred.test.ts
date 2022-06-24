@@ -692,6 +692,7 @@ describe('V1CredentialService', () => {
 
   describe('createProblemReport', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
+    const message = 'Indy error'
     let credential: CredentialExchangeRecord
 
     beforeEach(() => {
@@ -702,17 +703,12 @@ describe('V1CredentialService', () => {
       })
     })
 
-    test('returns problem report message base once get error', async () => {
+    test('returns problem report message base once get error', () => {
       // given
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       // when
-      const credentialProblemReportMessage = new V1CredentialProblemReportMessage({
-        description: {
-          en: 'Indy error',
-          code: CredentialProblemReportReason.IssuanceAbandoned,
-        },
-      })
+      const credentialProblemReportMessage = credentialService.createProblemReport(message)
 
       credentialProblemReportMessage.setThread({ threadId })
       // then
@@ -720,7 +716,11 @@ describe('V1CredentialService', () => {
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/problem-report',
         '~thread': {
-          thid: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
+          thid: threadId,
+        },
+        description: {
+          code: CredentialProblemReportReason.IssuanceAbandoned,
+          en: message,
         },
       })
     })

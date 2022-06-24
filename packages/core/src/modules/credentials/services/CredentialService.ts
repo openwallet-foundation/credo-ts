@@ -84,6 +84,9 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
   // methods for ack
   abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
 
+  // methods for problem-report
+  abstract createProblemReport(message: string): ProblemReportMessage
+
   abstract findProposalMessage(credentialExchangeId: string): Promise<AgentMessage | null>
   abstract findOfferMessage(credentialExchangeId: string): Promise<AgentMessage | null>
   abstract findRequestMessage(credentialExchangeId: string): Promise<AgentMessage | null>
