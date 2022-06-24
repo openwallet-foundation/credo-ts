@@ -120,7 +120,7 @@ export class Agent {
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
-    this.credentials = this.container.resolve(CredentialsModule)
+    this.credentials = this.container.resolve(CredentialsModule) as CredentialsModule
     this.proofs = this.container.resolve(ProofsModule)
     this.mediator = this.container.resolve(MediatorModule)
     this.mediationRecipient = this.container.resolve(RecipientModule)
@@ -277,7 +277,7 @@ export class Agent {
   }
 
   private async getMediationConnection(mediatorInvitationUrl: string) {
-    const outOfBandInvitation = await this.oob.parseInvitation(mediatorInvitationUrl)
+    const outOfBandInvitation = this.oob.parseInvitation(mediatorInvitationUrl)
     const outOfBandRecord = await this.oob.findByInvitationId(outOfBandInvitation.id)
     const [connection] = outOfBandRecord ? await this.connections.findAllByOutOfBandId(outOfBandRecord.id) : []
 

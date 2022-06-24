@@ -1,5 +1,4 @@
 import type { DummyRecord } from './repository/DummyRecord'
-import type { ConnectionRecord } from '@aries-framework/core'
 
 import { ConnectionService, Dispatcher, MessageSender } from '@aries-framework/core'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -32,7 +31,8 @@ export class DummyModule {
    * @param connection record of the target responder (must be active)
    * @returns created Dummy Record
    */
-  public async request(connection: ConnectionRecord) {
+  public async request(connectionId: string) {
+    const connection = await this.connectionService.getById(connectionId)
     const { record, message: payload } = await this.dummyService.createRequest(connection)
 
     await this.messageSender.sendMessage({ connection, payload })
@@ -48,11 +48,8 @@ export class DummyModule {
    * @param record Dummy record
    * @returns Updated dummy record
    */
-  public async respond(record: DummyRecord) {
-    if (!record.connectionId) {
-      throw new Error('Connection not found!')
-    }
-
+  public async respond(dummyId: string) {
+    const record = await this.dummyService.getById(dummyId)
     const connection = await this.connectionService.getById(record.connectionId)
 
     const payload = await this.dummyService.createResponse(record)

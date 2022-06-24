@@ -39,13 +39,13 @@ export const fromShortUrl = async (response: Response): Promise<OutOfBandInvitat
       if (invitationJson['@type'].includes('out-of-band')) {
         const invitation = JsonTransformer.fromJSON(invitationJson, OutOfBandInvitation)
 
-        await MessageValidator.validate(invitation)
+        await MessageValidator.validateSync(invitation)
 
         return invitation
       } else {
         const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
-        await MessageValidator.validate(invitation)
+        await MessageValidator.validateSync(invitation)
 
         return convertToNewInvitation(invitation)
       }
@@ -58,7 +58,7 @@ export const fromShortUrl = async (response: Response): Promise<OutOfBandInvitat
         if (typeof encodedInvitation === 'string') invitationJson = JsonEncoder.fromBase64(encodedInvitation)
         const invitation = JsonTransformer.fromJSON(invitationJson, OutOfBandInvitation)
 
-        await MessageValidator.validate(invitation)
+        await MessageValidator.validateSync(invitation)
 
         return invitation
       } else {
@@ -68,7 +68,7 @@ export const fromShortUrl = async (response: Response): Promise<OutOfBandInvitat
           if (typeof encodedInvitation === 'string') invitationJson = JsonEncoder.fromBase64(encodedInvitation)
           const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
-          await MessageValidator.validate(invitation)
+          await MessageValidator.validateSync(invitation)
 
           return convertToNewInvitation(invitation)
         }
@@ -94,7 +94,7 @@ export const parseInvitationUrl = async (
 ): Promise<OutOfBandInvitation> => {
   const parsedUrl = parseUrl(invitationUrl).query
   if (parsedUrl['oob']) {
-    const outOfBandInvitation = await OutOfBandInvitation.fromUrl(invitationUrl)
+    const outOfBandInvitation = OutOfBandInvitation.fromUrl(invitationUrl)
     return outOfBandInvitation
   } else if (parsedUrl['c_i' || parsedUrl['d_m']]) {
     const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)

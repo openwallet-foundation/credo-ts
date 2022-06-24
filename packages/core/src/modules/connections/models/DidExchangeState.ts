@@ -3,7 +3,7 @@
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0023-did-exchange/README.md#state-machine-tables
  */
-export const enum DidExchangeState {
+export enum DidExchangeState {
   Start = 'start',
   InvitationSent = 'invitation-sent',
   InvitationReceived = 'invitation-received',

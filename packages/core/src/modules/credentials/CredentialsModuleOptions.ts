@@ -1,16 +1,38 @@
-import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
-import type { CredentialProtocolVersion } from './CredentialProtocolVersion'
-import type {
-  FormatServiceAcceptProposeCredentialFormats,
-  FormatServiceOfferCredentialFormats,
-  FormatServiceProposeCredentialFormats as FormatServiceProposeCredentialFormats,
-  FormatServiceRequestCredentialFormats,
-} from './formats/models/CredentialFormatServiceOptions'
+import type { GetFormatDataReturn } from './CredentialServiceOptions'
+import type { CredentialFormat, CredentialFormatPayload } from './formats'
+import type { AutoAcceptCredential } from './models/CredentialAutoAcceptType'
+import type { CredentialService } from './services'
 
-// keys used to create a format service
-export enum CredentialFormatType {
-  Indy = 'Indy',
-  // others to follow
+// re-export GetFormatDataReturn type from service, as it is also used in the module
+export type { GetFormatDataReturn }
+
+export type FindProposalMessageReturn<CSs extends CredentialService[]> = ReturnType<CSs[number]['findProposalMessage']>
+export type FindOfferMessageReturn<CSs extends CredentialService[]> = ReturnType<CSs[number]['findOfferMessage']>
+export type FindRequestMessageReturn<CSs extends CredentialService[]> = ReturnType<CSs[number]['findRequestMessage']>
+export type FindCredentialMessageReturn<CSs extends CredentialService[]> = ReturnType<
+  CSs[number]['findCredentialMessage']
+>
+
+/**
+ * Get the supported protocol versions based on the provided credential services.
+ */
+export type ProtocolVersionType<CSs extends CredentialService[]> = CSs[number]['version']
+
+/**
+ * Get the service map for usage in the credentials module. Will return a type mapping of protocol version to service.
+ *
+ * @example
+ * ```
+ * type CredentialServiceMap = ServiceMap<[IndyCredentialFormat], [V1CredentialService]>
+ *
+ * // equal to
+ * type CredentialServiceMap = {
+ *   v1: V1CredentialService
+ * }
+ * ```
+ */
+export type ServiceMap<CFs extends CredentialFormat[], CSs extends CredentialService<CFs>[]> = {
+  [CS in CSs[number] as CS['version']]: CredentialService<CFs>
 }
 
 interface BaseOptions {
@@ -18,57 +40,91 @@ interface BaseOptions {
   comment?: string
 }
 
-// CREDENTIAL PROPOSAL
-interface ProposeCredentialOptions extends BaseOptions {
+/**
+ * Interface for CredentialsModule.proposeCredential. Will send a proposal.
+ */
+export interface ProposeCredentialOptions<
+  CFs extends CredentialFormat[] = CredentialFormat[],
+  CSs extends CredentialService[] = CredentialService[]
+> extends BaseOptions {
   connectionId: string
-  protocolVersion?: CredentialProtocolVersion
-  credentialFormats: FormatServiceProposeCredentialFormats
+  protocolVersion: ProtocolVersionType<CSs>
+  credentialFormats: CredentialFormatPayload<CFs, 'createProposal'>
 }
 
-interface AcceptProposalOptions extends BaseOptions {
+/**
+ * Interface for CredentialsModule.acceptProposal. Will send an offer
+ *
+ * credentialFormats is optional because this is an accept method
+ */
+export interface AcceptProposalOptions<CFs extends CredentialFormat[] = CredentialFormat[]> extends BaseOptions {
   credentialRecordId: string
-  credentialFormats: FormatServiceAcceptProposeCredentialFormats
+  credentialFormats?: CredentialFormatPayload<CFs, 'acceptProposal'>
 }
 
-interface NegotiateProposalOptions extends BaseOptions {
+/**
+ * Interface for CredentialsModule.negotiateProposal. Will send an offer
+ */
+export interface NegotiateProposalOptions<CFs extends CredentialFormat[] = CredentialFormat[]> extends BaseOptions {
   credentialRecordId: string
-  protocolVersion: CredentialProtocolVersion
-  credentialFormats: FormatServiceOfferCredentialFormats
-}
-// CREDENTIAL OFFER
-interface OfferCredentialOptions extends BaseOptions {
-  credentialRecordId?: string
-  connectionId?: string
-  protocolVersion: CredentialProtocolVersion
-  credentialFormats: FormatServiceAcceptProposeCredentialFormats
+  credentialFormats: CredentialFormatPayload<CFs, 'createOffer'>
 }
 
-interface AcceptOfferOptions extends BaseOptions {
+/**
+ * Interface for CredentialsModule.createOffer. Will create an out of band offer
+ */
+export interface CreateOfferOptions<
+  CFs extends CredentialFormat[] = CredentialFormat[],
+  CSs extends CredentialService[] = CredentialService[]
+> extends BaseOptions {
+  protocolVersion: ProtocolVersionType<CSs>
+  credentialFormats: CredentialFormatPayload<CFs, 'createOffer'>
+}
+
+/**
+ * Interface for CredentialsModule.offerCredentials. Extends CreateOfferOptions, will send an offer
+ */
+export interface OfferCredentialOptions<
+  CFs extends CredentialFormat[] = CredentialFormat[],
+  CSs extends CredentialService[] = CredentialService[]
+> extends BaseOptions,
+    CreateOfferOptions<CFs, CSs> {
+  connectionId: string
+}
+
+/**
+ * Interface for CredentialsModule.acceptOffer. Will send a request
+ *
+ * credentialFormats is optional because this is an accept method
+ */
+export interface AcceptOfferOptions<CFs extends CredentialFormat[] = CredentialFormat[]> extends BaseOptions {
   credentialRecordId: string
+  credentialFormats?: CredentialFormatPayload<CFs, 'acceptOffer'>
 }
 
-interface NegotiateOfferOptions extends ProposeCredentialOptions {
+/**
+ * Interface for CredentialsModule.negotiateOffer. Will send a proposal.
+ */
+export interface NegotiateOfferOptions<CFs extends CredentialFormat[] = CredentialFormat[]> extends BaseOptions {
   credentialRecordId: string
+  credentialFormats: CredentialFormatPayload<CFs, 'createProposal'>
 }
 
-// CREDENTIAL REQUEST
-interface RequestCredentialOptions extends BaseOptions {
-  connectionId?: string
-  credentialFormats?: FormatServiceRequestCredentialFormats
-  holderDid?: string
+/**
+ * Interface for CredentialsModule.acceptRequest. Will send a credential
+ *
+ * credentialFormats is optional because this is an accept method
+ */
+export interface AcceptRequestOptions<CFs extends CredentialFormat[] = CredentialFormat[]> extends BaseOptions {
+  credentialRecordId: string
+  credentialFormats?: CredentialFormatPayload<CFs, 'acceptRequest'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
 }
 
-interface AcceptRequestOptions extends BaseOptions {
-  credentialRecordId?: string
-}
-
-export {
-  OfferCredentialOptions,
-  ProposeCredentialOptions,
-  AcceptProposalOptions,
-  NegotiateProposalOptions,
-  NegotiateOfferOptions,
-  AcceptOfferOptions,
-  RequestCredentialOptions,
-  AcceptRequestOptions,
+/**
+ * Interface for CredentialsModule.acceptCredential. Will send an ack message
+ */
+export interface AcceptCredentialOptions {
+  credentialRecordId: string
 }

@@ -9,7 +9,7 @@ import { IsValidMessageType, parseMessageType } from '../../../../../utils/messa
 
 export const INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID = 'libindy-cred-request-0'
 
-interface RequestCredentialMessageOptions {
+export interface V1RequestCredentialMessageOptions {
   id?: string
   comment?: string
   requestAttachments: Attachment[]
@@ -17,13 +17,13 @@ interface RequestCredentialMessageOptions {
 }
 
 export class V1RequestCredentialMessage extends AgentMessage {
-  public constructor(options: RequestCredentialMessageOptions) {
+  public constructor(options: V1RequestCredentialMessageOptions) {
     super()
 
     if (options) {
       this.id = options.id || this.generateId()
       this.comment = options.comment
-      this.messageAttachment = options.requestAttachments
+      this.requestAttachments = options.requestAttachments
       this.appendedAttachments = options.attachments
     }
   }
@@ -43,10 +43,10 @@ export class V1RequestCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public messageAttachment!: Attachment[]
+  public requestAttachments!: Attachment[]
 
   public get indyCredentialRequest(): CredReq | null {
-    const attachment = this.messageAttachment.find(
+    const attachment = this.requestAttachments.find(
       (attachment) => attachment.id === INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID
     )
     // Extract proof request from attachment
@@ -55,7 +55,7 @@ export class V1RequestCredentialMessage extends AgentMessage {
     return credentialReqJson
   }
 
-  public getAttachmentById(id: string): Attachment | undefined {
-    return this.messageAttachment?.find((attachment) => attachment.id === id)
+  public getRequestAttachmentById(id: string): Attachment | undefined {
+    return this.requestAttachments.find((attachment) => attachment.id === id)
   }
 }

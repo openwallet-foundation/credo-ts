@@ -1,4 +1,4 @@
-export const enum DidExchangeRole {
+export enum DidExchangeRole {
   Requester = 'requester',
   Responder = 'responder',
 }

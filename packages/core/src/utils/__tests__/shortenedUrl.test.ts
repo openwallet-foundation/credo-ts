@@ -82,9 +82,9 @@ let connectionInvitationToNew: OutOfBandInvitation
 
 beforeAll(async () => {
   outOfBandInvitationMock = await JsonTransformer.fromJSON(mockOobInvite, OutOfBandInvitation)
-  await MessageValidator.validate(outOfBandInvitationMock)
+  await MessageValidator.validateSync(outOfBandInvitationMock)
   connectionInvitationMock = await JsonTransformer.fromJSON(mockConnectionInvite, ConnectionInvitationMessage)
-  await MessageValidator.validate(connectionInvitationMock)
+  await MessageValidator.validateSync(connectionInvitationMock)
   connectionInvitationToNew = convertToNewInvitation(connectionInvitationMock)
 })
 

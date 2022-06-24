@@ -2,14 +2,14 @@ import type { AgentMessage } from './agent/AgentMessage'
 import type { ResolvedDidCommService } from './agent/MessageSender'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
-import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
+import type { AutoAcceptCredential } from './modules/credentials/models/CredentialAutoAcceptType'
 import type { Key } from './modules/dids/domain/Key'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 
-export const enum KeyDerivationMethod {
+export enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
   Argon2IMod = 'ARGON2I_MOD',
   /** less secure, but faster */

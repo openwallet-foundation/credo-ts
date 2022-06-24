@@ -1,25 +1,121 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
-import type { Attachment } from '../../decorators/attachment/Attachment'
-import type { LinkedAttachment } from '../../utils/LinkedAttachment'
 import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
-import type { AutoAcceptCredential } from './CredentialAutoAcceptType'
-import type {
-  AcceptOfferOptions,
-  AcceptProposalOptions,
-  AcceptRequestOptions,
-  NegotiateOfferOptions,
-  NegotiateProposalOptions,
-  RequestCredentialOptions,
-} from './CredentialsModuleOptions'
-import type { FormatServiceAcceptProposeCredentialFormats } from './formats/models/CredentialFormatServiceOptions'
-import type { CredentialPreviewAttribute } from './models/CredentialPreviewAttribute'
-import type { V1CredentialPreview } from './protocol/v1/V1CredentialPreview'
-import type { ProposeCredentialMessageOptions } from './protocol/v1/messages'
+import type { CredentialFormat, CredentialFormatPayload } from './formats'
+import type { CredentialPreviewAttributeOptions } from './models'
+import type { AutoAcceptCredential } from './models/CredentialAutoAcceptType'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 
-export interface IndyCredentialPreview {
-  credentialDefinitionId?: string
-  attributes?: CredentialPreviewAttribute[]
+/**
+ * Get the format data payload for a specific message from a list of CredentialFormat interfaces and a message
+ *
+ * For an indy offer, this resolves to the cred abstract format as defined here:
+ * https://github.com/hyperledger/aries-rfcs/tree/b3a3942ef052039e73cd23d847f42947f8287da2/features/0592-indy-attachments#cred-abstract-format
+ *
+ * @example
+ * ```
+ *
+ * type OfferFormatData = FormatDataMessagePayload<[IndyCredentialFormat, JsonLdCredentialFormat], 'offer'>
+ *
+ * // equal to
+ * type OfferFormatData = {
+ *  indy: {
+ *   // ... payload for indy offer attachment as defined in RFC 0592 ...
+ *  },
+ *  jsonld: {
+ *   // ... payload for jsonld offer attachment as defined in RFC 0593 ...
+ *  }
+ * }
+ * ```
+ */
+export type FormatDataMessagePayload<
+  CFs extends CredentialFormat[] = CredentialFormat[],
+  M extends keyof CredentialFormat['formatData'] = keyof CredentialFormat['formatData']
+> = {
+  [CredentialFormat in CFs[number] as CredentialFormat['formatKey']]?: CredentialFormat['formatData'][M]
+}
+
+/**
+ * Get format data return value. Each key holds a mapping of credential format key to format data.
+ *
+ * @example
+ * ```
+ * {
+ *   proposal: {
+ *     indy: {
+ *       cred_def_id: string
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export type GetFormatDataReturn<CFs extends CredentialFormat[] = CredentialFormat[]> = {
+  proposalAttributes?: CredentialPreviewAttributeOptions[]
+  proposal?: FormatDataMessagePayload<CFs, 'proposal'>
+  offer?: FormatDataMessagePayload<CFs, 'offer'>
+  offerAttributes?: CredentialPreviewAttributeOptions[]
+  request?: FormatDataMessagePayload<CFs, 'request'>
+  credential?: FormatDataMessagePayload<CFs, 'credential'>
+}
+
+export interface CreateProposalOptions<CFs extends CredentialFormat[]> {
+  connection: ConnectionRecord
+  credentialFormats: CredentialFormatPayload<CFs, 'createProposal'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface AcceptProposalOptions<CFs extends CredentialFormat[]> {
+  credentialRecord: CredentialExchangeRecord
+  credentialFormats?: CredentialFormatPayload<CFs, 'acceptProposal'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface NegotiateProposalOptions<CFs extends CredentialFormat[]> {
+  credentialRecord: CredentialExchangeRecord
+  credentialFormats: CredentialFormatPayload<CFs, 'createOffer'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface CreateOfferOptions<CFs extends CredentialFormat[]> {
+  // Create offer can also be used for connection-less, so connection is optional
+  connection?: ConnectionRecord
+  credentialFormats: CredentialFormatPayload<CFs, 'createOffer'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface AcceptOfferOptions<CFs extends CredentialFormat[]> {
+  credentialRecord: CredentialExchangeRecord
+  credentialFormats?: CredentialFormatPayload<CFs, 'acceptOffer'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface NegotiateOfferOptions<CFs extends CredentialFormat[]> {
+  credentialRecord: CredentialExchangeRecord
+  credentialFormats: CredentialFormatPayload<CFs, 'createProposal'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface CreateRequestOptions<CFs extends CredentialFormat[]> {
+  connection: ConnectionRecord
+  credentialFormats: CredentialFormatPayload<CFs, 'createRequest'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface AcceptRequestOptions<CFs extends CredentialFormat[]> {
+  credentialRecord: CredentialExchangeRecord
+  credentialFormats?: CredentialFormatPayload<CFs, 'acceptRequest'>
+  autoAcceptCredential?: AutoAcceptCredential
+  comment?: string
+}
+
+export interface AcceptCredentialOptions {
+  credentialRecord: CredentialExchangeRecord
 }
 
 export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
@@ -27,65 +123,7 @@ export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessag
   credentialRecord: CredentialExchangeRecord
 }
 
-export interface CredentialOfferTemplate {
-  credentialDefinitionId: string
-  comment?: string
-  preview: V1CredentialPreview
-  autoAcceptCredential?: AutoAcceptCredential
-  attachments?: Attachment[]
-  linkedAttachments?: LinkedAttachment[]
-}
-
-export interface ServiceAcceptOfferOptions extends AcceptOfferOptions {
-  attachId?: string
-  credentialFormats: {
-    indy?: IndyCredentialPreview
-    jsonld?: {
-      // todo
-    }
-  }
-}
-
-export interface ServiceOfferCredentialOptions {
-  autoAcceptCredential?: AutoAcceptCredential
-  comment?: string
-  credentialRecordId?: string
-  connection?: ConnectionRecord
-  attachId?: string
-  credentialFormats: FormatServiceAcceptProposeCredentialFormats
-}
-
-export interface ServiceAcceptProposalOptions extends AcceptProposalOptions {
-  offerAttachment?: Attachment
-  proposalAttachment?: Attachment
-}
-
-export interface ServiceAcceptRequestOptions extends AcceptRequestOptions {
-  attachId?: string
-}
-export interface ServiceNegotiateProposalOptions extends NegotiateProposalOptions {
-  offerAttachment?: Attachment
-}
-
-export interface ServiceNegotiateOfferOptions extends NegotiateOfferOptions {
-  offerAttachment?: Attachment
-}
-
-export interface ServiceRequestCredentialOptions extends RequestCredentialOptions {
-  attachId?: string
-  offerAttachment?: Attachment
-  requestAttachment?: Attachment
-}
-
-export interface ServiceAcceptCredentialOptions {
-  credentialAttachment?: Attachment
-}
-
-export type CredentialProposeOptions = Omit<ProposeCredentialMessageOptions, 'id'> & {
-  linkedAttachments?: LinkedAttachment[]
-  autoAcceptCredential?: AutoAcceptCredential
-}
-
 export interface DeleteCredentialOptions {
   deleteAssociatedCredentials: boolean
+  deleteAssociatedDidCommMessages: boolean
 }
