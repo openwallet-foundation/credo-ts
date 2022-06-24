@@ -1,10 +1,12 @@
+import type { AnonCredsCredentialDefinitionRecord } from '../indy/repository/AnonCredsCredentialDefinitionRecord'
+import type { AnonCredsSchemaRecord } from '../indy/repository/AnonCredsSchemaRecord'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
 import type { NymRole } from 'indy-sdk'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { InjectionSymbols } from '../../constants'
-import { AriesFrameworkError } from '../../error'
+import { AriesFrameworkError, RecordNotFoundError } from '../../error'
 import { Wallet } from '../../wallet/Wallet'
 import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRepository } from '../indy/repository/AnonCredsSchemaRepository'
@@ -51,6 +53,15 @@ export class LedgerModule {
     return this.ledgerService.getPublicDid(did)
   }
 
+  public async findBySchemaId(schemaId: string): Promise<AnonCredsSchemaRecord | null> {
+    try {
+      return await this.anonCredsSchemaRepository.getBySchemaId(schemaId)
+    } catch (e) {
+      if (e instanceof RecordNotFoundError) return null
+
+      throw e
+    }
+  }
   public async registerSchema(schema: SchemaTemplate) {
     const did = this.wallet.publicDid?.did
 
@@ -60,7 +71,7 @@ export class LedgerModule {
 
     const schemaId = `${did}:2:${schema.name}:${schema.version}`
 
-    const anonSchema = await this.anonCredsSchemaRepository.findBySchemaId(schemaId)
+    const anonSchema = await this.findBySchemaId(schemaId)
     if (anonSchema) {
       return await this.getSchema(anonSchema.getTags().schemaId)
     }
@@ -70,6 +81,18 @@ export class LedgerModule {
 
   public async getSchema(id: string) {
     return this.ledgerService.getSchema(id)
+  }
+
+  public async findByCredentialDefinitionId(
+    credentialDefinitionId: string
+  ): Promise<AnonCredsCredentialDefinitionRecord | null> {
+    try {
+      return await this.anonCredsCredentialDefinitionRepository.getByCredentialDefinitionId(credentialDefinitionId)
+    } catch (e) {
+      if (e instanceof RecordNotFoundError) return null
+
+      throw e
+    }
   }
 
   public async registerCredentialDefinition(
@@ -82,9 +105,7 @@ export class LedgerModule {
     }
 
     const credentialDefinitionId = `${did}:3:CL:${credentialDefinitionTemplate.schema.seqNo}:${credentialDefinitionTemplate.tag}`
-    const anonCredDef = await this.anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId(
-      credentialDefinitionTemplate.schema.id
-    )
+    const anonCredDef = await this.findByCredentialDefinitionId(credentialDefinitionTemplate.schema.id)
     if (anonCredDef) {
       return await this.getCredentialDefinition(credentialDefinitionId)
     }
