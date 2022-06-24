@@ -8,7 +8,6 @@ import { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
 export interface JsonLdCredentialOptions {
   credential: W3cCredential
   options: JsonLdOptionsRFC0593
-  verificationMethod: string
 }
 
 /**
@@ -20,9 +19,6 @@ export class JsonLdCredential {
     if (options) {
       this.credential = options.credential
       this.options = options.options
-      if (options.verificationMethod) {
-        this.verificationMethod = options.verificationMethod
-      }
     }
   }
 
