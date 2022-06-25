@@ -1,4 +1,4 @@
-import type { Agent } from '../../../../agent/Agent'
+import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { ConnectionRecord } from '../../../../modules/connections'
 import type { JsonObject } from '../../../../types'
 
@@ -31,7 +31,7 @@ import { JsonEncoder, JsonTransformer } from '../../../../utils'
  *  - {@link extractDidDocument}
  *  - {@link migrateToOobRecord}
  */
-export async function migrateConnectionRecordToV0_2(agent: Agent) {
+export async function migrateConnectionRecordToV0_2<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating connection records to storage version 0.2')
   const connectionRepository = agent.dependencyManager.resolve(ConnectionRepository)
 
@@ -87,7 +87,10 @@ export async function migrateConnectionRecordToV0_2(agent: Agent) {
  * }
  * ```
  */
-export async function updateConnectionRoleAndState(agent: Agent, connectionRecord: ConnectionRecord) {
+export async function updateConnectionRoleAndState<Agent extends BaseAgent>(
+  agent: Agent,
+  connectionRecord: ConnectionRecord
+) {
   agent.config.logger.debug(
     `Extracting 'didDoc' and 'theirDidDoc' from connection record into separate DidRecord and updating unqualified dids to did:peer dids`
   )
@@ -140,7 +143,7 @@ export async function updateConnectionRoleAndState(agent: Agent, connectionRecor
  * }
  * ```
  */
-export async function extractDidDocument(agent: Agent, connectionRecord: ConnectionRecord) {
+export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, connectionRecord: ConnectionRecord) {
   agent.config.logger.debug(
     `Extracting 'didDoc' and 'theirDidDoc' from connection record into separate DidRecord and updating unqualified dids to did:peer dids`
   )
@@ -286,7 +289,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
  * }
  * ```
  */
-export async function migrateToOobRecord(
+export async function migrateToOobRecord<Agent extends BaseAgent>(
   agent: Agent,
   connectionRecord: ConnectionRecord
 ): Promise<ConnectionRecord | undefined> {
