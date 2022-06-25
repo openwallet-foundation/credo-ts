@@ -1,5 +1,4 @@
 import type { BlsKeyPair } from '../crypto/BbsService'
-import type { Logger } from '../logger'
 import type {
   EncryptedMessage,
   KeyDerivationMethod,
@@ -19,12 +18,14 @@ import type {
 } from './Wallet'
 import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
 
-import { AgentConfig } from '../agent/AgentConfig'
+import { AgentDependencies } from '../agent/AgentDependencies'
+import { InjectionSymbols } from '../constants'
 import { BbsService } from '../crypto/BbsService'
 import { Key } from '../crypto/Key'
 import { KeyType } from '../crypto/KeyType'
 import { AriesFrameworkError, IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
-import { injectable } from '../plugins'
+import { Logger } from '../logger'
+import { inject, injectable } from '../plugins'
 import { JsonEncoder, TypedArrayEncoder } from '../utils'
 import { isError } from '../utils/error'
 import { isIndyError } from '../utils/indyError'
@@ -41,9 +42,12 @@ export class IndyWallet implements Wallet {
   private publicDidInfo: DidInfo | undefined
   private indy: typeof Indy
 
-  public constructor(agentConfig: AgentConfig) {
-    this.logger = agentConfig.logger
-    this.indy = agentConfig.agentDependencies.indy
+  public constructor(
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
+    @inject(InjectionSymbols.Logger) logger: Logger
+  ) {
+    this.logger = logger
+    this.indy = agentDependencies.indy
   }
 
   public get isProvisioned() {

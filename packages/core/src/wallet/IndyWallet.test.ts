@@ -1,33 +1,41 @@
+import type { WalletConfig } from '../types'
+
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 import { SIGNATURE_LENGTH as ED25519_SIGNATURE_LENGTH } from '@stablelib/ed25519'
 
-import { getBaseConfig } from '../../tests/helpers'
-import { Agent } from '../agent/Agent'
+import { agentDependencies } from '../../tests/helpers'
+import testLogger from '../../tests/logger'
 import { KeyType } from '../crypto'
+import { KeyDerivationMethod } from '../types'
 import { TypedArrayEncoder } from '../utils'
 
 import { IndyWallet } from './IndyWallet'
 import { WalletError } from './error'
 
+// use raw key derivation method to speed up wallet creating / opening / closing between tests
+const walletConfig: WalletConfig = {
+  id: 'Wallet: IndyWalletTest',
+  // generated using indy.generateWalletKey
+  key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
+  keyDerivationMethod: KeyDerivationMethod.Raw,
+}
+
 describe('IndyWallet', () => {
   let indyWallet: IndyWallet
-  let agent: Agent
   const seed = 'sample-seed'
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    const { config, agentDependencies } = getBaseConfig('IndyWallettest')
-    agent = new Agent(config, agentDependencies)
-    indyWallet = agent.injectionContainer.resolve(IndyWallet)
-    await agent.initialize()
+    indyWallet = new IndyWallet(agentDependencies, testLogger)
+    await indyWallet.createAndOpen(walletConfig)
   })
 
   afterEach(async () => {
-    await agent.shutdown()
-    await agent.wallet.delete()
+    await indyWallet.delete()
   })
 
-  test('Get the public DID', () => {
+  test('Get the public DID', async () => {
+    await indyWallet.initPublicDid({ seed: '000000000000000000000000Trustee9' })
     expect(indyWallet.publicDid).toMatchObject({
       did: expect.any(String),
       verkey: expect.any(String),
@@ -35,7 +43,7 @@ describe('IndyWallet', () => {
   })
 
   test('Get the Master Secret', () => {
-    expect(indyWallet.masterSecretId).toEqual('Wallet: IndyWallettest')
+    expect(indyWallet.masterSecretId).toEqual('Wallet: IndyWalletTest')
   })
 
   test('Get the wallet handle', () => {

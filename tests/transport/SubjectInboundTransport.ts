@@ -3,7 +3,6 @@ import type { TransportSession } from '../../packages/core/src/agent/TransportSe
 import type { EncryptedMessage } from '../../packages/core/src/types'
 import type { Subject, Subscription } from 'rxjs'
 
-import { AgentConfig } from '../../packages/core/src/agent/AgentConfig'
 import { TransportService } from '../../packages/core/src/agent/TransportService'
 import { uuid } from '../../packages/core/src/utils/uuid'
 
@@ -26,7 +25,7 @@ export class SubjectInboundTransport implements InboundTransport {
   }
 
   private subscribe(agent: Agent) {
-    const logger = agent.dependencyManager.resolve(AgentConfig).logger
+    const logger = agent.config.logger
     const transportService = agent.dependencyManager.resolve(TransportService)
 
     this.subscription = this.ourSubject.subscribe({

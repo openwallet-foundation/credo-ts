@@ -1,6 +1,7 @@
 import type { DependencyManager } from '../../plugins'
 import type { ValidResponse } from './models'
 
+import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
@@ -17,16 +18,19 @@ export class QuestionAnswerModule {
   private questionAnswerService: QuestionAnswerService
   private messageSender: MessageSender
   private connectionService: ConnectionService
+  private agentContext: AgentContext
 
   public constructor(
     dispatcher: Dispatcher,
     questionAnswerService: QuestionAnswerService,
     messageSender: MessageSender,
-    connectionService: ConnectionService
+    connectionService: ConnectionService,
+    agentContext: AgentContext
   ) {
     this.questionAnswerService = questionAnswerService
     this.messageSender = messageSender
     this.connectionService = connectionService
+    this.agentContext = agentContext
     this.registerHandlers(dispatcher)
   }
 
@@ -46,16 +50,20 @@ export class QuestionAnswerModule {
       detail?: string
     }
   ) {
-    const connection = await this.connectionService.getById(connectionId)
+    const connection = await this.connectionService.getById(this.agentContext, connectionId)
     connection.assertReady()
 
-    const { questionMessage, questionAnswerRecord } = await this.questionAnswerService.createQuestion(connectionId, {
-      question: config.question,
-      validResponses: config.validResponses,
-      detail: config?.detail,
-    })
+    const { questionMessage, questionAnswerRecord } = await this.questionAnswerService.createQuestion(
+      this.agentContext,
+      connectionId,
+      {
+        question: config.question,
+        validResponses: config.validResponses,
+        detail: config?.detail,
+      }
+    )
     const outboundMessage = createOutboundMessage(connection, questionMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return questionAnswerRecord
   }
@@ -68,17 +76,18 @@ export class QuestionAnswerModule {
    * @returns QuestionAnswer record
    */
   public async sendAnswer(questionRecordId: string, response: string) {
-    const questionRecord = await this.questionAnswerService.getById(questionRecordId)
+    const questionRecord = await this.questionAnswerService.getById(this.agentContext, questionRecordId)
 
     const { answerMessage, questionAnswerRecord } = await this.questionAnswerService.createAnswer(
+      this.agentContext,
       questionRecord,
       response
     )
 
-    const connection = await this.connectionService.getById(questionRecord.connectionId)
+    const connection = await this.connectionService.getById(this.agentContext, questionRecord.connectionId)
 
     const outboundMessage = createOutboundMessage(connection, answerMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return questionAnswerRecord
   }
@@ -89,7 +98,7 @@ export class QuestionAnswerModule {
    * @returns list containing all QuestionAnswer records
    */
   public getAll() {
-    return this.questionAnswerService.getAll()
+    return this.questionAnswerService.getAll(this.agentContext)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

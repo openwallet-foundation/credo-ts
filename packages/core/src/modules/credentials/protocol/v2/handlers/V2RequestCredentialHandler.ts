@@ -1,6 +1,6 @@
-import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../../../logger/Logger'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialService } from '../V2CredentialService'
@@ -12,24 +12,25 @@ import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessa
 
 export class V2RequestCredentialHandler implements Handler {
   private credentialService: V2CredentialService
-  private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
+  private logger: Logger
+
   public supportedMessages = [V2RequestCredentialMessage]
 
   public constructor(
     credentialService: V2CredentialService,
-    agentConfig: AgentConfig,
-    didCommMessageRepository: DidCommMessageRepository
+    didCommMessageRepository: DidCommMessageRepository,
+    logger: Logger
   ) {
     this.credentialService = credentialService
-    this.agentConfig = agentConfig
     this.didCommMessageRepository = didCommMessageRepository
+    this.logger = logger
   }
 
   public async handle(messageContext: InboundMessageContext<V2RequestCredentialMessage>) {
     const credentialRecord = await this.credentialService.processRequest(messageContext)
 
-    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToRequest({
+    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToRequest(messageContext.agentContext, {
       credentialRecord,
       requestMessage: messageContext.message,
     })
@@ -43,16 +44,16 @@ export class V2RequestCredentialHandler implements Handler {
     credentialRecord: CredentialExchangeRecord,
     messageContext: InboundMessageContext<V2RequestCredentialMessage>
   ) {
-    this.agentConfig.logger.info(
-      `Automatically sending credential with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
+    this.logger.info(
+      `Automatically sending credential with autoAccept on ${messageContext.agentContext.config.autoAcceptCredentials}`
     )
 
-    const offerMessage = await this.didCommMessageRepository.findAgentMessage({
+    const offerMessage = await this.didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V2OfferCredentialMessage,
     })
 
-    const { message } = await this.credentialService.acceptRequest({
+    const { message } = await this.credentialService.acceptRequest(messageContext.agentContext, {
       credentialRecord,
     })
 
@@ -64,7 +65,7 @@ export class V2RequestCredentialHandler implements Handler {
 
       // Set ~service, update message in record (for later use)
       message.setService(ourService)
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: message,
         associatedRecordId: credentialRecord.id,
         role: DidCommMessageRole.Sender,
@@ -77,6 +78,6 @@ export class V2RequestCredentialHandler implements Handler {
       })
     }
 
-    this.agentConfig.logger.error(`Could not automatically create credential request`)
+    this.logger.error(`Could not automatically create credential request`)
   }
 }

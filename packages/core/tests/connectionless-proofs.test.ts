@@ -5,6 +5,7 @@ import { Subject, ReplaySubject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { InjectionSymbols } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { HandshakeProtocol } from '../src/modules/connections'
@@ -345,8 +346,10 @@ describe('Present Proof', () => {
     // We want to stop the mediator polling before the agent is shutdown.
     // FIXME: add a way to stop mediator polling from the public api, and make sure this is
     // being handled in the agent shutdown so we don't get any errors with wallets being closed.
-    faberAgent.config.stop$.next(true)
-    aliceAgent.config.stop$.next(true)
+    const faberStop$ = faberAgent.injectionContainer.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
+    const aliceStop$ = aliceAgent.injectionContainer.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
+    faberStop$.next(true)
+    aliceStop$.next(true)
     await sleep(2000)
   })
 })

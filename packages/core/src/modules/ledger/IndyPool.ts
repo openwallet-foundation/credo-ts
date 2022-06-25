@@ -1,7 +1,8 @@
-import type { AgentConfig } from '../../agent/AgentConfig'
+import type { AgentDependencies } from '../../agent/AgentDependencies'
 import type { Logger } from '../../logger'
 import type { FileSystem } from '../../storage/FileSystem'
 import type * as Indy from 'indy-sdk'
+import type { Subject } from 'rxjs'
 
 import { AriesFrameworkError, IndySdkError } from '../../error'
 import { isIndyError } from '../../utils/indyError'
@@ -31,14 +32,20 @@ export class IndyPool {
   private poolConnected?: Promise<number>
   public authorAgreement?: AuthorAgreement | null
 
-  public constructor(agentConfig: AgentConfig, poolConfig: IndyPoolConfig) {
-    this.indy = agentConfig.agentDependencies.indy
+  public constructor(
+    poolConfig: IndyPoolConfig,
+    agentDependencies: AgentDependencies,
+    logger: Logger,
+    stop$: Subject<boolean>,
+    fileSystem: FileSystem
+  ) {
+    this.indy = agentDependencies.indy
+    this.fileSystem = fileSystem
     this.poolConfig = poolConfig
-    this.fileSystem = agentConfig.fileSystem
-    this.logger = agentConfig.logger
+    this.logger = logger
 
     // Listen to stop$ (shutdown) and close pool
-    agentConfig.stop$.subscribe(async () => {
+    stop$.subscribe(async () => {
       if (this._poolHandle) {
         await this.close()
       }

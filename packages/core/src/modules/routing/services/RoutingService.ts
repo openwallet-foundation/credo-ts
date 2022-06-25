@@ -1,12 +1,10 @@
+import type { AgentContext } from '../../../agent'
 import type { Routing } from '../../connections'
 import type { RoutingCreatedEvent } from '../RoutingEvents'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { InjectionSymbols } from '../../../constants'
 import { Key, KeyType } from '../../../crypto'
-import { inject, injectable } from '../../../plugins'
-import { Wallet } from '../../../wallet'
+import { injectable } from '../../../plugins'
 import { RoutingEventTypes } from '../RoutingEvents'
 
 import { MediationRecipientService } from './MediationRecipientService'
@@ -14,42 +12,38 @@ import { MediationRecipientService } from './MediationRecipientService'
 @injectable()
 export class RoutingService {
   private mediationRecipientService: MediationRecipientService
-  private agentConfig: AgentConfig
-  private wallet: Wallet
+
   private eventEmitter: EventEmitter
 
-  public constructor(
-    mediationRecipientService: MediationRecipientService,
-    agentConfig: AgentConfig,
-    @inject(InjectionSymbols.Wallet) wallet: Wallet,
-    eventEmitter: EventEmitter
-  ) {
+  public constructor(mediationRecipientService: MediationRecipientService, eventEmitter: EventEmitter) {
     this.mediationRecipientService = mediationRecipientService
-    this.agentConfig = agentConfig
-    this.wallet = wallet
+
     this.eventEmitter = eventEmitter
   }
 
-  public async getRouting({ mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}): Promise<Routing> {
+  public async getRouting(
+    agentContext: AgentContext,
+    { mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}
+  ): Promise<Routing> {
     // Create and store new key
-    const { verkey: publicKeyBase58 } = await this.wallet.createDid()
+    const { verkey: publicKeyBase58 } = await agentContext.wallet.createDid()
 
     const recipientKey = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
 
     let routing: Routing = {
-      endpoints: this.agentConfig.endpoints,
+      endpoints: agentContext.config.endpoints,
       routingKeys: [],
       recipientKey,
     }
 
     // Extend routing with mediator keys (if applicable)
-    routing = await this.mediationRecipientService.addMediationRouting(routing, {
+    routing = await this.mediationRecipientService.addMediationRouting(agentContext, routing, {
       mediatorId,
       useDefaultMediator,
     })
 
     // Emit event so other parts of the framework can react on keys created
-    this.eventEmitter.emit<RoutingCreatedEvent>({
+    this.eventEmitter.emit<RoutingCreatedEvent>(agentContext, {
       type: RoutingEventTypes.RoutingCreatedEvent,
       payload: {
         routing,
