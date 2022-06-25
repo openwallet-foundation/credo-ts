@@ -1,7 +1,7 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { Key } from '../../modules/dids'
-import type { AgentContext } from '../AgentContext'
 import type { AgentMessage } from '../AgentMessage'
+import type { AgentContext } from '../context'
 
 import { AriesFrameworkError } from '../../error'
 

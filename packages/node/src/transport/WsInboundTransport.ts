@@ -1,6 +1,6 @@
 import type { Agent, InboundTransport, Logger, TransportSession, EncryptedMessage } from '@aries-framework/core'
 
-import { AriesFrameworkError, TransportService, utils } from '@aries-framework/core'
+import { AriesFrameworkError, TransportService, utils, MessageReceiver } from '@aries-framework/core'
 import WebSocket, { Server } from 'ws'
 
 export class WsInboundTransport implements InboundTransport {
@@ -58,11 +58,13 @@ export class WsInboundTransport implements InboundTransport {
   }
 
   private listenOnWebSocketMessages(agent: Agent, socket: WebSocket, session: TransportSession) {
+    const messageReceiver = agent.injectionContainer.resolve(MessageReceiver)
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socket.addEventListener('message', async (event: any) => {
       this.logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
       try {
-        await agent.receiveMessage(JSON.parse(event.data), session)
+        await messageReceiver.receiveMessage(JSON.parse(event.data), { session })
       } catch (error) {
         this.logger.error('Error processing message')
       }

@@ -16,6 +16,7 @@ export interface AgentMessageReceivedEvent extends BaseEvent {
   payload: {
     message: unknown
     connection?: ConnectionRecord
+    contextCorrelationId?: string
   }
 }
 

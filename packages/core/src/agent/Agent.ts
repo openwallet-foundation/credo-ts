@@ -41,7 +41,6 @@ import { WalletModule } from '../wallet/WalletModule'
 import { WalletError } from '../wallet/error'
 
 import { AgentConfig } from './AgentConfig'
-import { AgentContext } from './AgentContext'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
 import { EventEmitter } from './EventEmitter'
@@ -49,6 +48,7 @@ import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
+import { AgentContext, DefaultAgentContextProvider } from './context'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -137,8 +137,9 @@ export class Agent {
       .pipe(
         takeUntil(this.stop$),
         concatMap((e) =>
-          this.messageReceiver.receiveMessage(this.agentContext, e.payload.message, {
+          this.messageReceiver.receiveMessage(e.payload.message, {
             connection: e.payload.connection,
+            contextCorrelationId: e.payload.contextCorrelationId,
           })
         )
       )
@@ -268,8 +269,18 @@ export class Agent {
     return this.agentContext.wallet.publicDid
   }
 
+  /**
+   * Receive a message. This should mainly be used for receiving connection-less messages.
+   *
+   * If you want to receive messages that originated from e.g. a transport make sure to use the {@link MessageReceiver}
+   * for this. The `receiveMessage` method on the `Agent` class will associate the current context to the message, which
+   * may not be what should happen (e.g. in case of multi tenancy).
+   */
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
-    return await this.messageReceiver.receiveMessage(this.agentContext, inboundMessage, { session })
+    return await this.messageReceiver.receiveMessage(inboundMessage, {
+      session,
+      contextCorrelationId: this.agentContext.contextCorrelationId,
+    })
   }
 
   public get injectionContainer() {
@@ -366,6 +377,16 @@ export class Agent {
       IndyModule
     )
 
-    dependencyManager.registerInstance(AgentContext, new AgentContext({ dependencyManager }))
+    // TODO: contextCorrelationId for base wallet
+    // Bind the default agent context to the container for use in modules etc.
+    dependencyManager.registerInstance(
+      AgentContext,
+      new AgentContext({ dependencyManager, contextCorrelationId: 'default' })
+    )
+
+    // If no agent context provider has been registered we use the default agent context provider.
+    if (!this.dependencyManager.isRegistered(InjectionSymbols.AgentContextProvider)) {
+      this.dependencyManager.registerSingleton(InjectionSymbols.AgentContextProvider, DefaultAgentContextProvider)
+    }
   }
 }

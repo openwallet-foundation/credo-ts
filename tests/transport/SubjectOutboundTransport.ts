@@ -3,7 +3,7 @@ import type { OutboundPackage, OutboundTransport, Agent, Logger } from '@aries-f
 
 import { takeUntil, Subject, take } from 'rxjs'
 
-import { InjectionSymbols, AriesFrameworkError } from '@aries-framework/core'
+import { MessageReceiver, InjectionSymbols, AriesFrameworkError } from '@aries-framework/core'
 
 export class SubjectOutboundTransport implements OutboundTransport {
   private logger!: Logger
@@ -29,6 +29,7 @@ export class SubjectOutboundTransport implements OutboundTransport {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
+    const messageReceiver = this.agent.injectionContainer.resolve(MessageReceiver)
     this.logger.debug(`Sending outbound message to endpoint ${outboundPackage.endpoint}`, {
       endpoint: outboundPackage.endpoint,
     })
@@ -53,7 +54,7 @@ export class SubjectOutboundTransport implements OutboundTransport {
       next: async ({ message }: SubjectMessage) => {
         this.logger.test('Received message')
 
-        await this.agent.receiveMessage(message)
+        await messageReceiver.receiveMessage(message)
       },
     })
 

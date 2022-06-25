@@ -1,5 +1,5 @@
-import type { AgentContext } from './AgentContext'
 import type { BaseEvent } from './Events'
+import type { AgentContext } from './context'
 import type { EventEmitter as NativeEventEmitter } from 'events'
 
 import { fromEventPattern, Subject } from 'rxjs'
