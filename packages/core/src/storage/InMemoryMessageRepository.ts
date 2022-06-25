@@ -2,11 +2,10 @@ import type { Logger } from '../logger'
 import type { EncryptedMessage } from '../types'
 import type { MessageRepository } from './MessageRepository'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../agent/AgentConfig'
+import { injectable } from '../plugins'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class InMemoryMessageRepository implements MessageRepository {
   private logger: Logger
   private messages: { [key: string]: EncryptedMessage[] } = {}

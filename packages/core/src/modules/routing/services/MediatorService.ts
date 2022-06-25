@@ -3,12 +3,11 @@ import type { EncryptedMessage } from '../../../types'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
 import type { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage } from '../messages'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
+import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { Wallet } from '../../../wallet/Wallet'
 import { RoutingEventTypes } from '../RoutingEvents'
@@ -26,7 +25,7 @@ import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
 import { MediatorRoutingRepository } from '../repository/MediatorRoutingRepository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MediatorService {
   private agentConfig: AgentConfig
   private mediationRepository: MediationRepository

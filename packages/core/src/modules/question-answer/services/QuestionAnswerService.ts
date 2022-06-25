@@ -4,18 +4,17 @@ import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import type { ValidResponse } from '../models'
 import type { QuestionAnswerTags } from '../repository'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
 import { QuestionMessage, AnswerMessage } from '../messages'
 import { QuestionAnswerState } from '../models'
 import { QuestionAnswerRecord, QuestionAnswerRepository } from '../repository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class QuestionAnswerService {
   private questionAnswerRepository: QuestionAnswerRepository
   private eventEmitter: EventEmitter

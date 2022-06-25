@@ -4,10 +4,9 @@ import type { Key } from '../dids/domain/Key'
 import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
 import type { OutOfBandRecord } from './repository'
 
-import { scoped, Lifecycle } from 'tsyringe'
-
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../error'
+import { injectable } from '../../plugins'
 import { JsonTransformer } from '../../utils'
 
 import { OutOfBandEventTypes } from './domain/OutOfBandEvents'
@@ -17,7 +16,7 @@ import { HandshakeReuseMessage } from './messages'
 import { HandshakeReuseAcceptedMessage } from './messages/HandshakeReuseAcceptedMessage'
 import { OutOfBandRepository } from './repository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class OutOfBandService {
   private outOfBandRepository: OutOfBandRepository
   private eventEmitter: EventEmitter

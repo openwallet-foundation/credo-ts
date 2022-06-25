@@ -3,16 +3,15 @@ import type { ConnectionRecord } from '../../connections/repository/ConnectionRe
 import type { BasicMessageStateChangedEvent } from '../BasicMessageEvents'
 import type { BasicMessageTags } from '../repository'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils'
 import { BasicMessageEventTypes } from '../BasicMessageEvents'
 import { BasicMessageRole } from '../BasicMessageRole'
 import { BasicMessage } from '../messages'
 import { BasicMessageRecord, BasicMessageRepository } from '../repository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class BasicMessageService {
   private basicMessageRepository: BasicMessageRepository
   private eventEmitter: EventEmitter

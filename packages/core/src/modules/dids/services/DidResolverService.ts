@@ -2,10 +2,9 @@ import type { Logger } from '../../../logger'
 import type { DidResolver } from '../domain/DidResolver'
 import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { IndyLedgerService } from '../../ledger'
 import { parseDid } from '../domain/parse'
 import { KeyDidResolver } from '../methods/key/KeyDidResolver'
@@ -14,7 +13,7 @@ import { SovDidResolver } from '../methods/sov/SovDidResolver'
 import { WebDidResolver } from '../methods/web/WebDidResolver'
 import { DidRepository } from '../repository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DidResolverService {
   private logger: Logger
   private resolvers: DidResolver[]

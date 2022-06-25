@@ -7,8 +7,6 @@ import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
-
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
@@ -18,6 +16,7 @@ import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key
 import { DidCommV1Service, IndyAgentService } from '../modules/dids/domain/service'
 import { didKeyToInstanceOfKey, verkeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
+import { inject, injectable } from '../plugins'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 import { getProtocolScheme } from '../utils/uri'
@@ -37,7 +36,7 @@ export interface TransportPriorityOptions {
   restrictive?: boolean
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MessageSender {
   private envelopeService: EnvelopeService
   private transportService: TransportService

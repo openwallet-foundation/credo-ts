@@ -2,14 +2,13 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { EncryptedMessage } from '../../../types'
 import type { BatchPickupMessage } from '../messages'
 
-import { inject, scoped, Lifecycle } from 'tsyringe'
-
 import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
+import { inject, injectable } from '../../../plugins'
 import { MessageRepository } from '../../../storage/MessageRepository'
 import { BatchMessage, BatchMessageMessage } from '../messages'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MessagePickupService {
   private messageRepository: MessageRepository
 

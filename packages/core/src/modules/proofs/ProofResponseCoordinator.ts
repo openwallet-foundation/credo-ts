@@ -1,8 +1,7 @@
 import type { ProofRecord } from './repository'
 
-import { scoped, Lifecycle } from 'tsyringe'
-
 import { AgentConfig } from '../../agent/AgentConfig'
+import { injectable } from '../../plugins'
 
 import { AutoAcceptProof } from './ProofAutoAcceptType'
 
@@ -10,7 +9,7 @@ import { AutoAcceptProof } from './ProofAutoAcceptType'
  * This class handles all the automation with all the messages in the present proof protocol
  * Every function returns `true` if it should automate the flow and `false` if not
  */
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ProofResponseCoordinator {
   private agentConfig: AgentConfig
 

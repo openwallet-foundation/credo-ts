@@ -15,8 +15,8 @@ export class WsInboundTransport implements InboundTransport {
   }
 
   public async start(agent: Agent) {
-    const transportService = agent.injectionContainer.resolve(TransportService)
-    const config = agent.injectionContainer.resolve(AgentConfig)
+    const transportService = agent.dependencyManager.resolve(TransportService)
+    const config = agent.dependencyManager.resolve(AgentConfig)
 
     this.logger = config.logger
 

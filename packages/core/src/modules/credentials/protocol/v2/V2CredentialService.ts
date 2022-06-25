@@ -25,12 +25,11 @@ import type {
 } from '../../formats'
 import type { CredentialFormatSpec } from '../../models'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../../error'
+import { injectable } from '../../../../plugins'
 import { DidCommMessageRepository } from '../../../../storage'
 import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
@@ -39,7 +38,7 @@ import { RoutingService } from '../../../routing/services/RoutingService'
 import { CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { CredentialState, AutoAcceptCredential } from '../../models'
-import { CredentialExchangeRecord, CredentialRepository } from '../../repository'
+import { CredentialRepository, CredentialExchangeRecord } from '../../repository'
 import { CredentialService } from '../../services/CredentialService'
 import { composeAutoAccept } from '../../util/composeAutoAccept'
 import { arePreviewAttributesEqual } from '../../util/previewAttributes'
@@ -62,7 +61,7 @@ import {
   V2RequestCredentialMessage,
 } from './messages'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class V2CredentialService<CFs extends CredentialFormat[] = CredentialFormat[]> extends CredentialService<CFs> {
   private connectionService: ConnectionService
   private credentialFormatCoordinator: CredentialFormatCoordinator<CFs>

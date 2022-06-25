@@ -2,12 +2,12 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
 import type { ConnectionRecord, Routing, ConnectionInvitationMessage } from '../../modules/connections'
+import type { DependencyManager } from '../../plugins'
 import type { PlaintextMessage } from '../../types'
 import type { Key } from '../dids'
 import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -18,6 +18,7 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { DidExchangeState, HandshakeProtocol, ConnectionsModule } from '../../modules/connections'
+import { injectable, module } from '../../plugins'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
@@ -36,6 +37,7 @@ import { HandshakeReuseHandler } from './handlers'
 import { HandshakeReuseAcceptedHandler } from './handlers/HandshakeReuseAcceptedHandler'
 import { convertToNewInvitation, convertToOldInvitation } from './helpers'
 import { OutOfBandInvitation } from './messages'
+import { OutOfBandRepository } from './repository'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
@@ -73,7 +75,8 @@ export interface ReceiveOutOfBandInvitationConfig {
   routing?: Routing
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class OutOfBandModule {
   private outOfBandService: OutOfBandService
   private routingService: RoutingService
@@ -676,5 +679,19 @@ export class OutOfBandModule {
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new HandshakeReuseHandler(this.outOfBandService))
     dispatcher.registerHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
+  }
+
+  /**
+   * Registers the dependencies of the ot of band module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(OutOfBandModule)
+
+    // Services
+    dependencyManager.registerSingleton(OutOfBandService)
+
+    // Repositories
+    dependencyManager.registerSingleton(OutOfBandRepository)
   }
 }
