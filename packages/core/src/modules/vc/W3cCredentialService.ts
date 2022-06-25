@@ -1,4 +1,4 @@
-import type { AgentContext } from '../..'
+import type { AgentContext } from '../../agent/context'
 import type { Key } from '../../crypto/Key'
 import type { DocumentLoader } from './jsonldUtil'
 import type { W3cVerifyCredentialResult } from './models'

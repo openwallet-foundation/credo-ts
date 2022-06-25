@@ -1,4 +1,4 @@
-import type { Agent } from '../../../../agent/Agent'
+import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { CredentialMetadata, CredentialExchangeRecord } from '../../../../modules/credentials'
 import type { JsonObject } from '../../../../types'
 
@@ -16,7 +16,7 @@ import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } fr
  * The following transformations are applied:
  *  - {@link updateIndyMetadata}
  */
-export async function migrateCredentialRecordToV0_2(agent: Agent) {
+export async function migrateCredentialRecordToV0_2<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating credential records to storage version 0.2')
   const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
 
@@ -115,7 +115,10 @@ export function getCredentialRole(credentialRecord: CredentialExchangeRecord) {
  * }
  * ```
  */
-export async function updateIndyMetadata(agent: Agent, credentialRecord: CredentialExchangeRecord) {
+export async function updateIndyMetadata<Agent extends BaseAgent>(
+  agent: Agent,
+  credentialRecord: CredentialExchangeRecord
+) {
   agent.config.logger.debug(`Updating indy metadata to use the generic metadata api available to records.`)
 
   const { requestMetadata, schemaId, credentialDefinitionId, ...rest } = credentialRecord.metadata.data
@@ -173,7 +176,7 @@ export async function updateIndyMetadata(agent: Agent, credentialRecord: Credent
  * }
  * ```
  */
-export async function migrateInternalCredentialRecordProperties(
+export async function migrateInternalCredentialRecordProperties<Agent extends BaseAgent>(
   agent: Agent,
   credentialRecord: CredentialExchangeRecord
 ) {
@@ -210,7 +213,10 @@ export async function migrateInternalCredentialRecordProperties(
  * This migration scripts extracts all message (proposalMessage, offerMessage, requestMessage, credentialMessage) and moves
  * them into the DidCommMessageRepository.
  */
-export async function moveDidCommMessages(agent: Agent, credentialRecord: CredentialExchangeRecord) {
+export async function moveDidCommMessages<Agent extends BaseAgent>(
+  agent: Agent,
+  credentialRecord: CredentialExchangeRecord
+) {
   agent.config.logger.debug(
     `Moving didcomm messages from credential record with id ${credentialRecord.id} to DidCommMessageRecord`
   )

@@ -1,4 +1,4 @@
-import type { Agent } from '../../../../agent/Agent'
+import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { MediationRecord } from '../../../../modules/routing'
 import type { V0_1ToV0_2UpdateConfig } from './index'
 
@@ -12,7 +12,10 @@ import { MediationRepository, MediationRole } from '../../../../modules/routing'
  * The following transformations are applied:
  *  - {@link updateMediationRole}
  */
-export async function migrateMediationRecordToV0_2(agent: Agent, upgradeConfig: V0_1ToV0_2UpdateConfig) {
+export async function migrateMediationRecordToV0_2<Agent extends BaseAgent>(
+  agent: Agent,
+  upgradeConfig: V0_1ToV0_2UpdateConfig
+) {
   agent.config.logger.info('Migrating mediation records to storage version 0.2')
   const mediationRepository = agent.dependencyManager.resolve(MediationRepository)
 
@@ -50,7 +53,7 @@ export async function migrateMediationRecordToV0_2(agent: Agent, upgradeConfig: 
  * Most agents only act as either the role of mediator or recipient, in which case the `allMediator` or `allRecipient` configuration is the most appropriate. If your agent acts as both a recipient and mediator, the `recipientIfEndpoint` configuration is the most appropriate. The `doNotChange` options is not recommended and can lead to errors if the role is not set correctly.
  *
  */
-export async function updateMediationRole(
+export async function updateMediationRole<Agent extends BaseAgent>(
   agent: Agent,
   mediationRecord: MediationRecord,
   { mediationRoleUpdateStrategy }: V0_1ToV0_2UpdateConfig
