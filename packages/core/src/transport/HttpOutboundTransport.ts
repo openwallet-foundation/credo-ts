@@ -6,6 +6,7 @@ import type fetch from 'node-fetch'
 
 import { AbortController } from 'abort-controller'
 
+import { MessageReceiver } from '../agent/MessageReceiver'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 
@@ -81,7 +82,9 @@ export class HttpOutboundTransport implements OutboundTransport {
             )
             return
           }
-          await this.agent.receiveMessage(encryptedMessage)
+
+          const messageReceiver = this.agent.injectionContainer.resolve(MessageReceiver)
+          await messageReceiver.receiveMessage(encryptedMessage)
         } catch (error) {
           this.logger.debug('Unable to parse response message')
         }

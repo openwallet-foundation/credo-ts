@@ -2,7 +2,7 @@ import type { InboundTransport, Agent, TransportSession, EncryptedMessage } from
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import { DidCommMimeType, AriesFrameworkError, TransportService, utils } from '@aries-framework/core'
+import { DidCommMimeType, AriesFrameworkError, TransportService, utils, MessageReceiver } from '@aries-framework/core'
 import express, { text } from 'express'
 
 export class HttpInboundTransport implements InboundTransport {
@@ -30,6 +30,7 @@ export class HttpInboundTransport implements InboundTransport {
 
   public async start(agent: Agent) {
     const transportService = agent.dependencyManager.resolve(TransportService)
+    const messageReceiver = agent.dependencyManager.resolve(MessageReceiver)
 
     agent.config.logger.debug(`Starting HTTP inbound transport`, {
       port: this.port,
@@ -40,7 +41,9 @@ export class HttpInboundTransport implements InboundTransport {
       try {
         const message = req.body
         const encryptedMessage = JSON.parse(message)
-        await agent.receiveMessage(encryptedMessage, session)
+        await messageReceiver.receiveMessage(encryptedMessage, {
+          session,
+        })
 
         // If agent did not use session when processing message we need to send response here.
         if (!res.headersSent) {
