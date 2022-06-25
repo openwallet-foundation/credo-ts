@@ -1,6 +1,9 @@
 import type { Agent } from '../../agent/Agent'
+import type { FileSystem } from '../FileSystem'
 import type { UpdateConfig } from './updates'
 
+import { AgentContext } from '../../agent'
+import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
 import { WalletError } from '../../wallet/error/WalletError'
@@ -13,12 +16,16 @@ export class UpdateAssistant {
   private agent: Agent
   private storageUpdateService: StorageUpdateService
   private updateConfig: UpdateConfig
+  private agentContext: AgentContext
+  private fileSystem: FileSystem
 
   public constructor(agent: Agent, updateConfig: UpdateConfig) {
     this.agent = agent
     this.updateConfig = updateConfig
 
     this.storageUpdateService = this.agent.dependencyManager.resolve(StorageUpdateService)
+    this.agentContext = this.agent.dependencyManager.resolve(AgentContext)
+    this.fileSystem = this.agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
   }
 
   public async initialize() {
@@ -39,11 +46,11 @@ export class UpdateAssistant {
   }
 
   public async isUpToDate() {
-    return this.storageUpdateService.isUpToDate()
+    return this.storageUpdateService.isUpToDate(this.agentContext)
   }
 
   public async getCurrentAgentStorageVersion() {
-    return this.storageUpdateService.getCurrentStorageVersion()
+    return this.storageUpdateService.getCurrentStorageVersion(this.agentContext)
   }
 
   public static get frameworkStorageVersion() {
@@ -51,7 +58,9 @@ export class UpdateAssistant {
   }
 
   public async getNeededUpdates() {
-    const currentStorageVersion = parseVersionString(await this.storageUpdateService.getCurrentStorageVersion())
+    const currentStorageVersion = parseVersionString(
+      await this.storageUpdateService.getCurrentStorageVersion(this.agentContext)
+    )
 
     // Filter updates. We don't want older updates we already applied
     // or aren't needed because the wallet was created after the update script was made
@@ -104,7 +113,7 @@ export class UpdateAssistant {
           await update.doUpdate(this.agent, this.updateConfig)
 
           // Update the framework version in storage
-          await this.storageUpdateService.setCurrentStorageVersion(update.toVersion)
+          await this.storageUpdateService.setCurrentStorageVersion(this.agentContext, update.toVersion)
           this.agent.config.logger.info(
             `Successfully updated agent storage from version ${update.fromVersion} to version ${update.toVersion}`
           )
@@ -132,8 +141,7 @@ export class UpdateAssistant {
   }
 
   private getBackupPath(backupIdentifier: string) {
-    const fileSystem = this.agent.config.fileSystem
-    return `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    return `${this.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
   }
 
   private async createBackup(backupIdentifier: string) {

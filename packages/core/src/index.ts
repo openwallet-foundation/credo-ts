@@ -1,6 +1,7 @@
 // reflect-metadata used for class-transformer + class-validator
 import 'reflect-metadata'
 
+export { AgentContext } from './agent/AgentContext'
 export { Agent } from './agent/Agent'
 export { EventEmitter } from './agent/EventEmitter'
 export { Handler, HandlerInboundMessage } from './agent/Handler'

@@ -1,3 +1,4 @@
+import type { AgentContext } from '../../../../agent'
 import type { IndyEndpointAttrib, IndyLedgerService } from '../../../ledger'
 import type { DidResolver } from '../../domain/DidResolver'
 import type { ParsedDid, DidResolutionResult } from '../../types'
@@ -20,12 +21,12 @@ export class SovDidResolver implements DidResolver {
 
   public readonly supportedMethods = ['sov']
 
-  public async resolve(did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
+  public async resolve(agentContext: AgentContext, did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 
     try {
-      const nym = await this.indyLedgerService.getPublicDid(parsed.id)
-      const endpoints = await this.indyLedgerService.getEndpointsForDid(did)
+      const nym = await this.indyLedgerService.getPublicDid(agentContext, parsed.id)
+      const endpoints = await this.indyLedgerService.getEndpointsForDid(agentContext, did)
 
       const verificationMethodId = `${parsed.did}#key-1`
       const keyAgreementId = `${parsed.did}#key-agreement-1`

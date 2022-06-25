@@ -1,24 +1,30 @@
+import type { AgentContext } from './AgentContext'
 import type { BaseEvent } from './Events'
 import type { EventEmitter as NativeEventEmitter } from 'events'
 
-import { fromEventPattern } from 'rxjs'
+import { fromEventPattern, Subject } from 'rxjs'
 import { takeUntil } from 'rxjs/operators'
 
-import { injectable } from '../plugins'
+import { InjectionSymbols } from '../constants'
+import { injectable, inject } from '../plugins'
 
-import { AgentConfig } from './AgentConfig'
+import { AgentDependencies } from './AgentDependencies'
 
 @injectable()
 export class EventEmitter {
-  private agentConfig: AgentConfig
   private eventEmitter: NativeEventEmitter
+  private stop$: Subject<boolean>
 
-  public constructor(agentConfig: AgentConfig) {
-    this.agentConfig = agentConfig
-    this.eventEmitter = new agentConfig.agentDependencies.EventEmitterClass()
+  public constructor(
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
+    @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>
+  ) {
+    this.eventEmitter = new agentDependencies.EventEmitterClass()
+    this.stop$ = stop$
   }
 
-  public emit<T extends BaseEvent>(data: T) {
+  // agentContext is currently not used, but already making required as it will be used soon
+  public emit<T extends BaseEvent>(agentContext: AgentContext, data: T) {
     this.eventEmitter.emit(data.type, data)
   }
 
@@ -34,6 +40,6 @@ export class EventEmitter {
     return fromEventPattern<T>(
       (handler) => this.on(event, handler),
       (handler) => this.off(event, handler)
-    ).pipe(takeUntil(this.agentConfig.stop$))
+    ).pipe(takeUntil(this.stop$))
   }
 }

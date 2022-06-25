@@ -1,5 +1,5 @@
 import type { DummyStateChangedEvent } from './DummyEvents'
-import type { ConnectionRecord, InboundMessageContext } from '@aries-framework/core'
+import type { AgentContext, ConnectionRecord, InboundMessageContext } from '@aries-framework/core'
 
 import { injectable, JsonTransformer, EventEmitter } from '@aries-framework/core'
 
@@ -27,7 +27,7 @@ export class DummyService {
    * @returns Object containing dummy request message and associated dummy record
    *
    */
-  public async createRequest(connectionRecord: ConnectionRecord) {
+  public async createRequest(agentContext: AgentContext, connectionRecord: ConnectionRecord) {
     // Create message
     const message = new DummyRequestMessage({})
 
@@ -38,9 +38,9 @@ export class DummyService {
       state: DummyState.Init,
     })
 
-    await this.dummyRepository.save(record)
+    await this.dummyRepository.save(agentContext, record)
 
-    this.emitStateChangedEvent(record, null)
+    this.emitStateChangedEvent(agentContext, record, null)
 
     return { record, message }
   }
@@ -51,7 +51,7 @@ export class DummyService {
    * @param record the dummy record for which to create a dummy response
    * @returns outbound message containing dummy response
    */
-  public async createResponse(record: DummyRecord) {
+  public async createResponse(agentContext: AgentContext, record: DummyRecord) {
     const responseMessage = new DummyResponseMessage({
       threadId: record.threadId,
     })
@@ -76,9 +76,9 @@ export class DummyService {
       state: DummyState.RequestReceived,
     })
 
-    await this.dummyRepository.save(record)
+    await this.dummyRepository.save(messageContext.agentContext, record)
 
-    this.emitStateChangedEvent(record, null)
+    this.emitStateChangedEvent(messageContext.agentContext, record, null)
 
     return record
   }
@@ -96,13 +96,13 @@ export class DummyService {
     const connection = messageContext.assertReadyConnection()
 
     // Dummy record already exists
-    const record = await this.findByThreadAndConnectionId(message.threadId, connection.id)
+    const record = await this.findByThreadAndConnectionId(messageContext.agentContext, message.threadId, connection.id)
 
     if (record) {
       // Check current state
       record.assertState(DummyState.RequestSent)
 
-      await this.updateState(record, DummyState.ResponseReceived)
+      await this.updateState(messageContext.agentContext, record, DummyState.ResponseReceived)
     } else {
       throw new Error(`Dummy record not found with threadId ${message.threadId}`)
     }
@@ -115,8 +115,8 @@ export class DummyService {
    *
    * @returns List containing all dummy records
    */
-  public getAll(): Promise<DummyRecord[]> {
-    return this.dummyRepository.getAll()
+  public getAll(agentContext: AgentContext): Promise<DummyRecord[]> {
+    return this.dummyRepository.getAll(agentContext)
   }
 
   /**
@@ -127,8 +127,8 @@ export class DummyService {
    * @return The dummy record
    *
    */
-  public getById(dummyRecordId: string): Promise<DummyRecord> {
-    return this.dummyRepository.getById(dummyRecordId)
+  public getById(agentContext: AgentContext, dummyRecordId: string): Promise<DummyRecord> {
+    return this.dummyRepository.getById(agentContext, dummyRecordId)
   }
 
   /**
@@ -140,8 +140,12 @@ export class DummyService {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The dummy record
    */
-  public async findByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<DummyRecord | null> {
-    return this.dummyRepository.findSingleByQuery({ threadId, connectionId })
+  public async findByThreadAndConnectionId(
+    agentContext: AgentContext,
+    threadId: string,
+    connectionId?: string
+  ): Promise<DummyRecord | null> {
+    return this.dummyRepository.findSingleByQuery(agentContext, { threadId, connectionId })
   }
 
   /**
@@ -152,19 +156,23 @@ export class DummyService {
    * @param newState The state to update to
    *
    */
-  public async updateState(dummyRecord: DummyRecord, newState: DummyState) {
+  public async updateState(agentContext: AgentContext, dummyRecord: DummyRecord, newState: DummyState) {
     const previousState = dummyRecord.state
     dummyRecord.state = newState
-    await this.dummyRepository.update(dummyRecord)
+    await this.dummyRepository.update(agentContext, dummyRecord)
 
-    this.emitStateChangedEvent(dummyRecord, previousState)
+    this.emitStateChangedEvent(agentContext, dummyRecord, previousState)
   }
 
-  private emitStateChangedEvent(dummyRecord: DummyRecord, previousState: DummyState | null) {
+  private emitStateChangedEvent(
+    agentContext: AgentContext,
+    dummyRecord: DummyRecord,
+    previousState: DummyState | null
+  ) {
     // we need to clone the dummy record to avoid mutating records after they're emitted in an event
     const clonedDummyRecord = JsonTransformer.clone(dummyRecord)
 
-    this.eventEmitter.emit<DummyStateChangedEvent>({
+    this.eventEmitter.emit<DummyStateChangedEvent>(agentContext, {
       type: DummyEventTypes.StateChanged,
       payload: { dummyRecord: clonedDummyRecord, previousState: previousState },
     })

@@ -1,6 +1,16 @@
+import type { AgentContext } from '../../../agent'
 import type { Wallet } from '../../../wallet/Wallet'
 
-import { getAgentConfig, getMockConnection, getMockOutOfBand, mockFunction } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import {
+  agentDependencies,
+  getAgentConfig,
+  getAgentContext,
+  getMockConnection,
+  getMockOutOfBand,
+  mockFunction,
+} from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { KeyType } from '../../../crypto'
@@ -27,9 +37,11 @@ describe('OutOfBandService', () => {
   let outOfBandRepository: OutOfBandRepository
   let outOfBandService: OutOfBandService
   let eventEmitter: EventEmitter
+  let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger)
+    agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
   })
@@ -39,7 +51,7 @@ describe('OutOfBandService', () => {
   })
 
   beforeEach(async () => {
-    eventEmitter = new EventEmitter(agentConfig)
+    eventEmitter = new EventEmitter(agentDependencies, new Subject())
     outOfBandRepository = new OutOfBandRepositoryMock()
     outOfBandService = new OutOfBandService(outOfBandRepository, eventEmitter)
   })
@@ -55,6 +67,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
       })
@@ -70,6 +83,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
       })
@@ -85,6 +99,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
       })
@@ -113,6 +128,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
       })
@@ -135,6 +151,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
       })
@@ -159,6 +176,7 @@ describe('OutOfBandService', () => {
 
       const connection = getMockConnection({ state: DidExchangeState.Completed })
       const messageContext = new InboundMessageContext(reuseMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
         connection,
@@ -193,6 +211,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
         connection: getMockConnection({ state: DidExchangeState.Completed }),
@@ -214,7 +233,7 @@ describe('OutOfBandService', () => {
       // Non-reusable should update state
       mockOob.reusable = false
       await outOfBandService.processHandshakeReuse(messageContext)
-      expect(updateStateSpy).toHaveBeenCalledWith(mockOob, OutOfBandState.Done)
+      expect(updateStateSpy).toHaveBeenCalledWith(agentContext, mockOob, OutOfBandState.Done)
     })
 
     it('returns a handshake-reuse-accepted message', async () => {
@@ -223,6 +242,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
         connection: getMockConnection({ state: DidExchangeState.Completed }),
@@ -256,6 +276,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
       })
@@ -272,6 +293,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
       })
@@ -288,6 +310,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
       })
@@ -317,6 +340,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
       })
@@ -339,6 +363,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
         connection: getMockConnection({ state: DidExchangeState.Completed, id: 'connectionId' }),
@@ -366,6 +391,7 @@ describe('OutOfBandService', () => {
 
       const connection = getMockConnection({ state: DidExchangeState.Completed, id: 'connectionId' })
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
         connection,
@@ -402,6 +428,7 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+        agentContext,
         senderKey: key,
         recipientKey: key,
         connection: getMockConnection({ state: DidExchangeState.Completed, id: 'connectionId' }),
@@ -418,7 +445,7 @@ describe('OutOfBandService', () => {
       const updateStateSpy = jest.spyOn(outOfBandService, 'updateState')
 
       await outOfBandService.processHandshakeReuseAccepted(messageContext)
-      expect(updateStateSpy).toHaveBeenCalledWith(mockOob, OutOfBandState.Done)
+      expect(updateStateSpy).toHaveBeenCalledWith(agentContext, mockOob, OutOfBandState.Done)
     })
   })
 
@@ -428,7 +455,7 @@ describe('OutOfBandService', () => {
         state: OutOfBandState.Initial,
       })
 
-      await outOfBandService.updateState(mockOob, OutOfBandState.Done)
+      await outOfBandService.updateState(agentContext, mockOob, OutOfBandState.Done)
 
       expect(mockOob.state).toEqual(OutOfBandState.Done)
     })
@@ -438,9 +465,9 @@ describe('OutOfBandService', () => {
         state: OutOfBandState.Initial,
       })
 
-      await outOfBandService.updateState(mockOob, OutOfBandState.Done)
+      await outOfBandService.updateState(agentContext, mockOob, OutOfBandState.Done)
 
-      expect(outOfBandRepository.update).toHaveBeenCalledWith(mockOob)
+      expect(outOfBandRepository.update).toHaveBeenCalledWith(agentContext, mockOob)
     })
 
     test('emits an OutOfBandStateChangedEvent', async () => {
@@ -451,7 +478,7 @@ describe('OutOfBandService', () => {
       })
 
       eventEmitter.on(OutOfBandEventTypes.OutOfBandStateChanged, stateChangedListener)
-      await outOfBandService.updateState(mockOob, OutOfBandState.Done)
+      await outOfBandService.updateState(agentContext, mockOob, OutOfBandState.Done)
       eventEmitter.off(OutOfBandEventTypes.OutOfBandStateChanged, stateChangedListener)
 
       expect(stateChangedListener).toHaveBeenCalledTimes(1)
@@ -471,8 +498,8 @@ describe('OutOfBandService', () => {
     it('getById should return value from outOfBandRepository.getById', async () => {
       const expected = getMockOutOfBand()
       mockFunction(outOfBandRepository.getById).mockReturnValue(Promise.resolve(expected))
-      const result = await outOfBandService.getById(expected.id)
-      expect(outOfBandRepository.getById).toBeCalledWith(expected.id)
+      const result = await outOfBandService.getById(agentContext, expected.id)
+      expect(outOfBandRepository.getById).toBeCalledWith(agentContext, expected.id)
 
       expect(result).toBe(expected)
     })
@@ -480,8 +507,8 @@ describe('OutOfBandService', () => {
     it('findById should return value from outOfBandRepository.findById', async () => {
       const expected = getMockOutOfBand()
       mockFunction(outOfBandRepository.findById).mockReturnValue(Promise.resolve(expected))
-      const result = await outOfBandService.findById(expected.id)
-      expect(outOfBandRepository.findById).toBeCalledWith(expected.id)
+      const result = await outOfBandService.findById(agentContext, expected.id)
+      expect(outOfBandRepository.findById).toBeCalledWith(agentContext, expected.id)
 
       expect(result).toBe(expected)
     })
@@ -490,8 +517,8 @@ describe('OutOfBandService', () => {
       const expected = [getMockOutOfBand(), getMockOutOfBand()]
 
       mockFunction(outOfBandRepository.getAll).mockReturnValue(Promise.resolve(expected))
-      const result = await outOfBandService.getAll()
-      expect(outOfBandRepository.getAll).toBeCalledWith()
+      const result = await outOfBandService.getAll(agentContext)
+      expect(outOfBandRepository.getAll).toBeCalledWith(agentContext)
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })

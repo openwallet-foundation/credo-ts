@@ -711,7 +711,7 @@ describe('out of band', () => {
         message,
       })
 
-      expect(saveOrUpdateSpy).toHaveBeenCalledWith({
+      expect(saveOrUpdateSpy).toHaveBeenCalledWith(expect.anything(), {
         agentMessage: message,
         associatedRecordId: credentialRecord.id,
         role: DidCommMessageRole.Sender,

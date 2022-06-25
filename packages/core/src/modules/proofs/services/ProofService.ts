@@ -1,6 +1,6 @@
+import type { AgentContext } from '../../../agent'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { Logger } from '../../../logger'
 import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofStateChangedEvent } from '../ProofEvents'
@@ -10,22 +10,21 @@ import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
+import { Logger } from '../../../logger'
 import { inject, injectable } from '../../../plugins'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { checkProofRequestForDuplicates } from '../../../utils/indyProofRequest'
 import { uuid } from '../../../utils/uuid'
-import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
 import { ConnectionService } from '../../connections'
-import { IndyCredential, CredentialRepository, IndyCredentialInfo } from '../../credentials'
+import { CredentialRepository, IndyCredential, IndyCredentialInfo } from '../../credentials'
 import { IndyCredentialUtils } from '../../credentials/formats/indy/IndyCredentialUtils'
-import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../indy'
+import { IndyHolderService, IndyRevocationService, IndyVerifierService } from '../../indy'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
@@ -62,7 +61,6 @@ export class ProofService {
   private proofRepository: ProofRepository
   private credentialRepository: CredentialRepository
   private ledgerService: IndyLedgerService
-  private wallet: Wallet
   private logger: Logger
   private indyHolderService: IndyHolderService
   private indyVerifierService: IndyVerifierService
@@ -73,20 +71,18 @@ export class ProofService {
   public constructor(
     proofRepository: ProofRepository,
     ledgerService: IndyLedgerService,
-    @inject(InjectionSymbols.Wallet) wallet: Wallet,
-    agentConfig: AgentConfig,
     indyHolderService: IndyHolderService,
     indyVerifierService: IndyVerifierService,
     indyRevocationService: IndyRevocationService,
     connectionService: ConnectionService,
     eventEmitter: EventEmitter,
-    credentialRepository: CredentialRepository
+    credentialRepository: CredentialRepository,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.proofRepository = proofRepository
     this.credentialRepository = credentialRepository
     this.ledgerService = ledgerService
-    this.wallet = wallet
-    this.logger = agentConfig.logger
+    this.logger = logger
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
     this.indyRevocationService = indyRevocationService
@@ -105,6 +101,7 @@ export class ProofService {
    *
    */
   public async createProposal(
+    agentContext: AgentContext,
     connectionRecord: ConnectionRecord,
     presentationProposal: PresentationPreview,
     config?: {
@@ -129,8 +126,8 @@ export class ProofService {
       proposalMessage,
       autoAcceptProof: config?.autoAcceptProof,
     })
-    await this.proofRepository.save(proofRecord)
-    this.emitStateChangedEvent(proofRecord, null)
+    await this.proofRepository.save(agentContext, proofRecord)
+    this.emitStateChangedEvent(agentContext, proofRecord, null)
 
     return { message: proposalMessage, proofRecord }
   }
@@ -146,6 +143,7 @@ export class ProofService {
    *
    */
   public async createProposalAsResponse(
+    agentContext: AgentContext,
     proofRecord: ProofRecord,
     presentationProposal: PresentationPreview,
     config?: {
@@ -164,7 +162,7 @@ export class ProofService {
 
     // Update record
     proofRecord.proposalMessage = proposalMessage
-    await this.updateState(proofRecord, ProofState.ProposalSent)
+    await this.updateState(agentContext, proofRecord, ProofState.ProposalSent)
 
     return { message: proposalMessage, proofRecord }
   }
@@ -173,10 +171,10 @@ export class ProofService {
    * Decline a proof request
    * @param proofRecord The proof request to be declined
    */
-  public async declineRequest(proofRecord: ProofRecord): Promise<ProofRecord> {
+  public async declineRequest(agentContext: AgentContext, proofRecord: ProofRecord): Promise<ProofRecord> {
     proofRecord.assertState(ProofState.RequestReceived)
 
-    await this.updateState(proofRecord, ProofState.Declined)
+    await this.updateState(agentContext, proofRecord, ProofState.Declined)
 
     return proofRecord
   }
@@ -201,7 +199,11 @@ export class ProofService {
 
     try {
       // Proof record already exists
-      proofRecord = await this.getByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
+      proofRecord = await this.getByThreadAndConnectionId(
+        messageContext.agentContext,
+        proposalMessage.threadId,
+        connection?.id
+      )
 
       // Assert
       proofRecord.assertState(ProofState.RequestSent)
@@ -212,7 +214,7 @@ export class ProofService {
 
       // Update record
       proofRecord.proposalMessage = proposalMessage
-      await this.updateState(proofRecord, ProofState.ProposalReceived)
+      await this.updateState(messageContext.agentContext, proofRecord, ProofState.ProposalReceived)
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
@@ -226,8 +228,8 @@ export class ProofService {
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save record
-      await this.proofRepository.save(proofRecord)
-      this.emitStateChangedEvent(proofRecord, null)
+      await this.proofRepository.save(messageContext.agentContext, proofRecord)
+      this.emitStateChangedEvent(messageContext.agentContext, proofRecord, null)
     }
 
     return proofRecord
@@ -244,6 +246,7 @@ export class ProofService {
    *
    */
   public async createRequestAsResponse(
+    agentContext: AgentContext,
     proofRecord: ProofRecord,
     proofRequest: ProofRequest,
     config?: {
@@ -274,7 +277,7 @@ export class ProofService {
 
     // Update record
     proofRecord.requestMessage = requestPresentationMessage
-    await this.updateState(proofRecord, ProofState.RequestSent)
+    await this.updateState(agentContext, proofRecord, ProofState.RequestSent)
 
     return { message: requestPresentationMessage, proofRecord }
   }
@@ -289,6 +292,7 @@ export class ProofService {
    *
    */
   public async createRequest(
+    agentContext: AgentContext,
     proofRequest: ProofRequest,
     connectionRecord?: ConnectionRecord,
     config?: {
@@ -326,8 +330,8 @@ export class ProofService {
       autoAcceptProof: config?.autoAcceptProof,
     })
 
-    await this.proofRepository.save(proofRecord)
-    this.emitStateChangedEvent(proofRecord, null)
+    await this.proofRepository.save(agentContext, proofRecord)
+    this.emitStateChangedEvent(agentContext, proofRecord, null)
 
     return { message: requestPresentationMessage, proofRecord }
   }
@@ -366,7 +370,11 @@ export class ProofService {
 
     try {
       // Proof record already exists
-      proofRecord = await this.getByThreadAndConnectionId(proofRequestMessage.threadId, connection?.id)
+      proofRecord = await this.getByThreadAndConnectionId(
+        messageContext.agentContext,
+        proofRequestMessage.threadId,
+        connection?.id
+      )
 
       // Assert
       proofRecord.assertState(ProofState.ProposalSent)
@@ -377,7 +385,7 @@ export class ProofService {
 
       // Update record
       proofRecord.requestMessage = proofRequestMessage
-      await this.updateState(proofRecord, ProofState.RequestReceived)
+      await this.updateState(messageContext.agentContext, proofRecord, ProofState.RequestReceived)
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
@@ -391,8 +399,8 @@ export class ProofService {
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save in repository
-      await this.proofRepository.save(proofRecord)
-      this.emitStateChangedEvent(proofRecord, null)
+      await this.proofRepository.save(messageContext.agentContext, proofRecord)
+      this.emitStateChangedEvent(messageContext.agentContext, proofRecord, null)
     }
 
     return proofRecord
@@ -408,6 +416,7 @@ export class ProofService {
    *
    */
   public async createPresentation(
+    agentContext: AgentContext,
     proofRecord: ProofRecord,
     requestedCredentials: RequestedCredentials,
     config?: {
@@ -429,12 +438,13 @@ export class ProofService {
 
     // Get the matching attachments to the requested credentials
     const attachments = await this.getRequestedAttachmentsForRequestedCredentials(
+      agentContext,
       indyProofRequest,
       requestedCredentials
     )
 
     // Create proof
-    const proof = await this.createProof(indyProofRequest, requestedCredentials)
+    const proof = await this.createProof(agentContext, indyProofRequest, requestedCredentials)
 
     // Create message
     const attachment = new Attachment({
@@ -454,7 +464,7 @@ export class ProofService {
 
     // Update record
     proofRecord.presentationMessage = presentationMessage
-    await this.updateState(proofRecord, ProofState.PresentationSent)
+    await this.updateState(agentContext, proofRecord, ProofState.PresentationSent)
 
     return { message: presentationMessage, proofRecord }
   }
@@ -474,7 +484,11 @@ export class ProofService {
 
     this.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
 
-    const proofRecord = await this.getByThreadAndConnectionId(presentationMessage.threadId, connection?.id)
+    const proofRecord = await this.getByThreadAndConnectionId(
+      messageContext.agentContext,
+      presentationMessage.threadId,
+      connection?.id
+    )
 
     // Assert
     proofRecord.assertState(ProofState.RequestSent)
@@ -501,12 +515,12 @@ export class ProofService {
       )
     }
 
-    const isValid = await this.verifyProof(indyProofJson, indyProofRequest)
+    const isValid = await this.verifyProof(messageContext.agentContext, indyProofJson, indyProofRequest)
 
     // Update record
     proofRecord.isVerified = isValid
     proofRecord.presentationMessage = presentationMessage
-    await this.updateState(proofRecord, ProofState.PresentationReceived)
+    await this.updateState(messageContext.agentContext, proofRecord, ProofState.PresentationReceived)
 
     return proofRecord
   }
@@ -518,7 +532,10 @@ export class ProofService {
    * @returns Object containing presentation acknowledgement message and associated proof record
    *
    */
-  public async createAck(proofRecord: ProofRecord): Promise<ProofProtocolMsgReturnType<PresentationAckMessage>> {
+  public async createAck(
+    agentContext: AgentContext,
+    proofRecord: ProofRecord
+  ): Promise<ProofProtocolMsgReturnType<PresentationAckMessage>> {
     this.logger.debug(`Creating presentation ack for proof record with id ${proofRecord.id}`)
 
     // Assert
@@ -531,7 +548,7 @@ export class ProofService {
     })
 
     // Update record
-    await this.updateState(proofRecord, ProofState.Done)
+    await this.updateState(agentContext, proofRecord, ProofState.Done)
 
     return { message: ackMessage, proofRecord }
   }
@@ -548,7 +565,11 @@ export class ProofService {
 
     this.logger.debug(`Processing presentation ack with id ${presentationAckMessage.id}`)
 
-    const proofRecord = await this.getByThreadAndConnectionId(presentationAckMessage.threadId, connection?.id)
+    const proofRecord = await this.getByThreadAndConnectionId(
+      messageContext.agentContext,
+      presentationAckMessage.threadId,
+      connection?.id
+    )
 
     // Assert
     proofRecord.assertState(ProofState.PresentationSent)
@@ -558,7 +579,7 @@ export class ProofService {
     })
 
     // Update record
-    await this.updateState(proofRecord, ProofState.Done)
+    await this.updateState(messageContext.agentContext, proofRecord, ProofState.Done)
 
     return proofRecord
   }
@@ -579,15 +600,19 @@ export class ProofService {
 
     this.logger.debug(`Processing problem report with id ${presentationProblemReportMessage.id}`)
 
-    const proofRecord = await this.getByThreadAndConnectionId(presentationProblemReportMessage.threadId, connection?.id)
+    const proofRecord = await this.getByThreadAndConnectionId(
+      messageContext.agentContext,
+      presentationProblemReportMessage.threadId,
+      connection?.id
+    )
 
     proofRecord.errorMessage = `${presentationProblemReportMessage.description.code}: ${presentationProblemReportMessage.description.en}`
-    await this.update(proofRecord)
+    await this.update(messageContext.agentContext, proofRecord)
     return proofRecord
   }
 
-  public async generateProofRequestNonce() {
-    return this.wallet.generateNonce()
+  public async generateProofRequestNonce(agentContext: AgentContext) {
+    return agentContext.wallet.generateNonce()
   }
 
   /**
@@ -600,10 +625,11 @@ export class ProofService {
    *
    */
   public async createProofRequestFromProposal(
+    agentContext: AgentContext,
     presentationProposal: PresentationPreview,
     config: { name: string; version: string; nonce?: string }
   ): Promise<ProofRequest> {
-    const nonce = config.nonce ?? (await this.generateProofRequestNonce())
+    const nonce = config.nonce ?? (await this.generateProofRequestNonce(agentContext))
 
     const proofRequest = new ProofRequest({
       name: config.name,
@@ -683,6 +709,7 @@ export class ProofService {
    * @returns a list of attachments that are linked to the requested credentials
    */
   public async getRequestedAttachmentsForRequestedCredentials(
+    agentContext: AgentContext,
     indyProofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<Attachment[] | undefined> {
@@ -700,7 +727,10 @@ export class ProofService {
 
       //Get credentialInfo
       if (!requestedAttribute.credentialInfo) {
-        const indyCredentialInfo = await this.indyHolderService.getCredential(requestedAttribute.credentialId)
+        const indyCredentialInfo = await this.indyHolderService.getCredential(
+          agentContext,
+          requestedAttribute.credentialId
+        )
         requestedAttribute.credentialInfo = JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo)
       }
 
@@ -716,7 +746,9 @@ export class ProofService {
     for (const credentialId of credentialIds) {
       // Get the credentialRecord that matches the ID
 
-      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialIds: [credentialId] })
+      const credentialRecord = await this.credentialRepository.getSingleByQuery(agentContext, {
+        credentialIds: [credentialId],
+      })
 
       if (credentialRecord.linkedAttachments) {
         // Get the credentials that have a hashlink as value and are requested
@@ -750,6 +782,7 @@ export class ProofService {
    * @returns RetrievedCredentials object
    */
   public async getRequestedCredentialsForProofRequest(
+    agentContext: AgentContext,
     proofRequest: ProofRequest,
     config: {
       presentationProposal?: PresentationPreview
@@ -760,7 +793,7 @@ export class ProofService {
 
     for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
       let credentialMatch: IndyCredential[] = []
-      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
+      const credentials = await this.getCredentialsForProofRequest(agentContext, proofRequest, referent)
 
       // If we have exactly one credential, or no proposal to pick preferences
       // on the credentials to use, we will use the first one
@@ -789,7 +822,7 @@ export class ProofService {
 
       retrievedCredentials.requestedAttributes[referent] = await Promise.all(
         credentialMatch.map(async (credential: IndyCredential) => {
-          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem({
+          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem(agentContext, {
             proofRequest,
             requestedItem: requestedAttribute,
             credential,
@@ -815,11 +848,11 @@ export class ProofService {
     }
 
     for (const [referent, requestedPredicate] of proofRequest.requestedPredicates.entries()) {
-      const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
+      const credentials = await this.getCredentialsForProofRequest(agentContext, proofRequest, referent)
 
       retrievedCredentials.requestedPredicates[referent] = await Promise.all(
         credentials.map(async (credential) => {
-          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem({
+          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem(agentContext, {
             proofRequest,
             requestedItem: requestedPredicate,
             credential,
@@ -890,7 +923,11 @@ export class ProofService {
    * @returns Boolean whether the proof is valid
    *
    */
-  public async verifyProof(proofJson: IndyProof, proofRequest: ProofRequest): Promise<boolean> {
+  public async verifyProof(
+    agentContext: AgentContext,
+    proofJson: IndyProof,
+    proofRequest: ProofRequest
+  ): Promise<boolean> {
     const proof = JsonTransformer.fromJSON(proofJson, PartialProof)
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
@@ -908,12 +945,13 @@ export class ProofService {
     // I'm not 100% sure how much indy does. Also if it checks whether the proof requests matches the proof
     // @see https://github.com/hyperledger/aries-cloudagent-python/blob/master/aries_cloudagent/indy/sdk/verifier.py#L79-L164
 
-    const schemas = await this.getSchemas(new Set(proof.identifiers.map((i) => i.schemaId)))
+    const schemas = await this.getSchemas(agentContext, new Set(proof.identifiers.map((i) => i.schemaId)))
     const credentialDefinitions = await this.getCredentialDefinitions(
+      agentContext,
       new Set(proof.identifiers.map((i) => i.credentialDefinitionId))
     )
 
-    return await this.indyVerifierService.verifyProof({
+    return await this.indyVerifierService.verifyProof(agentContext, {
       proofRequest: proofRequest.toJSON(),
       proof: proofJson,
       schemas,
@@ -926,8 +964,8 @@ export class ProofService {
    *
    * @returns List containing all proof records
    */
-  public async getAll(): Promise<ProofRecord[]> {
-    return this.proofRepository.getAll()
+  public async getAll(agentContext: AgentContext): Promise<ProofRecord[]> {
+    return this.proofRepository.getAll(agentContext)
   }
 
   /**
@@ -938,8 +976,8 @@ export class ProofService {
    * @return The proof record
    *
    */
-  public async getById(proofRecordId: string): Promise<ProofRecord> {
-    return this.proofRepository.getById(proofRecordId)
+  public async getById(agentContext: AgentContext, proofRecordId: string): Promise<ProofRecord> {
+    return this.proofRepository.getById(agentContext, proofRecordId)
   }
 
   /**
@@ -949,8 +987,8 @@ export class ProofService {
    * @return The proof record or null if not found
    *
    */
-  public async findById(proofRecordId: string): Promise<ProofRecord | null> {
-    return this.proofRepository.findById(proofRecordId)
+  public async findById(agentContext: AgentContext, proofRecordId: string): Promise<ProofRecord | null> {
+    return this.proofRepository.findById(agentContext, proofRecordId)
   }
 
   /**
@@ -958,9 +996,9 @@ export class ProofService {
    *
    * @param proofId the proof record id
    */
-  public async deleteById(proofId: string) {
-    const proofRecord = await this.getById(proofId)
-    return this.proofRepository.delete(proofRecord)
+  public async deleteById(agentContext: AgentContext, proofId: string) {
+    const proofRecord = await this.getById(agentContext, proofId)
+    return this.proofRepository.delete(agentContext, proofRecord)
   }
 
   /**
@@ -972,12 +1010,16 @@ export class ProofService {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
-  public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<ProofRecord> {
-    return this.proofRepository.getSingleByQuery({ threadId, connectionId })
+  public async getByThreadAndConnectionId(
+    agentContext: AgentContext,
+    threadId: string,
+    connectionId?: string
+  ): Promise<ProofRecord> {
+    return this.proofRepository.getSingleByQuery(agentContext, { threadId, connectionId })
   }
 
-  public update(proofRecord: ProofRecord) {
-    return this.proofRepository.update(proofRecord)
+  public update(agentContext: AgentContext, proofRecord: ProofRecord) {
+    return this.proofRepository.update(agentContext, proofRecord)
   }
 
   /**
@@ -988,6 +1030,7 @@ export class ProofService {
    * @returns indy proof object
    */
   private async createProof(
+    agentContext: AgentContext,
     proofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<IndyProof> {
@@ -999,17 +1042,18 @@ export class ProofService {
         if (c.credentialInfo) {
           return c.credentialInfo
         }
-        const credentialInfo = await this.indyHolderService.getCredential(c.credentialId)
+        const credentialInfo = await this.indyHolderService.getCredential(agentContext, c.credentialId)
         return JsonTransformer.fromJSON(credentialInfo, IndyCredentialInfo)
       })
     )
 
-    const schemas = await this.getSchemas(new Set(credentialObjects.map((c) => c.schemaId)))
+    const schemas = await this.getSchemas(agentContext, new Set(credentialObjects.map((c) => c.schemaId)))
     const credentialDefinitions = await this.getCredentialDefinitions(
+      agentContext,
       new Set(credentialObjects.map((c) => c.credentialDefinitionId))
     )
 
-    return this.indyHolderService.createProof({
+    return this.indyHolderService.createProof(agentContext, {
       proofRequest: proofRequest.toJSON(),
       requestedCredentials: requestedCredentials,
       schemas,
@@ -1018,10 +1062,11 @@ export class ProofService {
   }
 
   private async getCredentialsForProofRequest(
+    agentContext: AgentContext,
     proofRequest: ProofRequest,
     attributeReferent: string
   ): Promise<IndyCredential[]> {
-    const credentialsJson = await this.indyHolderService.getCredentialsForProofRequest({
+    const credentialsJson = await this.indyHolderService.getCredentialsForProofRequest(agentContext, {
       proofRequest: proofRequest.toJSON(),
       attributeReferent,
     })
@@ -1029,15 +1074,18 @@ export class ProofService {
     return JsonTransformer.fromJSON(credentialsJson, IndyCredential) as unknown as IndyCredential[]
   }
 
-  private async getRevocationStatusForRequestedItem({
-    proofRequest,
-    requestedItem,
-    credential,
-  }: {
-    proofRequest: ProofRequest
-    requestedItem: ProofAttributeInfo | ProofPredicateInfo
-    credential: IndyCredential
-  }) {
+  private async getRevocationStatusForRequestedItem(
+    agentContext: AgentContext,
+    {
+      proofRequest,
+      requestedItem,
+      credential,
+    }: {
+      proofRequest: ProofRequest
+      requestedItem: ProofAttributeInfo | ProofPredicateInfo
+      credential: IndyCredential
+    }
+  ) {
     const requestNonRevoked = requestedItem.nonRevoked ?? proofRequest.nonRevoked
     const credentialRevocationId = credential.credentialInfo.credentialRevocationId
     const revocationRegistryId = credential.credentialInfo.revocationRegistryId
@@ -1055,6 +1103,7 @@ export class ProofService {
 
       // Note presentation from-to's vs ledger from-to's: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
       const status = await this.indyRevocationService.getRevocationStatus(
+        agentContext,
         credentialRevocationId,
         revocationRegistryId,
         requestNonRevoked
@@ -1074,18 +1123,22 @@ export class ProofService {
    * @param newState The state to update to
    *
    */
-  private async updateState(proofRecord: ProofRecord, newState: ProofState) {
+  private async updateState(agentContext: AgentContext, proofRecord: ProofRecord, newState: ProofState) {
     const previousState = proofRecord.state
     proofRecord.state = newState
-    await this.proofRepository.update(proofRecord)
+    await this.proofRepository.update(agentContext, proofRecord)
 
-    this.emitStateChangedEvent(proofRecord, previousState)
+    this.emitStateChangedEvent(agentContext, proofRecord, previousState)
   }
 
-  private emitStateChangedEvent(proofRecord: ProofRecord, previousState: ProofState | null) {
+  private emitStateChangedEvent(
+    agentContext: AgentContext,
+    proofRecord: ProofRecord,
+    previousState: ProofState | null
+  ) {
     const clonedProof = JsonTransformer.clone(proofRecord)
 
-    this.eventEmitter.emit<ProofStateChangedEvent>({
+    this.eventEmitter.emit<ProofStateChangedEvent>(agentContext, {
       type: ProofEventTypes.ProofStateChanged,
       payload: {
         proofRecord: clonedProof,
@@ -1103,11 +1156,11 @@ export class ProofService {
    * @returns Object containing schemas for specified schema ids
    *
    */
-  private async getSchemas(schemaIds: Set<string>) {
+  private async getSchemas(agentContext: AgentContext, schemaIds: Set<string>) {
     const schemas: { [key: string]: Schema } = {}
 
     for (const schemaId of schemaIds) {
-      const schema = await this.ledgerService.getSchema(schemaId)
+      const schema = await this.ledgerService.getSchema(agentContext, schemaId)
       schemas[schemaId] = schema
     }
 
@@ -1123,11 +1176,11 @@ export class ProofService {
    * @returns Object containing credential definitions for specified credential definition ids
    *
    */
-  private async getCredentialDefinitions(credentialDefinitionIds: Set<string>) {
+  private async getCredentialDefinitions(agentContext: AgentContext, credentialDefinitionIds: Set<string>) {
     const credentialDefinitions: { [key: string]: CredDef } = {}
 
     for (const credDefId of credentialDefinitionIds) {
-      const credDef = await this.ledgerService.getCredentialDefinition(credDefId)
+      const credDef = await this.ledgerService.getCredentialDefinition(agentContext, credDefId)
       credentialDefinitions[credDefId] = credDef
     }
 

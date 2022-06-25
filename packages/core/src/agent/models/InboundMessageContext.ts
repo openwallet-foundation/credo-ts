@@ -1,5 +1,6 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { Key } from '../../modules/dids'
+import type { AgentContext } from '../AgentContext'
 import type { AgentMessage } from '../AgentMessage'
 
 import { AriesFrameworkError } from '../../error'
@@ -9,6 +10,7 @@ export interface MessageContextParams {
   sessionId?: string
   senderKey?: Key
   recipientKey?: Key
+  agentContext: AgentContext
 }
 
 export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
@@ -17,13 +19,15 @@ export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
   public sessionId?: string
   public senderKey?: Key
   public recipientKey?: Key
+  public readonly agentContext: AgentContext
 
-  public constructor(message: T, context: MessageContextParams = {}) {
+  public constructor(message: T, context: MessageContextParams) {
     this.message = message
     this.recipientKey = context.recipientKey
     this.senderKey = context.senderKey
     this.connection = context.connection
     this.sessionId = context.sessionId
+    this.agentContext = context.agentContext
   }
 
   /**

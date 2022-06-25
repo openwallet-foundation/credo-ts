@@ -2,13 +2,13 @@ import type { Logger } from '../logger'
 import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
-import type { Wallet } from '../wallet/Wallet'
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { TransportSession } from './TransportService'
 import type { Subscription } from 'rxjs'
 import type { DependencyContainer } from 'tsyringe'
 
+import { Subject } from 'rxjs'
 import { concatMap, takeUntil } from 'rxjs/operators'
 import { container as baseContainer } from 'tsyringe'
 
@@ -41,6 +41,7 @@ import { WalletModule } from '../wallet/WalletModule'
 import { WalletError } from '../wallet/error'
 
 import { AgentConfig } from './AgentConfig'
+import { AgentContext } from './AgentContext'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
 import { EventEmitter } from './EventEmitter'
@@ -59,8 +60,9 @@ export class Agent {
   protected messageSender: MessageSender
   private _isInitialized = false
   public messageSubscription: Subscription
-  private walletService: Wallet
   private routingService: RoutingService
+  private agentContext: AgentContext
+  private stop$ = new Subject<boolean>()
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
@@ -111,8 +113,8 @@ export class Agent {
     this.messageSender = this.dependencyManager.resolve(MessageSender)
     this.messageReceiver = this.dependencyManager.resolve(MessageReceiver)
     this.transportService = this.dependencyManager.resolve(TransportService)
-    this.walletService = this.dependencyManager.resolve(InjectionSymbols.Wallet)
     this.routingService = this.dependencyManager.resolve(RoutingService)
+    this.agentContext = this.dependencyManager.resolve(AgentContext)
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.dependencyManager.resolve(ConnectionsModule)
@@ -133,8 +135,12 @@ export class Agent {
     this.messageSubscription = this.eventEmitter
       .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
       .pipe(
-        takeUntil(this.agentConfig.stop$),
-        concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message, { connection: e.payload.connection }))
+        takeUntil(this.stop$),
+        concatMap((e) =>
+          this.messageReceiver.receiveMessage(this.agentContext, e.payload.message, {
+            connection: e.payload.connection,
+          })
+        )
       )
       .subscribe()
   }
@@ -184,7 +190,7 @@ export class Agent {
 
     // Make sure the storage is up to date
     const storageUpdateService = this.dependencyManager.resolve(StorageUpdateService)
-    const isStorageUpToDate = await storageUpdateService.isUpToDate()
+    const isStorageUpToDate = await storageUpdateService.isUpToDate(this.agentContext)
     this.logger.info(`Agent storage is ${isStorageUpToDate ? '' : 'not '}up to date.`)
 
     if (!isStorageUpToDate && this.agentConfig.autoUpdateStorageOnStartup) {
@@ -193,7 +199,7 @@ export class Agent {
       await updateAssistant.initialize()
       await updateAssistant.update()
     } else if (!isStorageUpToDate) {
-      const currentVersion = await storageUpdateService.getCurrentStorageVersion()
+      const currentVersion = await storageUpdateService.getCurrentStorageVersion(this.agentContext)
       // Close wallet to prevent un-initialized agent with initialized wallet
       await this.wallet.close()
       throw new AriesFrameworkError(
@@ -207,9 +213,11 @@ export class Agent {
 
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
-      await this.walletService.initPublicDid({ seed: publicDidSeed })
+      await this.agentContext.wallet.initPublicDid({ seed: publicDidSeed })
     }
 
+    // set the pools on the ledger.
+    this.ledger.setPools(this.agentContext.config.indyLedgers)
     // As long as value isn't false we will async connect to all genesis pools on startup
     if (connectToIndyLedgersOnStartup) {
       this.ledger.connectToPools().catch((error) => {
@@ -242,7 +250,7 @@ export class Agent {
   public async shutdown() {
     // All observables use takeUntil with the stop$ observable
     // this means all observables will stop running if a value is emitted on this observable
-    this.agentConfig.stop$.next(true)
+    this.stop$.next(true)
 
     // Stop transports
     const allTransports = [...this.inboundTransports, ...this.outboundTransports]
@@ -257,11 +265,11 @@ export class Agent {
   }
 
   public get publicDid() {
-    return this.walletService.publicDid
+    return this.agentContext.wallet.publicDid
   }
 
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
-    return await this.messageReceiver.receiveMessage(inboundMessage, { session })
+    return await this.messageReceiver.receiveMessage(this.agentContext, inboundMessage, { session })
   }
 
   public get injectionContainer() {
@@ -272,6 +280,10 @@ export class Agent {
     return this.agentConfig
   }
 
+  public get context() {
+    return this.agentContext
+  }
+
   private async getMediationConnection(mediatorInvitationUrl: string) {
     const outOfBandInvitation = this.oob.parseInvitation(mediatorInvitationUrl)
     const outOfBandRecord = await this.oob.findByInvitationId(outOfBandInvitation.id)
@@ -280,7 +292,7 @@ export class Agent {
     if (!connection) {
       this.logger.debug('Mediation connection does not exist, creating connection')
       // We don't want to use the current default mediator when connecting to another mediator
-      const routing = await this.routingService.getRouting({ useDefaultMediator: false })
+      const routing = await this.routingService.getRouting(this.agentContext, { useDefaultMediator: false })
 
       this.logger.debug('Routing created', routing)
       const { connectionRecord: newConnection } = await this.oob.receiveInvitation(outOfBandInvitation, {
@@ -302,7 +314,7 @@ export class Agent {
   }
 
   private registerDependencies(dependencyManager: DependencyManager) {
-    dependencyManager.registerInstance(AgentConfig, this.agentConfig)
+    const dependencies = this.agentConfig.agentDependencies
 
     // Register internal dependencies
     dependencyManager.registerSingleton(EventEmitter)
@@ -317,11 +329,14 @@ export class Agent {
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
 
+    dependencyManager.registerInstance(AgentConfig, this.agentConfig)
+    dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, dependencies)
+    dependencyManager.registerInstance(InjectionSymbols.FileSystem, new dependencies.FileSystem())
+    dependencyManager.registerInstance(InjectionSymbols.Stop$, this.stop$)
+
     // Register possibly already defined services
     if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
-      this.dependencyManager.registerSingleton(IndyWallet)
-      const wallet = this.dependencyManager.resolve(IndyWallet)
-      dependencyManager.registerInstance(InjectionSymbols.Wallet, wallet)
+      dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndyWallet)
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.Logger)) {
       dependencyManager.registerInstance(InjectionSymbols.Logger, this.logger)
@@ -350,5 +365,7 @@ export class Agent {
       OutOfBandModule,
       IndyModule
     )
+
+    dependencyManager.registerInstance(AgentContext, new AgentContext({ dependencyManager }))
   }
 }

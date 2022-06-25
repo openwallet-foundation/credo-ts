@@ -1,7 +1,6 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
-import type { Logger } from '../../logger'
-import type { ConnectionRecord, Routing, ConnectionInvitationMessage } from '../../modules/connections'
+import type { ConnectionInvitationMessage, ConnectionRecord, Routing } from '../../modules/connections'
 import type { DependencyManager } from '../../plugins'
 import type { PlaintextMessage } from '../../types'
 import type { Key } from '../dids'
@@ -9,16 +8,18 @@ import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 
-import { AgentConfig } from '../../agent/AgentConfig'
+import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { InjectionSymbols } from '../../constants'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
-import { DidExchangeState, HandshakeProtocol, ConnectionsModule } from '../../modules/connections'
-import { injectable, module } from '../../plugins'
+import { Logger } from '../../logger'
+import { ConnectionsModule, DidExchangeState, HandshakeProtocol } from '../../modules/connections'
+import { inject, injectable, module } from '../../plugins'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
@@ -85,22 +86,23 @@ export class OutOfBandModule {
   private dispatcher: Dispatcher
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
-  private agentConfig: AgentConfig
+  private agentContext: AgentContext
   private logger: Logger
 
   public constructor(
     dispatcher: Dispatcher,
-    agentConfig: AgentConfig,
     outOfBandService: OutOfBandService,
     routingService: RoutingService,
     connectionsModule: ConnectionsModule,
     didCommMessageRepository: DidCommMessageRepository,
     messageSender: MessageSender,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    agentContext: AgentContext
   ) {
     this.dispatcher = dispatcher
-    this.agentConfig = agentConfig
-    this.logger = agentConfig.logger
+    this.agentContext = agentContext
+    this.logger = logger
     this.outOfBandService = outOfBandService
     this.routingService = routingService
     this.connectionsModule = connectionsModule
@@ -129,11 +131,11 @@ export class OutOfBandModule {
     const multiUseInvitation = config.multiUseInvitation ?? false
     const handshake = config.handshake ?? true
     const customHandshakeProtocols = config.handshakeProtocols
-    const autoAcceptConnection = config.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections
+    const autoAcceptConnection = config.autoAcceptConnection ?? this.agentContext.config.autoAcceptConnections
     // We don't want to treat an empty array as messages being provided
     const messages = config.messages && config.messages.length > 0 ? config.messages : undefined
-    const label = config.label ?? this.agentConfig.label
-    const imageUrl = config.imageUrl ?? this.agentConfig.connectionImageUrl
+    const label = config.label ?? this.agentContext.config.label
+    const imageUrl = config.imageUrl ?? this.agentContext.config.connectionImageUrl
 
     if (!handshake && !messages) {
       throw new AriesFrameworkError(
@@ -163,7 +165,7 @@ export class OutOfBandModule {
       }
     }
 
-    const routing = config.routing ?? (await this.routingService.getRouting({}))
+    const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
 
     const services = routing.endpoints.map((endpoint, index) => {
       return new OutOfBandDidCommService({
@@ -204,8 +206,8 @@ export class OutOfBandModule {
       autoAcceptConnection,
     })
 
-    await this.outOfBandService.save(outOfBandRecord)
-    this.outOfBandService.emitStateChangedEvent(outOfBandRecord, null)
+    await this.outOfBandService.save(this.agentContext, outOfBandRecord)
+    this.outOfBandService.emitStateChangedEvent(this.agentContext, outOfBandRecord, null)
 
     return outOfBandRecord
   }
@@ -234,7 +236,7 @@ export class OutOfBandModule {
     domain: string
   }): Promise<{ message: Message; invitationUrl: string }> {
     // Create keys (and optionally register them at the mediator)
-    const routing = await this.routingService.getRouting()
+    const routing = await this.routingService.getRouting(this.agentContext)
 
     // Set the service on the message
     config.message.service = new ServiceDecorator({
@@ -245,7 +247,7 @@ export class OutOfBandModule {
 
     // We need to update the message with the new service, so we can
     // retrieve it from storage later on.
-    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage(this.agentContext, {
       agentMessage: config.message,
       associatedRecordId: config.recordId,
       role: DidCommMessageRole.Sender,
@@ -313,9 +315,9 @@ export class OutOfBandModule {
     const autoAcceptInvitation = config.autoAcceptInvitation ?? true
     const autoAcceptConnection = config.autoAcceptConnection ?? true
     const reuseConnection = config.reuseConnection ?? false
-    const label = config.label ?? this.agentConfig.label
+    const label = config.label ?? this.agentContext.config.label
     const alias = config.alias
-    const imageUrl = config.imageUrl ?? this.agentConfig.connectionImageUrl
+    const imageUrl = config.imageUrl ?? this.agentContext.config.connectionImageUrl
 
     const messages = outOfBandInvitation.getRequests()
 
@@ -339,8 +341,8 @@ export class OutOfBandModule {
       outOfBandInvitation: outOfBandInvitation,
       autoAcceptConnection,
     })
-    await this.outOfBandService.save(outOfBandRecord)
-    this.outOfBandService.emitStateChangedEvent(outOfBandRecord, null)
+    await this.outOfBandService.save(this.agentContext, outOfBandRecord)
+    this.outOfBandService.emitStateChangedEvent(this.agentContext, outOfBandRecord, null)
 
     if (autoAcceptInvitation) {
       return await this.acceptInvitation(outOfBandRecord.id, {
@@ -382,7 +384,7 @@ export class OutOfBandModule {
       routing?: Routing
     }
   ) {
-    const outOfBandRecord = await this.outOfBandService.getById(outOfBandId)
+    const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
 
     const { outOfBandInvitation } = outOfBandRecord
     const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, routing } = config
@@ -391,7 +393,7 @@ export class OutOfBandModule {
 
     const existingConnection = await this.findExistingConnection(services)
 
-    await this.outOfBandService.updateState(outOfBandRecord, OutOfBandState.PrepareResponse)
+    await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.PrepareResponse)
 
     if (handshakeProtocols) {
       this.logger.debug('Out of band message contains handshake protocols.')
@@ -473,11 +475,11 @@ export class OutOfBandModule {
   }
 
   public async findByRecipientKey(recipientKey: Key) {
-    return this.outOfBandService.findByRecipientKey(recipientKey)
+    return this.outOfBandService.findByRecipientKey(this.agentContext, recipientKey)
   }
 
   public async findByInvitationId(invitationId: string) {
-    return this.outOfBandService.findByInvitationId(invitationId)
+    return this.outOfBandService.findByInvitationId(this.agentContext, invitationId)
   }
 
   /**
@@ -486,7 +488,7 @@ export class OutOfBandModule {
    * @returns List containing all  out of band records
    */
   public getAll() {
-    return this.outOfBandService.getAll()
+    return this.outOfBandService.getAll(this.agentContext)
   }
 
   /**
@@ -498,7 +500,7 @@ export class OutOfBandModule {
    *
    */
   public getById(outOfBandId: string): Promise<OutOfBandRecord> {
-    return this.outOfBandService.getById(outOfBandId)
+    return this.outOfBandService.getById(this.agentContext, outOfBandId)
   }
 
   /**
@@ -508,7 +510,7 @@ export class OutOfBandModule {
    * @returns The out of band record or null if not found
    */
   public findById(outOfBandId: string): Promise<OutOfBandRecord | null> {
-    return this.outOfBandService.findById(outOfBandId)
+    return this.outOfBandService.findById(this.agentContext, outOfBandId)
   }
 
   /**
@@ -517,7 +519,7 @@ export class OutOfBandModule {
    * @param outOfBandId the out of band record id
    */
   public async deleteById(outOfBandId: string) {
-    return this.outOfBandService.deleteById(outOfBandId)
+    return this.outOfBandService.deleteById(this.agentContext, outOfBandId)
   }
 
   private assertHandshakeProtocols(handshakeProtocols: HandshakeProtocol[]) {
@@ -600,7 +602,7 @@ export class OutOfBandModule {
 
     this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
-    this.eventEmitter.emit<AgentMessageReceivedEvent>({
+    this.eventEmitter.emit<AgentMessageReceivedEvent>(this.agentContext, {
       type: AgentEventTypes.AgentMessageReceived,
       payload: {
         message: plaintextMessage,
@@ -641,7 +643,7 @@ export class OutOfBandModule {
     })
 
     plaintextMessage['~service'] = JsonTransformer.toJSON(serviceDecorator)
-    this.eventEmitter.emit<AgentMessageReceivedEvent>({
+    this.eventEmitter.emit<AgentMessageReceivedEvent>(this.agentContext, {
       type: AgentEventTypes.AgentMessageReceived,
       payload: {
         message: plaintextMessage,
@@ -650,7 +652,11 @@ export class OutOfBandModule {
   }
 
   private async handleHandshakeReuse(outOfBandRecord: OutOfBandRecord, connectionRecord: ConnectionRecord) {
-    const reuseMessage = await this.outOfBandService.createHandShakeReuse(outOfBandRecord, connectionRecord)
+    const reuseMessage = await this.outOfBandService.createHandShakeReuse(
+      this.agentContext,
+      outOfBandRecord,
+      connectionRecord
+    )
 
     const reuseAcceptedEventPromise = firstValueFrom(
       this.eventEmitter.observable<HandshakeReusedEvent>(OutOfBandEventTypes.HandshakeReused).pipe(
@@ -671,7 +677,7 @@ export class OutOfBandModule {
     )
 
     const outbound = createOutboundMessage(connectionRecord, reuseMessage)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendMessage(this.agentContext, outbound)
 
     return reuseAcceptedEventPromise
   }

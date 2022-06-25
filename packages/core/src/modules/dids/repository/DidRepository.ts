@@ -1,3 +1,4 @@
+import type { AgentContext } from '../../../agent'
 import type { Key } from '../domain/Key'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -17,11 +18,11 @@ export class DidRepository extends Repository<DidRecord> {
     super(DidRecord, storageService, eventEmitter)
   }
 
-  public findByRecipientKey(recipientKey: Key) {
-    return this.findSingleByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
+  public findByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
+    return this.findSingleByQuery(agentContext, { recipientKeyFingerprints: [recipientKey.fingerprint] })
   }
 
-  public findAllByRecipientKey(recipientKey: Key) {
-    return this.findByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
+  public findAllByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
+    return this.findByQuery(agentContext, { recipientKeyFingerprints: [recipientKey.fingerprint] })
   }
 }

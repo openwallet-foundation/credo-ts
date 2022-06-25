@@ -1,3 +1,4 @@
+import type { AgentContext } from '../../../agent'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../../agent/Events'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
@@ -17,7 +18,6 @@ import type { GetRoutingOptions } from './RoutingService'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
@@ -49,16 +49,13 @@ export class MediationRecipientService {
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private config: AgentConfig
 
   public constructor(
     connectionService: ConnectionService,
     messageSender: MessageSender,
-    config: AgentConfig,
     mediatorRepository: MediationRepository,
     eventEmitter: EventEmitter
   ) {
-    this.config = config
     this.mediationRepository = mediatorRepository
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
@@ -83,6 +80,7 @@ export class MediationRecipientService {
   }
 
   public async createRequest(
+    agentContext: AgentContext,
     connection: ConnectionRecord
   ): Promise<MediationProtocolMsgReturnType<MediationRequestMessage>> {
     const message = new MediationRequestMessage({})
@@ -93,8 +91,8 @@ export class MediationRecipientService {
       role: MediationRole.Recipient,
       connectionId: connection.id,
     })
-    await this.mediationRepository.save(mediationRecord)
-    this.emitStateChangedEvent(mediationRecord, null)
+    await this.mediationRepository.save(agentContext, mediationRecord)
+    this.emitStateChangedEvent(agentContext, mediationRecord, null)
 
     return { mediationRecord, message }
   }
@@ -104,7 +102,7 @@ export class MediationRecipientService {
     const connection = messageContext.assertReadyConnection()
 
     // Mediation record must already exists to be updated to granted status
-    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
+    const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
 
     // Assert
     mediationRecord.assertState(MediationState.Requested)
@@ -113,14 +111,14 @@ export class MediationRecipientService {
     // Update record
     mediationRecord.endpoint = messageContext.message.endpoint
     mediationRecord.routingKeys = messageContext.message.routingKeys
-    return await this.updateState(mediationRecord, MediationState.Granted)
+    return await this.updateState(messageContext.agentContext, mediationRecord, MediationState.Granted)
   }
 
   public async processKeylistUpdateResults(messageContext: InboundMessageContext<KeylistUpdateResponseMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
-    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
+    const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
 
     // Assert
     mediationRecord.assertReady()
@@ -137,8 +135,8 @@ export class MediationRecipientService {
       }
     }
 
-    await this.mediationRepository.update(mediationRecord)
-    this.eventEmitter.emit<KeylistUpdatedEvent>({
+    await this.mediationRepository.update(messageContext.agentContext, mediationRecord)
+    this.eventEmitter.emit<KeylistUpdatedEvent>(messageContext.agentContext, {
       type: RoutingEventTypes.RecipientKeylistUpdated,
       payload: {
         mediationRecord,
@@ -148,12 +146,13 @@ export class MediationRecipientService {
   }
 
   public async keylistUpdateAndAwait(
+    agentContext: AgentContext,
     mediationRecord: MediationRecord,
     verKey: string,
     timeoutMs = 15000 // TODO: this should be a configurable value in agent config
   ): Promise<MediationRecord> {
     const message = this.createKeylistUpdateMessage(verKey)
-    const connection = await this.connectionService.getById(mediationRecord.connectionId)
+    const connection = await this.connectionService.getById(agentContext, mediationRecord.connectionId)
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Recipient)
@@ -175,7 +174,7 @@ export class MediationRecipientService {
       .subscribe(subject)
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(agentContext, outboundMessage)
 
     const keylistUpdate = await firstValueFrom(subject)
     return keylistUpdate.payload.mediationRecord
@@ -194,24 +193,29 @@ export class MediationRecipientService {
   }
 
   public async addMediationRouting(
+    agentContext: AgentContext,
     routing: Routing,
     { mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}
   ): Promise<Routing> {
     let mediationRecord: MediationRecord | null = null
 
     if (mediatorId) {
-      mediationRecord = await this.getById(mediatorId)
+      mediationRecord = await this.getById(agentContext, mediatorId)
     } else if (useDefaultMediator) {
       // If no mediatorId is provided, and useDefaultMediator is true (default)
       // We use the default mediator if available
-      mediationRecord = await this.findDefaultMediator()
+      mediationRecord = await this.findDefaultMediator(agentContext)
     }
 
     // Return early if no mediation record
     if (!mediationRecord) return routing
 
     // new did has been created and mediator needs to be updated with the public key.
-    mediationRecord = await this.keylistUpdateAndAwait(mediationRecord, routing.recipientKey.publicKeyBase58)
+    mediationRecord = await this.keylistUpdateAndAwait(
+      agentContext,
+      mediationRecord,
+      routing.recipientKey.publicKeyBase58
+    )
 
     return {
       ...routing,
@@ -224,7 +228,7 @@ export class MediationRecipientService {
     const connection = messageContext.assertReadyConnection()
 
     // Mediation record already exists
-    const mediationRecord = await this.findByConnectionId(connection.id)
+    const mediationRecord = await this.findByConnectionId(messageContext.agentContext, connection.id)
 
     if (!mediationRecord) {
       throw new Error(`No mediation has been requested for this connection id: ${connection.id}`)
@@ -235,7 +239,7 @@ export class MediationRecipientService {
     mediationRecord.assertState(MediationState.Requested)
 
     // Update record
-    await this.updateState(mediationRecord, MediationState.Denied)
+    await this.updateState(messageContext.agentContext, mediationRecord, MediationState.Denied)
 
     return mediationRecord
   }
@@ -245,33 +249,41 @@ export class MediationRecipientService {
     const { message: statusMessage } = messageContext
     const { messageCount, recipientKey } = statusMessage
 
-    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
+    const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Recipient)
 
     //No messages to be sent
     if (messageCount === 0) {
-      const { message, connectionRecord } = await this.connectionService.createTrustPing(connection, {
-        responseRequested: false,
-      })
+      const { message, connectionRecord } = await this.connectionService.createTrustPing(
+        messageContext.agentContext,
+        connection,
+        {
+          responseRequested: false,
+        }
+      )
       const websocketSchemes = ['ws', 'wss']
 
-      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message), {
-        transportPriority: {
-          schemes: websocketSchemes,
-          restrictive: true,
-          // TODO: add keepAlive: true to enforce through the public api
-          // we need to keep the socket alive. It already works this way, but would
-          // be good to make more explicit from the public facing API.
-          // This would also make it easier to change the internal API later on.
-          // keepAlive: true,
-        },
-      })
+      await this.messageSender.sendMessage(
+        messageContext.agentContext,
+        createOutboundMessage(connectionRecord, message),
+        {
+          transportPriority: {
+            schemes: websocketSchemes,
+            restrictive: true,
+            // TODO: add keepAlive: true to enforce through the public api
+            // we need to keep the socket alive. It already works this way, but would
+            // be good to make more explicit from the public facing API.
+            // This would also make it easier to change the internal API later on.
+            // keepAlive: true,
+          },
+        }
+      )
 
       return null
     }
-    const { maximumMessagePickup } = this.config
+    const { maximumMessagePickup } = messageContext.agentContext.config
     const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
 
     const deliveryRequestMessage = new DeliveryRequestMessage({
@@ -287,7 +299,7 @@ export class MediationRecipientService {
 
     const { appendedAttachments } = messageContext.message
 
-    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
+    const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Recipient)
@@ -301,7 +313,7 @@ export class MediationRecipientService {
     for (const attachment of appendedAttachments) {
       ids.push(attachment.id)
 
-      this.eventEmitter.emit<AgentMessageReceivedEvent>({
+      this.eventEmitter.emit<AgentMessageReceivedEvent>(messageContext.agentContext, {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: attachment.getDataAsJson<EncryptedMessage>(),
@@ -322,18 +334,22 @@ export class MediationRecipientService {
    * @param newState The state to update to
    *
    */
-  private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
+  private async updateState(agentContext: AgentContext, mediationRecord: MediationRecord, newState: MediationState) {
     const previousState = mediationRecord.state
     mediationRecord.state = newState
-    await this.mediationRepository.update(mediationRecord)
+    await this.mediationRepository.update(agentContext, mediationRecord)
 
-    this.emitStateChangedEvent(mediationRecord, previousState)
+    this.emitStateChangedEvent(agentContext, mediationRecord, previousState)
     return mediationRecord
   }
 
-  private emitStateChangedEvent(mediationRecord: MediationRecord, previousState: MediationState | null) {
+  private emitStateChangedEvent(
+    agentContext: AgentContext,
+    mediationRecord: MediationRecord,
+    previousState: MediationState | null
+  ) {
     const clonedMediationRecord = JsonTransformer.clone(mediationRecord)
-    this.eventEmitter.emit<MediationStateChangedEvent>({
+    this.eventEmitter.emit<MediationStateChangedEvent>(agentContext, {
       type: RoutingEventTypes.MediationStateChanged,
       payload: {
         mediationRecord: clonedMediationRecord,
@@ -342,29 +358,32 @@ export class MediationRecipientService {
     })
   }
 
-  public async getById(id: string): Promise<MediationRecord> {
-    return this.mediationRepository.getById(id)
+  public async getById(agentContext: AgentContext, id: string): Promise<MediationRecord> {
+    return this.mediationRepository.getById(agentContext, id)
   }
 
-  public async findByConnectionId(connectionId: string): Promise<MediationRecord | null> {
-    return this.mediationRepository.findSingleByQuery({ connectionId })
+  public async findByConnectionId(agentContext: AgentContext, connectionId: string): Promise<MediationRecord | null> {
+    return this.mediationRepository.findSingleByQuery(agentContext, { connectionId })
   }
 
-  public async getMediators(): Promise<MediationRecord[]> {
-    return this.mediationRepository.getAll()
+  public async getMediators(agentContext: AgentContext): Promise<MediationRecord[]> {
+    return this.mediationRepository.getAll(agentContext)
   }
 
-  public async findDefaultMediator(): Promise<MediationRecord | null> {
-    return this.mediationRepository.findSingleByQuery({ default: true })
+  public async findDefaultMediator(agentContext: AgentContext): Promise<MediationRecord | null> {
+    return this.mediationRepository.findSingleByQuery(agentContext, { default: true })
   }
 
-  public async discoverMediation(mediatorId?: string): Promise<MediationRecord | undefined> {
+  public async discoverMediation(
+    agentContext: AgentContext,
+    mediatorId?: string
+  ): Promise<MediationRecord | undefined> {
     // If mediatorId is passed, always use it (and error if it is not found)
     if (mediatorId) {
-      return this.mediationRepository.getById(mediatorId)
+      return this.mediationRepository.getById(agentContext, mediatorId)
     }
 
-    const defaultMediator = await this.findDefaultMediator()
+    const defaultMediator = await this.findDefaultMediator(agentContext)
     if (defaultMediator) {
       if (defaultMediator.state !== MediationState.Granted) {
         throw new AriesFrameworkError(
@@ -376,25 +395,25 @@ export class MediationRecipientService {
     }
   }
 
-  public async setDefaultMediator(mediator: MediationRecord) {
-    const mediationRecords = await this.mediationRepository.findByQuery({ default: true })
+  public async setDefaultMediator(agentContext: AgentContext, mediator: MediationRecord) {
+    const mediationRecords = await this.mediationRepository.findByQuery(agentContext, { default: true })
 
     for (const record of mediationRecords) {
       record.setTag('default', false)
-      await this.mediationRepository.update(record)
+      await this.mediationRepository.update(agentContext, record)
     }
 
     // Set record coming in tag to true and then update.
     mediator.setTag('default', true)
-    await this.mediationRepository.update(mediator)
+    await this.mediationRepository.update(agentContext, mediator)
   }
 
-  public async clearDefaultMediator() {
-    const mediationRecord = await this.findDefaultMediator()
+  public async clearDefaultMediator(agentContext: AgentContext) {
+    const mediationRecord = await this.findDefaultMediator(agentContext)
 
     if (mediationRecord) {
       mediationRecord.setTag('default', false)
-      await this.mediationRepository.update(mediationRecord)
+      await this.mediationRepository.update(agentContext, mediationRecord)
     }
   }
 }

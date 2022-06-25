@@ -6,23 +6,20 @@ import type fetch from 'node-fetch'
 
 import { AbortController } from 'abort-controller'
 
-import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 
 export class HttpOutboundTransport implements OutboundTransport {
   private agent!: Agent
   private logger!: Logger
-  private agentConfig!: AgentConfig
   private fetch!: typeof fetch
 
   public supportedSchemes = ['http', 'https']
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
-    this.agentConfig = agent.dependencyManager.resolve(AgentConfig)
-    this.logger = this.agentConfig.logger
-    this.fetch = this.agentConfig.agentDependencies.fetch
+    this.logger = this.agent.config.logger
+    this.fetch = this.agent.config.agentDependencies.fetch
 
     this.logger.debug('Starting HTTP outbound transport')
   }
@@ -53,7 +50,7 @@ export class HttpOutboundTransport implements OutboundTransport {
         response = await this.fetch(endpoint, {
           method: 'POST',
           body: JSON.stringify(payload),
-          headers: { 'Content-Type': this.agentConfig.didCommMimeType },
+          headers: { 'Content-Type': this.agent.config.didCommMimeType },
           signal: abortController.signal,
         })
         clearTimeout(id)
@@ -96,7 +93,7 @@ export class HttpOutboundTransport implements OutboundTransport {
         error,
         message: error.message,
         body: payload,
-        didCommMimeType: this.agentConfig.didCommMimeType,
+        didCommMimeType: this.agent.config.didCommMimeType,
       })
       throw new AriesFrameworkError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
     }

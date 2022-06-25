@@ -1,7 +1,7 @@
 import type { IndyLedgerService } from '../../ledger'
 import type { DidRepository } from '../repository'
 
-import { getAgentConfig, mockProperty } from '../../../../tests/helpers'
+import { getAgentConfig, getAgentContext, mockProperty } from '../../../../tests/helpers'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { DidDocument } from '../domain'
 import { parseDid } from '../domain/parse'
@@ -13,11 +13,16 @@ import didKeyEd25519Fixture from './__fixtures__/didKeyEd25519.json'
 jest.mock('../methods/key/KeyDidResolver')
 
 const agentConfig = getAgentConfig('DidResolverService')
+const agentContext = getAgentContext()
 
 describe('DidResolverService', () => {
   const indyLedgerServiceMock = jest.fn() as unknown as IndyLedgerService
   const didDocumentRepositoryMock = jest.fn() as unknown as DidRepository
-  const didResolverService = new DidResolverService(agentConfig, indyLedgerServiceMock, didDocumentRepositoryMock)
+  const didResolverService = new DidResolverService(
+    indyLedgerServiceMock,
+    didDocumentRepositoryMock,
+    agentConfig.logger
+  )
 
   it('should correctly find and call the correct resolver for a specified did', async () => {
     const didKeyResolveSpy = jest.spyOn(KeyDidResolver.prototype, 'resolve')
@@ -32,17 +37,19 @@ describe('DidResolverService', () => {
     }
     didKeyResolveSpy.mockResolvedValue(returnValue)
 
-    const result = await didResolverService.resolve('did:key:xxxx', { someKey: 'string' })
+    const result = await didResolverService.resolve(agentContext, 'did:key:xxxx', { someKey: 'string' })
     expect(result).toEqual(returnValue)
 
     expect(didKeyResolveSpy).toHaveBeenCalledTimes(1)
-    expect(didKeyResolveSpy).toHaveBeenCalledWith('did:key:xxxx', parseDid('did:key:xxxx'), { someKey: 'string' })
+    expect(didKeyResolveSpy).toHaveBeenCalledWith(agentContext, 'did:key:xxxx', parseDid('did:key:xxxx'), {
+      someKey: 'string',
+    })
   })
 
   it("should return an error with 'invalidDid' if the did string couldn't be parsed", async () => {
     const did = 'did:__Asd:asdfa'
 
-    const result = await didResolverService.resolve(did)
+    const result = await didResolverService.resolve(agentContext, did)
 
     expect(result).toEqual({
       didDocument: null,
@@ -56,7 +63,7 @@ describe('DidResolverService', () => {
   it("should return an error with 'unsupportedDidMethod' if the did has no resolver", async () => {
     const did = 'did:example:asdfa'
 
-    const result = await didResolverService.resolve(did)
+    const result = await didResolverService.resolve(agentContext, did)
 
     expect(result).toEqual({
       didDocument: null,

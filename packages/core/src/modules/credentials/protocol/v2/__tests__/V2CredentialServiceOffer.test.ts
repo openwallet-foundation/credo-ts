@@ -1,9 +1,10 @@
-import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { CreateOfferOptions } from '../../../CredentialServiceOptions'
 import type { IndyCredentialFormat } from '../../../formats/indy/IndyCredentialFormat'
 
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
@@ -55,6 +56,9 @@ const connectionService = new ConnectionServiceMock()
 // @ts-ignore
 indyCredentialFormatService.formatKey = 'indy'
 
+const agentConfig = getAgentConfig('V2CredentialServiceOfferTest')
+const agentContext = getAgentContext()
+
 const connection = getMockConnection({
   id: '123',
   state: DidExchangeState.Completed,
@@ -80,13 +84,11 @@ const offerAttachment = new Attachment({
 
 describe('V2CredentialServiceOffer', () => {
   let eventEmitter: EventEmitter
-  let agentConfig: AgentConfig
   let credentialService: V2CredentialService
 
   beforeEach(async () => {
     // real objects
-    agentConfig = getAgentConfig('V2CredentialServiceOfferTest')
-    eventEmitter = new EventEmitter(agentConfig)
+    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
 
     // mock function implementations
     mockFunction(connectionService.getById).mockResolvedValue(connection)
@@ -96,12 +98,12 @@ describe('V2CredentialServiceOffer', () => {
     credentialService = new V2CredentialService(
       connectionService,
       didCommMessageRepository,
-      agentConfig,
       routingService,
       dispatcher,
       eventEmitter,
       credentialRepository,
-      indyCredentialFormatService
+      indyCredentialFormatService,
+      agentConfig.logger
     )
   })
 
@@ -129,11 +131,12 @@ describe('V2CredentialServiceOffer', () => {
       })
 
       // when
-      await credentialService.createOffer(offerOptions)
+      await credentialService.createOffer(agentContext, offerOptions)
 
       // then
       expect(credentialRepository.save).toHaveBeenNthCalledWith(
         1,
+        agentContext,
         expect.objectContaining({
           type: CredentialExchangeRecord.type,
           id: expect.any(String),
@@ -154,7 +157,7 @@ describe('V2CredentialServiceOffer', () => {
       const eventListenerMock = jest.fn()
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
-      await credentialService.createOffer(offerOptions)
+      await credentialService.createOffer(agentContext, offerOptions)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
@@ -175,7 +178,7 @@ describe('V2CredentialServiceOffer', () => {
         previewAttributes: credentialPreview.attributes,
       })
 
-      const { message: credentialOffer } = await credentialService.createOffer(offerOptions)
+      const { message: credentialOffer } = await credentialService.createOffer(agentContext, offerOptions)
 
       expect(credentialOffer.toJSON()).toMatchObject({
         '@id': expect.any(String),
@@ -210,9 +213,7 @@ describe('V2CredentialServiceOffer', () => {
       offerAttachments: [offerAttachment],
     })
 
-    const messageContext = new InboundMessageContext(credentialOfferMessage, {
-      connection,
-    })
+    const messageContext = new InboundMessageContext(credentialOfferMessage, { agentContext, connection })
 
     test(`creates and return credential record in ${CredentialState.OfferReceived} state with offer, thread ID`, async () => {
       mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
@@ -223,6 +224,7 @@ describe('V2CredentialServiceOffer', () => {
       // then
       expect(credentialRepository.save).toHaveBeenNthCalledWith(
         1,
+        agentContext,
         expect.objectContaining({
           type: CredentialExchangeRecord.type,
           id: expect.any(String),

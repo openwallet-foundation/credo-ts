@@ -4,7 +4,7 @@ import { IndyWallet } from './IndyWallet'
 
 describe('Wallet', () => {
   const config = getAgentConfig('WalletTest')
-  const wallet = new IndyWallet(config)
+  const wallet = new IndyWallet(config.agentDependencies, config.logger)
 
   test('initialize public did', async () => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
