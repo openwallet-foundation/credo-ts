@@ -708,7 +708,7 @@ describe('V1CredentialService', () => {
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credential))
 
       // when
-      const credentialProblemReportMessage = credentialService.createProblemReport(message)
+      const credentialProblemReportMessage = credentialService.createProblemReport({ message })
 
       credentialProblemReportMessage.setThread({ threadId })
       // then

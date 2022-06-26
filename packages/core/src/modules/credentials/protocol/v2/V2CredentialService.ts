@@ -15,6 +15,7 @@ import type {
   AcceptCredentialOptions,
   GetFormatDataReturn,
   FormatDataMessagePayload,
+  CreateProblemReportOptions,
 } from '../../CredentialServiceOptions'
 import type {
   CredentialFormat,
@@ -808,10 +809,10 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
    * @returns a {@link V2CredentialProblemReportMessage}
    *
    */
-  public createProblemReport(message: string): ProblemReportMessage {
+  public createProblemReport(options: CreateProblemReportOptions): ProblemReportMessage {
     return new V2CredentialProblemReportMessage({
       description: {
-        en: message,
+        en: options.message,
         code: CredentialProblemReportReason.IssuanceAbandoned,
       },
     })

@@ -20,6 +20,7 @@ import type {
   AcceptRequestOptions,
   AcceptCredentialOptions,
   GetFormatDataReturn,
+  CreateProblemReportOptions,
 } from '../CredentialServiceOptions'
 import type { CredentialFormat, CredentialFormatService } from '../formats'
 import type { CredentialExchangeRecord, CredentialRepository } from './../repository'
@@ -85,7 +86,7 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
   abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
 
   // methods for problem-report
-  abstract createProblemReport(message: string): ProblemReportMessage
+  abstract createProblemReport(options: CreateProblemReportOptions): ProblemReportMessage
 
   abstract findProposalMessage(credentialExchangeId: string): Promise<AgentMessage | null>
   abstract findOfferMessage(credentialExchangeId: string): Promise<AgentMessage | null>

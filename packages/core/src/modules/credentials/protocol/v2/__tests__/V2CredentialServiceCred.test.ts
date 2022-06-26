@@ -659,10 +659,11 @@ describe('CredentialService', () => {
         threadId: 'somethreadid',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
+      const message = 'Indy error'
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
 
       // when
-      const credentialProblemReportMessage = credentialService.createProblemReport('Indy error')
+      const credentialProblemReportMessage = credentialService.createProblemReport({ message })
 
       credentialProblemReportMessage.setThread({ threadId: 'somethreadid' })
       // then
@@ -674,7 +675,7 @@ describe('CredentialService', () => {
         },
         description: {
           code: CredentialProblemReportReason.IssuanceAbandoned,
-          en: 'Indy error',
+          en: message,
         },
       })
     })

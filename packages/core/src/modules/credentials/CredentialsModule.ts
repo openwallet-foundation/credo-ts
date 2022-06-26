@@ -17,6 +17,7 @@ import type {
   FindCredentialMessageReturn,
   FindProposalMessageReturn,
   GetFormatDataReturn,
+  SendProblemReportOptions,
 } from './CredentialsModuleOptions'
 import type { CredentialFormat } from './formats'
 import type { IndyCredentialFormat } from './formats/indy/IndyCredentialFormat'
@@ -67,7 +68,7 @@ export interface CredentialsModule<CFs extends CredentialFormat[], CSs extends C
 
   // Credential
   acceptCredential(options: AcceptCredentialOptions): Promise<CredentialExchangeRecord>
-  sendProblemReport(credentialRecordId: string, message: string): Promise<CredentialExchangeRecord>
+  sendProblemReport(options: SendProblemReportOptions): Promise<CredentialExchangeRecord>
 
   // Record Methods
   getAll(): Promise<CredentialExchangeRecord[]>
@@ -524,15 +525,15 @@ export class CredentialsModule<
    * @param message message to send
    * @returns credential record associated with the credential problem report message
    */
-  public async sendProblemReport(credentialRecordId: string, message: string) {
-    const credentialRecord = await this.getById(credentialRecordId)
+  public async sendProblemReport(options: SendProblemReportOptions) {
+    const credentialRecord = await this.getById(options.credentialRecordId)
     if (!credentialRecord.connectionId) {
       throw new AriesFrameworkError(`No connectionId found for credential record '${credentialRecord.id}'.`)
     }
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
     const service = this.getService(credentialRecord.protocolVersion)
-    const problemReportMessage = service.createProblemReport(message)
+    const problemReportMessage = service.createProblemReport({ message: options.message })
     problemReportMessage.setThread({
       threadId: credentialRecord.threadId,
     })

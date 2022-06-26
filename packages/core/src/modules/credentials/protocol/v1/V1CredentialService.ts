@@ -8,6 +8,7 @@ import type {
   AcceptProposalOptions,
   AcceptRequestOptions,
   CreateOfferOptions,
+  CreateProblemReportOptions,
   CreateProposalOptions,
   CredentialProtocolMsgReturnType,
   NegotiateOfferOptions,
@@ -919,10 +920,10 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
    * @returns a {@link V1CredentialProblemReportMessage}
    *
    */
-  public createProblemReport(message: string): ProblemReportMessage {
+  public createProblemReport(options: CreateProblemReportOptions): ProblemReportMessage {
     return new V1CredentialProblemReportMessage({
       description: {
-        en: message,
+        en: options.message,
         code: CredentialProblemReportReason.IssuanceAbandoned,
       },
     })
