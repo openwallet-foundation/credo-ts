@@ -90,7 +90,7 @@ export class ConnectionService {
     outOfBandRecord: OutOfBandRecord,
     config: ConnectionRequestParams
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    this.logger.debug(`Create message ${ConnectionRequestMessage.type} start`, outOfBandRecord)
+    this.logger.debug(`Create message ${ConnectionRequestMessage.type.messageTypeUri} start`, outOfBandRecord)
     outOfBandRecord.assertRole(OutOfBandRole.Receiver)
     outOfBandRecord.assertState(OutOfBandState.PrepareResponse)
 
@@ -199,7 +199,7 @@ export class ConnectionService {
     outOfBandRecord: OutOfBandRecord,
     routing?: Routing
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
-    this.logger.debug(`Create message ${ConnectionResponseMessage.type} start`, connectionRecord)
+    this.logger.debug(`Create message ${ConnectionResponseMessage.type.messageTypeUri} start`, connectionRecord)
     connectionRecord.assertState(DidExchangeState.RequestReceived)
     connectionRecord.assertRole(DidExchangeRole.Responder)
 
@@ -237,7 +237,7 @@ export class ConnectionService {
     connectionRecord.did = peerDid
     await this.updateState(connectionRecord, DidExchangeState.ResponseSent)
 
-    this.logger.debug(`Create message ${ConnectionResponseMessage.type} end`, {
+    this.logger.debug(`Create message ${ConnectionResponseMessage.type.messageTypeUri} end`, {
       connectionRecord,
       message: connectionResponse,
     })

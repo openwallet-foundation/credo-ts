@@ -368,6 +368,7 @@ describe('V1CredentialServiceProposeOffer', () => {
           threadId: credentialOfferMessage.id,
           connectionId: connection.id,
           state: CredentialState.OfferReceived,
+          credentialAttributes: undefined,
         })
       )
     })
