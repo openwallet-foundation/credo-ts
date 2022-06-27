@@ -1,8 +1,6 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import type { DidCommMessageRepository } from '../../../../../storage'
-import type { HandlerAutoAcceptOptions } from '../../../formats/models/CredentialFormatServiceOptions'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
@@ -12,35 +10,28 @@ import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessa
 export class V2ProposeCredentialHandler implements Handler {
   private credentialService: V2CredentialService
   private agentConfig: AgentConfig
-  private didCommMessageRepository: DidCommMessageRepository
 
   public supportedMessages = [V2ProposeCredentialMessage]
 
-  public constructor(
-    credentialService: V2CredentialService,
-    agentConfig: AgentConfig,
-    didCommMessageRepository: DidCommMessageRepository
-  ) {
+  public constructor(credentialService: V2CredentialService, agentConfig: AgentConfig) {
     this.credentialService = credentialService
     this.agentConfig = agentConfig
-    this.didCommMessageRepository = didCommMessageRepository
   }
 
   public async handle(messageContext: InboundMessageContext<V2ProposeCredentialMessage>) {
     const credentialRecord = await this.credentialService.processProposal(messageContext)
 
-    const handlerOptions: HandlerAutoAcceptOptions = {
+    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToProposal({
       credentialRecord,
-      autoAcceptType: this.agentConfig.autoAcceptCredentials,
-    }
+      proposalMessage: messageContext.message,
+    })
 
-    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToProposal(handlerOptions)
     if (shouldAutoRespond) {
-      return await this.createOffer(credentialRecord, messageContext)
+      return await this.acceptProposal(credentialRecord, messageContext)
     }
   }
 
-  private async createOffer(
+  private async acceptProposal(
     credentialRecord: CredentialExchangeRecord,
     messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>
   ) {
@@ -53,7 +44,7 @@ export class V2ProposeCredentialHandler implements Handler {
       return
     }
 
-    const message = await this.credentialService.createOfferAsResponse(credentialRecord)
+    const { message } = await this.credentialService.acceptProposal({ credentialRecord })
 
     return createOutboundMessage(messageContext.connection, message)
   }

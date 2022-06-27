@@ -11,8 +11,7 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../utils/MessageValidator'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 import { IsStringOrInstance } from '../../../utils/validators'
 import { DidKey } from '../../dids'
 import { outOfBandServiceToNumAlgo2Did } from '../../dids/methods/peer/peerDidNumAlgo2'
@@ -68,7 +67,7 @@ export class OutOfBandInvitation extends AgentMessage {
     return invitationUrl
   }
 
-  public static async fromUrl(invitationUrl: string) {
+  public static fromUrl(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl['oob']
 
@@ -84,10 +83,8 @@ export class OutOfBandInvitation extends AgentMessage {
     }
   }
 
-  public static async fromJson(json: Record<string, unknown>) {
-    const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation)
-    await MessageValidator.validate(invitation)
-    return invitation
+  public static fromJson(json: Record<string, unknown>) {
+    return JsonTransformer.fromJSON(json, OutOfBandInvitation)
   }
 
   public get invitationDids() {
@@ -109,6 +106,9 @@ export class OutOfBandInvitation extends AgentMessage {
       .map((didKey) => DidKey.fromDid(didKey).key)
   }
 
+  @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
+    toClassOnly: true,
+  })
   @IsValidMessageType(OutOfBandInvitation.type)
   public readonly type = OutOfBandInvitation.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/out-of-band/1.1/invitation')
@@ -122,6 +122,7 @@ export class OutOfBandInvitation extends AgentMessage {
 
   public readonly accept?: string[]
 
+  @Transform(({ value }) => value?.map(replaceLegacyDidSovPrefix), { toClassOnly: true })
   @Expose({ name: 'handshake_protocols' })
   public handshakeProtocols?: HandshakeProtocol[]
 

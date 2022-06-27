@@ -3,6 +3,141 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.2.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.1.0...v0.2.0) (2022-06-24)
+
+### Bug Fixes
+
+- add BBS context to DidDoc ([#789](https://github.com/hyperledger/aries-framework-javascript/issues/789)) ([c8ca091](https://github.com/hyperledger/aries-framework-javascript/commit/c8ca091f22c58c8d5273be36908df0a188020ddb))
+- add oob state and role check ([#777](https://github.com/hyperledger/aries-framework-javascript/issues/777)) ([1c74618](https://github.com/hyperledger/aries-framework-javascript/commit/1c7461836578a62ec545de3a0c8fcdc7de2f4d8f))
+- agent isinitialized on shutdown ([#665](https://github.com/hyperledger/aries-framework-javascript/issues/665)) ([d1049e0](https://github.com/hyperledger/aries-framework-javascript/commit/d1049e0fe99665e7fff8c4f1fe89f7ce19ccce84))
+- allow agent without inbound endpoint to connect when using multi-use invitation ([#712](https://github.com/hyperledger/aries-framework-javascript/issues/712)) ([01c5bb3](https://github.com/hyperledger/aries-framework-javascript/commit/01c5bb3b67786fa7efa361d02bfddde7d113eacf)), closes [#483](https://github.com/hyperledger/aries-framework-javascript/issues/483)
+- **basic-message:** assert connection is ready ([#657](https://github.com/hyperledger/aries-framework-javascript/issues/657)) ([9f9156c](https://github.com/hyperledger/aries-framework-javascript/commit/9f9156cb96a4e8d7013d4968359bd0858830f833))
+- check for "REQNACK" response from indy ledger ([#626](https://github.com/hyperledger/aries-framework-javascript/issues/626)) ([ce66f07](https://github.com/hyperledger/aries-framework-javascript/commit/ce66f0744976e8f2abfa05055bfa384f3d084321))
+- check proof request group names do not overlap ([#638](https://github.com/hyperledger/aries-framework-javascript/issues/638)) ([0731ccd](https://github.com/hyperledger/aries-framework-javascript/commit/0731ccd7683ab1e0e8057fbf3b909bdd3227da88))
+- clone record before emitting event ([#833](https://github.com/hyperledger/aries-framework-javascript/issues/833)) ([8192861](https://github.com/hyperledger/aries-framework-javascript/commit/819286190985934438cb236e8d3f4ea7145f0cec))
+- close session early if no return route ([#715](https://github.com/hyperledger/aries-framework-javascript/issues/715)) ([2e65408](https://github.com/hyperledger/aries-framework-javascript/commit/2e6540806f2d67bef16004f6e8398c5bf7a05bcf))
+- **connections:** allow ; to convert legacy did ([#882](https://github.com/hyperledger/aries-framework-javascript/issues/882)) ([448a29d](https://github.com/hyperledger/aries-framework-javascript/commit/448a29db44e5ec0b8f01d36ba139ac760654a635))
+- **connections:** didexchange to connection state ([#823](https://github.com/hyperledger/aries-framework-javascript/issues/823)) ([dda1bd3](https://github.com/hyperledger/aries-framework-javascript/commit/dda1bd33882f7915a0ef1720eff0b1804f2c946c))
+- **connections:** fix log of object in string ([#904](https://github.com/hyperledger/aries-framework-javascript/issues/904)) ([95d893e](https://github.com/hyperledger/aries-framework-javascript/commit/95d893e6f37014f14bb991c5f12a9da0f4d627ab))
+- **connections:** set image url in create request ([#896](https://github.com/hyperledger/aries-framework-javascript/issues/896)) ([8396965](https://github.com/hyperledger/aries-framework-javascript/commit/8396965bfb2922bd5606383c12788d9c60968918))
+- **core:** allow JSON as input for indy attributes ([#813](https://github.com/hyperledger/aries-framework-javascript/issues/813)) ([478fda3](https://github.com/hyperledger/aries-framework-javascript/commit/478fda3bb28171ce395bb67f25d2f2e3668c52b0))
+- **core:** error if unpacked message does not match JWE structure ([#639](https://github.com/hyperledger/aries-framework-javascript/issues/639)) ([c43cfaa](https://github.com/hyperledger/aries-framework-javascript/commit/c43cfaa340c6ea8f42f015f6f280cbaece8c58bb))
+- **core:** expose CredentialPreviewAttribute ([#796](https://github.com/hyperledger/aries-framework-javascript/issues/796)) ([65d7f15](https://github.com/hyperledger/aries-framework-javascript/commit/65d7f15cff3384c2f34e9b0c64fab574e6299484))
+- **core:** set tags in MediationRecord constructor ([#686](https://github.com/hyperledger/aries-framework-javascript/issues/686)) ([1b01bce](https://github.com/hyperledger/aries-framework-javascript/commit/1b01bceed3435fc7f92b051110fcc315bcac08f3))
+- credential preview attributes mismatch schema attributes ([#625](https://github.com/hyperledger/aries-framework-javascript/issues/625)) ([c0095b8](https://github.com/hyperledger/aries-framework-javascript/commit/c0095b8ee855514c7b3c01010041e623458eb8de))
+- **credentials:** add missing issue credential v1 proposal attributes ([#798](https://github.com/hyperledger/aries-framework-javascript/issues/798)) ([966cc3d](https://github.com/hyperledger/aries-framework-javascript/commit/966cc3d178be7296f073eb815c36792e2137b64b))
+- **credentials:** default for credentials in exchange record ([#816](https://github.com/hyperledger/aries-framework-javascript/issues/816)) ([df1a00b](https://github.com/hyperledger/aries-framework-javascript/commit/df1a00b0968fa42dbaf606c9ec2325b778a0317d))
+- **credentials:** do not store offer attributes ([#892](https://github.com/hyperledger/aries-framework-javascript/issues/892)) ([39c4c0d](https://github.com/hyperledger/aries-framework-javascript/commit/39c4c0ddee5e8b9563b6f174a8ad808d4b9cf307))
+- **credentials:** indy cred attachment format ([#862](https://github.com/hyperledger/aries-framework-javascript/issues/862)) ([16935e2](https://github.com/hyperledger/aries-framework-javascript/commit/16935e2976252aac6bd67c5000779da1c5c1a828))
+- **credentials:** miscellaneous typing issues ([#880](https://github.com/hyperledger/aries-framework-javascript/issues/880)) ([ad35b08](https://github.com/hyperledger/aries-framework-javascript/commit/ad35b0826b5ee592b64d898fe629391bd34444aa))
+- **credentials:** parse and validate preview [@type](https://github.com/type) ([#861](https://github.com/hyperledger/aries-framework-javascript/issues/861)) ([1cc8f46](https://github.com/hyperledger/aries-framework-javascript/commit/1cc8f4661c666fb49625cf935877ff5e5d88b524))
+- **credentials:** proposal preview attribute ([#855](https://github.com/hyperledger/aries-framework-javascript/issues/855)) ([3022bd2](https://github.com/hyperledger/aries-framework-javascript/commit/3022bd2c37dac381f2045f5afab329bcc3806d26))
+- **credentials:** store revocation identifiers ([#864](https://github.com/hyperledger/aries-framework-javascript/issues/864)) ([7374799](https://github.com/hyperledger/aries-framework-javascript/commit/73747996dab4f7d63f616ebfc9758d0fcdffd3eb))
+- **credentials:** use interface in module api ([#856](https://github.com/hyperledger/aries-framework-javascript/issues/856)) ([58e6603](https://github.com/hyperledger/aries-framework-javascript/commit/58e6603ab925aa1f4f41673452b83ef75b538bdc))
+- delete credentials ([#766](https://github.com/hyperledger/aries-framework-javascript/issues/766)) ([cbdff28](https://github.com/hyperledger/aries-framework-javascript/commit/cbdff28d566e3eaabcb806d9158c62476379b5dd))
+- delete credentials ([#770](https://github.com/hyperledger/aries-framework-javascript/issues/770)) ([f1e0412](https://github.com/hyperledger/aries-framework-javascript/commit/f1e0412200fcc77ba928c0af2b099326f7a47ebf))
+- did sov service type resolving ([#689](https://github.com/hyperledger/aries-framework-javascript/issues/689)) ([dbcd8c4](https://github.com/hyperledger/aries-framework-javascript/commit/dbcd8c4ae88afd12098b55acccb70237a8d54cd7))
+- disallow floating promises ([#704](https://github.com/hyperledger/aries-framework-javascript/issues/704)) ([549647d](https://github.com/hyperledger/aries-framework-javascript/commit/549647db6b7492e593022dff1d4162efd2d95a39))
+- disallow usage of global buffer ([#601](https://github.com/hyperledger/aries-framework-javascript/issues/601)) ([87ecd8c](https://github.com/hyperledger/aries-framework-javascript/commit/87ecd8c622c6b602a23af9fa2ecc50820bce32f8))
+- do not import from src dir ([#748](https://github.com/hyperledger/aries-framework-javascript/issues/748)) ([1dfa32e](https://github.com/hyperledger/aries-framework-javascript/commit/1dfa32edc6029793588040de9b8b933a0615e926))
+- do not import test logger in src ([#746](https://github.com/hyperledger/aries-framework-javascript/issues/746)) ([5c80004](https://github.com/hyperledger/aries-framework-javascript/commit/5c80004228211a338c1358c99921a45c344a33bb))
+- do not use basic message id as record id ([#677](https://github.com/hyperledger/aries-framework-javascript/issues/677)) ([3713398](https://github.com/hyperledger/aries-framework-javascript/commit/3713398b87f732841db8131055d2437b0af9a435))
+- extract indy did from peer did in indy credential request ([#790](https://github.com/hyperledger/aries-framework-javascript/issues/790)) ([09e5557](https://github.com/hyperledger/aries-framework-javascript/commit/09e55574440e63418df0697067b9ffad11936027))
+- incorrect encoding of services for did:peer ([#610](https://github.com/hyperledger/aries-framework-javascript/issues/610)) ([28b1715](https://github.com/hyperledger/aries-framework-javascript/commit/28b1715e388f5ed15cb937712b663627c3619465))
+- **indy:** async ledger connection issues on iOS ([#803](https://github.com/hyperledger/aries-framework-javascript/issues/803)) ([8055652](https://github.com/hyperledger/aries-framework-javascript/commit/8055652e63309cf7b20676119b71d846b295d468))
+- issue where attributes and predicates match ([#640](https://github.com/hyperledger/aries-framework-javascript/issues/640)) ([15a5e6b](https://github.com/hyperledger/aries-framework-javascript/commit/15a5e6be73d1d752dbaef40fc26416e545f763a4))
+- leading zeros in credential value encoding ([#632](https://github.com/hyperledger/aries-framework-javascript/issues/632)) ([0d478a7](https://github.com/hyperledger/aries-framework-javascript/commit/0d478a7f198fec2ed5fceada77c9819ebab96a81))
+- mediation record checks for pickup v2 ([#736](https://github.com/hyperledger/aries-framework-javascript/issues/736)) ([2ad600c](https://github.com/hyperledger/aries-framework-javascript/commit/2ad600c066598526c421244cbe82bafc6cfbb85a))
+- miscellaneous issue credential v2 fixes ([#769](https://github.com/hyperledger/aries-framework-javascript/issues/769)) ([537b51e](https://github.com/hyperledger/aries-framework-javascript/commit/537b51efbf5ca1d50cd03e3ca4314da8b431c076))
+- **node:** allow to import node package without postgres ([#757](https://github.com/hyperledger/aries-framework-javascript/issues/757)) ([59e1058](https://github.com/hyperledger/aries-framework-javascript/commit/59e10589acee987fb46f9cbaa3583ba8dcd70b87))
+- **node:** only send 500 if no headers sent yet ([#857](https://github.com/hyperledger/aries-framework-javascript/issues/857)) ([4be8f82](https://github.com/hyperledger/aries-framework-javascript/commit/4be8f82c214f99538eaa0fd0aac5a8f7a6e1dd6b))
+- **oob:** allow legacy did sov prefix ([#889](https://github.com/hyperledger/aries-framework-javascript/issues/889)) ([c7766d0](https://github.com/hyperledger/aries-framework-javascript/commit/c7766d0454cb764b771bb1ef263e81210368588a))
+- **oob:** check service is string instance ([#814](https://github.com/hyperledger/aries-framework-javascript/issues/814)) ([bd1e677](https://github.com/hyperledger/aries-framework-javascript/commit/bd1e677f41a6d37f75746616681fc6d6ad7ca90e))
+- **oob:** export messages to public ([#828](https://github.com/hyperledger/aries-framework-javascript/issues/828)) ([10cf74d](https://github.com/hyperledger/aries-framework-javascript/commit/10cf74d473ce00dca4bc624d60f379e8a78f9b63))
+- **oob:** expose oob record ([#839](https://github.com/hyperledger/aries-framework-javascript/issues/839)) ([c297dfd](https://github.com/hyperledger/aries-framework-javascript/commit/c297dfd9cbdafcb2cdb1f7bcbd466c42f1b8e319))
+- **oob:** expose parseInvitation publicly ([#834](https://github.com/hyperledger/aries-framework-javascript/issues/834)) ([5767500](https://github.com/hyperledger/aries-framework-javascript/commit/5767500b3a797f794fc9ed8147e501e9566d2675))
+- **oob:** legacy invitation with multiple endpoint ([#825](https://github.com/hyperledger/aries-framework-javascript/issues/825)) ([8dd7f80](https://github.com/hyperledger/aries-framework-javascript/commit/8dd7f8049ea9c566b5c66b0c46c36f69e001ed3a))
+- optional fields in did document ([#726](https://github.com/hyperledger/aries-framework-javascript/issues/726)) ([2da845d](https://github.com/hyperledger/aries-framework-javascript/commit/2da845dd4c88c5e93fa9f02107d69f479946024f))
+- process ws return route messages serially ([#826](https://github.com/hyperledger/aries-framework-javascript/issues/826)) ([2831a8e](https://github.com/hyperledger/aries-framework-javascript/commit/2831a8ee1bcda649e33eb68b002890f6670f660e))
+- **proofs:** allow duplicates in proof attributes ([#848](https://github.com/hyperledger/aries-framework-javascript/issues/848)) ([ca6c1ce](https://github.com/hyperledger/aries-framework-javascript/commit/ca6c1ce82bb84a638f98977191b04a249633be76))
+- propose payload attachment in in snake_case JSON format ([#775](https://github.com/hyperledger/aries-framework-javascript/issues/775)) ([6c2dfdb](https://github.com/hyperledger/aries-framework-javascript/commit/6c2dfdb625f7a8f2504f8bc8cf878e01ee1c50cc))
+- relax validation of thread id in revocation notification ([#768](https://github.com/hyperledger/aries-framework-javascript/issues/768)) ([020e6ef](https://github.com/hyperledger/aries-framework-javascript/commit/020e6efa6e878401dede536dd99b3c9814d9541b))
+- remove deprecated multibase and multihash ([#674](https://github.com/hyperledger/aries-framework-javascript/issues/674)) ([3411f1d](https://github.com/hyperledger/aries-framework-javascript/commit/3411f1d20f09cab47b77bf9eb6b66cf135d19d4c))
+- remove unqualified did from out of band record ([#782](https://github.com/hyperledger/aries-framework-javascript/issues/782)) ([0c1423d](https://github.com/hyperledger/aries-framework-javascript/commit/0c1423d7203d92aea5440aac0488dae5dad6b05e))
+- remove usage of const enum ([#888](https://github.com/hyperledger/aries-framework-javascript/issues/888)) ([a7754bd](https://github.com/hyperledger/aries-framework-javascript/commit/a7754bd7bfeaac1ca30df8437554e041d4cf103e))
+- **routing:** also use pickup strategy from config ([#808](https://github.com/hyperledger/aries-framework-javascript/issues/808)) ([fd08ae3](https://github.com/hyperledger/aries-framework-javascript/commit/fd08ae3afaa334c4644aaacee2b6547f171d9d7d))
+- **routing:** mediation recipient role for recipient ([#661](https://github.com/hyperledger/aries-framework-javascript/issues/661)) ([88ad790](https://github.com/hyperledger/aries-framework-javascript/commit/88ad790d8291aaf9113f0de5c7b13563a4967ee7))
+- **routing:** remove sentTime from request message ([#670](https://github.com/hyperledger/aries-framework-javascript/issues/670)) ([1e9715b](https://github.com/hyperledger/aries-framework-javascript/commit/1e9715b894538f57e6ff3aa2d2e4225f8b2f7dc1))
+- **routing:** sending of trustping in pickup v2 ([#787](https://github.com/hyperledger/aries-framework-javascript/issues/787)) ([45b024d](https://github.com/hyperledger/aries-framework-javascript/commit/45b024d62d370e2c646b20993647740f314356e2))
+- send message to service ([#838](https://github.com/hyperledger/aries-framework-javascript/issues/838)) ([270c347](https://github.com/hyperledger/aries-framework-javascript/commit/270c3478f76ba5c3702377d78027afb71549de5c))
+- support pre-aip2 please ack decorator ([#835](https://github.com/hyperledger/aries-framework-javascript/issues/835)) ([a4bc215](https://github.com/hyperledger/aries-framework-javascript/commit/a4bc2158351129aef5281639bbb44127ebcf5ad8))
+- update inbound message validation ([#678](https://github.com/hyperledger/aries-framework-javascript/issues/678)) ([e383343](https://github.com/hyperledger/aries-framework-javascript/commit/e3833430104e3a0415194bd6f27d71c3b5b5ef9b))
+- verify jws contains at least 1 signature ([#600](https://github.com/hyperledger/aries-framework-javascript/issues/600)) ([9c96518](https://github.com/hyperledger/aries-framework-javascript/commit/9c965185de7908bdde1776369453cce384f9e82c))
+
+### Code Refactoring
+
+- delete credentials by default when deleting exchange ([#767](https://github.com/hyperledger/aries-framework-javascript/issues/767)) ([656ed73](https://github.com/hyperledger/aries-framework-javascript/commit/656ed73b95d8a8483a38ff0b5462a4671cb82898))
+- do not add ~service in createOOBOffer method ([#772](https://github.com/hyperledger/aries-framework-javascript/issues/772)) ([a541949](https://github.com/hyperledger/aries-framework-javascript/commit/a541949c7dbf907e29eb798e60901b92fbec6443))
+
+- chore!: update indy-sdk-react-native version to 0.2.0 (#754) ([4146778](https://github.com/hyperledger/aries-framework-javascript/commit/414677828be7f6c08fa02905d60d6555dc4dd438)), closes [#754](https://github.com/hyperledger/aries-framework-javascript/issues/754)
+
+### Features
+
+- 0.2.0 migration script for connections ([#773](https://github.com/hyperledger/aries-framework-javascript/issues/773)) ([0831b9b](https://github.com/hyperledger/aries-framework-javascript/commit/0831b9b451d8ac74a018fc525cdbac8ec9f6cd1c))
+- ability to add generic records ([#702](https://github.com/hyperledger/aries-framework-javascript/issues/702)) ([e617496](https://github.com/hyperledger/aries-framework-javascript/commit/e61749609a072f0f8d869e6c278d0a4a79938ee4)), closes [#688](https://github.com/hyperledger/aries-framework-javascript/issues/688)
+- add didcomm message record ([#593](https://github.com/hyperledger/aries-framework-javascript/issues/593)) ([e547fb1](https://github.com/hyperledger/aries-framework-javascript/commit/e547fb1c0b01f821b5425bf9bb632e885f92b398))
+- add find and save/update methods to DidCommMessageRepository ([#620](https://github.com/hyperledger/aries-framework-javascript/issues/620)) ([beff6b0](https://github.com/hyperledger/aries-framework-javascript/commit/beff6b0ae0ad100ead1a4820ebf6c12fb3ad148d))
+- add generic did resolver ([#554](https://github.com/hyperledger/aries-framework-javascript/issues/554)) ([8e03f35](https://github.com/hyperledger/aries-framework-javascript/commit/8e03f35f8e1cd02dac4df02d1f80f2c5a921dfef))
+- add issue credential v2 ([#745](https://github.com/hyperledger/aries-framework-javascript/issues/745)) ([245223a](https://github.com/hyperledger/aries-framework-javascript/commit/245223acbc6f50de418b310025665e5c1316f1af))
+- add out-of-band and did exchange ([#717](https://github.com/hyperledger/aries-framework-javascript/issues/717)) ([16c6d60](https://github.com/hyperledger/aries-framework-javascript/commit/16c6d6080db93b5f4a86e81bdbd7a3e987728d82))
+- add question answer protocol ([#557](https://github.com/hyperledger/aries-framework-javascript/issues/557)) ([b5a2536](https://github.com/hyperledger/aries-framework-javascript/commit/b5a25364ff523214fc8e56a7133bfa5c1db9b935))
+- add role and method to did record tags ([#692](https://github.com/hyperledger/aries-framework-javascript/issues/692)) ([3b6504b](https://github.com/hyperledger/aries-framework-javascript/commit/3b6504ba6053c62f0841cb64a0e9a5be0e78bf80))
+- add support for did:peer ([#608](https://github.com/hyperledger/aries-framework-javascript/issues/608)) ([c5c4172](https://github.com/hyperledger/aries-framework-javascript/commit/c5c41722e9b626d7cea929faff562c2a69a079fb))
+- add support for signed attachments ([#595](https://github.com/hyperledger/aries-framework-javascript/issues/595)) ([eb49374](https://github.com/hyperledger/aries-framework-javascript/commit/eb49374c7ac7a61c10c8cb9079acffe689d0b402))
+- add update assistant for storage migrations ([#690](https://github.com/hyperledger/aries-framework-javascript/issues/690)) ([c9bff93](https://github.com/hyperledger/aries-framework-javascript/commit/c9bff93cfac43c4ae2cbcad1f96c1a74cde39602))
+- add validation to JSON transformer ([#830](https://github.com/hyperledger/aries-framework-javascript/issues/830)) ([5b9efe3](https://github.com/hyperledger/aries-framework-javascript/commit/5b9efe3b6fdaaec6dda387c542979e0e8fd51d5c))
+- add wallet key derivation method option ([#650](https://github.com/hyperledger/aries-framework-javascript/issues/650)) ([8386506](https://github.com/hyperledger/aries-framework-javascript/commit/83865067402466ffb51ba5008f52ea3e4169c31d))
+- add wallet module with import export ([#652](https://github.com/hyperledger/aries-framework-javascript/issues/652)) ([6cf5a7b](https://github.com/hyperledger/aries-framework-javascript/commit/6cf5a7b9de84dee1be61c315a734328ec209e87d))
+- **core:** add support for postgres wallet type ([#699](https://github.com/hyperledger/aries-framework-javascript/issues/699)) ([83ff0f3](https://github.com/hyperledger/aries-framework-javascript/commit/83ff0f36401cbf6e95c0a1ceb9fa921a82dc6830))
+- **core:** added timeOut to the module level ([#603](https://github.com/hyperledger/aries-framework-javascript/issues/603)) ([09950c7](https://github.com/hyperledger/aries-framework-javascript/commit/09950c706c0827a75eb93ffb05cc926f8472f66d))
+- **core:** allow to set auto accept connetion exchange when accepting invitation ([#589](https://github.com/hyperledger/aries-framework-javascript/issues/589)) ([2d95dce](https://github.com/hyperledger/aries-framework-javascript/commit/2d95dce70fb36dbbae459e17cfb0dea4dbbbe237))
+- **core:** generic repository events ([#842](https://github.com/hyperledger/aries-framework-javascript/issues/842)) ([74dd289](https://github.com/hyperledger/aries-framework-javascript/commit/74dd289669080b1406562ac575dd7c3c3d442e72))
+- **credentials:** add get format data method ([#877](https://github.com/hyperledger/aries-framework-javascript/issues/877)) ([521d489](https://github.com/hyperledger/aries-framework-javascript/commit/521d489cccaf9c4c3f3650ccf980a8dec0b8f729))
+- **credentials:** delete associated didCommMessages ([#870](https://github.com/hyperledger/aries-framework-javascript/issues/870)) ([1f8b6ab](https://github.com/hyperledger/aries-framework-javascript/commit/1f8b6aba9c34bd45ea61cdfdc5f7ab1e825368fc))
+- **credentials:** find didcomm message methods ([#887](https://github.com/hyperledger/aries-framework-javascript/issues/887)) ([dc12427](https://github.com/hyperledger/aries-framework-javascript/commit/dc12427bb308e53bb1c5749c61769b5f08c684c2))
+- delete credential from wallet ([#691](https://github.com/hyperledger/aries-framework-javascript/issues/691)) ([abec3a2](https://github.com/hyperledger/aries-framework-javascript/commit/abec3a2c95815d1c54b22a6370222f024eefb060))
+- extension module creation ([#688](https://github.com/hyperledger/aries-framework-javascript/issues/688)) ([2b6441a](https://github.com/hyperledger/aries-framework-javascript/commit/2b6441a2de5e9940bdf225b1ad9028cdfbf15cd5))
+- filter retrieved credential by revocation state ([#641](https://github.com/hyperledger/aries-framework-javascript/issues/641)) ([5912c0c](https://github.com/hyperledger/aries-framework-javascript/commit/5912c0ce2dbc8f773cec5324ffb19c40b15009b0))
+- indy revocation (prover & verifier) ([#592](https://github.com/hyperledger/aries-framework-javascript/issues/592)) ([fb19ff5](https://github.com/hyperledger/aries-framework-javascript/commit/fb19ff555b7c10c9409450dcd7d385b1eddf41ac))
+- **indy:** add choice for taa mechanism ([#849](https://github.com/hyperledger/aries-framework-javascript/issues/849)) ([ba03fa0](https://github.com/hyperledger/aries-framework-javascript/commit/ba03fa0c23f270274a592dfd6556a35adf387b51))
+- ledger connections happen on agent init in background ([#580](https://github.com/hyperledger/aries-framework-javascript/issues/580)) ([61695ce](https://github.com/hyperledger/aries-framework-javascript/commit/61695ce7737ffef363b60e341ae5b0e67e0e2c90))
+- pickup v2 protocol ([#711](https://github.com/hyperledger/aries-framework-javascript/issues/711)) ([b281673](https://github.com/hyperledger/aries-framework-javascript/commit/b281673b3503bb85ebda7afdd68b6d792d8f5bf5))
+- regex for schemaVersion, issuerDid, credDefId, schemaId, schemaIssuerDid ([#679](https://github.com/hyperledger/aries-framework-javascript/issues/679)) ([36b9d46](https://github.com/hyperledger/aries-framework-javascript/commit/36b9d466d400a0f87f6272bc428965601023581a))
+- **routing:** allow to discover mediator pickup strategy ([#669](https://github.com/hyperledger/aries-framework-javascript/issues/669)) ([5966da1](https://github.com/hyperledger/aries-framework-javascript/commit/5966da130873607a41919bbe1239e5e44afb47e4))
+- support advanced wallet query ([#831](https://github.com/hyperledger/aries-framework-javascript/issues/831)) ([28e0ffa](https://github.com/hyperledger/aries-framework-javascript/commit/28e0ffa151d41a39197f01bcc5f9c9834a0b2537))
+- support handling messages with different minor version ([#714](https://github.com/hyperledger/aries-framework-javascript/issues/714)) ([ad12360](https://github.com/hyperledger/aries-framework-javascript/commit/ad123602682214f02250e82a80ac7cf5255b8d12))
+- support new did document in didcomm message exchange ([#609](https://github.com/hyperledger/aries-framework-javascript/issues/609)) ([a1a3b7d](https://github.com/hyperledger/aries-framework-javascript/commit/a1a3b7d95a6e6656dc5630357ac4e692b33b49bc))
+- support revocation notification messages ([#579](https://github.com/hyperledger/aries-framework-javascript/issues/579)) ([9f04375](https://github.com/hyperledger/aries-framework-javascript/commit/9f04375edc5eaffa0aa3583efcf05c83d74987bb))
+- support wallet key rotation ([#672](https://github.com/hyperledger/aries-framework-javascript/issues/672)) ([5cd1598](https://github.com/hyperledger/aries-framework-javascript/commit/5cd1598b496a832c82f35a363fabe8f408abd439))
+- update recursive backoff & trust ping record updates ([#631](https://github.com/hyperledger/aries-framework-javascript/issues/631)) ([f64a9da](https://github.com/hyperledger/aries-framework-javascript/commit/f64a9da2ef9fda9693b23ddbd25bd885b88cdb1e))
+
+### BREAKING CHANGES
+
+- **indy:** the transaction author agreement acceptance mechanism was previously automatically the first acceptance mechanism from the acceptance mechanism list. With this addition, the framework never automatically selects the acceptance mechanism anymore and it needs to be specified in the transactionAuthorAgreement in the indyLedgers agent config array.
+- the credentials associated with a credential exchange record are now deleted by default when deleting a credential exchange record. If you only want to delete the credential exchange record and not the associated credentials, you can pass the deleteAssociatedCredentials to the deleteById method:
+
+```ts
+await agent.credentials.deleteById('credentialExchangeId', {
+  deleteAssociatedCredentials: false,
+})
+```
+
+- with the addition of the out of band module `credentials.createOutOfBandOffer` is renamed to `credentials.createOffer` and no longer adds the `~service` decorator to the message. You need to call `oob.createLegacyConnectionlessInvitation` afterwards to use it for AIP-1 style connectionless exchanges. See [Migrating from AFJ 0.1.0 to 0.2.x](https://github.com/hyperledger/aries-framework-javascript/blob/main/docs/migration/0.1-to-0.2.md) for detailed migration instructions.
+- the connections module has been extended with an out of band module and support for the DID Exchange protocol. Some methods have been moved to the out of band module, see [Migrating from AFJ 0.1.0 to 0.2.x](https://github.com/hyperledger/aries-framework-javascript/blob/main/docs/migration/0.1-to-0.2.md) for detailed migration instructions.
+- indy-sdk-react-native has been updated to 0.2.0. The new version now depends on libindy version 1.16 and requires you to update the binaries in your react-native application. See the [indy-sdk-react-native](https://github.com/hyperledger/indy-sdk-react-native) repository for instructions on how to get the latest binaries for both iOS and Android.
+- The mediator pickup strategy enum value `MediatorPickupStrategy.Explicit` has been renamed to `MediatorPickupStrategy.PickUpV1` to better align with the naming of the new `MediatorPickupStrategy.PickUpV2`
+- attachment method `getDataAsJson` is now located one level up. So instead of `attachment.data.getDataAsJson()` you should now call `attachment.getDataAsJson()`
+
 # 0.1.0 (2021-12-23)
 
 ### Bug Fixes
@@ -64,7 +199,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Code Refactoring
 
 - make a connection with mediator asynchronously ([#231](https://github.com/hyperledger/aries-framework-javascript/issues/231)) ([bafa839](https://github.com/hyperledger/aries-framework-javascript/commit/bafa8399b32b0f814c90a2406a00a74036df96c8))
-
 - fix(core)!: Improved typing on metadata api (#585) ([4ab8d73](https://github.com/hyperledger/aries-framework-javascript/commit/4ab8d73e5fc866a91085f95f973022846ed431fb)), closes [#585](https://github.com/hyperledger/aries-framework-javascript/issues/585)
 - fix(core)!: update class transformer library (#547) ([dee03e3](https://github.com/hyperledger/aries-framework-javascript/commit/dee03e38d2732ba0bd38eeacca6ad58b191e87f8)), closes [#547](https://github.com/hyperledger/aries-framework-javascript/issues/547)
 - fix(core)!: prefixed internal metadata with \_internal/ (#535) ([aa1b320](https://github.com/hyperledger/aries-framework-javascript/commit/aa1b3206027fdb71e6aaa4c6491f8ba84dca7b9a)), closes [#535](https://github.com/hyperledger/aries-framework-javascript/issues/535)
@@ -133,39 +267,12 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - removed the getAll() function.
 - The agent’s `shutdown` method does not delete the wallet anymore. If you want to delete the wallet, you can do it via exposed wallet API.
 - class-transformer released a breaking change in a patch version, causing AFJ to break. I updated to the newer version and pinned the version exactly as this is the second time this has happened now.
-
-Signed-off-by: Timo Glastra <timo@animo.id>
-
 - internal metadata is now prefixed with \_internal to avoid clashing and accidental overwriting of internal data.
-
 - fix(core): added \_internal/ prefix on metadata
-
-Signed-off-by: Berend Sliedrecht <berend@animo.id>
-
 - credentialRecord.credentialMetadata has been replaced by credentialRecord.metadata.
-
-Signed-off-by: Berend Sliedrecht <berend@animo.id>
-
 - a trust ping response will not be requested anymore after completing a connection. This is not required, and also non-standard behaviour. It was also causing some tests to be flaky as response messages were stil being sent after one of the agents had already shut down.
-
-Signed-off-by: Timo Glastra <timo@animo.id>
-
 - The `ProofsModule.getRequestedCredentialsForProofRequest` expected some low level message objects as input. This is not in line with the public API of the rest of the framework and has been simplified to only require a proof record id and optionally a boolean whether the retrieved credentials should be filtered based on the proof proposal (if available).
-
-Signed-off-by: Timo Glastra <timo@animo.id>
-
 - Proof request requestedAttributes and requestedPredicates are now a map instead of record. This is needed to have proper validation using class-validator.
-
-Signed-off-by: Timo Glastra <timo@animo.id>
-
 - `BasicMessageReceivedEvent` has been replaced by the more general `BasicMessageStateChanged` event which triggers when a basic message is received or sent.
-
-Signed-off-by: NeilSMyers <mmyersneil@gmail.com>
-
 - Tags on a record can now be accessed using the `getTags()` method. Records should be updated with this method and return the properties from the record to include in the tags.
-
-Signed-off-by: Timo Glastra <timo@animo.id>
-
 - extracts outbound transporter from Agent's constructor.
-
-Signed-off-by: Jakub Koci <jakub.koci@gmail.com>

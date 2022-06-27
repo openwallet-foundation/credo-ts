@@ -6,11 +6,12 @@ import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { V1CredentialPreview } from '../V1CredentialPreview'
+
+import { V1CredentialPreview } from './V1CredentialPreview'
 
 export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
 
-export interface OfferCredentialMessageOptions {
+export interface V1OfferCredentialMessageOptions {
   id?: string
   comment?: string
   offerAttachments: Attachment[]
@@ -24,14 +25,14 @@ export interface OfferCredentialMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#offer-credential
  */
 export class V1OfferCredentialMessage extends AgentMessage {
-  public constructor(options: OfferCredentialMessageOptions) {
+  public constructor(options: V1OfferCredentialMessageOptions) {
     super()
 
     if (options) {
       this.id = options.id || this.generateId()
       this.comment = options.comment
       this.credentialPreview = options.credentialPreview
-      this.messageAttachment = options.offerAttachments
+      this.offerAttachments = options.offerAttachments
       this.appendedAttachments = options.attachments
     }
   }
@@ -57,12 +58,10 @@ export class V1OfferCredentialMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public messageAttachment!: Attachment[]
+  public offerAttachments!: Attachment[]
 
   public get indyCredentialOffer(): CredOffer | null {
-    const attachment = this.messageAttachment.find(
-      (attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID
-    )
+    const attachment = this.offerAttachments.find((attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
 
     // Extract credential offer from attachment
     const credentialOfferJson = attachment?.getDataAsJson<CredOffer>() ?? null
@@ -70,7 +69,7 @@ export class V1OfferCredentialMessage extends AgentMessage {
     return credentialOfferJson
   }
 
-  public getAttachmentById(id: string): Attachment | undefined {
-    return this.messageAttachment?.find((attachment) => attachment.id == id)
+  public getOfferAttachmentById(id: string): Attachment | undefined {
+    return this.offerAttachments.find((attachment) => attachment.id == id)
   }
 }

@@ -13,7 +13,6 @@ import { ConnectionsModule } from '../modules/connections'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
 import { isValidJweStructure } from '../utils/JWE'
 import { JsonTransformer } from '../utils/JsonTransformer'
-import { MessageValidator } from '../utils/MessageValidator'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
 import { AgentConfig } from './AgentConfig'
@@ -168,7 +167,6 @@ export class MessageReceiver {
     let message: AgentMessage
     try {
       message = await this.transformMessage(plaintextMessage)
-      await this.validateMessage(message)
     } catch (error) {
       if (connection) await this.sendProblemReportMessage(error.message, connection, plaintextMessage)
       throw error
@@ -209,25 +207,19 @@ export class MessageReceiver {
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage
-    return JsonTransformer.fromJSON(message, MessageClass)
-  }
-
-  /**
-   * Validate an AgentMessage instance.
-   * @param message agent message to validate
-   */
-  private async validateMessage(message: AgentMessage) {
+    let messageTransformed: AgentMessage
     try {
-      await MessageValidator.validate(message)
+      messageTransformed = JsonTransformer.fromJSON(message, MessageClass)
     } catch (error) {
       this.logger.error(`Error validating message ${message.type}`, {
         errors: error,
-        message: message.toJSON(),
+        message: JSON.stringify(message),
       })
       throw new ProblemReportError(`Error validating message ${message.type}`, {
         problemCode: ProblemReportReason.MessageParseFailure,
       })
     }
+    return messageTransformed
   }
 
   /**

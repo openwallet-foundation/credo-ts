@@ -124,6 +124,17 @@ describe('ConnectionService', () => {
       expect(message.label).toBe('Custom label')
     })
 
+    it('returns a connection record containing image url', async () => {
+      expect.assertions(1)
+
+      const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse, imageUrl: connectionImageUrl })
+      const config = { label: 'Custom label', routing: myRouting }
+
+      const { connectionRecord } = await connectionService.createRequest(outOfBand, config)
+
+      expect(connectionRecord.imageUrl).toBe(connectionImageUrl)
+    })
+
     it('returns a connection request message containing a custom image url', async () => {
       expect.assertions(1)
 
@@ -209,7 +220,7 @@ describe('ConnectionService', () => {
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
-      expect(processedConnection.theirDid).toBe('did:peer:1zQmfPPbuG8vajHvYjGUW8CN5k9rLuuMmYSGBYwJqJDDUS72')
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmW2esSyEVGzrh3CFt1eQZUHEAb3Li1hyPudPhSoFevrFY')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
       expect(processedConnection.imageUrl).toBe(connectionImageUrl)
@@ -267,7 +278,7 @@ describe('ConnectionService', () => {
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
-      expect(processedConnection.theirDid).toBe('did:peer:1zQmfPPbuG8vajHvYjGUW8CN5k9rLuuMmYSGBYwJqJDDUS72')
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmW2esSyEVGzrh3CFt1eQZUHEAb3Li1hyPudPhSoFevrFY')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
 

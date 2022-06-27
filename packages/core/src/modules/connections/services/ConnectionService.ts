@@ -18,7 +18,6 @@ import { InjectionSymbols } from '../../../constants'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../utils/MessageValidator'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
 import { Wallet } from '../../../wallet/Wallet'
 import { DidKey, Key, IndyAgentService } from '../../dids'
@@ -90,7 +89,7 @@ export class ConnectionService {
     outOfBandRecord: OutOfBandRecord,
     config: ConnectionRequestParams
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    this.logger.debug(`Create message ${ConnectionRequestMessage.type} start`, outOfBandRecord)
+    this.logger.debug(`Create message ${ConnectionRequestMessage.type.messageTypeUri} start`, outOfBandRecord)
     outOfBandRecord.assertRole(OutOfBandRole.Receiver)
     outOfBandRecord.assertState(OutOfBandState.PrepareResponse)
 
@@ -121,6 +120,7 @@ export class ConnectionService {
       autoAcceptConnection: config?.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
       invitationDid,
+      imageUrl: outOfBandInvitation.imageUrl,
     })
 
     const { label, imageUrl, autoAcceptConnection } = config
@@ -198,7 +198,7 @@ export class ConnectionService {
     outOfBandRecord: OutOfBandRecord,
     routing?: Routing
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
-    this.logger.debug(`Create message ${ConnectionResponseMessage.type} start`, connectionRecord)
+    this.logger.debug(`Create message ${ConnectionResponseMessage.type.messageTypeUri} start`, connectionRecord)
     connectionRecord.assertState(DidExchangeState.RequestReceived)
     connectionRecord.assertRole(DidExchangeRole.Responder)
 
@@ -236,7 +236,7 @@ export class ConnectionService {
     connectionRecord.did = peerDid
     await this.updateState(connectionRecord, DidExchangeState.ResponseSent)
 
-    this.logger.debug(`Create message ${ConnectionResponseMessage.type} end`, {
+    this.logger.debug(`Create message ${ConnectionResponseMessage.type.messageTypeUri} end`, {
       connectionRecord,
       message: connectionResponse,
     })
@@ -286,11 +286,6 @@ export class ConnectionService {
     }
 
     const connection = JsonTransformer.fromJSON(connectionJson, Connection)
-    try {
-      await MessageValidator.validate(connection)
-    } catch (error) {
-      throw new Error(error)
-    }
 
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
     // as the recipient key(s) in the connection invitation message

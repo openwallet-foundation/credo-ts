@@ -6,12 +6,13 @@ import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { indyDidRegex, schemaIdRegex, schemaVersionRegex, credDefIdRegex } from '../../../../../utils'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { V1CredentialPreview } from '../V1CredentialPreview'
 
-export interface ProposeCredentialMessageOptions {
+import { V1CredentialPreview } from './V1CredentialPreview'
+
+export interface V1ProposeCredentialMessageOptions {
   id?: string
   comment?: string
-  credentialProposal?: V1CredentialPreview
+  credentialPreview?: V1CredentialPreview
   schemaIssuerDid?: string
   schemaId?: string
   schemaName?: string
@@ -27,13 +28,13 @@ export interface ProposeCredentialMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#propose-credential
  */
 export class V1ProposeCredentialMessage extends AgentMessage {
-  public constructor(options: ProposeCredentialMessageOptions) {
+  public constructor(options: V1ProposeCredentialMessageOptions) {
     super()
 
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
-      this.credentialProposal = options.credentialProposal
+      this.credentialPreview = options.credentialPreview
       this.schemaIssuerDid = options.schemaIssuerDid
       this.schemaId = options.schemaId
       this.schemaName = options.schemaName
@@ -64,7 +65,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @ValidateNested()
   @IsOptional()
   @IsInstance(V1CredentialPreview)
-  public credentialProposal?: V1CredentialPreview
+  public credentialPreview?: V1CredentialPreview
 
   /**
    * Filter to request credential based on a particular Schema issuer DID.
