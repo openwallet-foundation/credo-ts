@@ -6,7 +6,7 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
 
-const VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 = 'Ed25519VerificationKey2018'
+export const VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 = 'Ed25519VerificationKey2018'
 
 export function getEd25519VerificationMethod({ key, id, controller }: { id: string; key: Key; controller: string }) {
   return {

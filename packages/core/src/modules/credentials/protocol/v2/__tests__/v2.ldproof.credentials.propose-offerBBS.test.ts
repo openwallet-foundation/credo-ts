@@ -59,10 +59,9 @@ describe('credentials, BBS+ signature', () => {
     signCredentialOptions = {
       credential,
       options: {
-        proofType: 'BbsBlsSignature2020',
+        proofType: 'BbsBlsSignatureProof2020',
         proofPurpose: 'assertionMethod',
       },
-      verificationMethod,
     }
 
     testLogger.test('Alice sends (v2, Indy) credential proposal to Faber')
@@ -233,7 +232,8 @@ describe('credentials, BBS+ signature', () => {
         birthDate: '1958-07-17',
       },
       proof: {
-        type: 'BbsBlsSignature2020',
+        type: 'BbsBlsSignatureProof2020', // this is BbsBlsSignature2020 in the other BBS+ tests
+        // but that isn't a recognized proof type in the pex library
         created: expect.any(String),
         verificationMethod:
           'did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa#zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa',

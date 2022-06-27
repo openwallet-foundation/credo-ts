@@ -7,7 +7,6 @@ import type {
   FormatCreateReturn,
   FormatProcessOptions,
 } from '..'
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { SignCredentialOptionsRFC0593 } from '../../../vc/models/W3cCredentialServiceOptions'
 import type {
   FormatAcceptRequestOptions,
@@ -19,13 +18,16 @@ import type {
 } from '../CredentialFormatServiceOptions'
 import type { JsonLdCredentialFormat } from './JsonLdCredentialFormat'
 
+import { ProofType } from '@sphereon/pex/dist/main/lib/types/SSI.types'
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { AriesFrameworkError } from '../../../../../src/error'
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
-import { deepEqual } from '../../../../utils/objEqual'
+import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
+import { proofTypeKeyTypeMapping } from '../../../dids/domain/key-type/keyDidMapping'
+import { DidResolverService } from '../../../dids/services/DidResolverService'
 import { W3cCredentialService } from '../../../vc'
 import { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
@@ -40,14 +42,17 @@ const JSONLD_VC = 'aries/ld-proof-vc@1.0'
 @scoped(Lifecycle.ContainerScoped)
 export class JsonLdCredentialFormatService extends CredentialFormatService<JsonLdCredentialFormat> {
   private w3cCredentialService: W3cCredentialService
+  private didResolver: DidResolverService
 
   public constructor(
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
-    w3cCredentialService: W3cCredentialService
+    w3cCredentialService: W3cCredentialService,
+    didResolver: DidResolverService
   ) {
     super(credentialRepository, eventEmitter)
     this.w3cCredentialService = w3cCredentialService
+    this.didResolver = didResolver
   }
 
   public readonly formatKey = 'jsonld' as const
@@ -235,30 +240,70 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // (attachment in the request message from holder to issuer)
     const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
+    let verificationMethod = credentialFormats?.jsonld?.verificationMethod
+
     // FIXME: Need to transform from json to class instance
     // FIXME: SignCredentialOptions doesn't follow RFC0593
     // FIXME: Add validation of the jsonLdFormat data (if present)
     const credentialData = jsonLdFormat ?? credentialRequest
+
+    // FIXME: we're not using all properties from the interface. If we're not using them,
+    // they shouldn't be in the interface.
+    if (!verificationMethod) {
+      verificationMethod = await this.deriveVerificationMethod(credentialData.credential, credentialRequest)
+      if (!verificationMethod) {
+        throw new AriesFrameworkError('Missing verification method in credential data')
+      }
+    }
     const format = new CredentialFormatSpec({
       attachId,
       format: JSONLD_VC,
     })
-
-    // FIXME: we're not using all properties from the interface. If we're not using them,
-    // they shouldn't be in the interface.
-    if (!credentialData.verificationMethod) {
-      throw new AriesFrameworkError('Missing verification method in credential data')
-    }
     const verifiableCredential = await this.w3cCredentialService.signCredential({
       credential: JsonTransformer.fromJSON(credentialData.credential, W3cCredential),
       proofType: credentialData.options.proofType,
-      verificationMethod: credentialData.verificationMethod,
+      verificationMethod: verificationMethod,
     })
 
     const attachment = this.getFormatData(verifiableCredential, format.attachId)
     return { format, attachment }
   }
 
+  /**
+   * Derive a verification method using the issuer from the given verifiable credential
+   * @param credential the verifiable credential we want to sign
+   * @return the verification method derived from this credential and its associated issuer did, keys etc.
+   */
+  public async deriveVerificationMethod(
+    credential: W3cCredential,
+    credentialRequest: SignCredentialOptionsRFC0593
+  ): Promise<string> {
+    // extract issuer from vc (can be string or Issuer)
+    let issuerDid = credential.issuer
+
+    if (typeof issuerDid !== 'string') {
+      issuerDid = issuerDid.id
+    }
+    // this will throw an error if the issuer did is invalid
+    const issuerDidDocument = await this.didResolver.resolveDidDocument(issuerDid)
+
+    // find first key which matches proof type
+    const proofType = credentialRequest.options.proofType
+    const proofTypeEnum: ProofType = (<any>ProofType)[proofType]
+
+    const keyType: string | undefined = proofTypeKeyTypeMapping[proofTypeEnum]
+    if (!keyType) {
+      throw new AriesFrameworkError(`No Key Type found for proofType ${proofType}`)
+    }
+
+    const verificationMethod = await findVerificationMethodByKeyType(keyType, issuerDidDocument)
+
+    if (!verificationMethod) {
+      throw new AriesFrameworkError(`Missing verification method for key type ${keyType}`)
+    }
+
+    return verificationMethod.id
+  }
   /**
    * Processes an incoming credential - retrieve metadata, retrieve payload and store it in the Indy wallet
    * @param options the issue credential message wrapped inside this object

@@ -1,7 +1,8 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
+import type { DidDocument, DidDocumentService, VerificationMethod } from '../../dids'
 import type { SignCredentialOptionsRFC0593 } from '../../vc/models/W3cCredentialServiceOptions'
 import type { CredentialFormatService } from '../formats'
-import type { JsonLdCredentialFormat } from '../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonLdAcceptRequestOptions, JsonLdCredentialFormat } from '../formats/jsonld/JsonLdCredentialFormat'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
@@ -12,6 +13,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { DidResolverService } from '../../dids/services/DidResolverService'
 import { W3cCredentialService } from '../../vc'
 import { Ed25519Signature2018Fixtures } from '../../vc/__tests__/fixtures'
 import { W3cVerifiableCredential } from '../../vc/models'
@@ -25,9 +27,83 @@ import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredent
 import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 
 jest.mock('../../vc/W3cCredentialService')
+jest.mock('../../dids/services/DidResolverService')
 
 const W3cCredentialServiceMock = W3cCredentialService as jest.Mock<W3cCredentialService>
+const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 
+const didDocument: DidDocument = {
+  context: [
+    'https://w3id.org/did/v1',
+    'https://w3id.org/security/suites/ed25519-2018/v1',
+    'https://w3id.org/security/suites/x25519-2019/v1',
+  ],
+  id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+  alsoKnownAs: undefined,
+  controller: undefined,
+  verificationMethod: [
+    {
+      id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      type: 'Ed25519VerificationKey2018',
+      controller: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      publicKeyBase58: '3Dn1SJNPaCXcvvJvSbsFWP2xaCjMom3can8CQNhWrTRx',
+      publicKeyBase64: undefined,
+      publicKeyJwk: undefined,
+      publicKeyHex: undefined,
+      publicKeyMultibase: undefined,
+      publicKeyPem: undefined,
+      blockchainAccountId: undefined,
+      ethereumAddress: undefined,
+    },
+  ],
+  service: undefined,
+  authentication: [
+    'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+  ],
+  assertionMethod: [
+    'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+  ],
+  keyAgreement: [
+    {
+      id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6LSbkodSr6SU2trs8VUgnrnWtSm7BAPG245ggrBmSrxbv1R',
+      type: 'X25519KeyAgreementKey2019',
+      controller: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      publicKeyBase58: '5dTvYHaNaB7mk7iA9LqCJEHG2dGZQsvoi8WGzDRtYEf',
+      publicKeyBase64: undefined,
+      publicKeyJwk: undefined,
+      publicKeyHex: undefined,
+      publicKeyMultibase: undefined,
+      publicKeyPem: undefined,
+      blockchainAccountId: undefined,
+      ethereumAddress: undefined,
+    },
+  ],
+  capabilityInvocation: [
+    'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+  ],
+  capabilityDelegation: [
+    'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+  ],
+  dereferenceVerificationMethod: function (keyId: string): VerificationMethod {
+    throw new Error('Function not implemented.')
+  },
+  dereferenceKey: function (keyId: string, allowedPurposes?: DidPurpose[]): VerificationMethod {
+    throw new Error('Function not implemented.')
+  },
+  getServicesByType: function <S extends DidDocumentService = DidDocumentService>(type: string): S[] {
+    throw new Error('Function not implemented.')
+  },
+  getServicesByClassType: function <S extends DidDocumentService = DidDocumentService>(
+    classType: new (...args: never[]) => S
+  ): S[] {
+    throw new Error('Function not implemented.')
+  },
+  didCommServices: [],
+  recipientKeys: [],
+  toJSON: function (): Record<string, any> {
+    throw new Error('Function not implemented.')
+  },
+}
 const vcJson = {
   ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
   credentialSubject: {
@@ -140,8 +216,8 @@ const signCredentialOptions: SignCredentialOptionsRFC0593 = {
     proofPurpose: 'assertionMethod',
     proofType: 'Ed25519Signature2018',
   },
-  verificationMethod,
 }
+
 const requestAttachment = new Attachment({
   mimeType: 'application/json',
   data: new AttachmentData({
@@ -153,13 +229,20 @@ let jsonldFormatService: CredentialFormatService<JsonLdCredentialFormat>
 let eventEmitter: EventEmitter
 let agentConfig: AgentConfig
 let w3cCredentialService: W3cCredentialService
+let didResolver: DidResolverService
 
 describe('JsonLd CredentialFormatService', () => {
   beforeEach(async () => {
     agentConfig = getAgentConfig('JsonLdCredentialFormatServiceTest')
     eventEmitter = new EventEmitter(agentConfig)
     w3cCredentialService = new W3cCredentialServiceMock()
-    jsonldFormatService = new JsonLdCredentialFormatService(credentialRepository, eventEmitter, w3cCredentialService)
+    didResolver = new DidResolverServiceMock()
+    jsonldFormatService = new JsonLdCredentialFormatService(
+      credentialRepository,
+      eventEmitter,
+      w3cCredentialService,
+      didResolver
+    )
   })
 
   describe('Create JsonLd Credential Proposal / Offer', () => {
@@ -182,7 +265,7 @@ describe('JsonLd CredentialFormatService', () => {
         byteCount: undefined,
         data: {
           base64:
-            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwib3B0aW9ucyI6eyJwcm9vZlB1cnBvc2UiOiJhc3NlcnRpb25NZXRob2QiLCJwcm9vZlR5cGUiOiJFZDI1NTE5U2lnbmF0dXJlMjAxOCJ9LCJ2ZXJpZmljYXRpb25NZXRob2QiOiI4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyM4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyJ9',
+            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwib3B0aW9ucyI6eyJwcm9vZlB1cnBvc2UiOiJhc3NlcnRpb25NZXRob2QiLCJwcm9vZlR5cGUiOiJFZDI1NTE5U2lnbmF0dXJlMjAxOCJ9fQ==',
           json: undefined,
           links: undefined,
           jws: undefined,
@@ -215,7 +298,7 @@ describe('JsonLd CredentialFormatService', () => {
         byteCount: undefined,
         data: {
           base64:
-            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwib3B0aW9ucyI6eyJwcm9vZlB1cnBvc2UiOiJhc3NlcnRpb25NZXRob2QiLCJwcm9vZlR5cGUiOiJFZDI1NTE5U2lnbmF0dXJlMjAxOCJ9LCJ2ZXJpZmljYXRpb25NZXRob2QiOiI4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyM4SEg1Z1lFZU5jM3o3UFlYbWQ1NGQ0eDZxQWZDTnJxUXFFQjNuUzdaZnU3SyJ9',
+            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwib3B0aW9ucyI6eyJwcm9vZlB1cnBvc2UiOiJhc3NlcnRpb25NZXRob2QiLCJwcm9vZlR5cGUiOiJFZDI1NTE5U2lnbmF0dXJlMjAxOCJ9fQ==',
           json: undefined,
           links: undefined,
           jws: undefined,
@@ -274,6 +357,21 @@ describe('JsonLd CredentialFormatService', () => {
   describe('Accept Request', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
 
+    test('Derive Verification Method', async () => {
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+
+      const service = jsonldFormatService as JsonLdCredentialFormatService
+      const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+
+      const verificationMethod = await service.deriveVerificationMethod(
+        signCredentialOptions.credential,
+        credentialRequest
+      )
+      expect(verificationMethod).toBe(
+        'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
+      )
+    })
+
     test('Creates a credential', async () => {
       // given
       mockFunction(w3cCredentialService.signCredential).mockReturnValue(Promise.resolve(vc))
@@ -284,12 +382,19 @@ describe('JsonLd CredentialFormatService', () => {
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
+      const acceptRequestOptions: JsonLdAcceptRequestOptions = {
+        ...signCredentialOptions,
+        verificationMethod,
+      }
+
       const { format, attachment } = await jsonldFormatService.acceptRequest({
         credentialRecord,
+        credentialFormats: {
+          jsonld: acceptRequestOptions,
+        },
         requestAttachment,
         offerAttachment,
       })
-
       //then
       expect(w3cCredentialService.signCredential).toHaveBeenCalledTimes(1)
 
@@ -361,8 +466,6 @@ describe('JsonLd CredentialFormatService', () => {
           base64: JsonEncoder.toBase64(inputDoc),
         }),
       })
-      // console.log("QUACK message1 = ", message1)
-
       let areCredentialsEqual = jsonldFormatService.areCredentialsEqual(message1, message2)
       expect(areCredentialsEqual).toBe(true)
 

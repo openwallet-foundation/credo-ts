@@ -113,7 +113,6 @@ describe('credentials', () => {
         proofType: 'Ed25519Signature2018',
         proofPurpose: 'assertionMethod',
       },
-      verificationMethod,
     }
   })
 

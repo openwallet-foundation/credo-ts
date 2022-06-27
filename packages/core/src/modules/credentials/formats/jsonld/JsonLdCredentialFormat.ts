@@ -1,6 +1,10 @@
 import type { SignCredentialOptionsRFC0593 } from '../../../vc/models/W3cCredentialServiceOptions'
 import type { CredentialFormat } from '../CredentialFormat'
 
+export interface JsonLdAcceptRequestOptions extends SignCredentialOptionsRFC0593 {
+  verificationMethod?: string
+}
+
 export interface JsonLdCredentialFormat extends CredentialFormat {
   formatKey: 'jsonld'
   credentialRecordType: 'w3c'
@@ -10,6 +14,6 @@ export interface JsonLdCredentialFormat extends CredentialFormat {
     createOffer: SignCredentialOptionsRFC0593
     acceptOffer: SignCredentialOptionsRFC0593
     createRequest: SignCredentialOptionsRFC0593
-    acceptRequest: SignCredentialOptionsRFC0593
+    acceptRequest: JsonLdAcceptRequestOptions
   }
 }

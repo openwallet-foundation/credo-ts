@@ -1,5 +1,6 @@
 import type { DidDocumentService } from './service'
 
+import { ProofType } from '@sphereon/pex/dist/main/lib/types/SSI.types'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -234,7 +235,6 @@ export async function findVerificationMethodByKeyType(
     'capabilityInvocation',
     'capabilityDelegation',
   ]
-
   for await (const purpose of didVerificationMethods) {
     const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
     if (key instanceof Array) {

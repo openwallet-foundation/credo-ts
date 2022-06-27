@@ -27,7 +27,7 @@ export interface SignCredentialOptions {
 export interface SignCredentialOptionsRFC0593 {
   credential: W3cCredential
   options: JsonLdOptionsRFC0593
-  verificationMethod: string
+  // verificationMethod: string
 }
 
 export interface VerifyCredentialOptions {
