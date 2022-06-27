@@ -264,7 +264,7 @@ export class OutOfBandModule {
    * @returns out-of-band record and connection record if one has been created
    */
   public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig = {}) {
-    const message = this.parseInvitation(invitationUrl)
+    const message = await this.parseInvitation(invitationUrl)
     return this.receiveInvitation(await message, config)
   }
 
