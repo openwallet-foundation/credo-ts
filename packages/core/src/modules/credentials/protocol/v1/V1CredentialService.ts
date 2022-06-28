@@ -31,7 +31,7 @@ import { isLinkedAttachment } from '../../../../utils/attachment'
 import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services'
-import { MediationRecipientService } from '../../../routing'
+import { RoutingService } from '../../../routing/services/RoutingService'
 import { CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { IndyCredPropose } from '../../formats/indy/models'
@@ -67,13 +67,13 @@ import { V1CredentialPreview } from './messages/V1CredentialPreview'
 export class V1CredentialService extends CredentialService<[IndyCredentialFormat]> {
   private connectionService: ConnectionService
   private formatService: IndyCredentialFormatService
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
 
   public constructor(
     connectionService: ConnectionService,
     didCommMessageRepository: DidCommMessageRepository,
     agentConfig: AgentConfig,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     dispatcher: Dispatcher,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
@@ -83,7 +83,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     this.connectionService = connectionService
     this.formatService = formatService
     this.didCommMessageRepository = didCommMessageRepository
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
 
     this.registerHandlers()
   }
@@ -1120,12 +1120,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
   protected registerHandlers() {
     this.dispatcher.registerHandler(new V1ProposeCredentialHandler(this, this.agentConfig))
     this.dispatcher.registerHandler(
-      new V1OfferCredentialHandler(
-        this,
-        this.agentConfig,
-        this.mediationRecipientService,
-        this.didCommMessageRepository
-      )
+      new V1OfferCredentialHandler(this, this.agentConfig, this.routingService, this.didCommMessageRepository)
     )
     this.dispatcher.registerHandler(
       new V1RequestCredentialHandler(this, this.agentConfig, this.didCommMessageRepository)

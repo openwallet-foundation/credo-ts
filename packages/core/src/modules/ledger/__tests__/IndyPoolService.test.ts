@@ -49,8 +49,8 @@ const pools: IndyPoolConfig[] = [
   },
 ]
 
-describe('IndyLedgerService', () => {
-  const config = getAgentConfig('IndyLedgerServiceTest', {
+describe('IndyPoolService', () => {
+  const config = getAgentConfig('IndyPoolServiceTest', {
     indyLedgers: pools,
   })
   let wallet: IndyWallet
@@ -80,7 +80,7 @@ describe('IndyLedgerService', () => {
     })
 
     it('should throw a LedgerNotConfiguredError error if no pools are configured on the agent', async () => {
-      const config = getAgentConfig('IndyLedgerServiceTest', { indyLedgers: [] })
+      const config = getAgentConfig('IndyPoolServiceTest', { indyLedgers: [] })
       poolService = new IndyPoolService(config, cacheRepository)
 
       expect(() => poolService.ledgerWritePool).toThrow(LedgerNotConfiguredError)
@@ -89,7 +89,7 @@ describe('IndyLedgerService', () => {
 
   describe('getPoolForDid', () => {
     it('should throw a LedgerNotConfiguredError error if no pools are configured on the agent', async () => {
-      const config = getAgentConfig('IndyLedgerServiceTest', { indyLedgers: [] })
+      const config = getAgentConfig('IndyPoolServiceTest', { indyLedgers: [] })
       poolService = new IndyPoolService(config, cacheRepository)
 
       expect(poolService.getPoolForDid('some-did')).rejects.toThrow(LedgerNotConfiguredError)

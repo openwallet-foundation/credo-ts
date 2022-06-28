@@ -4,7 +4,7 @@ import type { OutboundMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
-import type { GetRoutingOptions } from './services/MediationRecipientService'
+import type { GetRoutingOptions } from './services/RoutingService'
 
 import { firstValueFrom, interval, ReplaySubject, timer } from 'rxjs'
 import { filter, first, takeUntil, throttleTime, timeout, tap, delayWhen } from 'rxjs/operators'
@@ -13,7 +13,6 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { MessageReceiver } from '../../agent/MessageReceiver'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
@@ -33,6 +32,7 @@ import { BatchPickupMessage } from './messages/BatchPickupMessage'
 import { MediationState } from './models/MediationState'
 import { MediationRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
+import { RoutingService } from './services/RoutingService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RecipientModule {
@@ -41,11 +41,11 @@ export class RecipientModule {
   private connectionService: ConnectionService
   private dids: DidsModule
   private messageSender: MessageSender
-  private messageReceiver: MessageReceiver
   private eventEmitter: EventEmitter
   private logger: Logger
   private discoverFeaturesModule: DiscoverFeaturesModule
   private mediationRepository: MediationRepository
+  private routingService: RoutingService
 
   public constructor(
     dispatcher: Dispatcher,
@@ -54,21 +54,21 @@ export class RecipientModule {
     connectionService: ConnectionService,
     dids: DidsModule,
     messageSender: MessageSender,
-    messageReceiver: MessageReceiver,
     eventEmitter: EventEmitter,
     discoverFeaturesModule: DiscoverFeaturesModule,
-    mediationRepository: MediationRepository
+    mediationRepository: MediationRepository,
+    routingService: RoutingService
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.dids = dids
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
-    this.messageReceiver = messageReceiver
     this.eventEmitter = eventEmitter
     this.logger = agentConfig.logger
     this.discoverFeaturesModule = discoverFeaturesModule
     this.mediationRepository = mediationRepository
+    this.routingService = routingService
     this.registerHandlers(dispatcher)
   }
 
@@ -366,7 +366,7 @@ export class RecipientModule {
   }
 
   public async getRouting(options: GetRoutingOptions) {
-    return this.mediationRecipientService.getRouting(options)
+    return this.routingService.getRouting(options)
   }
 
   // Register handlers for the several messages for the mediator.

@@ -13,7 +13,7 @@ import { AriesFrameworkError } from '../../error'
 import { DidResolverService } from '../dids'
 import { DidRepository } from '../dids/repository'
 import { OutOfBandService } from '../oob/OutOfBandService'
-import { MediationRecipientService } from '../routing/services/MediationRecipientService'
+import { RoutingService } from '../routing/services/RoutingService'
 
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import {
@@ -38,7 +38,7 @@ export class ConnectionsModule {
   private outOfBandService: OutOfBandService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private didRepository: DidRepository
   private didResolverService: DidResolverService
 
@@ -49,7 +49,7 @@ export class ConnectionsModule {
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
     trustPingService: TrustPingService,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     didRepository: DidRepository,
     didResolverService: DidResolverService,
     messageSender: MessageSender
@@ -59,7 +59,7 @@ export class ConnectionsModule {
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
     this.trustPingService = trustPingService
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.didRepository = didRepository
     this.messageSender = messageSender
     this.didResolverService = didResolverService
@@ -79,8 +79,7 @@ export class ConnectionsModule {
   ) {
     const { protocol, label, alias, imageUrl, autoAcceptConnection } = config
 
-    const routing =
-      config.routing || (await this.mediationRecipientService.getRouting({ mediatorId: outOfBandRecord.mediatorId }))
+    const routing = config.routing || (await this.routingService.getRouting({ mediatorId: outOfBandRecord.mediatorId }))
 
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
@@ -270,7 +269,7 @@ export class ConnectionsModule {
         this.agentConfig,
         this.connectionService,
         this.outOfBandService,
-        this.mediationRecipientService,
+        this.routingService,
         this.didRepository
       )
     )
@@ -291,7 +290,7 @@ export class ConnectionsModule {
         this.agentConfig,
         this.didExchangeProtocol,
         this.outOfBandService,
-        this.mediationRecipientService,
+        this.routingService,
         this.didRepository
       )
     )

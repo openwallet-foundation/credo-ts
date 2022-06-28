@@ -35,7 +35,7 @@ import { DidCommMessageRepository } from '../../../../storage'
 import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
-import { MediationRecipientService } from '../../../routing'
+import { RoutingService } from '../../../routing/services/RoutingService'
 import { CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { CredentialState, AutoAcceptCredential } from '../../models'
@@ -67,14 +67,14 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
   private connectionService: ConnectionService
   private credentialFormatCoordinator: CredentialFormatCoordinator<CFs>
   protected didCommMessageRepository: DidCommMessageRepository
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private formatServiceMap: { [key: string]: CredentialFormatService }
 
   public constructor(
     connectionService: ConnectionService,
     didCommMessageRepository: DidCommMessageRepository,
     agentConfig: AgentConfig,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     dispatcher: Dispatcher,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
@@ -83,7 +83,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     super(credentialRepository, didCommMessageRepository, eventEmitter, dispatcher, agentConfig)
     this.connectionService = connectionService
     this.didCommMessageRepository = didCommMessageRepository
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.credentialFormatCoordinator = new CredentialFormatCoordinator(didCommMessageRepository)
 
     // Dynamically build format service map. This will be extracted once services are registered dynamically
@@ -1138,12 +1138,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     this.dispatcher.registerHandler(new V2ProposeCredentialHandler(this, this.agentConfig))
 
     this.dispatcher.registerHandler(
-      new V2OfferCredentialHandler(
-        this,
-        this.agentConfig,
-        this.mediationRecipientService,
-        this.didCommMessageRepository
-      )
+      new V2OfferCredentialHandler(this, this.agentConfig, this.routingService, this.didCommMessageRepository)
     )
 
     this.dispatcher.registerHandler(

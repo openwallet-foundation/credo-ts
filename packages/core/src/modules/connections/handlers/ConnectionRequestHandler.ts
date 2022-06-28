@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
-import type { MediationRecipientService } from '../../routing'
+import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
@@ -13,7 +13,7 @@ export class ConnectionRequestHandler implements Handler {
   private agentConfig: AgentConfig
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private didRepository: DidRepository
   public supportedMessages = [ConnectionRequestMessage]
 
@@ -21,13 +21,13 @@ export class ConnectionRequestHandler implements Handler {
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     didRepository: DidRepository
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.didRepository = didRepository
   }
 
@@ -59,7 +59,7 @@ export class ConnectionRequestHandler implements Handler {
 
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
-      const routing = outOfBandRecord.reusable ? await this.mediationRecipientService.getRouting() : undefined
+      const routing = outOfBandRecord.reusable ? await this.routingService.getRouting() : undefined
 
       const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord, routing)
       return createOutboundMessage(connectionRecord, message, outOfBandRecord)

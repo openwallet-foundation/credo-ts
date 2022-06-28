@@ -26,6 +26,7 @@ import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
+import { RoutingService } from '../modules/routing/services/RoutingService'
 import { StorageUpdateService } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
@@ -53,6 +54,7 @@ export class Agent {
   private _isInitialized = false
   public messageSubscription: Subscription
   private walletService: Wallet
+  private routingService: RoutingService
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
@@ -117,6 +119,7 @@ export class Agent {
     this.messageReceiver = this.container.resolve(MessageReceiver)
     this.transportService = this.container.resolve(TransportService)
     this.walletService = this.container.resolve(InjectionSymbols.Wallet)
+    this.routingService = this.container.resolve(RoutingService)
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.container.resolve(ConnectionsModule)
@@ -284,7 +287,7 @@ export class Agent {
     if (!connection) {
       this.logger.debug('Mediation connection does not exist, creating connection')
       // We don't want to use the current default mediator when connecting to another mediator
-      const routing = await this.mediationRecipient.getRouting({ useDefaultMediator: false })
+      const routing = await this.routingService.getRouting({ useDefaultMediator: false })
 
       this.logger.debug('Routing created', routing)
       const { connectionRecord: newConnection } = await this.oob.receiveInvitation(outOfBandInvitation, {
