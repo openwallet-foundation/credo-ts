@@ -137,7 +137,6 @@ export class ProofsModule {
     connection.assertReady()
 
     const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
-      nonce: await service.generateProofRequestNonce(),
       proofRecord,
     }
 
