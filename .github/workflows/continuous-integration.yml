@@ -142,14 +142,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      # Lerna will use the latest tag to determine the latest released version. As we create a tag for each commit
-      # we need to remove all pre-release tags so we can determine the last stable release
-      - name: Remove all pre-release tags
-        run: git tag -l | grep -vE 'v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$' | xargs git tag -d
+      - name: Get next version
+        run: export NEXT_VERSION_BUMP=$(yarn next-version-bump)
 
       # no-private is important to not include the internal packages (demo, sample, etc...)
       - name: Update version
-        run: yarn lerna version --conventional-commits --no-git-tag-version --no-push --yes --exact --no-private
+        run: yarn lerna version --conventional-commits --no-git-tag-version --no-push --yes --exact --no-private $NEXT_VERSION_BUMP
 
       - name: Format lerna changes
         run: yarn format
