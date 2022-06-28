@@ -16,12 +16,13 @@ import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
+import { DidType } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
 import { ProblemReportMessage } from '../messages'
-import { ValueTransferRepository } from '../repository'
+import { ValueTransferTransactionStatus, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 import { WitnessStateRecord } from '../repository/WitnessStateRecord'
@@ -164,14 +165,14 @@ export class ValueTransferService {
     if (record.role === ValueTransferRole.Witness) {
       // When Witness receives Problem Report he needs to forward this to the 3rd party
       const forwardedProblemReportMessage = new ProblemReportMessage({
-        from: record.witnessDid,
-        to: messageContext.message.from === record.getterDid ? record.giverDid : record.getterDid,
+        from: record.witness?.did,
+        to: messageContext.message.from === record.getter?.did ? record.giver?.did : record.getter?.did,
         body: problemReportMessage.body,
         pthid: problemReportMessage.pthid,
       })
 
       record.problemReportMessage = problemReportMessage
-      await this.updateState(record, ValueTransferState.Failed)
+      await this.updateState(record, ValueTransferState.Failed, ValueTransferTransactionStatus.Finished)
       return {
         record,
         message: forwardedProblemReportMessage,
@@ -188,42 +189,70 @@ export class ValueTransferService {
 
     // Update Value Transfer record and raise event
     record.problemReportMessage = problemReportMessage
-    await this.updateState(record, ValueTransferState.Failed)
+    await this.updateState(record, ValueTransferState.Failed, ValueTransferTransactionStatus.Finished)
     return { record }
   }
 
-  public async abortTransaction(record: ValueTransferRecord): Promise<{
+  public async abortTransaction(
+    record: ValueTransferRecord,
+    reason?: string
+  ): Promise<{
     record: ValueTransferRecord
     message?: ProblemReportMessage
   }> {
     if (record.role === ValueTransferRole.Witness) {
       // TODO: discuss weather Witness can abort transaction
-      return { record }
+      throw new AriesFrameworkError('Transaction cannot be canceled by Witness.')
+    }
+
+    if (record.state === ValueTransferState.Completed) {
+      throw new AriesFrameworkError('Transaction cannot be canceled as it is already completed.')
+    }
+
+    if (record.state === ValueTransferState.Failed) {
+      throw new AriesFrameworkError('Transaction cannot be canceled as it is failed.')
     }
 
     let from = undefined
 
     if (record.role === ValueTransferRole.Giver) {
       await this.valueTransfer.giver().abortTransaction()
-      from = record.giverDid
+      from = record.giver?.did || (await this.didService.createDID(DidType.PeerDid)).id
     } else if (record.role === ValueTransferRole.Getter) {
       await this.valueTransfer.getter().abortTransaction()
-      from = record.getterDid
+      from = record.getter?.did
     }
 
     const problemReport = new ProblemReportMessage({
       from,
-      to: record.witnessDid,
+      to: record.witness?.did,
       pthid: record.threadId,
       body: {
         code: 'e.p.transaction-aborted',
-        comment: `Transaction aborted by ${from}`,
+        comment: `Transaction aborted by ${from}. ` + (reason ? `Reason: ${reason}.` : ''),
       },
     })
 
     record.problemReportMessage = problemReport
-    await this.updateState(record, ValueTransferState.Failed)
+
+    await this.updateState(record, ValueTransferState.Failed, ValueTransferTransactionStatus.Finished)
     return { record, message: problemReport }
+  }
+
+  public async getPendingTransactions(): Promise<{
+    records?: ValueTransferRecord[] | null
+  }> {
+    const records = await this.valueTransferRepository.findByQuery({ status: ValueTransferTransactionStatus.Pending })
+    return { records }
+  }
+
+  public async getActiveTransaction(): Promise<{
+    record?: ValueTransferRecord | null
+  }> {
+    const record = await this.valueTransferRepository.findSingleByQuery({
+      status: ValueTransferTransactionStatus.InProgress,
+    })
+    return { record }
   }
 
   public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {
@@ -258,11 +287,11 @@ export class ValueTransferService {
   public async sendProblemReportToGetterAndGiver(message: ProblemReportMessage, record?: ValueTransferRecord) {
     const getterProblemReport = new ProblemReportMessage({
       ...message,
-      to: record?.getterDid,
+      to: record?.getter?.did,
     })
     const giverProblemReport = new ProblemReportMessage({
       ...message,
-      to: record?.giverDid,
+      to: record?.giver?.did,
     })
 
     await Promise.all([this.sendMessageToGetter(getterProblemReport), this.sendMessageToGiver(giverProblemReport)])
@@ -310,9 +339,14 @@ export class ValueTransferService {
     return this.valueTransferRepository.findByQuery(query)
   }
 
-  public async updateState(record: ValueTransferRecord, state: ValueTransferState) {
+  public async updateState(
+    record: ValueTransferRecord,
+    state: ValueTransferState,
+    status: ValueTransferTransactionStatus
+  ) {
     const previousState = record.state
     record.state = state
+    record.status = status
     await this.valueTransferRepository.update(record)
     this.eventEmitter.emit<ValueTransferStateChangedEvent>({
       type: ValueTransferEventTypes.ValueTransferStateChanged,

@@ -1,6 +1,5 @@
 import type { DummyService } from '../services'
-import type { Handler, HandlerInboundMessage } from '@aries-framework/core'
-import type { DIDCommV1Message } from '@aries-framework/core/src/agent/didcomm'
+import type { Handler, HandlerInboundMessage, DIDCommV1Message } from '@aries-framework/core'
 
 import { DummyResponseMessage } from '../messages'
 

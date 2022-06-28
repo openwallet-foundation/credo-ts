@@ -1,0 +1,1 @@
+export { DidInfo } from './DidInfo'

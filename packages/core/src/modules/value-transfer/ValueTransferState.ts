@@ -7,7 +7,9 @@ export enum ValueTransferState {
   RequestReceived = 'request-received',
   RequestAcceptanceSent = 'request-acceptance-sent',
   CashAcceptanceSent = 'cash-acceptance-sent',
-  CashRemovalSent = 'cash-removal-sent',
+  CashSignatureSent = 'cash-signature-sent',
+  WaitingReceipt = 'waiting-receipt',
+  ReceiptReceived = 'receipt-received',
   Failed = 'failed',
   Completed = 'completed',
 }

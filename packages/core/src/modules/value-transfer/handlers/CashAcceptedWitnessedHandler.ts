@@ -17,7 +17,8 @@ export class CashAcceptedWitnessedHandler implements Handler<typeof DIDCommV2Mes
   }
 
   public async handle(messageContext: HandlerInboundMessage<CashAcceptedWitnessedHandler>) {
-    const { message } = await this.valueTransferGiverService.processCashAcceptanceWitnessed(messageContext)
-    return this.valueTransferService.sendMessageToWitness(message)
+    const { message, record } = await this.valueTransferGiverService.processCashAcceptanceWitnessed(messageContext)
+    await this.valueTransferService.sendMessageToWitness(message)
+    await this.valueTransferGiverService.removeCash(record)
   }
 }

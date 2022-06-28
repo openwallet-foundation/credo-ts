@@ -119,11 +119,15 @@ export class ValueTransferModule {
   }
 
   /**
-   * Try to abort value transfer protocol
+   * Try to abort value transfer protocol and send correspondent Problem Report to remote
    *
-   * @returns void
-   */
-  public async abortTransaction(recordId: string): Promise<{
+   * @returns Value Transfer record and sent Problem Report Message
+   * */
+  public async abortTransaction(
+    recordId: string,
+    send = true,
+    reason?: string
+  ): Promise<{
     record: ValueTransferRecord
     message: ProblemReportMessage | undefined
   }> {
@@ -131,11 +135,36 @@ export class ValueTransferModule {
     const record = await this.valueTransferService.getById(recordId)
 
     // Abort transaction
-    const { message } = await this.valueTransferService.abortTransaction(record)
+    const { message } = await this.valueTransferService.abortTransaction(record, reason)
     // Send Payment Request Acceptance to Witness
-    if (message) await this.valueTransferService.sendMessageToWitness(message)
+    if (message && send) await this.valueTransferService.sendMessageToWitness(message)
 
     return { record, message }
+  }
+
+  /**
+   * Get list of pending transactions:
+   *  Getter: Request sent but hasn't accepted / rejected yet
+   *  Giver: Request received but hasn't accepted / rejected yet
+   *
+   * @returns Value Transfer records
+   * */
+  public async getPendingTransactions(): Promise<{
+    records?: ValueTransferRecord[] | null
+  }> {
+    return this.valueTransferService.getPendingTransactions()
+  }
+
+  /**
+   * Get active transaction.
+   * If there is more than one active transaction error will be thrown.
+   *
+   * @returns Value Transfer record in Active Status
+   * */
+  public async getActiveTransaction(): Promise<{
+    record?: ValueTransferRecord | null
+  }> {
+    return this.valueTransferService.getActiveTransaction()
   }
 
   public getAll(): Promise<ValueTransferRecord[]> {

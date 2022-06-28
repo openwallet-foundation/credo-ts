@@ -1,6 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
-import type { RequestAcceptedWitnessedMessage, GetterReceiptMessage } from '../messages'
+import type { GetterReceiptMessage, RequestAcceptedWitnessedMessage } from '../messages'
 import type { Getter } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -10,12 +10,13 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { DidType } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
+import { DidInfo, WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
 import { CashAcceptedMessage, ProblemReportMessage, RequestMessage } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
-import { ValueTransferRecord, ValueTransferRepository } from '../repository'
+import { ValueTransferRecord, ValueTransferTransactionStatus, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
@@ -30,6 +31,7 @@ export class ValueTransferGetterService {
   private valueTransferCryptoService: ValueTransferCryptoService
   private valueTransferStateService: ValueTransferStateService
   private didService: DidService
+  private wellKnownService: WellKnownService
   private eventEmitter: EventEmitter
   private getter: Getter
 
@@ -40,6 +42,7 @@ export class ValueTransferGetterService {
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferStateService,
     didService: DidService,
+    wellKnownService: WellKnownService,
     eventEmitter: EventEmitter
   ) {
     this.valueTransferRepository = valueTransferRepository
@@ -48,6 +51,7 @@ export class ValueTransferGetterService {
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
     this.didService = didService
+    this.wellKnownService = wellKnownService
     this.eventEmitter = eventEmitter
 
     this.getter = new ValueTransfer(
@@ -103,16 +107,20 @@ export class ValueTransferGetterService {
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
     })
 
+    const getterInfo = await this.wellKnownService.resolve(getter)
+    const witnessInfo = witness ? new DidInfo({ did: witness }) : undefined
+    const giverInfo = await this.wellKnownService.resolve(giver)
+
     // Create Value Transfer record and raise event
     const record = new ValueTransferRecord({
       role: ValueTransferRole.Getter,
       state: ValueTransferState.RequestSent,
       threadId: requestMessage.id,
       valueTransferMessage: message,
-      getter: getter,
-      witness: witness,
-      giver: giver,
-      amount: amount,
+      getter: getterInfo,
+      witness: witnessInfo,
+      giver: giverInfo,
+      status: ValueTransferTransactionStatus.Pending,
     })
 
     await this.valueTransferRepository.save(record)
@@ -149,7 +157,7 @@ export class ValueTransferGetterService {
     const valueTransferDelta = requestAcceptedWitnessedMessage.valueTransferDelta
     if (!valueTransferDelta) {
       const problemReport = new ProblemReportMessage({
-        from: record.getterDid,
+        from: record.getter?.did,
         to: requestAcceptedWitnessedMessage.from,
         pthid: record.threadId,
         body: {
@@ -165,8 +173,8 @@ export class ValueTransferGetterService {
     if (error || !message || !delta) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
-        from: record.getterDid,
-        to: record.witnessDid,
+        from: record.getter?.did,
+        to: record.witness?.did,
         pthid: record.threadId,
         body: {
           code: error?.code || 'invalid-request-acceptance',
@@ -176,7 +184,11 @@ export class ValueTransferGetterService {
 
       // Update Value Transfer record
       record.problemReportMessage = problemReportMessage
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed)
+      await this.valueTransferService.updateState(
+        record,
+        ValueTransferState.Failed,
+        ValueTransferTransactionStatus.Finished
+      )
       return {
         record,
         message: problemReportMessage,
@@ -185,19 +197,27 @@ export class ValueTransferGetterService {
 
     // VTP message verification succeed
     const cashAcceptedMessage = new CashAcceptedMessage({
-      from: record.getterDid,
-      to: record.witnessDid,
+      from: record.getter?.did,
+      to: record.witness?.did,
       thid: record.threadId,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
     // Update Value Transfer record and raise event
-    record.valueTransferMessage = message
-    record.witnessDid = message.witnessId
-    record.giverDid = message.giverId
 
-    await this.valueTransferService.updateState(record, ValueTransferState.CashAcceptanceSent)
+    const witnessInfo = record.witness?.did ? record.witness : new DidInfo({ did: message.witnessId })
+    const giverInfo = record.giver?.did ? record.giver : await this.wellKnownService.resolve(message.giverId)
+
+    record.valueTransferMessage = message
+    record.witness = witnessInfo
+    record.giver = giverInfo
+
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.CashAcceptanceSent,
+      ValueTransferTransactionStatus.InProgress
+    )
     return { record, message: cashAcceptedMessage }
   }
 
@@ -221,6 +241,12 @@ export class ValueTransferGetterService {
 
     record.assertState(ValueTransferState.CashAcceptanceSent)
     record.assertRole(ValueTransferRole.Getter)
+
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.ReceiptReceived,
+      ValueTransferTransactionStatus.InProgress
+    )
 
     const valueTransferDelta = getterReceiptMessage.valueTransferDelta
     if (!valueTransferDelta) {
@@ -249,7 +275,11 @@ export class ValueTransferGetterService {
       await this.getter.abortTransaction()
       record.problemReportMessage = problemReportMessage
 
-      await this.valueTransferService.updateState(record, ValueTransferState.Failed)
+      await this.valueTransferService.updateState(
+        record,
+        ValueTransferState.Failed,
+        ValueTransferTransactionStatus.Finished
+      )
       return { record, message: problemReportMessage }
     }
 
@@ -257,7 +287,11 @@ export class ValueTransferGetterService {
     record.valueTransferMessage = message
     record.receipt = message
 
-    await this.valueTransferService.updateState(record, ValueTransferState.Completed)
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.Completed,
+      ValueTransferTransactionStatus.Finished
+    )
     return { record, message: getterReceiptMessage }
   }
 }
