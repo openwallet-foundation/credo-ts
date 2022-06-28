@@ -34,7 +34,7 @@ import { AriesFrameworkError } from '../../error'
 import { DidCommMessageRole } from '../../storage'
 import { DidCommMessageRepository } from '../../storage/didcomm/DidCommMessageRepository'
 import { ConnectionService } from '../connections/services'
-import { MediationRecipientService } from '../routing'
+import { RoutingService } from '../routing/services/RoutingService'
 
 import { CredentialState } from './models/CredentialState'
 import { V1CredentialService } from './protocol/v1/V1CredentialService'
@@ -95,7 +95,7 @@ export class CredentialsModule<
   private credentialRepository: CredentialRepository
   private agentConfig: AgentConfig
   private didCommMessageRepo: DidCommMessageRepository
-  private mediatorRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private logger: Logger
   private serviceMap: ServiceMap<CFs, CSs>
 
@@ -104,7 +104,7 @@ export class CredentialsModule<
     connectionService: ConnectionService,
     agentConfig: AgentConfig,
     credentialRepository: CredentialRepository,
-    mediationRecipientService: MediationRecipientService,
+    mediationRecipientService: RoutingService,
     didCommMessageRepository: DidCommMessageRepository,
     v1Service: V1CredentialService,
     v2Service: V2CredentialService<CFs>,
@@ -116,7 +116,7 @@ export class CredentialsModule<
     this.connectionService = connectionService
     this.credentialRepository = credentialRepository
     this.agentConfig = agentConfig
-    this.mediatorRecipientService = mediationRecipientService
+    this.routingService = mediationRecipientService
     this.didCommMessageRepo = didCommMessageRepository
     this.logger = agentConfig.logger
 
@@ -304,7 +304,7 @@ export class CredentialsModule<
     // Use ~service decorator otherwise
     else if (offerMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediatorRecipientService.getRouting()
+      const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],

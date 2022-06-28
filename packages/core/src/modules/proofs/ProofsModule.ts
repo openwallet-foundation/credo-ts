@@ -13,7 +13,7 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { ConnectionService } from '../connections/services/ConnectionService'
-import { MediationRecipientService } from '../routing/services/MediationRecipientService'
+import { RoutingService } from '../routing/services/RoutingService'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import { PresentationProblemReportReason } from './errors'
@@ -33,7 +33,7 @@ export class ProofsModule {
   private proofService: ProofService
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
 
@@ -41,7 +41,7 @@ export class ProofsModule {
     dispatcher: Dispatcher,
     proofService: ProofService,
     connectionService: ConnectionService,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     agentConfig: AgentConfig,
     messageSender: MessageSender,
     proofResponseCoordinator: ProofResponseCoordinator
@@ -49,7 +49,7 @@ export class ProofsModule {
     this.proofService = proofService
     this.connectionService = connectionService
     this.messageSender = messageSender
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.agentConfig = agentConfig
     this.proofResponseCoordinator = proofResponseCoordinator
     this.registerHandlers(dispatcher)
@@ -196,7 +196,7 @@ export class ProofsModule {
     const { message, proofRecord } = await this.proofService.createRequest(proofRequest, undefined, config)
 
     // Create and set ~service decorator
-    const routing = await this.mediationRecipientService.getRouting()
+    const routing = await this.routingService.getRouting()
     message.service = new ServiceDecorator({
       serviceEndpoint: routing.endpoints[0],
       recipientKeys: [routing.recipientKey.publicKeyBase58],
@@ -242,7 +242,7 @@ export class ProofsModule {
     // Use ~service decorator otherwise
     else if (proofRecord.requestMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
@@ -452,7 +452,7 @@ export class ProofsModule {
         this.proofService,
         this.agentConfig,
         this.proofResponseCoordinator,
-        this.mediationRecipientService
+        this.routingService
       )
     )
     dispatcher.registerHandler(

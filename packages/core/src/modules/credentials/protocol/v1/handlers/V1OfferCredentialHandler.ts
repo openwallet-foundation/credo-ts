@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
+import type { RoutingService } from '../../../../routing/services/RoutingService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
@@ -13,19 +13,19 @@ import { V1OfferCredentialMessage } from '../messages'
 export class V1OfferCredentialHandler implements Handler {
   private credentialService: V1CredentialService
   private agentConfig: AgentConfig
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private didCommMessageRepository: DidCommMessageRepository
   public supportedMessages = [V1OfferCredentialMessage]
 
   public constructor(
     credentialService: V1CredentialService,
     agentConfig: AgentConfig,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     didCommMessageRepository: DidCommMessageRepository
   ) {
     this.credentialService = credentialService
     this.agentConfig = agentConfig
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.didCommMessageRepository = didCommMessageRepository
   }
 
@@ -54,7 +54,7 @@ export class V1OfferCredentialHandler implements Handler {
 
       return createOutboundMessage(messageContext.connection, message)
     } else if (messageContext.message.service) {
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],

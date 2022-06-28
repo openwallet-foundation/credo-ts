@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
+import type { RoutingService } from '../../../../routing/services/RoutingService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
@@ -14,19 +14,19 @@ import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 export class V2OfferCredentialHandler implements Handler {
   private credentialService: V2CredentialService
   private agentConfig: AgentConfig
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   public supportedMessages = [V2OfferCredentialMessage]
   private didCommMessageRepository: DidCommMessageRepository
 
   public constructor(
     credentialService: V2CredentialService,
     agentConfig: AgentConfig,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     didCommMessageRepository: DidCommMessageRepository
   ) {
     this.credentialService = credentialService
     this.agentConfig = agentConfig
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.didCommMessageRepository = didCommMessageRepository
   }
 
@@ -58,7 +58,7 @@ export class V2OfferCredentialHandler implements Handler {
       })
       return createOutboundMessage(messageContext.connection, message)
     } else if (offerMessage?.service) {
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
