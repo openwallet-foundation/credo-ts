@@ -652,22 +652,18 @@ describe('CredentialService', () => {
   })
 
   describe('createProblemReport', () => {
-    test('returns problem report message base once get error', async () => {
+    test('returns problem report message base once get error', () => {
       // given
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.OfferReceived,
         threadId: 'somethreadid',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
+      const message = 'Indy error'
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
 
       // when
-      const credentialProblemReportMessage = new V2CredentialProblemReportMessage({
-        description: {
-          en: 'Indy error',
-          code: CredentialProblemReportReason.IssuanceAbandoned,
-        },
-      })
+      const credentialProblemReportMessage = credentialService.createProblemReport({ message })
 
       credentialProblemReportMessage.setThread({ threadId: 'somethreadid' })
       // then
@@ -676,6 +672,10 @@ describe('CredentialService', () => {
         '@type': 'https://didcomm.org/issue-credential/2.0/problem-report',
         '~thread': {
           thid: 'somethreadid',
+        },
+        description: {
+          code: CredentialProblemReportReason.IssuanceAbandoned,
+          en: message,
         },
       })
     })

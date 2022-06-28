@@ -1,12 +1,14 @@
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { ProblemReportMessage } from '../../../problem-reports'
 import type {
   AcceptCredentialOptions,
   AcceptOfferOptions,
   AcceptProposalOptions,
   AcceptRequestOptions,
   CreateOfferOptions,
+  CreateProblemReportOptions,
   CreateProposalOptions,
   CredentialProtocolMsgReturnType,
   NegotiateOfferOptions,
@@ -30,6 +32,7 @@ import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services'
 import { MediationRecipientService } from '../../../routing'
+import { CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { IndyCredPropose } from '../../formats/indy/models'
 import { AutoAcceptCredential } from '../../models/CredentialAutoAcceptType'
@@ -52,6 +55,7 @@ import {
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   V1CredentialAckMessage,
+  V1CredentialProblemReportMessage,
   V1IssueCredentialMessage,
   V1OfferCredentialMessage,
   V1ProposeCredentialMessage,
@@ -907,6 +911,22 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     await this.updateState(credentialRecord, CredentialState.Done)
 
     return credentialRecord
+  }
+
+  /**
+   * Create a {@link V1CredentialProblemReportMessage} to be sent.
+   *
+   * @param message message to send
+   * @returns a {@link V1CredentialProblemReportMessage}
+   *
+   */
+  public createProblemReport(options: CreateProblemReportOptions): ProblemReportMessage {
+    return new V1CredentialProblemReportMessage({
+      description: {
+        en: options.message,
+        code: CredentialProblemReportReason.IssuanceAbandoned,
+      },
+    })
   }
 
   // AUTO RESPOND METHODS
