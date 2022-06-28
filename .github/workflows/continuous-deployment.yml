@@ -32,7 +32,7 @@ jobs:
       # On push to main, release unstable version
       - name: Release Unstable
         run: |
-          export NEXT_VERSION_BUMP=$(yarn next-version-bump)
+          export NEXT_VERSION_BUMP=$(./node_modules/.bin/ts-node ./scripts/get-next-bump.ts)
           yarn lerna publish --loglevel=verbose --canary $NEXT_VERSION_BUMP --exact --force-publish --yes --no-verify-access --dist-tag alpha
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
