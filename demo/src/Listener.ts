@@ -11,11 +11,9 @@ import type {
   CredentialStateChangedEvent,
   ProofRecord,
   ProofStateChangedEvent,
-} from '@aries-framework/core'
-import type {
   ValueTransferStateChangedEvent,
   ValueTransferRecord,
-} from '@aries-framework/core/src/modules/value-transfer'
+} from '@aries-framework/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import {
@@ -25,10 +23,10 @@ import {
   CredentialState,
   ProofEventTypes,
   ProofState,
+  ValueTransferEventTypes,
+  ValueTransferState,
+  JsonEncoder,
 } from '@aries-framework/core'
-import { ValueTransferEventTypes } from '@aries-framework/core/src/modules/value-transfer'
-import { ValueTransferState } from '@aries-framework/core/src/modules/value-transfer/ValueTransferState'
-import { JsonEncoder } from '@aries-framework/core/src/utils'
 import { ui } from 'inquirer'
 
 import { Color, purpleText } from './OutputClass'

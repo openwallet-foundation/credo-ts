@@ -1,4 +1,3 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { HandlerInboundMessage, Handler } from '../../../agent/Handler'
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferService } from '../services'
@@ -7,18 +6,12 @@ import type { ValueTransferGiverService } from '../services/ValueTransferGiverSe
 import { CashAcceptedWitnessedMessage } from '../messages'
 
 export class CashAcceptedWitnessedHandler implements Handler<typeof DIDCommV2Message> {
-  private agentConfig: AgentConfig
   private valueTransferService: ValueTransferService
   private valueTransferGiverService: ValueTransferGiverService
 
   public readonly supportedMessages = [CashAcceptedWitnessedMessage]
 
-  public constructor(
-    agentConfig: AgentConfig,
-    valueTransferService: ValueTransferService,
-    valueTransferGiverService: ValueTransferGiverService
-  ) {
-    this.agentConfig = agentConfig
+  public constructor(valueTransferService: ValueTransferService, valueTransferGiverService: ValueTransferGiverService) {
     this.valueTransferService = valueTransferService
     this.valueTransferGiverService = valueTransferGiverService
   }

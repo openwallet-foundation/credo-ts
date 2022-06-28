@@ -22,6 +22,8 @@ export { InjectionSymbols } from './constants'
 export type { Wallet } from './wallet/Wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
+export { JsonEncoder } from './utils'
+export { sleep } from './utils/sleep'
 
 import { uuid } from './utils/uuid'
 

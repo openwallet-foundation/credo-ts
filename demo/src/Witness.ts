@@ -1,8 +1,9 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { Transport } from '@aries-framework/core'
-import type { ValueTransferConfig } from '@aries-framework/core/src/types'
+import type { ValueTransferConfig } from '@aries-framework/core'
 
-import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
+import { ValueTransferRole } from '@aries-framework/core'
+import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
@@ -27,6 +28,7 @@ export class Witness extends BaseAgent {
       role: ValueTransferRole.Witness,
       getterTransport: Witness.getterTransport,
       giverTransport: Witness.giverTransport,
+      verifiableNotes: createVerifiableNotes(10),
     }
     const witness = new Witness('witness', undefined, Witness.transports, valueTransferConfig)
     await witness.initializeAgent()

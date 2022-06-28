@@ -1,11 +1,6 @@
-import type { Agent } from '@aries-framework/core/src/agent/Agent'
-import type { Logger } from '@aries-framework/core/src/logger'
-import type { FileSystem } from '@aries-framework/core/src/storage/FileSystem'
-import type { OutboundTransport } from '@aries-framework/core/src/transport/OutboundTransport'
-import type { OutboundPackage } from '@aries-framework/core/src/types'
+import type { Agent, Logger, FileSystem, OutboundTransport, OutboundPackage } from '@aries-framework/core'
 
-import { AgentConfig } from '@aries-framework/core/src/agent/AgentConfig'
-import { JsonEncoder } from '@aries-framework/core/src/utils'
+import { AgentConfig, JsonEncoder } from '@aries-framework/core'
 
 export class FileOutboundTransport implements OutboundTransport {
   private agent!: Agent

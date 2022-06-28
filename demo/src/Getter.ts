@@ -1,9 +1,8 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { Transport } from '@aries-framework/core'
-import type { ValueTransferConfig } from '@aries-framework/core/src/types'
+import type { ValueTransferConfig } from '@aries-framework/core'
 
-import { ValueTransferRole } from '@aries-framework/core/src/modules/value-transfer'
-import { ValueTransferState } from '@aries-framework/core/src/modules/value-transfer/ValueTransferState'
+import { ValueTransferRole, ValueTransferState } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'

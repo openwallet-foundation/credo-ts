@@ -1,4 +1,4 @@
-import type { ValueTransferRecord } from '@aries-framework/core/src/modules/value-transfer'
+import type { ValueTransferRecord } from '@aries-framework/core'
 
 import { clear } from 'console'
 import { textSync } from 'figlet'

@@ -8,8 +8,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
-import { ConnectionService } from '../../connections/services/ConnectionService'
-import { DidResolverService, DidService, DidType } from '../../dids'
+import { DidService, DidType } from '../../dids'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
@@ -27,8 +26,6 @@ export class ValueTransferGiverService {
   private valueTransferService: ValueTransferService
   private valueTransferCryptoService: ValueTransferCryptoService
   private valueTransferStateService: ValueTransferStateService
-  private didResolverService: DidResolverService
-  private connectionService: ConnectionService
   private didService: DidService
   private eventEmitter: EventEmitter
   private giver: Giver
@@ -38,8 +35,6 @@ export class ValueTransferGiverService {
     valueTransferService: ValueTransferService,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferStateService,
-    didResolverService: DidResolverService,
-    connectionService: ConnectionService,
     didService: DidService,
     eventEmitter: EventEmitter
   ) {
@@ -47,8 +42,6 @@ export class ValueTransferGiverService {
     this.valueTransferService = valueTransferService
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
-    this.didResolverService = didResolverService
-    this.connectionService = connectionService
     this.didService = didService
     this.eventEmitter = eventEmitter
 
