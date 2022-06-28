@@ -142,12 +142,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Get next version
-        run: export NEXT_VERSION_BUMP=$(yarn next-version-bump)
-
       # no-private is important to not include the internal packages (demo, sample, etc...)
       - name: Update version
-        run: yarn lerna version --conventional-commits --no-git-tag-version --no-push --yes --exact --no-private $NEXT_VERSION_BUMP
+        run: |
+          export NEXT_VERSION_BUMP=$(yarn next-version-bump)
+          yarn lerna version --conventional-commits --no-git-tag-version --no-push --yes --exact --no-private $NEXT_VERSION_BUMP
 
       - name: Format lerna changes
         run: yarn format

@@ -29,12 +29,11 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Get next version
-        run: export NEXT_VERSION_BUMP=$(yarn next-version-bump)
-
       # On push to main, release unstable version
       - name: Release Unstable
-        run: yarn lerna publish --loglevel=verbose --canary $NEXT_VERSION_BUMP --exact --force-publish --yes --no-verify-access --dist-tag alpha
+        run: |
+          export NEXT_VERSION_BUMP=$(yarn next-version-bump)
+          yarn lerna publish --loglevel=verbose --canary $NEXT_VERSION_BUMP --exact --force-publish --yes --no-verify-access --dist-tag alpha
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
