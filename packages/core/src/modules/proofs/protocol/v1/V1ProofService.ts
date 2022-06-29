@@ -620,9 +620,9 @@ export class V1ProofService extends ProofService {
     }
 
     const indyProposeProofFormat: IndyProposeProofFormat = {
-      name: options?.name ?? 'Proof Request',
-      version: options?.version ?? '1.0',
-      nonce: options.nonce ?? (await this.generateProofRequestNonce()),
+      name: 'Proof Request',
+      version: '1.0',
+      nonce: await this.generateProofRequestNonce(),
     }
 
     const proofRequest = IndyProofUtils.createReferentForProofRequest(

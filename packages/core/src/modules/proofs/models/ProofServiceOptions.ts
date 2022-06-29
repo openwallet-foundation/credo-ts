@@ -79,8 +79,5 @@ export interface GetRequestedCredentialsForProofRequestOptions {
 }
 
 export interface ProofRequestFromProposalOptions {
-  name?: string
-  version?: string
-  nonce?: string
   proofRecord: ProofRecord
 }
