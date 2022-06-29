@@ -2,13 +2,13 @@ import type { EncryptedMessage } from '../agent/didcomm'
 import type { Logger } from '../logger'
 import type {
   DecryptedMessageContext,
-  WalletConfig,
-  WalletExportImportConfig,
-  WalletConfigRekey,
   KeyDerivationMethod,
+  WalletConfig,
+  WalletConfigRekey,
+  WalletExportImportConfig,
 } from '../types'
-import type { Wallet, DidInfo, DidConfig } from './Wallet'
-import type { default as Indy } from 'indy-sdk'
+import type { DidConfig, DidInfo, Wallet } from './Wallet'
+import type { default as Indy, KeyConfig } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -18,7 +18,7 @@ import { JsonEncoder } from '../utils/JsonEncoder'
 import { Buffer } from '../utils/buffer'
 import { isIndyError } from '../utils/indyError'
 
-import { WalletDuplicateError, WalletNotFoundError, WalletError } from './error'
+import { WalletDuplicateError, WalletError, WalletNotFoundError } from './error'
 import { WalletInvalidKeyError } from './error/WalletInvalidKeyError'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -364,6 +364,18 @@ export class IndyWallet implements Wallet {
       return { did, verkey }
     } catch (error) {
       throw new WalletError('Error creating Did', { cause: error })
+    }
+  }
+
+  public async createKey(keyConfig?: KeyConfig): Promise<string> {
+    try {
+      return await this.indy.createKey(this.handle, keyConfig || {})
+    } catch (error) {
+      if (isIndyError(error, 'WalletItemAlreadyExists')) {
+        // ignore error
+        return ''
+      }
+      throw new WalletError('Error creating Key', { cause: error })
     }
   }
 

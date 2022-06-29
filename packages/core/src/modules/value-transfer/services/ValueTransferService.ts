@@ -4,8 +4,9 @@ import type { ValueTransferConfig } from '../../../types'
 import type { Transport } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
+import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { PartyState, ValueTransfer, VerifiableNote, Wallet, WitnessState } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { PartyState, ValueTransfer, Wallet, WitnessState } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -361,7 +362,7 @@ export class ValueTransferService {
     giverWallet = giverWallet.receiveNotes(new Set(verifiableNotes))[1]
     partyStateHashes.add(giverWallet.rootHash())
 
-    let getterWallet = new Wallet()
+    const getterWallet = new Wallet()
     partyStateHashes.add(getterWallet.rootHash())
 
     return partyStateHashes

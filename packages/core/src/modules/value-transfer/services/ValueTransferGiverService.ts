@@ -8,7 +8,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
-import { DidResolverService, DidService, DidType } from '../../dids'
+import { DidService, DidType } from '../../dids'
 import { DidInfo, WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
