@@ -12,7 +12,7 @@ export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature
   proofType: string
   requiredKeyType: string
-  keyType: string
+  keyType: KeyType
 }
 
 @injectable()
@@ -39,5 +39,15 @@ export class SignatureSuiteRegistry {
     }
 
     return suiteInfo
+  }
+
+  public getKeyTypeByProofType(proofType: string): KeyType {
+    const suiteInfo = this.suiteMapping.find((suiteInfo) => suiteInfo.proofType === proofType)
+
+    if (!suiteInfo) {
+      throw new AriesFrameworkError(`No KeyType found for proof type: ${proofType}`)
+    }
+
+    return suiteInfo.keyType
   }
 }

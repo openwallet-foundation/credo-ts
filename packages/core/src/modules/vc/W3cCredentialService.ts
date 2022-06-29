@@ -1,5 +1,6 @@
 import type { AgentContext } from '../../agent/context'
 import type { Key } from '../../crypto/Key'
+import type { KeyType } from '../../crypto/KeyType'
 import type { Query } from '../../storage/StorageService'
 import type { DocumentLoader } from './jsonldUtil'
 import type { W3cVerifyCredentialResult } from './models'
@@ -377,6 +378,10 @@ export class W3cCredentialService {
   ): Promise<W3cVerifiableCredential[]> {
     const result = await this.w3cCredentialRepository.findByQuery(agentContext, query)
     return result.map((record) => record.credential)
+  }
+
+  public getKeyTypeByProofType(proofType: string): KeyType {
+    return this.suiteRegistry.getKeyTypeByProofType(proofType)
   }
 
   public async findCredentialRecordByQuery(
