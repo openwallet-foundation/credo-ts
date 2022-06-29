@@ -94,6 +94,23 @@ describe('W3cCredentialService', () => {
     await wallet.delete()
   })
 
+  describe('Utility methods', () => {
+    describe('getKeyTypesByProofType', () => {
+      it('should return the correct key types for Ed25519Signature2018 proof type', async () => {
+        const keyTypes = w3cCredentialService.getKeyTypesByProofType('Ed25519Signature2018')
+        expect(keyTypes).toEqual([KeyType.Ed25519])
+      })
+      it('should return the correct key types for BbsBlsSignature2020 proof type', async () => {
+        const keyTypes = w3cCredentialService.getKeyTypesByProofType('BbsBlsSignature2020')
+        expect(keyTypes).toEqual([KeyType.Bls12381g2])
+      })
+      it('should return the correct key types for BbsBlsSignatureProof2020 proof type', async () => {
+        const keyTypes = w3cCredentialService.getKeyTypesByProofType('BbsBlsSignatureProof2020')
+        expect(keyTypes).toEqual([KeyType.Bls12381g2])
+      })
+    })
+  })
+
   describe('Ed25519Signature2018', () => {
     let issuerDidKey: DidKey
     let verificationMethod: string
