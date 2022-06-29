@@ -251,7 +251,6 @@ export class ProofsModule {
     const presentationOptions: CreatePresentationOptions = {
       proofFormats,
       proofRecord: record,
-      protocolVersion: version,
       comment,
     }
     const { message, proofRecord } = await service.createPresentation(presentationOptions)

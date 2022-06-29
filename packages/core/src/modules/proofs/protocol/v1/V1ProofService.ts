@@ -293,6 +293,11 @@ export class V1ProofService extends ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     this.logger.debug(`Creating proof request`)
 
+    // Assert
+    if (options.connectionRecord) {
+      options.connectionRecord.assertReady()
+    }
+
     if (!options.proofFormats.indy || Object.keys(options.proofFormats).length !== 1) {
       throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
     }
@@ -707,8 +712,66 @@ export class V1ProofService extends ProofService {
     if (!proposal) {
       return false
     }
-
     await MessageValidator.validate(proposal)
+
+    // check the proposal against a possible previous request
+    const request = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V1RequestPresentationMessage,
+    })
+
+    if (!request) {
+      return false
+    }
+
+    const proofRequest = request.indyProofRequest
+
+    if (!proofRequest) {
+      throw new V1PresentationProblemReportError(
+        `Missing required base64 or json encoded attachment data for presentation request with thread id ${request.threadId}`,
+        { problemCode: PresentationProblemReportReason.Abandoned }
+      )
+    }
+    await validateOrReject(proofRequest)
+
+    // Assert attribute and predicate (group) names do not match
+    checkProofRequestForDuplicates(proofRequest)
+
+    const proposalAttributes = proposal.presentationProposal.attributes
+    const requestedAttributes = proofRequest.requestedAttributes
+
+    const proposedAttributeNames = proposalAttributes.map((x) => x.name)
+    let requestedAttributeNames: string[] = []
+
+    const requestedAttributeList = Array.from(requestedAttributes.values())
+
+    requestedAttributeList.forEach((x) => {
+      if (x.name) {
+        requestedAttributeNames.push(x.name)
+      } else if (x.names) {
+        requestedAttributeNames = requestedAttributeNames.concat(x.names)
+      }
+    })
+
+    if (requestedAttributeNames.length > proposedAttributeNames.length) {
+      // more attributes are requested than have been proposed
+      return false
+    }
+
+    requestedAttributeNames.forEach((x) => {
+      if (!proposedAttributeNames.includes(x)) {
+        this.logger.debug(`Attribute ${x} was requested but wasn't proposed.`)
+        return false
+      }
+    })
+
+    // assert that all requested attributes are provided
+    const providedPredicateNames = proposal.presentationProposal.predicates.map((x) => x.name)
+    proofRequest.requestedPredicates.forEach((x) => {
+      if (!providedPredicateNames.includes(x.name)) {
+        return false
+      }
+    })
     return true
   }
 

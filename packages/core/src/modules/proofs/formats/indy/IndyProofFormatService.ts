@@ -32,7 +32,7 @@ import { checkProofRequestForDuplicates } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
-import { ObjectCheck } from '../../../../utils/objectCheck'
+import { objectEquals } from '../../../../utils/objectCheck'
 import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { IndyCredential, IndyCredentialInfo, IndyCredentialUtils } from '../../../credentials'
@@ -327,8 +327,8 @@ export class IndyProofFormatService extends ProofFormatService {
     const requestAttachmentData = JsonTransformer.fromJSON(requestAttachmentJson, ProofRequest)
 
     if (
-      ObjectCheck.objectEquals(proposalAttachmentData.requestedAttributes, requestAttachmentData.requestedAttributes) &&
-      ObjectCheck.objectEquals(proposalAttachmentData.requestedPredicates, requestAttachmentData.requestedPredicates)
+      objectEquals(proposalAttachmentData.requestedAttributes, requestAttachmentData.requestedAttributes) &&
+      objectEquals(proposalAttachmentData.requestedPredicates, requestAttachmentData.requestedPredicates)
     ) {
       return true
     }

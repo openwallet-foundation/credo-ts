@@ -61,7 +61,6 @@ export interface CreatePresentationOptions {
   lastPresentation?: boolean
   goalCode?: string
   comment?: string
-  protocolVersion: ProofProtocolVersion
   willConfirm?: boolean
 }
 
