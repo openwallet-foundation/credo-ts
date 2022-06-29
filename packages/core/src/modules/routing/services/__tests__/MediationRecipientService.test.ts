@@ -1,34 +1,38 @@
-import type { Wallet } from '../../../wallet/Wallet'
+import type { Wallet } from '../../../../wallet/Wallet'
+import type { Routing } from '../../../connections/services/ConnectionService'
 
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { AgentEventTypes } from '../../../agent/Events'
-import { MessageSender } from '../../../agent/MessageSender'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { Attachment } from '../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../error'
-import { IndyWallet } from '../../../wallet/IndyWallet'
-import { ConnectionRepository, DidExchangeState } from '../../connections'
-import { ConnectionService } from '../../connections/services/ConnectionService'
-import { DidRepository } from '../../dids/repository'
-import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../messages'
-import { MediationRole, MediationState } from '../models'
-import { MediationRecord, MediationRepository } from '../repository'
-import { MediationRecipientService } from '../services'
+import { getAgentConfig, getMockConnection, mockFunction } from '../../../../../tests/helpers'
+import { EventEmitter } from '../../../../agent/EventEmitter'
+import { AgentEventTypes } from '../../../../agent/Events'
+import { MessageSender } from '../../../../agent/MessageSender'
+import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import { Attachment } from '../../../../decorators/attachment/Attachment'
+import { AriesFrameworkError } from '../../../../error'
+import { IndyWallet } from '../../../../wallet/IndyWallet'
+import { DidExchangeState } from '../../../connections'
+import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
+import { ConnectionService } from '../../../connections/services/ConnectionService'
+import { Key } from '../../../dids'
+import { DidRepository } from '../../../dids/repository/DidRepository'
+import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../../messages'
+import { MediationRole, MediationState } from '../../models'
+import { MediationRecord } from '../../repository/MediationRecord'
+import { MediationRepository } from '../../repository/MediationRepository'
+import { MediationRecipientService } from '../MediationRecipientService'
 
-jest.mock('../repository/MediationRepository')
+jest.mock('../../repository/MediationRepository')
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
 
-jest.mock('../../connections/repository/ConnectionRepository')
+jest.mock('../../../connections/repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 
-jest.mock('../../dids/repository/DidRepository')
+jest.mock('../../../dids/repository/DidRepository')
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
-jest.mock('../../../agent/EventEmitter')
+jest.mock('../../../../agent/EventEmitter')
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 
-jest.mock('../../../agent/MessageSender')
+jest.mock('../../../../agent/MessageSender')
 const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 
 const connectionImageUrl = 'https://example.com/image.png'
@@ -81,7 +85,6 @@ describe('MediationRecipientService', () => {
     mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
 
     mediationRecipientService = new MediationRecipientService(
-      wallet,
       connectionService,
       messageSender,
       config,
@@ -259,6 +262,71 @@ describe('MediationRecipientService', () => {
       await expect(mediationRecipientService.processDelivery(messageContext)).rejects.toThrowError(
         'Mediation record is not ready to be used. Expected granted, found invalid state requested'
       )
+    })
+  })
+
+  describe('addMediationRouting', () => {
+    const routingKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
+    const recipientKey = Key.fromFingerprint('z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th')
+    const routing: Routing = {
+      routingKeys: [routingKey],
+      recipientKey,
+      endpoints: [],
+    }
+
+    const mediationRecord = new MediationRecord({
+      connectionId: 'connection-id',
+      role: MediationRole.Recipient,
+      state: MediationState.Granted,
+      threadId: 'thread-id',
+      endpoint: 'https://a-mediator-endpoint.com',
+      routingKeys: [routingKey.publicKeyBase58],
+    })
+
+    beforeEach(() => {
+      jest.spyOn(mediationRecipientService, 'keylistUpdateAndAwait').mockResolvedValue(mediationRecord)
+    })
+
+    test('adds mediation routing id mediator id is passed', async () => {
+      mockFunction(mediationRepository.getById).mockResolvedValue(mediationRecord)
+
+      const extendedRouting = await mediationRecipientService.addMediationRouting(routing, {
+        mediatorId: 'mediator-id',
+      })
+
+      expect(extendedRouting).toMatchObject({
+        endpoints: ['https://a-mediator-endpoint.com'],
+        routingKeys: [routingKey],
+      })
+      expect(mediationRepository.getById).toHaveBeenCalledWith('mediator-id')
+    })
+
+    test('adds mediation routing if useDefaultMediator is true and default mediation is found', async () => {
+      mockFunction(mediationRepository.findSingleByQuery).mockResolvedValue(mediationRecord)
+
+      jest.spyOn(mediationRecipientService, 'keylistUpdateAndAwait').mockResolvedValue(mediationRecord)
+      const extendedRouting = await mediationRecipientService.addMediationRouting(routing, {
+        useDefaultMediator: true,
+      })
+
+      expect(extendedRouting).toMatchObject({
+        endpoints: ['https://a-mediator-endpoint.com'],
+        routingKeys: [routingKey],
+      })
+      expect(mediationRepository.findSingleByQuery).toHaveBeenCalledWith({ default: true })
+    })
+
+    test('does not add mediation routing if no mediation is found', async () => {
+      mockFunction(mediationRepository.findSingleByQuery).mockResolvedValue(mediationRecord)
+
+      jest.spyOn(mediationRecipientService, 'keylistUpdateAndAwait').mockResolvedValue(mediationRecord)
+      const extendedRouting = await mediationRecipientService.addMediationRouting(routing, {
+        useDefaultMediator: false,
+      })
+
+      expect(extendedRouting).toMatchObject(routing)
+      expect(mediationRepository.findSingleByQuery).not.toHaveBeenCalled()
+      expect(mediationRepository.getById).not.toHaveBeenCalled()
     })
   })
 })

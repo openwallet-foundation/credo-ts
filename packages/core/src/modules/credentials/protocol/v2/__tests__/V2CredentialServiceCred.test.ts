@@ -17,7 +17,7 @@ import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { AckStatus } from '../../../../common/messages/AckMessage'
 import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
-import { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
+import { RoutingService } from '../../../../routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { credReq } from '../../../__tests__/fixtures'
 import { CredentialProblemReportReason } from '../../../errors/CredentialProblemReportReason'
@@ -40,7 +40,7 @@ import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessa
 jest.mock('../../../repository/CredentialRepository')
 jest.mock('../../../formats/indy/IndyCredentialFormatService')
 jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
-jest.mock('../../../../routing/services/MediationRecipientService')
+jest.mock('../../../../routing/services/RoutingService')
 jest.mock('../../../../connections/services/ConnectionService')
 jest.mock('../../../../../agent/Dispatcher')
 
@@ -48,13 +48,13 @@ jest.mock('../../../../../agent/Dispatcher')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const IndyCredentialFormatServiceMock = IndyCredentialFormatService as jest.Mock<IndyCredentialFormatService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
+const RoutingServiceMock = RoutingService as jest.Mock<RoutingService>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
-const mediationRecipientService = new MediationRecipientServiceMock()
+const routingService = new RoutingServiceMock()
 const indyCredentialFormatService = new IndyCredentialFormatServiceMock()
 const dispatcher = new DispatcherMock()
 const connectionService = new ConnectionServiceMock()
@@ -252,7 +252,7 @@ describe('CredentialService', () => {
       connectionService,
       didCommMessageRepository,
       agentConfig,
-      mediationRecipientService,
+      routingService,
       dispatcher,
       eventEmitter,
       credentialRepository,
@@ -652,22 +652,18 @@ describe('CredentialService', () => {
   })
 
   describe('createProblemReport', () => {
-    test('returns problem report message base once get error', async () => {
+    test('returns problem report message base once get error', () => {
       // given
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.OfferReceived,
         threadId: 'somethreadid',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
+      const message = 'Indy error'
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
 
       // when
-      const credentialProblemReportMessage = new V2CredentialProblemReportMessage({
-        description: {
-          en: 'Indy error',
-          code: CredentialProblemReportReason.IssuanceAbandoned,
-        },
-      })
+      const credentialProblemReportMessage = credentialService.createProblemReport({ message })
 
       credentialProblemReportMessage.setThread({ threadId: 'somethreadid' })
       // then
@@ -676,6 +672,10 @@ describe('CredentialService', () => {
         '@type': 'https://didcomm.org/issue-credential/2.0/problem-report',
         '~thread': {
           thid: 'somethreadid',
+        },
+        description: {
+          code: CredentialProblemReportReason.IssuanceAbandoned,
+          en: message,
         },
       })
     })

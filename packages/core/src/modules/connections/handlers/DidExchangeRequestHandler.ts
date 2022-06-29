@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
-import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
+import type { RoutingService } from '../../routing/services/RoutingService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { createOutboundMessage } from '../../../agent/helpers'
@@ -14,7 +14,7 @@ export class DidExchangeRequestHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   private agentConfig: AgentConfig
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private didRepository: DidRepository
   public supportedMessages = [DidExchangeRequestMessage]
 
@@ -22,13 +22,13 @@ export class DidExchangeRequestHandler implements Handler {
     agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
     outOfBandService: OutOfBandService,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     didRepository: DidRepository
   ) {
     this.agentConfig = agentConfig
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.didRepository = didRepository
   }
 
@@ -72,7 +72,7 @@ export class DidExchangeRequestHandler implements Handler {
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       // TODO We should add an option to not pass routing and therefore do not rotate keys and use the keys from the invitation
       // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
-      const routing = outOfBandRecord.reusable ? await this.mediationRecipientService.getRouting() : undefined
+      const routing = outOfBandRecord.reusable ? await this.routingService.getRouting() : undefined
 
       const message = await this.didExchangeProtocol.createResponse(connectionRecord, outOfBandRecord, routing)
       return createOutboundMessage(connectionRecord, message, outOfBandRecord)

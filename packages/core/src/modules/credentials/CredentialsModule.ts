@@ -17,6 +17,7 @@ import type {
   FindCredentialMessageReturn,
   FindProposalMessageReturn,
   GetFormatDataReturn,
+  SendProblemReportOptions,
 } from './CredentialsModuleOptions'
 import type { CredentialFormat } from './formats'
 import type { IndyCredentialFormat } from './formats/indy/IndyCredentialFormat'
@@ -33,7 +34,7 @@ import { AriesFrameworkError } from '../../error'
 import { DidCommMessageRole } from '../../storage'
 import { DidCommMessageRepository } from '../../storage/didcomm/DidCommMessageRepository'
 import { ConnectionService } from '../connections/services'
-import { MediationRecipientService } from '../routing'
+import { RoutingService } from '../routing/services/RoutingService'
 
 import { CredentialState } from './models/CredentialState'
 import { V1CredentialService } from './protocol/v1/V1CredentialService'
@@ -67,6 +68,7 @@ export interface CredentialsModule<CFs extends CredentialFormat[], CSs extends C
 
   // Credential
   acceptCredential(options: AcceptCredentialOptions): Promise<CredentialExchangeRecord>
+  sendProblemReport(options: SendProblemReportOptions): Promise<CredentialExchangeRecord>
 
   // Record Methods
   getAll(): Promise<CredentialExchangeRecord[]>
@@ -93,7 +95,7 @@ export class CredentialsModule<
   private credentialRepository: CredentialRepository
   private agentConfig: AgentConfig
   private didCommMessageRepo: DidCommMessageRepository
-  private mediatorRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private logger: Logger
   private serviceMap: ServiceMap<CFs, CSs>
 
@@ -102,7 +104,7 @@ export class CredentialsModule<
     connectionService: ConnectionService,
     agentConfig: AgentConfig,
     credentialRepository: CredentialRepository,
-    mediationRecipientService: MediationRecipientService,
+    mediationRecipientService: RoutingService,
     didCommMessageRepository: DidCommMessageRepository,
     v1Service: V1CredentialService,
     v2Service: V2CredentialService<CFs>,
@@ -114,7 +116,7 @@ export class CredentialsModule<
     this.connectionService = connectionService
     this.credentialRepository = credentialRepository
     this.agentConfig = agentConfig
-    this.mediatorRecipientService = mediationRecipientService
+    this.routingService = mediationRecipientService
     this.didCommMessageRepo = didCommMessageRepository
     this.logger = agentConfig.logger
 
@@ -302,7 +304,7 @@ export class CredentialsModule<
     // Use ~service decorator otherwise
     else if (offerMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediatorRecipientService.getRouting()
+      const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
@@ -515,6 +517,30 @@ export class CredentialsModule<
         `Cannot accept credential without connectionId or ~service decorator on credential message.`
       )
     }
+  }
+
+  /**
+   * Send problem report message for a credential record
+   * @param credentialRecordId The id of the credential record for which to send problem report
+   * @param message message to send
+   * @returns credential record associated with the credential problem report message
+   */
+  public async sendProblemReport(options: SendProblemReportOptions) {
+    const credentialRecord = await this.getById(options.credentialRecordId)
+    if (!credentialRecord.connectionId) {
+      throw new AriesFrameworkError(`No connectionId found for credential record '${credentialRecord.id}'.`)
+    }
+    const connection = await this.connectionService.getById(credentialRecord.connectionId)
+
+    const service = this.getService(credentialRecord.protocolVersion)
+    const problemReportMessage = service.createProblemReport({ message: options.message })
+    problemReportMessage.setThread({
+      threadId: credentialRecord.threadId,
+    })
+    const outboundMessage = createOutboundMessage(connection, problemReportMessage)
+    await this.messageSender.sendMessage(outboundMessage)
+
+    return credentialRecord
   }
 
   public async getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFs>> {
