@@ -61,7 +61,6 @@ export interface CreatePresentationOptions {
   lastPresentation?: boolean
   goalCode?: string
   comment?: string
-  protocolVersion: ProofProtocolVersion
   willConfirm?: boolean
 }
 
@@ -79,8 +78,5 @@ export interface GetRequestedCredentialsForProofRequestOptions {
 }
 
 export interface ProofRequestFromProposalOptions {
-  name?: string
-  version?: string
-  nonce?: string
   proofRecord: ProofRecord
 }

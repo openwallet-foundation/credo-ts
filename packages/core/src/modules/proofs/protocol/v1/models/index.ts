@@ -1,6 +1,4 @@
-export * from './AttributeFilter'
 export * from './PartialProof'
-export * from './PredicateType'
 export * from './ProofAttribute'
 export * from './ProofIdentifier'
 export * from './RequestedProof'

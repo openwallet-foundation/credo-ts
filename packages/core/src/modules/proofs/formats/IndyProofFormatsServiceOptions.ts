@@ -1,6 +1,7 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
-import { IndyRevocationInterval } from '../../credentials'
+import type { IndyRevocationInterval } from '../../credentials'
 import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
+import type { ProofRequestFromProposalOptions } from '../models/ProofServiceOptions'
 import type { RequestProofFormats } from '../models/SharedOptions'
 import type {
   PresentationPreview,
@@ -53,8 +54,8 @@ export interface CreateRequestAsResponseOptions {
   formats: RequestProofFormats
 }
 
-export interface IndyProofConfig {
-  name: string
-  version: string
+export interface IndyProofRequestFromProposalOptions extends ProofRequestFromProposalOptions {
+  name?: string
+  version?: string
   nonce?: string
 }

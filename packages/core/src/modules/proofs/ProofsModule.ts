@@ -137,7 +137,6 @@ export class ProofsModule {
     connection.assertReady()
 
     const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
-      nonce: await service.generateProofRequestNonce(),
       proofRecord,
     }
 
@@ -252,7 +251,6 @@ export class ProofsModule {
     const presentationOptions: CreatePresentationOptions = {
       proofFormats,
       proofRecord: record,
-      protocolVersion: version,
       comment,
     }
     const { message, proofRecord } = await service.createPresentation(presentationOptions)

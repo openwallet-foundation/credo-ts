@@ -66,7 +66,6 @@ export class V2RequestPresentationHandler implements Handler {
     const { message, proofRecord } = await this.proofService.createPresentation({
       proofRecord: record,
       proofFormats: requestedCredentials,
-      protocolVersion: ProofProtocolVersion.V2,
     })
 
     if (messageContext.connection) {

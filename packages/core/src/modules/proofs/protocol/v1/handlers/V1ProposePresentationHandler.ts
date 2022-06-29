@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofRequestFromProposalOptions } from '../../../models/ProofServiceOptions'
+import type { IndyProofRequestFromProposalOptions } from '../../../formats/IndyProofFormatsServiceOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V1ProofService } from '../V1ProofService'
 
@@ -59,7 +59,7 @@ export class V1ProposePresentationHandler implements Handler {
       throw new AriesFrameworkError(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
     }
 
-    const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
+    const proofRequestFromProposalOptions: IndyProofRequestFromProposalOptions = {
       name: 'proof-request',
       version: '1.0',
       nonce: await this.proofService.generateProofRequestNonce(),

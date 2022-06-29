@@ -83,7 +83,6 @@ export class V1RequestPresentationHandler implements Handler {
       proofFormats: {
         indy: requestedCredentials.indy,
       },
-      protocolVersion: ProofProtocolVersion.V1,
       willConfirm: true,
     })
 

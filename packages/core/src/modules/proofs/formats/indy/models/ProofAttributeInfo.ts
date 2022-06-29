@@ -1,7 +1,9 @@
 import { Expose, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsString, ValidateIf, ValidateNested } from 'class-validator'
+
 import { IndyRevocationInterval } from '../../../../credentials'
-import { AttributeFilter } from '../../../protocol/v1/models/AttributeFilter'
+
+import { AttributeFilter } from './AttributeFilter'
 
 export class ProofAttributeInfo {
   public constructor(options: ProofAttributeInfo) {
