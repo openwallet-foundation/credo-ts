@@ -63,7 +63,7 @@ export class Giver extends BaseAgent {
   }
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
-    const { record } = await this.agent.valueTransfer.acceptPaymentRequest(valueTransferRecord.id)
+    const { record } = await this.agent.valueTransfer.acceptPaymentRequest({ recordId: valueTransferRecord.id })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nPayment request accepted!\n'))
     await this.waitForPayment()

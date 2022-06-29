@@ -2,6 +2,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { GetterReceiptMessage, RequestAcceptedWitnessedMessage } from '../messages'
 import type { Getter } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts/types'
 
 import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -71,35 +72,45 @@ export class ValueTransferGetterService {
    * Initiate a new value transfer exchange as Getter by sending a payment request message
    * to the known Witness which transfers record later to Giver.
    *
-   * @param amount Amount to pay
-   * @param witness (Optional) DID of witness if it's known in advance
-   * @param giver (Optional) DID of giver if it's known in advance
-   * @param usePublicDid (Optional) Whether to use public DID of Getter in the request or create a new random one (True by default)
+   * @param params Options to use for request creation -
+   * {
+   *  amount - Amount to pay
+   *  unitOfAmount - (Optional) Currency code that represents the unit of account
+   *  witness - (Optional) DID of witness if it's known in advance
+   *  giver - (Optional) DID of giver if it's known in advance
+   *  usePublicDid - (Optional) Whether to use public DID of Getter in the request or create a new random one (True by default)
+   *  timeouts - (Optional) Giver timeouts to which value transfer must fit
+   * }
+   *
    * @returns
    *    * Value Transfer record
    *    * Payment Request Message
    */
-  public async createRequest(
-    amount: number,
-    witness?: string,
-    giver?: string,
-    usePublicDid = true
-  ): Promise<{
+  public async createRequest(params: {
+    amount: number
+    unitOfAmount?: string
+    witness?: string
+    giver?: string
+    usePublicDid?: boolean
+    timeouts?: Timeouts
+  }): Promise<{
     record: ValueTransferRecord
     message: RequestMessage
   }> {
     // Get payment public DID from the storage or generate a new one if requested
     const state = await this.valueTransferStateRepository.getState()
+    const usePublicDid = params.usePublicDid || true
     const getter =
       usePublicDid && state.publicDid ? state.publicDid : (await this.didService.createDID(DidType.PeerDid)).id
 
     // Call VTP package to create payment request
-    const givenTotal = new TaggedPrice({ amount })
+    const givenTotal = new TaggedPrice({ amount: params.amount, uoa: params.unitOfAmount })
     const { error, message } = await this.getter.createRequest({
       getterId: getter,
-      witnessId: witness,
-      giverId: giver,
+      witnessId: params.witness,
+      giverId: params.giver,
       givenTotal,
+      timeouts: params.timeouts,
     })
     if (error || !message) {
       throw new AriesFrameworkError(`VTP: Failed to create Payment Request: ${error?.message}`)
@@ -107,13 +118,13 @@ export class ValueTransferGetterService {
 
     const requestMessage = new RequestMessage({
       from: getter,
-      to: witness,
+      to: params.witness,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
     })
 
     const getterInfo = await this.wellKnownService.resolve(getter)
-    const witnessInfo = witness ? new DidInfo({ did: witness }) : undefined
-    const giverInfo = await this.wellKnownService.resolve(giver)
+    const witnessInfo = params.witness ? new DidInfo({ did: params.witness }) : undefined
+    const giverInfo = await this.wellKnownService.resolve(params.giver)
 
     // Create Value Transfer record and raise event
     const record = new ValueTransferRecord({

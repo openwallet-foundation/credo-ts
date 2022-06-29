@@ -1,5 +1,6 @@
 import type { ProblemReportMessage, RequestAcceptedMessage, RequestMessage } from './messages'
 import type { ValueTransferRecord, ValueTransferTags } from './repository'
+import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts/types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -65,26 +66,32 @@ export class ValueTransferModule {
    * Initiate a new value transfer exchange as Getter by sending a Payment Request message
    * to the Witness which transfers record later to the known Giver.
    *
-   * @param amount Amount to pay
-   * @param giver DID of Giver. Must be known in advance.
-   * @param witness (Optional) DID of Witness. Must be omitted and set by Witness later.
-   * @param usePublicDid (Optional) Whether to use public DID of Getter in the request or create a new random one (True by default)
+   * @param params Options to use for request creation -
+   * {
+   *  amount - Amount to pay
+   *  unitOfAmount - (Optional) Currency code that represents the unit of account
+   *  witness - (Optional) DID of witness if it's known in advance
+   *  giver - (Optional) DID of giver if it's known in advance
+   *  usePublicDid - (Optional) Whether to use public DID of Getter in the request or create a new random one (True by default)
+   *  timeouts (Optional) - Getter timeouts to which value transfer must fit
+   *   {
+   *      timeout_elapsed - number (seconds) - how far after start the party wants the transaction to timeout
+   *      timeout_time of amount - string - absolute time when the party wants the transaction to timeout
+   *    }
+   * }
    *
    * @returns Value Transfer record and Payment Request Message
    */
-  public async requestPayment(
-    amount: number,
-    witness?: string,
-    giver?: string,
-    usePublicDid = true
-  ): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
+  public async requestPayment(params: {
+    amount: number
+    unitOfAmount?: string
+    witness?: string
+    giver?: string
+    usePublicDid?: boolean
+    timeouts?: Timeouts
+  }): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
     // Create Payment Request and Value Transfer record
-    const { message, record } = await this.valueTransferGetterService.createRequest(
-      amount,
-      witness,
-      giver,
-      usePublicDid
-    )
+    const { message, record } = await this.valueTransferGetterService.createRequest(params)
 
     // Send Payment Request to Witness
     await this.valueTransferService.sendMessageToWitness(message)
@@ -94,19 +101,30 @@ export class ValueTransferModule {
   /**
    * Accept received Payment Request as Giver.
    *
-   * @param recordId Id of Value Transfer record
+   * @param params Options to use for accepting request -
+   * {
+   *  recordId Id of Value Transfer record
+   *  timeouts Giver timeouts to which value transfer must fit
+   *   {
+   *      timeout_elapsed - number (seconds) - how far after start the party wants the transaction to timeout
+   *      timeout_time of amount - string - absolute time when the party wants the transaction to timeout
+   *   }
+   * }
    *
    * @returns Value Transfer record and Payment Request Acceptance Message
    */
-  public async acceptPaymentRequest(recordId: string): Promise<{
+  public async acceptPaymentRequest(params: { recordId: string; timeouts?: Timeouts }): Promise<{
     record: ValueTransferRecord
     message: RequestAcceptedMessage | ProblemReportMessage
   }> {
     // Get Value Transfer record
-    const record = await this.valueTransferService.getById(recordId)
+    const record = await this.valueTransferService.getById(params.recordId)
 
     // Accept Payment Request
-    const { message, record: updatedRecord } = await this.valueTransferGiverService.acceptRequest(record)
+    const { message, record: updatedRecord } = await this.valueTransferGiverService.acceptRequest(
+      record,
+      params.timeouts
+    )
 
     // Send Payment Request Acceptance to Witness
     await this.valueTransferService.sendMessageToWitness(message)

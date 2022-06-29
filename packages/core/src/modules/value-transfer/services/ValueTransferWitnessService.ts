@@ -26,7 +26,7 @@ import {
   RequestWitnessedMessage,
 } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
-import { ValueTransferRecord, ValueTransferTransactionStatus, ValueTransferRepository } from '../repository'
+import { ValueTransferRecord, ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 

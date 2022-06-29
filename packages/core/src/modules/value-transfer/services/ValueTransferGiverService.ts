@@ -2,6 +2,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { CashAcceptedWitnessedMessage, GiverReceiptMessage, RequestWitnessedMessage } from '../messages'
 import type { Giver } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts/types'
 
 import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -16,7 +17,7 @@ import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
 import { CashRemovedMessage, ProblemReportMessage, RequestAcceptedMessage } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
-import { ValueTransferRecord, ValueTransferTransactionStatus, ValueTransferRepository } from '../repository'
+import { ValueTransferRecord, ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferService } from './ValueTransferService'
@@ -141,12 +142,16 @@ export class ValueTransferGiverService {
    * Accept received {@link RequestMessage} as Giver by sending a payment request acceptance message.
    *
    * @param record Value Transfer record containing Payment Request to accept.
+   * @param timeouts (Optional) Giver timeouts to which value transfer must fit
    *
    * @returns
    *    * Value Transfer record
    *    * Witnessed Request Acceptance Message
    */
-  public async acceptRequest(record: ValueTransferRecord): Promise<{
+  public async acceptRequest(
+    record: ValueTransferRecord,
+    timeouts?: Timeouts
+  ): Promise<{
     record: ValueTransferRecord
     message: RequestAcceptedMessage | ProblemReportMessage
   }> {
@@ -174,7 +179,8 @@ export class ValueTransferGiverService {
     const { error, message, delta } = await this.giver.acceptPaymentRequest(
       giverDid,
       record.valueTransferMessage,
-      notesToSpend
+      notesToSpend,
+      timeouts
     )
     if (error || !message || !delta) {
       // VTP message verification failed
