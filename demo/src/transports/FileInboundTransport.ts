@@ -1,8 +1,6 @@
 import type { InboundTransport, Agent, FileSystem } from '@aries-framework/core'
 
-import { AgentConfig } from '@aries-framework/core'
-import { JsonEncoder } from '@aries-framework/core/build/utils/JsonEncoder'
-import { sleep } from '@aries-framework/core/build/utils/sleep'
+import { AgentConfig, JsonEncoder, sleep } from '@aries-framework/core'
 
 export class FileInboundTransport implements InboundTransport {
   private FileSystem!: FileSystem

@@ -1,4 +1,3 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferResponseCoordinator } from '../ValueTransferResponseCoordinator'
@@ -9,7 +8,6 @@ import { ProblemReportMessage } from '../../problem-reports'
 import { RequestWitnessedMessage } from '../messages/RequestWitnessedMessage'
 
 export class RequestWitnessedHandler implements Handler<typeof DIDCommV2Message> {
-  private agentConfig: AgentConfig
   private valueTransferService: ValueTransferService
   private valueTransferGiverService: ValueTransferGiverService
   private valueTransferResponseCoordinator: ValueTransferResponseCoordinator
@@ -17,12 +15,10 @@ export class RequestWitnessedHandler implements Handler<typeof DIDCommV2Message>
   public readonly supportedMessages = [RequestWitnessedMessage]
 
   public constructor(
-    agentConfig: AgentConfig,
     valueTransferService: ValueTransferService,
     valueTransferGiverService: ValueTransferGiverService,
     valueTransferResponseCoordinator: ValueTransferResponseCoordinator
   ) {
-    this.agentConfig = agentConfig
     this.valueTransferService = valueTransferService
     this.valueTransferGiverService = valueTransferGiverService
     this.valueTransferResponseCoordinator = valueTransferResponseCoordinator

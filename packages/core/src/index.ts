@@ -23,6 +23,8 @@ export type { Wallet } from './wallet/Wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
 export { DIDCommV1Message, DIDCommV2Message } from './agent/didcomm'
+export { JsonEncoder } from './utils'
+export { sleep } from './utils/sleep'
 
 import { uuid } from './utils/uuid'
 
