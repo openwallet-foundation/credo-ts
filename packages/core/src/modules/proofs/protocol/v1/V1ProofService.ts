@@ -341,7 +341,7 @@ export class V1ProofService extends ProofService {
 
     for (const attachmentFormat of requestAttachments) {
       await this.indyProofFormatService.processRequest({
-        formatAttachments: attachmentFormat,
+        requestAttachment: attachmentFormat,
       })
     }
 

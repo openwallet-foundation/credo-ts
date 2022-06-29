@@ -330,7 +330,7 @@ export class V2ProofService extends ProofService {
     for (const attachmentFormat of requestAttachments) {
       const service = this.getFormatServiceForFormat(attachmentFormat.format)
       service?.processRequest({
-        formatAttachments: attachmentFormat,
+        requestAttachment: attachmentFormat,
       })
     }
 

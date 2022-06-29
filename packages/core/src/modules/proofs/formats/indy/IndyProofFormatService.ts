@@ -98,19 +98,20 @@ export class IndyProofFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  private createProofAttachment(options: CreateProofAttachmentOptions): ProofAttachmentFormat {
+  private async createProofAttachment(options: CreateProofAttachmentOptions): Promise<ProofAttachmentFormat> {
     const format = new ProofFormatSpec({
       attachmentId: options.id,
       format: V2_INDY_PRESENTATION_PROPOSAL,
     })
 
     const request = new ProofRequest(options.proofProposalOptions)
+    await MessageValidator.validate(request)
 
     const attachment = new Attachment({
       id: options.id,
       mimeType: 'application/json',
       data: new AttachmentData({
-        base64: JsonEncoder.toBase64(request),
+        base64: JsonEncoder.toBase64(JsonTransformer.toJSON(request)),
       }),
     })
     return { format, attachment }
@@ -122,7 +123,7 @@ export class IndyProofFormatService extends ProofFormatService {
     }
     const indyFormat = options.formats.indy
 
-    return this.createProofAttachment({
+    return await this.createProofAttachment({
       id: options.id ?? uuid(),
       proofProposalOptions: indyFormat,
     })
@@ -177,7 +178,7 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async processRequest(options: ProcessRequestOptions): Promise<void> {
-    const proofRequestJson = options.formatAttachments.attachment.getDataAsJson<ProofRequest>()
+    const proofRequestJson = options.requestAttachment.attachment.getDataAsJson<ProofRequest>()
 
     const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 

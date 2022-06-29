@@ -31,7 +31,7 @@ export interface CreateRequestOptions {
 }
 
 export interface ProcessRequestOptions {
-  formatAttachments: ProofAttachmentFormat
+  requestAttachment: ProofAttachmentFormat
   record?: ProofRecord
 }
 
