@@ -61,9 +61,6 @@ export class V2ProposePresentationHandler implements Handler {
     }
 
     const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
-      name: 'proof-request',
-      version: '1.0',
-      nonce: await this.proofService.generateProofRequestNonce(),
       proofRecord,
     }
 
