@@ -654,8 +654,23 @@ export class V2ProofService extends ProofService {
     if (!proposal) {
       return false
     }
-
+    const request = await this.didCommMessageRepository.findAgentMessage({
+      associatedRecordId: proofRecord.id,
+      messageClass: V2RequestPresentationMessage,
+    })
+    if (!request) {
+      return true
+    }
     await MessageValidator.validate(proposal)
+
+    const proposalAttachments = proposal.getAttachmentFormats()
+    const requestAttachments = request.getAttachmentFormats()
+
+    const equalityResults = []
+    for (const attachmentFormat of proposalAttachments) {
+      const service = this.getFormatServiceForFormat(attachmentFormat.format)
+      equalityResults.push(service?.proposalAndRequestAreEqual(proposalAttachments, requestAttachments))
+    }
     return true
   }
 

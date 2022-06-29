@@ -31,8 +31,16 @@ export function objectEquals(x: Map<string, unknown>, y: Map<string, unknown>): 
     return false
   }
 
-  const p = Object.keys(x)
-  return Object.keys(y).every(function (i) {
-    return p.indexOf(i) !== -1
-  })
+  const xkeys = Object.keys(x)
+  const ykeys = Object.keys(y)
+  return (
+    ykeys.every(function (i) {
+      return xkeys.indexOf(i) !== -1
+    }) &&
+    xkeys.every(function (i) {
+      const a: Map<string, unknown> = new Map(Object.entries(i))
+      const b: Map<string, unknown> = new Map(Object.entries(ykeys))
+      return objectEquals(a, b)
+    })
+  )
 }
