@@ -4,8 +4,9 @@ import type { ValueTransferConfig } from '../../../types'
 import type { Transport } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
+import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { PartyState, ValueTransfer, Wallet, WitnessState } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -16,7 +17,6 @@ import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
-import { ConnectionService } from '../../connections/services/ConnectionService'
 import { DidType } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
@@ -42,7 +42,6 @@ export class ValueTransferService {
   private valueTransferStateService: ValueTransferStateService
   private witnessStateRepository: WitnessStateRepository
   private didService: DidService
-  private connectionService: ConnectionService
   private eventEmitter: EventEmitter
   private messageSender: MessageSender
 
@@ -54,7 +53,6 @@ export class ValueTransferService {
     valueTransferStateService: ValueTransferStateService,
     witnessStateRepository: WitnessStateRepository,
     didService: DidService,
-    connectionService: ConnectionService,
     eventEmitter: EventEmitter,
     messageSender: MessageSender
   ) {
@@ -65,7 +63,6 @@ export class ValueTransferService {
     this.valueTransferStateService = valueTransferStateService
     this.witnessStateRepository = witnessStateRepository
     this.didService = didService
-    this.connectionService = connectionService
     this.eventEmitter = eventEmitter
     this.messageSender = messageSender
 
@@ -82,26 +79,40 @@ export class ValueTransferService {
     const publicDid = await this.didService.findPublicDid()
 
     if (config.role === ValueTransferRole.Witness) {
-      const state = await this.witnessStateRepository.findSingleByQuery({})
-      if (state) return
+      const record = await this.witnessStateRepository.findSingleByQuery({})
 
-      if (!publicDid) {
-        throw new AriesFrameworkError(
-          'Witness public DID not found. Please set `publicDidSeed` field in the agent config.'
-        )
+      if (!record) {
+        if (!publicDid) {
+          throw new AriesFrameworkError(
+            'Witness public DID not found. Please set `publicDidSeed` field in the agent config.'
+          )
+        }
+
+        const partyStateHashes = ValueTransferService.calculateInitialPartyStateHashes(new Set(config.verifiableNotes))
+
+        const record = new WitnessStateRecord({
+          publicDid: publicDid.id,
+          witnessState: new WitnessState(partyStateHashes),
+        })
+
+        await this.witnessStateRepository.save(record)
+      } else {
+        if (!record.witnessState.partyStateHashes.size) {
+          const partyStateHashes = ValueTransferService.calculateInitialPartyStateHashes(
+            new Set(config.verifiableNotes)
+          )
+
+          for (const hash of partyStateHashes) {
+            record.witnessState.partyStateHashes.add(hash)
+          }
+
+          await this.witnessStateRepository.update(record)
+        }
       }
+    } else if (config.role === ValueTransferRole.Giver) {
+      const record = await this.valueTransferStateRepository.findSingleByQuery({})
 
-      const record = new WitnessStateRecord({
-        publicDid: publicDid.id,
-        stateAccumulator: '',
-      })
-      await this.witnessStateRepository.save(record)
-      return
-    }
-    if (config.role === ValueTransferRole.Getter || ValueTransferRole.Giver) {
-      const state = await this.valueTransferStateRepository.findSingleByQuery({})
-
-      if (!state) {
+      if (!record) {
         let wallet = new Wallet()
 
         if (config.verifiableNotes?.length) {
@@ -111,18 +122,29 @@ export class ValueTransferService {
 
         const record = new ValueTransferStateRecord({
           publicDid: publicDid?.id,
-          previousHash: '',
-          wallet,
+          partyState: new PartyState(new Uint8Array(), wallet),
         })
+
         await this.valueTransferStateRepository.save(record)
       } else {
         if (config.verifiableNotes?.length) {
-          if (!state.wallet.amount()) {
-            state.wallet.receiveNotes(new Set(config.verifiableNotes))
+          if (!record.partyState.wallet.amount()) {
+            record.partyState.wallet.receiveNotes(new Set(config.verifiableNotes))
           }
 
-          await this.valueTransferStateRepository.update(state)
+          await this.valueTransferStateRepository.update(record)
         }
+      }
+    } else if (config.role === ValueTransferRole.Getter) {
+      const record = await this.valueTransferStateRepository.findSingleByQuery({})
+
+      if (!record) {
+        const record = new ValueTransferStateRecord({
+          publicDid: publicDid?.id,
+          partyState: new PartyState(new Uint8Array(), new Wallet()),
+        })
+
+        await this.valueTransferStateRepository.save(record)
       }
     }
   }
@@ -298,7 +320,7 @@ export class ValueTransferService {
   }
 
   public async getBalance(): Promise<number> {
-    const state = await this.valueTransferStateService.getState()
+    const state = await this.valueTransferStateService.getPartyState()
     return state.wallet.amount()
   }
 
@@ -331,5 +353,18 @@ export class ValueTransferService {
       type: ValueTransferEventTypes.ValueTransferStateChanged,
       payload: { record: record, previousState },
     })
+  }
+
+  private static calculateInitialPartyStateHashes(verifiableNotes: Set<VerifiableNote>) {
+    const partyStateHashes = new Set<Uint8Array>()
+
+    let giverWallet = new Wallet()
+    giverWallet = giverWallet.receiveNotes(new Set(verifiableNotes))[1]
+    partyStateHashes.add(giverWallet.rootHash())
+
+    const getterWallet = new Wallet()
+    partyStateHashes.add(getterWallet.rootHash())
+
+    return partyStateHashes
   }
 }

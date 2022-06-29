@@ -4,15 +4,9 @@ import type { CashAcceptedMessage, CashRemovedMessage, RequestAcceptedMessage, R
 import type { Witness } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { InjectionSymbols } from '../../../constants'
-import { Wallet } from '../../../wallet'
-import { ConnectionService } from '../../connections/services/ConnectionService'
-import { DidResolverService } from '../../dids'
-import { DidService } from '../../dids/services/DidService'
 import { DidInfo } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
@@ -26,8 +20,7 @@ import {
   RequestWitnessedMessage,
 } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
-import { ValueTransferRecord, ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
-import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
+import { ValueTransferRecord, ValueTransferTransactionStatus, ValueTransferRepository } from '../repository'
 import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
@@ -36,45 +29,27 @@ import { ValueTransferStateService } from './ValueTransferStateService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferWitnessService {
-  private wallet: Wallet
-  private config: AgentConfig
   private valueTransferRepository: ValueTransferRepository
-  private valueTransferStateRepository: ValueTransferStateRepository
   private valueTransferService: ValueTransferService
   private valueTransferCryptoService: ValueTransferCryptoService
   private valueTransferStateService: ValueTransferStateService
   private witnessStateRepository: WitnessStateRepository
-  private didService: DidService
-  private didResolverService: DidResolverService
-  private connectionService: ConnectionService
   private eventEmitter: EventEmitter
   private witness: Witness
 
   public constructor(
-    @inject(InjectionSymbols.Wallet) wallet: Wallet,
-    config: AgentConfig,
     valueTransferRepository: ValueTransferRepository,
-    valueTransferStateRepository: ValueTransferStateRepository,
     valueTransferService: ValueTransferService,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferStateService,
     witnessStateRepository: WitnessStateRepository,
-    didService: DidService,
-    didResolverService: DidResolverService,
-    connectionService: ConnectionService,
     eventEmitter: EventEmitter
   ) {
-    this.wallet = wallet
-    this.config = config
     this.valueTransferRepository = valueTransferRepository
-    this.valueTransferStateRepository = valueTransferStateRepository
     this.valueTransferService = valueTransferService
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
     this.witnessStateRepository = witnessStateRepository
-    this.didService = didService
-    this.didResolverService = didResolverService
-    this.connectionService = connectionService
     this.eventEmitter = eventEmitter
 
     this.witness = new ValueTransfer(

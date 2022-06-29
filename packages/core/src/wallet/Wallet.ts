@@ -18,6 +18,7 @@ export interface Wallet {
 
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>
+  createKey(keyConfig?: DidConfig): Promise<string>
   pack(payload: Buffer, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
   unpack(encryptedMessage: EncryptedMessage): Promise<DecryptedMessageContext>
   sign(data: Buffer, verkey: string): Promise<Buffer>

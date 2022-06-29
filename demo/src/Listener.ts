@@ -25,8 +25,8 @@ import {
   ProofState,
   ValueTransferEventTypes,
   ValueTransferState,
+  JsonEncoder,
 } from '@aries-framework/core'
-import { JsonEncoder } from '@aries-framework/core/build/utils/JsonEncoder'
 import { ui } from 'inquirer'
 
 import { Color, purpleText } from './OutputClass'

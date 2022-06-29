@@ -2,6 +2,7 @@
 import type { Transport, ValueTransferConfig } from '@aries-framework/core'
 
 import { ValueTransferRole } from '@aries-framework/core'
+import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
@@ -26,6 +27,7 @@ export class Witness extends BaseAgent {
       role: ValueTransferRole.Witness,
       getterTransport: Witness.getterTransport,
       giverTransport: Witness.giverTransport,
+      verifiableNotes: createVerifiableNotes(10),
     }
     const witness = new Witness('witness', undefined, Witness.transports, valueTransferConfig)
     await witness.initializeAgent()

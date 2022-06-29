@@ -73,6 +73,7 @@ export class KeyService {
     }
     return this.crypto.sign({
       payload: params.payload,
+      verKey: keyRecord.publicKeyBytes,
       signKey: keyRecord.privateKeyBytes,
       keyType: keyRecord.keyType,
     })
@@ -96,8 +97,9 @@ export class KeyService {
     if (!senderKeyRecord) {
       throw new AriesFrameworkError(`Unable to find sign key for did: ${params.senderKid}`)
     }
-    return this.crypto.aesEncrypt({
+    return this.crypto.encrypt({
       payload: params.payload,
+      senderPublicKey: senderKeyRecord.publicKeyBytes,
       senderPrivateKey: senderKeyRecord.privateKeyBytes,
       recipientPublicKey: params.recipientKey.keyBytes,
       keyType: senderKeyRecord.keyType,
@@ -113,9 +115,10 @@ export class KeyService {
     if (!recipientKeyRecord) {
       throw new AriesFrameworkError(`Unable to find sign key for did: ${params.recipientKid}`)
     }
-    return this.crypto.aesDecrypt({
+    return this.crypto.decrypt({
       payload: params.payload,
       senderPublicKey: params.senderKey.keyBytes,
+      recipientPublicKey: recipientKeyRecord.publicKeyBytes,
       recipientPrivateKey: recipientKeyRecord.privateKeyBytes,
       keyType: recipientKeyRecord.keyType,
     })

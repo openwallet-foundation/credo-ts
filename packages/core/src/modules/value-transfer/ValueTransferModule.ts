@@ -4,11 +4,7 @@ import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts/types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
-import { MessageSender } from '../../agent/MessageSender'
-import { ConnectionService } from '../connections'
-import { DidResolverService } from '../dids'
 
 import { ValueTransferResponseCoordinator } from './ValueTransferResponseCoordinator'
 import { RequestHandler } from './handlers'
@@ -28,10 +24,6 @@ import { ValueTransferWitnessService } from './services/ValueTransferWitnessServ
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferModule {
-  private config: AgentConfig
-  private messageSender: MessageSender
-  private connectionService: ConnectionService
-  private resolverService: DidResolverService
   private valueTransferService: ValueTransferService
   private valueTransferGetterService: ValueTransferGetterService
   private valueTransferGiverService: ValueTransferGiverService
@@ -40,20 +32,12 @@ export class ValueTransferModule {
 
   public constructor(
     dispatcher: Dispatcher,
-    config: AgentConfig,
-    messageSender: MessageSender,
-    connectionService: ConnectionService,
-    resolverService: DidResolverService,
     valueTransferService: ValueTransferService,
     valueTransferGetterService: ValueTransferGetterService,
     valueTransferGiverService: ValueTransferGiverService,
     valueTransferWitnessService: ValueTransferWitnessService,
     valueTransferResponseCoordinator: ValueTransferResponseCoordinator
   ) {
-    this.config = config
-    this.messageSender = messageSender
-    this.connectionService = connectionService
-    this.resolverService = resolverService
     this.valueTransferService = valueTransferService
     this.valueTransferGetterService = valueTransferGetterService
     this.valueTransferGiverService = valueTransferGiverService
@@ -214,32 +198,23 @@ export class ValueTransferModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(
-      new RequestHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
-    )
+    dispatcher.registerHandler(new RequestHandler(this.valueTransferService, this.valueTransferWitnessService))
     dispatcher.registerHandler(
       new RequestWitnessedHandler(
-        this.config,
         this.valueTransferService,
         this.valueTransferGiverService,
         this.valueTransferResponseCoordinator
       )
     )
+    dispatcher.registerHandler(new RequestAcceptedHandler(this.valueTransferService, this.valueTransferWitnessService))
     dispatcher.registerHandler(
-      new RequestAcceptedHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
+      new RequestAcceptedWitnessedHandler(this.valueTransferService, this.valueTransferGetterService)
     )
+    dispatcher.registerHandler(new CashAcceptedHandler(this.valueTransferService, this.valueTransferWitnessService))
     dispatcher.registerHandler(
-      new RequestAcceptedWitnessedHandler(this.config, this.valueTransferService, this.valueTransferGetterService)
+      new CashAcceptedWitnessedHandler(this.valueTransferService, this.valueTransferGiverService)
     )
-    dispatcher.registerHandler(
-      new CashAcceptedHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
-    )
-    dispatcher.registerHandler(
-      new CashAcceptedWitnessedHandler(this.config, this.valueTransferService, this.valueTransferGiverService)
-    )
-    dispatcher.registerHandler(
-      new CashRemovedHandler(this.config, this.valueTransferService, this.valueTransferWitnessService)
-    )
+    dispatcher.registerHandler(new CashRemovedHandler(this.valueTransferService, this.valueTransferWitnessService))
     dispatcher.registerHandler(new GetterReceiptHandler(this.valueTransferGetterService))
     dispatcher.registerHandler(new GiverReceiptHandler(this.valueTransferGiverService))
     dispatcher.registerHandler(new ProblemReportHandler(this.valueTransferService))
