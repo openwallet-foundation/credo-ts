@@ -1,8 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { GetterReceiptMessage, RequestAcceptedWitnessedMessage } from '../messages'
-import type { Getter } from '@sicpa-dlab/value-transfer-protocol-ts'
-import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts/types'
+import type { Getter, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'

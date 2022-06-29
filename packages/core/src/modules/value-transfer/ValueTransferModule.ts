@@ -1,6 +1,6 @@
 import type { ProblemReportMessage, RequestAcceptedMessage, RequestMessage } from './messages'
 import type { ValueTransferRecord, ValueTransferTags } from './repository'
-import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts/types'
+import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
