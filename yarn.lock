@@ -2145,10 +2145,10 @@
   resolved "https://registry.yarnpkg.com/@react-native/polyfills/-/polyfills-1.0.0.tgz#05bb0031533598f9458cf65a502b8df0eecae780"
   integrity sha512-0jbp4RxjYopTsIdLl+/Fy2TiwVYHy4mgeu07DG4b/LyM0OS/+lPP5c9sbnt/AMlnF6qz2JRZpPpGw1eMNS6A4w==
 
-"@sicpa-dlab/didcomm-react-native@^0.0.2":
-  version "0.0.2"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/didcomm-react-native/0.0.2/594e9dd51deb6bf8df65f2c4d956c945a861be614347178c3b8f5dbc4c8155f5#93106dd59cc7e2ea418bdf9f5876c696bcf13215"
-  integrity sha512-BVfMNwoqmHhjBxdDAjBZ7ys1Mt+RJpVNn6YRaSfJAgmOF3wgSLMDsfb32Ki+vyvH3KW6YCeKvWK/3y/o73jo9w==
+"@sicpa-dlab/didcomm-react-native@^0.0.8":
+  version "0.0.8"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/didcomm-react-native/0.0.8/d21e37acf15068b46ab771c2ea7c0bd6b3d09b89c94fef197850bdae0f7e02d1#92f6e78ec17b1fe363b175647f573c08f899b37e"
+  integrity sha512-7Zu/Mdjat+Lrs6LPk1RXnckqg0UVmvxXwFznGFdZG6QLyC16C2SpdmlqDxXU6M6PFlq7yWGM22YmH/cmvWRSqw==
 
 "@sicpa-dlab/value-transfer-protocol-ts@0.0.14":
   version "0.0.14"
@@ -4465,9 +4465,9 @@ ee-first@1.1.1:
   integrity sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==
 
 electron-to-chromium@^1.4.172:
-  version "1.4.172"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.172.tgz#87335795a3dc19e7b6dd5af291038477d81dc6b1"
-  integrity sha512-yDoFfTJnqBAB6hSiPvzmsBJSrjOXJtHSJoqJdI/zSIh7DYupYnIOHt/bbPw/WE31BJjNTybDdNAs21gCMnTh0Q==
+  version "1.4.173"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.173.tgz#48f128dda49cd7f6317e65ac0085bd3a6b9b6e3b"
+  integrity sha512-Qo3LnVW6JRNhD32viSdPebxKI7K+3WeBDjU1+Q2yZS83zAh8C2LyPpzTimlciv6U74KpY9n/0ESAhUByRke0jw==
 
 emittery@^0.8.1:
   version "0.8.1"
