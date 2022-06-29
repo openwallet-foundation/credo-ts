@@ -5,6 +5,45 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'
 
 describe('OutOfBandInvitation', () => {
+  describe('transformHandshakeProtocols', () => {
+    const defualtJson = {
+      '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
+      services: ['did:sov:LjgpST2rjsoxYegQDRm7EL'],
+      '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
+      label: 'Faber College',
+      goal_code: 'issue-vc',
+      goal: 'To issue a Faber College Graduate credential',
+    }
+
+    test('Undefined handshake protocols', () => {
+      const json = { ...defualtJson }
+
+      const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation)
+
+      expect(invitation.handshakeProtocols).toBe(undefined)
+    })
+
+    test('Defined handshake protocols', () => {
+      const json = {
+        ...defualtJson,
+        handshake_protocols: ['https://didcomm.org/connections/1.0'],
+      }
+      const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation)
+
+      expect(invitation.handshakeProtocols).toStrictEqual(['https://didcomm.org/connections/1.0'])
+    })
+
+    test('Legacy handshake protocols', () => {
+      const json = {
+        ...defualtJson,
+        handshake_protocols: ['did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0'],
+      }
+      const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation)
+
+      expect(invitation.handshakeProtocols).toStrictEqual(['https://didcomm.org/connections/1.0'])
+    })
+  })
+
   describe('toUrl', () => {
     test('encode the message into the URL containing the base64 encoded invitation as the oob query parameter', async () => {
       const domain = 'https://example.com/ssi'
