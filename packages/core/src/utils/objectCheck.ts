@@ -1,4 +1,4 @@
-import { map } from "rxjs"
+import { map } from 'rxjs'
 
 export function objectEquals(x: Map<string, unknown>, y: Map<string, unknown>): boolean {
   if (x === null || x === undefined || y === null || y === undefined) {
@@ -36,7 +36,7 @@ export function objectEquals(x: Map<string, unknown>, y: Map<string, unknown>): 
 
   const xkeys = Array.from(x.keys())
   const ykeys = Array.from(y.keys())
-  if (!equalArray(xkeys, ykeys)) {
+  if (!equalsIgnoreOrder(xkeys, ykeys)) {
     return false
   }
   return (
@@ -60,15 +60,13 @@ export function objectEquals(x: Map<string, unknown>, y: Map<string, unknown>): 
   )
 }
 
-function equalArray(a: string[], b: string[]) {
-  if (a.length === b.length) {
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) {
-        return false
-      }
-    }
-    return true
-  } else {
-    return false
+function equalsIgnoreOrder(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  const uniqueValues = new Set([...a, ...b])
+  for (const v of uniqueValues) {
+    const aCount = a.filter((e) => e === v).length
+    const bCount = b.filter((e) => e === v).length
+    if (aCount !== bCount) return false
   }
+  return true
 }
