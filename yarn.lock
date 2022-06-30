@@ -2165,10 +2165,10 @@
     fast-json-patch "^3.1.1"
     reflect-metadata "^0.1.13"
 
-"@sicpa-dlab/value-transfer-protocol-ts@0.0.17":
-  version "0.0.17"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.17/60b276f3153d1269fdd2c14cedf8d57aa5e2a8130c8edff92fa6b731b6743806#80eb83c032bbecce4d279f28c985889521e2bfa0"
-  integrity sha512-Ybhoh6jObRVNZQIiNxIgaulXyJok/ez4Qx1LfyPPr6Br8fOHb6IhjnQcf1ptfdh+B8rv9vTbGVdSzAcmCZ4+Sw==
+"@sicpa-dlab/value-transfer-protocol-ts@0.0.18":
+  version "0.0.18"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.18/ab03a203148c90f4879514ae2217f58622de58cbcb2c6ee00e6250efeb983f75#d5630056ebf5036883c07fe8e80eaa135e0366fb"
+  integrity sha512-ebvA+VL/Fiy0LzJulyaUTXx3LhvuMEaAz5zlIN5lzIZSKEvF3AyAvgKPYHygOvhn56MyKAybNbVOA/XeB591Fw==
   dependencies:
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
