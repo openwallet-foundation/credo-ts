@@ -24,7 +24,7 @@ export class Witness extends BaseAgent {
 
   public static async build(): Promise<Witness> {
     const valueTransferConfig: ValueTransferConfig = {
-      role: ValueTransferRole.Witness,
+      isWitness: true,
       getterTransport: Witness.getterTransport,
       giverTransport: Witness.giverTransport,
       verifiableNotes: createVerifiableNotes(10),

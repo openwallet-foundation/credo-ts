@@ -41,7 +41,7 @@ export interface WalletExportImportConfig {
 }
 
 export interface ValueTransferConfig {
-  role: ValueTransferRole
+  isWitness?: boolean
   getterTransport?: Transport
   giverTransport?: Transport
   witnessTransport?: Transport
