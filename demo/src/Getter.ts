@@ -1,7 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { Transport, ValueTransferConfig } from '@aries-framework/core'
 
-import { ValueTransferRole, ValueTransferState } from '@aries-framework/core'
+import { ValueTransferState } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
@@ -22,7 +22,6 @@ export class Getter extends BaseAgent {
 
   public static async build(): Promise<Getter> {
     const valueTransferConfig: ValueTransferConfig = {
-      role: ValueTransferRole.Getter,
       witnessTransport: Getter.transport,
     }
     const getter = new Getter('getter', undefined, [Getter.transport], valueTransferConfig)

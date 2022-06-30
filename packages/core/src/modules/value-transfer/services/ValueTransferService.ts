@@ -76,10 +76,9 @@ export class ValueTransferService {
   }
 
   public async initState(config: ValueTransferConfig) {
-    const publicDid = await this.didService.findPublicDid()
-
-    if (config.role === ValueTransferRole.Witness) {
-      const record = await this.witnessStateRepository.findSingleByQuery({})
+    if (config.isWitness) {
+      const record = await this.getWitnessState()
+      const publicDid = await this.didService.findPublicDid()
 
       if (!record) {
         if (!publicDid) {
@@ -109,43 +108,35 @@ export class ValueTransferService {
           await this.witnessStateRepository.update(record)
         }
       }
-    } else if (config.role === ValueTransferRole.Giver) {
-      const record = await this.valueTransferStateRepository.findSingleByQuery({})
-
-      if (!record) {
-        let wallet = new Wallet()
-
-        if (config.verifiableNotes?.length) {
-          const res = wallet.receiveNotes(new Set(config.verifiableNotes))
-          wallet = res[1]
-        }
-
-        const record = new ValueTransferStateRecord({
-          publicDid: publicDid?.id,
-          partyState: new PartyState(new Uint8Array(), wallet),
-        })
-
-        await this.valueTransferStateRepository.save(record)
-      } else {
-        if (config.verifiableNotes?.length) {
-          if (!record.partyState.wallet.amount()) {
-            record.partyState.wallet.receiveNotes(new Set(config.verifiableNotes))
-          }
-
-          await this.valueTransferStateRepository.update(record)
-        }
+    } else {
+      const stateRecord = await this.initPartyState()
+      if (config.verifiableNotes?.length && !stateRecord.partyState.wallet.amount()) {
+        await this.receiveNotes(config.verifiableNotes, stateRecord)
       }
-    } else if (config.role === ValueTransferRole.Getter) {
-      const record = await this.valueTransferStateRepository.findSingleByQuery({})
+    }
+  }
 
-      if (!record) {
-        const record = new ValueTransferStateRecord({
-          publicDid: publicDid?.id,
-          partyState: new PartyState(new Uint8Array(), new Wallet()),
-        })
-
-        await this.valueTransferStateRepository.save(record)
+  /**
+   * Add notes into the wallet.
+   * Init payment state if it's missing.
+   *
+   * @param notes Verifiable notes to add.
+   * @param stateRecord Party Valuer Transfer state record
+   */
+  public async receiveNotes(notes: VerifiableNote[], stateRecord?: ValueTransferStateRecord | null) {
+    try {
+      if (!notes.length) return
+      if (this.config.valueTransferConfig?.isWitness) {
+        throw new AriesFrameworkError(`Witness cannot add notes`)
       }
+
+      const state = stateRecord ? stateRecord : await this.initPartyState()
+
+      const [, wallet] = state.partyState.wallet.receiveNotes(new Set(notes))
+      state.partyState.wallet = wallet
+      await this.valueTransferStateRepository.update(state)
+    } catch (e) {
+      throw new AriesFrameworkError(`Unable to add verifiable notes. Err: ${e}`)
     }
   }
 
@@ -353,6 +344,27 @@ export class ValueTransferService {
       type: ValueTransferEventTypes.ValueTransferStateChanged,
       payload: { record: record, previousState },
     })
+  }
+
+  public async getPartyState(): Promise<ValueTransferStateRecord | null> {
+    return this.valueTransferStateRepository.findSingleByQuery({})
+  }
+
+  public async getWitnessState(): Promise<WitnessStateRecord | null> {
+    return this.witnessStateRepository.findSingleByQuery({})
+  }
+
+  private async initPartyState(): Promise<ValueTransferStateRecord> {
+    let state = await this.getPartyState()
+    if (state) return state
+
+    const publicDid = await this.didService.findPublicDid()
+    state = new ValueTransferStateRecord({
+      publicDid: publicDid?.id,
+      partyState: new PartyState(new Uint8Array(), new Wallet()),
+    })
+    await this.valueTransferStateRepository.save(state)
+    return state
   }
 
   private static calculateInitialPartyStateHashes(verifiableNotes: Set<VerifiableNote>) {

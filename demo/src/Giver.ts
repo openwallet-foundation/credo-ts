@@ -23,7 +23,6 @@ export class Giver extends BaseAgent {
 
   public static async build(): Promise<Giver> {
     const valueTransferConfig: ValueTransferConfig = {
-      role: ValueTransferRole.Giver,
       witnessTransport: Giver.transport,
       verifiableNotes: createVerifiableNotes(10),
     }

@@ -1,6 +1,6 @@
 import type { ProblemReportMessage, RequestAcceptedMessage, RequestMessage } from './messages'
 import type { ValueTransferRecord, ValueTransferTags } from './repository'
-import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { Timeouts, VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -183,6 +183,16 @@ export class ValueTransferModule {
     record?: ValueTransferRecord | null
   }> {
     return this.valueTransferService.getActiveTransaction()
+  }
+
+  /**
+   * Add notes into the wallet.
+   * Init payment state if it's missing.
+   *
+   * @param notes Verifiable notes to add.
+   */
+  public async receiveNotes(notes: VerifiableNote[]) {
+    await this.valueTransferService.receiveNotes(notes)
   }
 
   public getAll(): Promise<ValueTransferRecord[]> {
