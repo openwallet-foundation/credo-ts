@@ -1,7 +1,10 @@
+import { map } from "rxjs"
+
 export function objectEquals(x: Map<string, unknown>, y: Map<string, unknown>): boolean {
   if (x === null || x === undefined || y === null || y === undefined) {
     return x === y
   }
+
   // after this just checking type of one would be enough
   if (x.constructor !== y.constructor) {
     return false
@@ -31,16 +34,41 @@ export function objectEquals(x: Map<string, unknown>, y: Map<string, unknown>): 
     return false
   }
 
-  const xkeys = Object.keys(x)
-  const ykeys = Object.keys(y)
+  const xkeys = Array.from(x.keys())
+  const ykeys = Array.from(y.keys())
+  if (!equalArray(xkeys, ykeys)) {
+    return false
+  }
   return (
-    ykeys.every(function (i) {
+    xkeys.every(function (i) {
       return xkeys.indexOf(i) !== -1
     }) &&
-    xkeys.every(function (i) {
-      const a: Map<string, unknown> = new Map(Object.entries(i))
-      const b: Map<string, unknown> = new Map(Object.entries(ykeys))
+    xkeys.every(function (xkey) {
+      // get the x map entries for this key
+
+      const xval: any = x.get(xkey)
+      const yval: any = y.get(xkey)
+
+      const a: Map<string, unknown> = new Map([[xkey, xval]])
+      if (a.size === 1) {
+        return xval === yval
+      }
+      // get the y map entries for this key
+      const b: Map<string, unknown> = new Map([[xkey, yval]])
       return objectEquals(a, b)
     })
   )
+}
+
+function equalArray(a: string[], b: string[]) {
+  if (a.length === b.length) {
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) {
+        return false
+      }
+    }
+    return true
+  } else {
+    return false
+  }
 }
