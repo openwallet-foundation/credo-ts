@@ -139,8 +139,10 @@ export class ValueTransferService {
       const state = stateRecord ? stateRecord : await this.initPartyState()
 
       const [, wallet] = state.partyState.wallet.receiveNotes(new Set(notes))
-      state.partyState.wallet = wallet
-      await this.valueTransferStateRepository.update(state)
+      await this.valueTransferStateService.storePartyState({
+        ...state.partyState,
+        wallet,
+      })
     } catch (e) {
       throw new AriesFrameworkError(`Unable to add verifiable notes. Err: ${e}`)
     }
