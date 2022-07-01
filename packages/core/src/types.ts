@@ -44,7 +44,7 @@ export interface ValueTransferConfig {
   isWitness?: boolean
   getterTransport?: Transport
   giverTransport?: Transport
-  witnessTransport?: Transport
+  //witnessTransport?: Transport
   verifiableNotes?: VerifiableNote[]
   autoAcceptValueTransfer?: AutoAcceptValueTransfer
 }

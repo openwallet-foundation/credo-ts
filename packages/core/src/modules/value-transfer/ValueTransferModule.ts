@@ -78,7 +78,7 @@ export class ValueTransferModule {
     const { message, record } = await this.valueTransferGetterService.createRequest(params)
 
     // Send Payment Request to Witness
-    await this.valueTransferService.sendMessageToWitness(message)
+    await this.valueTransferService.sendMessageToWitness(message, record.role)
     return { message, record }
   }
 
@@ -111,7 +111,7 @@ export class ValueTransferModule {
     )
 
     // Send Payment Request Acceptance to Witness
-    await this.valueTransferService.sendMessageToWitness(message)
+    await this.valueTransferService.sendMessageToWitness(message, record.role)
 
     return { record: updatedRecord, message }
   }
@@ -121,6 +121,7 @@ export class ValueTransferModule {
    *
    * @param recordId Id of Value Transfer record
    *
+   * @param options
    * @returns Value Transfer record
    */
   public async returnWhenIsCompleted(recordId: string, options?: { timeoutMs: number }): Promise<ValueTransferRecord> {
@@ -155,7 +156,7 @@ export class ValueTransferModule {
     // Abort transaction
     const { message } = await this.valueTransferService.abortTransaction(record, reason)
     // Send Payment Request Acceptance to Witness
-    if (message && send) await this.valueTransferService.sendMessageToWitness(message)
+    if (message && send) await this.valueTransferService.sendMessageToWitness(message, record.role)
 
     return { record, message }
   }

@@ -5,6 +5,8 @@ import type { ValueTransferGetterService } from '../services/ValueTransferGetter
 
 import { RequestAcceptedWitnessedMessage } from '../messages'
 
+import { ValueTransferRole } from '@aries-framework/core'
+
 export class RequestAcceptedWitnessedHandler implements Handler<typeof DIDCommV2Message> {
   private valueTransferService: ValueTransferService
   private valueTransferGetterService: ValueTransferGetterService
@@ -20,7 +22,7 @@ export class RequestAcceptedWitnessedHandler implements Handler<typeof DIDCommV2
   }
 
   public async handle(messageContext: HandlerInboundMessage<RequestAcceptedWitnessedHandler>) {
-    const { message } = await this.valueTransferGetterService.processRequestAcceptanceWitnessed(messageContext)
-    return this.valueTransferService.sendMessageToWitness(message)
+    const { message, record } = await this.valueTransferGetterService.processRequestAcceptanceWitnessed(messageContext)
+    return this.valueTransferService.sendMessageToWitness(message, record.role)
   }
 }
