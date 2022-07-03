@@ -21,12 +21,11 @@ import type {
 import type { IndyCredentialFormat } from './IndyCredentialFormat'
 import type * as Indy from 'indy-sdk'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
 import { AriesFrameworkError } from '../../../../error'
+import { inject, injectable } from '../../../../plugins'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
 import { getIndyDidFromVerificationMethod } from '../../../../utils/did'
@@ -51,7 +50,7 @@ const INDY_CRED_REQUEST = 'hlindy/cred-req@v2.0'
 const INDY_CRED_FILTER = 'hlindy/cred-filter@v2.0'
 const INDY_CRED = 'hlindy/cred@v2.0'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyCredentialFormatService extends CredentialFormatService<IndyCredentialFormat> {
   private indyIssuerService: IndyIssuerService
   private indyLedgerService: IndyLedgerService

@@ -4,11 +4,10 @@ import type { EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
+import { injectable } from '../plugins'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class TransportService {
   public transportSessionTable: TransportSessionTable = {}
 

@@ -42,7 +42,7 @@ export interface WalletExportImportConfig {
 }
 
 export type EncryptedMessage = {
-  protected: unknown
+  protected: string
   iv: unknown
   ciphertext: unknown
   tag: unknown

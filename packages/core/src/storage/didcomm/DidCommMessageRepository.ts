@@ -2,17 +2,16 @@ import type { AgentMessage, ConstructableAgentMessage } from '../../agent/AgentM
 import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
-import { inject, scoped, Lifecycle } from 'tsyringe'
-
 import { EventEmitter } from '../../agent/EventEmitter'
 import { InjectionSymbols } from '../../constants'
+import { inject, injectable } from '../../plugins'
 import { parseMessageType } from '../../utils/messageType'
 import { Repository } from '../Repository'
 import { StorageService } from '../StorageService'
 
 import { DidCommMessageRecord } from './DidCommMessageRecord'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
   public constructor(
     @inject(InjectionSymbols.StorageService) storageService: StorageService<DidCommMessageRecord>,

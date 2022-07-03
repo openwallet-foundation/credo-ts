@@ -10,13 +10,13 @@ import type { ConnectionRecordProps } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
-import { inject, scoped, Lifecycle } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { AriesFrameworkError } from '../../../error'
+import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
 import { Wallet } from '../../../wallet/Wallet'
@@ -54,7 +54,7 @@ export interface ConnectionRequestParams {
   autoAcceptConnection?: boolean
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ConnectionService {
   private wallet: Wallet
   private config: AgentConfig

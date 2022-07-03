@@ -5,10 +5,9 @@ import type { AgentMessageProcessedEvent } from './Events'
 import type { Handler } from './Handler'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { injectable } from '../plugins'
 import { canHandleMessageType, parseMessageType } from '../utils/messageType'
 
 import { ProblemReportMessage } from './../modules/problem-reports/messages/ProblemReportMessage'
@@ -17,7 +16,7 @@ import { AgentEventTypes } from './Events'
 import { MessageSender } from './MessageSender'
 import { isOutboundServiceMessage } from './helpers'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 class Dispatcher {
   private handlers: Handler[] = []
   private messageSender: MessageSender

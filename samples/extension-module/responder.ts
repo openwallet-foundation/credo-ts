@@ -6,7 +6,7 @@ import { agentDependencies, HttpInboundTransport, WsInboundTransport } from '@ar
 import express from 'express'
 import { Server } from 'ws'
 
-import { DummyEventTypes, DummyModule, DummyState } from './dummy'
+import { DummyModule, DummyEventTypes, DummyApi, DummyState } from './dummy'
 
 const run = async () => {
   // Create transports
@@ -33,6 +33,9 @@ const run = async () => {
     agentDependencies
   )
 
+  // Register the DummyModule
+  agent.dependencyManager.registerModules(DummyModule)
+
   // Register transports
   agent.registerInboundTransport(httpInboundTransport)
   agent.registerInboundTransport(wsInboundTransport)
@@ -44,8 +47,8 @@ const run = async () => {
     res.send(outOfBandInvitation.toUrl({ domain: `http://localhost:${port}/invitation` }))
   })
 
-  // Inject DummyModule
-  const dummyModule = agent.injectionContainer.resolve(DummyModule)
+  // Inject DummyApi
+  const dummyApi = agent.dependencyManager.resolve(DummyApi)
 
   // Now agent will handle messages and events from Dummy protocol
 
@@ -61,7 +64,7 @@ const run = async () => {
   // Subscribe to dummy record events
   agent.events.on(DummyEventTypes.StateChanged, async (event: DummyStateChangedEvent) => {
     if (event.payload.dummyRecord.state === DummyState.RequestReceived) {
-      await dummyModule.respond(event.payload.dummyRecord.id)
+      await dummyApi.respond(event.payload.dummyRecord.id)
     }
   })
 

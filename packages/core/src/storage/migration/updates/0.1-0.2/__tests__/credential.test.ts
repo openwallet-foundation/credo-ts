@@ -23,7 +23,7 @@ jest.mock('../../../../../agent/Agent', () => {
   return {
     Agent: jest.fn(() => ({
       config: agentConfig,
-      injectionContainer: {
+      dependencyManager: {
         resolve: jest.fn((token) =>
           token === CredentialRepositoryMock ? credentialRepository : didCommMessageRepository
         ),

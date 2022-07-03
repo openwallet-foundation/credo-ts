@@ -2,7 +2,6 @@ import type { StorageUpdateError } from '../error/StorageUpdateError'
 
 import { readFileSync, unlinkSync } from 'fs'
 import path from 'path'
-import { container } from 'tsyringe'
 
 import { getBaseConfig } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
@@ -29,7 +28,7 @@ describe('UpdateAssistant | Backup', () => {
   let backupPath: string
 
   beforeEach(async () => {
-    agent = new Agent(config, agentDependencies, container)
+    agent = new Agent(config, agentDependencies)
     backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
 
     // If tests fail it's possible the cleanup has been skipped. So remove before running tests
@@ -65,8 +64,8 @@ describe('UpdateAssistant | Backup', () => {
       return record
     })
 
-    const credentialRepository = agent.injectionContainer.resolve(CredentialRepository)
-    const storageUpdateService = agent.injectionContainer.resolve(StorageUpdateService)
+    const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
+    const storageUpdateService = agent.dependencyManager.resolve(StorageUpdateService)
 
     // Add 0.1 data and set version to 0.1
     for (const credentialRecord of aliceCredentialRecords) {
@@ -101,8 +100,8 @@ describe('UpdateAssistant | Backup', () => {
       return record
     })
 
-    const credentialRepository = agent.injectionContainer.resolve(CredentialRepository)
-    const storageUpdateService = agent.injectionContainer.resolve(StorageUpdateService)
+    const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
+    const storageUpdateService = agent.dependencyManager.resolve(StorageUpdateService)
 
     // Add 0.1 data and set version to 0.1
     for (const credentialRecord of aliceCredentialRecords) {

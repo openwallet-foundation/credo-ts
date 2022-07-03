@@ -113,7 +113,7 @@ describe('wallet', () => {
 
   test('when exporting and importing a wallet, content is copied', async () => {
     await bobAgent.initialize()
-    const bobBasicMessageRepository = bobAgent.injectionContainer.resolve(BasicMessageRepository)
+    const bobBasicMessageRepository = bobAgent.dependencyManager.resolve(BasicMessageRepository)
 
     const basicMessageRecord = new BasicMessageRecord({
       id: 'some-id',

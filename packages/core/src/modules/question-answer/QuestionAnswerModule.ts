@@ -1,16 +1,18 @@
+import type { DependencyManager } from '../../plugins'
 import type { ValidResponse } from './models'
-
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections'
 
 import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
+import { QuestionAnswerRepository } from './repository'
 import { QuestionAnswerService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class QuestionAnswerModule {
   private questionAnswerService: QuestionAnswerService
   private messageSender: MessageSender
@@ -93,5 +95,19 @@ export class QuestionAnswerModule {
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new QuestionMessageHandler(this.questionAnswerService))
     dispatcher.registerHandler(new AnswerMessageHandler(this.questionAnswerService))
+  }
+
+  /**
+   * Registers the dependencies of the question answer module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(QuestionAnswerModule)
+
+    // Services
+    dependencyManager.registerSingleton(QuestionAnswerService)
+
+    // Repositories
+    dependencyManager.registerSingleton(QuestionAnswerRepository)
   }
 }

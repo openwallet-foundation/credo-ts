@@ -16,7 +16,6 @@ import type { GetRoutingOptions } from './RoutingService'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -25,6 +24,7 @@ import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { Key } from '../../dids'
@@ -43,7 +43,7 @@ import { MediationRole, MediationState } from '../models'
 import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MediationRecipientService {
   private mediationRepository: MediationRepository
   private eventEmitter: EventEmitter

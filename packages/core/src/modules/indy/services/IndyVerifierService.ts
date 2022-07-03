@@ -1,13 +1,12 @@
 import type * as Indy from 'indy-sdk'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyVerifierService {
   private indy: typeof Indy
   private ledgerService: IndyLedgerService

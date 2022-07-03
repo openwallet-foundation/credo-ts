@@ -19,7 +19,7 @@ export class SubjectOutboundTransport implements OutboundTransport {
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
 
-    this.logger = agent.injectionContainer.resolve(InjectionSymbols.Logger)
+    this.logger = agent.dependencyManager.resolve(InjectionSymbols.Logger)
   }
 
   public async stop(): Promise<void> {

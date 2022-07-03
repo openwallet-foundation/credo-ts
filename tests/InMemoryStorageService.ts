@@ -1,9 +1,13 @@
 import type { BaseRecord, TagsBase } from '../packages/core/src/storage/BaseRecord'
 import type { StorageService, BaseRecordConstructor, Query } from '../packages/core/src/storage/StorageService'
 
-import { scoped, Lifecycle } from 'tsyringe'
-
-import { RecordNotFoundError, RecordDuplicateError, JsonTransformer, AriesFrameworkError } from '@aries-framework/core'
+import {
+  RecordNotFoundError,
+  RecordDuplicateError,
+  JsonTransformer,
+  AriesFrameworkError,
+  injectable,
+} from '@aries-framework/core'
 
 interface StorageRecord {
   value: Record<string, unknown>
@@ -12,7 +16,7 @@ interface StorageRecord {
   id: string
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implements StorageService<T> {
   public records: { [id: string]: StorageRecord }
 

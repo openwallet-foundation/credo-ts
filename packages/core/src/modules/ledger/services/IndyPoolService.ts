@@ -1,11 +1,10 @@
 import type { Logger } from '../../../logger/Logger'
 import type * as Indy from 'indy-sdk'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
-import { PersistedLruCache, CacheRepository } from '../../../cache'
+import { CacheRepository, PersistedLruCache } from '../../../cache'
 import { IndySdkError } from '../../../error/IndySdkError'
+import { injectable } from '../../../plugins'
 import { isSelfCertifiedDid } from '../../../utils/did'
 import { isIndyError } from '../../../utils/indyError'
 import { allSettled, onlyFulfilled, onlyRejected } from '../../../utils/promises'
@@ -20,8 +19,7 @@ export interface CachedDidResponse {
   nymResponse: Indy.GetNymResponse
   poolId: string
 }
-
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyPoolService {
   public readonly pools: IndyPool[]
   private logger: Logger

@@ -25,10 +25,10 @@ export class WsOutboundTransport implements OutboundTransport {
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
-    const agentConfig = agent.injectionContainer.resolve(AgentConfig)
+    const agentConfig = agent.dependencyManager.resolve(AgentConfig)
 
     this.logger = agentConfig.logger
-    this.eventEmitter = agent.injectionContainer.resolve(EventEmitter)
+    this.eventEmitter = agent.dependencyManager.resolve(EventEmitter)
     this.logger.debug('Starting WS outbound transport')
     this.WebSocketClass = agentConfig.agentDependencies.WebSocketClass
   }

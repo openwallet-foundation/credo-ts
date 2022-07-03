@@ -1,15 +1,14 @@
 import type { Logger } from '../../logger'
 import type { VersionString } from '../../utils/version'
 
-import { scoped, Lifecycle } from 'tsyringe'
-
 import { AgentConfig } from '../../agent/AgentConfig'
+import { injectable } from '../../plugins'
 
 import { StorageVersionRecord } from './repository/StorageVersionRecord'
 import { StorageVersionRepository } from './repository/StorageVersionRepository'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION, INITIAL_STORAGE_VERSION } from './updates'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class StorageUpdateService {
   private static STORAGE_VERSION_RECORD_ID = 'STORAGE_VERSION_RECORD_ID'
 
