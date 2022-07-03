@@ -1,15 +1,12 @@
-import type { DependencyManager } from '../plugins'
 import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { Subscription } from 'rxjs'
-import type { DependencyContainer } from 'tsyringe'
 
 import { Subject } from 'rxjs'
 import { concatMap, takeUntil } from 'rxjs/operators'
-import { container as baseContainer } from 'tsyringe'
 
 import { CacheRepository } from '../cache'
 import { InjectionSymbols } from '../constants'
@@ -29,6 +26,7 @@ import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerM
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { W3cVcModule } from '../modules/vc/module'
+import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
@@ -52,11 +50,11 @@ export class Agent extends BaseAgent {
   public constructor(
     initialConfig: InitConfig,
     dependencies: AgentDependencies,
-    injectionContainer?: DependencyContainer
+    dependencyManager?: DependencyManager
   ) {
     // NOTE: we can't create variables before calling super as TS will complain that the super call must be the
     // the first statement in the constructor.
-    super(new AgentConfig(initialConfig, dependencies), injectionContainer ?? baseContainer.createChildContainer())
+    super(new AgentConfig(initialConfig, dependencies), dependencyManager ?? new DependencyManager())
 
     const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
 
@@ -93,10 +91,6 @@ export class Agent extends BaseAgent {
 
   public get events() {
     return this.eventEmitter
-  }
-
-  public get isInitialized() {
-    return this._isInitialized && this.wallet.isInitialized
   }
 
   public async initialize() {

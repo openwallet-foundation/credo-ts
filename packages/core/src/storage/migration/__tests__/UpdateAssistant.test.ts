@@ -1,12 +1,10 @@
 import type { BaseRecord } from '../../BaseRecord'
-import type { DependencyContainer } from 'tsyringe'
-
-import { container as baseContainer } from 'tsyringe'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { getBaseConfig } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
+import { DependencyManager } from '../../../plugins'
 import { UpdateAssistant } from '../UpdateAssistant'
 
 const { agentDependencies, config } = getBaseConfig('UpdateAssistant')
@@ -14,15 +12,14 @@ const { agentDependencies, config } = getBaseConfig('UpdateAssistant')
 describe('UpdateAssistant', () => {
   let updateAssistant: UpdateAssistant
   let agent: Agent
-  let container: DependencyContainer
   let storageService: InMemoryStorageService<BaseRecord>
 
   beforeEach(async () => {
-    container = baseContainer.createChildContainer()
-    storageService = new InMemoryStorageService()
-    container.registerInstance(InjectionSymbols.StorageService, storageService)
+    const dependencyManager = new DependencyManager()
+    const storageService = new InMemoryStorageService()
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
-    agent = new Agent(config, agentDependencies, container)
+    agent = new Agent(config, agentDependencies, dependencyManager)
 
     updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
