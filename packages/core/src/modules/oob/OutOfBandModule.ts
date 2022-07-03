@@ -1,5 +1,6 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
+import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Logger } from '../../logger'
 import type { ConnectionRecord, Routing, ConnectionInvitationMessage } from '../../modules/connections'
 import type { DependencyManager } from '../../plugins'
@@ -54,6 +55,7 @@ export interface CreateOutOfBandInvitationConfig {
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
   routing?: Routing
+  appendedAttachments?: Attachment[]
 }
 
 export interface CreateLegacyInvitationConfig {
@@ -134,6 +136,8 @@ export class OutOfBandModule {
     const messages = config.messages && config.messages.length > 0 ? config.messages : undefined
     const label = config.label ?? this.agentConfig.label
     const imageUrl = config.imageUrl ?? this.agentConfig.connectionImageUrl
+    const appendedAttachments =
+      config.appendedAttachments && config.appendedAttachments.length > 0 ? config.appendedAttachments : undefined
 
     if (!handshake && !messages) {
       throw new AriesFrameworkError(
@@ -182,6 +186,7 @@ export class OutOfBandModule {
       accept: didCommProfiles,
       services,
       handshakeProtocols,
+      appendedAttachments,
     }
     const outOfBandInvitation = new OutOfBandInvitation(options)
 
