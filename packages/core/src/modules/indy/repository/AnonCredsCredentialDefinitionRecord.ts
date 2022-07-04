@@ -15,8 +15,6 @@ export type DefaultAnonCredsCredentialDefinitionTags = {
 }
 
 export class AnonCredsCredentialDefinitionRecord extends BaseRecord<DefaultAnonCredsCredentialDefinitionTags> {
-  public content!: Record<string, unknown>
-
   public static readonly type = 'AnonCredsCredentialDefinitionRecord'
   public readonly type = AnonCredsCredentialDefinitionRecord.type
   public readonly credentialDefinition!: CredDef

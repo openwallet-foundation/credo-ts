@@ -1,6 +1,5 @@
 import type { DependencyManager } from '../../plugins'
 import type { AnonCredsCredentialDefinitionRecord } from '../indy/repository/AnonCredsCredentialDefinitionRecord'
-import type { AnonCredsSchemaRecord } from '../indy/repository/AnonCredsSchemaRecord'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
 import type { CredDef, NymRole, Schema } from 'indy-sdk'
 
@@ -8,10 +7,12 @@ import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError, RecordNotFoundError } from '../../error'
 import { IndySdkError } from '../../error/IndySdkError'
 import { injectable, module, inject } from '../../plugins'
+import { isIndyError } from '../../utils/indyError'
 import { Wallet } from '../../wallet/Wallet'
 import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRepository } from '../indy/repository/AnonCredsSchemaRepository'
 
+import { generateCredentialDefinitionId, generateSchemaId } from './ledgerUtil'
 import { IndyPoolService, IndyLedgerService } from './services'
 
 @module()
@@ -55,16 +56,6 @@ export class LedgerModule {
     return this.ledgerService.getPublicDid(did)
   }
 
-  private async findBySchemaId(schemaId: string): Promise<AnonCredsSchemaRecord | null> {
-    try {
-      return await this.anonCredsSchemaRepository.getBySchemaId(schemaId)
-    } catch (e) {
-      if (e instanceof RecordNotFoundError) return null
-
-      throw e
-    }
-  }
-
   public async getSchema(id: string) {
     return this.ledgerService.getSchema(id)
   }
@@ -76,12 +67,12 @@ export class LedgerModule {
       throw new AriesFrameworkError('Agent has no public DID.')
     }
 
-    const schemaId = `${did}:2:${schema.name}:${schema.version}`
+    const schemaId = generateSchemaId(did, schema.name, schema.version)
 
     // Try find the schema in the wallet
-    const anonSchema = await this.findBySchemaId(schemaId)
+    const schemaRecord = await this.anonCredsSchemaRepository.findBySchemaId(schemaId)
     //  Schema in wallet
-    if (anonSchema) return anonSchema.schema
+    if (schemaRecord) return schemaRecord.schema
 
     const schemaFromLedger = await this.findBySchemaIdOnLedger(schemaId)
     if (schemaFromLedger) return schemaFromLedger
@@ -92,7 +83,7 @@ export class LedgerModule {
     try {
       return await this.ledgerService.getSchema(schemaId)
     } catch (e) {
-      if (e instanceof IndySdkError) return null
+      if (e instanceof IndySdkError && isIndyError(e.cause, 'LedgerNotFound')) return null
 
       throw e
     }
@@ -114,7 +105,7 @@ export class LedgerModule {
     try {
       return await this.ledgerService.getCredentialDefinition(credentialDefinitionId)
     } catch (e) {
-      if (e instanceof IndySdkError) return null
+      if (e instanceof IndySdkError && isIndyError(e.cause, 'LedgerNotFound')) return null
 
       throw e
     }
@@ -130,20 +121,25 @@ export class LedgerModule {
     }
 
     // Construct credential definition ID
-    const credentialDefinitionId = `${did}:3:CL:${credentialDefinitionTemplate.schema.seqNo}:${credentialDefinitionTemplate.tag}`
+    const credentialDefinitionId = generateCredentialDefinitionId(
+      did,
+      credentialDefinitionTemplate.schema.seqNo,
+      credentialDefinitionTemplate.tag
+    )
 
     // Check if the credential exists in wallet. If so, return it
-    const anonCredDef = await this.findByCredentialDefinitionId(credentialDefinitionTemplate.schema.id)
-    if (anonCredDef) {
-      return anonCredDef.credentialDefinition
+    const credentialDefinitionRecord = await this.findByCredentialDefinitionId(credentialDefinitionTemplate.schema.id)
+    if (credentialDefinitionRecord) {
+      return credentialDefinitionRecord.credentialDefinition
     }
 
     // Check for the credential on the ledger.
     const credentialDefinitionOnLedger = await this.findByCredentialDefinitionIdOnLedger(credentialDefinitionId)
     if (credentialDefinitionOnLedger)
-      throw new AriesFrameworkError(`Credential definition ${credentialDefinitionTemplate.tag} already exists.`)
+      throw new AriesFrameworkError(
+        `No credential definition record found and credential definition ${credentialDefinitionId} already exists on the ledger.`
+      )
 
-    // Could not retrieve credential from ledger -> credential is not registered yet. Do nothing
     // Register the credential
     return await this.ledgerService.registerCredentialDefinition(did, {
       ...credentialDefinitionTemplate,

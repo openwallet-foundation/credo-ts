@@ -18,4 +18,8 @@ export class AnonCredsSchemaRepository extends Repository<AnonCredsSchemaRecord>
   public async getBySchemaId(schemaId: string) {
     return this.getSingleByQuery({ schemaId: schemaId })
   }
+
+  public async findBySchemaId(schemaId: string) {
+    return await this.findSingleByQuery({ schemaId: schemaId })
+  }
 }
