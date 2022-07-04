@@ -93,7 +93,7 @@ export class ValueTransferService {
           )
         }
 
-        const partyStateHashes = ValueTransferService.calculateInitialPartyStateHashes(config.supportedPartiesCount)
+        const partyStateHashes = ValueTransferService.generateInitialPartyStateHashes(config.supportedPartiesCount)
 
         const record = new WitnessStateRecord({
           publicDid: publicDid.id,
@@ -103,7 +103,7 @@ export class ValueTransferService {
         await this.witnessStateRepository.save(record)
       } else {
         if (!record.witnessState.partyStateHashes.size) {
-          const partyStateHashes = ValueTransferService.calculateInitialPartyStateHashes(config.supportedPartiesCount)
+          const partyStateHashes = ValueTransferService.generateInitialPartyStateHashes(config.supportedPartiesCount)
 
           for (const hash of partyStateHashes) {
             record.witnessState.partyStateHashes.add(hash)
@@ -114,8 +114,10 @@ export class ValueTransferService {
       }
     } else {
       const stateRecord = await this.initPartyState()
-      if (config.verifiableNotes?.length && !stateRecord.partyState.wallet.amount()) {
-        await this.receiveNotes(config.verifiableNotes, stateRecord)
+      if (!stateRecord.partyState.wallet.amount()) {
+        const initialNotes =
+          config.verifiableNotes ?? ValueTransferService.getRandomInitialStateNotes(config.supportedPartiesCount)
+        await this.receiveNotes(initialNotes, stateRecord)
       }
     }
   }
@@ -374,7 +376,7 @@ export class ValueTransferService {
     return state
   }
 
-  private static calculateInitialPartyStateHashes(supportedPartiesCount = 2) {
+  private static generateInitialPartyStateHashes(supportedPartiesCount = 20) {
     const partyStateHashes = new Set<Uint8Array>()
 
     for (let i = 0; i < supportedPartiesCount; i++) {
@@ -384,5 +386,11 @@ export class ValueTransferService {
     }
 
     return partyStateHashes
+  }
+
+  private static getRandomInitialStateNotes(availableStatesCount = 20): VerifiableNote[] {
+    const stateIndex = Math.floor(Math.random() * availableStatesCount)
+    const startFromSno = stateIndex * 10
+    return createVerifiableNotes(10, startFromSno)
   }
 }
