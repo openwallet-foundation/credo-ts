@@ -13,7 +13,6 @@ jest.mock('../services/IndyPoolService')
 const IndyPoolServiceMock = IndyPoolService as jest.Mock<IndyPoolService>
 jest.mock('../../indy/services/IndyIssuerService')
 const IndyIssuerServiceMock = IndyIssuerService as jest.Mock<IndyIssuerService>
-
 jest.mock('../../../cache/CacheRepository')
 const CacheRepositoryMock = CacheRepository as jest.Mock<CacheRepository>
 

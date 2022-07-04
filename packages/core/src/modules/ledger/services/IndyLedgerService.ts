@@ -231,16 +231,6 @@ export class IndyLedgerService {
     }
   }
 
-  public async findByCredentialDefinitionId(credentialDefinitionId: string) {
-    try {
-      await this.getCredentialDefinition(credentialDefinitionId)
-    } catch (e) {
-      if (e instanceof IndySdkError) return null
-
-      throw e
-    }
-  }
-
   public async getCredentialDefinition(credentialDefinitionId: string) {
     const did = didFromCredentialDefinitionId(credentialDefinitionId)
     const { pool } = await this.indyPoolService.getPoolForDid(did)
