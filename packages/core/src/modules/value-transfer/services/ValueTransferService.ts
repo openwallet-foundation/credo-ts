@@ -93,7 +93,7 @@ export class ValueTransferService {
           )
         }
 
-        const partyStateHashes = ValueTransferService.calculateInitialPartyStateHashes(new Set(config.verifiableNotes))
+        const partyStateHashes = ValueTransferService.calculateInitialPartyStateHashes(config.supportedPartiesCount)
 
         const record = new WitnessStateRecord({
           publicDid: publicDid.id,
@@ -103,9 +103,7 @@ export class ValueTransferService {
         await this.witnessStateRepository.save(record)
       } else {
         if (!record.witnessState.partyStateHashes.size) {
-          const partyStateHashes = ValueTransferService.calculateInitialPartyStateHashes(
-            new Set(config.verifiableNotes)
-          )
+          const partyStateHashes = ValueTransferService.calculateInitialPartyStateHashes(config.supportedPartiesCount)
 
           for (const hash of partyStateHashes) {
             record.witnessState.partyStateHashes.add(hash)
@@ -376,14 +374,14 @@ export class ValueTransferService {
     return state
   }
 
-  private static calculateInitialPartyStateHashes(verifiableNotes: Set<VerifiableNote>) {
+  private static calculateInitialPartyStateHashes(supportedPartiesCount = 2) {
     const partyStateHashes = new Set<Uint8Array>()
 
-    const [, giverWallet] = new Wallet().receiveNotes(new Set(verifiableNotes))
-    partyStateHashes.add(giverWallet.rootHash())
-
-    const [, getterWallet] = new Wallet().receiveNotes(new Set(createVerifiableNotes(10, 10)))
-    partyStateHashes.add(getterWallet.rootHash())
+    for (let i = 0; i < supportedPartiesCount; i++) {
+      const startFromSno = i * 10
+      const [, partyWallet] = new Wallet().receiveNotes(new Set(createVerifiableNotes(10, startFromSno)))
+      partyStateHashes.add(partyWallet.rootHash())
+    }
 
     return partyStateHashes
   }

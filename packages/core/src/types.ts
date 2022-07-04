@@ -44,9 +44,9 @@ export interface ValueTransferConfig {
   isWitness?: boolean
   getterTransport?: Transport
   giverTransport?: Transport
-  //witnessTransport?: Transport
   verifiableNotes?: VerifiableNote[]
   autoAcceptValueTransfer?: AutoAcceptValueTransfer
+  supportedPartiesCount?: number
 }
 
 export enum DidCommMimeType {
