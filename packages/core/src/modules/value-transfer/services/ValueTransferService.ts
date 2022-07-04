@@ -115,8 +115,9 @@ export class ValueTransferService {
     } else {
       const stateRecord = await this.initPartyState()
       if (!stateRecord.partyState.wallet.amount()) {
-        const initialNotes =
-          config.verifiableNotes ?? ValueTransferService.getRandomInitialStateNotes(config.supportedPartiesCount)
+        const initialNotes = config.verifiableNotes?.length
+          ? config.verifiableNotes
+          : ValueTransferService.getRandomInitialStateNotes(config.supportedPartiesCount)
         await this.receiveNotes(initialNotes, stateRecord)
       }
     }
