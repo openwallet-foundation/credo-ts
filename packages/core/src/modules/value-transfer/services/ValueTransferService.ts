@@ -38,6 +38,8 @@ import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferStateService } from './ValueTransferStateService'
 
+const DEFAULT_SUPPORTED_PARTIES_COUNT = 50
+
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferService {
   private config: AgentConfig
@@ -377,10 +379,10 @@ export class ValueTransferService {
     return state
   }
 
-  private static generateInitialPartyStateHashes(supportedPartiesCount = 20) {
+  private static generateInitialPartyStateHashes(statesCount = DEFAULT_SUPPORTED_PARTIES_COUNT) {
     const partyStateHashes = new Set<Uint8Array>()
 
-    for (let i = 0; i < supportedPartiesCount; i++) {
+    for (let i = 0; i < statesCount; i++) {
       const startFromSno = i * 10
       const [, partyWallet] = new Wallet().receiveNotes(new Set(createVerifiableNotes(10, startFromSno)))
       partyStateHashes.add(partyWallet.rootHash())
@@ -389,8 +391,8 @@ export class ValueTransferService {
     return partyStateHashes
   }
 
-  private static getRandomInitialStateNotes(availableStatesCount = 20): VerifiableNote[] {
-    const stateIndex = Math.floor(Math.random() * availableStatesCount)
+  private static getRandomInitialStateNotes(statesCount = DEFAULT_SUPPORTED_PARTIES_COUNT): VerifiableNote[] {
+    const stateIndex = Math.floor(Math.random() * statesCount)
     const startFromSno = stateIndex * 10
     return createVerifiableNotes(10, startFromSno)
   }
