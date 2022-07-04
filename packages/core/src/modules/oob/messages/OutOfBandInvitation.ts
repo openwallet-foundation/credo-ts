@@ -26,6 +26,7 @@ export interface OutOfBandInvitationOptions {
   handshakeProtocols?: HandshakeProtocol[]
   services: Array<OutOfBandDidCommService | string>
   imageUrl?: string
+  appendedAttachments?: Attachment[]
 }
 
 export class OutOfBandInvitation extends AgentMessage {
@@ -41,6 +42,7 @@ export class OutOfBandInvitation extends AgentMessage {
       this.handshakeProtocols = options.handshakeProtocols
       this.services = options.services
       this.imageUrl = options.imageUrl
+      this.appendedAttachments = options.appendedAttachments
     }
   }
 
