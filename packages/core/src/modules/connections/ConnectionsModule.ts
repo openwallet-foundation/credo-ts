@@ -1,19 +1,19 @@
+import type { DependencyManager } from '../../plugins'
 import type { Key } from '../dids'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
-
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
+import { injectable, module } from '../../plugins'
 import { DidResolverService } from '../dids'
 import { DidRepository } from '../dids/repository'
 import { OutOfBandService } from '../oob/OutOfBandService'
-import { MediationRecipientService } from '../routing/services/MediationRecipientService'
+import { RoutingService } from '../routing/services/RoutingService'
 
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import {
@@ -27,10 +27,12 @@ import {
   DidExchangeCompleteHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
+import { ConnectionRepository } from './repository'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class ConnectionsModule {
   private agentConfig: AgentConfig
   private didExchangeProtocol: DidExchangeProtocol
@@ -38,7 +40,7 @@ export class ConnectionsModule {
   private outOfBandService: OutOfBandService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private didRepository: DidRepository
   private didResolverService: DidResolverService
 
@@ -49,7 +51,7 @@ export class ConnectionsModule {
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
     trustPingService: TrustPingService,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     didRepository: DidRepository,
     didResolverService: DidResolverService,
     messageSender: MessageSender
@@ -59,7 +61,7 @@ export class ConnectionsModule {
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
     this.trustPingService = trustPingService
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.didRepository = didRepository
     this.messageSender = messageSender
     this.didResolverService = didResolverService
@@ -79,8 +81,7 @@ export class ConnectionsModule {
   ) {
     const { protocol, label, alias, imageUrl, autoAcceptConnection } = config
 
-    const routing =
-      config.routing || (await this.mediationRecipientService.getRouting({ mediatorId: outOfBandRecord.mediatorId }))
+    const routing = config.routing || (await this.routingService.getRouting({ mediatorId: outOfBandRecord.mediatorId }))
 
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
@@ -270,7 +271,7 @@ export class ConnectionsModule {
         this.agentConfig,
         this.connectionService,
         this.outOfBandService,
-        this.mediationRecipientService,
+        this.routingService,
         this.didRepository
       )
     )
@@ -291,7 +292,7 @@ export class ConnectionsModule {
         this.agentConfig,
         this.didExchangeProtocol,
         this.outOfBandService,
-        this.mediationRecipientService,
+        this.routingService,
         this.didRepository
       )
     )
@@ -306,5 +307,21 @@ export class ConnectionsModule {
       )
     )
     dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
+  }
+
+  /**
+   * Registers the dependencies of the connections module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(ConnectionsModule)
+
+    // Services
+    dependencyManager.registerSingleton(ConnectionService)
+    dependencyManager.registerSingleton(DidExchangeProtocol)
+    dependencyManager.registerSingleton(TrustPingService)
+
+    // Repositories
+    dependencyManager.registerSingleton(ConnectionRepository)
   }
 }

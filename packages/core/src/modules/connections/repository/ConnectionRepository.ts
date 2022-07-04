@@ -1,13 +1,12 @@
-import { inject, scoped, Lifecycle } from 'tsyringe'
-
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
+import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
 
 import { ConnectionRecord } from './ConnectionRecord'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ConnectionRepository extends Repository<ConnectionRecord> {
   public constructor(
     @inject(InjectionSymbols.StorageService) storageService: StorageService<ConnectionRecord>,

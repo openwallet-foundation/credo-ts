@@ -2282,10 +2282,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.16", "@types/indy-sdk@^1.16.16":
-  version "1.16.17"
-  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.17.tgz#cb090033951d078809f493036746804a1a594497"
-  integrity sha512-FI5urEpXiu/NHOoL1TciJDU38QusUBtPZv9FDMUOWPczl87fVb08CYHWYtAZoLnsKfi5zeGD+WEBpYC14aF9Uw==
+"@types/indy-sdk-react-native@npm:@types/indy-sdk@^1.16.19", "@types/indy-sdk@^1.16.19":
+  version "1.16.19"
+  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.19.tgz#f58fc4b5ae67f34cd95c2559fe259b43e0042ead"
+  integrity sha512-OVgBpLdghrWqPmxEMg76MgIUHo/MvR3xvUeFUJirqdnXGwOs5rQYiZvyECBYeaBEGrSleyAnn5+m4pUfweJyJw==
   dependencies:
     buffer "^6.0.0"
 
@@ -3767,6 +3767,15 @@ conventional-changelog-angular@^5.0.12:
   integrity sha512-i/gipMxs7s8L/QeuavPF2hLnJgH6pEZAttySB6aiQLWcX3puWDL3ACVmvBhJGxnAy52Qc15ua26BufY6KpmrVA==
   dependencies:
     compare-func "^2.0.0"
+    q "^1.5.1"
+
+conventional-changelog-conventionalcommits@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/conventional-changelog-conventionalcommits/-/conventional-changelog-conventionalcommits-5.0.0.tgz#41bdce54eb65a848a4a3ffdca93e92fa22b64a86"
+  integrity sha512-lCDbA+ZqVFQGUj7h9QBKoIpLhl8iihkO0nCTyRNzuXtcd7ubODpYB04IFy31JloiJgG0Uovu8ot8oxRzn7Nwtw==
+  dependencies:
+    compare-func "^2.0.0"
+    lodash "^4.17.15"
     q "^1.5.1"
 
 conventional-changelog-core@^4.2.2:
@@ -5551,10 +5560,10 @@ indent-string@^4.0.0:
   resolved "https://registry.yarnpkg.com/indent-string/-/indent-string-4.0.0.tgz#624f8f4497d619b2d9768531d58f4122854d7251"
   integrity sha512-EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg==
 
-indy-sdk-react-native@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/indy-sdk-react-native/-/indy-sdk-react-native-0.2.0.tgz#9f02dc29726b22b5f90aa602b6a0d15cbd26b48b"
-  integrity sha512-eipyH5GzQFjTf89sMCSMy5axbl3uVDln79LOH2rpqN2cb+80Pzb3tMFYWb9TaU4jMKYzlaEE0RsuQoS151g2jQ==
+indy-sdk-react-native@^0.2.2:
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/indy-sdk-react-native/-/indy-sdk-react-native-0.2.2.tgz#6bd92e9444349e20d90f1461c5a44b406d1bc659"
+  integrity sha512-5eZEvHls18JEuaQxjycSkIYrUVDzMCBh5NunEm7RMLDIfQjjSjLOErDurzWFHbCCt8ruIjBtErSZUfjL5atoig==
   dependencies:
     buffer "^6.0.2"
 

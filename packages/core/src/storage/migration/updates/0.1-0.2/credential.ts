@@ -18,7 +18,7 @@ import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } fr
  */
 export async function migrateCredentialRecordToV0_2(agent: Agent) {
   agent.config.logger.info('Migrating credential records to storage version 0.2')
-  const credentialRepository = agent.injectionContainer.resolve(CredentialRepository)
+  const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
 
   agent.config.logger.debug(`Fetching all credential records from storage`)
   const allCredentials = await credentialRepository.getAll()
@@ -214,7 +214,7 @@ export async function moveDidCommMessages(agent: Agent, credentialRecord: Creden
   agent.config.logger.debug(
     `Moving didcomm messages from credential record with id ${credentialRecord.id} to DidCommMessageRecord`
   )
-  const didCommMessageRepository = agent.injectionContainer.resolve(DidCommMessageRepository)
+  const didCommMessageRepository = agent.dependencyManager.resolve(DidCommMessageRepository)
 
   for (const messageKey of credentialRecordMessageKeys) {
     agent.config.logger.debug(

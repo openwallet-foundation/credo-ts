@@ -29,8 +29,8 @@ export class HttpInboundTransport implements InboundTransport {
   }
 
   public async start(agent: Agent) {
-    const transportService = agent.injectionContainer.resolve(TransportService)
-    const config = agent.injectionContainer.resolve(AgentConfig)
+    const transportService = agent.dependencyManager.resolve(TransportService)
+    const config = agent.dependencyManager.resolve(AgentConfig)
 
     config.logger.debug(`Starting HTTP inbound transport`, {
       port: this.port,

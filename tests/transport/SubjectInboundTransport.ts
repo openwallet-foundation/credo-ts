@@ -26,8 +26,8 @@ export class SubjectInboundTransport implements InboundTransport {
   }
 
   private subscribe(agent: Agent) {
-    const logger = agent.injectionContainer.resolve(AgentConfig).logger
-    const transportService = agent.injectionContainer.resolve(TransportService)
+    const logger = agent.dependencyManager.resolve(AgentConfig).logger
+    const transportService = agent.dependencyManager.resolve(TransportService)
 
     this.subscription = this.ourSubject.subscribe({
       next: async ({ message, replySubject }: SubjectMessage) => {

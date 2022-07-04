@@ -4,11 +4,10 @@ import type { IndyRevocationInterval } from '../../credentials'
 import type { RequestedCredentials } from '../../proofs'
 import type { default as Indy } from 'indy-sdk'
 
-import { scoped, Lifecycle } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { IndySdkError } from '../../../error/IndySdkError'
+import { injectable } from '../../../plugins'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyLedgerService } from '../../ledger'
@@ -20,8 +19,7 @@ enum RequestReferentType {
   Predicate = 'predicate',
   SelfAttestedAttribute = 'self-attested-attribute',
 }
-
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyRevocationService {
   private indy: typeof Indy
   private indyUtilitiesService: IndyUtilitiesService

@@ -11,17 +11,16 @@ import type {
   CredValues,
 } from 'indy-sdk'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { IndySdkError } from '../../../error/IndySdkError'
+import { injectable } from '../../../plugins'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
 import { IndyUtilitiesService } from './IndyUtilitiesService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyIssuerService {
   private indy: typeof Indy
   private wallet: IndyWallet

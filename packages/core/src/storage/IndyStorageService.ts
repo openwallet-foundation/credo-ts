@@ -2,16 +2,15 @@ import type { BaseRecord, TagsBase } from './BaseRecord'
 import type { StorageService, BaseRecordConstructor, Query } from './StorageService'
 import type { default as Indy, WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
 
-import { scoped, Lifecycle } from 'tsyringe'
-
 import { AgentConfig } from '../agent/AgentConfig'
 import { RecordNotFoundError, RecordDuplicateError, IndySdkError } from '../error'
+import { injectable } from '../plugins'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { isIndyError } from '../utils/indyError'
 import { isBoolean } from '../utils/type'
 import { IndyWallet } from '../wallet/IndyWallet'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyStorageService<T extends BaseRecord> implements StorageService<T> {
   private wallet: IndyWallet
   private indy: typeof Indy

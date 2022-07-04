@@ -128,3 +128,11 @@ export interface AcceptRequestOptions<CFs extends CredentialFormat[] = Credentia
 export interface AcceptCredentialOptions {
   credentialRecordId: string
 }
+
+/**
+ * Interface for CredentialsModule.sendProblemReport. Will send a problem-report message
+ */
+export interface SendProblemReportOptions {
+  credentialRecordId: string
+  message: string
+}

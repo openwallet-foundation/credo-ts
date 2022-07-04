@@ -1,19 +1,21 @@
+import type { DependencyManager } from '../../plugins'
 import type { AnonCredsCredentialDefinitionRecord } from '../indy/repository/AnonCredsCredentialDefinitionRecord'
 import type { AnonCredsSchemaRecord } from '../indy/repository/AnonCredsSchemaRecord'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
-import type { NymRole } from 'indy-sdk'
-
-import { inject, scoped, Lifecycle } from 'tsyringe'
+import type { NymRole, Schema } from 'indy-sdk'
 
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError, RecordNotFoundError } from '../../error'
+import { IndySdkError } from '../../error/IndySdkError'
+import { injectable, module, inject } from '../../plugins'
 import { Wallet } from '../../wallet/Wallet'
 import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRepository } from '../indy/repository/AnonCredsSchemaRepository'
 
-import { IndyLedgerService } from './services'
+import { IndyPoolService, IndyLedgerService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class LedgerModule {
   private ledgerService: IndyLedgerService
   private wallet: Wallet
@@ -62,7 +64,7 @@ export class LedgerModule {
       throw e
     }
   }
-  public async registerSchema(schema: SchemaTemplate) {
+  public async registerSchema(schema: SchemaTemplate): Promise<Schema> {
     const did = this.wallet.publicDid?.did
 
     if (!did) {
@@ -71,12 +73,25 @@ export class LedgerModule {
 
     const schemaId = `${did}:2:${schema.name}:${schema.version}`
 
+    // Try find the schema in the wallet
     const anonSchema = await this.findBySchemaId(schemaId)
-    if (anonSchema) {
-      return await this.getSchema(anonSchema.getTags().schemaId)
+    //  Schema not in wallet
+    if (!anonSchema) {
+      try {
+        // Try look for schema on the ledger and return it
+        return await this.getSchema(schemaId)
+      } catch (e) {
+        // Schema does not exist
+        if (e instanceof IndySdkError) {
+          // Register a new schema
+          return this.ledgerService.registerSchema(did, schema)
+        } else {
+          throw e
+        }
+      }
     }
-
-    return this.ledgerService.registerSchema(did, schema)
+    // Schema exists in wallet so return it
+    return anonSchema.schema
   }
 
   public async getSchema(id: string) {
@@ -104,16 +119,30 @@ export class LedgerModule {
       throw new AriesFrameworkError('Agent has no public DID.')
     }
 
+    // Construct credential definition ID
     const credentialDefinitionId = `${did}:3:CL:${credentialDefinitionTemplate.schema.seqNo}:${credentialDefinitionTemplate.tag}`
+
+    // Check if the credential exists in wallet. If so, return it
     const anonCredDef = await this.findByCredentialDefinitionId(credentialDefinitionTemplate.schema.id)
     if (anonCredDef) {
-      return await this.getCredentialDefinition(credentialDefinitionId)
+      return anonCredDef.credentialDefinition
     }
 
-    return this.ledgerService.registerCredentialDefinition(did, {
-      ...credentialDefinitionTemplate,
-      signatureType: 'CL',
-    })
+    // Check for the credential on the ledger.
+    try {
+      const credDefOnLedger = await this.ledgerService.getCredentialDefinition(credentialDefinitionId)
+      // If the ledger has the credential definition already throw an error
+      if (credDefOnLedger) {
+        throw new AriesFrameworkError(`Credential definition ${credentialDefinitionTemplate.tag} already exists.`)
+      }
+    } catch (e) {
+      // Could not retrieve credential from ledger -> credential is not registered yet. Do nothing
+      //  Register the credential
+      return await this.ledgerService.registerCredentialDefinition(did, {
+        ...credentialDefinitionTemplate,
+        signatureType: 'CL',
+      })
+    }
   }
 
   public async getCredentialDefinition(id: string) {
@@ -130,5 +159,17 @@ export class LedgerModule {
     toSeconds = new Date().getTime()
   ) {
     return this.ledgerService.getRevocationRegistryDelta(revocationRegistryDefinitionId, fromSeconds, toSeconds)
+  }
+
+  /**
+   * Registers the dependencies of the ledger module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(LedgerModule)
+
+    // Services
+    dependencyManager.registerSingleton(IndyLedgerService)
+    dependencyManager.registerSingleton(IndyPoolService)
   }
 }

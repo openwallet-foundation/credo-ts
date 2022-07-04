@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { ProblemReportMessage } from '../../../problem-reports'
 import type {
   CreateProposalOptions,
   CredentialProtocolMsgReturnType,
@@ -14,6 +15,7 @@ import type {
   AcceptCredentialOptions,
   GetFormatDataReturn,
   FormatDataMessagePayload,
+  CreateProblemReportOptions,
 } from '../../CredentialServiceOptions'
 import type {
   CredentialFormat,
@@ -23,20 +25,20 @@ import type {
 } from '../../formats'
 import type { CredentialFormatSpec } from '../../models'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../../error'
+import { injectable } from '../../../../plugins'
 import { DidCommMessageRepository } from '../../../../storage'
 import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
-import { MediationRecipientService } from '../../../routing'
+import { RoutingService } from '../../../routing/services/RoutingService'
+import { CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { CredentialState, AutoAcceptCredential } from '../../models'
-import { CredentialExchangeRecord, CredentialRepository } from '../../repository'
+import { CredentialRepository, CredentialExchangeRecord } from '../../repository'
 import { CredentialService } from '../../services/CredentialService'
 import { composeAutoAccept } from '../../util/composeAutoAccept'
 import { arePreviewAttributesEqual } from '../../util/previewAttributes'
@@ -52,25 +54,26 @@ import {
 } from './handlers'
 import {
   V2CredentialAckMessage,
+  V2CredentialProblemReportMessage,
   V2IssueCredentialMessage,
   V2OfferCredentialMessage,
   V2ProposeCredentialMessage,
   V2RequestCredentialMessage,
 } from './messages'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class V2CredentialService<CFs extends CredentialFormat[] = CredentialFormat[]> extends CredentialService<CFs> {
   private connectionService: ConnectionService
   private credentialFormatCoordinator: CredentialFormatCoordinator<CFs>
   protected didCommMessageRepository: DidCommMessageRepository
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private formatServiceMap: { [key: string]: CredentialFormatService }
 
   public constructor(
     connectionService: ConnectionService,
     didCommMessageRepository: DidCommMessageRepository,
     agentConfig: AgentConfig,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     dispatcher: Dispatcher,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
@@ -79,7 +82,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     super(credentialRepository, didCommMessageRepository, eventEmitter, dispatcher, agentConfig)
     this.connectionService = connectionService
     this.didCommMessageRepository = didCommMessageRepository
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.credentialFormatCoordinator = new CredentialFormatCoordinator(didCommMessageRepository)
 
     // Dynamically build format service map. This will be extracted once services are registered dynamically
@@ -798,6 +801,22 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     return credentialRecord
   }
 
+  /**
+   * Create a {@link V2CredentialProblemReportMessage} to be sent.
+   *
+   * @param message message to send
+   * @returns a {@link V2CredentialProblemReportMessage}
+   *
+   */
+  public createProblemReport(options: CreateProblemReportOptions): ProblemReportMessage {
+    return new V2CredentialProblemReportMessage({
+      description: {
+        en: options.message,
+        code: CredentialProblemReportReason.IssuanceAbandoned,
+      },
+    })
+  }
+
   // AUTO ACCEPT METHODS
   public async shouldAutoRespondToProposal(options: {
     credentialRecord: CredentialExchangeRecord
@@ -1118,12 +1137,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     this.dispatcher.registerHandler(new V2ProposeCredentialHandler(this, this.agentConfig))
 
     this.dispatcher.registerHandler(
-      new V2OfferCredentialHandler(
-        this,
-        this.agentConfig,
-        this.mediationRecipientService,
-        this.didCommMessageRepository
-      )
+      new V2OfferCredentialHandler(this, this.agentConfig, this.routingService, this.didCommMessageRepository)
     )
 
     this.dispatcher.registerHandler(

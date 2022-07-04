@@ -1,12 +1,11 @@
 import type { GenericRecordTags, SaveGenericRecordOption } from '../repository/GenericRecord'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { GenericRecord } from '../repository/GenericRecord'
 import { GenericRecordsRepository } from '../repository/GenericRecordsRepository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class GenericRecordService {
   private genericRecordsRepository: GenericRecordsRepository
 

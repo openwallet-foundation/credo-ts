@@ -12,7 +12,9 @@ import type { DependencyContainer } from 'tsyringe'
 import { concatMap, takeUntil } from 'rxjs/operators'
 import { container as baseContainer } from 'tsyringe'
 
+import { CacheRepository } from '../cache'
 import { InjectionSymbols } from '../constants'
+import { JwsService } from '../crypto/JwsService'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
@@ -20,13 +22,16 @@ import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsModule'
+import { IndyModule } from '../modules/indy/module'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { OutOfBandModule } from '../modules/oob/OutOfBandModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
-import { StorageUpdateService } from '../storage'
+import { RoutingService } from '../modules/routing/services/RoutingService'
+import { DependencyManager } from '../plugins'
+import { StorageUpdateService, DidCommMessageRepository, StorageVersionRepository } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
@@ -36,6 +41,8 @@ import { WalletModule } from '../wallet/WalletModule'
 import { WalletError } from '../wallet/error'
 
 import { AgentConfig } from './AgentConfig'
+import { Dispatcher } from './Dispatcher'
+import { EnvelopeService } from './EnvelopeService'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
@@ -45,7 +52,7 @@ import { TransportService } from './TransportService'
 export class Agent {
   protected agentConfig: AgentConfig
   protected logger: Logger
-  protected container: DependencyContainer
+  public readonly dependencyManager: DependencyManager
   protected eventEmitter: EventEmitter
   protected messageReceiver: MessageReceiver
   protected transportService: TransportService
@@ -53,6 +60,7 @@ export class Agent {
   private _isInitialized = false
   public messageSubscription: Subscription
   private walletService: Wallet
+  private routingService: RoutingService
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
@@ -74,27 +82,12 @@ export class Agent {
     injectionContainer?: DependencyContainer
   ) {
     // Take input container or child container so we don't interfere with anything outside of this agent
-    this.container = injectionContainer ?? baseContainer.createChildContainer()
+    const container = injectionContainer ?? baseContainer.createChildContainer()
+
+    this.dependencyManager = new DependencyManager(container)
 
     this.agentConfig = new AgentConfig(initialConfig, dependencies)
     this.logger = this.agentConfig.logger
-
-    // Bind class based instances
-    this.container.registerInstance(AgentConfig, this.agentConfig)
-
-    // Based on interfaces. Need to register which class to use
-    if (!this.container.isRegistered(InjectionSymbols.Wallet)) {
-      this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
-    }
-    if (!this.container.isRegistered(InjectionSymbols.Logger)) {
-      this.container.registerInstance(InjectionSymbols.Logger, this.logger)
-    }
-    if (!this.container.isRegistered(InjectionSymbols.StorageService)) {
-      this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
-    }
-    if (!this.container.isRegistered(InjectionSymbols.MessageRepository)) {
-      this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
-    }
 
     this.logger.info('Creating agent with config', {
       ...initialConfig,
@@ -111,27 +104,30 @@ export class Agent {
       )
     }
 
+    this.registerDependencies(this.dependencyManager)
+
     // Resolve instances after everything is registered
-    this.eventEmitter = this.container.resolve(EventEmitter)
-    this.messageSender = this.container.resolve(MessageSender)
-    this.messageReceiver = this.container.resolve(MessageReceiver)
-    this.transportService = this.container.resolve(TransportService)
-    this.walletService = this.container.resolve(InjectionSymbols.Wallet)
+    this.eventEmitter = this.dependencyManager.resolve(EventEmitter)
+    this.messageSender = this.dependencyManager.resolve(MessageSender)
+    this.messageReceiver = this.dependencyManager.resolve(MessageReceiver)
+    this.transportService = this.dependencyManager.resolve(TransportService)
+    this.walletService = this.dependencyManager.resolve(InjectionSymbols.Wallet)
+    this.routingService = this.dependencyManager.resolve(RoutingService)
 
     // We set the modules in the constructor because that allows to set them as read-only
-    this.connections = this.container.resolve(ConnectionsModule)
-    this.credentials = this.container.resolve(CredentialsModule) as CredentialsModule
-    this.proofs = this.container.resolve(ProofsModule)
-    this.mediator = this.container.resolve(MediatorModule)
-    this.mediationRecipient = this.container.resolve(RecipientModule)
-    this.basicMessages = this.container.resolve(BasicMessagesModule)
-    this.questionAnswer = this.container.resolve(QuestionAnswerModule)
-    this.genericRecords = this.container.resolve(GenericRecordsModule)
-    this.ledger = this.container.resolve(LedgerModule)
-    this.discovery = this.container.resolve(DiscoverFeaturesModule)
-    this.dids = this.container.resolve(DidsModule)
-    this.wallet = this.container.resolve(WalletModule)
-    this.oob = this.container.resolve(OutOfBandModule)
+    this.connections = this.dependencyManager.resolve(ConnectionsModule)
+    this.credentials = this.dependencyManager.resolve(CredentialsModule) as CredentialsModule
+    this.proofs = this.dependencyManager.resolve(ProofsModule)
+    this.mediator = this.dependencyManager.resolve(MediatorModule)
+    this.mediationRecipient = this.dependencyManager.resolve(RecipientModule)
+    this.basicMessages = this.dependencyManager.resolve(BasicMessagesModule)
+    this.questionAnswer = this.dependencyManager.resolve(QuestionAnswerModule)
+    this.genericRecords = this.dependencyManager.resolve(GenericRecordsModule)
+    this.ledger = this.dependencyManager.resolve(LedgerModule)
+    this.discovery = this.dependencyManager.resolve(DiscoverFeaturesModule)
+    this.dids = this.dependencyManager.resolve(DidsModule)
+    this.wallet = this.dependencyManager.resolve(WalletModule)
+    this.oob = this.dependencyManager.resolve(OutOfBandModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
@@ -187,7 +183,7 @@ export class Agent {
     }
 
     // Make sure the storage is up to date
-    const storageUpdateService = this.container.resolve(StorageUpdateService)
+    const storageUpdateService = this.dependencyManager.resolve(StorageUpdateService)
     const isStorageUpToDate = await storageUpdateService.isUpToDate()
     this.logger.info(`Agent storage is ${isStorageUpToDate ? '' : 'not '}up to date.`)
 
@@ -269,7 +265,7 @@ export class Agent {
   }
 
   public get injectionContainer() {
-    return this.container
+    return this.dependencyManager.container
   }
 
   public get config() {
@@ -284,7 +280,7 @@ export class Agent {
     if (!connection) {
       this.logger.debug('Mediation connection does not exist, creating connection')
       // We don't want to use the current default mediator when connecting to another mediator
-      const routing = await this.mediationRecipient.getRouting({ useDefaultMediator: false })
+      const routing = await this.routingService.getRouting({ useDefaultMediator: false })
 
       this.logger.debug('Routing created', routing)
       const { connectionRecord: newConnection } = await this.oob.receiveInvitation(outOfBandInvitation, {
@@ -303,5 +299,56 @@ export class Agent {
       return this.connections.returnWhenIsConnected(connection.id)
     }
     return connection
+  }
+
+  private registerDependencies(dependencyManager: DependencyManager) {
+    dependencyManager.registerInstance(AgentConfig, this.agentConfig)
+
+    // Register internal dependencies
+    dependencyManager.registerSingleton(EventEmitter)
+    dependencyManager.registerSingleton(MessageSender)
+    dependencyManager.registerSingleton(MessageReceiver)
+    dependencyManager.registerSingleton(TransportService)
+    dependencyManager.registerSingleton(Dispatcher)
+    dependencyManager.registerSingleton(EnvelopeService)
+    dependencyManager.registerSingleton(JwsService)
+    dependencyManager.registerSingleton(CacheRepository)
+    dependencyManager.registerSingleton(DidCommMessageRepository)
+    dependencyManager.registerSingleton(StorageVersionRepository)
+    dependencyManager.registerSingleton(StorageUpdateService)
+
+    // Register possibly already defined services
+    if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
+      this.dependencyManager.registerSingleton(IndyWallet)
+      const wallet = this.dependencyManager.resolve(IndyWallet)
+      dependencyManager.registerInstance(InjectionSymbols.Wallet, wallet)
+    }
+    if (!dependencyManager.isRegistered(InjectionSymbols.Logger)) {
+      dependencyManager.registerInstance(InjectionSymbols.Logger, this.logger)
+    }
+    if (!dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
+      dependencyManager.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
+    }
+    if (!dependencyManager.isRegistered(InjectionSymbols.MessageRepository)) {
+      dependencyManager.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
+    }
+
+    // Register all modules
+    dependencyManager.registerModules(
+      ConnectionsModule,
+      CredentialsModule,
+      ProofsModule,
+      MediatorModule,
+      RecipientModule,
+      BasicMessagesModule,
+      QuestionAnswerModule,
+      GenericRecordsModule,
+      LedgerModule,
+      DiscoverFeaturesModule,
+      DidsModule,
+      WalletModule,
+      OutOfBandModule,
+      IndyModule
+    )
   }
 }

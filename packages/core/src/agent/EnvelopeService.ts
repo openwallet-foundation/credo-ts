@@ -2,12 +2,11 @@ import type { Logger } from '../logger'
 import type { EncryptedMessage, PlaintextMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 
-import { inject, scoped, Lifecycle } from 'tsyringe'
-
 import { InjectionSymbols } from '../constants'
 import { KeyType } from '../crypto'
 import { Key } from '../modules/dids'
 import { ForwardMessage } from '../modules/routing/messages'
+import { inject, injectable } from '../plugins'
 import { Wallet } from '../wallet/Wallet'
 
 import { AgentConfig } from './AgentConfig'
@@ -18,7 +17,7 @@ export interface EnvelopeKeys {
   senderKey: Key | null
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class EnvelopeService {
   private wallet: Wallet
   private logger: Logger

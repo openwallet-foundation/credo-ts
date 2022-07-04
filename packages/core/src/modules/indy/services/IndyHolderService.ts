@@ -2,16 +2,15 @@ import type { Logger } from '../../../logger'
 import type { RequestedCredentials } from '../../proofs'
 import type * as Indy from 'indy-sdk'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error/IndySdkError'
+import { injectable } from '../../../plugins'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 
 import { IndyRevocationService } from './IndyRevocationService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyHolderService {
   private indy: typeof Indy
   private logger: Logger

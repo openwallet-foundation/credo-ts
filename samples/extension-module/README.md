@@ -1,8 +1,10 @@
 <h1 align="center"><b>Extension module example</b></h1>
 
-This example shows how can an extension module be written and injected to an Aries Framework Javascript `Agent` instance. Its structure is similar to the one of regular modules, although is not strictly needed to follow it to achieve this goal.
+This example shows how an extension module can be written and injected to an Aries Framework Javascript `Agent` instance. Its structure is similar to the one of regular modules, although is not strictly needed to follow it to achieve this goal.
 
 An extension module could be used for different purposes, such as storing data in an Identity Wallet, supporting custom protocols over Didcomm or implementing new [Aries RFCs](https://github.com/hyperledger/aries-rfcs/tree/main/features) without the need of embed them right into AFJ's Core package. Injected modules can access to other core modules and services and trigger events, so in practice they work much in the same way as if they were included statically.
+
+> **Note** the custom module API is in heavy development and can have regular breaking changes. This is an experimental feature, so use it at your own risk. Over time we will provide a stable API for extension modules.
 
 ## Dummy module
 
@@ -10,21 +12,25 @@ This example consists of a module that implements a very simple request-response
 
 - Define Dummy protocol message classes (inherited from `AgentMessage`)
 - Create handlers for those messages (inherited from `Handler`)
-- Define records (inherited from `BaseRecord`) and a container-scoped repository (inherited from `Repository`) for state persistance
+- Define records (inherited from `BaseRecord`) and a singleton repository (inherited from `Repository`) for state persistance
 - Define events (inherited from `BaseEvent`)
-- Create a container-scoped service class that manages records and repository, and also trigger events using Agent's `EventEmitter`
-- Create a container-scoped module class that registers handlers in Agent's `Dispatcher` and provides a simple API to do requests and responses, with the aid of service classes and Agent's `MessageSender`
+- Create a singleton service class that manages records and repository, and also trigger events using Agent's `EventEmitter`
+- Create a singleton api class that registers handlers in Agent's `Dispatcher` and provides a simple API to do requests and responses, with the aid of service classes and Agent's `MessageSender`
+- Create a module class that registers all the above on the dependency manager so it can be be injected from the `Agent` instance.
 
 ## Usage
 
-In order to use this module, it must be injected into an AFJ instance. This can be done by resolving DummyModule right after agent is instantiated:
+In order to use this module, you first need to register `DummyModule` on the `Agent` instance. After that you need to resolve the `DummyApi` to interact with the public api of the module. Make sure to register and resolve the api **before** initializing the agent.
 
 ```ts
-import { DummyModule } from './dummy'
+import { DummyModule, DummyApi } from './dummy'
 
 const agent = new Agent(/** agent config... */)
 
-const dummyModule = agent.injectionContainer.resolve(DummyModule)
+// Register the module with it's dependencies
+agent.dependencyManager.registerModules(DummyModule)
+
+const dummyApi = agent.dependencyManager.resolve(DummyApi)
 
 await agent.initialize()
 ```
@@ -34,11 +40,11 @@ Then, Dummy module API methods can be called, and events listeners can be create
 ```ts
 agent.events.on(DummyEventTypes.StateChanged, async (event: DummyStateChangedEvent) => {
   if (event.payload.dummyRecord.state === DummyState.RequestReceived) {
-    await dummyModule.respond(event.payload.dummyRecord)
+    await dummyApi.respond(event.payload.dummyRecord)
   }
 })
 
-const record = await dummyModule.request(connection)
+const record = await dummyApi.request(connection)
 ```
 
 ## Run demo

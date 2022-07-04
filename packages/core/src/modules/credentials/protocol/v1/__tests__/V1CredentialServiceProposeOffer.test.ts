@@ -13,7 +13,7 @@ import { JsonTransformer } from '../../../../../utils'
 import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { IndyLedgerService } from '../../../../ledger/services'
-import { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
+import { RoutingService } from '../../../../routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { schema, credDef } from '../../../__tests__/fixtures'
 import { IndyCredentialFormatService } from '../../../formats'
@@ -30,7 +30,7 @@ jest.mock('../../../repository/CredentialRepository')
 jest.mock('../../../../ledger/services/IndyLedgerService')
 jest.mock('../../../formats/indy/IndyCredentialFormatService')
 jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
-jest.mock('../../../../routing/services/MediationRecipientService')
+jest.mock('../../../../routing/services/RoutingService')
 jest.mock('../../../../connections/services/ConnectionService')
 jest.mock('../../../../../agent/Dispatcher')
 
@@ -39,13 +39,13 @@ const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRep
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyCredentialFormatServiceMock = IndyCredentialFormatService as jest.Mock<IndyCredentialFormatService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
+const RoutingServiceMock = RoutingService as jest.Mock<RoutingService>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
-const mediationRecipientService = new MediationRecipientServiceMock()
+const routingService = new RoutingServiceMock()
 const indyLedgerService = new IndyLedgerServiceMock()
 const indyCredentialFormatService = new IndyCredentialFormatServiceMock()
 const dispatcher = new DispatcherMock()
@@ -108,7 +108,7 @@ describe('V1CredentialServiceProposeOffer', () => {
       connectionService,
       didCommMessageRepository,
       agentConfig,
-      mediationRecipientService,
+      routingService,
       dispatcher,
       eventEmitter,
       credentialRepository,

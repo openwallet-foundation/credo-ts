@@ -120,4 +120,22 @@ export class AgentConfig {
   public get autoUpdateStorageOnStartup() {
     return this.initConfig.autoUpdateStorageOnStartup ?? false
   }
+
+  public extend(config: Partial<InitConfig>): AgentConfig {
+    return new AgentConfig(
+      { ...this.initConfig, logger: this.logger, label: this.label, ...config },
+      this.agentDependencies
+    )
+  }
+
+  public toString() {
+    const config = {
+      ...this.initConfig,
+      logger: this.logger !== undefined,
+      agentDependencies: this.agentDependencies != undefined,
+      label: this.label,
+    }
+
+    return JSON.stringify(config, null, 2)
+  }
 }

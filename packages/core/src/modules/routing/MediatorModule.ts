@@ -1,7 +1,6 @@
+import type { DependencyManager } from '../../plugins'
 import type { EncryptedMessage } from '../../types'
 import type { MediationRecord } from './repository'
-
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -9,6 +8,7 @@ import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageReceiver } from '../../agent/MessageReceiver'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
 import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler } from './handlers'
@@ -16,7 +16,8 @@ import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { MediatorService } from './services/MediatorService'
 import { MessagePickupService } from './services/MessagePickupService'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class MediatorModule {
   private mediatorService: MediatorService
   private messagePickupService: MessagePickupService
@@ -66,5 +67,17 @@ export class MediatorModule {
     dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
     dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
     dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig))
+  }
+
+  /**
+   * Registers the dependencies of the mediator module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(MediatorModule)
+
+    // Services
+    dependencyManager.registerSingleton(MediatorService)
+    dependencyManager.registerSingleton(MessagePickupService)
   }
 }

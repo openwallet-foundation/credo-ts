@@ -20,7 +20,7 @@ export class HttpOutboundTransport implements OutboundTransport {
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
-    this.agentConfig = agent.injectionContainer.resolve(AgentConfig)
+    this.agentConfig = agent.dependencyManager.resolve(AgentConfig)
     this.logger = this.agentConfig.logger
     this.fetch = this.agentConfig.agentDependencies.fetch
 

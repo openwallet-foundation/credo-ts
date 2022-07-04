@@ -33,7 +33,7 @@ import { JsonEncoder, JsonTransformer } from '../../../../utils'
  */
 export async function migrateConnectionRecordToV0_2(agent: Agent) {
   agent.config.logger.info('Migrating connection records to storage version 0.2')
-  const connectionRepository = agent.injectionContainer.resolve(ConnectionRepository)
+  const connectionRepository = agent.dependencyManager.resolve(ConnectionRepository)
 
   agent.config.logger.debug(`Fetching all connection records from storage`)
   const allConnections = await connectionRepository.getAll()
@@ -145,7 +145,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
     `Extracting 'didDoc' and 'theirDidDoc' from connection record into separate DidRecord and updating unqualified dids to did:peer dids`
   )
 
-  const didRepository = agent.injectionContainer.resolve(DidRepository)
+  const didRepository = agent.dependencyManager.resolve(DidRepository)
 
   const untypedConnectionRecord = connectionRecord as unknown as JsonObject
   const oldDidDocJson = untypedConnectionRecord.didDoc as JsonObject | undefined
@@ -294,8 +294,8 @@ export async function migrateToOobRecord(
     `Migrating properties from connection record with id ${connectionRecord.id} to out of band record`
   )
 
-  const oobRepository = agent.injectionContainer.resolve(OutOfBandRepository)
-  const connectionRepository = agent.injectionContainer.resolve(ConnectionRepository)
+  const oobRepository = agent.dependencyManager.resolve(OutOfBandRepository)
+  const connectionRepository = agent.dependencyManager.resolve(ConnectionRepository)
 
   const untypedConnectionRecord = connectionRecord as unknown as JsonObject
   const oldInvitationJson = untypedConnectionRecord.invitation as JsonObject | undefined

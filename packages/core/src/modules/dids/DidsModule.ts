@@ -1,12 +1,14 @@
+import type { DependencyManager } from '../../plugins'
 import type { Key } from './domain/Key'
 import type { DidResolutionOptions } from './types'
 
-import { Lifecycle, scoped } from 'tsyringe'
+import { injectable, module } from '../../plugins'
 
 import { DidRepository } from './repository'
 import { DidResolverService } from './services/DidResolverService'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class DidsModule {
   private resolverService: DidResolverService
   private didRepository: DidRepository
@@ -30,5 +32,17 @@ export class DidsModule {
 
   public findAllByRecipientKey(recipientKey: Key) {
     return this.didRepository.findAllByRecipientKey(recipientKey)
+  }
+
+  /**
+   * Registers the dependencies of the dids module module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(DidsModule)
+
+    // Services
+    dependencyManager.registerSingleton(DidResolverService)
+    dependencyManager.registerSingleton(DidRepository)
   }
 }

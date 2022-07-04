@@ -700,7 +700,7 @@ describe('out of band', () => {
     test('updates the message in the didCommMessageRepository', async () => {
       const { message, credentialRecord } = await faberAgent.credentials.createOffer(credentialTemplate)
 
-      const didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
+      const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
 
       const saveOrUpdateSpy = jest.spyOn(didCommMessageRepository, 'saveOrUpdateAgentMessage')
       saveOrUpdateSpy.mockResolvedValue()

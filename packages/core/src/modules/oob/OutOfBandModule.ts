@@ -2,12 +2,12 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
 import type { ConnectionRecord, Routing, ConnectionInvitationMessage } from '../../modules/connections'
+import type { DependencyManager } from '../../plugins'
 import type { PlaintextMessage } from '../../types'
 import type { Key } from '../dids'
 import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -18,6 +18,7 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { DidExchangeState, HandshakeProtocol, ConnectionsModule } from '../../modules/connections'
+import { injectable, module } from '../../plugins'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
@@ -25,7 +26,7 @@ import { parseInvitationUrl } from '../../utils/parseInvitation'
 import { DidKey } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
 import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
-import { MediationRecipientService } from '../routing'
+import { RoutingService } from '../routing/services/RoutingService'
 
 import { OutOfBandService } from './OutOfBandService'
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
@@ -36,6 +37,7 @@ import { HandshakeReuseHandler } from './handlers'
 import { HandshakeReuseAcceptedHandler } from './handlers/HandshakeReuseAcceptedHandler'
 import { convertToNewInvitation, convertToOldInvitation } from './helpers'
 import { OutOfBandInvitation } from './messages'
+import { OutOfBandRepository } from './repository'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
@@ -73,10 +75,11 @@ export interface ReceiveOutOfBandInvitationConfig {
   routing?: Routing
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class OutOfBandModule {
   private outOfBandService: OutOfBandService
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private connectionsModule: ConnectionsModule
   private didCommMessageRepository: DidCommMessageRepository
   private dispatcher: Dispatcher
@@ -89,7 +92,7 @@ export class OutOfBandModule {
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     outOfBandService: OutOfBandService,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     connectionsModule: ConnectionsModule,
     didCommMessageRepository: DidCommMessageRepository,
     messageSender: MessageSender,
@@ -99,7 +102,7 @@ export class OutOfBandModule {
     this.agentConfig = agentConfig
     this.logger = agentConfig.logger
     this.outOfBandService = outOfBandService
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.connectionsModule = connectionsModule
     this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
@@ -160,7 +163,7 @@ export class OutOfBandModule {
       }
     }
 
-    const routing = config.routing ?? (await this.mediationRecipientService.getRouting({}))
+    const routing = config.routing ?? (await this.routingService.getRouting({}))
 
     const services = routing.endpoints.map((endpoint, index) => {
       return new OutOfBandDidCommService({
@@ -231,7 +234,7 @@ export class OutOfBandModule {
     domain: string
   }): Promise<{ message: Message; invitationUrl: string }> {
     // Create keys (and optionally register them at the mediator)
-    const routing = await this.mediationRecipientService.getRouting()
+    const routing = await this.routingService.getRouting()
 
     // Set the service on the message
     config.message.service = new ServiceDecorator({
@@ -676,5 +679,19 @@ export class OutOfBandModule {
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new HandshakeReuseHandler(this.outOfBandService))
     dispatcher.registerHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
+  }
+
+  /**
+   * Registers the dependencies of the ot of band module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(OutOfBandModule)
+
+    // Services
+    dependencyManager.registerSingleton(OutOfBandService)
+
+    // Repositories
+    dependencyManager.registerSingleton(OutOfBandRepository)
   }
 }

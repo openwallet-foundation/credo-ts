@@ -1,9 +1,9 @@
 import type { AgentMessageProcessedEvent } from '../../agent/Events'
+import type { DependencyManager } from '../../plugins'
 import type { ParsedMessageType } from '../../utils/messageType'
 
 import { firstValueFrom, of, ReplaySubject } from 'rxjs'
 import { filter, takeUntil, timeout, catchError, map } from 'rxjs/operators'
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -11,6 +11,7 @@ import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { injectable, module } from '../../plugins'
 import { canHandleMessageType, parseMessageType } from '../../utils/messageType'
 import { ConnectionService } from '../connections/services'
 
@@ -18,7 +19,8 @@ import { DiscloseMessageHandler, QueryMessageHandler } from './handlers'
 import { DiscloseMessage } from './messages'
 import { DiscoverFeaturesService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class DiscoverFeaturesModule {
   private connectionService: ConnectionService
   private messageSender: MessageSender
@@ -92,5 +94,16 @@ export class DiscoverFeaturesModule {
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new DiscloseMessageHandler())
     dispatcher.registerHandler(new QueryMessageHandler(this.discoverFeaturesService))
+  }
+
+  /**
+   * Registers the dependencies of the discover features module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(DiscoverFeaturesModule)
+
+    // Services
+    dependencyManager.registerSingleton(DiscoverFeaturesService)
   }
 }

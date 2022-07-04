@@ -1,10 +1,9 @@
+import type { DependencyManager } from '../../plugins'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { PresentationPreview, RequestPresentationMessage } from './messages'
 import type { RequestedCredentials, RetrievedCredentials } from './models'
 import type { ProofRequestOptions } from './models/ProofRequest'
 import type { ProofRecord } from './repository/ProofRecord'
-
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -12,8 +11,9 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
+import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections/services/ConnectionService'
-import { MediationRecipientService } from '../routing/services/MediationRecipientService'
+import { RoutingService } from '../routing/services/RoutingService'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import { PresentationProblemReportReason } from './errors'
@@ -26,14 +26,16 @@ import {
 } from './handlers'
 import { PresentationProblemReportMessage } from './messages/PresentationProblemReportMessage'
 import { ProofRequest } from './models/ProofRequest'
+import { ProofRepository } from './repository'
 import { ProofService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class ProofsModule {
   private proofService: ProofService
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
 
@@ -41,7 +43,7 @@ export class ProofsModule {
     dispatcher: Dispatcher,
     proofService: ProofService,
     connectionService: ConnectionService,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     agentConfig: AgentConfig,
     messageSender: MessageSender,
     proofResponseCoordinator: ProofResponseCoordinator
@@ -49,7 +51,7 @@ export class ProofsModule {
     this.proofService = proofService
     this.connectionService = connectionService
     this.messageSender = messageSender
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.agentConfig = agentConfig
     this.proofResponseCoordinator = proofResponseCoordinator
     this.registerHandlers(dispatcher)
@@ -196,7 +198,7 @@ export class ProofsModule {
     const { message, proofRecord } = await this.proofService.createRequest(proofRequest, undefined, config)
 
     // Create and set ~service decorator
-    const routing = await this.mediationRecipientService.getRouting()
+    const routing = await this.routingService.getRouting()
     message.service = new ServiceDecorator({
       serviceEndpoint: routing.endpoints[0],
       recipientKeys: [routing.recipientKey.publicKeyBase58],
@@ -242,7 +244,7 @@ export class ProofsModule {
     // Use ~service decorator otherwise
     else if (proofRecord.requestMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
@@ -452,7 +454,7 @@ export class ProofsModule {
         this.proofService,
         this.agentConfig,
         this.proofResponseCoordinator,
-        this.mediationRecipientService
+        this.routingService
       )
     )
     dispatcher.registerHandler(
@@ -460,6 +462,20 @@ export class ProofsModule {
     )
     dispatcher.registerHandler(new PresentationAckHandler(this.proofService))
     dispatcher.registerHandler(new PresentationProblemReportHandler(this.proofService))
+  }
+
+  /**
+   * Registers the dependencies of the proofs module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(ProofsModule)
+
+    // Services
+    dependencyManager.registerSingleton(ProofService)
+
+    // Repositories
+    dependencyManager.registerSingleton(ProofRepository)
   }
 }
 

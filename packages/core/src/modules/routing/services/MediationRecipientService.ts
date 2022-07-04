@@ -12,21 +12,20 @@ import type {
   MessageDeliveryMessage,
 } from '../messages'
 import type { StatusMessage } from '../messages/StatusMessage'
+import type { GetRoutingOptions } from './RoutingService'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
-import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
-import { InjectionSymbols } from '../../../constants'
 import { KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils'
-import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { Key } from '../../dids'
 import { ProblemReportError } from '../../problem-reports'
@@ -44,9 +43,8 @@ import { MediationRole, MediationState } from '../models'
 import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MediationRecipientService {
-  private wallet: Wallet
   private mediationRepository: MediationRepository
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
@@ -54,7 +52,6 @@ export class MediationRecipientService {
   private config: AgentConfig
 
   public constructor(
-    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     connectionService: ConnectionService,
     messageSender: MessageSender,
     config: AgentConfig,
@@ -62,7 +59,6 @@ export class MediationRecipientService {
     eventEmitter: EventEmitter
   ) {
     this.config = config
-    this.wallet = wallet
     this.mediationRepository = mediatorRepository
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
@@ -197,7 +193,10 @@ export class MediationRecipientService {
     return keylistUpdateMessage
   }
 
-  public async getRouting({ mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}): Promise<Routing> {
+  public async addMediationRouting(
+    routing: Routing,
+    { mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}
+  ): Promise<Routing> {
     let mediationRecord: MediationRecord | null = null
 
     if (mediatorId) {
@@ -208,21 +207,17 @@ export class MediationRecipientService {
       mediationRecord = await this.findDefaultMediator()
     }
 
-    let endpoints = this.config.endpoints
-    let routingKeys: Key[] = []
+    // Return early if no mediation record
+    if (!mediationRecord) return routing
 
-    // Create and store new key
-    const { verkey } = await this.wallet.createDid()
+    // new did has been created and mediator needs to be updated with the public key.
+    mediationRecord = await this.keylistUpdateAndAwait(mediationRecord, routing.recipientKey.publicKeyBase58)
 
-    const recipientKey = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
-    if (mediationRecord) {
-      routingKeys = mediationRecord.routingKeys.map((key) => Key.fromPublicKeyBase58(key, KeyType.Ed25519))
-      endpoints = mediationRecord.endpoint ? [mediationRecord.endpoint] : endpoints
-      // new did has been created and mediator needs to be updated with the public key.
-      mediationRecord = await this.keylistUpdateAndAwait(mediationRecord, verkey)
+    return {
+      ...routing,
+      endpoints: mediationRecord.endpoint ? [mediationRecord.endpoint] : routing.endpoints,
+      routingKeys: mediationRecord.routingKeys.map((key) => Key.fromPublicKeyBase58(key, KeyType.Ed25519)),
     }
-
-    return { endpoints, routingKeys, recipientKey, mediatorId: mediationRecord?.id }
   }
 
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {
@@ -407,17 +402,4 @@ export class MediationRecipientService {
 export interface MediationProtocolMsgReturnType<MessageType extends AgentMessage> {
   message: MessageType
   mediationRecord: MediationRecord
-}
-
-export interface GetRoutingOptions {
-  /**
-   * Identifier of the mediator to use when setting up routing
-   */
-  mediatorId?: string
-
-  /**
-   * Whether to use the default mediator if available and `mediatorId` has not been provided
-   * @default true
-   */
-  useDefaultMediator?: boolean
 }
