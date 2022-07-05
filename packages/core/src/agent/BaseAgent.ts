@@ -149,11 +149,7 @@ export abstract class BaseAgent {
   }
 
   public async shutdown() {
-    // close wallet if still initialized
-    if (this.wallet.isInitialized) {
-      await this.wallet.close()
-    }
-    this._isInitialized = false
+    // No logic required at the moment
   }
 
   public get publicDid() {

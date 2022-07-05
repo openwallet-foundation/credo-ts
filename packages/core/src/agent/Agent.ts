@@ -140,7 +140,13 @@ export class Agent extends BaseAgent {
     const transportPromises = allTransports.map((transport) => transport.stop())
     await Promise.all(transportPromises)
 
+    // close wallet if still initialized
+    if (this.wallet.isInitialized) {
+      await this.wallet.close()
+    }
+
     await super.shutdown()
+    this._isInitialized = false
   }
 
   protected registerDependencies(dependencyManager: DependencyManager) {
