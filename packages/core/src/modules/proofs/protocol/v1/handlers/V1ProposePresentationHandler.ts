@@ -2,11 +2,12 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofRequestFromProposalOptions } from '../../../models/ProofServiceOptions'
+import type { IndyProofRequestFromProposalOptions } from '../../../formats/IndyProofFormatsServiceOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V1ProofService } from '../V1ProofService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
+import { AriesFrameworkError } from '../../../../../error'
 import { V1ProposePresentationMessage } from '../messages'
 
 export class V1ProposePresentationHandler implements Handler {
@@ -45,7 +46,7 @@ export class V1ProposePresentationHandler implements Handler {
 
     if (!messageContext.connection) {
       this.agentConfig.logger.error('No connection on the messageContext')
-      return
+      throw new AriesFrameworkError('No connection on the messageContext')
     }
 
     const proposalMessage = await this.didCommMessageRepository.getAgentMessage({
@@ -55,10 +56,10 @@ export class V1ProposePresentationHandler implements Handler {
 
     if (!proposalMessage) {
       this.agentConfig.logger.error(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
-      return
+      throw new AriesFrameworkError(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
     }
 
-    const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
+    const proofRequestFromProposalOptions: IndyProofRequestFromProposalOptions = {
       name: 'proof-request',
       version: '1.0',
       nonce: await this.proofService.generateProofRequestNonce(),
@@ -70,8 +71,8 @@ export class V1ProposePresentationHandler implements Handler {
     const indyProofRequest = proofRequest.indy
 
     if (!indyProofRequest) {
-      this.agentConfig.logger.error(`Indy proof request is missing required proof request`)
-      return
+      this.agentConfig.logger.error(`No Indy proof request was found`)
+      throw new AriesFrameworkError('No Indy proof request was found')
     }
 
     const { message } = await this.proofService.createRequestAsResponse({

@@ -14,7 +14,7 @@ import {
 import { credDefIdRegex } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../../../utils/messageType'
-import { PredicateType } from '../models/PredicateType'
+import { PredicateType } from '../../../formats/indy/models/PredicateType'
 
 export interface PresentationPreviewAttributeOptions {
   name: string

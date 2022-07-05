@@ -1,4 +1,4 @@
 export enum PresentationRecordType {
   Indy = 'indy',
-  JsonLD = 'JSON-LD',
+  PresentationExchange = 'presentationExchange',
 }

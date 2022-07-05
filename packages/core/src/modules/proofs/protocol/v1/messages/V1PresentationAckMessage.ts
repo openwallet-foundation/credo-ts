@@ -3,9 +3,6 @@ import type { AckMessageOptions } from '../../../../common'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { AckMessage } from '../../../../common'
 
-/**
- * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
- */
 export class V1PresentationAckMessage extends AckMessage {
   public constructor(options: AckMessageOptions) {
     super(options)

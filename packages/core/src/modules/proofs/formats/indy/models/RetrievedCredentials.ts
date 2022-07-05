@@ -1,5 +1,5 @@
-import type { RequestedAttribute } from '../../../protocol/v1/models/RequestedAttribute'
-import type { RequestedPredicate } from '../../../protocol/v1/models/RequestedPredicate'
+import type { RequestedAttribute } from './RequestedAttribute'
+import type { RequestedPredicate } from './RequestedPredicate'
 
 export interface RetrievedCredentialsOptions {
   requestedAttributes?: Record<string, RequestedAttribute[]>

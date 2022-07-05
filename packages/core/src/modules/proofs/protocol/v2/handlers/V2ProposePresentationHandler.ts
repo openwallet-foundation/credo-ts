@@ -8,7 +8,6 @@ import type { V2ProofService } from '../V2ProofService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
-import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormats'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
 export class V2ProposePresentationHandler implements Handler {
@@ -48,7 +47,7 @@ export class V2ProposePresentationHandler implements Handler {
 
     if (!messageContext.connection) {
       this.agentConfig.logger.error('No connection on the messageContext')
-      return
+      throw new AriesFrameworkError('No connection on the messageContext')
     }
 
     const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
@@ -58,28 +57,18 @@ export class V2ProposePresentationHandler implements Handler {
 
     if (!proposalMessage) {
       this.agentConfig.logger.error(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
-      return
-    }
-
-    const proposalAttachment = proposalMessage
-      .getAttachmentFormats()
-      .find((x) => x.format.format === V2_INDY_PRESENTATION_PROPOSAL)
-
-    if (!proposalAttachment) {
-      throw new AriesFrameworkError('No proposal message could be found')
+      throw new AriesFrameworkError(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
     }
 
     const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
-      name: 'proof-request',
-      version: '1.0',
-      nonce: await this.proofService.generateProofRequestNonce(),
       proofRecord,
     }
 
     const proofRequest = await this.proofService.createProofRequestFromProposal(proofRequestFromProposalOptions)
 
-    if (!proofRequest.indy) {
-      throw new AriesFrameworkError('Failed to create proof request')
+    if (!proofRequest) {
+      this.agentConfig.logger.error('Failed to create proof request')
+      throw new AriesFrameworkError('Failed to create proof request.')
     }
 
     const { message } = await this.proofService.createRequestAsResponse({

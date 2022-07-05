@@ -1,18 +1,18 @@
-import type { IndyProposeProofFormat } from './formats/IndyProofFormatsServiceOptions'
-import type { CreateProposalOptions } from './models/ProofServiceOptions'
-import type { ProofRequestFormats } from './models/SharedOptions'
-import type { PresentationPreviewAttribute } from './protocol/v1/models/V1PresentationPreview'
+import type { CreateProposalOptions } from '../../models/ProofServiceOptions'
+import type { ProofRequestFormats } from '../../models/SharedOptions'
+import type { PresentationPreviewAttribute } from '../../protocol/v1/models/V1PresentationPreview'
+import type { IndyProposeProofFormat } from '../IndyProofFormatsServiceOptions'
 
-import { AriesFrameworkError } from '../../error/AriesFrameworkError'
-import { uuid } from '../../utils/uuid'
+import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
+import { uuid } from '../../../../utils/uuid'
+import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 
-import { ProofRequest } from './formats/indy/models/ProofRequest'
-import { AttributeFilter } from './protocol/v1/models/AttributeFilter'
-import { ProofAttributeInfo } from './protocol/v1/models/ProofAttributeInfo'
-import { ProofPredicateInfo } from './protocol/v1/models/ProofPredicateInfo'
-import { PresentationPreview } from './protocol/v1/models/V1PresentationPreview'
+import { ProofAttributeInfo } from './models/ProofAttributeInfo'
+import { ProofPredicateInfo } from './models/ProofPredicateInfo'
+import { ProofRequest } from './models/ProofRequest'
+import { AttributeFilter } from './models/AttributeFilter'
 
-export class ProofsUtils {
+export class IndyProofUtils {
   public static async createRequestFromPreview(options: CreateProposalOptions): Promise<ProofRequestFormats> {
     const indyFormat = options.proofFormats?.indy
 
@@ -29,7 +29,7 @@ export class ProofsUtils {
       throw new AriesFrameworkError(`No preview found`)
     }
 
-    const proofRequest = ProofsUtils.createReferentForProofRequest(indyFormat, preview)
+    const proofRequest = IndyProofUtils.createReferentForProofRequest(indyFormat, preview)
 
     return {
       indy: proofRequest,

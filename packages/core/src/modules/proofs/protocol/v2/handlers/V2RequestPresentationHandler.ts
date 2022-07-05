@@ -65,11 +65,7 @@ export class V2RequestPresentationHandler implements Handler {
 
     const { message, proofRecord } = await this.proofService.createPresentation({
       proofRecord: record,
-      proofFormats: {
-        indy: requestedCredentials.indy,
-      },
-      protocolVersion: ProofProtocolVersion.V2,
-      // Not sure to what to do with goalCode, willConfirm and comment fields here
+      proofFormats: requestedCredentials,
     })
 
     if (messageContext.connection) {

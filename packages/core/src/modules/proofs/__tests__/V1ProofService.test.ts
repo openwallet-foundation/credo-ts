@@ -1,7 +1,6 @@
 import type { Wallet } from '../../../wallet/Wallet'
 import type { CredentialRepository } from '../../credentials/repository'
 import type { ProofStateChangedEvent } from '../ProofEvents'
-import type { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
 import type { CustomProofTags } from './../repository/ProofRecord'
 
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
@@ -15,6 +14,7 @@ import { IndyRevocationService } from '../../indy/services/IndyRevocationService
 import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
+import { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
 import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import { ProofState } from '../models/ProofState'
 import { V1ProofService } from '../protocol/v1'
@@ -42,6 +42,7 @@ const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
 const IndyRevocationServiceMock = IndyRevocationService as jest.Mock<IndyRevocationService>
 const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
+const indyProofFormatServiceMock = IndyProofFormatService as jest.Mock<IndyProofFormatService>
 
 const connection = getMockConnection({
   id: '123',
@@ -112,6 +113,7 @@ describe('V1ProofService', () => {
     eventEmitter = new EventEmitter(agentConfig)
     connectionService = new connectionServiceMock()
     didCommMessageRepository = new didCommMessageRepositoryMock()
+    indyProofFormatService = new indyProofFormatServiceMock()
 
     proofService = new V1ProofService(
       proofRepository,

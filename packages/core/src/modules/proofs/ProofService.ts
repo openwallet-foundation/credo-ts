@@ -62,6 +62,18 @@ export abstract class ProofService {
     return await this.wallet.generateNonce()
   }
 
+  public emitStateChangedEvent(proofRecord: ProofRecord, previousState: ProofState | null) {
+    const clonedProof = JsonTransformer.clone(proofRecord)
+
+    this.eventEmitter.emit<ProofStateChangedEvent>({
+      type: ProofEventTypes.ProofStateChanged,
+      payload: {
+        proofRecord: clonedProof,
+        previousState: previousState,
+      },
+    })
+  }
+
   /**
    * Update the record to a new state and emit an state changed event. Also updates the record
    * in storage.
@@ -76,18 +88,6 @@ export abstract class ProofService {
     await this.proofRepository.update(proofRecord)
 
     this.emitStateChangedEvent(proofRecord, previousState)
-  }
-
-  protected emitStateChangedEvent(proofRecord: ProofRecord, previousState: ProofState | null) {
-    const clonedProof = JsonTransformer.clone(proofRecord)
-
-    this.eventEmitter.emit<ProofStateChangedEvent>({
-      type: ProofEventTypes.ProofStateChanged,
-      payload: {
-        proofRecord: clonedProof,
-        previousState: previousState,
-      },
-    })
   }
 
   abstract getVersion(): ProofProtocolVersion
@@ -159,6 +159,8 @@ export abstract class ProofService {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
   abstract processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
+  public abstract shouldAutoRespondToProposal(proofRecord: ProofRecord): Promise<boolean>
+
   public abstract shouldAutoRespondToRequest(proofRecord: ProofRecord): Promise<boolean>
 
   public abstract shouldAutoRespondToPresentation(proofRecord: ProofRecord): Promise<boolean>
@@ -168,7 +170,7 @@ export abstract class ProofService {
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService
-  ): Promise<void>
+  ): void
 
   public abstract findRequestMessage(proofRecordId: string): Promise<AgentMessage | null>
 

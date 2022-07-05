@@ -6,8 +6,9 @@ import { IsIn, IsInstance, IsOptional, IsString, ValidateNested } from 'class-va
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IsMap } from '../../../../../utils/transformers'
 import { IndyRevocationInterval } from '../../../../credentials'
-import { ProofAttributeInfo } from '../../../protocol/v1/models/ProofAttributeInfo'
-import { ProofPredicateInfo } from '../../../protocol/v1/models/ProofPredicateInfo'
+
+import { ProofAttributeInfo } from './ProofAttributeInfo'
+import { ProofPredicateInfo } from './ProofPredicateInfo'
 
 export interface ProofRequestOptions {
   name: string

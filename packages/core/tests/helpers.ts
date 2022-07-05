@@ -557,12 +557,13 @@ export async function presentProof({
     },
   }
 
-  let verifierRecord = await verifierAgent.proofs.requestProof(requestProofsOptions)
-
-  let holderRecord = await waitForProofRecordSubject(holderReplay, {
-    threadId: verifierRecord.threadId,
+  let holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
     state: ProofState.RequestReceived,
   })
+
+  let verifierRecord = await verifierAgent.proofs.requestProof(requestProofsOptions)
+
+  let holderRecord = await holderProofRecordPromise
 
   const requestedCredentials = await holderAgent.proofs.autoSelectCredentialsForProofRequest({
     proofRecordId: holderRecord.id,
@@ -575,21 +576,26 @@ export async function presentProof({
     proofRecordId: holderRecord.id,
     proofFormats: { indy: requestedCredentials.indy },
   }
-  await holderAgent.proofs.acceptRequest(acceptPresentationOptions)
 
-  verifierRecord = await waitForProofRecordSubject(verifierReplay, {
+  const verifierProofRecordPromise = waitForProofRecordSubject(verifierReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.PresentationReceived,
   })
 
+  await holderAgent.proofs.acceptRequest(acceptPresentationOptions)
+
+  verifierRecord = await verifierProofRecordPromise
+
   // assert presentation is valid
   expect(verifierRecord.isVerified).toBe(true)
 
-  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
-  holderRecord = await waitForProofRecordSubject(holderReplay, {
+  holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.Done,
   })
+
+  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
+  holderRecord = await holderProofRecordPromise
 
   return {
     verifierProof: verifierRecord,

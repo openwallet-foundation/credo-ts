@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { IsString, IsOptional, IsArray, ValidateNested, IsInstance, ValidateIf, ArrayNotEmpty } from 'class-validator'
+import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsString, ValidateIf, ValidateNested } from 'class-validator'
 
 import { IndyRevocationInterval } from '../../../../credentials'
 
