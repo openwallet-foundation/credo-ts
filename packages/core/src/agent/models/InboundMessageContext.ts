@@ -45,4 +45,14 @@ export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
 
     return this.connection
   }
+
+  public toJSON() {
+    return {
+      message: this.message,
+      recipientKey: this.recipientKey?.fingerprint,
+      senderKey: this.senderKey?.fingerprint,
+      sessionId: this.sessionId,
+      agentContext: this.agentContext.toJSON(),
+    }
+  }
 }

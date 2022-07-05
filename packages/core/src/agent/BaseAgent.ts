@@ -60,7 +60,7 @@ export abstract class BaseAgent {
     this.logger = this.agentConfig.logger
 
     this.logger.info('Creating agent with config', {
-      agentConfig: agentConfig.toString(),
+      agentConfig: agentConfig.toJSON(),
     })
 
     if (!this.agentConfig.walletConfig) {
