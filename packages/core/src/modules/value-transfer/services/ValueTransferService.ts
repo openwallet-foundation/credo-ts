@@ -6,7 +6,13 @@ import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { PartyState, ValueTransfer, Wallet, WitnessState } from '@sicpa-dlab/value-transfer-protocol-ts'
+import {
+  createVerifiableNotes,
+  PartyState,
+  ValueTransfer,
+  Wallet,
+  WitnessState,
+} from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -23,7 +29,7 @@ import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
 import { ProblemReportMessage } from '../messages'
-import { ValueTransferTransactionStatus, ValueTransferRepository } from '../repository'
+import { ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 import { WitnessStateRecord } from '../repository/WitnessStateRecord'
@@ -31,6 +37,8 @@ import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferStateService } from './ValueTransferStateService'
+
+const DEFAULT_SUPPORTED_PARTIES_COUNT = 50
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferService {
@@ -87,7 +95,7 @@ export class ValueTransferService {
           )
         }
 
-        const partyStateHashes = ValueTransferService.calculateInitialPartyStateHashes(new Set(config.verifiableNotes))
+        const partyStateHashes = ValueTransferService.generateInitialPartyStateHashes(config.supportedPartiesCount)
 
         const record = new WitnessStateRecord({
           publicDid: publicDid.id,
@@ -97,9 +105,7 @@ export class ValueTransferService {
         await this.witnessStateRepository.save(record)
       } else {
         if (!record.witnessState.partyStateHashes.size) {
-          const partyStateHashes = ValueTransferService.calculateInitialPartyStateHashes(
-            new Set(config.verifiableNotes)
-          )
+          const partyStateHashes = ValueTransferService.generateInitialPartyStateHashes(config.supportedPartiesCount)
 
           for (const hash of partyStateHashes) {
             record.witnessState.partyStateHashes.add(hash)
@@ -110,8 +116,11 @@ export class ValueTransferService {
       }
     } else {
       const stateRecord = await this.initPartyState()
-      if (config.verifiableNotes?.length && !stateRecord.partyState.wallet.amount()) {
-        await this.receiveNotes(config.verifiableNotes, stateRecord)
+      if (!stateRecord.partyState.wallet.amount()) {
+        const initialNotes = config.verifiableNotes?.length
+          ? config.verifiableNotes
+          : ValueTransferService.getRandomInitialStateNotes(config.supportedPartiesCount)
+        await this.receiveNotes(initialNotes, stateRecord)
       }
     }
   }
@@ -291,8 +300,11 @@ export class ValueTransferService {
     await Promise.all([this.sendMessageToGetter(getterProblemReport), this.sendMessageToGiver(giverProblemReport)])
   }
 
-  public async sendMessageToWitness(message: DIDCommV2Message) {
-    const witnessTransport = this.config.valueTransferConfig?.witnessTransport
+  public async sendMessageToWitness(message: DIDCommV2Message, senderRole: ValueTransferRole) {
+    // Workaround for different witness transports as now User-wallet can have both Giver/Getter roles in different transactions
+    const { witnessTransportForGetterRole, witnessTransportForGiverRole } = this.config.valueTransferConfig ?? {}
+    const witnessTransport =
+      senderRole === ValueTransferRole.Giver ? witnessTransportForGiverRole : witnessTransportForGetterRole
     return this.sendMessage(message, witnessTransport)
   }
 
@@ -369,16 +381,21 @@ export class ValueTransferService {
     return state
   }
 
-  private static calculateInitialPartyStateHashes(verifiableNotes: Set<VerifiableNote>) {
+  private static generateInitialPartyStateHashes(statesCount = DEFAULT_SUPPORTED_PARTIES_COUNT) {
     const partyStateHashes = new Set<Uint8Array>()
 
-    let giverWallet = new Wallet()
-    giverWallet = giverWallet.receiveNotes(new Set(verifiableNotes))[1]
-    partyStateHashes.add(giverWallet.rootHash())
-
-    const getterWallet = new Wallet()
-    partyStateHashes.add(getterWallet.rootHash())
+    for (let i = 0; i < statesCount; i++) {
+      const startFromSno = i * 10
+      const [, partyWallet] = new Wallet().receiveNotes(new Set(createVerifiableNotes(10, startFromSno)))
+      partyStateHashes.add(partyWallet.rootHash())
+    }
 
     return partyStateHashes
+  }
+
+  private static getRandomInitialStateNotes(statesCount = DEFAULT_SUPPORTED_PARTIES_COUNT): VerifiableNote[] {
+    const stateIndex = Math.floor(Math.random() * statesCount)
+    const startFromSno = stateIndex * 10
+    return createVerifiableNotes(10, startFromSno)
   }
 }

@@ -22,7 +22,7 @@ export class Getter extends BaseAgent {
 
   public static async build(): Promise<Getter> {
     const valueTransferConfig: ValueTransferConfig = {
-      witnessTransport: Getter.transport,
+      witnessTransportForGetterRole: Getter.transport,
     }
     const getter = new Getter('getter', undefined, [Getter.transport], valueTransferConfig)
     await getter.initializeAgent()

@@ -1,7 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { Transport, ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
 
-import { ValueTransferRole, ValueTransferState } from '@aries-framework/core'
+import { ValueTransferState } from '@aries-framework/core'
 import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'
@@ -23,7 +23,7 @@ export class Giver extends BaseAgent {
 
   public static async build(): Promise<Giver> {
     const valueTransferConfig: ValueTransferConfig = {
-      witnessTransport: Giver.transport,
+      witnessTransportForGiverRole: Giver.transport,
       verifiableNotes: createVerifiableNotes(10),
     }
     const giver = new Giver('giver', undefined, [Giver.transport], valueTransferConfig)

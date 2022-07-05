@@ -5,6 +5,7 @@ import type { ValueTransferService } from '../services'
 import type { ValueTransferGiverService } from '../services/ValueTransferGiverService'
 
 import { ProblemReportMessage } from '../../problem-reports'
+import { ValueTransferRole } from '../ValueTransferRole'
 import { RequestWitnessedMessage } from '../messages/RequestWitnessedMessage'
 
 export class RequestWitnessedHandler implements Handler<typeof DIDCommV2Message> {
@@ -27,12 +28,12 @@ export class RequestWitnessedHandler implements Handler<typeof DIDCommV2Message>
   public async handle(messageContext: HandlerInboundMessage<RequestWitnessedHandler>) {
     const { record, message } = await this.valueTransferGiverService.processRequestWitnessed(messageContext)
     if (!record || message.type === ProblemReportMessage.type) {
-      return this.valueTransferService.sendMessageToWitness(message)
+      return this.valueTransferService.sendMessageToWitness(message, record?.role ?? ValueTransferRole.Giver)
     }
 
     if (this.valueTransferResponseCoordinator.shouldAutoRespondToRequest(record)) {
       const { message } = await this.valueTransferGiverService.acceptRequest(record)
-      return this.valueTransferService.sendMessageToWitness(message)
+      return this.valueTransferService.sendMessageToWitness(message, record.role)
     }
   }
 }

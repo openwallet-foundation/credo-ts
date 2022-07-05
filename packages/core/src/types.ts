@@ -8,7 +8,6 @@ import type { DidCommService } from './modules/dids/domain/service/DidCommServic
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy, Transport } from './modules/routing'
-import type { ValueTransferRole } from './modules/value-transfer'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
@@ -44,9 +43,11 @@ export interface ValueTransferConfig {
   isWitness?: boolean
   getterTransport?: Transport
   giverTransport?: Transport
-  witnessTransport?: Transport
+  witnessTransportForGetterRole?: Transport
+  witnessTransportForGiverRole?: Transport
   verifiableNotes?: VerifiableNote[]
   autoAcceptValueTransfer?: AutoAcceptValueTransfer
+  supportedPartiesCount?: number
 }
 
 export enum DidCommMimeType {
