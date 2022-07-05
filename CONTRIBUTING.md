@@ -11,13 +11,15 @@ If you would like to propose a significant change, please open an issue first to
 Contributions are made pursuant to the Developer's Certificate of Origin, available at [https://developercertificate.org](https://developercertificate.org), and licensed under the Apache License, version 2.0 (Apache-2.0).
 
 ## Contributing Lessons Learned
+
 ### From our 0.2.0 release cycle, we learned:
-* It is difficult to manage a release with too many changes.
-  * We should **release weekly**, not monthly.
-  * We should focus on feature releases (minor and patch releases) to speed iteration.
-    * See our [Aries JavaScript Docs on semantic versioning](https://aries.js.org/guides/updating#versioning). Notably, while our versions are pre 1.0.0, minor versions are breaking change versions.
-* Mixing breaking changes with other PRs slows development.
-  * Non-breaking change PRs are merged earlier into **main**
-  * Breaking change PRs will go to a branch named **pre-<release-version> (ie. 0.3.0-pre)** and merged later in the release cycle.
-  * Consider separating your PR into a (usually larger) non-breaking PR and a (usually smaller) breaking change PR.
-  * Use prefixes and labels to highlight issues that introduce breaking changes. The prefix **!feat** and label **breaking change** draws attention to a new feature with a breaking change.
+
+- It is difficult to manage a release with too many changes.
+  - We should **release weekly**, not monthly.
+  - We should focus on feature releases (minor and patch releases) to speed iteration.
+    - See our [Aries JavaScript Docs on semantic versioning](https://aries.js.org/guides/updating#versioning). Notably, while our versions are pre 1.0.0, minor versions are breaking change versions.
+- Mixing breaking changes with other PRs slows development.
+  - Non-breaking change PRs are merged earlier into **main**
+  - Breaking change PRs will go to a branch named **<release-version>-pre (ie. 0.3.0-pre)** and merged later in the release cycle.
+  - Consider separating your PR into a (usually larger) non-breaking PR and a (usually smaller) breaking change PR.
+  - Use prefixes and labels to highlight issues that introduce breaking changes. The prefix **!feat** and label **breaking change** draws attention to a new feature with a breaking change.
