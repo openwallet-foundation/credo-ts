@@ -244,6 +244,9 @@ describe('out of band', () => {
 
       expect(eventListener).toHaveBeenCalledWith({
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord,
           previousState: null,
@@ -583,6 +586,9 @@ describe('out of band', () => {
       // Receiving the invitation
       expect(eventListener).toHaveBeenNthCalledWith(1, {
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord: expect.objectContaining({ state: OutOfBandState.Initial }),
           previousState: null,
@@ -592,6 +598,9 @@ describe('out of band', () => {
       // Accepting the invitation
       expect(eventListener).toHaveBeenNthCalledWith(2, {
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord,
           previousState: OutOfBandState.Initial,

@@ -8,9 +8,9 @@ import { TenantRepository } from '../../repository/TenantRepository'
 import { TenantRoutingRepository } from '../../repository/TenantRoutingRepository'
 import { TenantService } from '../TenantService'
 
-jest.mock('../repository/TenantRepository')
+jest.mock('../../repository/TenantRepository')
 const TenantRepositoryMock = TenantRepository as jest.Mock<TenantRepository>
-jest.mock('../repository/TenantRoutingRepository')
+jest.mock('../../repository/TenantRoutingRepository')
 const TenantRoutingRepositoryMock = TenantRoutingRepository as jest.Mock<TenantRoutingRepository>
 
 const wallet = {

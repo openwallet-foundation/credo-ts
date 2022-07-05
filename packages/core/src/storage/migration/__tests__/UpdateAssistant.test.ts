@@ -16,7 +16,7 @@ describe('UpdateAssistant', () => {
 
   beforeEach(async () => {
     const dependencyManager = new DependencyManager()
-    const storageService = new InMemoryStorageService()
+    storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     agent = new Agent(config, agentDependencies, dependencyManager)

@@ -17,10 +17,8 @@ describe('TenantsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     TenantsModule.register(dependencyManager)
 
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(TenantsApi)
-
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(5)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(6)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantsApi)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantRoutingRepository)

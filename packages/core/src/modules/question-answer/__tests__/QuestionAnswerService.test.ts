@@ -99,6 +99,9 @@ describe('QuestionAnswerService', () => {
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'QuestionAnswerStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: null,
           questionAnswerRecord: expect.objectContaining({
@@ -146,6 +149,9 @@ describe('QuestionAnswerService', () => {
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'QuestionAnswerStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: QuestionAnswerState.QuestionReceived,
           questionAnswerRecord: expect.objectContaining({
