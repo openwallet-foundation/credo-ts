@@ -1,19 +1,18 @@
 import type { Routing } from '../../connections'
 import type { RoutingCreatedEvent } from '../RoutingEvents'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { KeyType } from '../../../crypto'
+import { inject, injectable } from '../../../plugins'
 import { Wallet } from '../../../wallet'
 import { Key } from '../../dids'
 import { RoutingEventTypes } from '../RoutingEvents'
 
 import { MediationRecipientService } from './MediationRecipientService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class RoutingService {
   private mediationRecipientService: MediationRecipientService
   private agentConfig: AgentConfig

@@ -10,10 +10,9 @@ import type {
   Schema,
 } from 'indy-sdk'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error/IndySdkError'
+import { injectable } from '../../../plugins'
 import {
   didFromSchemaId,
   didFromCredentialDefinitionId,
@@ -26,7 +25,7 @@ import { LedgerError } from '../error/LedgerError'
 
 import { IndyPoolService } from './IndyPoolService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyLedgerService {
   private wallet: IndyWallet
   private indy: typeof Indy

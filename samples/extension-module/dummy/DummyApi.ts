@@ -1,14 +1,13 @@
 import type { DummyRecord } from './repository/DummyRecord'
 
-import { ConnectionService, Dispatcher, MessageSender } from '@aries-framework/core'
-import { Lifecycle, scoped } from 'tsyringe'
+import { injectable, ConnectionService, Dispatcher, MessageSender } from '@aries-framework/core'
 
 import { DummyRequestHandler, DummyResponseHandler } from './handlers'
 import { DummyState } from './repository'
 import { DummyService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
-export class DummyModule {
+@injectable()
+export class DummyApi {
   private messageSender: MessageSender
   private dummyService: DummyService
   private connectionService: ConnectionService

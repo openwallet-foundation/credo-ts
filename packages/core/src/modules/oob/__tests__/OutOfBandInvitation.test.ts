@@ -1,5 +1,6 @@
 import type { ClassValidationError } from '../../../error/ClassValidationError'
 
+import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'
@@ -123,6 +124,70 @@ describe('OutOfBandInvitation', () => {
       const invitation = OutOfBandInvitation.fromJson(json)
       expect(invitation).toBeDefined()
       expect(invitation).toBeInstanceOf(OutOfBandInvitation)
+    })
+
+    test('create an instance of `OutOfBandInvitation` from JSON object with appended attachments', () => {
+      const json = {
+        '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
+        '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
+        label: 'Faber College',
+        goal_code: 'issue-vc',
+        goal: 'To issue a Faber College Graduate credential',
+        handshake_protocols: ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0'],
+        services: ['did:sov:LjgpST2rjsoxYegQDRm7EL'],
+        '~attach': [
+          {
+            '@id': 'view-1',
+            'mime-type': 'image/png',
+            filename: 'IMG1092348.png',
+            lastmod_time: '2018-12-24 18:24:07Z',
+            description: 'view from doorway, facing east, with lights off',
+            data: {
+              base64: 'dmlldyBmcm9tIGRvb3J3YXksIGZhY2luZyBlYXN0LCB3aXRoIGxpZ2h0cyBvZmY=',
+            },
+          },
+          {
+            '@id': 'view-2',
+            'mime-type': 'image/png',
+            filename: 'IMG1092349.png',
+            lastmod_time: '2018-12-24 18:25:49Z',
+            description: 'view with lamp in the background',
+            data: {
+              base64: 'dmlldyB3aXRoIGxhbXAgaW4gdGhlIGJhY2tncm91bmQ=',
+            },
+          },
+        ],
+      }
+
+      const invitation = OutOfBandInvitation.fromJson(json)
+      expect(invitation).toBeDefined()
+      expect(invitation).toBeInstanceOf(OutOfBandInvitation)
+      expect(invitation.appendedAttachments).toBeDefined()
+      expect(invitation.appendedAttachments?.length).toEqual(2)
+      expect(invitation.getAppendedAttachmentById('view-1')).toEqual(
+        new Attachment({
+          id: 'view-1',
+          mimeType: 'image/png',
+          filename: 'IMG1092348.png',
+          lastmodTime: new Date('2018-12-24 18:24:07Z'),
+          description: 'view from doorway, facing east, with lights off',
+          data: {
+            base64: 'dmlldyBmcm9tIGRvb3J3YXksIGZhY2luZyBlYXN0LCB3aXRoIGxpZ2h0cyBvZmY=',
+          },
+        })
+      )
+      expect(invitation.getAppendedAttachmentById('view-2')).toEqual(
+        new Attachment({
+          id: 'view-2',
+          mimeType: 'image/png',
+          filename: 'IMG1092349.png',
+          lastmodTime: new Date('2018-12-24 18:25:49Z'),
+          description: 'view with lamp in the background',
+          data: {
+            base64: 'dmlldyB3aXRoIGxhbXAgaW4gdGhlIGJhY2tncm91bmQ=',
+          },
+        })
+      )
     })
 
     test('throw validation error when services attribute is empty', () => {

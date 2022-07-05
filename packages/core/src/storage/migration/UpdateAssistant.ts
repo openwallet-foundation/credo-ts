@@ -18,7 +18,7 @@ export class UpdateAssistant {
     this.agent = agent
     this.updateConfig = updateConfig
 
-    this.storageUpdateService = this.agent.injectionContainer.resolve(StorageUpdateService)
+    this.storageUpdateService = this.agent.dependencyManager.resolve(StorageUpdateService)
   }
 
   public async initialize() {

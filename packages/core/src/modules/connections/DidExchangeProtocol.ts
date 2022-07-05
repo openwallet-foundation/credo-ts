@@ -7,13 +7,12 @@ import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
 import type { Routing } from './services/ConnectionService'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../agent/AgentConfig'
 import { KeyType } from '../../crypto'
 import { JwsService } from '../../crypto/JwsService'
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../error'
+import { injectable } from '../../plugins'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { DidDocument, Key } from '../dids'
@@ -24,7 +23,7 @@ import { didKeyToInstanceOfKey } from '../dids/helpers'
 import { DidKey } from '../dids/methods/key/DidKey'
 import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../dids/methods/peer/didPeer'
 import { didDocumentJsonToNumAlgo1Did } from '../dids/methods/peer/peerDidNumAlgo1'
-import { DidRecord, DidRepository } from '../dids/repository'
+import { DidRepository, DidRecord } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
 
@@ -45,7 +44,7 @@ interface DidExchangeRequestParams {
   autoAcceptConnection?: boolean
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DidExchangeProtocol {
   private config: AgentConfig
   private connectionService: ConnectionService

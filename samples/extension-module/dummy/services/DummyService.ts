@@ -1,8 +1,7 @@
 import type { DummyStateChangedEvent } from './DummyEvents'
 import type { ConnectionRecord, InboundMessageContext } from '@aries-framework/core'
 
-import { JsonTransformer, EventEmitter } from '@aries-framework/core'
-import { Lifecycle, scoped } from 'tsyringe'
+import { injectable, JsonTransformer, EventEmitter } from '@aries-framework/core'
 
 import { DummyRequestMessage, DummyResponseMessage } from '../messages'
 import { DummyRecord } from '../repository/DummyRecord'
@@ -11,7 +10,7 @@ import { DummyState } from '../repository/DummyState'
 
 import { DummyEventTypes } from './DummyEvents'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DummyService {
   private dummyRepository: DummyRepository
   private eventEmitter: EventEmitter

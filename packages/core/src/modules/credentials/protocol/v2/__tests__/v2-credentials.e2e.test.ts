@@ -114,7 +114,7 @@ describe('v2 credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    const didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
+    const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
     const offerMessage = await didCommMessageRepository.findAgentMessage({
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2OfferCredentialMessage,
@@ -220,7 +220,7 @@ describe('v2 credentials', () => {
     // test that delete credential removes from both repository and wallet
     // latter is tested by spying on holder service (Indy) to
     // see if deleteCredential is called
-    const holderService = aliceAgent.injectionContainer.resolve(IndyHolderService)
+    const holderService = aliceAgent.dependencyManager.resolve(IndyHolderService)
 
     const deleteCredentialSpy = jest.spyOn(holderService, 'deleteCredential')
     await aliceAgent.credentials.deleteById(holderCredential.id, {

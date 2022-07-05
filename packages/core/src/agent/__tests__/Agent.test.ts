@@ -38,7 +38,7 @@ describe('Agent', () => {
     let agent: Agent
 
     afterEach(async () => {
-      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      const wallet = agent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
 
       if (wallet.isInitialized) {
         await wallet.delete()
@@ -59,7 +59,7 @@ describe('Agent', () => {
       expect.assertions(4)
 
       agent = new Agent(config, dependencies)
-      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      const wallet = agent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
 
       expect(agent.isInitialized).toBe(false)
       expect(wallet.isInitialized).toBe(false)
@@ -110,7 +110,7 @@ describe('Agent', () => {
   describe('Dependency Injection', () => {
     it('should be able to resolve registered instances', () => {
       const agent = new Agent(config, dependencies)
-      const container = agent.injectionContainer
+      const container = agent.dependencyManager
 
       // Modules
       expect(container.resolve(ConnectionsModule)).toBeInstanceOf(ConnectionsModule)
@@ -153,7 +153,7 @@ describe('Agent', () => {
 
     it('should return the same instance for consequent resolves', () => {
       const agent = new Agent(config, dependencies)
-      const container = agent.injectionContainer
+      const container = agent.dependencyManager
 
       // Modules
       expect(container.resolve(ConnectionsModule)).toBe(container.resolve(ConnectionsModule))

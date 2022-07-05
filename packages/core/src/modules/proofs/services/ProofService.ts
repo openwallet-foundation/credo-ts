@@ -9,13 +9,13 @@ import type { PresentationProblemReportMessage } from './../messages/Presentatio
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
-import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
+import { inject, injectable } from '../../../plugins'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { checkProofRequestForDuplicates } from '../../../utils/indyProofRequest'
@@ -57,7 +57,7 @@ import { ProofRecord } from '../repository/ProofRecord'
  * @todo add method to reject / revoke messages
  * @todo validate attachments / messages
  */
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ProofService {
   private proofRepository: ProofRepository
   private credentialRepository: CredentialRepository

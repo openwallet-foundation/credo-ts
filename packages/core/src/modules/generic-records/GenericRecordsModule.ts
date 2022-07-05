@@ -1,17 +1,19 @@
 import type { Logger } from '../../logger'
+import type { DependencyManager } from '../../plugins'
 import type { GenericRecord, GenericRecordTags, SaveGenericRecordOption } from './repository/GenericRecord'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../agent/AgentConfig'
+import { injectable, module } from '../../plugins'
 
+import { GenericRecordsRepository } from './repository/GenericRecordsRepository'
 import { GenericRecordService } from './service/GenericRecordService'
 
 export type ContentType = {
   content: string
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class GenericRecordsModule {
   private genericRecordsService: GenericRecordService
   private logger: Logger
@@ -73,5 +75,19 @@ export class GenericRecordsModule {
 
   public async getAll(): Promise<GenericRecord[]> {
     return this.genericRecordsService.getAll()
+  }
+
+  /**
+   * Registers the dependencies of the generic records module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(GenericRecordsModule)
+
+    // Services
+    dependencyManager.registerSingleton(GenericRecordService)
+
+    // Repositories
+    dependencyManager.registerSingleton(GenericRecordsRepository)
   }
 }

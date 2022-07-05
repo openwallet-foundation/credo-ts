@@ -6,11 +6,10 @@ import type { AgentMessage } from './AgentMessage'
 import type { DecryptedMessageContext } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AriesFrameworkError } from '../error'
 import { ConnectionsModule } from '../modules/connections'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
+import { injectable } from '../plugins'
 import { isValidJweStructure } from '../utils/JWE'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
@@ -23,7 +22,7 @@ import { TransportService } from './TransportService'
 import { createOutboundMessage } from './helpers'
 import { InboundMessageContext } from './models/InboundMessageContext'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MessageReceiver {
   private config: AgentConfig
   private envelopeService: EnvelopeService

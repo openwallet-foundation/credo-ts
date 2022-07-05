@@ -14,7 +14,7 @@ import { MediationRepository, MediationRole } from '../../../../modules/routing'
  */
 export async function migrateMediationRecordToV0_2(agent: Agent, upgradeConfig: V0_1ToV0_2UpdateConfig) {
   agent.config.logger.info('Migrating mediation records to storage version 0.2')
-  const mediationRepository = agent.injectionContainer.resolve(MediationRepository)
+  const mediationRepository = agent.dependencyManager.resolve(MediationRepository)
 
   agent.config.logger.debug(`Fetching all mediation records from storage`)
   const allMediationRecords = await mediationRepository.getAll()

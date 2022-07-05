@@ -5,12 +5,11 @@ import type { RevocationNotificationReceivedEvent } from '../../../CredentialEve
 import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
 import type { V2RevocationNotificationMessage } from '../messages/V2RevocationNotificationMessage'
 
-import { scoped, Lifecycle } from 'tsyringe'
-
 import { AgentConfig } from '../../../../../agent/AgentConfig'
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
+import { injectable } from '../../../../../plugins'
 import { JsonTransformer } from '../../../../../utils'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { RevocationNotification } from '../../../models/RevocationNotification'
@@ -18,7 +17,7 @@ import { CredentialRepository } from '../../../repository'
 import { V1RevocationNotificationHandler, V2RevocationNotificationHandler } from '../handlers'
 import { v1ThreadRegex, v2IndyRevocationFormat, v2IndyRevocationIdentifierRegex } from '../util/revocationIdentifier'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class RevocationNotificationService {
   private credentialRepository: CredentialRepository
   private eventEmitter: EventEmitter
