@@ -5,8 +5,6 @@ import type { ValueTransferGetterService } from '../services/ValueTransferGetter
 
 import { RequestAcceptedWitnessedMessage } from '../messages'
 
-import { ValueTransferRole } from '@aries-framework/core'
-
 export class RequestAcceptedWitnessedHandler implements Handler<typeof DIDCommV2Message> {
   private valueTransferService: ValueTransferService
   private valueTransferGetterService: ValueTransferGetterService

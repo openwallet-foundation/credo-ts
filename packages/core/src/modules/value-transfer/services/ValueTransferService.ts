@@ -302,7 +302,9 @@ export class ValueTransferService {
 
   public async sendMessageToWitness(message: DIDCommV2Message, senderRole: ValueTransferRole) {
     // Workaround for different witness transports as now User-wallet can have both Giver/Getter roles in different transactions
-    const witnessTransport = senderRole === ValueTransferRole.Giver ? 'nfc' : 'ipc'
+    const { witnessTransportForGetterRole, witnessTransportForGiverRole } = this.config.valueTransferConfig ?? {}
+    const witnessTransport =
+      senderRole === ValueTransferRole.Giver ? witnessTransportForGiverRole : witnessTransportForGetterRole
     return this.sendMessage(message, witnessTransport)
   }
 

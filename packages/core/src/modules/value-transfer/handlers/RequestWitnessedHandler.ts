@@ -5,9 +5,8 @@ import type { ValueTransferService } from '../services'
 import type { ValueTransferGiverService } from '../services/ValueTransferGiverService'
 
 import { ProblemReportMessage } from '../../problem-reports'
+import { ValueTransferRole } from '../ValueTransferRole'
 import { RequestWitnessedMessage } from '../messages/RequestWitnessedMessage'
-
-import { ValueTransferRole } from '@aries-framework/core'
 
 export class RequestWitnessedHandler implements Handler<typeof DIDCommV2Message> {
   private valueTransferService: ValueTransferService
