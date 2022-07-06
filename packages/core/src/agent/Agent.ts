@@ -39,6 +39,7 @@ import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
+import { ContactModule } from '../modules/contacts'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -66,6 +67,7 @@ export class Agent {
   public readonly dids: DidsModule
   public readonly wallet: WalletModule
   public readonly valueTransfer: ValueTransferModule
+  public readonly contact: ContactModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
     // Create child container so we don't interfere with anything outside of this agent
@@ -121,6 +123,7 @@ export class Agent {
     this.dids = this.container.resolve(DidsModule)
     this.wallet = this.container.resolve(WalletModule)
     this.valueTransfer = this.container.resolve(ValueTransferModule)
+    this.contact = this.container.resolve(ContactModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
