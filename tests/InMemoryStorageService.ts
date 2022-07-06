@@ -1,3 +1,4 @@
+import type { AgentContext } from '../packages/core/src/agent'
 import type { BaseRecord, TagsBase } from '../packages/core/src/storage/BaseRecord'
 import type { StorageService, BaseRecordConstructor, Query } from '../packages/core/src/storage/StorageService'
 
@@ -33,7 +34,7 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
   }
 
   /** @inheritDoc */
-  public async save(record: T) {
+  public async save(agentContext: AgentContext, record: T) {
     const value = JsonTransformer.toJSON(record)
 
     if (this.records[record.id]) {
@@ -49,7 +50,7 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
   }
 
   /** @inheritDoc */
-  public async update(record: T): Promise<void> {
+  public async update(agentContext: AgentContext, record: T): Promise<void> {
     const value = JsonTransformer.toJSON(record)
     delete value._tags
 
@@ -68,7 +69,7 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
   }
 
   /** @inheritDoc */
-  public async delete(record: T) {
+  public async delete(agentContext: AgentContext, record: T) {
     if (!this.records[record.id]) {
       throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
         recordType: record.type,
@@ -79,7 +80,7 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
   }
 
   /** @inheritDoc */
-  public async getById(recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
+  public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
     const record = this.records[id]
 
     if (!record) {
@@ -92,7 +93,7 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
   }
 
   /** @inheritDoc */
-  public async getAll(recordClass: BaseRecordConstructor<T>): Promise<T[]> {
+  public async getAll(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>): Promise<T[]> {
     const records = Object.values(this.records)
       .filter((record) => record.type === recordClass.type)
       .map((record) => this.recordToInstance(record, recordClass))
@@ -101,7 +102,11 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
   }
 
   /** @inheritDoc */
-  public async findByQuery(recordClass: BaseRecordConstructor<T>, query: Query<T>): Promise<T[]> {
+  public async findByQuery(
+    agentContext: AgentContext,
+    recordClass: BaseRecordConstructor<T>,
+    query: Query<T>
+  ): Promise<T[]> {
     if (query.$and || query.$or || query.$not) {
       throw new AriesFrameworkError(
         'Advanced wallet query features $and, $or or $not not supported in in memory storage'

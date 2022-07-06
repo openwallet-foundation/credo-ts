@@ -115,7 +115,7 @@ describe('v2 credentials', () => {
     })
 
     const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
-    const offerMessage = await didCommMessageRepository.findAgentMessage({
+    const offerMessage = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2OfferCredentialMessage,
     })
@@ -227,7 +227,11 @@ describe('v2 credentials', () => {
       deleteAssociatedCredentials: true,
       deleteAssociatedDidCommMessages: true,
     })
-    expect(deleteCredentialSpy).toHaveBeenNthCalledWith(1, holderCredential.credentials[0].credentialRecordId)
+    expect(deleteCredentialSpy).toHaveBeenNthCalledWith(
+      1,
+      aliceAgent.context,
+      holderCredential.credentials[0].credentialRecordId
+    )
 
     return expect(aliceAgent.credentials.getById(holderCredential.id)).rejects.toThrowError(
       `CredentialRecord: record with id ${holderCredential.id} not found.`

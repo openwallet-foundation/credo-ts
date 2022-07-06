@@ -1,6 +1,6 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
+import type { AgentContext } from '../../../agent'
 
-import { getAgentConfig } from '../../../../tests/helpers'
+import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
 import { Key } from '../../../crypto/Key'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -30,23 +30,32 @@ const DidRepositoryMock = DidRepository as unknown as jest.Mock<DidRepository>
 jest.mock('../repository/W3cCredentialRepository')
 const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
 
+const agentConfig = getAgentConfig('W3cCredentialServiceTest')
+
 describe('W3cCredentialService', () => {
   let wallet: IndyWallet
-  let agentConfig: AgentConfig
+  let agentContext: AgentContext
   let didResolverService: DidResolverService
   let w3cCredentialService: W3cCredentialService
   let w3cCredentialRepository: W3cCredentialRepository
   const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
-    agentConfig = getAgentConfig('W3cCredentialServiceTest')
-    wallet = new IndyWallet(agentConfig)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
-    didResolverService = new DidResolverService(agentConfig, new IndyLedgerServiceMock(), new DidRepositoryMock())
+    agentContext = getAgentContext({
+      agentConfig,
+      wallet,
+    })
+    didResolverService = new DidResolverService(
+      new IndyLedgerServiceMock(),
+      new DidRepositoryMock(),
+      agentConfig.logger
+    )
     w3cCredentialRepository = new W3cCredentialRepositoryMock()
-    w3cCredentialService = new W3cCredentialService(wallet, w3cCredentialRepository, didResolverService)
-    w3cCredentialService.documentLoader = customDocumentLoader
+    w3cCredentialService = new W3cCredentialService(w3cCredentialRepository, didResolverService)
+    w3cCredentialService.documentLoaderWithContext = () => customDocumentLoader
   })
 
   afterAll(async () => {
@@ -69,7 +78,7 @@ describe('W3cCredentialService', () => {
 
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
-        const vc = await w3cCredentialService.signCredential({
+        const vc = await w3cCredentialService.signCredential(agentContext, {
           credential,
           proofType: 'Ed25519Signature2018',
           verificationMethod: verificationMethod,
@@ -91,7 +100,7 @@ describe('W3cCredentialService', () => {
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
         expect(async () => {
-          await w3cCredentialService.signCredential({
+          await w3cCredentialService.signCredential(agentContext, {
             credential,
             proofType: 'Ed25519Signature2018',
             verificationMethod:
@@ -106,7 +115,7 @@ describe('W3cCredentialService', () => {
           Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
           W3cVerifiableCredential
         )
-        const result = await w3cCredentialService.verifyCredential({ credential: vc })
+        const result = await w3cCredentialService.verifyCredential(agentContext, { credential: vc })
 
         expect(result.verified).toBe(true)
         expect(result.error).toBeUndefined()
@@ -121,7 +130,7 @@ describe('W3cCredentialService', () => {
           Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_BAD_SIGNED,
           W3cVerifiableCredential
         )
-        const result = await w3cCredentialService.verifyCredential({ credential: vc })
+        const result = await w3cCredentialService.verifyCredential(agentContext, { credential: vc })
 
         expect(result.verified).toBe(false)
         expect(result.error).toBeDefined()
@@ -141,7 +150,7 @@ describe('W3cCredentialService', () => {
         }
 
         const vc = JsonTransformer.fromJSON(vcJson, W3cVerifiableCredential)
-        const result = await w3cCredentialService.verifyCredential({ credential: vc })
+        const result = await w3cCredentialService.verifyCredential(agentContext, { credential: vc })
 
         expect(result.verified).toBe(false)
 
@@ -163,7 +172,7 @@ describe('W3cCredentialService', () => {
         }
 
         const vc = JsonTransformer.fromJSON(vcJson, W3cVerifiableCredential)
-        const result = await w3cCredentialService.verifyCredential({ credential: vc })
+        const result = await w3cCredentialService.verifyCredential(agentContext, { credential: vc })
 
         expect(result.verified).toBe(false)
 
@@ -220,7 +229,7 @@ describe('W3cCredentialService', () => {
           date: new Date().toISOString(),
         })
 
-        const verifiablePresentation = await w3cCredentialService.signPresentation({
+        const verifiablePresentation = await w3cCredentialService.signPresentation(agentContext, {
           presentation: presentation,
           purpose: purpose,
           signatureType: 'Ed25519Signature2018',
@@ -238,7 +247,7 @@ describe('W3cCredentialService', () => {
           W3cVerifiablePresentation
         )
 
-        const result = await w3cCredentialService.verifyPresentation({
+        const result = await w3cCredentialService.verifyPresentation(agentContext, {
           presentation: vp,
           proofType: 'Ed25519Signature2018',
           challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
@@ -256,7 +265,7 @@ describe('W3cCredentialService', () => {
           W3cVerifiableCredential
         )
 
-        const w3cCredentialRecord = await w3cCredentialService.storeCredential({ record: credential })
+        const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, { record: credential })
 
         expect(w3cCredentialRecord).toMatchObject({
           type: 'W3cCredentialRecord',
@@ -290,7 +299,7 @@ describe('W3cCredentialService', () => {
 
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
-        const vc = await w3cCredentialService.signCredential({
+        const vc = await w3cCredentialService.signCredential(agentContext, {
           credential,
           proofType: 'BbsBlsSignature2020',
           verificationMethod: verificationMethod,
@@ -307,7 +316,7 @@ describe('W3cCredentialService', () => {
     })
     describe('verifyCredential', () => {
       it('should verify the credential successfully', async () => {
-        const result = await w3cCredentialService.verifyCredential({
+        const result = await w3cCredentialService.verifyCredential(agentContext, {
           credential: JsonTransformer.fromJSON(
             BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT_SIGNED,
             W3cVerifiableCredential
@@ -340,7 +349,7 @@ describe('W3cCredentialService', () => {
           },
         }
 
-        const result = await w3cCredentialService.deriveProof({
+        const result = await w3cCredentialService.deriveProof(agentContext, {
           credential: vc,
           revealDocument: revealDocument,
           verificationMethod: verificationMethod,
@@ -354,7 +363,7 @@ describe('W3cCredentialService', () => {
     })
     describe('verifyDerived', () => {
       it('should verify the derived proof successfully', async () => {
-        const result = await w3cCredentialService.verifyCredential({
+        const result = await w3cCredentialService.verifyCredential(agentContext, {
           credential: JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VALID_DERIVED, W3cVerifiableCredential),
           proofPurpose: new purposes.AssertionProofPurpose(),
         })
@@ -388,7 +397,7 @@ describe('W3cCredentialService', () => {
           date: new Date().toISOString(),
         })
 
-        const verifiablePresentation = await w3cCredentialService.signPresentation({
+        const verifiablePresentation = await w3cCredentialService.signPresentation(agentContext, {
           presentation: presentation,
           purpose: purpose,
           signatureType: 'Ed25519Signature2018',
@@ -406,7 +415,7 @@ describe('W3cCredentialService', () => {
           W3cVerifiablePresentation
         )
 
-        const result = await w3cCredentialService.verifyPresentation({
+        const result = await w3cCredentialService.verifyPresentation(agentContext, {
           presentation: vp,
           proofType: 'Ed25519Signature2018',
           challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',

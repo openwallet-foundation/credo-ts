@@ -1,12 +1,14 @@
-import type { Logger } from '../../../logger'
+import type { AgentContext } from '../../../agent'
 import type { RequestedCredentials } from '../../proofs'
 import type * as Indy from 'indy-sdk'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
+import { AgentDependencies } from '../../../agent/AgentDependencies'
+import { InjectionSymbols } from '../../../constants'
 import { IndySdkError } from '../../../error/IndySdkError'
-import { injectable } from '../../../plugins'
+import { Logger } from '../../../logger'
+import { injectable, inject } from '../../../plugins'
 import { isIndyError } from '../../../utils/indyError'
-import { IndyWallet } from '../../../wallet/IndyWallet'
+import { assertIndyWallet } from '../../../wallet/util/assertIndyWallet'
 
 import { IndyRevocationService } from './IndyRevocationService'
 
@@ -14,14 +16,16 @@ import { IndyRevocationService } from './IndyRevocationService'
 export class IndyHolderService {
   private indy: typeof Indy
   private logger: Logger
-  private wallet: IndyWallet
   private indyRevocationService: IndyRevocationService
 
-  public constructor(agentConfig: AgentConfig, indyRevocationService: IndyRevocationService, wallet: IndyWallet) {
-    this.indy = agentConfig.agentDependencies.indy
-    this.wallet = wallet
+  public constructor(
+    indyRevocationService: IndyRevocationService,
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies
+  ) {
+    this.indy = agentDependencies.indy
     this.indyRevocationService = indyRevocationService
-    this.logger = agentConfig.logger
+    this.logger = logger
   }
 
   /**
@@ -36,24 +40,24 @@ export class IndyHolderService {
    *
    * @todo support attribute non_revoked fields
    */
-  public async createProof({
-    proofRequest,
-    requestedCredentials,
-    schemas,
-    credentialDefinitions,
-  }: CreateProofOptions): Promise<Indy.IndyProof> {
+  public async createProof(
+    agentContext: AgentContext,
+    { proofRequest, requestedCredentials, schemas, credentialDefinitions }: CreateProofOptions
+  ): Promise<Indy.IndyProof> {
+    assertIndyWallet(agentContext.wallet)
     try {
       this.logger.debug('Creating Indy Proof')
       const revocationStates: Indy.RevStates = await this.indyRevocationService.createRevocationState(
+        agentContext,
         proofRequest,
         requestedCredentials
       )
 
       const indyProof: Indy.IndyProof = await this.indy.proverCreateProof(
-        this.wallet.handle,
+        agentContext.wallet.handle,
         proofRequest,
         requestedCredentials.toJSON(),
-        this.wallet.masterSecretId,
+        agentContext.wallet.masterSecretId,
         schemas,
         credentialDefinitions,
         revocationStates
@@ -80,16 +84,20 @@ export class IndyHolderService {
    *
    * @returns The credential id
    */
-  public async storeCredential({
-    credentialRequestMetadata,
-    credential,
-    credentialDefinition,
-    credentialId,
-    revocationRegistryDefinition,
-  }: StoreCredentialOptions): Promise<Indy.CredentialId> {
+  public async storeCredential(
+    agentContext: AgentContext,
+    {
+      credentialRequestMetadata,
+      credential,
+      credentialDefinition,
+      credentialId,
+      revocationRegistryDefinition,
+    }: StoreCredentialOptions
+  ): Promise<Indy.CredentialId> {
+    assertIndyWallet(agentContext.wallet)
     try {
       return await this.indy.proverStoreCredential(
-        this.wallet.handle,
+        agentContext.wallet.handle,
         credentialId ?? null,
         credentialRequestMetadata,
         credential,
@@ -114,9 +122,13 @@ export class IndyHolderService {
    *
    * @todo handle record not found
    */
-  public async getCredential(credentialId: Indy.CredentialId): Promise<Indy.IndyCredentialInfo> {
+  public async getCredential(
+    agentContext: AgentContext,
+    credentialId: Indy.CredentialId
+  ): Promise<Indy.IndyCredentialInfo> {
+    assertIndyWallet(agentContext.wallet)
     try {
-      return await this.indy.proverGetCredential(this.wallet.handle, credentialId)
+      return await this.indy.proverGetCredential(agentContext.wallet.handle, credentialId)
     } catch (error) {
       this.logger.error(`Error getting Indy Credential '${credentialId}'`, {
         error,
@@ -131,18 +143,18 @@ export class IndyHolderService {
    *
    * @returns The credential request and the credential request metadata
    */
-  public async createCredentialRequest({
-    holderDid,
-    credentialOffer,
-    credentialDefinition,
-  }: CreateCredentialRequestOptions): Promise<[Indy.CredReq, Indy.CredReqMetadata]> {
+  public async createCredentialRequest(
+    agentContext: AgentContext,
+    { holderDid, credentialOffer, credentialDefinition }: CreateCredentialRequestOptions
+  ): Promise<[Indy.CredReq, Indy.CredReqMetadata]> {
+    assertIndyWallet(agentContext.wallet)
     try {
       return await this.indy.proverCreateCredentialReq(
-        this.wallet.handle,
+        agentContext.wallet.handle,
         holderDid,
         credentialOffer,
         credentialDefinition,
-        this.wallet.masterSecretId
+        agentContext.wallet.masterSecretId
       )
     } catch (error) {
       this.logger.error(`Error creating Indy Credential Request`, {
@@ -165,17 +177,15 @@ export class IndyHolderService {
    * @returns List of credentials that are available for building a proof for the given proof request
    *
    */
-  public async getCredentialsForProofRequest({
-    proofRequest,
-    attributeReferent,
-    start = 0,
-    limit = 256,
-    extraQuery,
-  }: GetCredentialForProofRequestOptions): Promise<Indy.IndyCredential[]> {
+  public async getCredentialsForProofRequest(
+    agentContext: AgentContext,
+    { proofRequest, attributeReferent, start = 0, limit = 256, extraQuery }: GetCredentialForProofRequestOptions
+  ): Promise<Indy.IndyCredential[]> {
+    assertIndyWallet(agentContext.wallet)
     try {
       // Open indy credential search
       const searchHandle = await this.indy.proverSearchCredentialsForProofReq(
-        this.wallet.handle,
+        agentContext.wallet.handle,
         proofRequest,
         extraQuery ?? null
       )
@@ -210,9 +220,10 @@ export class IndyHolderService {
    * @param credentialId the id (referent) of the credential
    *
    */
-  public async deleteCredential(credentialId: Indy.CredentialId): Promise<void> {
+  public async deleteCredential(agentContext: AgentContext, credentialId: Indy.CredentialId): Promise<void> {
+    assertIndyWallet(agentContext.wallet)
     try {
-      return await this.indy.proverDeleteCredential(this.wallet.handle, credentialId)
+      return await this.indy.proverDeleteCredential(agentContext.wallet.handle, credentialId)
     } catch (error) {
       this.logger.error(`Error deleting Indy Credential from Wallet`, {
         error,

@@ -1,3 +1,4 @@
+import type { FileSystem } from '../../FileSystem'
 import type { StorageUpdateError } from '../error/StorageUpdateError'
 
 import { readFileSync, unlinkSync } from 'fs'
@@ -5,6 +6,7 @@ import path from 'path'
 
 import { getBaseConfig } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
+import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
 import { CredentialExchangeRecord, CredentialRepository } from '../../../modules/credentials'
 import { JsonTransformer } from '../../../utils'
@@ -29,13 +31,14 @@ describe('UpdateAssistant | Backup', () => {
 
   beforeEach(async () => {
     agent = new Agent(config, agentDependencies)
-    backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
 
     // If tests fail it's possible the cleanup has been skipped. So remove before running tests
-    if (await agent.config.fileSystem.exists(backupPath)) {
+    if (await fileSystem.exists(backupPath)) {
       unlinkSync(backupPath)
     }
-    if (await agent.config.fileSystem.exists(`${backupPath}-error`)) {
+    if (await fileSystem.exists(`${backupPath}-error`)) {
       unlinkSync(`${backupPath}-error`)
     }
 
@@ -69,14 +72,14 @@ describe('UpdateAssistant | Backup', () => {
 
     // Add 0.1 data and set version to 0.1
     for (const credentialRecord of aliceCredentialRecords) {
-      await credentialRepository.save(credentialRecord)
+      await credentialRepository.save(agent.context, credentialRecord)
     }
-    await storageUpdateService.setCurrentStorageVersion('0.1')
+    await storageUpdateService.setCurrentStorageVersion(agent.context, '0.1')
 
     // Expect an update is needed
     expect(await updateAssistant.isUpToDate()).toBe(false)
 
-    const fileSystem = agent.config.fileSystem
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
     // Backup should not exist before update
     expect(await fileSystem.exists(backupPath)).toBe(false)
 
@@ -86,7 +89,9 @@ describe('UpdateAssistant | Backup', () => {
     // Backup should exist after update
     expect(await fileSystem.exists(backupPath)).toBe(true)
 
-    expect((await credentialRepository.getAll()).sort((a, b) => a.id.localeCompare(b.id))).toMatchSnapshot()
+    expect(
+      (await credentialRepository.getAll(agent.context)).sort((a, b) => a.id.localeCompare(b.id))
+    ).toMatchSnapshot()
   })
 
   it('should restore the backup if an error occurs during the update', async () => {
@@ -105,9 +110,9 @@ describe('UpdateAssistant | Backup', () => {
 
     // Add 0.1 data and set version to 0.1
     for (const credentialRecord of aliceCredentialRecords) {
-      await credentialRepository.save(credentialRecord)
+      await credentialRepository.save(agent.context, credentialRecord)
     }
-    await storageUpdateService.setCurrentStorageVersion('0.1')
+    await storageUpdateService.setCurrentStorageVersion(agent.context, '0.1')
 
     // Expect an update is needed
     expect(await updateAssistant.isUpToDate()).toBe(false)
@@ -121,7 +126,7 @@ describe('UpdateAssistant | Backup', () => {
       },
     ])
 
-    const fileSystem = agent.config.fileSystem
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
     // Backup should not exist before update
     expect(await fileSystem.exists(backupPath)).toBe(false)
 
@@ -140,7 +145,7 @@ describe('UpdateAssistant | Backup', () => {
     expect(await fileSystem.exists(`${backupPath}-error`)).toBe(true)
 
     // Wallet should be same as when we started because of backup
-    expect((await credentialRepository.getAll()).sort((a, b) => a.id.localeCompare(b.id))).toEqual(
+    expect((await credentialRepository.getAll(agent.context)).sort((a, b) => a.id.localeCompare(b.id))).toEqual(
       aliceCredentialRecords.sort((a, b) => a.id.localeCompare(b.id))
     )
   })

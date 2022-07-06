@@ -35,14 +35,17 @@ export class DidExchangeCompleteHandler implements Handler {
     if (!message.thread?.parentThreadId) {
       throw new AriesFrameworkError(`Message does not contain pthid attribute`)
     }
-    const outOfBandRecord = await this.outOfBandService.findByInvitationId(message.thread?.parentThreadId)
+    const outOfBandRecord = await this.outOfBandService.findByInvitationId(
+      messageContext.agentContext,
+      message.thread?.parentThreadId
+    )
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
     }
 
     if (!outOfBandRecord.reusable) {
-      await this.outOfBandService.updateState(outOfBandRecord, OutOfBandState.Done)
+      await this.outOfBandService.updateState(messageContext.agentContext, outOfBandRecord, OutOfBandState.Done)
     }
     await this.didExchangeProtocol.processComplete(messageContext, outOfBandRecord)
   }
