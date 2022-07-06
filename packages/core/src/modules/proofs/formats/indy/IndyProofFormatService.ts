@@ -39,11 +39,11 @@ import { IndyCredential, IndyCredentialInfo, IndyCredentialUtils } from '../../.
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
 import { PartialProof } from '../../protocol/v1/models'
+import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../ProofFormat'
 import { ProofFormatService } from '../ProofFormatService'
-import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../ProofFormats'
 import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
-import { ProofFormatSpec } from '../models/ProofFormatSpec'
+import { ProofFormatSpec } from '../../models/ProofFormatSpec'
 
 import { RequestedAttribute, RequestedPredicate } from './models'
 import { ProofRequest } from './models/ProofRequest'
@@ -60,15 +60,13 @@ export class IndyProofFormatService extends ProofFormatService {
   private wallet: IndyWallet
 
   public constructor(
-    agentConfig: AgentConfig,
     indyHolderService: IndyHolderService,
     indyVerifierService: IndyVerifierService,
     indyRevocationService: IndyRevocationService,
     ledgerService: IndyLedgerService,
-    didCommMessageRepository: DidCommMessageRepository,
     wallet: IndyWallet
   ) {
-    super(didCommMessageRepository, agentConfig)
+    super()
     this.indyHolderService = indyHolderService
     this.indyVerifierService = indyVerifierService
     this.indyRevocationService = indyRevocationService

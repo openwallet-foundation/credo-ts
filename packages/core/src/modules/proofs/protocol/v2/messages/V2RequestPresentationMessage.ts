@@ -8,7 +8,7 @@ import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { uuid } from '../../../../../utils/uuid'
-import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
+import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 
 export interface V2RequestPresentationMessageOptions {
   id?: string

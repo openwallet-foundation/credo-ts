@@ -27,6 +27,8 @@ export type DefaultProofTags = {
   state: ProofState
 }
 
+// T-TODO: rename to proof exchange record
+
 export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public connectionId?: string
   public threadId!: string

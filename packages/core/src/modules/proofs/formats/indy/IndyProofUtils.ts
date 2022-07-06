@@ -7,10 +7,10 @@ import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { uuid } from '../../../../utils/uuid'
 import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 
+import { AttributeFilter } from './models/AttributeFilter'
 import { ProofAttributeInfo } from './models/ProofAttributeInfo'
 import { ProofPredicateInfo } from './models/ProofPredicateInfo'
 import { ProofRequest } from './models/ProofRequest'
-import { AttributeFilter } from './models/AttributeFilter'
 
 export class IndyProofUtils {
   public static async createRequestFromPreview(options: CreateProposalOptions): Promise<ProofRequestFormats> {

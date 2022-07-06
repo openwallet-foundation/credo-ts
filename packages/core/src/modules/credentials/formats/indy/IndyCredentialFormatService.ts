@@ -21,7 +21,6 @@ import type {
 import type { IndyCredentialFormat } from './IndyCredentialFormat'
 import type * as Indy from 'indy-sdk'
 
-import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
 import { AriesFrameworkError } from '../../../../error'
 import { Logger } from '../../../../logger'
@@ -38,7 +37,6 @@ import { CredentialProblemReportError, CredentialProblemReportReason } from '../
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 import { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import { CredentialMetadataKeys } from '../../repository/CredentialMetadataTypes'
-import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
 
 import { IndyCredentialUtils } from './IndyCredentialUtils'
@@ -59,8 +57,6 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   private logger: Logger
 
   public constructor(
-    credentialRepository: CredentialRepository,
-    eventEmitter: EventEmitter,
     indyIssuerService: IndyIssuerService,
     indyLedgerService: IndyLedgerService,
     indyHolderService: IndyHolderService,
@@ -68,7 +64,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     didResolver: DidResolverService,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
-    super(credentialRepository, eventEmitter)
+    super()
     this.indyIssuerService = indyIssuerService
     this.indyLedgerService = indyLedgerService
     this.indyHolderService = indyHolderService

@@ -5,7 +5,7 @@ import type { MediationRecipientService } from '../../../routing/services/Mediat
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
-import type { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
+import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -35,7 +35,7 @@ import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
 import { ProofService } from '../../ProofService'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
-import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormats'
+import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormat'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { IndyProofUtils } from '../../formats/indy/IndyProofUtils'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'

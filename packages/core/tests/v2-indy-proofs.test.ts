@@ -13,7 +13,7 @@ import {
   V2_INDY_PRESENTATION,
   V2_INDY_PRESENTATION_PROPOSAL,
   V2_INDY_PRESENTATION_REQUEST,
-} from '../src/modules/proofs/formats/ProofFormats'
+} from '../src/modules/proofs/formats/ProofFormat'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import {
   V2PresentationMessage,

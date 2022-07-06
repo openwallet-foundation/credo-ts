@@ -1,20 +1,23 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { DidCommMessageRepository } from '../../../storage'
+import type { AgentContext } from '../../../agent'
 import type {
   RetrievedCredentialOptions,
   ProofRequestFormats,
   RequestedCredentialsFormats,
 } from '../models/SharedOptions'
 import type { CreateRequestAsResponseOptions, GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
-import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
+import type { ProofFormat } from './ProofFormat'
 import type {
-  CreatePresentationFormatsOptions,
-  CreatePresentationOptions,
-  CreateProposalOptions,
-  CreateRequestOptions,
-  ProcessPresentationOptions,
-  ProcessProposalOptions,
+  FormatCreateReturn,
+  FormatProcessOptions,
+  FormatCreateProposalOptions,
+  FormatAcceptProposalOptions,
+} from './ProofFormatServiceOptions'
+import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
+import { CreateRequestOptions, CreatePresentationOptions } from '../models/ProofServiceOptions'
+import {
   ProcessRequestOptions,
+  ProcessPresentationOptions,
+  CreatePresentationFormatsOptions,
 } from './models/ProofFormatServiceOptions'
 
 /**
@@ -25,18 +28,19 @@ import type {
  * @abstract
  * @class ProofFormatService
  */
-export abstract class ProofFormatService {
-  protected didCommMessageRepository: DidCommMessageRepository
-  protected agentConfig: AgentConfig
+export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
+  abstract readonly formatKey: PF['formatKey']
 
-  public constructor(didCommMessageRepository: DidCommMessageRepository, agentConfig: AgentConfig) {
-    this.didCommMessageRepository = didCommMessageRepository
-    this.agentConfig = agentConfig
-  }
-
-  abstract createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat>
-
-  abstract processProposal(options: ProcessProposalOptions): Promise<void>
+  // proposal methods
+  abstract createProposal(
+    agentContext: AgentContext,
+    options: FormatCreateProposalOptions<PF>
+  ): Promise<FormatCreateReturn>
+  abstract processProposal(agentContext: AgentContext, options: FormatProcessOptions): Promise<void>
+  abstract acceptProposal(
+    agentContext: AgentContext,
+    options: FormatAcceptProposalOptions<PF>
+  ): Promise<FormatCreateReturn>
 
   abstract createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat>
 

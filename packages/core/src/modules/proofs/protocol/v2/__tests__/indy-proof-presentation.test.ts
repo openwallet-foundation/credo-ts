@@ -15,7 +15,7 @@ import {
   V2_INDY_PRESENTATION,
   V2_INDY_PRESENTATION_PROPOSAL,
   V2_INDY_PRESENTATION_REQUEST,
-} from '../../../formats/ProofFormats'
+} from '../../../formats/ProofFormat'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
