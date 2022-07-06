@@ -25,7 +25,6 @@ import {
   Agent,
   ConnectionInvitationMessage,
   LogLevel,
-  AgentConfig,
   WsOutboundTransport,
 } from '@aries-framework/core'
 import { HttpInboundTransport, agentDependencies, WsInboundTransport } from '@aries-framework/node'
@@ -55,7 +54,7 @@ const agentConfig: InitConfig = {
 
 // Set up agent
 const agent = new Agent(agentConfig, agentDependencies)
-const config = agent.dependencyManager.resolve(AgentConfig)
+const config = agent.config
 
 // Create all transports
 const httpInboundTransport = new HttpInboundTransport({ app, port })

@@ -1,6 +1,6 @@
-import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../../../logger'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { RoutingService } from '../../../../routing/services/RoutingService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -13,27 +13,28 @@ import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 export class V2OfferCredentialHandler implements Handler {
   private credentialService: V2CredentialService
-  private agentConfig: AgentConfig
   private routingService: RoutingService
+  private logger: Logger
+
   public supportedMessages = [V2OfferCredentialMessage]
   private didCommMessageRepository: DidCommMessageRepository
 
   public constructor(
     credentialService: V2CredentialService,
-    agentConfig: AgentConfig,
     routingService: RoutingService,
-    didCommMessageRepository: DidCommMessageRepository
+    didCommMessageRepository: DidCommMessageRepository,
+    logger: Logger
   ) {
     this.credentialService = credentialService
-    this.agentConfig = agentConfig
     this.routingService = routingService
     this.didCommMessageRepository = didCommMessageRepository
+    this.logger = logger
   }
 
   public async handle(messageContext: InboundMessageContext<V2OfferCredentialMessage>) {
     const credentialRecord = await this.credentialService.processOffer(messageContext)
 
-    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToOffer({
+    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToOffer(messageContext.agentContext, {
       credentialRecord,
       offerMessage: messageContext.message,
     })
@@ -48,17 +49,17 @@ export class V2OfferCredentialHandler implements Handler {
     messageContext: HandlerInboundMessage<V2OfferCredentialHandler>,
     offerMessage?: V2OfferCredentialMessage
   ) {
-    this.agentConfig.logger.info(
-      `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
+    this.logger.info(
+      `Automatically sending request with autoAccept on ${messageContext.agentContext.config.autoAcceptCredentials}`
     )
 
     if (messageContext.connection) {
-      const { message } = await this.credentialService.acceptOffer({
+      const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, {
         credentialRecord,
       })
       return createOutboundMessage(messageContext.connection, message)
     } else if (offerMessage?.service) {
-      const routing = await this.routingService.getRouting()
+      const routing = await this.routingService.getRouting(messageContext.agentContext)
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
@@ -66,14 +67,14 @@ export class V2OfferCredentialHandler implements Handler {
       })
       const recipientService = offerMessage.service
 
-      const { message } = await this.credentialService.acceptOffer({
+      const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, {
         credentialRecord,
       })
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
 
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: message,
         role: DidCommMessageRole.Sender,
         associatedRecordId: credentialRecord.id,
@@ -86,6 +87,6 @@ export class V2OfferCredentialHandler implements Handler {
       })
     }
 
-    this.agentConfig.logger.error(`Could not automatically create credential request`)
+    this.logger.error(`Could not automatically create credential request`)
   }
 }

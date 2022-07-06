@@ -1,15 +1,15 @@
-import type { Logger } from '../../../logger'
-import type { FileSystem } from '../../../storage/FileSystem'
+import type { AgentContext } from '../../../agent'
 import type { IndyRevocationInterval } from '../../credentials'
 import type { RequestedCredentials } from '../../proofs'
 import type { default as Indy } from 'indy-sdk'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
+import { AgentDependencies } from '../../../agent/AgentDependencies'
+import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { IndySdkError } from '../../../error/IndySdkError'
-import { injectable } from '../../../plugins'
+import { Logger } from '../../../logger'
+import { injectable, inject } from '../../../plugins'
 import { isIndyError } from '../../../utils/indyError'
-import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyLedgerService } from '../../ledger'
 
 import { IndyUtilitiesService } from './IndyUtilitiesService'
@@ -23,26 +23,23 @@ enum RequestReferentType {
 export class IndyRevocationService {
   private indy: typeof Indy
   private indyUtilitiesService: IndyUtilitiesService
-  private fileSystem: FileSystem
   private ledgerService: IndyLedgerService
   private logger: Logger
-  private wallet: IndyWallet
 
   public constructor(
-    agentConfig: AgentConfig,
     indyUtilitiesService: IndyUtilitiesService,
     ledgerService: IndyLedgerService,
-    wallet: IndyWallet
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
-    this.fileSystem = agentConfig.fileSystem
-    this.indy = agentConfig.agentDependencies.indy
+    this.indy = agentDependencies.indy
     this.indyUtilitiesService = indyUtilitiesService
-    this.logger = agentConfig.logger
+    this.logger = logger
     this.ledgerService = ledgerService
-    this.wallet = wallet
   }
 
   public async createRevocationState(
+    agentContext: AgentContext,
     proofRequest: Indy.IndyProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<Indy.RevStates> {
@@ -100,10 +97,12 @@ export class IndyRevocationService {
           this.assertRevocationInterval(requestRevocationInterval)
 
           const { revocationRegistryDefinition } = await this.ledgerService.getRevocationRegistryDefinition(
+            agentContext,
             revocationRegistryId
           )
 
           const { revocationRegistryDelta, deltaTimestamp } = await this.ledgerService.getRevocationRegistryDelta(
+            agentContext,
             revocationRegistryId,
             requestRevocationInterval?.to,
             0
@@ -147,6 +146,7 @@ export class IndyRevocationService {
   // Get revocation status for credential (given a from-to)
   // Note from-to interval details: https://github.com/hyperledger/indy-hipe/blob/master/text/0011-cred-revocation/README.md#indy-node-revocation-registry-intervals
   public async getRevocationStatus(
+    agentContext: AgentContext,
     credentialRevocationId: string,
     revocationRegistryDefinitionId: string,
     requestRevocationInterval: IndyRevocationInterval
@@ -158,6 +158,7 @@ export class IndyRevocationService {
     this.assertRevocationInterval(requestRevocationInterval)
 
     const { revocationRegistryDelta, deltaTimestamp } = await this.ledgerService.getRevocationRegistryDelta(
+      agentContext,
       revocationRegistryDefinitionId,
       requestRevocationInterval.to,
       0

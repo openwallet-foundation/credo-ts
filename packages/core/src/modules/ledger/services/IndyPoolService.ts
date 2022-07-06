@@ -1,10 +1,16 @@
-import type { Logger } from '../../../logger/Logger'
+import type { AgentContext } from '../../../agent'
+import type { IndyPoolConfig } from '../IndyPool'
 import type * as Indy from 'indy-sdk'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
+import { Subject } from 'rxjs'
+
+import { AgentDependencies } from '../../../agent/AgentDependencies'
 import { CacheRepository, PersistedLruCache } from '../../../cache'
+import { InjectionSymbols } from '../../../constants'
 import { IndySdkError } from '../../../error/IndySdkError'
-import { injectable } from '../../../plugins'
+import { Logger } from '../../../logger/Logger'
+import { injectable, inject } from '../../../plugins'
+import { FileSystem } from '../../../storage/FileSystem'
 import { isSelfCertifiedDid } from '../../../utils/did'
 import { isIndyError } from '../../../utils/indyError'
 import { allSettled, onlyFulfilled, onlyRejected } from '../../../utils/promises'
@@ -21,17 +27,34 @@ export interface CachedDidResponse {
 }
 @injectable()
 export class IndyPoolService {
-  public readonly pools: IndyPool[]
+  public pools: IndyPool[] = []
   private logger: Logger
   private indy: typeof Indy
+  private agentDependencies: AgentDependencies
+  private stop$: Subject<boolean>
+  private fileSystem: FileSystem
   private didCache: PersistedLruCache<CachedDidResponse>
 
-  public constructor(agentConfig: AgentConfig, cacheRepository: CacheRepository) {
-    this.pools = agentConfig.indyLedgers.map((poolConfig) => new IndyPool(agentConfig, poolConfig))
-    this.logger = agentConfig.logger
-    this.indy = agentConfig.agentDependencies.indy
+  public constructor(
+    cacheRepository: CacheRepository,
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
+    @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem
+  ) {
+    this.logger = logger
+    this.indy = agentDependencies.indy
+    this.agentDependencies = agentDependencies
+    this.fileSystem = fileSystem
+    this.stop$ = stop$
 
     this.didCache = new PersistedLruCache(DID_POOL_CACHE_ID, DID_POOL_CACHE_LIMIT, cacheRepository)
+  }
+
+  public setPools(poolConfigs: IndyPoolConfig[]) {
+    this.pools = poolConfigs.map(
+      (poolConfig) => new IndyPool(poolConfig, this.agentDependencies, this.logger, this.stop$, this.fileSystem)
+    )
   }
 
   /**
@@ -67,7 +90,10 @@ export class IndyPoolService {
    * Get the most appropriate pool for the given did. The algorithm is based on the approach as described in this document:
    * https://docs.google.com/document/d/109C_eMsuZnTnYe2OAd02jAts1vC4axwEKIq7_4dnNVA/edit
    */
-  public async getPoolForDid(did: string): Promise<{ pool: IndyPool; did: Indy.GetNymResponse }> {
+  public async getPoolForDid(
+    agentContext: AgentContext,
+    did: string
+  ): Promise<{ pool: IndyPool; did: Indy.GetNymResponse }> {
     const pools = this.pools
 
     if (pools.length === 0) {
@@ -76,7 +102,7 @@ export class IndyPoolService {
       )
     }
 
-    const cachedNymResponse = await this.didCache.get(did)
+    const cachedNymResponse = await this.didCache.get(agentContext, did)
     const pool = this.pools.find((pool) => pool.id === cachedNymResponse?.poolId)
 
     // If we have the nym response with associated pool in the cache, we'll use that
@@ -123,7 +149,7 @@ export class IndyPoolService {
       value = productionOrNonProduction[0].value
     }
 
-    await this.didCache.set(did, {
+    await this.didCache.set(agentContext, did, {
       nymResponse: value.did,
       poolId: value.pool.id,
     })

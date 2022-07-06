@@ -13,7 +13,7 @@ export const IndyIssuerService = jest.fn(() => ({
     ])
   ),
 
-  createCredentialOffer: jest.fn((credentialDefinitionId: string) =>
+  createCredentialOffer: jest.fn((_, credentialDefinitionId: string) =>
     Promise.resolve({
       schema_id: 'aaa',
       cred_def_id: credentialDefinitionId,
