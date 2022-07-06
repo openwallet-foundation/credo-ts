@@ -10,16 +10,15 @@ If you would like to propose a significant change, please open an issue first to
 
 Contributions are made pursuant to the Developer's Certificate of Origin, available at [https://developercertificate.org](https://developercertificate.org), and licensed under the Apache License, version 2.0 (Apache-2.0).
 
-## Contributing Lessons Learned
-
-### From our 0.2.0 release cycle, we learned:
+## Contributing checklist:
 
 - It is difficult to manage a release with too many changes.
-  - We should **release weekly**, not monthly.
+  - We should **release more often**, not months apart.
   - We should focus on feature releases (minor and patch releases) to speed iteration.
     - See our [Aries JavaScript Docs on semantic versioning](https://aries.js.org/guides/updating#versioning). Notably, while our versions are pre 1.0.0, minor versions are breaking change versions.
 - Mixing breaking changes with other PRs slows development.
   - Non-breaking change PRs are merged earlier into **main**
   - Breaking change PRs will go to a branch named **<release-version>-pre (ie. 0.3.0-pre)** and merged later in the release cycle.
   - Consider separating your PR into a (usually larger) non-breaking PR and a (usually smaller) breaking change PR.
-  - Use prefixes and labels to highlight issues that introduce breaking changes. The prefix **!feat** and label **breaking change** draws attention to a new feature with a breaking change.
+- Commits and PR titles MUST follow conventional commits (https://www.conventionalcommits.org/en/v1.0.0/). This allows us to automatically determine the next release version and generate changelog files.
+  - Use conventional commits to mark breaking changes. Adding `!` after the scope of a prefix message (e.g. `chore!: a breaking change`) or adding a **BREAKING CHANGE:** note to commit messages marks a commit as breaking. See examples: https://www.conventionalcommits.org/en/v1.0.0/#examples
