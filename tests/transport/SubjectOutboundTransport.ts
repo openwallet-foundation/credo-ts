@@ -9,6 +9,7 @@ export class SubjectOutboundTransport implements OutboundTransport {
   private logger!: Logger
   private subjectMap: { [key: string]: Subject<SubjectMessage> | undefined }
   private agent!: Agent
+  private stop$!: Subject<boolean>
 
   public supportedSchemes = ['rxjs']
 
@@ -19,7 +20,8 @@ export class SubjectOutboundTransport implements OutboundTransport {
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
 
-    this.logger = agent.injectionContainer.resolve(InjectionSymbols.Logger)
+    this.logger = agent.dependencyManager.resolve(InjectionSymbols.Logger)
+    this.stop$ = agent.dependencyManager.resolve(InjectionSymbols.Stop$)
   }
 
   public async stop(): Promise<void> {
@@ -45,9 +47,9 @@ export class SubjectOutboundTransport implements OutboundTransport {
     // Create a replySubject just for this session. Both ends will be able to close it,
     // mimicking a transport like http or websocket. Close session automatically when agent stops
     const replySubject = new Subject<SubjectMessage>()
-    this.agent.config.stop$.pipe(take(1)).subscribe(() => !replySubject.closed && replySubject.complete())
+    this.stop$.pipe(take(1)).subscribe(() => !replySubject.closed && replySubject.complete())
 
-    replySubject.pipe(takeUntil(this.agent.config.stop$)).subscribe({
+    replySubject.pipe(takeUntil(this.stop$)).subscribe({
       next: async ({ message }: SubjectMessage) => {
         this.logger.test('Received message')
 

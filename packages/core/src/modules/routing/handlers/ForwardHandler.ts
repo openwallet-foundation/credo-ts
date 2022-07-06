@@ -25,10 +25,16 @@ export class ForwardHandler implements Handler {
   public async handle(messageContext: HandlerInboundMessage<ForwardHandler>) {
     const { encryptedMessage, mediationRecord } = await this.mediatorService.processForwardMessage(messageContext)
 
-    const connectionRecord = await this.connectionService.getById(mediationRecord.connectionId)
+    const connectionRecord = await this.connectionService.getById(
+      messageContext.agentContext,
+      mediationRecord.connectionId
+    )
 
     // The message inside the forward message is packed so we just send the packed
     // message to the connection associated with it
-    await this.messageSender.sendPackage({ connection: connectionRecord, encryptedMessage })
+    await this.messageSender.sendPackage(messageContext.agentContext, {
+      connection: connectionRecord,
+      encryptedMessage,
+    })
   }
 }

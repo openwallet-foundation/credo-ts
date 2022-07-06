@@ -1,26 +1,39 @@
-import type { Logger } from '../logger'
+import type { BlsKeyPair } from '../crypto/BbsService'
 import type {
   EncryptedMessage,
-  WalletConfig,
-  WalletExportImportConfig,
-  WalletConfigRekey,
   KeyDerivationMethod,
+  WalletConfig,
+  WalletConfigRekey,
+  WalletExportImportConfig,
 } from '../types'
 import type { Buffer } from '../utils/buffer'
-import type { Wallet, DidInfo, DidConfig, UnpackedMessageContext } from './Wallet'
+import type {
+  CreateKeyOptions,
+  DidConfig,
+  DidInfo,
+  SignOptions,
+  UnpackedMessageContext,
+  VerifyOptions,
+  Wallet,
+} from './Wallet'
 import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
-import { AgentConfig } from '../agent/AgentConfig'
-import { AriesFrameworkError } from '../error'
-import { JsonEncoder } from '../utils/JsonEncoder'
+import { AgentDependencies } from '../agent/AgentDependencies'
+import { InjectionSymbols } from '../constants'
+import { BbsService } from '../crypto/BbsService'
+import { Key } from '../crypto/Key'
+import { KeyType } from '../crypto/KeyType'
+import { AriesFrameworkError, IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
+import { Logger } from '../logger'
+import { inject, injectable } from '../plugins'
+import { JsonEncoder, TypedArrayEncoder } from '../utils'
+import { isError } from '../utils/error'
 import { isIndyError } from '../utils/indyError'
 
-import { WalletDuplicateError, WalletNotFoundError, WalletError } from './error'
+import { WalletDuplicateError, WalletError, WalletNotFoundError } from './error'
 import { WalletInvalidKeyError } from './error/WalletInvalidKeyError'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyWallet implements Wallet {
   private walletConfig?: WalletConfig
   private walletHandle?: number
@@ -29,9 +42,12 @@ export class IndyWallet implements Wallet {
   private publicDidInfo: DidInfo | undefined
   private indy: typeof Indy
 
-  public constructor(agentConfig: AgentConfig) {
-    this.logger = agentConfig.logger
-    this.indy = agentConfig.agentDependencies.indy
+  public constructor(
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
+    @inject(InjectionSymbols.Logger) logger: Logger
+  ) {
+    this.logger = logger
+    this.indy = agentDependencies.indy
   }
 
   public get isProvisioned() {
@@ -139,6 +155,9 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
+        if (!isError(error)) {
+          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+        }
         const errorMessage = `Error creating wallet '${walletConfig.id}'`
         this.logger.error(errorMessage, {
           error,
@@ -221,6 +240,9 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
+        if (!isError(error)) {
+          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+        }
         const errorMessage = `Error opening wallet '${walletConfig.id}': ${error.message}`
         this.logger.error(errorMessage, {
           error,
@@ -266,6 +288,9 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
+        if (!isError(error)) {
+          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+        }
         const errorMessage = `Error deleting wallet '${this.walletConfig.id}': ${error.message}`
         this.logger.error(errorMessage, {
           error,
@@ -282,6 +307,9 @@ export class IndyWallet implements Wallet {
       this.logger.debug(`Exporting wallet ${this.walletConfig?.id} to path ${exportConfig.path}`)
       await this.indy.exportWallet(this.handle, exportConfig)
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       const errorMessage = `Error exporting wallet: ${error.message}`
       this.logger.error(errorMessage, {
         error,
@@ -300,6 +328,9 @@ export class IndyWallet implements Wallet {
         importConfig
       )
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       const errorMessage = `Error importing wallet': ${error.message}`
       this.logger.error(errorMessage, {
         error,
@@ -330,6 +361,9 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
+        if (!isError(error)) {
+          throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+        }
         const errorMessage = `Error closing wallet': ${error.message}`
         this.logger.error(errorMessage, {
           error,
@@ -369,6 +403,10 @@ export class IndyWallet implements Wallet {
 
         return masterSecretId
       } else {
+        if (!isIndyError(error)) {
+          throw new AriesFrameworkError('Attempted to throw Indy error, but it was not an Indy error')
+        }
+
         this.logger.error(`Error creating master secret with id ${masterSecretId}`, {
           indyError: error.indyName,
           error,
@@ -396,8 +434,124 @@ export class IndyWallet implements Wallet {
 
       return { did, verkey }
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       throw new WalletError('Error creating Did', { cause: error })
     }
+  }
+
+  /**
+   * Create a key with an optional seed and keyType.
+   * The keypair is also automatically stored in the wallet afterwards
+   *
+   * Bls12381g1g2 and X25519 are not supported.
+   *
+   * @param seed string The seed for creating a key
+   * @param keyType KeyType the type of key that should be created
+   *
+   * @returns a Key instance with a publicKeyBase58
+   *
+   * @throws {WalletError} When an unsupported keytype is requested
+   * @throws {WalletError} When the key could not be created
+   */
+  public async createKey({ seed, keyType }: CreateKeyOptions): Promise<Key> {
+    try {
+      if (keyType === KeyType.Ed25519) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //@ts-ignore
+        const verkey = await this.indy.createKey(this.handle, { seed, crypto_type: 'ed25519' })
+        return Key.fromPublicKeyBase58(verkey, keyType)
+      }
+
+      if (keyType === KeyType.Bls12381g1 || keyType === KeyType.Bls12381g2) {
+        const blsKeyPair = await BbsService.createKey({ keyType, seed })
+        await this.storeKeyPair(blsKeyPair)
+        return Key.fromPublicKeyBase58(blsKeyPair.publicKeyBase58, keyType)
+      }
+    } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
+      throw new WalletError(`Error creating key with key type '${keyType}': ${error.message}`, { cause: error })
+    }
+
+    throw new WalletError(`Unsupported key type: '${keyType}' for wallet IndyWallet`)
+  }
+
+  /**
+   * sign a Buffer with an instance of a Key class
+   *
+   * Bls12381g1g2, Bls12381g1 and X25519 are not supported.
+   *
+   * @param data Buffer The data that needs to be signed
+   * @param key Key The key that is used to sign the data
+   *
+   * @returns A signature for the data
+   */
+  public async sign({ data, key }: SignOptions): Promise<Buffer> {
+    try {
+      if (key.keyType === KeyType.Ed25519) {
+        // Checks to see if it is an not an Array of messages, but just a single one
+        if (!TypedArrayEncoder.isTypedArray(data)) {
+          throw new WalletError(`${KeyType.Ed25519} does not support multiple singing of multiple messages`)
+        }
+        return await this.indy.cryptoSign(this.handle, key.publicKeyBase58, data as Buffer)
+      }
+
+      if (key.keyType === KeyType.Bls12381g2) {
+        const blsKeyPair = await this.retrieveKeyPair(key.publicKeyBase58)
+        return BbsService.sign({
+          messages: data,
+          publicKey: key.publicKey,
+          privateKey: TypedArrayEncoder.fromBase58(blsKeyPair.privateKeyBase58),
+        })
+      }
+    } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
+      throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}`, { cause: error })
+    }
+    throw new WalletError(`Unsupported keyType: ${key.keyType}`)
+  }
+
+  /**
+   * Verify the signature with the data and the used key
+   *
+   * Bls12381g1g2, Bls12381g1 and X25519 are not supported.
+   *
+   * @param data Buffer The data that has to be confirmed to be signed
+   * @param key Key The key that was used in the signing process
+   * @param signature Buffer The signature that was created by the signing process
+   *
+   * @returns A boolean whether the signature was created with the supplied data and key
+   *
+   * @throws {WalletError} When it could not do the verification
+   * @throws {WalletError} When an unsupported keytype is used
+   */
+  public async verify({ data, key, signature }: VerifyOptions): Promise<boolean> {
+    try {
+      if (key.keyType === KeyType.Ed25519) {
+        // Checks to see if it is an not an Array of messages, but just a single one
+        if (!TypedArrayEncoder.isTypedArray(data)) {
+          throw new WalletError(`${KeyType.Ed25519} does not support multiple singing of multiple messages`)
+        }
+        return await this.indy.cryptoVerify(key.publicKeyBase58, data as Buffer, signature)
+      }
+
+      if (key.keyType === KeyType.Bls12381g2) {
+        return await BbsService.verify({ signature, publicKey: key.publicKey, messages: data })
+      }
+    } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
+      throw new WalletError(`Error verifying signature of data signed with verkey ${key.publicKeyBase58}`, {
+        cause: error,
+      })
+    }
+    throw new WalletError(`Unsupported keyType: ${key.keyType}`)
   }
 
   public async pack(
@@ -410,6 +564,9 @@ export class IndyWallet implements Wallet {
       const packedMessage = await this.indy.packMessage(this.handle, messageRaw, recipientKeys, senderVerkey ?? null)
       return JsonEncoder.fromBuffer(packedMessage)
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       throw new WalletError('Error packing message', { cause: error })
     }
   }
@@ -424,34 +581,57 @@ export class IndyWallet implements Wallet {
         plaintextMessage: JsonEncoder.fromString(unpackedMessage.message),
       }
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       throw new WalletError('Error unpacking message', { cause: error })
     }
   }
 
-  public async sign(data: Buffer, verkey: string): Promise<Buffer> {
-    try {
-      return await this.indy.cryptoSign(this.handle, verkey, data)
-    } catch (error) {
-      throw new WalletError(`Error signing data with verkey ${verkey}`, { cause: error })
-    }
-  }
-
-  public async verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean> {
-    try {
-      // check signature
-      const isValid = await this.indy.cryptoVerify(signerVerkey, data, signature)
-
-      return isValid
-    } catch (error) {
-      throw new WalletError(`Error verifying signature of data signed with verkey ${signerVerkey}`, { cause: error })
-    }
-  }
-
-  public async generateNonce() {
+  public async generateNonce(): Promise<string> {
     try {
       return await this.indy.generateNonce()
     } catch (error) {
+      if (!isError(error)) {
+        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')
+      }
       throw new WalletError('Error generating nonce', { cause: error })
+    }
+  }
+
+  private async retrieveKeyPair(publicKeyBase58: string): Promise<BlsKeyPair> {
+    try {
+      const { value } = await this.indy.getWalletRecord(this.handle, 'KeyPairRecord', `keypair-${publicKeyBase58}`, {})
+      if (value) {
+        return JsonEncoder.fromString(value) as BlsKeyPair
+      } else {
+        throw new WalletError(`No content found for record with public key: ${publicKeyBase58}`)
+      }
+    } catch (error) {
+      if (isIndyError(error, 'WalletItemNotFound')) {
+        throw new RecordNotFoundError(`KeyPairRecord not found for public key: ${publicKeyBase58}.`, {
+          recordType: 'KeyPairRecord',
+          cause: error,
+        })
+      }
+      throw isIndyError(error) ? new IndySdkError(error) : error
+    }
+  }
+
+  private async storeKeyPair(blsKeyPair: BlsKeyPair): Promise<void> {
+    try {
+      await this.indy.addWalletRecord(
+        this.handle,
+        'KeyPairRecord',
+        `keypair-${blsKeyPair.publicKeyBase58}`,
+        JSON.stringify(blsKeyPair),
+        {}
+      )
+    } catch (error) {
+      if (isIndyError(error, 'WalletItemAlreadyExists')) {
+        throw new RecordDuplicateError(`Record already exists`, { recordType: 'KeyPairRecord' })
+      }
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 }

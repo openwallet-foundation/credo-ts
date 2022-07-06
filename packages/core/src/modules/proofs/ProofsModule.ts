@@ -1,5 +1,6 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
-import type { ProofService } from './ProofService'
+import type { DependencyManager } from '../../plugins'
+import type { MediationRecipientService } from '../routing'
 import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
@@ -19,48 +20,53 @@ import type {
 import type { RequestedCredentialsFormats } from './models/SharedOptions'
 import type { ProofRecord } from './repository/ProofRecord'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
-import { AgentConfig } from '../../agent/AgentConfig'
+import { AgentContext } from '../../agent/AgentContext'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { InjectionSymbols } from '../../constants'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
+import { Logger } from '../../logger'
+import { inject, injectable, module } from '../../plugins'
 import { DidCommMessageRole } from '../../storage'
 import { ConnectionService } from '../connections/services/ConnectionService'
-import { MediationRecipientService } from '../routing/services/MediationRecipientService'
+import { RoutingService } from '../routing'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
+import { ProofService } from './ProofService'
 import { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import { ProofState } from './models/ProofState'
 import { V1ProofService } from './protocol/v1/V1ProofService'
 import { V2ProofService } from './protocol/v2/V2ProofService'
 import { ProofRepository } from './repository/ProofRepository'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class ProofsModule {
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private agentConfig: AgentConfig
-  private mediationRecipientService: MediationRecipientService
   private serviceMap: { [key in ProofProtocolVersion]: ProofService }
   private proofRepository: ProofRepository
+  private routingService: RoutingService
+  private agentContext: AgentContext
+  private proofResponseCoordinator: ProofResponseCoordinator
+  private logger: Logger
 
   public constructor(
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
     messageSender: MessageSender,
-    agentConfig: AgentConfig,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     v1ProofService: V1ProofService,
     v2ProofService: V2ProofService,
-    proofRepository: ProofRepository
+    proofRepository: ProofRepository,
+    agentContext: AgentContext,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.connectionService = connectionService
     this.messageSender = messageSender
-    this.agentConfig = agentConfig
-    this.mediationRecipientService = mediationRecipientService
+
     this.proofRepository = proofRepository
 
     this.serviceMap = {
@@ -68,7 +74,12 @@ export class ProofsModule {
       [ProofProtocolVersion.V2]: v2ProofService,
     }
 
-    this.registerHandlers(dispatcher, mediationRecipientService)
+    this.routingService = routingService
+    this.agentContext = agentContext
+    this.proofResponseCoordinator = proofResponseCoordinator
+    this.logger = logger
+
+    this.registerHandlers(dispatcher, routingService)
   }
 
   private getService(protocolVersion: ProofProtocolVersion) {
@@ -90,7 +101,7 @@ export class ProofsModule {
 
     const { connectionId } = options
 
-    const connection = await this.connectionService.getById(connectionId)
+    const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
     // Assert
     connection.assertReady()
@@ -107,7 +118,7 @@ export class ProofsModule {
     const { message, proofRecord } = await service.createProposal(proposalOptions)
 
     const outbound = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendMessage(this.agentContext, outbound)
 
     return proofRecord
   }
@@ -131,7 +142,7 @@ export class ProofsModule {
       )
     }
 
-    const connection = await this.connectionService.getById(proofRecord.connectionId)
+    const connection = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
 
     // Assert
     connection.assertReady()
@@ -151,7 +162,7 @@ export class ProofsModule {
     })
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return proofRecord
   }
@@ -182,7 +193,7 @@ export class ProofsModule {
     const { message, proofRecord } = await service.createRequest(createProofRequest)
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return proofRecord
   }
@@ -212,7 +223,7 @@ export class ProofsModule {
     const { message, proofRecord } = await service.createRequest(createProofRequest)
 
     // Create and set ~service decorator
-    const routing = await this.mediationRecipientService.getRouting()
+    const routing = await this.routingService.getRouting(this.agentContext)
     message.service = new ServiceDecorator({
       serviceEndpoint: routing.endpoints[0],
       recipientKeys: [routing.recipientKey.publicKeyBase58],
@@ -259,13 +270,13 @@ export class ProofsModule {
 
     // Use connection if present
     if (proofRecord.connectionId) {
-      const connection = await this.connectionService.getById(proofRecord.connectionId)
+      const connection = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
 
       // Assert
       connection.assertReady()
 
       const outboundMessage = createOutboundMessage(connection, message)
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
       return proofRecord
     }
@@ -273,7 +284,7 @@ export class ProofsModule {
     // Use ~service decorator otherwise
     else if (requestMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.routingService.getRouting(this.agentContext)
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
@@ -291,7 +302,7 @@ export class ProofsModule {
         role: DidCommMessageRole.Sender,
       })
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.sendMessageToService(this.agentContext, {
         message,
         service: recipientService.resolvedDidCommService,
         senderKey: ourService.resolvedDidCommService.recipientKeys[0],
@@ -352,14 +363,14 @@ export class ProofsModule {
       connection.assertReady()
 
       const outboundMessage = createOutboundMessage(connection, message)
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     }
     // Use ~service decorator otherwise
     else if (requestMessage?.service && presentationMessage?.service) {
       const recipientService = presentationMessage?.service
       const ourService = requestMessage.service
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.sendMessageToService(this.agentContext, {
         message,
         service: recipientService.resolvedDidCommService,
         senderKey: ourService.resolvedDidCommService.recipientKeys[0],
@@ -480,6 +491,20 @@ export class ProofsModule {
         mediationRecipientService
       )
     }
+  }
+
+  /**
+   * Registers the dependencies of the proofs module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(ProofsModule)
+
+    // Services
+    dependencyManager.registerSingleton(ProofService)
+
+    // Repositories
+    dependencyManager.registerSingleton(ProofRepository)
   }
 }
 

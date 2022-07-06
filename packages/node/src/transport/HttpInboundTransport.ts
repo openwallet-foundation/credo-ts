@@ -2,7 +2,7 @@ import type { InboundTransport, Agent, TransportSession, EncryptedMessage } from
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import { DidCommMimeType, AriesFrameworkError, AgentConfig, TransportService, utils } from '@aries-framework/core'
+import { DidCommMimeType, AriesFrameworkError, TransportService, utils } from '@aries-framework/core'
 import express, { text } from 'express'
 
 export class HttpInboundTransport implements InboundTransport {
@@ -29,10 +29,9 @@ export class HttpInboundTransport implements InboundTransport {
   }
 
   public async start(agent: Agent) {
-    const transportService = agent.injectionContainer.resolve(TransportService)
-    const config = agent.injectionContainer.resolve(AgentConfig)
+    const transportService = agent.dependencyManager.resolve(TransportService)
 
-    config.logger.debug(`Starting HTTP inbound transport`, {
+    agent.config.logger.debug(`Starting HTTP inbound transport`, {
       port: this.port,
     })
 
@@ -48,7 +47,7 @@ export class HttpInboundTransport implements InboundTransport {
           res.status(200).end()
         }
       } catch (error) {
-        config.logger.error(`Error processing inbound message: ${error.message}`, error)
+        agent.config.logger.error(`Error processing inbound message: ${error.message}`, error)
 
         if (!res.headersSent) {
           res.status(500).send('Error processing message')

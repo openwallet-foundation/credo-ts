@@ -1,9 +1,13 @@
-import type { Wallet } from '../../../wallet/Wallet'
+import type { Wallet } from '../../..'
+import type { AgentContext } from '../../../agent'
 import type { CredentialRepository } from '../../credentials/repository'
+import type { IndyVerifierService } from '../../indy'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { CustomProofTags } from './../repository/ProofRecord'
 
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
@@ -96,6 +100,7 @@ describe('V1ProofService', () => {
   let proofService: V1ProofService
   let ledgerService: IndyLedgerService
   let wallet: Wallet
+  let indyVerifierService: IndyVerifierService
   let indyHolderService: IndyHolderService
   let indyRevocationService: IndyRevocationService
   let eventEmitter: EventEmitter
@@ -103,6 +108,7 @@ describe('V1ProofService', () => {
   let connectionService: ConnectionService
   let didCommMessageRepository: DidCommMessageRepository
   let indyProofFormatService: IndyProofFormatService
+  let agentContext: AgentContext
 
   beforeEach(() => {
     const agentConfig = getAgentConfig('V1ProofServiceTest')
@@ -110,10 +116,11 @@ describe('V1ProofService', () => {
     indyHolderService = new IndyHolderServiceMock()
     indyRevocationService = new IndyRevocationServiceMock()
     ledgerService = new IndyLedgerServiceMock()
-    eventEmitter = new EventEmitter(agentConfig)
+    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     connectionService = new connectionServiceMock()
     didCommMessageRepository = new didCommMessageRepositoryMock()
     indyProofFormatService = new indyProofFormatServiceMock()
+    agentContext = getAgentContext()
 
     proofService = new V1ProofService(
       proofRepository,
@@ -143,6 +150,7 @@ describe('V1ProofService', () => {
       })
       messageContext = new InboundMessageContext(presentationRequest, {
         connection,
+        agentContext,
       })
     })
 
@@ -162,7 +170,7 @@ describe('V1ProofService', () => {
         connectionId: connection.id,
       }
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1)
-      const [[createdProofRecord]] = repositorySaveSpy.mock.calls
+      const [[, createdProofRecord]] = repositorySaveSpy.mock.calls
       expect(createdProofRecord).toMatchObject(expectedProofRecord)
       expect(returnedProofRecord).toMatchObject(expectedProofRecord)
     })
@@ -241,6 +249,7 @@ describe('V1ProofService', () => {
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })
       messageContext = new InboundMessageContext(presentationProblemReportMessage, {
         connection,
+        agentContext,
       })
     })
 
@@ -257,12 +266,12 @@ describe('V1ProofService', () => {
       const expectedCredentialRecord = {
         errorMessage: 'abandoned: Indy error',
       }
-      expect(proofRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
+      expect(proofRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
         connectionId: connection.id,
       })
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
-      const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
+      const [[, updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)
     })

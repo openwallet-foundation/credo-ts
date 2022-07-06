@@ -1,7 +1,11 @@
+import type { AgentContext } from '../../../agent'
 import type { IndyPoolConfig } from '../IndyPool'
 import type { CachedDidResponse } from '../services/IndyPoolService'
 
-import { getAgentConfig, mockFunction } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { NodeFileSystem } from '../../../../../node/src/NodeFileSystem'
+import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { CacheRecord } from '../../../cache'
 import { CacheRepository } from '../../../cache/CacheRepository'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
@@ -49,16 +53,18 @@ const pools: IndyPoolConfig[] = [
   },
 ]
 
-describe('IndyLedgerService', () => {
-  const config = getAgentConfig('IndyLedgerServiceTest', {
+describe('IndyPoolService', () => {
+  const config = getAgentConfig('IndyPoolServiceTest', {
     indyLedgers: pools,
   })
+  let agentContext: AgentContext
   let wallet: IndyWallet
   let poolService: IndyPoolService
   let cacheRepository: CacheRepository
 
   beforeAll(async () => {
-    wallet = new IndyWallet(config)
+    wallet = new IndyWallet(config.agentDependencies, config.logger)
+    agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
   })
@@ -71,7 +77,15 @@ describe('IndyLedgerService', () => {
     cacheRepository = new CacheRepositoryMock()
     mockFunction(cacheRepository.findById).mockResolvedValue(null)
 
-    poolService = new IndyPoolService(config, cacheRepository)
+    poolService = new IndyPoolService(
+      cacheRepository,
+      agentDependencies,
+      config.logger,
+      new Subject<boolean>(),
+      new NodeFileSystem()
+    )
+
+    poolService.setPools(pools)
   })
 
   describe('ledgerWritePool', () => {
@@ -79,20 +93,18 @@ describe('IndyLedgerService', () => {
       expect(poolService.ledgerWritePool).toBe(poolService.pools[0])
     })
 
-    it('should throw a LedgerNotConfiguredError error if no pools are configured on the agent', async () => {
-      const config = getAgentConfig('IndyLedgerServiceTest', { indyLedgers: [] })
-      poolService = new IndyPoolService(config, cacheRepository)
+    it('should throw a LedgerNotConfiguredError error if no pools are configured on the pool service', async () => {
+      poolService.setPools([])
 
       expect(() => poolService.ledgerWritePool).toThrow(LedgerNotConfiguredError)
     })
   })
 
   describe('getPoolForDid', () => {
-    it('should throw a LedgerNotConfiguredError error if no pools are configured on the agent', async () => {
-      const config = getAgentConfig('IndyLedgerServiceTest', { indyLedgers: [] })
-      poolService = new IndyPoolService(config, cacheRepository)
+    it('should throw a LedgerNotConfiguredError error if no pools are configured on the pool service', async () => {
+      poolService.setPools([])
 
-      expect(poolService.getPoolForDid('some-did')).rejects.toThrow(LedgerNotConfiguredError)
+      expect(poolService.getPoolForDid(agentContext, 'some-did')).rejects.toThrow(LedgerNotConfiguredError)
     })
 
     it('should throw a LedgerError if all ledger requests throw an error other than NotFoundError', async () => {
@@ -103,7 +115,7 @@ describe('IndyLedgerService', () => {
         spy.mockImplementationOnce(() => Promise.reject(new AriesFrameworkError('Something went wrong')))
       })
 
-      expect(poolService.getPoolForDid(did)).rejects.toThrowError(LedgerError)
+      expect(poolService.getPoolForDid(agentContext, did)).rejects.toThrowError(LedgerError)
     })
 
     it('should throw a LedgerNotFoundError if all pools did not find the did on the ledger', async () => {
@@ -116,7 +128,7 @@ describe('IndyLedgerService', () => {
         spy.mockImplementationOnce(responses[index])
       })
 
-      expect(poolService.getPoolForDid(did)).rejects.toThrowError(LedgerNotFoundError)
+      expect(poolService.getPoolForDid(agentContext, did)).rejects.toThrowError(LedgerNotFoundError)
     })
 
     it('should return the pool if the did was only found on one ledger', async () => {
@@ -131,7 +143,7 @@ describe('IndyLedgerService', () => {
         spy.mockImplementationOnce(responses[index])
       })
 
-      const { pool } = await poolService.getPoolForDid(did)
+      const { pool } = await poolService.getPoolForDid(agentContext, did)
 
       expect(pool.config.id).toBe('sovrinMain')
     })
@@ -150,7 +162,7 @@ describe('IndyLedgerService', () => {
         spy.mockImplementationOnce(responses[index])
       })
 
-      const { pool } = await poolService.getPoolForDid(did)
+      const { pool } = await poolService.getPoolForDid(agentContext, did)
 
       expect(pool.config.id).toBe('sovrinBuilder')
     })
@@ -168,7 +180,7 @@ describe('IndyLedgerService', () => {
         spy.mockImplementationOnce(responses[index])
       })
 
-      const { pool } = await poolService.getPoolForDid(did)
+      const { pool } = await poolService.getPoolForDid(agentContext, did)
 
       expect(pool.config.id).toBe('indicioMain')
     })
@@ -186,7 +198,7 @@ describe('IndyLedgerService', () => {
         spy.mockImplementationOnce(responses[index])
       })
 
-      const { pool } = await poolService.getPoolForDid(did)
+      const { pool } = await poolService.getPoolForDid(agentContext, did)
 
       expect(pool.config.id).toBe('sovrinMain')
     })
@@ -205,7 +217,7 @@ describe('IndyLedgerService', () => {
         spy.mockImplementationOnce(responses[index])
       })
 
-      const { pool } = await poolService.getPoolForDid(did)
+      const { pool } = await poolService.getPoolForDid(agentContext, did)
 
       expect(pool.config.id).toBe('sovrinBuilder')
     })
@@ -238,9 +250,7 @@ describe('IndyLedgerService', () => {
         })
       )
 
-      poolService = new IndyPoolService(config, cacheRepository)
-
-      const { pool } = await poolService.getPoolForDid(did)
+      const { pool } = await poolService.getPoolForDid(agentContext, did)
 
       expect(pool.config.id).toBe(pool.id)
     })
@@ -261,17 +271,16 @@ describe('IndyLedgerService', () => {
 
       const spy = mockFunction(cacheRepository.update).mockResolvedValue()
 
-      poolService = new IndyPoolService(config, cacheRepository)
       poolService.pools.forEach((pool, index) => {
         const spy = jest.spyOn(pool, 'submitReadRequest')
         spy.mockImplementationOnce(responses[index])
       })
 
-      const { pool } = await poolService.getPoolForDid(did)
+      const { pool } = await poolService.getPoolForDid(agentContext, did)
 
       expect(pool.config.id).toBe('sovrinBuilder')
 
-      const cacheRecord = spy.mock.calls[0][0]
+      const cacheRecord = spy.mock.calls[0][1]
       expect(cacheRecord.entries.length).toBe(1)
       expect(cacheRecord.entries[0].key).toBe(did)
       expect(cacheRecord.entries[0].value).toEqual({

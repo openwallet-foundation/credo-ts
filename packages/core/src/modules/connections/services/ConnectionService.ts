@@ -1,6 +1,6 @@
+import type { AgentContext } from '../../../agent'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
 import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../../oob/repository'
@@ -10,22 +10,21 @@ import type { ConnectionRecordProps } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
-import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
+import { Key } from '../../../crypto'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { AriesFrameworkError } from '../../../error'
+import { Logger } from '../../../logger'
+import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../utils/MessageValidator'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
-import { Wallet } from '../../../wallet/Wallet'
-import { DidKey, Key, IndyAgentService } from '../../dids'
+import { DidKey, IndyAgentService } from '../../dids'
 import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
 import { didKeyToVerkey } from '../../dids/helpers'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
-import { DidRepository, DidRecord } from '../../dids/repository'
+import { DidRecord, DidRepository } from '../../dids/repository'
 import { DidRecordMetadataKeys } from '../../dids/repository/didRecordMetadataTypes'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
@@ -33,14 +32,14 @@ import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 import {
-  DidExchangeRole,
-  DidExchangeState,
+  authenticationTypes,
   Connection,
   DidDoc,
+  DidExchangeRole,
+  DidExchangeState,
   Ed25119Sig2018,
   HandshakeProtocol,
   ReferencedAuthentication,
-  authenticationTypes,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
@@ -55,28 +54,23 @@ export interface ConnectionRequestParams {
   autoAcceptConnection?: boolean
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ConnectionService {
-  private wallet: Wallet
-  private config: AgentConfig
   private connectionRepository: ConnectionRepository
   private didRepository: DidRepository
   private eventEmitter: EventEmitter
   private logger: Logger
 
   public constructor(
-    @inject(InjectionSymbols.Wallet) wallet: Wallet,
-    config: AgentConfig,
+    @inject(InjectionSymbols.Logger) logger: Logger,
     connectionRepository: ConnectionRepository,
     didRepository: DidRepository,
     eventEmitter: EventEmitter
   ) {
-    this.wallet = wallet
-    this.config = config
     this.connectionRepository = connectionRepository
     this.didRepository = didRepository
     this.eventEmitter = eventEmitter
-    this.logger = config.logger
+    this.logger = logger
   }
 
   /**
@@ -87,10 +81,11 @@ export class ConnectionService {
    * @returns outbound message containing connection request
    */
   public async createRequest(
+    agentContext: AgentContext,
     outOfBandRecord: OutOfBandRecord,
     config: ConnectionRequestParams
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    this.logger.debug(`Create message ${ConnectionRequestMessage.type} start`, outOfBandRecord)
+    this.logger.debug(`Create message ${ConnectionRequestMessage.type.messageTypeUri} start`, outOfBandRecord)
     outOfBandRecord.assertRole(OutOfBandRole.Receiver)
     outOfBandRecord.assertState(OutOfBandState.PrepareResponse)
 
@@ -105,12 +100,12 @@ export class ConnectionService {
     // We take just the first one for now.
     const [invitationDid] = outOfBandInvitation.invitationDids
 
-    const { did: peerDid } = await this.createDid({
+    const { did: peerDid } = await this.createDid(agentContext, {
       role: DidDocumentRole.Created,
       didDoc,
     })
 
-    const connectionRecord = await this.createConnection({
+    const connectionRecord = await this.createConnection(agentContext, {
       protocol: HandshakeProtocol.Connections,
       role: DidExchangeRole.Requester,
       state: DidExchangeState.InvitationReceived,
@@ -121,15 +116,16 @@ export class ConnectionService {
       autoAcceptConnection: config?.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
       invitationDid,
+      imageUrl: outOfBandInvitation.imageUrl,
     })
 
     const { label, imageUrl, autoAcceptConnection } = config
 
     const connectionRequest = new ConnectionRequestMessage({
-      label: label ?? this.config.label,
+      label: label ?? agentContext.config.label,
       did: didDoc.id,
       didDoc,
-      imageUrl: imageUrl ?? this.config.connectionImageUrl,
+      imageUrl: imageUrl ?? agentContext.config.connectionImageUrl,
     })
 
     if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
@@ -137,7 +133,7 @@ export class ConnectionService {
     }
 
     connectionRecord.threadId = connectionRequest.id
-    await this.updateState(connectionRecord, DidExchangeState.RequestSent)
+    await this.updateState(agentContext, connectionRecord, DidExchangeState.RequestSent)
 
     return {
       connectionRecord,
@@ -149,7 +145,9 @@ export class ConnectionService {
     messageContext: InboundMessageContext<ConnectionRequestMessage>,
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
-    this.logger.debug(`Process message ${ConnectionRequestMessage.type} start`, messageContext)
+    this.logger.debug(`Process message ${ConnectionRequestMessage.type} start`, {
+      message: messageContext.message,
+    })
     outOfBandRecord.assertRole(OutOfBandRole.Sender)
     outOfBandRecord.assertState(OutOfBandState.AwaitResponse)
 
@@ -162,12 +160,12 @@ export class ConnectionService {
       })
     }
 
-    const { did: peerDid } = await this.createDid({
+    const { did: peerDid } = await this.createDid(messageContext.agentContext, {
       role: DidDocumentRole.Received,
       didDoc: message.connection.didDoc,
     })
 
-    const connectionRecord = await this.createConnection({
+    const connectionRecord = await this.createConnection(messageContext.agentContext, {
       protocol: HandshakeProtocol.Connections,
       role: DidExchangeRole.Responder,
       state: DidExchangeState.RequestReceived,
@@ -180,8 +178,8 @@ export class ConnectionService {
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
     })
 
-    await this.connectionRepository.update(connectionRecord)
-    this.emitStateChangedEvent(connectionRecord, null)
+    await this.connectionRepository.update(messageContext.agentContext, connectionRecord)
+    this.emitStateChangedEvent(messageContext.agentContext, connectionRecord, null)
 
     this.logger.debug(`Process message ${ConnectionRequestMessage.type} end`, connectionRecord)
     return connectionRecord
@@ -194,11 +192,12 @@ export class ConnectionService {
    * @returns outbound message containing connection response
    */
   public async createResponse(
+    agentContext: AgentContext,
     connectionRecord: ConnectionRecord,
     outOfBandRecord: OutOfBandRecord,
     routing?: Routing
   ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
-    this.logger.debug(`Create message ${ConnectionResponseMessage.type} start`, connectionRecord)
+    this.logger.debug(`Create message ${ConnectionResponseMessage.type.messageTypeUri} start`, connectionRecord)
     connectionRecord.assertState(DidExchangeState.RequestReceived)
     connectionRecord.assertRole(DidExchangeRole.Responder)
 
@@ -210,7 +209,7 @@ export class ConnectionService {
           )
         )
 
-    const { did: peerDid } = await this.createDid({
+    const { did: peerDid } = await this.createDid(agentContext, {
       role: DidDocumentRole.Created,
       didDoc,
     })
@@ -230,13 +229,13 @@ export class ConnectionService {
 
     const connectionResponse = new ConnectionResponseMessage({
       threadId: connectionRecord.threadId,
-      connectionSig: await signData(connectionJson, this.wallet, signingKey),
+      connectionSig: await signData(connectionJson, agentContext.wallet, signingKey),
     })
 
     connectionRecord.did = peerDid
-    await this.updateState(connectionRecord, DidExchangeState.ResponseSent)
+    await this.updateState(agentContext, connectionRecord, DidExchangeState.ResponseSent)
 
-    this.logger.debug(`Create message ${ConnectionResponseMessage.type} end`, {
+    this.logger.debug(`Create message ${ConnectionResponseMessage.type.messageTypeUri} end`, {
       connectionRecord,
       message: connectionResponse,
     })
@@ -259,7 +258,9 @@ export class ConnectionService {
     messageContext: InboundMessageContext<ConnectionResponseMessage>,
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
-    this.logger.debug(`Process message ${ConnectionResponseMessage.type} start`, messageContext)
+    this.logger.debug(`Process message ${ConnectionResponseMessage.type} start`, {
+      message: messageContext.message,
+    })
     const { connection: connectionRecord, message, recipientKey, senderKey } = messageContext
 
     if (!recipientKey || !senderKey) {
@@ -275,7 +276,10 @@ export class ConnectionService {
 
     let connectionJson = null
     try {
-      connectionJson = await unpackAndVerifySignatureDecorator(message.connectionSig, this.wallet)
+      connectionJson = await unpackAndVerifySignatureDecorator(
+        message.connectionSig,
+        messageContext.agentContext.wallet
+      )
     } catch (error) {
       if (error instanceof AriesFrameworkError) {
         throw new ConnectionProblemReportError(error.message, {
@@ -286,11 +290,6 @@ export class ConnectionService {
     }
 
     const connection = JsonTransformer.fromJSON(connectionJson, Connection)
-    try {
-      await MessageValidator.validate(connection)
-    } catch (error) {
-      throw new Error(error)
-    }
 
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
     // as the recipient key(s) in the connection invitation message
@@ -309,7 +308,7 @@ export class ConnectionService {
       throw new AriesFrameworkError('DID Document is missing.')
     }
 
-    const { did: peerDid } = await this.createDid({
+    const { did: peerDid } = await this.createDid(messageContext.agentContext, {
       role: DidDocumentRole.Received,
       didDoc: connection.didDoc,
     })
@@ -317,7 +316,7 @@ export class ConnectionService {
     connectionRecord.theirDid = peerDid
     connectionRecord.threadId = message.threadId
 
-    await this.updateState(connectionRecord, DidExchangeState.ResponseReceived)
+    await this.updateState(messageContext.agentContext, connectionRecord, DidExchangeState.ResponseReceived)
     return connectionRecord
   }
 
@@ -332,6 +331,7 @@ export class ConnectionService {
    * @returns outbound message containing trust ping message
    */
   public async createTrustPing(
+    agentContext: AgentContext,
     connectionRecord: ConnectionRecord,
     config: { responseRequested?: boolean; comment?: string } = {}
   ): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
@@ -344,7 +344,7 @@ export class ConnectionService {
 
     // Only update connection record and emit an event if the state is not already 'Complete'
     if (connectionRecord.state !== DidExchangeState.Completed) {
-      await this.updateState(connectionRecord, DidExchangeState.Completed)
+      await this.updateState(agentContext, connectionRecord, DidExchangeState.Completed)
     }
 
     return {
@@ -372,7 +372,7 @@ export class ConnectionService {
     // TODO: This is better addressed in a middleware of some kind because
     // any message can transition the state to complete, not just an ack or trust ping
     if (connection.state === DidExchangeState.ResponseSent && connection.role === DidExchangeRole.Responder) {
-      await this.updateState(connection, DidExchangeState.Completed)
+      await this.updateState(messageContext.agentContext, connection, DidExchangeState.Completed)
     }
 
     return connection
@@ -397,9 +397,9 @@ export class ConnectionService {
     }
 
     let connectionRecord
-    const ourDidRecords = await this.didRepository.findAllByRecipientKey(recipientKey)
+    const ourDidRecords = await this.didRepository.findAllByRecipientKey(messageContext.agentContext, recipientKey)
     for (const ourDidRecord of ourDidRecords) {
-      connectionRecord = await this.findByOurDid(ourDidRecord.id)
+      connectionRecord = await this.findByOurDid(messageContext.agentContext, ourDidRecord.id)
     }
 
     if (!connectionRecord) {
@@ -408,7 +408,9 @@ export class ConnectionService {
       )
     }
 
-    const theirDidRecord = connectionRecord.theirDid && (await this.didRepository.findById(connectionRecord.theirDid))
+    const theirDidRecord =
+      connectionRecord.theirDid &&
+      (await this.didRepository.findById(messageContext.agentContext, connectionRecord.theirDid))
     if (!theirDidRecord) {
       throw new AriesFrameworkError(`Did record with id ${connectionRecord.theirDid} not found.`)
     }
@@ -420,7 +422,7 @@ export class ConnectionService {
     }
 
     connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
-    await this.update(connectionRecord)
+    await this.update(messageContext.agentContext, connectionRecord)
     return connectionRecord
   }
 
@@ -498,19 +500,23 @@ export class ConnectionService {
     }
   }
 
-  public async updateState(connectionRecord: ConnectionRecord, newState: DidExchangeState) {
+  public async updateState(agentContext: AgentContext, connectionRecord: ConnectionRecord, newState: DidExchangeState) {
     const previousState = connectionRecord.state
     connectionRecord.state = newState
-    await this.connectionRepository.update(connectionRecord)
+    await this.connectionRepository.update(agentContext, connectionRecord)
 
-    this.emitStateChangedEvent(connectionRecord, previousState)
+    this.emitStateChangedEvent(agentContext, connectionRecord, previousState)
   }
 
-  private emitStateChangedEvent(connectionRecord: ConnectionRecord, previousState: DidExchangeState | null) {
+  private emitStateChangedEvent(
+    agentContext: AgentContext,
+    connectionRecord: ConnectionRecord,
+    previousState: DidExchangeState | null
+  ) {
     // Connection record in event should be static
     const clonedConnection = JsonTransformer.clone(connectionRecord)
 
-    this.eventEmitter.emit<ConnectionStateChangedEvent>({
+    this.eventEmitter.emit<ConnectionStateChangedEvent>(agentContext, {
       type: ConnectionEventTypes.ConnectionStateChanged,
       payload: {
         connectionRecord: clonedConnection,
@@ -519,8 +525,8 @@ export class ConnectionService {
     })
   }
 
-  public update(connectionRecord: ConnectionRecord) {
-    return this.connectionRepository.update(connectionRecord)
+  public update(agentContext: AgentContext, connectionRecord: ConnectionRecord) {
+    return this.connectionRepository.update(agentContext, connectionRecord)
   }
 
   /**
@@ -528,8 +534,8 @@ export class ConnectionService {
    *
    * @returns List containing all connection records
    */
-  public getAll() {
-    return this.connectionRepository.getAll()
+  public getAll(agentContext: AgentContext) {
+    return this.connectionRepository.getAll(agentContext)
   }
 
   /**
@@ -540,8 +546,8 @@ export class ConnectionService {
    * @return The connection record
    *
    */
-  public getById(connectionId: string): Promise<ConnectionRecord> {
-    return this.connectionRepository.getById(connectionId)
+  public getById(agentContext: AgentContext, connectionId: string): Promise<ConnectionRecord> {
+    return this.connectionRepository.getById(agentContext, connectionId)
   }
 
   /**
@@ -550,8 +556,8 @@ export class ConnectionService {
    * @param connectionId the connection record id
    * @returns The connection record or null if not found
    */
-  public findById(connectionId: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findById(connectionId)
+  public findById(agentContext: AgentContext, connectionId: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findById(agentContext, connectionId)
   }
 
   /**
@@ -559,13 +565,13 @@ export class ConnectionService {
    *
    * @param connectionId the connection record id
    */
-  public async deleteById(connectionId: string) {
-    const connectionRecord = await this.getById(connectionId)
-    return this.connectionRepository.delete(connectionRecord)
+  public async deleteById(agentContext: AgentContext, connectionId: string) {
+    const connectionRecord = await this.getById(agentContext, connectionId)
+    return this.connectionRepository.delete(agentContext, connectionRecord)
   }
 
-  public async findSingleByQuery(query: { did: string; theirDid: string }) {
-    return this.connectionRepository.findSingleByQuery(query)
+  public async findByDids(agentContext: AgentContext, query: { ourDid: string; theirDid: string }) {
+    return this.connectionRepository.findByDids(agentContext, query)
   }
 
   /**
@@ -576,33 +582,56 @@ export class ConnectionService {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The connection record
    */
-  public getByThreadId(threadId: string): Promise<ConnectionRecord> {
-    return this.connectionRepository.getByThreadId(threadId)
+  public async getByThreadId(agentContext: AgentContext, threadId: string): Promise<ConnectionRecord> {
+    return this.connectionRepository.getByThreadId(agentContext, threadId)
   }
 
-  public async findByTheirDid(did: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findSingleByQuery({ theirDid: did })
+  public async findByTheirDid(agentContext: AgentContext, theirDid: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findSingleByQuery(agentContext, { theirDid })
   }
 
-  public async findByOurDid(did: string): Promise<ConnectionRecord | null> {
-    return this.connectionRepository.findSingleByQuery({ did })
+  public async findByOurDid(agentContext: AgentContext, ourDid: string): Promise<ConnectionRecord | null> {
+    return this.connectionRepository.findSingleByQuery(agentContext, { did: ourDid })
   }
 
-  public async findAllByOutOfBandId(outOfBandId: string) {
-    return this.connectionRepository.findByQuery({ outOfBandId })
+  public async findAllByOutOfBandId(agentContext: AgentContext, outOfBandId: string) {
+    return this.connectionRepository.findByQuery(agentContext, { outOfBandId })
   }
 
-  public async findByInvitationDid(invitationDid: string) {
-    return this.connectionRepository.findByQuery({ invitationDid })
+  public async findByInvitationDid(agentContext: AgentContext, invitationDid: string) {
+    return this.connectionRepository.findByQuery(agentContext, { invitationDid })
   }
 
-  public async createConnection(options: ConnectionRecordProps): Promise<ConnectionRecord> {
+  public async findByKeys(
+    agentContext: AgentContext,
+    { senderKey, recipientKey }: { senderKey: Key; recipientKey: Key }
+  ) {
+    const theirDidRecord = await this.didRepository.findByRecipientKey(agentContext, senderKey)
+    if (theirDidRecord) {
+      const ourDidRecord = await this.didRepository.findByRecipientKey(agentContext, recipientKey)
+      if (ourDidRecord) {
+        const connectionRecord = await this.findByDids(agentContext, {
+          ourDid: ourDidRecord.id,
+          theirDid: theirDidRecord.id,
+        })
+        if (connectionRecord && connectionRecord.isReady) return connectionRecord
+      }
+    }
+
+    this.logger.debug(
+      `No connection record found for encrypted message with recipient key ${recipientKey.fingerprint} and sender key ${senderKey.fingerprint}`
+    )
+
+    return null
+  }
+
+  public async createConnection(agentContext: AgentContext, options: ConnectionRecordProps): Promise<ConnectionRecord> {
     const connectionRecord = new ConnectionRecord(options)
-    await this.connectionRepository.save(connectionRecord)
+    await this.connectionRepository.save(agentContext, connectionRecord)
     return connectionRecord
   }
 
-  private async createDid({ role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {
+  private async createDid(agentContext: AgentContext, { role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {
     // Convert the legacy did doc to a new did document
     const didDocument = convertToNewDidDocument(didDoc)
 
@@ -633,7 +662,7 @@ export class ConnectionService {
       didDocument: 'omitted...',
     })
 
-    await this.didRepository.save(didRecord)
+    await this.didRepository.save(agentContext, didRecord)
     this.logger.debug('Did record created.', didRecord)
     return { did: peerDid, didDocument }
   }
@@ -704,7 +733,11 @@ export class ConnectionService {
     })
   }
 
-  public async returnWhenIsConnected(connectionId: string, timeoutMs = 20000): Promise<ConnectionRecord> {
+  public async returnWhenIsConnected(
+    agentContext: AgentContext,
+    connectionId: string,
+    timeoutMs = 20000
+  ): Promise<ConnectionRecord> {
     const isConnected = (connection: ConnectionRecord) => {
       return connection.id === connectionId && connection.state === DidExchangeState.Completed
     }
@@ -722,7 +755,7 @@ export class ConnectionService {
       )
       .subscribe(subject)
 
-    const connection = await this.getById(connectionId)
+    const connection = await this.getById(agentContext, connectionId)
     if (isConnected(connection)) {
       subject.next(connection)
     }

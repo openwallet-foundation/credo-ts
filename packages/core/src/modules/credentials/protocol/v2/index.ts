@@ -1,2 +1,2 @@
-export * from '../../CredentialServiceOptions'
 export * from './V2CredentialService'
+export * from './messages'

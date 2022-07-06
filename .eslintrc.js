@@ -57,6 +57,16 @@ module.exports = {
         patterns: ['packages/*'],
       },
     ],
+    // Do not allow const enums
+    // https://github.com/typescript-eslint/typescript-eslint/issues/561#issuecomment-593059472
+    // https://ncjamieson.com/dont-export-const-enums/
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: 'TSEnumDeclaration[const=true]',
+        message: "Don't declare const enums",
+      },
+    ],
   },
   overrides: [
     {
@@ -89,7 +99,7 @@ module.exports = {
       },
     },
     {
-      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts', 'samples/**', 'demo/**'],
+      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts', 'samples/**', 'demo/**', 'scripts/**'],
       env: {
         jest: true,
         node: false,

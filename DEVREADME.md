@@ -2,6 +2,11 @@
 
 This file is intended for developers working on the internals of the framework. If you're just looking how to get started with the framework, see the [docs](./docs)
 
+## Installing dependencies
+
+Right now, as a patch that will later be changed, some platforms will have an "error" when installing the dependencies with yarn. This is because the BBS signatures library that we use is built for Linux x86 and MacOS x86 (and not Windows and MacOS arm). This means that it will show that it could not download the binary.
+This is not an error for developers, the library that fails is `node-bbs-signaturs` and is an optional dependency for perfomance improvements. It will fallback to a, slower, wasm build.
+
 ## Running tests
 
 Test are executed using jest. Some test require either the **mediator agents** or the **ledger** to be running. When running tests that require a connection to the ledger pool, you need to set the `TEST_AGENT_PUBLIC_DID_SEED` and `GENESIS_TXN_PATH` environment variables.
@@ -20,7 +25,7 @@ If you're using the setup as described in this document, you don't need to provi
 
 ### Setup Postgres
 
-> Note: Setup the postgres plugin first from here [docs](./docs/postgres-plugin-setup)
+> Note: Setup the postgres plugin first by following the [docs](https://aries.js.org/)
 
 ```sh
 # Get postgres docker image

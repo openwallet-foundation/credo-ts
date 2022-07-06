@@ -1,3 +1,4 @@
+import type { AgentContext } from '../../../../agent'
 import type { IndyEndpointAttrib, IndyLedgerService } from '../../../ledger'
 import type { DidResolver } from '../../domain/DidResolver'
 import type { ParsedDid, DidResolutionResult } from '../../types'
@@ -6,6 +7,8 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
 import { TypedArrayEncoder } from '../../../../utils/TypedArrayEncoder'
 import { getFullVerkey } from '../../../../utils/did'
+import { SECURITY_X25519_CONTEXT_URL } from '../../../vc/constants'
+import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../../vc/signature-suites/ed25519/constants'
 import { DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { DidCommV1Service } from '../../domain/service/DidCommV1Service'
@@ -20,12 +23,12 @@ export class SovDidResolver implements DidResolver {
 
   public readonly supportedMethods = ['sov']
 
-  public async resolve(did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
+  public async resolve(agentContext: AgentContext, did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 
     try {
-      const nym = await this.indyLedgerService.getPublicDid(parsed.id)
-      const endpoints = await this.indyLedgerService.getEndpointsForDid(did)
+      const nym = await this.indyLedgerService.getPublicDid(agentContext, parsed.id)
+      const endpoints = await this.indyLedgerService.getEndpointsForDid(agentContext, did)
 
       const verificationMethodId = `${parsed.did}#key-1`
       const keyAgreementId = `${parsed.did}#key-agreement-1`
@@ -36,8 +39,9 @@ export class SovDidResolver implements DidResolver {
       )
 
       const builder = new DidDocumentBuilder(parsed.did)
-        .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
-        .addContext('https://w3id.org/security/suites/x25519-2019/v1')
+
+        .addContext(ED25519_SUITE_CONTEXT_URL_2018)
+        .addContext(SECURITY_X25519_CONTEXT_URL)
         .addVerificationMethod({
           controller: parsed.did,
           id: verificationMethodId,

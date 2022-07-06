@@ -25,7 +25,6 @@ import {
   Agent,
   ConnectionInvitationMessage,
   LogLevel,
-  AgentConfig,
   WsOutboundTransport,
 } from '@aries-framework/core'
 import { HttpInboundTransport, agentDependencies, WsInboundTransport } from '@aries-framework/node'
@@ -55,7 +54,7 @@ const agentConfig: InitConfig = {
 
 // Set up agent
 const agent = new Agent(agentConfig, agentDependencies)
-const config = agent.injectionContainer.resolve(AgentConfig)
+const config = agent.config
 
 // Create all transports
 const httpInboundTransport = new HttpInboundTransport({ app, port })
@@ -72,7 +71,7 @@ agent.registerOutboundTransport(wsOutboundTransport)
 // Allow to create invitation, no other way to ask for invitation yet
 httpInboundTransport.app.get('/invitation', async (req, res) => {
   if (typeof req.query.c_i === 'string') {
-    const invitation = await ConnectionInvitationMessage.fromUrl(req.url)
+    const invitation = ConnectionInvitationMessage.fromUrl(req.url)
     res.send(invitation.toJSON())
   } else {
     const { outOfBandInvitation } = await agent.oob.createInvitation()

@@ -4,7 +4,6 @@ import * as indy from 'indy-sdk'
 import { Agent } from '../src/agent/Agent'
 import { DID_IDENTIFIER_REGEX, isAbbreviatedVerkey, isFullVerkey, VERKEY_REGEX } from '../src/utils/did'
 import { sleep } from '../src/utils/sleep'
-import { IndyWallet } from '../src/wallet/IndyWallet'
 
 import { genesisPath, getBaseConfig } from './helpers'
 import testLogger from './logger'
@@ -65,7 +64,7 @@ describe('ledger', () => {
       throw new Error('Agent does not have public did.')
     }
 
-    const faberWallet = faberAgent.injectionContainer.resolve(IndyWallet)
+    const faberWallet = faberAgent.context.wallet
     const didInfo = await faberWallet.createDid()
 
     const result = await faberAgent.ledger.registerPublicDid(didInfo.did, didInfo.verkey, 'alias', 'TRUST_ANCHOR')

@@ -9,8 +9,8 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { Key } from '../src/modules/dids'
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
@@ -700,7 +700,7 @@ describe('out of band', () => {
     test('updates the message in the didCommMessageRepository', async () => {
       const { message, credentialRecord } = await faberAgent.credentials.createOffer(credentialTemplate)
 
-      const didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
+      const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
 
       const saveOrUpdateSpy = jest.spyOn(didCommMessageRepository, 'saveOrUpdateAgentMessage')
       saveOrUpdateSpy.mockResolvedValue()
@@ -711,7 +711,7 @@ describe('out of band', () => {
         message,
       })
 
-      expect(saveOrUpdateSpy).toHaveBeenCalledWith({
+      expect(saveOrUpdateSpy).toHaveBeenCalledWith(expect.anything(), {
         agentMessage: message,
         associatedRecordId: credentialRecord.id,
         role: DidCommMessageRole.Sender,

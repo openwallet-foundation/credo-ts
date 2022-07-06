@@ -1,22 +1,22 @@
+import type { AgentContext } from '../../agent'
 import type { ResolvedDidCommService } from '../../agent/MessageSender'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
-import type { Logger } from '../../logger'
 import type { ParsedMessageType } from '../../utils/messageType'
 import type { OutOfBandDidCommService } from '../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
 import type { Routing } from './services/ConnectionService'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
-import { AgentConfig } from '../../agent/AgentConfig'
-import { KeyType } from '../../crypto'
+import { InjectionSymbols } from '../../constants'
+import { Key, KeyType } from '../../crypto'
 import { JwsService } from '../../crypto/JwsService'
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../error'
+import { Logger } from '../../logger'
+import { inject, injectable } from '../../plugins'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
-import { DidDocument, Key } from '../dids'
+import { DidDocument } from '../dids'
 import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
 import { createDidDocumentFromServices } from '../dids/domain/createPeerDidFromServices'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
@@ -33,7 +33,7 @@ import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from '.
 import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessage'
 import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
-import { HandshakeProtocol, DidExchangeRole, DidExchangeState } from './models'
+import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService } from './services'
 
 interface DidExchangeRequestParams {
@@ -45,28 +45,27 @@ interface DidExchangeRequestParams {
   autoAcceptConnection?: boolean
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DidExchangeProtocol {
-  private config: AgentConfig
   private connectionService: ConnectionService
   private jwsService: JwsService
   private didRepository: DidRepository
   private logger: Logger
 
   public constructor(
-    config: AgentConfig,
     connectionService: ConnectionService,
     didRepository: DidRepository,
-    jwsService: JwsService
+    jwsService: JwsService,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
-    this.config = config
     this.connectionService = connectionService
     this.didRepository = didRepository
     this.jwsService = jwsService
-    this.logger = config.logger
+    this.logger = logger
   }
 
   public async createRequest(
+    agentContext: AgentContext,
     outOfBandRecord: OutOfBandRecord,
     params: DidExchangeRequestParams
   ): Promise<{ message: DidExchangeRequestMessage; connectionRecord: ConnectionRecord }> {
@@ -82,7 +81,7 @@ export class DidExchangeProtocol {
     // We take just the first one for now.
     const [invitationDid] = outOfBandInvitation.invitationDids
 
-    const connectionRecord = await this.connectionService.createConnection({
+    const connectionRecord = await this.connectionService.createConnection(agentContext, {
       protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Requester,
       alias,
@@ -97,15 +96,17 @@ export class DidExchangeProtocol {
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
 
     // Create message
-    const label = params.label ?? this.config.label
-    const didDocument = await this.createPeerDidDoc(this.routingToServices(routing))
+    const label = params.label ?? agentContext.config.label
+    const didDocument = await this.createPeerDidDoc(agentContext, this.routingToServices(routing))
     const parentThreadId = outOfBandInvitation.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
     // Create sign attachment containing didDoc
     if (getNumAlgoFromPeerDid(didDocument.id) === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(didDocument, [routing.recipientKey.publicKeyBase58])
+      const didDocAttach = await this.createSignedAttachment(agentContext, didDocument, [
+        routing.recipientKey.publicKeyBase58,
+      ])
       message.didDoc = didDocAttach
     }
 
@@ -116,7 +117,7 @@ export class DidExchangeProtocol {
       connectionRecord.autoAcceptConnection = autoAcceptConnection
     }
 
-    await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
+    await this.updateState(agentContext, DidExchangeRequestMessage.type, connectionRecord)
     this.logger.debug(`Create message ${DidExchangeRequestMessage.type.messageTypeUri} end`, {
       connectionRecord,
       message,
@@ -164,7 +165,7 @@ export class DidExchangeProtocol {
       )
     }
 
-    const didDocument = await this.extractDidDocument(message)
+    const didDocument = await this.extractDidDocument(messageContext.agentContext, message)
     const didRecord = new DidRecord({
       id: message.did,
       role: DidDocumentRole.Received,
@@ -185,9 +186,9 @@ export class DidExchangeProtocol {
       didDocument: 'omitted...',
     })
 
-    await this.didRepository.save(didRecord)
+    await this.didRepository.save(messageContext.agentContext, didRecord)
 
-    const connectionRecord = await this.connectionService.createConnection({
+    const connectionRecord = await this.connectionService.createConnection(messageContext.agentContext, {
       protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Responder,
       state: DidExchangeState.RequestReceived,
@@ -199,12 +200,13 @@ export class DidExchangeProtocol {
       outOfBandId: outOfBandRecord.id,
     })
 
-    await this.updateState(DidExchangeRequestMessage.type, connectionRecord)
+    await this.updateState(messageContext.agentContext, DidExchangeRequestMessage.type, connectionRecord)
     this.logger.debug(`Process message ${DidExchangeRequestMessage.type.messageTypeUri} end`, connectionRecord)
     return connectionRecord
   }
 
   public async createResponse(
+    agentContext: AgentContext,
     connectionRecord: ConnectionRecord,
     outOfBandRecord: OutOfBandRecord,
     routing?: Routing
@@ -234,11 +236,12 @@ export class DidExchangeProtocol {
       }))
     }
 
-    const didDocument = await this.createPeerDidDoc(services)
+    const didDocument = await this.createPeerDidDoc(agentContext, services)
     const message = new DidExchangeResponseMessage({ did: didDocument.id, threadId })
 
     if (getNumAlgoFromPeerDid(didDocument.id) === PeerDidNumAlgo.GenesisDoc) {
       const didDocAttach = await this.createSignedAttachment(
+        agentContext,
         didDocument,
         Array.from(
           new Set(
@@ -254,7 +257,7 @@ export class DidExchangeProtocol {
 
     connectionRecord.did = didDocument.id
 
-    await this.updateState(DidExchangeResponseMessage.type, connectionRecord)
+    await this.updateState(agentContext, DidExchangeResponseMessage.type, connectionRecord)
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type.messageTypeUri} end`, {
       connectionRecord,
       message,
@@ -300,6 +303,7 @@ export class DidExchangeProtocol {
     }
 
     const didDocument = await this.extractDidDocument(
+      messageContext.agentContext,
       message,
       outOfBandRecord.outOfBandInvitation.getRecipientKeys().map((key) => key.publicKeyBase58)
     )
@@ -321,16 +325,17 @@ export class DidExchangeProtocol {
       didDocument: 'omitted...',
     })
 
-    await this.didRepository.save(didRecord)
+    await this.didRepository.save(messageContext.agentContext, didRecord)
 
     connectionRecord.theirDid = message.did
 
-    await this.updateState(DidExchangeResponseMessage.type, connectionRecord)
+    await this.updateState(messageContext.agentContext, DidExchangeResponseMessage.type, connectionRecord)
     this.logger.debug(`Process message ${DidExchangeResponseMessage.type.messageTypeUri} end`, connectionRecord)
     return connectionRecord
   }
 
   public async createComplete(
+    agentContext: AgentContext,
     connectionRecord: ConnectionRecord,
     outOfBandRecord: OutOfBandRecord
   ): Promise<DidExchangeCompleteMessage> {
@@ -352,7 +357,7 @@ export class DidExchangeProtocol {
 
     const message = new DidExchangeCompleteMessage({ threadId, parentThreadId })
 
-    await this.updateState(DidExchangeCompleteMessage.type, connectionRecord)
+    await this.updateState(agentContext, DidExchangeCompleteMessage.type, connectionRecord)
     this.logger.debug(`Create message ${DidExchangeCompleteMessage.type.messageTypeUri} end`, {
       connectionRecord,
       message,
@@ -385,18 +390,22 @@ export class DidExchangeProtocol {
       })
     }
 
-    await this.updateState(DidExchangeCompleteMessage.type, connectionRecord)
+    await this.updateState(messageContext.agentContext, DidExchangeCompleteMessage.type, connectionRecord)
     this.logger.debug(`Process message ${DidExchangeCompleteMessage.type.messageTypeUri} end`, { connectionRecord })
     return connectionRecord
   }
 
-  private async updateState(messageType: ParsedMessageType, connectionRecord: ConnectionRecord) {
+  private async updateState(
+    agentContext: AgentContext,
+    messageType: ParsedMessageType,
+    connectionRecord: ConnectionRecord
+  ) {
     this.logger.debug(`Updating state`, { connectionRecord })
     const nextState = DidExchangeStateMachine.nextState(messageType, connectionRecord)
-    return this.connectionService.updateState(connectionRecord, nextState)
+    return this.connectionService.updateState(agentContext, connectionRecord, nextState)
   }
 
-  private async createPeerDidDoc(services: ResolvedDidCommService[]) {
+  private async createPeerDidDoc(agentContext: AgentContext, services: ResolvedDidCommService[]) {
     const didDocument = createDidDocumentFromServices(services)
 
     const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
@@ -420,12 +429,12 @@ export class DidExchangeProtocol {
       didDocument: 'omitted...',
     })
 
-    await this.didRepository.save(didRecord)
+    await this.didRepository.save(agentContext, didRecord)
     this.logger.debug('Did record created.', didRecord)
     return didDocument
   }
 
-  private async createSignedAttachment(didDoc: DidDocument, verkeys: string[]) {
+  private async createSignedAttachment(agentContext: AgentContext, didDoc: DidDocument, verkeys: string[]) {
     const didDocAttach = new Attachment({
       mimeType: 'application/json',
       data: new AttachmentData({
@@ -439,7 +448,7 @@ export class DidExchangeProtocol {
         const kid = new DidKey(key).did
         const payload = JsonEncoder.toBuffer(didDoc)
 
-        const jws = await this.jwsService.createJws({
+        const jws = await this.jwsService.createJws(agentContext, {
           payload,
           verkey,
           header: {
@@ -461,6 +470,7 @@ export class DidExchangeProtocol {
    * @returns verified DID document content from message attachment
    */
   private async extractDidDocument(
+    agentContext: AgentContext,
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
     invitationKeysBase58: string[] = []
   ): Promise<DidDocument> {
@@ -486,7 +496,7 @@ export class DidExchangeProtocol {
     this.logger.trace('DidDocument JSON', json)
 
     const payload = JsonEncoder.toBuffer(json)
-    const { isValid, signerVerkeys } = await this.jwsService.verifyJws({ jws, payload })
+    const { isValid, signerVerkeys } = await this.jwsService.verifyJws(agentContext, { jws, payload })
 
     const didDocument = JsonTransformer.fromJSON(json, DidDocument)
     const didDocumentKeysBase58 = didDocument.authentication

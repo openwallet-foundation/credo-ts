@@ -1,14 +1,22 @@
+import type { GetFormatDataReturn } from './CredentialServiceOptions'
 import type { CredentialFormat, CredentialFormatPayload } from './formats'
 import type { AutoAcceptCredential } from './models/CredentialAutoAcceptType'
 import type { CredentialService } from './services'
 
+// re-export GetFormatDataReturn type from service, as it is also used in the module
+export type { GetFormatDataReturn }
+
+export type FindProposalMessageReturn<CSs extends CredentialService[]> = ReturnType<CSs[number]['findProposalMessage']>
+export type FindOfferMessageReturn<CSs extends CredentialService[]> = ReturnType<CSs[number]['findOfferMessage']>
+export type FindRequestMessageReturn<CSs extends CredentialService[]> = ReturnType<CSs[number]['findRequestMessage']>
+export type FindCredentialMessageReturn<CSs extends CredentialService[]> = ReturnType<
+  CSs[number]['findCredentialMessage']
+>
+
 /**
  * Get the supported protocol versions based on the provided credential services.
  */
-export type ProtocolVersionType<
-  CFs extends CredentialFormat[],
-  CSs extends CredentialService<CFs>[]
-> = CSs[number]['version']
+export type ProtocolVersionType<CSs extends CredentialService[]> = CSs[number]['version']
 
 /**
  * Get the service map for usage in the credentials module. Will return a type mapping of protocol version to service.
@@ -37,10 +45,10 @@ interface BaseOptions {
  */
 export interface ProposeCredentialOptions<
   CFs extends CredentialFormat[] = CredentialFormat[],
-  CSs extends CredentialService<CFs>[] = CredentialService<CredentialFormat[]>[]
+  CSs extends CredentialService[] = CredentialService[]
 > extends BaseOptions {
   connectionId: string
-  protocolVersion: ProtocolVersionType<CFs, CSs>
+  protocolVersion: ProtocolVersionType<CSs>
   credentialFormats: CredentialFormatPayload<CFs, 'createProposal'>
 }
 
@@ -67,9 +75,9 @@ export interface NegotiateProposalOptions<CFs extends CredentialFormat[] = Crede
  */
 export interface CreateOfferOptions<
   CFs extends CredentialFormat[] = CredentialFormat[],
-  CSs extends CredentialService<CFs>[] = CredentialService<CredentialFormat[]>[]
+  CSs extends CredentialService[] = CredentialService[]
 > extends BaseOptions {
-  protocolVersion: ProtocolVersionType<CFs, CSs>
+  protocolVersion: ProtocolVersionType<CSs>
   credentialFormats: CredentialFormatPayload<CFs, 'createOffer'>
 }
 
@@ -78,7 +86,7 @@ export interface CreateOfferOptions<
  */
 export interface OfferCredentialOptions<
   CFs extends CredentialFormat[] = CredentialFormat[],
-  CSs extends CredentialService<CFs>[] = CredentialService<CredentialFormat[]>[]
+  CSs extends CredentialService[] = CredentialService[]
 > extends BaseOptions,
     CreateOfferOptions<CFs, CSs> {
   connectionId: string
@@ -119,4 +127,12 @@ export interface AcceptRequestOptions<CFs extends CredentialFormat[] = Credentia
  */
 export interface AcceptCredentialOptions {
   credentialRecordId: string
+}
+
+/**
+ * Interface for CredentialsModule.sendProblemReport. Will send a problem-report message
+ */
+export interface SendProblemReportOptions {
+  credentialRecordId: string
+  message: string
 }

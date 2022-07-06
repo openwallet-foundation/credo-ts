@@ -1,16 +1,18 @@
 import type { AgentMessageProcessedEvent } from '../../agent/Events'
+import type { DependencyManager } from '../../plugins'
 import type { ParsedMessageType } from '../../utils/messageType'
 
-import { firstValueFrom, of, ReplaySubject } from 'rxjs'
-import { filter, takeUntil, timeout, catchError, map } from 'rxjs/operators'
-import { Lifecycle, scoped } from 'tsyringe'
+import { firstValueFrom, of, ReplaySubject, Subject } from 'rxjs'
+import { catchError, filter, map, takeUntil, timeout } from 'rxjs/operators'
 
-import { AgentConfig } from '../../agent/AgentConfig'
+import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { InjectionSymbols } from '../../constants'
+import { inject, injectable, module } from '../../plugins'
 import { canHandleMessageType, parseMessageType } from '../../utils/messageType'
 import { ConnectionService } from '../connections/services'
 
@@ -18,13 +20,15 @@ import { DiscloseMessageHandler, QueryMessageHandler } from './handlers'
 import { DiscloseMessage } from './messages'
 import { DiscoverFeaturesService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class DiscoverFeaturesModule {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private discoverFeaturesService: DiscoverFeaturesService
   private eventEmitter: EventEmitter
-  private agentConfig: AgentConfig
+  private stop$: Subject<boolean>
+  private agentContext: AgentContext
 
   public constructor(
     dispatcher: Dispatcher,
@@ -32,14 +36,16 @@ export class DiscoverFeaturesModule {
     messageSender: MessageSender,
     discoverFeaturesService: DiscoverFeaturesService,
     eventEmitter: EventEmitter,
-    agentConfig: AgentConfig
+    @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
+    agentContext: AgentContext
   ) {
     this.connectionService = connectionService
     this.messageSender = messageSender
     this.discoverFeaturesService = discoverFeaturesService
     this.registerHandlers(dispatcher)
     this.eventEmitter = eventEmitter
-    this.agentConfig = agentConfig
+    this.stop$ = stop$
+    this.agentContext = agentContext
   }
 
   public async isProtocolSupported(connectionId: string, message: { type: ParsedMessageType }) {
@@ -51,7 +57,7 @@ export class DiscoverFeaturesModule {
       .observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
       .pipe(
         // Stop when the agent shuts down
-        takeUntil(this.agentConfig.stop$),
+        takeUntil(this.stop$),
         // filter by connection id and query disclose message type
         filter(
           (e) =>
@@ -81,16 +87,27 @@ export class DiscoverFeaturesModule {
   }
 
   public async queryFeatures(connectionId: string, options: { query: string; comment?: string }) {
-    const connection = await this.connectionService.getById(connectionId)
+    const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
     const queryMessage = await this.discoverFeaturesService.createQuery(options)
 
     const outbound = createOutboundMessage(connection, queryMessage)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendMessage(this.agentContext, outbound)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new DiscloseMessageHandler())
     dispatcher.registerHandler(new QueryMessageHandler(this.discoverFeaturesService))
+  }
+
+  /**
+   * Registers the dependencies of the discover features module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(DiscoverFeaturesModule)
+
+    // Services
+    dependencyManager.registerSingleton(DiscoverFeaturesService)
   }
 }

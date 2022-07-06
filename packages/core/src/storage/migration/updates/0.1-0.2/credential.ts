@@ -18,10 +18,10 @@ import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } fr
  */
 export async function migrateCredentialRecordToV0_2(agent: Agent) {
   agent.config.logger.info('Migrating credential records to storage version 0.2')
-  const credentialRepository = agent.injectionContainer.resolve(CredentialRepository)
+  const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
 
   agent.config.logger.debug(`Fetching all credential records from storage`)
-  const allCredentials = await credentialRepository.getAll()
+  const allCredentials = await credentialRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${allCredentials.length} credential records to update.`)
   for (const credentialRecord of allCredentials) {
@@ -31,7 +31,7 @@ export async function migrateCredentialRecordToV0_2(agent: Agent) {
     await migrateInternalCredentialRecordProperties(agent, credentialRecord)
     await moveDidCommMessages(agent, credentialRecord)
 
-    await credentialRepository.update(credentialRecord)
+    await credentialRepository.update(agent.context, credentialRecord)
 
     agent.config.logger.debug(
       `Successfully migrated credential record with id ${credentialRecord.id} to storage version 0.2`
@@ -39,7 +39,7 @@ export async function migrateCredentialRecordToV0_2(agent: Agent) {
   }
 }
 
-export const enum CredentialRole {
+export enum CredentialRole {
   Issuer,
   Holder,
 }
@@ -214,7 +214,7 @@ export async function moveDidCommMessages(agent: Agent, credentialRecord: Creden
   agent.config.logger.debug(
     `Moving didcomm messages from credential record with id ${credentialRecord.id} to DidCommMessageRecord`
   )
-  const didCommMessageRepository = agent.injectionContainer.resolve(DidCommMessageRepository)
+  const didCommMessageRepository = agent.dependencyManager.resolve(DidCommMessageRepository)
 
   for (const messageKey of credentialRecordMessageKeys) {
     agent.config.logger.debug(
@@ -232,7 +232,7 @@ export async function moveDidCommMessages(agent: Agent, credentialRecord: Creden
         associatedRecordId: credentialRecord.id,
         message,
       })
-      await didCommMessageRepository.save(didCommMessageRecord)
+      await didCommMessageRepository.save(agent.context, didCommMessageRecord)
 
       agent.config.logger.debug(
         `Successfully moved ${messageKey} from credential record with id ${credentialRecord.id} to DIDCommMessageRecord`
