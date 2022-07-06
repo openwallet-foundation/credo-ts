@@ -1,3 +1,4 @@
+import type { AgentContext } from '../../../../agent'
 import type { DidDocument } from '../../domain'
 import type { DidResolver } from '../../domain/DidResolver'
 import type { DidRepository } from '../../repository'
@@ -18,7 +19,7 @@ export class PeerDidResolver implements DidResolver {
     this.didRepository = didRepository
   }
 
-  public async resolve(did: string): Promise<DidResolutionResult> {
+  public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 
     try {
@@ -36,7 +37,7 @@ export class PeerDidResolver implements DidResolver {
       }
       // For Method 1, retrieve from storage
       else if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
-        const didDocumentRecord = await this.didRepository.getById(did)
+        const didDocumentRecord = await this.didRepository.getById(agentContext, did)
 
         if (!didDocumentRecord.didDocument) {
           throw new AriesFrameworkError(`Found did record for method 1 peer did (${did}), but no did document.`)

@@ -1,4 +1,3 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
@@ -10,7 +9,6 @@ import { AriesFrameworkError } from '../../../error'
 import { ConnectionResponseMessage } from '../messages'
 
 export class ConnectionResponseHandler implements Handler {
-  private agentConfig: AgentConfig
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
   private didResolverService: DidResolverService
@@ -18,12 +16,10 @@ export class ConnectionResponseHandler implements Handler {
   public supportedMessages = [ConnectionResponseMessage]
 
   public constructor(
-    agentConfig: AgentConfig,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
     didResolverService: DidResolverService
   ) {
-    this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
     this.didResolverService = didResolverService
@@ -36,7 +32,7 @@ export class ConnectionResponseHandler implements Handler {
       throw new AriesFrameworkError('Unable to process connection response without senderKey or recipientKey')
     }
 
-    const connectionRecord = await this.connectionService.getByThreadId(message.threadId)
+    const connectionRecord = await this.connectionService.getByThreadId(messageContext.agentContext, message.threadId)
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }
@@ -45,7 +41,10 @@ export class ConnectionResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} has no 'did'`)
     }
 
-    const ourDidDocument = await this.didResolverService.resolveDidDocument(connectionRecord.did)
+    const ourDidDocument = await this.didResolverService.resolveDidDocument(
+      messageContext.agentContext,
+      connectionRecord.did
+    )
     if (!ourDidDocument) {
       throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved!`)
     }
@@ -59,7 +58,8 @@ export class ConnectionResponseHandler implements Handler {
     }
 
     const outOfBandRecord =
-      connectionRecord.outOfBandId && (await this.outOfBandService.findById(connectionRecord.outOfBandId))
+      connectionRecord.outOfBandId &&
+      (await this.outOfBandService.findById(messageContext.agentContext, connectionRecord.outOfBandId))
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} was not found.`)
@@ -72,8 +72,10 @@ export class ConnectionResponseHandler implements Handler {
     // TODO: should we only send ping message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the ping. So for now we'll only do it
     // if auto accept is enable
-    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const { message } = await this.connectionService.createTrustPing(connection, { responseRequested: false })
+    if (connection.autoAcceptConnection ?? messageContext.agentContext.config.autoAcceptConnections) {
+      const { message } = await this.connectionService.createTrustPing(messageContext.agentContext, connection, {
+        responseRequested: false,
+      })
 
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message

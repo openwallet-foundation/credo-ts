@@ -1,4 +1,3 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
@@ -13,19 +12,16 @@ import { DidExchangeRequestMessage } from '../messages'
 export class DidExchangeRequestHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
-  private agentConfig: AgentConfig
   private routingService: RoutingService
   private didRepository: DidRepository
   public supportedMessages = [DidExchangeRequestMessage]
 
   public constructor(
-    agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
     outOfBandService: OutOfBandService,
     routingService: RoutingService,
     didRepository: DidRepository
   ) {
-    this.agentConfig = agentConfig
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
     this.routingService = routingService
@@ -42,7 +38,10 @@ export class DidExchangeRequestHandler implements Handler {
     if (!message.thread?.parentThreadId) {
       throw new AriesFrameworkError(`Message does not contain 'pthid' attribute`)
     }
-    const outOfBandRecord = await this.outOfBandService.findByInvitationId(message.thread.parentThreadId)
+    const outOfBandRecord = await this.outOfBandService.findByInvitationId(
+      messageContext.agentContext,
+      message.thread.parentThreadId
+    )
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
@@ -54,7 +53,7 @@ export class DidExchangeRequestHandler implements Handler {
       )
     }
 
-    const didRecord = await this.didRepository.findByRecipientKey(senderKey)
+    const didRecord = await this.didRepository.findByRecipientKey(messageContext.agentContext, senderKey)
     if (didRecord) {
       throw new AriesFrameworkError(`Did record for sender key ${senderKey.fingerprint} already exists.`)
     }
@@ -69,12 +68,19 @@ export class DidExchangeRequestHandler implements Handler {
 
     const connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, outOfBandRecord)
 
-    if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+    if (connectionRecord?.autoAcceptConnection ?? messageContext.agentContext.config.autoAcceptConnections) {
       // TODO We should add an option to not pass routing and therefore do not rotate keys and use the keys from the invitation
       // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
-      const routing = outOfBandRecord.reusable ? await this.routingService.getRouting() : undefined
+      const routing = outOfBandRecord.reusable
+        ? await this.routingService.getRouting(messageContext.agentContext)
+        : undefined
 
-      const message = await this.didExchangeProtocol.createResponse(connectionRecord, outOfBandRecord, routing)
+      const message = await this.didExchangeProtocol.createResponse(
+        messageContext.agentContext,
+        connectionRecord,
+        outOfBandRecord,
+        routing
+      )
       return createOutboundMessage(connectionRecord, message, outOfBandRecord)
     }
   }

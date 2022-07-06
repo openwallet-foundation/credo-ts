@@ -1,7 +1,6 @@
 import type { Handler, HandlerInboundMessage } from '../../../../../../agent/Handler'
 import type { MessagePickupService } from '../MessagePickupService'
 
-import { AriesFrameworkError } from '../../../../../../error'
 import { BatchPickupMessage } from '../messages'
 
 export class BatchPickupHandler implements Handler {
@@ -13,11 +12,7 @@ export class BatchPickupHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<BatchPickupHandler>) {
-    const { message, connection } = messageContext
-
-    if (!connection) {
-      throw new AriesFrameworkError(`No connection associated with incoming message with id ${message.id}`)
-    }
+    messageContext.assertReadyConnection()
 
     return this.messagePickupService.batch(messageContext)
   }

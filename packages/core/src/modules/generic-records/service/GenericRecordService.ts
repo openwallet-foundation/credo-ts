@@ -1,3 +1,4 @@
+import type { AgentContext } from '../../../agent'
 import type { GenericRecordTags, SaveGenericRecordOption } from '../repository/GenericRecord'
 
 import { AriesFrameworkError } from '../../../error'
@@ -13,7 +14,7 @@ export class GenericRecordService {
     this.genericRecordsRepository = genericRecordsRepository
   }
 
-  public async save({ content, tags, id }: SaveGenericRecordOption) {
+  public async save(agentContext: AgentContext, { content, tags, id }: SaveGenericRecordOption) {
     const genericRecord = new GenericRecord({
       id,
       content,
@@ -21,7 +22,7 @@ export class GenericRecordService {
     })
 
     try {
-      await this.genericRecordsRepository.save(genericRecord)
+      await this.genericRecordsRepository.save(agentContext, genericRecord)
       return genericRecord
     } catch (error) {
       throw new AriesFrameworkError(
@@ -30,35 +31,35 @@ export class GenericRecordService {
     }
   }
 
-  public async delete(record: GenericRecord): Promise<void> {
+  public async delete(agentContext: AgentContext, record: GenericRecord): Promise<void> {
     try {
-      await this.genericRecordsRepository.delete(record)
+      await this.genericRecordsRepository.delete(agentContext, record)
     } catch (error) {
       throw new AriesFrameworkError(`Unable to delete the genericRecord record with id ${record.id}. Message: ${error}`)
     }
   }
 
-  public async deleteById(id: string): Promise<void> {
-    await this.genericRecordsRepository.deleteById(id)
+  public async deleteById(agentContext: AgentContext, id: string): Promise<void> {
+    await this.genericRecordsRepository.deleteById(agentContext, id)
   }
 
-  public async update(record: GenericRecord): Promise<void> {
+  public async update(agentContext: AgentContext, record: GenericRecord): Promise<void> {
     try {
-      await this.genericRecordsRepository.update(record)
+      await this.genericRecordsRepository.update(agentContext, record)
     } catch (error) {
       throw new AriesFrameworkError(`Unable to update the genericRecord record with id ${record.id}. Message: ${error}`)
     }
   }
 
-  public async findAllByQuery(query: Partial<GenericRecordTags>) {
-    return this.genericRecordsRepository.findByQuery(query)
+  public async findAllByQuery(agentContext: AgentContext, query: Partial<GenericRecordTags>) {
+    return this.genericRecordsRepository.findByQuery(agentContext, query)
   }
 
-  public async findById(id: string): Promise<GenericRecord | null> {
-    return this.genericRecordsRepository.findById(id)
+  public async findById(agentContext: AgentContext, id: string): Promise<GenericRecord | null> {
+    return this.genericRecordsRepository.findById(agentContext, id)
   }
 
-  public async getAll() {
-    return this.genericRecordsRepository.getAll()
+  public async getAll(agentContext: AgentContext) {
+    return this.genericRecordsRepository.getAll(agentContext)
   }
 }

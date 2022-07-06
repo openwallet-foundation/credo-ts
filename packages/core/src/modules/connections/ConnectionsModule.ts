@@ -1,10 +1,9 @@
-import type { Key } from '../../crypto'
 import type { DependencyManager } from '../../plugins'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
 
-import { AgentConfig } from '../../agent/AgentConfig'
+import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
@@ -35,7 +34,6 @@ import { TrustPingService } from './services/TrustPingService'
 @module()
 @injectable()
 export class ConnectionsModule {
-  private agentConfig: AgentConfig
   private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
@@ -44,10 +42,10 @@ export class ConnectionsModule {
   private routingService: RoutingService
   private didRepository: DidRepository
   private didResolverService: DidResolverService
+  private agentContext: AgentContext
 
   public constructor(
     dispatcher: Dispatcher,
-    agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
@@ -55,9 +53,9 @@ export class ConnectionsModule {
     routingService: RoutingService,
     didRepository: DidRepository,
     didResolverService: DidResolverService,
-    messageSender: MessageSender
+    messageSender: MessageSender,
+    agentContext: AgentContext
   ) {
-    this.agentConfig = agentConfig
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
@@ -66,6 +64,8 @@ export class ConnectionsModule {
     this.didRepository = didRepository
     this.messageSender = messageSender
     this.didResolverService = didResolverService
+    this.agentContext = agentContext
+
     this.registerHandlers(dispatcher)
   }
 
@@ -82,18 +82,20 @@ export class ConnectionsModule {
   ) {
     const { protocol, label, alias, imageUrl, autoAcceptConnection } = config
 
-    const routing = config.routing || (await this.routingService.getRouting({ mediatorId: outOfBandRecord.mediatorId }))
+    const routing =
+      config.routing ||
+      (await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId }))
 
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
-      result = await this.didExchangeProtocol.createRequest(outOfBandRecord, {
+      result = await this.didExchangeProtocol.createRequest(this.agentContext, outOfBandRecord, {
         label,
         alias,
         routing,
         autoAcceptConnection,
       })
     } else if (protocol === HandshakeProtocol.Connections) {
-      result = await this.connectionService.createRequest(outOfBandRecord, {
+      result = await this.connectionService.createRequest(this.agentContext, outOfBandRecord, {
         label,
         alias,
         imageUrl,
@@ -106,7 +108,7 @@ export class ConnectionsModule {
 
     const { message, connectionRecord } = result
     const outboundMessage = createOutboundMessage(connectionRecord, message, outOfBandRecord)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     return connectionRecord
   }
 
@@ -118,7 +120,7 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
-    const connectionRecord = await this.connectionService.findById(connectionId)
+    const connectionRecord = await this.connectionService.findById(this.agentContext, connectionId)
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection record ${connectionId} not found.`)
     }
@@ -126,21 +128,29 @@ export class ConnectionsModule {
       throw new AriesFrameworkError(`Connection record ${connectionId} does not have out-of-band record.`)
     }
 
-    const outOfBandRecord = await this.outOfBandService.findById(connectionRecord.outOfBandId)
+    const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
     let outboundMessage
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
-      const message = await this.didExchangeProtocol.createResponse(connectionRecord, outOfBandRecord)
+      const message = await this.didExchangeProtocol.createResponse(
+        this.agentContext,
+        connectionRecord,
+        outOfBandRecord
+      )
       outboundMessage = createOutboundMessage(connectionRecord, message)
     } else {
-      const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord)
+      const { message } = await this.connectionService.createResponse(
+        this.agentContext,
+        connectionRecord,
+        outOfBandRecord
+      )
       outboundMessage = createOutboundMessage(connectionRecord, message)
     }
 
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     return connectionRecord
   }
 
@@ -152,26 +162,30 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
-    const connectionRecord = await this.connectionService.getById(connectionId)
+    const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
     let outboundMessage
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       if (!connectionRecord.outOfBandId) {
         throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
       }
-      const outOfBandRecord = await this.outOfBandService.findById(connectionRecord.outOfBandId)
+      const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
       if (!outOfBandRecord) {
         throw new AriesFrameworkError(
           `OutOfBand record for connection ${connectionRecord.id} with outOfBandId ${connectionRecord.outOfBandId} not found!`
         )
       }
-      const message = await this.didExchangeProtocol.createComplete(connectionRecord, outOfBandRecord)
+      const message = await this.didExchangeProtocol.createComplete(
+        this.agentContext,
+        connectionRecord,
+        outOfBandRecord
+      )
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
       outboundMessage = createOutboundMessage(connectionRecord, message)
     } else {
-      const { message } = await this.connectionService.createTrustPing(connectionRecord, {
+      const { message } = await this.connectionService.createTrustPing(this.agentContext, connectionRecord, {
         responseRequested: false,
       })
       // Disable return routing as we don't want to receive a response for this message over the same channel
@@ -180,12 +194,12 @@ export class ConnectionsModule {
       outboundMessage = createOutboundMessage(connectionRecord, message)
     }
 
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     return connectionRecord
   }
 
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
-    return this.connectionService.returnWhenIsConnected(connectionId, options?.timeoutMs)
+    return this.connectionService.returnWhenIsConnected(this.agentContext, connectionId, options?.timeoutMs)
   }
 
   /**
@@ -194,7 +208,7 @@ export class ConnectionsModule {
    * @returns List containing all connection records
    */
   public getAll() {
-    return this.connectionService.getAll()
+    return this.connectionService.getAll(this.agentContext)
   }
 
   /**
@@ -206,7 +220,7 @@ export class ConnectionsModule {
    *
    */
   public getById(connectionId: string): Promise<ConnectionRecord> {
-    return this.connectionService.getById(connectionId)
+    return this.connectionService.getById(this.agentContext, connectionId)
   }
 
   /**
@@ -216,7 +230,7 @@ export class ConnectionsModule {
    * @returns The connection record or null if not found
    */
   public findById(connectionId: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.findById(connectionId)
+    return this.connectionService.findById(this.agentContext, connectionId)
   }
 
   /**
@@ -225,31 +239,11 @@ export class ConnectionsModule {
    * @param connectionId the connection record id
    */
   public async deleteById(connectionId: string) {
-    return this.connectionService.deleteById(connectionId)
-  }
-
-  public async findByKeys({ senderKey, recipientKey }: { senderKey: Key; recipientKey: Key }) {
-    const theirDidRecord = await this.didRepository.findByRecipientKey(senderKey)
-    if (theirDidRecord) {
-      const ourDidRecord = await this.didRepository.findByRecipientKey(recipientKey)
-      if (ourDidRecord) {
-        const connectionRecord = await this.connectionService.findSingleByQuery({
-          did: ourDidRecord.id,
-          theirDid: theirDidRecord.id,
-        })
-        if (connectionRecord && connectionRecord.isReady) return connectionRecord
-      }
-    }
-
-    this.agentConfig.logger.debug(
-      `No connection record found for encrypted message with recipient key ${recipientKey.fingerprint} and sender key ${senderKey.fingerprint}`
-    )
-
-    return null
+    return this.connectionService.deleteById(this.agentContext, connectionId)
   }
 
   public async findAllByOutOfBandId(outOfBandId: string) {
-    return this.connectionService.findAllByOutOfBandId(outOfBandId)
+    return this.connectionService.findAllByOutOfBandId(this.agentContext, outOfBandId)
   }
 
   /**
@@ -261,21 +255,20 @@ export class ConnectionsModule {
    * @returns The connection record
    */
   public getByThreadId(threadId: string): Promise<ConnectionRecord> {
-    return this.connectionService.getByThreadId(threadId)
+    return this.connectionService.getByThreadId(this.agentContext, threadId)
   }
 
   public async findByDid(did: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.findByTheirDid(did)
+    return this.connectionService.findByTheirDid(this.agentContext, did)
   }
 
   public async findByInvitationDid(invitationDid: string): Promise<ConnectionRecord[]> {
-    return this.connectionService.findByInvitationDid(invitationDid)
+    return this.connectionService.findByInvitationDid(this.agentContext, invitationDid)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
       new ConnectionRequestHandler(
-        this.agentConfig,
         this.connectionService,
         this.outOfBandService,
         this.routingService,
@@ -283,12 +276,7 @@ export class ConnectionsModule {
       )
     )
     dispatcher.registerHandler(
-      new ConnectionResponseHandler(
-        this.agentConfig,
-        this.connectionService,
-        this.outOfBandService,
-        this.didResolverService
-      )
+      new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.didResolverService)
     )
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
@@ -296,7 +284,6 @@ export class ConnectionsModule {
 
     dispatcher.registerHandler(
       new DidExchangeRequestHandler(
-        this.agentConfig,
         this.didExchangeProtocol,
         this.outOfBandService,
         this.routingService,
@@ -306,7 +293,6 @@ export class ConnectionsModule {
 
     dispatcher.registerHandler(
       new DidExchangeResponseHandler(
-        this.agentConfig,
         this.didExchangeProtocol,
         this.outOfBandService,
         this.connectionService,

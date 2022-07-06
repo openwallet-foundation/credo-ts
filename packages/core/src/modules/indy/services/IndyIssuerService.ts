@@ -1,37 +1,37 @@
-import type { FileSystem } from '../../../storage/FileSystem'
+import type { AgentContext } from '../../../agent'
 import type {
-  default as Indy,
-  CredDef,
-  Schema,
   Cred,
+  CredDef,
   CredDefId,
   CredOffer,
   CredReq,
   CredRevocId,
   CredValues,
+  default as Indy,
+  Schema,
 } from 'indy-sdk'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
+import { AgentDependencies } from '../../../agent/AgentDependencies'
+import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { IndySdkError } from '../../../error/IndySdkError'
-import { injectable } from '../../../plugins'
+import { injectable, inject } from '../../../plugins'
 import { isIndyError } from '../../../utils/indyError'
-import { IndyWallet } from '../../../wallet/IndyWallet'
+import { assertIndyWallet } from '../../../wallet/util/assertIndyWallet'
 
 import { IndyUtilitiesService } from './IndyUtilitiesService'
 
 @injectable()
 export class IndyIssuerService {
   private indy: typeof Indy
-  private wallet: IndyWallet
   private indyUtilitiesService: IndyUtilitiesService
-  private fileSystem: FileSystem
 
-  public constructor(agentConfig: AgentConfig, wallet: IndyWallet, indyUtilitiesService: IndyUtilitiesService) {
-    this.indy = agentConfig.agentDependencies.indy
-    this.wallet = wallet
+  public constructor(
+    indyUtilitiesService: IndyUtilitiesService,
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies
+  ) {
+    this.indy = agentDependencies.indy
     this.indyUtilitiesService = indyUtilitiesService
-    this.fileSystem = agentConfig.fileSystem
   }
 
   /**
@@ -39,7 +39,11 @@ export class IndyIssuerService {
    *
    * @returns the schema.
    */
-  public async createSchema({ originDid, name, version, attributes }: CreateSchemaOptions): Promise<Schema> {
+  public async createSchema(
+    agentContext: AgentContext,
+    { originDid, name, version, attributes }: CreateSchemaOptions
+  ): Promise<Schema> {
+    assertIndyWallet(agentContext.wallet)
     try {
       const [, schema] = await this.indy.issuerCreateSchema(originDid, name, version, attributes)
 
@@ -54,16 +58,20 @@ export class IndyIssuerService {
    *
    * @returns the credential definition.
    */
-  public async createCredentialDefinition({
-    issuerDid,
-    schema,
-    tag = 'default',
-    signatureType = 'CL',
-    supportRevocation = false,
-  }: CreateCredentialDefinitionOptions): Promise<CredDef> {
+  public async createCredentialDefinition(
+    agentContext: AgentContext,
+    {
+      issuerDid,
+      schema,
+      tag = 'default',
+      signatureType = 'CL',
+      supportRevocation = false,
+    }: CreateCredentialDefinitionOptions
+  ): Promise<CredDef> {
+    assertIndyWallet(agentContext.wallet)
     try {
       const [, credentialDefinition] = await this.indy.issuerCreateAndStoreCredentialDef(
-        this.wallet.handle,
+        agentContext.wallet.handle,
         issuerDid,
         schema,
         tag,
@@ -85,9 +93,10 @@ export class IndyIssuerService {
    * @param credentialDefinitionId The credential definition to create an offer for
    * @returns The created credential offer
    */
-  public async createCredentialOffer(credentialDefinitionId: CredDefId) {
+  public async createCredentialOffer(agentContext: AgentContext, credentialDefinitionId: CredDefId) {
+    assertIndyWallet(agentContext.wallet)
     try {
-      return await this.indy.issuerCreateCredentialOffer(this.wallet.handle, credentialDefinitionId)
+      return await this.indy.issuerCreateCredentialOffer(agentContext.wallet.handle, credentialDefinitionId)
     } catch (error) {
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
@@ -98,13 +107,17 @@ export class IndyIssuerService {
    *
    * @returns Credential and revocation id
    */
-  public async createCredential({
-    credentialOffer,
-    credentialRequest,
-    credentialValues,
-    revocationRegistryId,
-    tailsFilePath,
-  }: CreateCredentialOptions): Promise<[Cred, CredRevocId]> {
+  public async createCredential(
+    agentContext: AgentContext,
+    {
+      credentialOffer,
+      credentialRequest,
+      credentialValues,
+      revocationRegistryId,
+      tailsFilePath,
+    }: CreateCredentialOptions
+  ): Promise<[Cred, CredRevocId]> {
+    assertIndyWallet(agentContext.wallet)
     try {
       // Indy SDK requires tailsReaderHandle. Use null if no tailsFilePath is present
       const tailsReaderHandle = tailsFilePath ? await this.indyUtilitiesService.createTailsReader(tailsFilePath) : 0
@@ -114,7 +127,7 @@ export class IndyIssuerService {
       }
 
       const [credential, credentialRevocationId] = await this.indy.issuerCreateCredential(
-        this.wallet.handle,
+        agentContext.wallet.handle,
         credentialOffer,
         credentialRequest,
         credentialValues,

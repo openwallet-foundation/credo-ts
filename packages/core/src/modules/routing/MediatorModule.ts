@@ -2,10 +2,9 @@ import type { DependencyManager } from '../../plugins'
 import type { EncryptedMessage } from '../../types'
 import type { MediationRecord } from './repository'
 
-import { AgentConfig } from '../../agent/AgentConfig'
+import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { MessageReceiver } from '../../agent/MessageReceiver'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { injectable, module } from '../../plugins'
@@ -23,7 +22,7 @@ export class MediatorModule {
   private messagePickupService: MessagePickupService
   private messageSender: MessageSender
   public eventEmitter: EventEmitter
-  public agentConfig: AgentConfig
+  public agentContext: AgentContext
   public connectionService: ConnectionService
 
   public constructor(
@@ -31,32 +30,43 @@ export class MediatorModule {
     mediationService: MediatorService,
     messagePickupService: MessagePickupService,
     messageSender: MessageSender,
-    messageReceiver: MessageReceiver,
     eventEmitter: EventEmitter,
-    agentConfig: AgentConfig,
+    agentContext: AgentContext,
     connectionService: ConnectionService
   ) {
     this.mediatorService = mediationService
     this.messagePickupService = messagePickupService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.agentConfig = agentConfig
     this.connectionService = connectionService
+    this.agentContext = agentContext
     this.registerHandlers(dispatcher)
   }
 
   public async initialize() {
-    await this.mediatorService.initialize()
+    this.agentContext.config.logger.debug('Mediator routing record not loaded yet, retrieving from storage')
+    const routingRecord = await this.mediatorService.findMediatorRoutingRecord(this.agentContext)
+
+    // If we don't have a routing record yet for this tenant, create it
+    if (!routingRecord) {
+      this.agentContext.config.logger.debug(
+        'Mediator routing record does not exist yet, creating routing keys and record'
+      )
+      await this.mediatorService.createMediatorRoutingRecord(this.agentContext)
+    }
   }
 
   public async grantRequestedMediation(mediatorId: string): Promise<MediationRecord> {
-    const record = await this.mediatorService.getById(mediatorId)
-    const connectionRecord = await this.connectionService.getById(record.connectionId)
+    const record = await this.mediatorService.getById(this.agentContext, mediatorId)
+    const connectionRecord = await this.connectionService.getById(this.agentContext, record.connectionId)
 
-    const { message, mediationRecord } = await this.mediatorService.createGrantMediationMessage(record)
+    const { message, mediationRecord } = await this.mediatorService.createGrantMediationMessage(
+      this.agentContext,
+      record
+    )
     const outboundMessage = createOutboundMessage(connectionRecord, message)
 
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return mediationRecord
   }
@@ -68,7 +78,7 @@ export class MediatorModule {
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateHandler(this.mediatorService))
     dispatcher.registerHandler(new ForwardHandler(this.mediatorService, this.connectionService, this.messageSender))
-    dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig))
+    dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService))
   }
 
   /**

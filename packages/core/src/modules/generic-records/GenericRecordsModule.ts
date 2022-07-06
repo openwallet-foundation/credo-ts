@@ -1,9 +1,10 @@
-import type { Logger } from '../../logger'
 import type { DependencyManager } from '../../plugins'
 import type { GenericRecord, GenericRecordTags, SaveGenericRecordOption } from './repository/GenericRecord'
 
-import { AgentConfig } from '../../agent/AgentConfig'
-import { injectable, module } from '../../plugins'
+import { AgentContext } from '../../agent'
+import { InjectionSymbols } from '../../constants'
+import { Logger } from '../../logger'
+import { inject, injectable, module } from '../../plugins'
 
 import { GenericRecordsRepository } from './repository/GenericRecordsRepository'
 import { GenericRecordService } from './service/GenericRecordService'
@@ -17,14 +18,21 @@ export type ContentType = {
 export class GenericRecordsModule {
   private genericRecordsService: GenericRecordService
   private logger: Logger
-  public constructor(agentConfig: AgentConfig, genericRecordsService: GenericRecordService) {
+  private agentContext: AgentContext
+
+  public constructor(
+    genericRecordsService: GenericRecordService,
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    agentContext: AgentContext
+  ) {
     this.genericRecordsService = genericRecordsService
-    this.logger = agentConfig.logger
+    this.logger = logger
+    this.agentContext = agentContext
   }
 
   public async save({ content, tags, id }: SaveGenericRecordOption) {
     try {
-      const record = await this.genericRecordsService.save({
+      const record = await this.genericRecordsService.save(this.agentContext, {
         id,
         content,
         tags,
@@ -42,7 +50,7 @@ export class GenericRecordsModule {
 
   public async delete(record: GenericRecord): Promise<void> {
     try {
-      await this.genericRecordsService.delete(record)
+      await this.genericRecordsService.delete(this.agentContext, record)
     } catch (error) {
       this.logger.error('Error while saving generic-record', {
         error,
@@ -54,12 +62,12 @@ export class GenericRecordsModule {
   }
 
   public async deleteById(id: string): Promise<void> {
-    await this.genericRecordsService.deleteById(id)
+    await this.genericRecordsService.deleteById(this.agentContext, id)
   }
 
   public async update(record: GenericRecord): Promise<void> {
     try {
-      await this.genericRecordsService.update(record)
+      await this.genericRecordsService.update(this.agentContext, record)
     } catch (error) {
       this.logger.error('Error while update generic-record', {
         error,
@@ -71,15 +79,15 @@ export class GenericRecordsModule {
   }
 
   public async findById(id: string) {
-    return this.genericRecordsService.findById(id)
+    return this.genericRecordsService.findById(this.agentContext, id)
   }
 
   public async findAllByQuery(query: Partial<GenericRecordTags>): Promise<GenericRecord[]> {
-    return this.genericRecordsService.findAllByQuery(query)
+    return this.genericRecordsService.findAllByQuery(this.agentContext, query)
   }
 
   public async getAll(): Promise<GenericRecord[]> {
-    return this.genericRecordsService.getAll()
+    return this.genericRecordsService.getAll(this.agentContext)
   }
 
   /**

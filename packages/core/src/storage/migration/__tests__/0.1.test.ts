@@ -1,3 +1,4 @@
+import type { FileSystem } from '../../../../src'
 import type { DidInfo, DidConfig } from '../../../wallet'
 import type { V0_1ToV0_2UpdateConfig } from '../updates/0.1-0.2'
 
@@ -63,6 +64,8 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         container
       )
 
+      const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+
       const updateAssistant = new UpdateAssistant(agent, {
         v0_1ToV0_2: {
           mediationRoleUpdateStrategy,
@@ -90,7 +93,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       expect(storageService.records).toMatchSnapshot(mediationRoleUpdateStrategy)
 
       // Need to remove backupFiles after each run so we don't get IOErrors
-      const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+      const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
       unlinkSync(backupPath)
 
       await agent.shutdown()
@@ -122,6 +125,8 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       container
     )
 
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
         mediationRoleUpdateStrategy: 'doNotChange',
@@ -150,7 +155,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()
@@ -184,6 +189,8 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       container
     )
 
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+
     // We need to manually initialize the wallet as we're using the in memory wallet service
     // When we call agent.initialize() it will create the wallet and store the current framework
     // version in the in memory storage service. We need to manually set the records between initializing
@@ -199,7 +206,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()
@@ -233,6 +240,8 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       container
     )
 
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+
     // We need to manually initialize the wallet as we're using the in memory wallet service
     // When we call agent.initialize() it will create the wallet and store the current framework
     // version in the in memory storage service. We need to manually set the records between initializing
@@ -248,7 +257,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()

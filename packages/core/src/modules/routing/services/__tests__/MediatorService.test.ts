@@ -1,4 +1,6 @@
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../tests/helpers'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
@@ -21,17 +23,18 @@ const MediatorRoutingRepositoryMock = MediatorRoutingRepository as jest.Mock<Med
 jest.mock('../../../../wallet/IndyWallet')
 const WalletMock = IndyWallet as jest.Mock<IndyWallet>
 
+const agentContext = getAgentContext({
+  wallet: new WalletMock(),
+})
+
 const mediationRepository = new MediationRepositoryMock()
 const mediatorRoutingRepository = new MediatorRoutingRepositoryMock()
-
-const wallet = new WalletMock()
 
 const mediatorService = new MediatorService(
   mediationRepository,
   mediatorRoutingRepository,
-  agentConfig,
-  wallet,
-  new EventEmitter(agentConfig)
+  new EventEmitter(agentConfig.agentDependencies, new Subject()),
+  agentConfig.logger
 )
 
 const mockConnection = getMockConnection({
@@ -64,7 +67,7 @@ describe('MediatorService', () => {
         ],
       })
 
-      const messageContext = new InboundMessageContext(keyListUpdate, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
       await mediatorService.processKeylistUpdateRequest(messageContext)
 
       expect(mediationRecord.recipientKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
@@ -94,7 +97,7 @@ describe('MediatorService', () => {
         ],
       })
 
-      const messageContext = new InboundMessageContext(keyListUpdate, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
       await mediatorService.processKeylistUpdateRequest(messageContext)
 
       expect(mediationRecord.recipientKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])

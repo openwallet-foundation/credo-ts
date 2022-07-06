@@ -1,17 +1,17 @@
-import type { Logger } from '../logger'
 import type { EncryptedMessage } from '../types'
 import type { MessageRepository } from './MessageRepository'
 
-import { AgentConfig } from '../agent/AgentConfig'
-import { injectable } from '../plugins'
+import { InjectionSymbols } from '../constants'
+import { Logger } from '../logger'
+import { injectable, inject } from '../plugins'
 
 @injectable()
 export class InMemoryMessageRepository implements MessageRepository {
   private logger: Logger
   private messages: { [key: string]: EncryptedMessage[] } = {}
 
-  public constructor(agentConfig: AgentConfig) {
-    this.logger = agentConfig.logger
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
+    this.logger = logger
   }
 
   public getAvailableMessageCount(connectionId: string): number | Promise<number> {

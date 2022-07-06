@@ -1,6 +1,6 @@
 import type { Agent, InboundTransport, Logger, TransportSession, EncryptedMessage } from '@aries-framework/core'
 
-import { AriesFrameworkError, AgentConfig, TransportService, utils } from '@aries-framework/core'
+import { AriesFrameworkError, TransportService, utils } from '@aries-framework/core'
 import WebSocket, { Server } from 'ws'
 
 export class WsInboundTransport implements InboundTransport {
@@ -16,11 +16,10 @@ export class WsInboundTransport implements InboundTransport {
 
   public async start(agent: Agent) {
     const transportService = agent.dependencyManager.resolve(TransportService)
-    const config = agent.dependencyManager.resolve(AgentConfig)
 
-    this.logger = config.logger
+    this.logger = agent.config.logger
 
-    const wsEndpoint = config.endpoints.find((e) => e.startsWith('ws'))
+    const wsEndpoint = agent.config.endpoints.find((e) => e.startsWith('ws'))
     this.logger.debug(`Starting WS inbound transport`, {
       endpoint: wsEndpoint,
     })

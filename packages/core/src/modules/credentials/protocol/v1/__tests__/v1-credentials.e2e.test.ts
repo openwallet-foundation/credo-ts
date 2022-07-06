@@ -96,7 +96,7 @@ describe('v1 credentials', () => {
     })
 
     const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
-    const offerMessageRecord = await didCommMessageRepository.findAgentMessage({
+    const offerMessageRecord = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V1OfferCredentialMessage,
     })

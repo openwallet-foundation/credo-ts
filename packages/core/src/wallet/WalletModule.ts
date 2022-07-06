@@ -1,33 +1,35 @@
-import type { Logger } from '../logger'
 import type { DependencyManager } from '../plugins'
 import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
+import type { Wallet } from './Wallet'
 
-import { AgentConfig } from '../agent/AgentConfig'
+import { AgentContext } from '../agent'
 import { InjectionSymbols } from '../constants'
+import { Logger } from '../logger'
 import { inject, injectable, module } from '../plugins'
 import { StorageUpdateService } from '../storage'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION } from '../storage/migration/updates'
 
-import { Wallet } from './Wallet'
 import { WalletError } from './error/WalletError'
 import { WalletNotFoundError } from './error/WalletNotFoundError'
 
 @module()
 @injectable()
 export class WalletModule {
+  private agentContext: AgentContext
   private wallet: Wallet
   private storageUpdateService: StorageUpdateService
   private logger: Logger
   private _walletConfig?: WalletConfig
 
   public constructor(
-    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     storageUpdateService: StorageUpdateService,
-    agentConfig: AgentConfig
+    agentContext: AgentContext,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
-    this.wallet = wallet
     this.storageUpdateService = storageUpdateService
-    this.logger = agentConfig.logger
+    this.logger = logger
+    this.wallet = agentContext.wallet
+    this.agentContext = agentContext
   }
 
   public get isInitialized() {
@@ -73,7 +75,7 @@ export class WalletModule {
     this._walletConfig = walletConfig
 
     // Store the storage version in the wallet
-    await this.storageUpdateService.setCurrentStorageVersion(CURRENT_FRAMEWORK_STORAGE_VERSION)
+    await this.storageUpdateService.setCurrentStorageVersion(this.agentContext, CURRENT_FRAMEWORK_STORAGE_VERSION)
   }
 
   public async create(walletConfig: WalletConfig): Promise<void> {
