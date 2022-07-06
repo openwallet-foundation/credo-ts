@@ -33,14 +33,14 @@ const did = 'Y5bj4SjCiTM9PgeheKAiXx'
 
 const schemaId = 'abcd'
 
-const schema = {
+const schema: Indy.Schema = {
   id: schemaId,
   attrNames: ['hello', 'world'],
   name: 'awesomeSchema',
   version: '1',
   ver: '1',
   seqNo: 99,
-} as Indy.Schema
+}
 
 const credentialDefinition = {
   schema: 'abcde',
@@ -49,7 +49,7 @@ const credentialDefinition = {
   supportRevocation: true,
 }
 
-const credDef = {
+const credDef: Indy.CredDef = {
   id: 'abcde',
   schemaId: schema.id,
   type: 'CL',
@@ -59,13 +59,13 @@ const credDef = {
     revocation: true,
   },
   ver: '1',
-} as Indy.CredDef
+}
 
-const credentialDefinitionTemplate = {
-  schema: 'abcde',
+const credentialDefinitionTemplate: Omit<CredentialDefinitionTemplate, 'signatureType'> = {
+  schema: schema,
   tag: 'someTag',
   supportRevocation: true,
-} as unknown as Omit<CredentialDefinitionTemplate, 'signatureType'>
+}
 
 describe('LedgerModule', () => {
   const config = getAgentConfig('LedgerModuleTest', {
@@ -132,7 +132,7 @@ describe('LedgerModule', () => {
     // Get public DID
     describe('getPublicDid', () => {
       it('should return the public DID if there is one', async () => {
-        const nymResponse = { did: 'Y5bj4SjCiTM9PgeheKAiXx', verkey: 'abcde', role: 'STEWARD' } as Indy.GetNymResponse
+        const nymResponse: Indy.GetNymResponse = { did: 'Y5bj4SjCiTM9PgeheKAiXx', verkey: 'abcde', role: 'STEWARD' }
         mockProperty(wallet, 'publicDid', { did: nymResponse.did, verkey: nymResponse.verkey })
         mockFunction(ledgerService.getPublicDid).mockResolvedValueOnce(nymResponse)
         await expect(ledgerModule.getPublicDid(nymResponse.did)).resolves.toEqual(nymResponse)
@@ -245,7 +245,7 @@ describe('LedgerModule', () => {
 
     describe('getRevocationRegistryDefinition', () => {
       it('should return the ParseRevocationRegistryDefinitionTemplate for a valid revocationRegistryDefinitionId', async () => {
-        const revocRegDef = {
+        const revocRegDef: Indy.RevocRegDef = {
           id: 'abcde',
           revocDefType: 'CL_ACCUM',
           tag: 'someTag',
@@ -258,7 +258,7 @@ describe('LedgerModule', () => {
             publicKeys: ['abcde', 'fghijk'],
           },
           ver: 'abcde',
-        } as Indy.RevocRegDef
+        }
         const parseRevocationRegistryDefinitionTemplate = {
           revocationRegistryDefinition: revocRegDef,
           revocationRegistryDefinitionTxnTime: 12345678,

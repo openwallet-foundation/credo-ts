@@ -129,16 +129,15 @@ export class LedgerModule {
 
     // Check if the credential exists in wallet. If so, return it
     const credentialDefinitionRecord = await this.findByCredentialDefinitionId(credentialDefinitionTemplate.schema.id)
-    if (credentialDefinitionRecord) {
-      return credentialDefinitionRecord.credentialDefinition
-    }
+    if (credentialDefinitionRecord) return credentialDefinitionRecord.credentialDefinition
 
     // Check for the credential on the ledger.
     const credentialDefinitionOnLedger = await this.findByCredentialDefinitionIdOnLedger(credentialDefinitionId)
-    if (credentialDefinitionOnLedger)
+    if (credentialDefinitionOnLedger) {
       throw new AriesFrameworkError(
         `No credential definition record found and credential definition ${credentialDefinitionId} already exists on the ledger.`
       )
+    }
 
     // Register the credential
     return await this.ledgerService.registerCredentialDefinition(did, {
