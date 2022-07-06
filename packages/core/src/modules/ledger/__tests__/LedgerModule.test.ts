@@ -10,6 +10,7 @@ import { AnonCredsCredentialDefinitionRepository } from '../../indy/repository/A
 import { AnonCredsSchemaRecord } from '../../indy/repository/AnonCredsSchemaRecord'
 import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { LedgerModule } from '../LedgerModule'
+import { generateCredentialDefinitionId, generateSchemaId } from '../ledgerUtil'
 import { IndyLedgerService } from '../services/IndyLedgerService'
 
 jest.mock('../services/IndyLedgerService')
@@ -67,6 +68,29 @@ const credentialDefinitionTemplate: Omit<CredentialDefinitionTemplate, 'signatur
   tag: 'someTag',
   supportRevocation: true,
 }
+
+const revocRegDef: Indy.RevocRegDef = {
+  id: 'abcde',
+  revocDefType: 'CL_ACCUM',
+  tag: 'someTag',
+  credDefId: 'abcde',
+  value: {
+    issuanceType: 'ISSUANCE_BY_DEFAULT',
+    maxCredNum: 3,
+    tailsHash: 'abcde',
+    tailsLocation: 'xyz',
+    publicKeys: ['abcde', 'fghijk'],
+  },
+  ver: 'abcde',
+}
+
+const schemaIdGenerated = generateSchemaId(did, schema.name, schema.version)
+
+const credentialDefinitionId = generateCredentialDefinitionId(
+  did,
+  credentialDefinitionTemplate.schema.seqNo,
+  credentialDefinitionTemplate.tag
+)
 
 describe('LedgerModule', () => {
   const config = getAgentConfig('LedgerModuleTest', {
@@ -137,6 +161,7 @@ describe('LedgerModule', () => {
         mockProperty(wallet, 'publicDid', { did: nymResponse.did, verkey: nymResponse.verkey })
         mockFunction(ledgerService.getPublicDid).mockResolvedValueOnce(nymResponse)
         await expect(ledgerModule.getPublicDid(nymResponse.did)).resolves.toEqual(nymResponse)
+        expect(ledgerService.getPublicDid).toHaveBeenCalledWith(nymResponse.did)
       })
     })
 
@@ -145,6 +170,7 @@ describe('LedgerModule', () => {
       it('should return the schema by id if there is one', async () => {
         mockFunction(ledgerService.getSchema).mockResolvedValueOnce(schema)
         await expect(ledgerModule.getSchema(schemaId)).resolves.toEqual(schema)
+        expect(ledgerService.getSchema).toHaveBeenCalledWith(schemaId)
       })
 
       it('should throw an error if no schema for the id exists', async () => {
@@ -152,6 +178,7 @@ describe('LedgerModule', () => {
           new AriesFrameworkError('Error retrieving schema abcd from ledger 1')
         )
         await expect(ledgerModule.getSchema(schemaId)).rejects.toThrowError(AriesFrameworkError)
+        expect(ledgerService.getSchema).toHaveBeenCalledWith(schemaId)
       })
     })
 
@@ -171,6 +198,7 @@ describe('LedgerModule', () => {
         await expect(ledgerModule.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toEqual(
           schema
         )
+        expect(anonCredsSchemaRepository.findBySchemaId).toHaveBeenCalledWith(schemaIdGenerated)
       })
 
       it('should return the schema from the ledger when it already exists', async () => {
@@ -182,6 +210,10 @@ describe('LedgerModule', () => {
         await expect(
           ledgerModule.registerSchema({ ...schema, attributes: ['hello', 'world'] })
         ).resolves.toHaveProperty('schema', schema)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect(jest.spyOn(LedgerModule.prototype as any, 'findBySchemaIdOnLedger')).toHaveBeenCalledWith(
+          schemaIdGenerated
+        )
       })
 
       it('should return the schema after registering it', async () => {
@@ -190,6 +222,7 @@ describe('LedgerModule', () => {
         await expect(ledgerModule.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toEqual(
           schema
         )
+        expect(ledgerService.registerSchema).toHaveBeenCalledWith(did, { ...schema, attributes: ['hello', 'world'] })
       })
     })
 
@@ -214,6 +247,9 @@ describe('LedgerModule', () => {
           'value.primary',
           credentialDefinition
         )
+        expect(anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId).toHaveBeenCalledWith(
+          credentialDefinitionId
+        )
       })
 
       it('should throw an exception if the definition already exists on the ledger', async () => {
@@ -225,12 +261,20 @@ describe('LedgerModule', () => {
         await expect(ledgerModule.registerCredentialDefinition(credentialDefinitionTemplate)).rejects.toThrowError(
           AriesFrameworkError
         )
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect(jest.spyOn(LedgerModule.prototype as any, 'findByCredentialDefinitionIdOnLedger')).toHaveBeenCalledWith(
+          credentialDefinitionId
+        )
       })
 
       it('should register the credential successfully if it is neither in the wallet and neither on the ledger', async () => {
         mockProperty(wallet, 'publicDid', { did: did, verkey: 'abcde' })
         mockFunction(ledgerService.registerCredentialDefinition).mockResolvedValueOnce(credDef)
         await expect(ledgerModule.registerCredentialDefinition(credentialDefinitionTemplate)).resolves.toEqual(credDef)
+        expect(ledgerService.registerCredentialDefinition).toHaveBeenCalledWith(did, {
+          ...credentialDefinitionTemplate,
+          signatureType: 'CL',
+        })
       })
     })
 
@@ -239,31 +283,19 @@ describe('LedgerModule', () => {
         mockProperty(wallet, 'publicDid', { did: did, verkey: 'abcde' })
         mockFunction(ledgerService.getCredentialDefinition).mockResolvedValue(credDef)
         await expect(ledgerModule.getCredentialDefinition(credDef.id)).resolves.toEqual(credDef)
+        expect(ledgerService.getCredentialDefinition).toHaveBeenCalledWith(credDef.id)
       })
 
       it('should throw an error if there is no credential definition for the given id', async () => {
         mockProperty(wallet, 'publicDid', { did: did, verkey: 'abcde' })
         mockFunction(ledgerService.getCredentialDefinition).mockRejectedValueOnce(new AriesFrameworkError(''))
         await expect(ledgerModule.getCredentialDefinition(credDef.id)).rejects.toThrowError(AriesFrameworkError)
+        expect(ledgerService.getCredentialDefinition).toHaveBeenCalledWith(credDef.id)
       })
     })
 
     describe('getRevocationRegistryDefinition', () => {
       it('should return the ParseRevocationRegistryDefinitionTemplate for a valid revocationRegistryDefinitionId', async () => {
-        const revocRegDef: Indy.RevocRegDef = {
-          id: 'abcde',
-          revocDefType: 'CL_ACCUM',
-          tag: 'someTag',
-          credDefId: 'abcde',
-          value: {
-            issuanceType: 'ISSUANCE_BY_DEFAULT',
-            maxCredNum: 3,
-            tailsHash: 'abcde',
-            tailsLocation: 'xyz',
-            publicKeys: ['abcde', 'fghijk'],
-          },
-          ver: 'abcde',
-        }
         const parseRevocationRegistryDefinitionTemplate = {
           revocationRegistryDefinition: revocRegDef,
           revocationRegistryDefinitionTxnTime: 12345678,
@@ -274,11 +306,13 @@ describe('LedgerModule', () => {
         await expect(ledgerModule.getRevocationRegistryDefinition(revocRegDef.id)).resolves.toBe(
           parseRevocationRegistryDefinitionTemplate
         )
+        expect(ledgerService.getRevocationRegistryDefinition).toHaveBeenCalledWith(revocRegDef.id)
       })
 
       it('should throw an error if the ParseRevocationRegistryDefinitionTemplate does not exists', async () => {
         mockFunction(ledgerService.getRevocationRegistryDefinition).mockRejectedValueOnce(new AriesFrameworkError(''))
         await expect(ledgerModule.getRevocationRegistryDefinition('abcde')).rejects.toThrowError(AriesFrameworkError)
+        expect(ledgerService.getRevocationRegistryDefinition).toHaveBeenCalledWith(revocRegDef.id)
       })
     })
 
@@ -304,11 +338,13 @@ describe('LedgerModule', () => {
         await expect(ledgerModule.getRevocationRegistryDelta('12345')).resolves.toEqual(
           parseRevocationRegistryDeltaTemplate
         )
+        expect(ledgerService.getRevocationRegistryDelta).toHaveBeenCalledTimes(1)
       })
 
       it('should throw an error if the delta cannot be obtained', async () => {
         mockFunction(ledgerService.getRevocationRegistryDelta).mockRejectedValueOnce(new AriesFrameworkError(''))
-        await expect(ledgerModule.getRevocationRegistryDelta('abde1234')).rejects.toThrowError(AriesFrameworkError)
+        await expect(ledgerModule.getRevocationRegistryDelta('abcde1234')).rejects.toThrowError(AriesFrameworkError)
+        expect(ledgerService.getRevocationRegistryDelta).toHaveBeenCalledTimes(1)
       })
     })
   })

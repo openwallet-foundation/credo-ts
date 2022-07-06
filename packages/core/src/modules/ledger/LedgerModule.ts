@@ -116,7 +116,7 @@ export class LedgerModule {
 
     // Check if the credential exists in wallet. If so, return it
     const credentialDefinitionRecord = await this.anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId(
-      credentialDefinitionTemplate.schema.id
+      credentialDefinitionId
     )
     if (credentialDefinitionRecord) return credentialDefinitionRecord.credentialDefinition
 
