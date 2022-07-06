@@ -22,7 +22,7 @@ export class AnonCredsCredentialDefinitionRepository extends Repository<AnonCred
 
   public async findByCredentialDefinitionId(credentialDefinitionId: string) {
     try {
-      return this.getByCredentialDefinitionId(credentialDefinitionId)
+      return await this.getByCredentialDefinitionId(credentialDefinitionId)
     } catch (e) {
       if (e instanceof RecordNotFoundError) return null
 
