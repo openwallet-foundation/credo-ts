@@ -1,10 +1,9 @@
 import type { DependencyManager } from '../../plugins'
-import type { AnonCredsCredentialDefinitionRecord } from '../indy/repository/AnonCredsCredentialDefinitionRecord'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
 import type { CredDef, NymRole, Schema } from 'indy-sdk'
 
 import { InjectionSymbols } from '../../constants'
-import { AriesFrameworkError, RecordNotFoundError } from '../../error'
+import { AriesFrameworkError } from '../../error'
 import { IndySdkError } from '../../error/IndySdkError'
 import { injectable, module, inject } from '../../plugins'
 import { isIndyError } from '../../utils/indyError'
@@ -89,18 +88,6 @@ export class LedgerModule {
     }
   }
 
-  private async findByCredentialDefinitionId(
-    credentialDefinitionId: string
-  ): Promise<AnonCredsCredentialDefinitionRecord | null> {
-    try {
-      return await this.anonCredsCredentialDefinitionRepository.getByCredentialDefinitionId(credentialDefinitionId)
-    } catch (e) {
-      if (e instanceof RecordNotFoundError) return null
-
-      throw e
-    }
-  }
-
   private async findByCredentialDefinitionIdOnLedger(credentialDefinitionId: string): Promise<CredDef | null> {
     try {
       return await this.ledgerService.getCredentialDefinition(credentialDefinitionId)
@@ -128,7 +115,9 @@ export class LedgerModule {
     )
 
     // Check if the credential exists in wallet. If so, return it
-    const credentialDefinitionRecord = await this.findByCredentialDefinitionId(credentialDefinitionTemplate.schema.id)
+    const credentialDefinitionRecord = await this.anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId(
+      credentialDefinitionTemplate.schema.id
+    )
     if (credentialDefinitionRecord) return credentialDefinitionRecord.credentialDefinition
 
     // Check for the credential on the ledger.

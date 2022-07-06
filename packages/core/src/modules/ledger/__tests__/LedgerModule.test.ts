@@ -5,6 +5,7 @@ import type * as Indy from 'indy-sdk'
 import { getAgentConfig, mockFunction, mockProperty } from '../../../../tests/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+import { AnonCredsCredentialDefinitionRecord } from '../../indy/repository/AnonCredsCredentialDefinitionRecord'
 import { AnonCredsCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRecord } from '../../indy/repository/AnonCredsSchemaRecord'
 import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
@@ -202,11 +203,15 @@ describe('LedgerModule', () => {
 
       it('should return the credential definition from the wallet if it already exists', async () => {
         mockProperty(wallet, 'publicDid', { did: did, verkey: 'abcde' })
-        jest
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .spyOn(LedgerModule.prototype as any, 'findByCredentialDefinitionId')
-          .mockResolvedValueOnce({ credentialDefinition: credentialDefinition })
-        await expect(ledgerModule.registerCredentialDefinition(credentialDefinitionTemplate)).resolves.toEqual(
+        const anonCredsCredentialDefinitionRecord: AnonCredsCredentialDefinitionRecord =
+          new AnonCredsCredentialDefinitionRecord({
+            credentialDefinition: credDef,
+          })
+        mockFunction(anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId).mockResolvedValueOnce(
+          anonCredsCredentialDefinitionRecord
+        )
+        await expect(ledgerModule.registerCredentialDefinition(credentialDefinitionTemplate)).resolves.toHaveProperty(
+          'value.primary',
           credentialDefinition
         )
       })
