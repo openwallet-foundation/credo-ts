@@ -17,6 +17,9 @@ export class ContactModule {
   }
 
 
+  public save(record: ContactRecord) {
+    return this.contactService.save(record)
+  }
 
   public getAll(): Promise<ContactRecord[]> {
     return this.contactService.getAll()
