@@ -22,6 +22,7 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
       method: 'GET',
       headers: {
         Accept: 'application/json',
+        'Content-Type': 'application/json',
       },
     })
   } catch (error) {
@@ -50,7 +51,10 @@ export const fromShortUrl = async (response: Response): Promise<OutOfBandInvitat
         return convertToNewInvitation(invitation)
       }
     } else if (response['url']) {
-      const parsedUrl = parseUrl(response['url']).query
+      let parsedUrl
+      const location = response.headers.get('Location')
+      if (response.status === 302 && location) parsedUrl = parseUrl(location).query
+      else parsedUrl = parseUrl(response['url']).query
 
       if (parsedUrl['oob']) {
         const encodedInvitation = parsedUrl['oob']
