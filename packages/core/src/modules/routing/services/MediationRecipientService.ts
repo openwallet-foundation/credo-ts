@@ -316,6 +316,7 @@ export class MediationRecipientService {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: attachment.getDataAsJson<EncryptedMessage>(),
+          contextCorrelationId: messageContext.agentContext.contextCorrelationId,
         },
       })
     }
