@@ -25,7 +25,7 @@ export class ContactRecord extends BaseRecord<DefaultContactTags, CustomContactT
   public name!: string
 
   public static readonly type = 'ContactRecord'
-  // public readonly type = ValueTransferRecord.type
+  public readonly type = ContactRecord.type
 
   public constructor(props: ContactStorageProps) {
     super()
