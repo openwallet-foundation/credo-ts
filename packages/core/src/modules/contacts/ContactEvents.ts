@@ -2,10 +2,10 @@ import type { BaseEvent } from '../../agent/Events'
 import { ContactRecord } from './repository'
 
 export enum ContactEventTypes {
-  ContactAdded = 'ContactAdded',
+  ContactStateChanged = 'ContactStateChanged',
 }
-export interface ContactAddedEvent extends BaseEvent {
-  type: typeof ContactEventTypes.ContactAdded
+export interface ContactStateChangedEvent extends BaseEvent {
+  type: typeof ContactEventTypes.ContactStateChanged
   payload: {
     record: ContactRecord
   }

@@ -6,6 +6,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 
 import { ContactRecord, ContactRepository } from '../repository'
+import { ContactEventTypes, ContactStateChangedEvent } from '../ContactEvents'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ContactService {
@@ -21,6 +22,16 @@ export class ContactService {
     this.config = config
     this.contactRepository = contactRepository
     this.eventEmitter = eventEmitter
+  }
+
+  public async save({ did, name }: ContactRecord) {
+    const contactRecord = new ContactRecord({did, name})
+
+    await this.contactRepository.save(contactRecord)
+    this.eventEmitter.emit<ContactStateChangedEvent>({
+      type: ContactEventTypes.ContactStateChanged,
+      payload: { record: contactRecord },
+    })
   }
 
   public async getAll(): Promise<ContactRecord[]> {
