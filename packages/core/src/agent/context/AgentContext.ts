@@ -12,9 +12,13 @@ export class AgentContext {
   public readonly dependencyManager: DependencyManager
 
   /**
-   * An identifier that allows to correlate this context across usages. An example of the contextCorrelationId could be
-   * the id of the `TenantRecord` that is associated with this context. The AgentContextProvider can use this identifier to
-   * correlate an inbound message to a specific context (if the message is not encrypted, it's impossible to correlate it to a tenant)
+   * An identifier that allows to correlate this context across sessions. This identifier is created by the `AgentContextProvider`
+   * and should only be meaningful to the `AgentContextProvider`. The `contextCorrelationId` MUST uniquely identity the context and
+   * should be enough to start a new session.
+   *
+   * An example of the `contextCorrelationId` is for example the id of the `TenantRecord` that is associated with this context when using the tenant module.
+   * The `TenantAgentContextProvider` will set the `contextCorrelationId` to the `TenantRecord` id when creating the context, and will be able to create a context
+   * for a specific tenant using the `contextCorrelationId`.
    */
   public readonly contextCorrelationId: string
 
