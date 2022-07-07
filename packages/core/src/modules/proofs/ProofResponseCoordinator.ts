@@ -1,4 +1,4 @@
-import type { AgentContext } from '../../agent/AgentContext'
+import type { AgentContext } from '../../agent/context'
 import type { ProofRecord } from './repository'
 
 import { injectable } from '../../plugins'

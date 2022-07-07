@@ -3,6 +3,7 @@ import type { TransportSession } from '../../packages/core/src/agent/TransportSe
 import type { EncryptedMessage } from '../../packages/core/src/types'
 import type { Subject, Subscription } from 'rxjs'
 
+import { MessageReceiver } from '../../packages/core/src'
 import { TransportService } from '../../packages/core/src/agent/TransportService'
 import { uuid } from '../../packages/core/src/utils/uuid'
 
@@ -27,6 +28,7 @@ export class SubjectInboundTransport implements InboundTransport {
   private subscribe(agent: Agent) {
     const logger = agent.config.logger
     const transportService = agent.dependencyManager.resolve(TransportService)
+    const messageReceiver = agent.dependencyManager.resolve(MessageReceiver)
 
     this.subscription = this.ourSubject.subscribe({
       next: async ({ message, replySubject }: SubjectMessage) => {
@@ -44,7 +46,7 @@ export class SubjectInboundTransport implements InboundTransport {
           })
         }
 
-        await agent.receiveMessage(message, session)
+        await messageReceiver.receiveMessage(message, { session })
       },
     })
   }

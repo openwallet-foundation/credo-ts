@@ -24,6 +24,7 @@ export class BatchHandler implements Handler {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: message.message,
+          contextCorrelationId: messageContext.agentContext.contextCorrelationId,
         },
       })
     })

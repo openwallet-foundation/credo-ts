@@ -244,12 +244,14 @@ describe('MediationRecipientService', () => {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: { first: 'value' },
+          contextCorrelationId: agentContext.contextCorrelationId,
         },
       })
       expect(eventEmitter.emit).toHaveBeenNthCalledWith(2, agentContext, {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: { second: 'value' },
+          contextCorrelationId: agentContext.contextCorrelationId,
         },
       })
     })

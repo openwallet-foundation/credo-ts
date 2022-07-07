@@ -2,6 +2,7 @@ export const InjectionSymbols = {
   MessageRepository: Symbol('MessageRepository'),
   StorageService: Symbol('StorageService'),
   Logger: Symbol('Logger'),
+  AgentContextProvider: Symbol('AgentContextProvider'),
   AgentDependencies: Symbol('AgentDependencies'),
   Stop$: Symbol('Stop$'),
   FileSystem: Symbol('FileSystem'),

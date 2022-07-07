@@ -625,6 +625,7 @@ export class OutOfBandModule {
       payload: {
         message: plaintextMessage,
         connection: connectionRecord,
+        contextCorrelationId: this.agentContext.contextCorrelationId,
       },
     })
   }
@@ -666,6 +667,7 @@ export class OutOfBandModule {
       type: AgentEventTypes.AgentMessageReceived,
       payload: {
         message: plaintextMessage,
+        contextCorrelationId: this.agentContext.contextCorrelationId,
       },
     })
   }

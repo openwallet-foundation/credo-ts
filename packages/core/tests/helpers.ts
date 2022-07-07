@@ -142,14 +142,16 @@ export function getAgentContext({
   dependencyManager = new DependencyManager(),
   wallet,
   agentConfig,
+  contextCorrelationId = 'mock',
 }: {
   dependencyManager?: DependencyManager
   wallet?: Wallet
   agentConfig?: AgentConfig
+  contextCorrelationId?: string
 } = {}) {
   if (wallet) dependencyManager.registerInstance(InjectionSymbols.Wallet, wallet)
   if (agentConfig) dependencyManager.registerInstance(AgentConfig, agentConfig)
-  return new AgentContext({ dependencyManager })
+  return new AgentContext({ dependencyManager, contextCorrelationId })
 }
 
 export async function waitForProofRecord(
