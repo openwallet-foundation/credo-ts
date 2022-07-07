@@ -4,6 +4,7 @@ import type { RecordSavedEvent, RecordUpdatedEvent, RecordDeletedEvent } from '.
 import type { BaseRecordConstructor, Query, StorageService } from './StorageService'
 
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
+import { JsonTransformer } from '../utils/JsonTransformer'
 
 import { RepositoryEventTypes } from './RepositoryEvents'
 
@@ -26,10 +27,13 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   /** @inheritDoc {StorageService#save} */
   public async save(record: T): Promise<void> {
     await this.storageService.save(record)
+
+    // Record in event should be static
+    const clonedRecord = JsonTransformer.clone(record)
     this.eventEmitter.emit<RecordSavedEvent<T>>({
       type: RepositoryEventTypes.RecordSaved,
       payload: {
-        record,
+        record: clonedRecord,
       },
     })
   }
@@ -37,10 +41,13 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   /** @inheritDoc {StorageService#update} */
   public async update(record: T): Promise<void> {
     await this.storageService.update(record)
+
+    // Record in event should be static
+    const clonedRecord = JsonTransformer.clone(record)
     this.eventEmitter.emit<RecordUpdatedEvent<T>>({
       type: RepositoryEventTypes.RecordUpdated,
       payload: {
-        record,
+        record: clonedRecord,
       },
     })
   }
@@ -48,10 +55,13 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   /** @inheritDoc {StorageService#delete} */
   public async delete(record: T): Promise<void> {
     await this.storageService.delete(record)
+
+    // Record in event should be static
+    const clonedRecord = JsonTransformer.clone(record)
     this.eventEmitter.emit<RecordDeletedEvent<T>>({
       type: RepositoryEventTypes.RecordDeleted,
       payload: {
-        record,
+        record: clonedRecord,
       },
     })
   }
