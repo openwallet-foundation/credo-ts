@@ -595,9 +595,10 @@ export class OutOfBandModule {
 
   private async emitWithConnection(connectionRecord: ConnectionRecord, messages: PlaintextMessage[]) {
     const supportedMessageTypes = this.dispatcher.supportedMessageTypes
-    const plaintextMessage = messages.find((message) =>
-      supportedMessageTypes.find((type) => supportsIncomingMessageType(parseMessageType(message['@type']), type))
-    )
+    const plaintextMessage = messages.find((message) => {
+      const parsedMessageType = parseMessageType(message['@type'])
+      return supportedMessageTypes.find((type) => supportsIncomingMessageType(parsedMessageType, type))
+    })
 
     if (!plaintextMessage) {
       throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
@@ -620,9 +621,10 @@ export class OutOfBandModule {
     }
 
     const supportedMessageTypes = this.dispatcher.supportedMessageTypes
-    const plaintextMessage = messages.find((message) =>
-      supportedMessageTypes.find((type) => supportsIncomingMessageType(parseMessageType(message['@type']), type))
-    )
+    const plaintextMessage = messages.find((message) => {
+      const parsedMessageType = parseMessageType(message['@type'])
+      return supportedMessageTypes.find((type) => supportsIncomingMessageType(parsedMessageType, type))
+    })
 
     if (!plaintextMessage) {
       throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
