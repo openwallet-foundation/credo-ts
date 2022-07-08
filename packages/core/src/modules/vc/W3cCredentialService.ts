@@ -380,8 +380,8 @@ export class W3cCredentialService {
     return result.map((record) => record.credential)
   }
 
-  public getKeyTypeByProofType(proofType: string): KeyType {
-    return this.suiteRegistry.getKeyTypeByProofType(proofType)
+  public getKeyTypesByProofType(proofType: string): string[] {
+    return this.suiteRegistry.getKeyTypesByProofType(proofType)
   }
 
   public async findCredentialRecordByQuery(

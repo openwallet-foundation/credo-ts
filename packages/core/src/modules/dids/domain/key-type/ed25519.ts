@@ -6,7 +6,8 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
 
-const VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 = 'Ed25519VerificationKey2018'
+export const VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 = 'Ed25519VerificationKey2018'
+export const VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020 = 'Ed25519VerificationKey2020'
 
 export function getEd25519VerificationMethod({ key, id, controller }: { id: string; key: Key; controller: string }) {
   return {
@@ -24,13 +25,19 @@ export const keyDidEd25519: KeyDidMapping = {
   ],
   getKeyFromVerificationMethod: (verificationMethod: VerificationMethod) => {
     if (
-      verificationMethod.type !== VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 ||
-      !verificationMethod.publicKeyBase58
+      verificationMethod.type !== VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 &&
+      verificationMethod.publicKeyBase58
     ) {
-      throw new Error('Invalid verification method passed')
+      return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.Ed25519)
+    }
+    if (
+      verificationMethod.type !== VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020 &&
+      verificationMethod.publicKeyMultibase
+    ) {
+      return Key.fromFingerprint(verificationMethod.publicKeyMultibase)
     }
 
-    return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.Ed25519)
+    throw new Error('Invalid verification method passed')
   },
 }
 
