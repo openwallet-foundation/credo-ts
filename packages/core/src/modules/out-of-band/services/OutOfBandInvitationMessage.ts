@@ -1,11 +1,9 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Type } from 'class-transformer'
-import { IsInstance, ValidateNested } from 'class-validator'
+import { IsInstance, ValidateNested, Equals } from 'class-validator'
 
 import { DIDCommV2Message } from '@aries-framework/core'
-
-type OutOfBandInvitationType = 'https://didcomm.org/out-of-band/2.0/invitation'
 
 export enum OutOfBandGoalCode {
   makeConnection = 'make-connection',
@@ -26,5 +24,6 @@ export class OutOfBandInvitationMessage extends DIDCommV2Message {
   @ValidateNested()
   @IsInstance(OutOfBandInvitationBody)
   public body!: OutOfBandInvitationBody
-  public type!: OutOfBandInvitationType
+  @Equals(OutOfBandInvitationMessage.type)
+  public static readonly type = 'https://didcomm.org/out-of-band/2.0/invitation'
 }
