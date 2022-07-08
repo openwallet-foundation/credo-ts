@@ -35,8 +35,11 @@ export class OutOfBandService {
   }
 
   public acceptOutOfBandInvitation(message: OutOfBandInvitationMessage) {
+    if (!message.from) {
+      throw new Error('Invalid field "from"')
+    }
     if (message.body.goalCode === OutOfBandGoalCode.makeConnection) {
-      this.contactService.save({ did: '', name: '' })
+      this.contactService.save({ did: message.from, name: '' })
     }
   }
 }
