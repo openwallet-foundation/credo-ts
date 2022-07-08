@@ -1,8 +1,7 @@
-import {
-  BaseRecord
-} from '@aries-framework/core'
+import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
+
+import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 
 export interface ContactStorageProps {
   id?: string
@@ -43,7 +42,7 @@ export class ContactRecord extends BaseRecord<DefaultContactTags, CustomContactT
     return {
       ...this._tags,
       did: this.did,
-      name: this.name
+      name: this.name,
     }
   }
 }

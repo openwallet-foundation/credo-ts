@@ -1,5 +1,5 @@
 import type { BaseEvent } from '../../agent/Events'
-import { ContactRecord } from './repository'
+import type { ContactRecord } from './repository'
 
 export enum ContactEventTypes {
   ContactStateChanged = 'ContactStateChanged',

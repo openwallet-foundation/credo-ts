@@ -46,7 +46,8 @@ export interface ValueTransferConfig {
   witnessTransportForGetterRole?: Transport
   witnessTransportForGiverRole?: Transport
   verifiableNotes?: VerifiableNote[]
-  autoAcceptValueTransfer?: AutoAcceptValueTransfer
+  autoAcceptPaymentOffer?: AutoAcceptValueTransfer
+  autoAcceptPaymentRequest?: AutoAcceptValueTransfer
   supportedPartiesCount?: number
 }
 

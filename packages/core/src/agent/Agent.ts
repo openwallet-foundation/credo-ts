@@ -17,6 +17,7 @@ import { MixedCrypto } from '../crypto'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
+import { ContactModule } from '../modules/contacts'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidService, DidType } from '../modules/dids'
 import { DidsModule } from '../modules/dids/DidsModule'
@@ -39,7 +40,6 @@ import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
-import { ContactModule } from '../modules/contacts'
 
 export class Agent {
   protected agentConfig: AgentConfig

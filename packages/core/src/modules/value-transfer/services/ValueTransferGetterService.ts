@@ -1,6 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { GetterReceiptMessage, RequestAcceptedWitnessedMessage } from '../messages'
+import type { OfferWitnessedMessage } from '../messages/OfferWitnessedMessage'
 import type { Getter, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -118,7 +119,7 @@ export class ValueTransferGetterService {
     })
 
     const getterInfo = await this.wellKnownService.resolve(getter)
-    const witnessInfo = params.witness ? new DidInfo({ did: params.witness }) : undefined
+    const witnessInfo = await this.wellKnownService.resolve(params.witness)
     const giverInfo = await this.wellKnownService.resolve(params.giver)
 
     // Create Value Transfer record and raise event
@@ -139,6 +140,155 @@ export class ValueTransferGetterService {
       payload: { record },
     })
     return { record, message: requestMessage }
+  }
+
+  /**
+   * Process a received {@link OfferMessage}.
+   *    Value transfer record with the information from the offer message will be created.
+   *    Use {@link ValueTransferGetterService.acceptOffer} after calling this method to accept payment request.
+   *
+   * @param messageContext The context of the received message.
+   * @returns
+   *    * Value Transfer record
+   *    * Witnessed Offer Message
+   */
+  public async processOfferWitnessed(messageContext: InboundMessageContext<OfferWitnessedMessage>): Promise<{
+    record?: ValueTransferRecord
+    message: OfferWitnessedMessage | ProblemReportMessage
+  }> {
+    const { message: offerWitnessedMessage } = messageContext
+
+    const valueTransferMessage = offerWitnessedMessage.valueTransferMessage
+    if (!valueTransferMessage) {
+      const problemReport = new ProblemReportMessage({
+        to: offerWitnessedMessage.from,
+        pthid: offerWitnessedMessage.id,
+        body: {
+          code: 'e.p.req.bad-offer',
+          comment: `Missing required base64 or json encoded attachment data for payment offer with thread id ${offerWitnessedMessage.thid}`,
+        },
+      })
+      return { message: problemReport }
+    }
+
+    // ensure that DID exist in the wallet
+    const did = await this.didService.findById(valueTransferMessage.giverId)
+    if (!did) {
+      const problemReport = new ProblemReportMessage({
+        to: offerWitnessedMessage.from,
+        pthid: offerWitnessedMessage.id,
+        body: {
+          code: 'e.p.req.bad-getter',
+          comment: `Requested getter '${valueTransferMessage.getterId}' does not exist in the wallet`,
+        },
+      })
+      return {
+        message: problemReport,
+      }
+    }
+
+    const getterInfo = await this.wellKnownService.resolve(valueTransferMessage.getterId)
+    const witnessInfo = await this.wellKnownService.resolve(valueTransferMessage.witnessId)
+    const giverInfo = await this.wellKnownService.resolve(valueTransferMessage.giverId)
+
+    // Create Value Transfer record and raise event
+    const record = new ValueTransferRecord({
+      role: ValueTransferRole.Getter,
+      state: ValueTransferState.OfferReceived,
+      status: ValueTransferTransactionStatus.Pending,
+      threadId: offerWitnessedMessage.thid,
+      valueTransferMessage,
+      getter: getterInfo,
+      witness: witnessInfo,
+      giver: giverInfo,
+    })
+
+    await this.valueTransferRepository.save(record)
+    this.eventEmitter.emit<ValueTransferStateChangedEvent>({
+      type: ValueTransferEventTypes.ValueTransferStateChanged,
+      payload: { record },
+    })
+    return { record, message: offerWitnessedMessage }
+  }
+
+  /**
+   * Accept received {@link OfferMessage} as Getter by sending a cash acceptance message.
+   *
+   * @param record Value Transfer record containing Payment Offer to accept.
+   * @param timeouts (Optional) Getter timeouts to which value transfer must fit
+   *
+   * @returns
+   *    * Value Transfer record
+   *    * Cash Acceptance Message
+   */
+  public async acceptOffer(
+    record: ValueTransferRecord,
+    timeouts?: Timeouts
+  ): Promise<{
+    record: ValueTransferRecord
+    message: CashAcceptedMessage | ProblemReportMessage
+  }> {
+    // Verify that we are in appropriate state to perform action
+    record.assertRole(ValueTransferRole.Getter)
+    record.assertState(ValueTransferState.OfferReceived)
+
+    const activeTransaction = await this.valueTransferService.getActiveTransaction()
+    if (activeTransaction.record) {
+      throw new AriesFrameworkError(
+        `Offer cannot be accepted as there is another active transaction: ${activeTransaction.record?.id}`
+      )
+    }
+
+    if (!record.getter?.did) {
+      throw new AriesFrameworkError(`Offer cannot be accepted as there is no getterDID in the record`)
+    }
+
+    const { error, message, delta } = await this.getter.acceptOffer(
+      record.getter?.did,
+      record.valueTransferMessage,
+      timeouts
+    )
+    if (error || !message || !delta) {
+      // VTP message verification failed
+      const problemReport = new ProblemReportMessage({
+        from: record.getter?.did,
+        to: record.witness?.did,
+        pthid: record.threadId,
+        body: {
+          code: error?.code || 'invalid-payment-offer',
+          comment: `Offer verification failed. Error: ${error}`,
+        },
+      })
+
+      // Update Value Transfer record
+      record.problemReportMessage = problemReport
+      await this.valueTransferService.updateState(
+        record,
+        ValueTransferState.Failed,
+        ValueTransferTransactionStatus.Finished
+      )
+      return {
+        record,
+        message: problemReport,
+      }
+    }
+
+    // VTP message verification succeed
+    const cashAcceptedMessage = new CashAcceptedMessage({
+      from: record.getter?.did,
+      to: record.witness?.did,
+      thid: record.threadId,
+      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+    })
+
+    // Update Value Transfer record
+    record.valueTransferMessage = message
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.CashAcceptanceSent,
+      ValueTransferTransactionStatus.InProgress
+    )
+    return { record, message: cashAcceptedMessage }
   }
 
   /**

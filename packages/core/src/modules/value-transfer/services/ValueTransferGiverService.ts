@@ -3,7 +3,7 @@ import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { CashAcceptedWitnessedMessage, GiverReceiptMessage, RequestWitnessedMessage } from '../messages'
 import type { Giver, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -13,9 +13,10 @@ import { DidInfo, WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
-import { CashRemovedMessage, ProblemReportMessage, RequestAcceptedMessage } from '../messages'
+import { CashRemovedMessage, OfferMessage, ProblemReportMessage, RequestAcceptedMessage } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
 import { ValueTransferRecord, ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
+import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferService } from './ValueTransferService'
@@ -24,6 +25,7 @@ import { ValueTransferStateService } from './ValueTransferStateService'
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferGiverService {
   private valueTransferRepository: ValueTransferRepository
+  private valueTransferStateRepository: ValueTransferStateRepository
   private valueTransferService: ValueTransferService
   private valueTransferCryptoService: ValueTransferCryptoService
   private valueTransferStateService: ValueTransferStateService
@@ -34,6 +36,7 @@ export class ValueTransferGiverService {
 
   public constructor(
     valueTransferRepository: ValueTransferRepository,
+    valueTransferStateRepository: ValueTransferStateRepository,
     valueTransferService: ValueTransferService,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferStateService,
@@ -42,6 +45,7 @@ export class ValueTransferGiverService {
     eventEmitter: EventEmitter
   ) {
     this.valueTransferRepository = valueTransferRepository
+    this.valueTransferStateRepository = valueTransferStateRepository
     this.valueTransferService = valueTransferService
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
@@ -56,6 +60,90 @@ export class ValueTransferGiverService {
       },
       {}
     ).giver()
+  }
+
+  /**
+   * Initiate a new value transfer exchange as Giver by sending a payment offer message
+   * to the known Witness which transfers record later to Getter.
+   *
+   * @param params Options to use for request creation -
+   * {
+   *  amount - Amount to pay
+   *  unitOfAmount - (Optional) Currency code that represents the unit of account
+   *  witness - DID of witness
+   *  getter - DID of getter
+   *  usePublicDid - (Optional) Whether to use public DID of Getter in the request or create a new random one (True by default)
+   *  timeouts - (Optional) Giver timeouts to which value transfer must fit
+   * }
+   *
+   * @returns
+   *    * Value Transfer record
+   *    * Payment Offer Message
+   */
+  public async offerPayment(params: {
+    amount: number
+    unitOfAmount?: string
+    witness: string
+    getter: string
+    usePublicDid?: boolean
+    timeouts?: Timeouts
+  }): Promise<{
+    record: ValueTransferRecord
+    message: OfferMessage
+  }> {
+    // Get payment public DID from the storage or generate a new one if requested
+    const state = await this.valueTransferStateRepository.getState()
+    const giver =
+      params.usePublicDid && state.publicDid ? state.publicDid : (await this.didService.createDID(DidType.PeerDid)).id
+
+    // Call VTP to accept payment request
+    const { error: pickNotesError, notes: notesToSpend } = await this.giver.pickNotesToSpend(params.amount)
+    if (pickNotesError || !notesToSpend) {
+      throw new AriesFrameworkError(`Not enough notes to pay: ${params.amount}`)
+    }
+
+    // Call VTP package to create payment request
+    const givenTotal = new TaggedPrice({ amount: params.amount, uoa: params.unitOfAmount })
+    const { error, message } = await this.giver.offerPayment({
+      giverId: giver,
+      getterId: params.getter,
+      witnessId: params.witness,
+      givenTotal,
+      timeouts: params.timeouts,
+      notesToSpend,
+    })
+    if (error || !message) {
+      throw new AriesFrameworkError(`VTP: Failed to create Payment Offer: ${error?.message}`)
+    }
+
+    const offerMessage = new OfferMessage({
+      from: giver,
+      to: params.witness,
+      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
+    })
+
+    const getterInfo = await this.wellKnownService.resolve(params.getter)
+    const witnessInfo = await this.wellKnownService.resolve(params.witness)
+    const giverInfo = await this.wellKnownService.resolve(giver)
+
+    // Create Value Transfer record and raise event
+    const record = new ValueTransferRecord({
+      role: ValueTransferRole.Giver,
+      state: ValueTransferState.OfferSent,
+      threadId: offerMessage.id,
+      valueTransferMessage: message,
+      getter: getterInfo,
+      witness: witnessInfo,
+      giver: giverInfo,
+      status: ValueTransferTransactionStatus.Pending,
+    })
+
+    await this.valueTransferRepository.save(record)
+    this.eventEmitter.emit<ValueTransferStateChangedEvent>({
+      type: ValueTransferEventTypes.ValueTransferStateChanged,
+      payload: { record },
+    })
+    return { record, message: offerMessage }
   }
 
   /**

@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@multiformats/base-x": "^4.0.1",
-    "@sicpa-dlab/value-transfer-protocol-ts": "0.0.20",
+    "@sicpa-dlab/value-transfer-protocol-ts": "/Users/artem/value-transfer-protocol-ts/build",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",
     "@stablelib/uuid": "^1.0.1",
