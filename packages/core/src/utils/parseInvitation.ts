@@ -51,9 +51,11 @@ export const fromShortUrl = async (response: Response): Promise<OutOfBandInvitat
         return convertToNewInvitation(invitation)
       }
     } else if (response['url']) {
+      // The following if else is for here for trinsic shorten urls
+      // Because the redirect targets a deep link the automatic redirect does not occur
       let parsedUrl
       const location = response.headers.get('Location')
-      if (response.status === 302 && location) parsedUrl = parseUrl(location).query
+      if ((response.status === 302 || response.status === 301) && location) parsedUrl = parseUrl(location).query
       else parsedUrl = parseUrl(response['url']).query
 
       if (parsedUrl['oob']) {
@@ -90,9 +92,11 @@ export const fromShortUrl = async (response: Response): Promise<OutOfBandInvitat
  *
  * @param invitationUrl URL containing encoded invitation
  *
+ * @param dependencies Agent dependicies containing fetch
+ *
  * @returns OutOfBandInvitation
  */
-export const parseInvitationUrl = async (
+export const parseInvitationShortUrl = async (
   invitationUrl: string,
   dependencies: AgentDependencies
 ): Promise<OutOfBandInvitation> => {
@@ -100,8 +104,8 @@ export const parseInvitationUrl = async (
   if (parsedUrl['oob']) {
     const outOfBandInvitation = OutOfBandInvitation.fromUrl(invitationUrl)
     return outOfBandInvitation
-  } else if (parsedUrl['c_i' || parsedUrl['d_m']]) {
-    const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
+  } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
+    const invitation = ConnectionInvitationMessage.fromUrl(invitationUrl)
     return convertToNewInvitation(invitation)
   } else {
     try {
@@ -112,4 +116,24 @@ export const parseInvitationUrl = async (
       )
     }
   }
+}
+/**
+ * Parses URL containing encoded invitation and returns invitation message.
+ *
+ * @param invitationUrl URL containing encoded invitation
+ *
+ * @returns OutOfBandInvitation
+ */
+export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation => {
+  const parsedUrl = parseUrl(invitationUrl).query
+  if (parsedUrl['oob']) {
+    const outOfBandInvitation = OutOfBandInvitation.fromUrl(invitationUrl)
+    return outOfBandInvitation
+  } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
+    const invitation = ConnectionInvitationMessage.fromUrl(invitationUrl)
+    return convertToNewInvitation(invitation)
+  }
+  throw new AriesFrameworkError(
+    'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`.'
+  )
 }

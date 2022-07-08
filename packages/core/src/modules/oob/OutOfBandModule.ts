@@ -272,8 +272,8 @@ export class OutOfBandModule {
    * @returns out-of-band record and connection record if one has been created
    */
   public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig = {}) {
-    const message = await this.parseInvitation(invitationUrl)
-    return this.receiveInvitation(await message, config)
+    const message = this.parseInvitation(invitationUrl)
+    return this.receiveInvitation(message, config)
   }
 
   /**
@@ -283,8 +283,8 @@ export class OutOfBandModule {
    *
    * @returns OutOfBandInvitation
    */
-  public async parseInvitation(invitationUrl: string): Promise<OutOfBandInvitation> {
-    return await parseInvitationUrl(invitationUrl, this.agentConfig.agentDependencies)
+  public parseInvitation(invitationUrl: string): OutOfBandInvitation {
+    return parseInvitationUrl(invitationUrl)
   }
 
   /**

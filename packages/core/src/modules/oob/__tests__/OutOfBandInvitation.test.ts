@@ -7,7 +7,7 @@ import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'
 
 describe('OutOfBandInvitation', () => {
   describe('transformHandshakeProtocols', () => {
-    const defualtJson = {
+    const defaultJson = {
       '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
       services: ['did:sov:LjgpST2rjsoxYegQDRm7EL'],
       '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
@@ -17,7 +17,7 @@ describe('OutOfBandInvitation', () => {
     }
 
     test('Undefined handshake protocols', () => {
-      const json = { ...defualtJson }
+      const json = { ...defaultJson }
 
       const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation)
 
@@ -26,7 +26,7 @@ describe('OutOfBandInvitation', () => {
 
     test('Defined handshake protocols', () => {
       const json = {
-        ...defualtJson,
+        ...defaultJson,
         handshake_protocols: ['https://didcomm.org/connections/1.0'],
       }
       const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation)
@@ -36,7 +36,7 @@ describe('OutOfBandInvitation', () => {
 
     test('Legacy handshake protocols', () => {
       const json = {
-        ...defualtJson,
+        ...defaultJson,
         handshake_protocols: ['did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0'],
       }
       const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation)
