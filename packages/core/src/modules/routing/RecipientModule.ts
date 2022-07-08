@@ -12,6 +12,7 @@ import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
+import { filterContextCorrelationId } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { InjectionSymbols } from '../../constants'
@@ -146,6 +147,11 @@ export class RecipientModule {
 
   private async openWebSocketAndPickUp(mediator: MediationRecord, pickupStrategy: MediatorPickupStrategy) {
     let interval = 50
+
+    // FIXME: this won't work for tenant agents created by the tenants module as the agent context session
+    // could be closed. I'm not sure we want to support this as you probably don't want different tenants opening
+    // various websocket connections to mediators. However we should look at throwing an error or making sure
+    // it is not possible to use the mediation module with tenant agents.
 
     // Listens to Outbound websocket closed events and will reopen the websocket connection
     // in a recursive back off strategy if it matches the following criteria:
@@ -334,6 +340,7 @@ export class RecipientModule {
     // Apply required filters to observable stream subscribe to replay subject
     observable
       .pipe(
+        filterContextCorrelationId(this.agentContext.contextCorrelationId),
         // Only take event for current mediation record
         filter((event) => event.payload.mediationRecord.id === mediationRecord.id),
         // Only take event for previous state requested, current state granted
