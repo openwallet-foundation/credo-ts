@@ -1,6 +1,9 @@
-import type { OutOfBandInvitationMessage } from './services/OutOfBandInvitationMessage'
-import type { OutOfBandService } from './services/OutOfBandService'
+import { Lifecycle, scoped } from 'tsyringe'
 
+import { OutOfBandInvitationMessage } from './messages'
+import { OutOfBandService } from './services'
+
+@scoped(Lifecycle.ContainerScoped)
 export class OutOfBandModule {
   private outOfBandService: OutOfBandService
 
@@ -8,11 +11,19 @@ export class OutOfBandModule {
     this.outOfBandService = outOfBandService
   }
 
-  public createOutOfBandInvitation(message: { goal: string; goalCode: string; usePublicDid?: boolean }) {
-    return this.outOfBandService.createOutOfBandInvitation(message)
+  public async createInvitation(params: {
+    goalCode: string
+    goal?: string
+    usePublicDid?: boolean
+  }): Promise<OutOfBandInvitationMessage> {
+    return this.outOfBandService.createOutOfBandInvitation(params)
   }
 
-  public acceptOutOfBandInvitation(message: OutOfBandInvitationMessage) {
-    this.outOfBandService.acceptOutOfBandInvitation(message)
+  public receiveInvitationFromUrl(invitationUrl: string): OutOfBandInvitationMessage {
+    return OutOfBandInvitationMessage.fromUrl(invitationUrl)
+  }
+
+  public async acceptInvitation(message: OutOfBandInvitationMessage): Promise<void> {
+    return this.outOfBandService.acceptOutOfBandInvitation(message)
   }
 }

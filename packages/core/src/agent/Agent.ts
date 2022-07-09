@@ -17,7 +17,6 @@ import { MixedCrypto } from '../crypto'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
-import { ContactModule } from '../modules/contacts'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidService, DidType } from '../modules/dids'
 import { DidsModule } from '../modules/dids/DidsModule'
@@ -68,7 +67,6 @@ export class Agent {
   public readonly dids: DidsModule
   public readonly wallet: WalletModule
   public readonly valueTransfer: ValueTransferModule
-  public readonly contact: ContactModule
   public readonly outOfBand: OutOfBandModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
@@ -125,7 +123,6 @@ export class Agent {
     this.dids = this.container.resolve(DidsModule)
     this.wallet = this.container.resolve(WalletModule)
     this.valueTransfer = this.container.resolve(ValueTransferModule)
-    this.contact = this.container.resolve(ContactModule)
     this.outOfBand = this.container.resolve(OutOfBandModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)

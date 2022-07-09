@@ -1,17 +1,18 @@
-import type { ContactService } from '../../contacts/services'
-import type { DidService } from '../../dids'
+import { Lifecycle, scoped } from 'tsyringe'
 
-import { DidType } from '../../dids'
+import { AriesFrameworkError } from '../../../error'
+import { DidService, DidType } from '../../dids'
+import { WellKnownService } from '../../well-known'
+import { OutOfBandGoalCode, OutOfBandInvitationMessage } from '../messages'
 
-import { OutOfBandGoalCode, OutOfBandInvitationMessage } from './OutOfBandInvitationMessage'
-
+@scoped(Lifecycle.ContainerScoped)
 export class OutOfBandService {
-  private contactService: ContactService
   private didService: DidService
+  private wellKnownService: WellKnownService
 
-  public constructor(contactService: ContactService, didService: DidService) {
-    this.contactService = contactService
+  public constructor(didService: DidService, wellKnownService: WellKnownService) {
     this.didService = didService
+    this.wellKnownService = wellKnownService
   }
 
   public async createOutOfBandInvitation({
@@ -19,14 +20,13 @@ export class OutOfBandService {
     goalCode,
     usePublicDid,
   }: {
-    goal: string
     goalCode: string
+    goal?: string
     usePublicDid?: boolean
   }) {
-    const publicDid = await this.didService.findPublicDid()
-    const did = usePublicDid && publicDid ? publicDid : (await this.didService.createDID(DidType.PeerDid)).id
+    const did = await this.didService.getPublicOrCrateNewDid(DidType.PeerDid, usePublicDid)
     return new OutOfBandInvitationMessage({
-      from: typeof did === 'string' ? did : did.did,
+      from: did.did,
       body: {
         goal,
         goal_code: goalCode,
@@ -34,12 +34,13 @@ export class OutOfBandService {
     })
   }
 
-  public acceptOutOfBandInvitation(message: OutOfBandInvitationMessage) {
-    if (!message.from) {
-      throw new Error('Invalid field "from"')
-    }
-    if (message.body.goalCode === OutOfBandGoalCode.makeConnection) {
-      this.contactService.save({ did: message.from, name: '' })
+  public async acceptOutOfBandInvitation(message: OutOfBandInvitationMessage) {
+    if (message.body.goalCode === OutOfBandGoalCode.DidExchange) {
+      const didInfo = await this.wellKnownService.resolve(message.from)
+      if (!didInfo) {
+        throw new AriesFrameworkError(`Unable to resolve info for the DID: ${message.from}`)
+      }
+      await this.didService.storeRemoteDid(didInfo)
     }
   }
 }
