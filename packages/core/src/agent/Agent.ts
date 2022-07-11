@@ -17,13 +17,13 @@ import { MixedCrypto } from '../crypto'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
-import { ContactModule } from '../modules/contacts'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidService, DidType } from '../modules/dids'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { KeysModule } from '../modules/keys'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
+import { OutOfBandModule } from '../modules/out-of-band'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
@@ -67,7 +67,7 @@ export class Agent {
   public readonly dids: DidsModule
   public readonly wallet: WalletModule
   public readonly valueTransfer: ValueTransferModule
-  public readonly contact: ContactModule
+  public readonly outOfBand: OutOfBandModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
     // Create child container so we don't interfere with anything outside of this agent
@@ -123,7 +123,7 @@ export class Agent {
     this.dids = this.container.resolve(DidsModule)
     this.wallet = this.container.resolve(WalletModule)
     this.valueTransfer = this.container.resolve(ValueTransferModule)
-    this.contact = this.container.resolve(ContactModule)
+    this.outOfBand = this.container.resolve(OutOfBandModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter

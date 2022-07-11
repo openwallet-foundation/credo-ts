@@ -99,9 +99,7 @@ export class DidPeer {
   }
 
   private isValidPeerDid(did: string): boolean {
-    const isValid = PEER_DID_REGEX.test(did)
-
-    return isValid
+    return PEER_DID_REGEX.test(did)
   }
 
   public get didDocument() {

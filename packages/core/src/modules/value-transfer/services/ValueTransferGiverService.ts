@@ -92,9 +92,7 @@ export class ValueTransferGiverService {
     message: OfferMessage
   }> {
     // Get payment public DID from the storage or generate a new one if requested
-    const state = await this.valueTransferStateRepository.getState()
-    const giver =
-      params.usePublicDid && state.publicDid ? state.publicDid : (await this.didService.createDID(DidType.PeerDid)).id
+    const giver = await this.didService.getPublicOrCrateNewDid(DidType.PeerDid, params.usePublicDid)
 
     // Call VTP to accept payment request
     const { error: pickNotesError, notes: notesToSpend } = await this.giver.pickNotesToSpend(params.amount)
@@ -105,7 +103,7 @@ export class ValueTransferGiverService {
     // Call VTP package to create payment request
     const givenTotal = new TaggedPrice({ amount: params.amount, uoa: params.unitOfAmount })
     const { error, message } = await this.giver.offerPayment({
-      giverId: giver,
+      giverId: giver.did,
       getterId: params.getter,
       witnessId: params.witness,
       givenTotal,
@@ -117,14 +115,14 @@ export class ValueTransferGiverService {
     }
 
     const offerMessage = new OfferMessage({
-      from: giver,
+      from: giver.did,
       to: params.witness,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
     })
 
     const getterInfo = await this.wellKnownService.resolve(params.getter)
     const witnessInfo = await this.wellKnownService.resolve(params.witness)
-    const giverInfo = await this.wellKnownService.resolve(giver)
+    const giverInfo = await this.wellKnownService.resolve(giver.did)
 
     // Create Value Transfer record and raise event
     const record = new ValueTransferRecord({
