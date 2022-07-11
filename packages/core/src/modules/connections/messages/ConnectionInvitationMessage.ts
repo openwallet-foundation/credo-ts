@@ -121,7 +121,6 @@ export class ConnectionInvitationMessage extends AgentMessage {
    *
    * @param invitationUrl invitation url containing c_i or d_m parameter
    *
-   * @throws Error when url can not be decoded to JSON, or decoded message is not a valid `ConnectionInvitationMessage`
    * @throws Error when the url is invalid encoded url or shortened url is invalid
    */
   public static fromUrl(invitationUrl: string) {
@@ -133,9 +132,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
 
       return invitation
     } else {
-      throw new AriesFrameworkError(
-        'InvitationUrl is invalid. Needs to be encrypted with either c_i or d_m or must be valid shortened URL'
-      )
+      throw new AriesFrameworkError('InvitationUrl is invalid. Needs to be encoded with either c_i, d_m, or oob')
     }
   }
 }

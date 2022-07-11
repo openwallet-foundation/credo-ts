@@ -1,6 +1,5 @@
 import type { Response } from 'node-fetch'
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Headers } from 'node-fetch'
 
 import { ConnectionInvitationMessage } from '../../modules/connections'
@@ -8,7 +7,7 @@ import { OutOfBandInvitation } from '../../modules/oob'
 import { convertToNewInvitation } from '../../modules/oob/helpers'
 import { JsonTransformer } from '../JsonTransformer'
 import { MessageValidator } from '../MessageValidator'
-import { fromShortUrl } from '../parseInvitation'
+import { oobInvitationfromShortUrl } from '../parseInvitation'
 
 const mockOobInvite = {
   '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.0/invitation',
@@ -28,9 +27,9 @@ const mockConnectionInvite = {
 
 const header = new Headers()
 
-header.append('Content-Type', 'application/json')
-
 const dummyHeader = new Headers()
+
+header.append('Content-Type', 'application/json')
 
 const mockedResponseOobJson = {
   status: 200,
@@ -88,27 +87,23 @@ beforeAll(async () => {
   connectionInvitationToNew = convertToNewInvitation(connectionInvitationMock)
 })
 
-describe('shortUrlOobJson', () => {
-  test('oobToJson', async () => {
-    const short = await fromShortUrl(mockedResponseOobJson)
+describe('shortened urls resolving to oob invitations', () => {
+  test('Resolve a mocked response in the form of a oob invitation as a json object', async () => {
+    const short = await oobInvitationfromShortUrl(mockedResponseOobJson)
+    expect(short).toEqual(outOfBandInvitationMock)
+  })
+  test('Resolve a mocked response in the form of a oob invitation encoded in an url', async () => {
+    const short = await oobInvitationfromShortUrl(mockedResponseOobUrl)
     expect(short).toEqual(outOfBandInvitationMock)
   })
 })
-describe('shortUrlOobUrl', () => {
-  test('oobFromUrl', async () => {
-    const short = await fromShortUrl(mockedResponseOobUrl)
-    expect(short).toEqual(outOfBandInvitationMock)
-  })
-})
-describe('shortUrlConnectionJson', () => {
-  test('connectionInvitationToJson', async () => {
-    const short = await fromShortUrl(mockedResponseConnectionJson)
+describe('shortened urls resolving to connection invitations', () => {
+  test('Resolve a mocked response in the form of a connection invitation as a json object', async () => {
+    const short = await oobInvitationfromShortUrl(mockedResponseConnectionJson)
     expect(short).toEqual(connectionInvitationToNew)
   })
-})
-describe('shortUrlConnectionUrl', () => {
-  test('connectionFromUrl', async () => {
-    const short = await fromShortUrl(mockedResponseConnectionUrl)
+  test('Resolve a mocked Response in the form of a connection invitation encoded in an url', async () => {
+    const short = await oobInvitationfromShortUrl(mockedResponseConnectionUrl)
     expect(short).toEqual(connectionInvitationToNew)
   })
 })

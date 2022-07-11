@@ -49,6 +49,7 @@
     "web-did-resolver": "^2.0.8"
   },
   "devDependencies": {
+    "node-fetch": "^3.2.6",
     "@types/bn.js": "^5.1.0",
     "@types/events": "^3.0.0",
     "@types/luxon": "^1.27.0",
