@@ -88,32 +88,34 @@ export class TenantSessionCoordinator {
   }
 
   /**
-   * Dispose the agent context for a session. It will decrease the session count for the agent context.
-   * If the number of sessions is zero after the context for this session has been disposed, the agent context will be closed.
+   * End a session for the provided agent context. It will decrease the session count for the agent context.
+   * If the number of sessions is zero after the context for this session has been ended, the agent context will be closed.
    */
-  public async disposeAgentContextSession(agentContext: AgentContext): Promise<void> {
-    this.logger.debug(`Disposing context for session with contextCorrelationId ${agentContext.contextCorrelationId}'`)
+  public async endAgentContextSession(agentContext: AgentContext): Promise<void> {
+    this.logger.debug(
+      `Ending session for agent context with contextCorrelationId ${agentContext.contextCorrelationId}'`
+    )
     const hasTenantSessionMapping = this.hasTenantSessionMapping(agentContext.contextCorrelationId)
 
-    // Custom handling for the root agent context, which can be disposed on agent shutdown
+    // Custom handling for the root agent context. We don't keep track of the total number of sessions for the root
+    // agent context, and we always keep the dependency manager intact.
     if (!hasTenantSessionMapping && agentContext.contextCorrelationId === this.rootAgentContext.contextCorrelationId) {
-      this.logger.debug('Disposing root agent context')
-      await agentContext.dependencyManager.dispose()
+      this.logger.debug('Ending session for root agent context. Not disposing dependency manager')
       return
     }
 
     // This should not happen
     if (!hasTenantSessionMapping) {
       this.logger.error(
-        `Unknown agent context with contextCorrelationId '${agentContext.contextCorrelationId}'. Cannot dispose of session`
+        `Unknown agent context with contextCorrelationId '${agentContext.contextCorrelationId}'.  Cannot end session`
       )
       throw new AriesFrameworkError(
-        `Unknown agent context with contextCorrelationId '${agentContext.contextCorrelationId}'. Cannot dispose of session`
+        `Unknown agent context with contextCorrelationId '${agentContext.contextCorrelationId}'. Cannot end session`
       )
     }
 
     await this.mutexForTenant(agentContext.contextCorrelationId).runExclusive(async () => {
-      this.logger.debug(`Acquired lock for tenant '${agentContext.contextCorrelationId}' to dispose context`)
+      this.logger.debug(`Acquired lock for tenant '${agentContext.contextCorrelationId}' to end session context`)
       const tenantSessions = this.getTenantSessionsMapping(agentContext.contextCorrelationId)
 
       // TODO: check if session count is already 0

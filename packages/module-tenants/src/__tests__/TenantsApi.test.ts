@@ -1,4 +1,4 @@
-import { Agent, AgentContext } from '@aries-framework/core'
+import { Agent, AgentContext, InjectionSymbols } from '@aries-framework/core'
 
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../core/tests/helpers'
 import { TenantAgent } from '../TenantAgent'
@@ -17,6 +17,7 @@ const tenantService = new TenantServiceMock()
 const agentContextProvider = new AgentContextProviderMock()
 const agentConfig = getAgentConfig('TenantsApi')
 const rootAgent = new Agent(agentConfig, agentDependencies)
+rootAgent.dependencyManager.registerInstance(InjectionSymbols.AgentContextProvider, agentContextProvider)
 
 const tenantsApi = new TenantsApi(tenantService, rootAgent.context, agentContextProvider, agentConfig.logger)
 
@@ -52,7 +53,7 @@ describe('TenantsApi', () => {
       expect(tenantAgent.context).toBe(tenantAgentContext)
 
       await tenantAgent.wallet.delete()
-      await tenantAgent.shutdown()
+      await tenantAgent.destroy()
     })
   })
 
@@ -76,9 +77,9 @@ describe('TenantsApi', () => {
 
       mockFunction(agentContextProvider.getAgentContextForContextCorrelationId).mockResolvedValue(tenantAgentContext)
 
-      let shutdownSpy: jest.SpyInstance | undefined = undefined
+      let destroySpy: jest.SpyInstance | undefined = undefined
       await tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
-        shutdownSpy = jest.spyOn(tenantAgent, 'shutdown')
+        destroySpy = jest.spyOn(tenantAgent, 'destroy')
         expect(tenantAgent.isInitialized).toBe(true)
         expect(tenantAgent.wallet.walletConfig).toEqual({
           id: 'Wallet: TenantsApi: tenant-id',
@@ -92,10 +93,10 @@ describe('TenantsApi', () => {
         await tenantAgent.wallet.delete()
       })
 
-      expect(shutdownSpy).toHaveBeenCalled()
+      expect(destroySpy).toHaveBeenCalled()
     })
 
-    test('shutdown is called even if the tenant agent callback throws an error', async () => {
+    test('destroy is called even if the tenant agent callback throws an error', async () => {
       expect.assertions(7)
 
       const tenantDependencyManager = rootAgent.dependencyManager.createChild()
@@ -114,10 +115,10 @@ describe('TenantsApi', () => {
 
       mockFunction(agentContextProvider.getAgentContextForContextCorrelationId).mockResolvedValue(tenantAgentContext)
 
-      let shutdownSpy: jest.SpyInstance | undefined = undefined
+      let destroySpy: jest.SpyInstance | undefined = undefined
       await expect(
         tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
-          shutdownSpy = jest.spyOn(tenantAgent, 'shutdown')
+          destroySpy = jest.spyOn(tenantAgent, 'destroy')
           expect(tenantAgent.isInitialized).toBe(true)
           expect(tenantAgent.wallet.walletConfig).toEqual({
             id: 'Wallet: TenantsApi: tenant-id',
@@ -134,8 +135,8 @@ describe('TenantsApi', () => {
         })
       ).rejects.toThrow('Uh oh something went wrong')
 
-      // shutdown should have been called
-      expect(shutdownSpy).toHaveBeenCalled()
+      // destroy should have been called
+      expect(destroySpy).toHaveBeenCalled()
     })
   })
 
@@ -156,7 +157,7 @@ describe('TenantsApi', () => {
         wallet: {
           delete: jest.fn(),
         },
-        shutdown: jest.fn(),
+        destroy: jest.fn(),
       } as unknown as TenantAgent
 
       mockFunction(tenantService.createTenant).mockResolvedValue(tenantRecord)
@@ -170,7 +171,7 @@ describe('TenantsApi', () => {
 
       expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id' })
       expect(createdTenantRecord).toBe(tenantRecord)
-      expect(tenantAgentMock.shutdown).toHaveBeenCalled()
+      expect(tenantAgentMock.destroy).toHaveBeenCalled()
       expect(tenantService.createTenant).toHaveBeenCalledWith(rootAgent.context, {
         label: 'test',
       })
@@ -195,7 +196,7 @@ describe('TenantsApi', () => {
         wallet: {
           delete: jest.fn(),
         },
-        shutdown: jest.fn(),
+        destroy: jest.fn(),
       } as unknown as TenantAgent
       const getTenantAgentSpy = jest.spyOn(tenantsApi, 'getTenantAgent').mockResolvedValue(tenantAgentMock)
 
@@ -203,7 +204,7 @@ describe('TenantsApi', () => {
 
       expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id' })
       expect(tenantAgentMock.wallet.delete).toHaveBeenCalled()
-      expect(tenantAgentMock.shutdown).toHaveBeenCalled()
+      expect(tenantAgentMock.destroy).toHaveBeenCalled()
       expect(tenantService.deleteTenantById).toHaveBeenCalledWith(rootAgent.context, 'tenant-id')
     })
   })

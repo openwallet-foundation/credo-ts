@@ -42,16 +42,14 @@ export class DefaultAgentContextProvider implements AgentContextProvider {
     return this.agentContext
   }
 
-  public async disposeAgentContext(agentContext: AgentContext) {
+  public async endSessionForAgentContext(agentContext: AgentContext) {
     // Throw an error if the context correlation id does not match to prevent misuse.
     if (agentContext.contextCorrelationId !== this.agentContext.contextCorrelationId) {
       throw new AriesFrameworkError(
-        `Could not dispose agent context with contextCorrelationId '${agentContext.contextCorrelationId}'. Only contextCorrelationId '${this.agentContext.contextCorrelationId}' is provided by this provider.`
+        `Could not end session for agent context with contextCorrelationId '${agentContext.contextCorrelationId}'. Only contextCorrelationId '${this.agentContext.contextCorrelationId}' is provided by this provider.`
       )
     }
 
-    // Dispose of the dependency manager. This makes the injection container unusable
-    // and also meant the wallet etc... will be closed.
-    await agentContext.dependencyManager.dispose()
+    // We won't dispose the agent context as we don't keep track of the total number of sessions for the root agent context.65
   }
 }

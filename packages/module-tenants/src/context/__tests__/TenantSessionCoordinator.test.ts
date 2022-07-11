@@ -199,22 +199,21 @@ describe('TenantSessionCoordinator', () => {
     })
   })
 
-  describe('disposeAgentContextSession', () => {
-    test('disposes the agent context dependency manager if the agent context correlation id matches the root agent context', async () => {
+  describe('endAgentContextSessions', () => {
+    test('Returns early and does not release a session if the agent context correlation id matches the root agent context', async () => {
       const rootAgentContextMock = {
         contextCorrelationId: 'mock',
         dependencyManager: { dispose: jest.fn() },
       } as unknown as AgentContext
-      await tenantSessionCoordinator.disposeAgentContextSession(rootAgentContextMock)
+      await tenantSessionCoordinator.endAgentContextSession(rootAgentContextMock)
 
-      expect(rootAgentContextMock.dependencyManager.dispose).toHaveBeenCalledTimes(1)
       expect(tenantSessionMutexMock.releaseSession).not.toHaveBeenCalled()
     })
 
     test('throws an error if not agent context session exists for the tenant', async () => {
       const tenantAgentContextMock = { contextCorrelationId: 'does-not-exist' } as unknown as AgentContext
-      expect(tenantSessionCoordinator.disposeAgentContextSession(tenantAgentContextMock)).rejects.toThrowError(
-        `Unknown agent context with contextCorrelationId 'does-not-exist'. Cannot dispose of session`
+      expect(tenantSessionCoordinator.endAgentContextSession(tenantAgentContextMock)).rejects.toThrowError(
+        `Unknown agent context with contextCorrelationId 'does-not-exist'. Cannot end session`
       )
     })
 
@@ -230,7 +229,7 @@ describe('TenantSessionCoordinator', () => {
         tenant1,
       }
 
-      await tenantSessionCoordinator.disposeAgentContextSession(tenant1AgentContext)
+      await tenantSessionCoordinator.endAgentContextSession(tenant1AgentContext)
 
       // Should have reduced session count by one
       expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toEqual({
@@ -256,7 +255,7 @@ describe('TenantSessionCoordinator', () => {
         tenant1,
       }
 
-      await tenantSessionCoordinator.disposeAgentContextSession(tenant1AgentContext)
+      await tenantSessionCoordinator.endAgentContextSession(tenant1AgentContext)
 
       // Should have removed tenant1
       expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toBeUndefined()

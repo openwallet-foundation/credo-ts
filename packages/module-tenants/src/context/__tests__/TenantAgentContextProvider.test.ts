@@ -153,9 +153,9 @@ describe('TenantAgentContextProvider', () => {
     test('calls disposeAgentContextSession on tenant session coordinator', async () => {
       const tenantAgentContext = jest.fn() as unknown as AgentContext
 
-      await tenantAgentContextProvider.disposeAgentContext(tenantAgentContext)
+      await tenantAgentContextProvider.endSessionForAgentContext(tenantAgentContext)
 
-      expect(tenantSessionCoordinator.disposeAgentContextSession).toHaveBeenCalledWith(tenantAgentContext)
+      expect(tenantSessionCoordinator.endAgentContextSession).toHaveBeenCalledWith(tenantAgentContext)
     })
   })
 })

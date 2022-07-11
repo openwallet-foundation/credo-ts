@@ -78,12 +78,17 @@ export class MessageReceiver {
       contextCorrelationId,
     })
 
-    if (this.isEncryptedMessage(inboundMessage)) {
-      await this.receiveEncryptedMessage(agentContext, inboundMessage as EncryptedMessage, session)
-    } else if (this.isPlaintextMessage(inboundMessage)) {
-      await this.receivePlaintextMessage(agentContext, inboundMessage, connection)
-    } else {
-      throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
+    try {
+      if (this.isEncryptedMessage(inboundMessage)) {
+        await this.receiveEncryptedMessage(agentContext, inboundMessage as EncryptedMessage, session)
+      } else if (this.isPlaintextMessage(inboundMessage)) {
+        await this.receivePlaintextMessage(agentContext, inboundMessage, connection)
+      } else {
+        throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
+      }
+    } finally {
+      // Always end the session for the agent context after handling the message.
+      await agentContext.endSession()
     }
   }
 

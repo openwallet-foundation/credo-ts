@@ -101,8 +101,8 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     return agentContext
   }
 
-  public async disposeAgentContext(agentContext: AgentContext) {
-    await this.tenantSessionCoordinator.disposeAgentContextSession(agentContext)
+  public async endSessionForAgentContext(agentContext: AgentContext) {
+    await this.tenantSessionCoordinator.endAgentContextSession(agentContext)
   }
 
   private getRecipientKeysFromEncryptedMessage(jwe: EncryptedMessage): Key[] {

@@ -148,11 +148,6 @@ export abstract class BaseAgent {
     }
   }
 
-  public async shutdown() {
-    this.logger.trace(`Disposing agent context with contextCorrelationId '${this.agentContext.contextCorrelationId}'`)
-    await this.agentContext.dispose()
-  }
-
   public get publicDid() {
     return this.agentContext.wallet.publicDid
   }

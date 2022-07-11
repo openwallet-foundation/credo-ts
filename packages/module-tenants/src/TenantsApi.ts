@@ -50,8 +50,8 @@ export class TenantsApi {
       this.logger.error(`Error in tenant agent callback for tenant '${options.tenantId}'`, { error })
       throw error
     } finally {
-      this.logger.debug(`Shutting down tenant agent for tenant '${options.tenantId}'`)
-      await tenantAgent.shutdown()
+      this.logger.debug(`Destroying tenant agent for tenant '${options.tenantId}'`)
+      await tenantAgent.destroy()
     }
   }
 
@@ -61,7 +61,7 @@ export class TenantsApi {
 
     // This initializes the tenant agent, creates the wallet etc...
     const tenantAgent = await this.getTenantAgent({ tenantId: tenantRecord.id })
-    await tenantAgent.shutdown()
+    await tenantAgent.destroy()
 
     this.logger.info(`Successfully created tenant '${tenantRecord.id}'`)
 
@@ -81,7 +81,7 @@ export class TenantsApi {
     this.logger.trace(`Deleting wallet for tenant '${tenantId}'`)
     await tenantAgent.wallet.delete()
     this.logger.trace(`Shutting down agent for tenant '${tenantId}'`)
-    await tenantAgent.shutdown()
+    await tenantAgent.destroy()
 
     return this.tenantService.deleteTenantById(this.agentContext, tenantId)
   }

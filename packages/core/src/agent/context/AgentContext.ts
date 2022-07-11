@@ -49,14 +49,14 @@ export class AgentContext {
   }
 
   /**
-   * Dispose the current agent context
+   * End session the current agent context
    */
-  public async dispose() {
+  public async endSession() {
     const agentContextProvider = this.dependencyManager.resolve<AgentContextProvider>(
       InjectionSymbols.AgentContextProvider
     )
 
-    await agentContextProvider.disposeAgentContext(this)
+    await agentContextProvider.endSessionForAgentContext(this)
   }
 
   public toJSON() {
