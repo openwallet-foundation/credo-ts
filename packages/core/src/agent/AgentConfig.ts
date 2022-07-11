@@ -120,14 +120,12 @@ export class AgentConfig {
     )
   }
 
-  public toString() {
-    const config = {
+  public toJSON() {
+    return {
       ...this.initConfig,
       logger: this.logger !== undefined,
       agentDependencies: this.agentDependencies != undefined,
       label: this.label,
     }
-
-    return JSON.stringify(config, null, 2)
   }
 }

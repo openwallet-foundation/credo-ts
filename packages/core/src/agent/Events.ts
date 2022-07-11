@@ -6,9 +6,14 @@ export enum AgentEventTypes {
   AgentMessageProcessed = 'AgentMessageProcessed',
 }
 
+export interface EventMetadata {
+  contextCorrelationId: string
+}
+
 export interface BaseEvent {
   type: string
   payload: Record<string, unknown>
+  metadata: EventMetadata
 }
 
 export interface AgentMessageReceivedEvent extends BaseEvent {

@@ -1,4 +1,3 @@
-import type { Key } from '../../crypto'
 import type { DependencyManager } from '../../plugins'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository/ConnectionRecord'

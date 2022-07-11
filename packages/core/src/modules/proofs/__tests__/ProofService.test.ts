@@ -175,6 +175,9 @@ describe('ProofService', () => {
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'ProofStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: null,
           proofRecord: expect.objectContaining({

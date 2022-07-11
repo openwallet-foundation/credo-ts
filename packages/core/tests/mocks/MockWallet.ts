@@ -71,4 +71,8 @@ export class MockWallet implements Wallet {
   public generateNonce(): Promise<string> {
     throw new Error('Method not implemented.')
   }
+
+  public generateWalletKey(): Promise<string> {
+    throw new Error('Method not implemented.')
+  }
 }

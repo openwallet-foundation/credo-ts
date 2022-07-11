@@ -1,7 +1,9 @@
 import type { InboundTransport, Agent } from '../../packages/core/src'
 import type { TransportSession } from '../../packages/core/src/agent/TransportService'
 import type { EncryptedMessage } from '../../packages/core/src/types'
-import type { Subject, Subscription } from 'rxjs'
+import type { Subscription } from 'rxjs'
+
+import { Subject } from 'rxjs'
 
 import { MessageReceiver } from '../../packages/core/src'
 import { TransportService } from '../../packages/core/src/agent/TransportService'
@@ -10,10 +12,10 @@ import { uuid } from '../../packages/core/src/utils/uuid'
 export type SubjectMessage = { message: EncryptedMessage; replySubject?: Subject<SubjectMessage> }
 
 export class SubjectInboundTransport implements InboundTransport {
-  private ourSubject: Subject<SubjectMessage>
+  public readonly ourSubject: Subject<SubjectMessage>
   private subscription?: Subscription
 
-  public constructor(ourSubject: Subject<SubjectMessage>) {
+  public constructor(ourSubject = new Subject<SubjectMessage>()) {
     this.ourSubject = ourSubject
   }
 

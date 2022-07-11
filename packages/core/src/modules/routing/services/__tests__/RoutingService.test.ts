@@ -66,6 +66,9 @@ describe('RoutingService', () => {
       expect(routing).toEqual(routing)
       expect(routingListener).toHaveBeenCalledWith({
         type: RoutingEventTypes.RoutingCreatedEvent,
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           routing,
         },

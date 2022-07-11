@@ -61,6 +61,9 @@ describe('Repository', () => {
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'RecordSaved',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           record: expect.objectContaining({
             id: 'test-id',
@@ -91,6 +94,9 @@ describe('Repository', () => {
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'RecordUpdated',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           record: expect.objectContaining({
             id: 'test-id',
@@ -121,6 +127,9 @@ describe('Repository', () => {
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'RecordDeleted',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           record: expect.objectContaining({
             id: 'test-id',
