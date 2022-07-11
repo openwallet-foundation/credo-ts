@@ -12,13 +12,10 @@ export type WitnessStateTags = RecordTags<WitnessStateRecord>
 
 export interface WitnessStateProps {
   id?: string
-  publicDid: string
   witnessState: WitnessState
 }
 
 export class WitnessStateRecord extends BaseRecord<DefaultWitnessStateTags, CustomWitnessStateTags> {
-  public publicDid!: string
-
   @Type(() => WitnessState)
   public witnessState!: WitnessState
 
@@ -30,7 +27,6 @@ export class WitnessStateRecord extends BaseRecord<DefaultWitnessStateTags, Cust
 
     if (props) {
       this.id = props.id ?? uuid()
-      this.publicDid = props.publicDid
       this.witnessState = props.witnessState
     }
   }
@@ -38,7 +34,6 @@ export class WitnessStateRecord extends BaseRecord<DefaultWitnessStateTags, Cust
   public getTags() {
     return {
       ...this._tags,
-      publicDid: this.publicDid,
     }
   }
 }

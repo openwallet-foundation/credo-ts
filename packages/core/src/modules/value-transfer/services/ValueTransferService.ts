@@ -98,7 +98,6 @@ export class ValueTransferService {
         const partyStateHashes = ValueTransferService.generateInitialPartyStateHashes(config.supportedPartiesCount)
 
         const record = new WitnessStateRecord({
-          publicDid: publicDid.id,
           witnessState: new WitnessState(partyStateHashes),
         })
 
@@ -372,9 +371,7 @@ export class ValueTransferService {
     let state = await this.getPartyState()
     if (state) return state
 
-    const publicDid = await this.didService.findPublicDid()
     state = new ValueTransferStateRecord({
-      publicDid: publicDid?.id,
       partyState: new PartyState(new Uint8Array(), new Wallet()),
     })
     await this.valueTransferStateRepository.save(state)

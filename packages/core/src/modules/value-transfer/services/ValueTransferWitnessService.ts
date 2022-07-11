@@ -1,12 +1,20 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
-import type { CashAcceptedMessage, CashRemovedMessage, RequestAcceptedMessage, RequestMessage } from '../messages'
+import type {
+  CashAcceptedMessage,
+  CashRemovedMessage,
+  RequestAcceptedMessage,
+  RequestMessage,
+  OfferMessage,
+} from '../messages'
 import type { Witness } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../../error'
+import { DidService } from '../../dids'
 import { DidInfo } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
@@ -19,6 +27,7 @@ import {
   RequestAcceptedWitnessedMessage,
   RequestWitnessedMessage,
 } from '../messages'
+import { OfferWitnessedMessage } from '../messages/OfferWitnessedMessage'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
 import { ValueTransferRecord, ValueTransferTransactionStatus, ValueTransferRepository } from '../repository'
 import { WitnessStateRepository } from '../repository/WitnessStateRepository'
@@ -34,6 +43,7 @@ export class ValueTransferWitnessService {
   private valueTransferCryptoService: ValueTransferCryptoService
   private valueTransferStateService: ValueTransferStateService
   private witnessStateRepository: WitnessStateRepository
+  private didService: DidService
   private eventEmitter: EventEmitter
   private witness: Witness
 
@@ -43,6 +53,7 @@ export class ValueTransferWitnessService {
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferStateService,
     witnessStateRepository: WitnessStateRepository,
+    didService: DidService,
     eventEmitter: EventEmitter
   ) {
     this.valueTransferRepository = valueTransferRepository
@@ -50,6 +61,7 @@ export class ValueTransferWitnessService {
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
     this.witnessStateRepository = witnessStateRepository
+    this.didService = didService
     this.eventEmitter = eventEmitter
 
     this.witness = new ValueTransfer(
@@ -72,7 +84,6 @@ export class ValueTransferWitnessService {
    * @returns
    *    * Value Transfer record
    *    * Witnessed Request message
-   *    * Connection to send message
    */
   public async processRequest(messageContext: InboundMessageContext<RequestMessage>): Promise<{
     record?: ValueTransferRecord
@@ -81,12 +92,15 @@ export class ValueTransferWitnessService {
     const { message: requestMessage } = messageContext
 
     // Get Witness state
-    const state = await this.witnessStateRepository.getState()
+    const did = await this.didService.findPublicDid()
+    if (!did) {
+      throw new AriesFrameworkError(`Unable to find Witness public DID`)
+    }
 
     const valueTransferMessage = requestMessage.valueTransferMessage
     if (!valueTransferMessage) {
       const problemReport = new ProblemReportMessage({
-        from: state.publicDid,
+        from: did?.did,
         to: requestMessage.from,
         pthid: requestMessage.id,
         body: {
@@ -100,9 +114,9 @@ export class ValueTransferWitnessService {
     }
 
     // Check that witness request by Getter is corrected
-    if (valueTransferMessage.isWitnessSet && state.publicDid !== valueTransferMessage.witnessId) {
+    if (valueTransferMessage.isWitnessSet && did?.did !== valueTransferMessage.witnessId) {
       const problemReport = new ProblemReportMessage({
-        from: state.publicDid,
+        from: did.did,
         to: requestMessage.from,
         pthid: requestMessage.id,
         body: {
@@ -116,11 +130,11 @@ export class ValueTransferWitnessService {
     }
 
     //Call VTP package to process received Payment Request request
-    const { error, message } = await this.witness.processRequest(state.publicDid, valueTransferMessage)
+    const { error, message } = await this.witness.processRequest(did?.did, valueTransferMessage)
     if (error || !message) {
       // send problem report back to Getter
       const problemReportMessage = new ProblemReportMessage({
-        from: state.publicDid,
+        from: did.did,
         to: requestMessage.from,
         pthid: requestMessage.id,
         body: {
@@ -136,7 +150,7 @@ export class ValueTransferWitnessService {
 
     // next protocol message
     const requestWitnessedMessage = new RequestWitnessedMessage({
-      from: state.publicDid,
+      from: did.did,
       to: giverDid,
       thid: requestMessage.id,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
@@ -144,7 +158,7 @@ export class ValueTransferWitnessService {
 
     const getterInfo = new DidInfo({ did: valueTransferMessage.getterId })
     const giverInfo = giverDid ? new DidInfo({ did: giverDid }) : undefined
-    const witnessInfo = new DidInfo({ did: state.publicDid })
+    const witnessInfo = new DidInfo({ did: did.did })
 
     // Create Value Transfer record and raise event
     const record = new ValueTransferRecord({
@@ -164,6 +178,112 @@ export class ValueTransferWitnessService {
       payload: { record },
     })
     return { record, message: requestWitnessedMessage }
+  }
+
+  /**
+   * Process a received {@link OfferMessage}.
+   *    The original Offer message will be verified.
+   *    Value transfer record with the information from the offer message will be created.
+   *    The Offer message will be forwarded to Getter afterwards.
+   *
+   * @param messageContext The record context containing the offer message.
+   *
+   * @returns
+   *    * Value Transfer record
+   *    * Witnessed Offer message
+   */
+  public async processOffer(messageContext: InboundMessageContext<OfferMessage>): Promise<{
+    record?: ValueTransferRecord
+    message: OfferWitnessedMessage | ProblemReportMessage
+  }> {
+    const { message: offerMessage } = messageContext
+
+    // Get Witness state
+    const did = await this.didService.findPublicDid()
+    if (!did) {
+      throw new AriesFrameworkError(`Unable to find Witness public DID`)
+    }
+
+    const valueTransferMessage = offerMessage.valueTransferMessage
+    if (!valueTransferMessage) {
+      const problemReport = new ProblemReportMessage({
+        from: did.did,
+        to: offerMessage.from,
+        pthid: offerMessage.id,
+        body: {
+          code: 'e.p.req.bad-offer',
+          comment: `Missing required base64 or json encoded attachment data for payment offer with thread id ${offerMessage.id}`,
+        },
+      })
+      return {
+        message: problemReport,
+      }
+    }
+
+    // Check that witness request by Getter is corrected
+    if (did.did !== valueTransferMessage.witnessId) {
+      const problemReport = new ProblemReportMessage({
+        from: did.did,
+        to: offerMessage.from,
+        pthid: offerMessage.id,
+        body: {
+          code: 'e.p.req.bad-witness',
+          comment: `Requested witness ${valueTransferMessage.witnessId} is different`,
+        },
+      })
+      return {
+        message: problemReport,
+      }
+    }
+
+    //Call VTP package to process received Payment Request request
+    const { error, message } = await this.witness.processOffer(did.did, valueTransferMessage)
+    if (error || !message) {
+      // send problem report back to Getter
+      const problemReportMessage = new ProblemReportMessage({
+        from: did.did,
+        to: offerMessage.from,
+        pthid: offerMessage.id,
+        body: {
+          code: error?.code || 'invalid-payment-offer',
+          comment: `Payment Offer verification failed. Error: ${error}`,
+        },
+      })
+
+      return { message: problemReportMessage }
+    }
+
+    // next protocol message
+    const offerWitnessedMessage = new OfferWitnessedMessage({
+      from: did.did,
+      to: message.payment.getter?.id,
+      thid: offerMessage.id,
+      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
+    })
+
+    const getterInfo = new DidInfo({ did: valueTransferMessage.getterId })
+    const giverInfo = new DidInfo({ did: valueTransferMessage.giverId })
+    const witnessInfo = new DidInfo({ did: did.did })
+
+    // Create Value Transfer record and raise event
+    const record = new ValueTransferRecord({
+      role: ValueTransferRole.Witness,
+      state: ValueTransferState.OfferSent,
+      status: ValueTransferTransactionStatus.Pending,
+      threadId: offerMessage.id,
+      valueTransferMessage: message,
+      getter: getterInfo,
+      giver: giverInfo,
+      witness: witnessInfo,
+    })
+
+    await this.valueTransferRepository.save(record)
+    this.eventEmitter.emit<ValueTransferStateChangedEvent>({
+      type: ValueTransferEventTypes.ValueTransferStateChanged,
+      payload: { record },
+    })
+
+    return { record, message: offerWitnessedMessage }
   }
 
   /**
@@ -273,7 +393,7 @@ export class ValueTransferWitnessService {
     const record = await this.valueTransferRepository.getByThread(cashAcceptedMessage.thid)
 
     record.assertRole(ValueTransferRole.Witness)
-    record.assertState(ValueTransferState.RequestAcceptanceSent)
+    record.assertState([ValueTransferState.RequestAcceptanceSent, ValueTransferState.OfferSent])
 
     const valueTransferDelta = cashAcceptedMessage.valueTransferDelta
     if (!valueTransferDelta) {

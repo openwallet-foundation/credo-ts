@@ -12,13 +12,10 @@ export type ValueTransferStateTags = RecordTags<ValueTransferStateRecord>
 
 export interface ValueTransferStateProps {
   id?: string
-  publicDid?: string
   partyState: PartyState
 }
 
 export class ValueTransferStateRecord extends BaseRecord<DefaultValueTransferStateTags, CustomValueTransferStateTags> {
-  public publicDid?: string
-
   @Type(() => PartyState)
   public partyState!: PartyState
 
@@ -30,7 +27,6 @@ export class ValueTransferStateRecord extends BaseRecord<DefaultValueTransferSta
 
     if (props) {
       this.id = props.id ?? uuid()
-      this.publicDid = props.publicDid
       this.partyState = props.partyState
     }
   }
@@ -38,7 +34,6 @@ export class ValueTransferStateRecord extends BaseRecord<DefaultValueTransferSta
   public getTags() {
     return {
       ...this._tags,
-      publicDid: this.publicDid,
     }
   }
 }

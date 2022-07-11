@@ -1,5 +1,5 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { Transport, ValueTransferConfig } from '@aries-framework/core'
+import type { Transport, ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
 
 import { ValueTransferState } from '@aries-framework/core'
 
@@ -43,6 +43,20 @@ export class Getter extends BaseAgent {
     this.valueTransferRecordId = record.id
     console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()
+  }
+
+  public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {
+    const { record } = await this.agent.valueTransfer.acceptPaymentOffer({ recordId: valueTransferRecord.id })
+    this.valueTransferRecordId = record.id
+    console.log(greenText('\nPayment offer accepted!\n'))
+    await this.waitForPayment()
+  }
+
+  public async abortPaymentOffer(valueTransferRecord: ValueTransferRecord) {
+    const { record } = await this.agent.valueTransfer.abortTransaction(valueTransferRecord.id)
+    this.valueTransferRecordId = record.id
+    console.log(redText('\nPayment request rejected!\n'))
+    console.log(record.problemReportMessage)
   }
 
   private async waitForPayment() {
