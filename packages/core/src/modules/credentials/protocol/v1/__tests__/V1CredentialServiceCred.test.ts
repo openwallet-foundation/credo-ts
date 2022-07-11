@@ -482,6 +482,9 @@ describe('V1CredentialService', () => {
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: CredentialState.RequestReceived,
           credentialRecord: expect.objectContaining({
@@ -608,6 +611,9 @@ describe('V1CredentialService', () => {
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: CredentialState.CredentialReceived,
           credentialRecord: expect.objectContaining({
@@ -934,6 +940,9 @@ describe('V1CredentialService', () => {
       const [[event]] = eventListenerMock.mock.calls
       expect(event).toMatchObject({
         type: 'CredentialStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: CredentialState.OfferReceived,
           credentialRecord: expect.objectContaining({

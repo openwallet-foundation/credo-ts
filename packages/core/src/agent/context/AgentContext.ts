@@ -46,4 +46,10 @@ export class AgentContext {
   public get wallet() {
     return this.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
   }
+
+  public toJSON() {
+    return {
+      contextCorrelationId: this.contextCorrelationId,
+    }
+  }
 }

@@ -31,6 +31,7 @@ export interface Wallet {
   pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
   unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
   generateNonce(): Promise<string>
+  generateWalletKey(): Promise<string>
 }
 
 export interface DidInfo {

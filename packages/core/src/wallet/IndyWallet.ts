@@ -344,6 +344,7 @@ export class IndyWallet implements Wallet {
    * @throws {WalletError} if the wallet is already closed or another error occurs
    */
   public async close(): Promise<void> {
+    this.logger.debug(`Closing wallet ${this.walletConfig?.id}`)
     if (!this.walletHandle) {
       throw new WalletError('Wallet is in invalid state, you are trying to close wallet that has no `walletHandle`.')
     }
@@ -632,6 +633,14 @@ export class IndyWallet implements Wallet {
         throw new RecordDuplicateError(`Record already exists`, { recordType: 'KeyPairRecord' })
       }
       throw isIndyError(error) ? new IndySdkError(error) : error
+    }
+  }
+
+  public async generateWalletKey() {
+    try {
+      return await this.indy.generateWalletKey()
+    } catch (error) {
+      throw new WalletError('Error generating wallet key', { cause: error })
     }
   }
 }
