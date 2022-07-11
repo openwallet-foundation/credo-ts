@@ -282,6 +282,7 @@ export class ValueTransferWitnessService {
       type: ValueTransferEventTypes.ValueTransferStateChanged,
       payload: { record },
     })
+
     return { record, message: offerWitnessedMessage }
   }
 
@@ -392,7 +393,7 @@ export class ValueTransferWitnessService {
     const record = await this.valueTransferRepository.getByThread(cashAcceptedMessage.thid)
 
     record.assertRole(ValueTransferRole.Witness)
-    record.assertState(ValueTransferState.RequestAcceptanceSent)
+    record.assertState([ValueTransferState.RequestAcceptanceSent, ValueTransferState.OfferSent])
 
     const valueTransferDelta = cashAcceptedMessage.valueTransferDelta
     if (!valueTransferDelta) {

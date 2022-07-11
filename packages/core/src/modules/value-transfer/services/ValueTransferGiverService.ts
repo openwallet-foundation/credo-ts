@@ -325,7 +325,7 @@ export class ValueTransferGiverService {
     const record = await this.valueTransferRepository.getByThread(cashAcceptedWitnessedMessage.thid)
 
     record.assertRole(ValueTransferRole.Giver)
-    record.assertState(ValueTransferState.RequestAcceptanceSent)
+    record.assertState([ValueTransferState.RequestAcceptanceSent, ValueTransferState.OfferSent])
 
     const valueTransferDelta = cashAcceptedWitnessedMessage.valueTransferDelta
     if (!valueTransferDelta) {

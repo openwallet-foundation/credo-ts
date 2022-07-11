@@ -170,7 +170,7 @@ export class ValueTransferGetterService {
     }
 
     // ensure that DID exist in the wallet
-    const did = await this.didService.findById(valueTransferMessage.giverId)
+    const did = await this.didService.findById(valueTransferMessage.getterId)
     if (!did) {
       const problemReport = new ProblemReportMessage({
         to: offerWitnessedMessage.from,
