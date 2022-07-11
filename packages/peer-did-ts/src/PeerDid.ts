@@ -1,14 +1,11 @@
-import type { DidDocument } from '../../domain'
-import type { ParsedDid } from '../../types'
+import type { DidDocument } from './did-doc'
+import type { ParsedDID } from 'did-resolver'
 
 import { instanceToInstance } from 'class-transformer'
 
-import { JsonEncoder, MultiBaseEncoder, MultiHashEncoder } from '../../../../utils'
-import { Key } from '../../domain/Key'
-import { getKeyDidMappingByKeyType } from '../../domain/key-type'
-import { parseDid } from '../../domain/parse'
-
+import { getKeyDidMappingByKeyType, Key } from './key'
 import { didDocumentToNumAlgo2Did, didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
+import { parseDid, JsonEncoder, MultiBaseEncoder, MultiHashEncoder } from './utils'
 
 const PEER_DID_REGEX = new RegExp(
   '^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{46,47}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{46,47}))+(.(S)[0-9a-zA-Z=]*)?)))$'
@@ -24,8 +21,8 @@ function getNumAlgoFromPeerDid(did: string) {
   return Number(did[9])
 }
 
-export class DidPeer {
-  private readonly parsedDid: ParsedDid
+export class PeerDid {
+  private readonly parsedDid: ParsedDID
 
   // If numAlgo 1 is used, the did always has a did document
   private readonly _didDocument?: DidDocument
@@ -43,11 +40,11 @@ export class DidPeer {
 
   public static fromKey(key: Key) {
     const did = `did:peer:0${key.fingerprint}`
-    return new DidPeer({ did })
+    return new PeerDid({ did })
   }
 
   public static fromDid(did: string) {
-    return new DidPeer({
+    return new PeerDid({
       did,
     })
   }
@@ -55,7 +52,7 @@ export class DidPeer {
   public static fromDidDocument(
     didDocument: DidDocument,
     numAlgo?: PeerDidNumAlgo.GenesisDoc | PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
-  ): DidPeer {
+  ): PeerDid {
     if (!numAlgo && didDocument.id.startsWith('did:peer:')) {
       numAlgo = getNumAlgoFromPeerDid(didDocument.id)
     }
@@ -76,10 +73,10 @@ export class DidPeer {
 
       const did = `did:peer:1${didIdentifier}`
 
-      return new DidPeer({ did, didDocument })
+      return new PeerDid({ did, didDocument })
     } else if (numAlgo === PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc) {
       const did = didDocumentToNumAlgo2Did(didDocument)
-      return new DidPeer({ did })
+      return new PeerDid({ did })
     } else {
       throw new Error(`Unsupported numAlgo: ${numAlgo}. Not all peer did methods support parsing a did document`)
     }
