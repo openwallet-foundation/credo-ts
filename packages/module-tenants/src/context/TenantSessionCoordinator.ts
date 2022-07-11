@@ -142,9 +142,12 @@ export class TenantSessionCoordinator {
 
     tenantSessionMapping = {
       sessionCount: 0,
-      // TODO: we should make the timeout configurable
       mutex: withTimeout(
         new Mutex(),
+        // TODO: we should make the timeout configurable.
+        // NOTE: It can take a while to create an indy wallet. We're using RAW key derivation which should
+        // be fast enough to not cause a problem. This wil also only be problem when the wallet is being created
+        // for the first time or being acquired while wallet initialization is in progress.
         1000,
         new AriesFrameworkError(
           `Error acquiring lock for tenant ${tenantId}. Wallet initialization or shutdown took too long.`
