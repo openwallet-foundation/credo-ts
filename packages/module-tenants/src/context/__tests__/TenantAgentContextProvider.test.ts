@@ -148,4 +148,14 @@ describe('TenantAgentContextProvider', () => {
       expect(actualKey.fingerprint).toBe('z6MkkrCJLG5Mr8rqLXDksuWXPtAQfv95q7bHW7a6HqLLPtmt')
     })
   })
+
+  describe('disposeAgentContext', () => {
+    test('calls disposeAgentContextSession on tenant session coordinator', async () => {
+      const tenantAgentContext = jest.fn() as unknown as AgentContext
+
+      await tenantAgentContextProvider.disposeAgentContext(tenantAgentContext)
+
+      expect(tenantSessionCoordinator.disposeAgentContextSession).toHaveBeenCalledWith(tenantAgentContext)
+    })
+  })
 })

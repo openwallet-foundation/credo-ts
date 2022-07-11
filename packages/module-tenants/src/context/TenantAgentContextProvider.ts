@@ -101,6 +101,10 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     return agentContext
   }
 
+  public async disposeAgentContext(agentContext: AgentContext) {
+    await this.tenantSessionCoordinator.disposeAgentContextSession(agentContext)
+  }
+
   private getRecipientKeysFromEncryptedMessage(jwe: EncryptedMessage): Key[] {
     const jweProtected = JsonEncoder.fromBase64(jwe.protected)
     if (!Array.isArray(jweProtected.recipients)) return []
