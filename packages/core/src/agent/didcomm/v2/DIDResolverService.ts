@@ -1,4 +1,4 @@
-import type { VerificationMethod } from '../../../modules/dids'
+import type { DidDocumentService, VerificationMethod } from '../../../modules/dids'
 import type { DIDDoc, DIDResolver } from 'didcomm'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -24,32 +24,7 @@ export class DIDResolverService implements DIDResolver {
       DIDResolverService.mapVerificationMethod(verificationMethod)
     )
 
-    const services = result.didDocument.service.map((service) => ({
-      id: service.id,
-      kind:
-        service instanceof DidCommService || service instanceof DidCommV2Service
-          ? {
-              DIDCommMessaging: {
-                service_endpoint: service.serviceEndpoint,
-                accept: service.accept || [],
-                route_keys: service.routingKeys || [],
-              },
-            }
-          : service instanceof IndyAgentService
-          ? {
-              DIDCommMessaging: {
-                service_endpoint: service.serviceEndpoint,
-                accept: [],
-                route_keys: service.routingKeys || [],
-              },
-            }
-          : {
-              Other: {
-                type: service.type,
-                serviceEndpoint: service.serviceEndpoint,
-              },
-            },
-    }))
+    const services = result.didDocument.service.map((service) => DIDResolverService.mapService(service))
 
     const didDod: DIDDoc = {
       did: result.didDocument.id,
@@ -101,6 +76,48 @@ export class DIDResolverService implements DIDResolver {
               verificationMethod.blockchainAccountId ||
               verificationMethod.ethereumAddress,
           },
+    }
+  }
+
+  private static mapService(service: DidDocumentService) {
+    return {
+      id: service.id,
+      kind:
+        service instanceof DidCommV2Service
+          ? {
+              DIDCommMessaging: {
+                service_endpoint: service.serviceEndpoint,
+                accept: service.accept ?? [],
+                route_keys: service.routingKeys ?? [],
+              },
+            }
+          : service instanceof DidCommService
+          ? {
+              Other: {
+                type: service.type,
+                serviceEndpoint: service.serviceEndpoint,
+                recipientKeys: service.recipientKeys,
+                routingKeys: service.routingKeys,
+                accept: service.accept,
+                priority: service.priority,
+              },
+            }
+          : service instanceof IndyAgentService
+          ? {
+              Other: {
+                type: service.type,
+                serviceEndpoint: service.serviceEndpoint,
+                recipientKeys: service.recipientKeys,
+                routingKeys: service.routingKeys,
+                priority: service.priority,
+              },
+            }
+          : {
+              Other: {
+                type: service.type,
+                serviceEndpoint: service.serviceEndpoint,
+              },
+            },
     }
   }
 }
