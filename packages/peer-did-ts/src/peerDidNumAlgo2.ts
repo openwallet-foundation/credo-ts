@@ -140,6 +140,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
   return did
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 function expandServiceAbbreviations(service: object) {
   const expand = (abbreviated: string) => didPeerExpansions[abbreviated] ?? abbreviated
 
@@ -154,6 +155,7 @@ function expandServiceAbbreviations(service: object) {
   return fullService
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 function abbreviateServiceJson(service: object) {
   const abbreviate = (expanded: string) => didPeerAbbreviations[expanded] ?? expanded
 
