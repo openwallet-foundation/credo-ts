@@ -152,7 +152,7 @@ describe('DIDResolverService', () => {
       DIDCommMessaging: {
         service_endpoint: 'https://agent.com/did-comm-v2',
         accept: ['didcomm/v2', 'didcomm/aip2;env=rfc587'],
-        route_keys: ['did:example:mediator1#key-x25519', 'did:example:mediator2#key-x25519'],
+        routing_keys: ['did:example:mediator1#key-x25519', 'did:example:mediator2#key-x25519'],
       },
     })
   })

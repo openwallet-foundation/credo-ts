@@ -29,6 +29,9 @@ export class DIDResolverService implements DIDResolver {
     const didDod: DIDDoc = {
       did: result.didDocument.id,
       verification_methods: verificationMethods,
+      // FIXME: Remove the following hints after Wasm definition of DIDCommMessagingService in didcomm-rust is corrected
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       services: services,
       key_agreements: [],
       authentications: [],
@@ -88,7 +91,7 @@ export class DIDResolverService implements DIDResolver {
               DIDCommMessaging: {
                 service_endpoint: service.serviceEndpoint,
                 accept: service.accept ?? [],
-                route_keys: service.routingKeys ?? [],
+                routing_keys: service.routingKeys ?? [],
               },
             }
           : service instanceof DidCommService
