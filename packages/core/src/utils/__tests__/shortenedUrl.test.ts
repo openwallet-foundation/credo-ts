@@ -34,6 +34,7 @@ header.append('Content-Type', 'application/json')
 const mockedResponseOobJson = {
   status: 200,
   ok: true,
+  headers: header,
   json: async () => ({
     '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.0/invitation',
     '@id': '764af259-8bb4-4546-b91a-924c912d0bb8',
@@ -43,15 +44,14 @@ const mockedResponseOobJson = {
   }),
 } as Response
 
-mockedResponseOobJson['headers'] = header
-
 const mockedResponseOobUrl = {
   status: 200,
   ok: true,
+  headers: dummyHeader,
   url: 'https://wonderful-rabbit-5.tun2.indiciotech.io?oob=eyJAdHlwZSI6ICJkaWQ6c292OkJ6Q2JzTlloTXJqSGlxWkRUVUFTSGc7c3BlYy9vdXQtb2YtYmFuZC8xLjAvaW52aXRhdGlvbiIsICJAaWQiOiAiNzY0YWYyNTktOGJiNC00NTQ2LWI5MWEtOTI0YzkxMmQwYmI4IiwgImxhYmVsIjogIkFsaWNlIiwgImhhbmRzaGFrZV9wcm90b2NvbHMiOiBbImRpZDpzb3Y6QnpDYnNOWWhNcmpIaXFaRFRVQVNIZztzcGVjL2Nvbm5lY3Rpb25zLzEuMCJdLCAic2VydmljZXMiOiBbImRpZDpzb3Y6TXZUcVZYQ0VtSjg3dXNMOXVRVG83diJdfQ====',
 } as Response
 
-mockedResponseOobUrl['headers'] = dummyHeader
+mockedResponseOobUrl.headers = dummyHeader
 
 const mockedResponseConnectionJson = {
   status: 200,
