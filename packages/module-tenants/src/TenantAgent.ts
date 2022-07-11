@@ -13,7 +13,11 @@ export class TenantAgent extends BaseAgent {
   }
 
   public async shutdown() {
+    this.logger.debug(
+      `Shutting down tenant agent with contextCorrelationId '${this.agentContext.contextCorrelationId}'`
+    )
     await super.shutdown()
+
     this._isInitialized = false
   }
 

@@ -18,7 +18,7 @@ const agentContextProvider = new AgentContextProviderMock()
 const agentConfig = getAgentConfig('TenantsApi')
 const rootAgent = new Agent(agentConfig, agentDependencies)
 
-const tenantsApi = new TenantsApi(tenantService, rootAgent.context, agentContextProvider)
+const tenantsApi = new TenantsApi(tenantService, rootAgent.context, agentContextProvider, agentConfig.logger)
 
 describe('TenantsApi', () => {
   describe('getTenantAgent', () => {
@@ -53,6 +53,89 @@ describe('TenantsApi', () => {
 
       await tenantAgent.wallet.delete()
       await tenantAgent.shutdown()
+    })
+  })
+
+  describe('withTenantAgent', () => {
+    test('gets context from agent context provider and initializes tenant agent instance', async () => {
+      expect.assertions(6)
+
+      const tenantDependencyManager = rootAgent.dependencyManager.createChild()
+      const tenantAgentContext = getAgentContext({
+        contextCorrelationId: 'tenant-id',
+        dependencyManager: tenantDependencyManager,
+        agentConfig: agentConfig.extend({
+          label: 'tenant-agent',
+          walletConfig: {
+            id: 'Wallet: TenantsApi: tenant-id',
+            key: 'Wallet: TenantsApi: tenant-id',
+          },
+        }),
+      })
+      tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
+
+      mockFunction(agentContextProvider.getAgentContextForContextCorrelationId).mockResolvedValue(tenantAgentContext)
+
+      let shutdownSpy: jest.SpyInstance | undefined = undefined
+      await tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
+        shutdownSpy = jest.spyOn(tenantAgent, 'shutdown')
+        expect(tenantAgent.isInitialized).toBe(true)
+        expect(tenantAgent.wallet.walletConfig).toEqual({
+          id: 'Wallet: TenantsApi: tenant-id',
+          key: 'Wallet: TenantsApi: tenant-id',
+        })
+
+        expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
+        expect(tenantAgent).toBeInstanceOf(TenantAgent)
+        expect(tenantAgent.context).toBe(tenantAgentContext)
+
+        await tenantAgent.wallet.delete()
+      })
+
+      expect(shutdownSpy).toHaveBeenCalled()
+    })
+
+    test('shutdown is called even if the tenant agent callback throws an error', async () => {
+      expect.assertions(7)
+
+      const tenantDependencyManager = rootAgent.dependencyManager.createChild()
+      const tenantAgentContext = getAgentContext({
+        contextCorrelationId: 'tenant-id',
+        dependencyManager: tenantDependencyManager,
+        agentConfig: agentConfig.extend({
+          label: 'tenant-agent',
+          walletConfig: {
+            id: 'Wallet: TenantsApi: tenant-id',
+            key: 'Wallet: TenantsApi: tenant-id',
+          },
+        }),
+      })
+      tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
+
+      mockFunction(agentContextProvider.getAgentContextForContextCorrelationId).mockResolvedValue(tenantAgentContext)
+
+      let shutdownSpy: jest.SpyInstance | undefined = undefined
+      await expect(
+        tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
+          shutdownSpy = jest.spyOn(tenantAgent, 'shutdown')
+          expect(tenantAgent.isInitialized).toBe(true)
+          expect(tenantAgent.wallet.walletConfig).toEqual({
+            id: 'Wallet: TenantsApi: tenant-id',
+            key: 'Wallet: TenantsApi: tenant-id',
+          })
+
+          expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
+          expect(tenantAgent).toBeInstanceOf(TenantAgent)
+          expect(tenantAgent.context).toBe(tenantAgentContext)
+
+          await tenantAgent.wallet.delete()
+
+          throw new Error('Uh oh something went wrong')
+        })
+      ).rejects.toThrow('Uh oh something went wrong')
+
+      // shutdown should have been called
+      expect(shutdownSpy).toHaveBeenCalled()
     })
   })
 

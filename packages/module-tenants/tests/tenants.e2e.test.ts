@@ -1,6 +1,6 @@
 import type { InitConfig } from '@aries-framework/core'
 
-import { Agent, DependencyManager } from '@aries-framework/core'
+import { OutOfBandRecord, Agent, DependencyManager } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
@@ -195,7 +195,25 @@ describe('Tenants E2E', () => {
     await tenantAgent1.shutdown()
 
     // Delete tenants (will also delete wallets)
-    await agent1TenantsApi.deleteTenantById(tenantAgent1.context.contextCorrelationId)
-    await agent2TenantsApi.deleteTenantById(tenantAgent2.context.contextCorrelationId)
+    await agent1TenantsApi.deleteTenantById(tenantRecord1.id)
+    await agent2TenantsApi.deleteTenantById(tenantRecord2.id)
+  })
+
+  test('perform actions within the callback of withTenantAgent', async () => {
+    const tenantRecord = await agent1TenantsApi.createTenant({
+      config: {
+        label: 'Agent 1 Tenant 1',
+      },
+    })
+
+    await agent1TenantsApi.withTenantAgent({ tenantId: tenantRecord.id }, async (tenantAgent) => {
+      const outOfBandRecord = await tenantAgent.oob.createInvitation()
+
+      expect(outOfBandRecord).toBeInstanceOf(OutOfBandRecord)
+      expect(tenantAgent.context.contextCorrelationId).toBe(tenantRecord.id)
+      expect(tenantAgent.config.label).toBe('Agent 1 Tenant 1')
+    })
+
+    await agent1TenantsApi.deleteTenantById(tenantRecord.id)
   })
 })
