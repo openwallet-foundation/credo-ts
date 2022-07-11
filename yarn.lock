@@ -2165,10 +2165,10 @@
     fast-json-patch "^3.1.1"
     reflect-metadata "^0.1.13"
 
-"@sicpa-dlab/value-transfer-protocol-ts@0.0.18":
-  version "0.0.18"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.18/ab03a203148c90f4879514ae2217f58622de58cbcb2c6ee00e6250efeb983f75#d5630056ebf5036883c07fe8e80eaa135e0366fb"
-  integrity sha512-ebvA+VL/Fiy0LzJulyaUTXx3LhvuMEaAz5zlIN5lzIZSKEvF3AyAvgKPYHygOvhn56MyKAybNbVOA/XeB591Fw==
+"@sicpa-dlab/value-transfer-protocol-ts@0.0.20":
+  version "0.0.20"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.20/426d759ffb36dc625cb50017fad8ddc759485ad8b0bb90285eb55b1f991f66fd#8f3328ba830a8e98d344078180fe51fdf6b3a1c0"
+  integrity sha512-T1wFWi593Dp5hiFPELSkwPK741VChArRywRksPZike/+ghgvaRuA5W1Krj951h9f8UZ1TkOZsF/0vESUYamShA==
   dependencies:
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
@@ -4369,7 +4369,7 @@ did-resolver@3.1.3:
   resolved "https://registry.yarnpkg.com/did-resolver/-/did-resolver-3.1.3.tgz#ed530c9daa2c9925f85e9eabf258e51960db7e70"
   integrity sha512-ab8y90tSiDkTdfddXRC9Qcb1QSd568aC6+OgFTrcE4rs1vQAZOil+VqXHDu+Ff/UvhxlckPO8oJtp86iICZG0w==
 
-did-resolver@^3.1.3:
+did-resolver@^3.1.3, did-resolver@^3.2.2:
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/did-resolver/-/did-resolver-3.2.2.tgz#6f4e252a810f785d1b28a10265fad6dffee25158"
   integrity sha512-Eeo2F524VM5N3W4GwglZrnul2y6TLTwMQP3In62JdG34NZoqihYyOZLk+5wUW8sSgvIYIcJM8Dlt3xsdKZZ3tg==

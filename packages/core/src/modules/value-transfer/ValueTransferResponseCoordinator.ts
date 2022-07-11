@@ -1,5 +1,3 @@
-import type { ValueTransferRecord } from './repository'
-
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -21,11 +19,17 @@ export class ValueTransferResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a request
    */
-  public shouldAutoRespondToRequest(valueTransferRecord: ValueTransferRecord) {
-    const autoAccept =
-      valueTransferRecord.autoAcceptValueTransfer ??
-      this.agentConfig.autoAcceptValueTransfer ??
-      AutoAcceptValueTransfer.Never
+  public shouldAutoRespondToRequest() {
+    const autoAccept = this.agentConfig.autoAcceptPaymentRequest ?? AutoAcceptValueTransfer.Never
+
+    return autoAccept === AutoAcceptValueTransfer.Always
+  }
+
+  /**
+   * Checks whether it should automatically respond to a offer
+   */
+  public shouldAutoRespondToOffer() {
+    const autoAccept = this.agentConfig.autoAcceptPaymentOffer ?? AutoAcceptValueTransfer.Never
 
     return autoAccept === AutoAcceptValueTransfer.Always
   }

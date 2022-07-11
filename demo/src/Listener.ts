@@ -2,6 +2,8 @@ import type { Alice } from './Alice'
 import type { AliceInquirer } from './AliceInquirer'
 import type { Faber } from './Faber'
 import type { FaberInquirer } from './FaberInquirer'
+import type { Getter } from './Getter'
+import type { GetterInquirer } from './GetterInquirer'
 import type { Giver } from './Giver'
 import type { GiverInquirer } from './GiverInquirer'
 import type {
@@ -90,12 +92,31 @@ export class Listener {
     await giverInquirer.processAnswer()
   }
 
+  private async newPaymentOfferPrompt(valueTransferRecord: ValueTransferRecord, getterInquirer: GetterInquirer) {
+    this.printRequest(valueTransferRecord)
+    this.turnListenerOn()
+    await getterInquirer.acceptPaymentOffer(valueTransferRecord)
+    this.turnListenerOff()
+    await getterInquirer.processAnswer()
+  }
+
   public paymentRequestListener(giver: Giver, giverInquirer: GiverInquirer) {
     giver.agent.events.on(
       ValueTransferEventTypes.ValueTransferStateChanged,
       async ({ payload }: ValueTransferStateChangedEvent) => {
         if (payload.record.state === ValueTransferState.RequestReceived) {
           await this.newPaymentRequestPrompt(payload.record, giverInquirer)
+        }
+      }
+    )
+  }
+
+  public paymentOfferListener(getter: Getter, getterInquirer: GetterInquirer) {
+    getter.agent.events.on(
+      ValueTransferEventTypes.ValueTransferStateChanged,
+      async ({ payload }: ValueTransferStateChangedEvent) => {
+        if (payload.record.state === ValueTransferState.OfferReceived) {
+          await this.newPaymentOfferPrompt(payload.record, getterInquirer)
         }
       }
     )

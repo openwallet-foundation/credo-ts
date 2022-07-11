@@ -1,6 +1,5 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 import type { DidInfo } from '../../well-known'
-import type { AutoAcceptValueTransfer } from '../ValueTransferAutoAcceptType'
 import type { ValueTransferRole } from '../ValueTransferRole'
 import type { ValueTransferState } from '../ValueTransferState'
 
@@ -32,7 +31,6 @@ export interface ValueTransferStorageProps {
   state: ValueTransferState
   threadId: string
   createdAt?: Date
-  autoAcceptValueTransfer?: AutoAcceptValueTransfer
 
   getter?: DidInfo
   giver?: DidInfo
@@ -66,8 +64,6 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   @Type(() => ProblemReportMessage)
   public problemReportMessage?: ProblemReportMessage
 
-  public autoAcceptValueTransfer?: AutoAcceptValueTransfer
-
   public static readonly type = 'ValueTransferRecord'
   public readonly type = ValueTransferRecord.type
 
@@ -87,7 +83,6 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       this.valueTransferMessage = props.valueTransferMessage
       this.receipt = props.receipt
       this.problemReportMessage = props.problemReportMessage
-      this.autoAcceptValueTransfer = props.autoAcceptValueTransfer
       this._tags = props.tags ?? {}
     }
   }

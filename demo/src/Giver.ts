@@ -1,7 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { Transport, ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
 
-import { ValueTransferRole, ValueTransferState } from '@aries-framework/core'
+import { ValueTransferState } from '@aries-framework/core'
 import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'
@@ -23,7 +23,7 @@ export class Giver extends BaseAgent {
 
   public static async build(): Promise<Giver> {
     const valueTransferConfig: ValueTransferConfig = {
-      witnessTransport: Giver.transport,
+      witnessTransportForGiverRole: Giver.transport,
       verifiableNotes: createVerifiableNotes(10),
     }
     const giver = new Giver('giver', undefined, [Giver.transport], valueTransferConfig)
@@ -73,6 +73,13 @@ export class Giver extends BaseAgent {
     this.valueTransferRecordId = record.id
     console.log(redText('\nPayment request rejected!\n'))
     console.log(record.problemReportMessage)
+  }
+
+  public async offerPayment(getter: string, witness: string) {
+    const { record } = await this.agent.valueTransfer.offerPayment({ amount: 1, getter, witness })
+    this.valueTransferRecordId = record.id
+    console.log(greenText('\nOffer Sent!\n'))
+    await this.waitForPayment()
   }
 
   public async exit() {

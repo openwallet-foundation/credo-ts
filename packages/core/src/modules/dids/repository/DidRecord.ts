@@ -1,7 +1,7 @@
-import type { TagsBase } from '../../../storage/BaseRecord'
+import type { TagsBase, RecordTags } from '../../../storage/BaseRecord'
 
 import { Type } from 'class-transformer'
-import { IsEnum, ValidateNested } from 'class-validator'
+import { IsBoolean, IsEnum, IsOptional, ValidateNested } from 'class-validator'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { DidDocument } from '../domain'
@@ -13,6 +13,8 @@ export interface DidRecordProps {
   role: DidDocumentRole
   didDocument?: DidDocument
   isPublic?: boolean
+  label?: string
+  logoUrl?: string
   createdAt?: Date
   tags?: CustomDidTags
 }
@@ -26,6 +28,8 @@ type DefaultDidTags = {
   method: string
 }
 
+export type DidTags = RecordTags<DidRecord>
+
 export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> implements DidRecordProps {
   @Type(() => DidDocument)
   @ValidateNested()
@@ -34,6 +38,13 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
   @IsEnum(DidDocumentRole)
   public role!: DidDocumentRole
 
+  @IsOptional()
+  public label?: string
+
+  @IsOptional()
+  public logoUrl?: string
+
+  @IsBoolean()
   public isPublic!: boolean
 
   public static readonly type = 'DidDocumentRecord'
@@ -46,6 +57,8 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
       this.id = props.id
       this.role = props.role
       this.didDocument = props.didDocument
+      this.label = props.label
+      this.logoUrl = props.logoUrl
       this.isPublic = props.isPublic || false
       this.createdAt = props.createdAt ?? new Date()
       this._tags = props.tags ?? {}

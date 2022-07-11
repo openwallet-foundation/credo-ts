@@ -1,7 +1,6 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { Transport, ValueTransferConfig } from '@aries-framework/core'
 
-import { ValueTransferRole } from '@aries-framework/core'
 import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'

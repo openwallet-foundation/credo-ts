@@ -1,4 +1,10 @@
-import type { ProblemReportMessage, RequestAcceptedMessage, RequestMessage } from './messages'
+import type {
+  ProblemReportMessage,
+  RequestAcceptedMessage,
+  RequestMessage,
+  OfferMessage,
+  CashAcceptedMessage,
+} from './messages'
 import type { ValueTransferRecord, ValueTransferTags } from './repository'
 import type { Timeouts, VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
@@ -7,16 +13,20 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { Dispatcher } from '../../agent/Dispatcher'
 
 import { ValueTransferResponseCoordinator } from './ValueTransferResponseCoordinator'
-import { RequestHandler } from './handlers'
-import { CashAcceptedHandler } from './handlers/CashAcceptedHandler'
-import { CashAcceptedWitnessedHandler } from './handlers/CashAcceptedWitnessedHandler'
-import { CashRemovedHandler } from './handlers/CashRemovedHandler'
-import { GetterReceiptHandler } from './handlers/GetterReceiptHandler'
-import { GiverReceiptHandler } from './handlers/GiverReceiptHandler'
-import { ProblemReportHandler } from './handlers/ProblemReportHandler'
-import { RequestAcceptedHandler } from './handlers/RequestAcceptedHandler'
-import { RequestAcceptedWitnessedHandler } from './handlers/RequestAcceptedWitnessedHandler'
-import { RequestWitnessedHandler } from './handlers/RequestWitnessedHandler'
+import {
+  OfferHandler,
+  OfferWitnessedHandler,
+  RequestHandler,
+  CashAcceptedHandler,
+  CashAcceptedWitnessedHandler,
+  CashRemovedHandler,
+  GetterReceiptHandler,
+  GiverReceiptHandler,
+  ProblemReportHandler,
+  RequestAcceptedHandler,
+  RequestAcceptedWitnessedHandler,
+  RequestWitnessedHandler,
+} from './handlers'
 import { ValueTransferService } from './services'
 import { ValueTransferGetterService } from './services/ValueTransferGetterService'
 import { ValueTransferGiverService } from './services/ValueTransferGiverService'
@@ -47,8 +57,8 @@ export class ValueTransferModule {
   }
 
   /**
-   * Initiate a new value transfer exchange as Getter by sending a Payment Request message
-   * to the Witness which transfers record later to the known Giver.
+   * Initiate a new value transfer exchange as Giver by sending a Payment Offer message
+   * to the Witness which transfers record later to the specified Getter.
    *
    * @param params Options to use for request creation -
    * {
@@ -78,7 +88,7 @@ export class ValueTransferModule {
     const { message, record } = await this.valueTransferGetterService.createRequest(params)
 
     // Send Payment Request to Witness
-    await this.valueTransferService.sendMessageToWitness(message)
+    await this.valueTransferService.sendMessageToWitness(message, record.role)
     return { message, record }
   }
 
@@ -111,7 +121,77 @@ export class ValueTransferModule {
     )
 
     // Send Payment Request Acceptance to Witness
-    await this.valueTransferService.sendMessageToWitness(message)
+    await this.valueTransferService.sendMessageToWitness(message, record.role)
+
+    return { record: updatedRecord, message }
+  }
+
+  /**
+   * Initiate a new value transfer exchange as Giver by sending a Payment Offer message
+   * to the Witness which transfers record later to the specified Getter.
+   *
+   * @param params Options to use for request creation -
+   * {
+   *  amount - Amount to pay
+   *  unitOfAmount - (Optional) Currency code that represents the unit of account
+   *  witness - DID of witness
+   *  getter - DID of getter
+   *  usePublicDid - (Optional) Whether to use public DID of Giver in the offer or create a new random one (False by default)
+   *  timeouts (Optional) - Giver timeouts to which value transfer must fit
+   *   {
+   *      timeout_elapsed - number (seconds) - how far after start the party wants the transaction to timeout
+   *      timeout_time of amount - string - absolute time when the party wants the transaction to timeout
+   *    }
+   * }
+   *
+   * @returns Value Transfer record and Payment Request Message
+   */
+  public async offerPayment(params: {
+    amount: number
+    unitOfAmount?: string
+    witness: string
+    getter: string
+    usePublicDid?: boolean
+    timeouts?: Timeouts
+  }): Promise<{ record: ValueTransferRecord; message: OfferMessage }> {
+    // Create Payment Request and Value Transfer record
+    const { message, record } = await this.valueTransferGiverService.offerPayment(params)
+
+    // Send Payment Request to Witness
+    await this.valueTransferService.sendMessageToWitness(message, record.role)
+    return { message, record }
+  }
+
+  /**
+   * Accept received Payment Offer as Getter.
+   *
+   * @param params Options to use for accepting offer -
+   * {
+   *  recordId Id of Value Transfer record
+   *  timeouts Getter timeouts to which value transfer must fit
+   *   {
+   *      timeout_elapsed - number (seconds) - how far after start the party wants the transaction to timeout
+   *      timeout_time of amount - string - absolute time when the party wants the transaction to timeout
+   *   }
+   * }
+   *
+   * @returns Value Transfer record and Payment Request Acceptance Message
+   */
+  public async acceptPaymentOffer(params: { recordId: string; timeouts?: Timeouts }): Promise<{
+    record: ValueTransferRecord
+    message: CashAcceptedMessage | ProblemReportMessage
+  }> {
+    // Get Value Transfer record
+    const record = await this.valueTransferService.getById(params.recordId)
+
+    // Accept Payment Request
+    const { message, record: updatedRecord } = await this.valueTransferGetterService.acceptOffer(
+      record,
+      params.timeouts
+    )
+
+    // Send Payment Request Acceptance to Witness
+    await this.valueTransferService.sendMessageToWitness(message, record.role)
 
     return { record: updatedRecord, message }
   }
@@ -121,6 +201,7 @@ export class ValueTransferModule {
    *
    * @param recordId Id of Value Transfer record
    *
+   * @param options
    * @returns Value Transfer record
    */
   public async returnWhenIsCompleted(recordId: string, options?: { timeoutMs: number }): Promise<ValueTransferRecord> {
@@ -155,7 +236,7 @@ export class ValueTransferModule {
     // Abort transaction
     const { message } = await this.valueTransferService.abortTransaction(record, reason)
     // Send Payment Request Acceptance to Witness
-    if (message && send) await this.valueTransferService.sendMessageToWitness(message)
+    if (message && send) await this.valueTransferService.sendMessageToWitness(message, record.role)
 
     return { record, message }
   }
@@ -228,5 +309,13 @@ export class ValueTransferModule {
     dispatcher.registerHandler(new GetterReceiptHandler(this.valueTransferGetterService))
     dispatcher.registerHandler(new GiverReceiptHandler(this.valueTransferGiverService))
     dispatcher.registerHandler(new ProblemReportHandler(this.valueTransferService))
+    dispatcher.registerHandler(new OfferHandler(this.valueTransferService, this.valueTransferWitnessService))
+    dispatcher.registerHandler(
+      new OfferWitnessedHandler(
+        this.valueTransferService,
+        this.valueTransferGetterService,
+        this.valueTransferResponseCoordinator
+      )
+    )
   }
 }

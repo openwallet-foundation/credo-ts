@@ -72,8 +72,12 @@ export class AgentConfig {
     return this.initConfig.autoAcceptCredentials ?? AutoAcceptCredential.Never
   }
 
-  public get autoAcceptValueTransfer() {
-    return this.initConfig.valueTransferConfig?.autoAcceptValueTransfer ?? AutoAcceptValueTransfer.Never
+  public get autoAcceptPaymentOffer() {
+    return this.initConfig.valueTransferConfig?.autoAcceptPaymentOffer ?? AutoAcceptValueTransfer.Never
+  }
+
+  public get autoAcceptPaymentRequest() {
+    return this.initConfig.valueTransferConfig?.autoAcceptPaymentRequest ?? AutoAcceptValueTransfer.Never
   }
 
   public get didCommMimeType() {
