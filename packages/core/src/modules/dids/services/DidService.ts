@@ -1,12 +1,17 @@
 import type { Logger } from '../../../logger'
+import type { DidInfo } from '../../well-known'
+import type { DidReceivedEvent } from '../DidEvents'
 import type { DidDocument } from '../domain'
+import type { DidTags } from '../repository'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { KeyService } from '../../keys'
+import { DidEventTypes } from '../DidEvents'
 import { DidType, Key } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { DidKey } from '../methods/key'
@@ -21,17 +26,20 @@ export class DidService {
   private keysService: KeyService
   private didRepository: DidRepository
   private didResolverService: DidResolverService
+  private eventEmitter: EventEmitter
 
   public constructor(
     agentConfig: AgentConfig,
     keysService: KeyService,
     didRepository: DidRepository,
-    didResolverService: DidResolverService
+    didResolverService: DidResolverService,
+    eventEmitter: EventEmitter
   ) {
     this.logger = agentConfig.logger
     this.keysService = keysService
     this.didRepository = didRepository
     this.didResolverService = didResolverService
+    this.eventEmitter = eventEmitter
   }
 
   public async createDID(didType?: DidType, keyType?: KeyType, seed?: string, isPublic?: boolean): Promise<DidRecord> {
@@ -81,6 +89,12 @@ export class DidService {
     return didRecord
   }
 
+  public async getPublicOrCrateNewDid(type: DidType, usePublicDid = false) {
+    const publicDid = await this.findPublicDid()
+    if (usePublicDid && publicDid && publicDid.did === type) return publicDid
+    return this.createDID(type)
+  }
+
   public async getDIDDoc(did: string): Promise<DidDocument> {
     // find in the Wallet
     const didRecord = await this.didRepository.findById(did)
@@ -93,20 +107,6 @@ export class DidService {
       throw new AriesFrameworkError(`Unable to get DIDDoc for did: ${did}`)
     }
     return didDoc.didDocument
-  }
-
-  public getById(recordId: string): Promise<DidRecord> {
-    return this.didRepository.getById(recordId)
-  }
-
-  public findById(recordId: string): Promise<DidRecord | null> {
-    return this.didRepository.findById(recordId)
-  }
-
-  public async findPublicDid() {
-    return this.didRepository.findSingleByQuery({
-      isPublic: true,
-    })
   }
 
   private getDIDDocumentFromKey(didType: DidType, key: Key) {
@@ -122,5 +122,60 @@ export class DidService {
         throw new AriesFrameworkError(`DID type(s) are not implemented: ${didType}`)
       }
     }
+  }
+
+  public async storeRemoteDid({ did, label, logoUrl }: DidInfo) {
+    const didDocument = await this.didResolverService.resolve(did)
+    if (!didDocument.didDocument) {
+      throw new AriesFrameworkError(`Unable to resolve DidDoc for the DID: ${did}`)
+    }
+
+    const didRecord = new DidRecord({
+      id: didDocument.didDocument.id,
+      label: label,
+      logoUrl: logoUrl,
+      didDocument: didDocument.didDocument,
+      role: DidDocumentRole.Received,
+    })
+
+    await this.didRepository.save(didRecord)
+    this.eventEmitter.emit<DidReceivedEvent>({
+      type: DidEventTypes.DidReceived,
+      payload: { record: didRecord },
+    })
+  }
+
+  public async getAll(): Promise<DidRecord[]> {
+    return this.didRepository.getAll()
+  }
+
+  public async getMyDIDs() {
+    return this.didRepository.findByQuery({
+      role: DidDocumentRole.Created,
+    })
+  }
+
+  public async getReceivedDIDs() {
+    return this.didRepository.findByQuery({
+      role: DidDocumentRole.Received,
+    })
+  }
+
+  public async findAllByQuery(query: Partial<DidTags>) {
+    return this.didRepository.findByQuery(query)
+  }
+
+  public getById(recordId: string): Promise<DidRecord> {
+    return this.didRepository.getById(recordId)
+  }
+
+  public findById(recordId: string): Promise<DidRecord | null> {
+    return this.didRepository.findById(recordId)
+  }
+
+  public async findPublicDid() {
+    return this.didRepository.findSingleByQuery({
+      isPublic: true,
+    })
   }
 }

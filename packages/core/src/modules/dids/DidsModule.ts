@@ -1,5 +1,6 @@
 import type { KeyType } from '../../crypto'
 import type { DidType } from './domain'
+import type { DidRecord } from './repository'
 import type { DidResolutionOptions } from './types'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -22,5 +23,25 @@ export class DidsModule {
 
   public resolve(didUrl: string, options?: DidResolutionOptions) {
     return this.resolverService.resolve(didUrl, options)
+  }
+
+  public async getAllDIDs(): Promise<DidRecord[]> {
+    return this.didService.getAll()
+  }
+
+  public async getMyDIDs(): Promise<DidRecord[]> {
+    return this.didService.getMyDIDs()
+  }
+
+  public async getReceivedDIDs(): Promise<DidRecord[]> {
+    return this.didService.getReceivedDIDs()
+  }
+
+  public async findAllDIDsByQuery(query: Partial<DidRecord>) {
+    return this.didService.findAllByQuery(query)
+  }
+
+  public async getDIDById(recordId: string): Promise<DidRecord> {
+    return this.didService.getById(recordId)
   }
 }
