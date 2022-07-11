@@ -1,5 +1,6 @@
 import type { DependencyManager } from '../../plugins'
 import type { Wallet } from '../../wallet'
+import type { AgentContextProvider } from './AgentContextProvider'
 
 import { InjectionSymbols } from '../../constants'
 import { AgentConfig } from '../AgentConfig'
@@ -45,6 +46,17 @@ export class AgentContext {
    */
   public get wallet() {
     return this.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
+  }
+
+  /**
+   * Dispose the current agent context
+   */
+  public async dispose() {
+    const agentContextProvider = this.dependencyManager.resolve<AgentContextProvider>(
+      InjectionSymbols.AgentContextProvider
+    )
+
+    await agentContextProvider.disposeAgentContext(this)
   }
 
   public toJSON() {

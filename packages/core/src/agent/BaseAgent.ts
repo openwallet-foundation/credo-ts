@@ -149,7 +149,8 @@ export abstract class BaseAgent {
   }
 
   public async shutdown() {
-    // No logic required at the moment
+    this.logger.trace(`Disposing agent context with contextCorrelationId '${this.agentContext.contextCorrelationId}'`)
+    await this.agentContext.dispose()
   }
 
   public get publicDid() {

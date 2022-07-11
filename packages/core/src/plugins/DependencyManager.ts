@@ -47,6 +47,15 @@ export class DependencyManager {
     else this.container.register(token, token, { lifecycle: Lifecycle.ContainerScoped })
   }
 
+  /**
+   * Dispose the dependency manager. Calls `.dispose()` on all instances that implement the `Disposable` interface and have
+   * been constructed by the `DependencyManager`. This means all instances registered using `registerInstance` won't have the
+   * dispose method called.
+   */
+  public async dispose() {
+    await this.container.dispose()
+  }
+
   public createChild() {
     return new DependencyManager(this.container.createChildContainer())
   }
