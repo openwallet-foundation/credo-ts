@@ -183,7 +183,9 @@ export class Agent extends BaseAgent {
     // Register all modules
     dependencyManager.registerModules(
       ConnectionsModule,
-      CredentialsModule,
+      new CredentialsModule({
+        autoAcceptCredentials: this.agentConfig.autoAcceptCredentials,
+      }),
       ProofsModule,
       MediatorModule,
       RecipientModule,

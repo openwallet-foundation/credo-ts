@@ -1,8 +1,7 @@
+import type { Constructor } from '../utils/mixins'
 import type { DependencyManager } from './DependencyManager'
 
 export interface Module {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  new (...args: any[]): any
   register(dependencyManager: DependencyManager): void
 }
 
@@ -11,5 +10,5 @@ export interface Module {
  * on the class declaration.
  */
 export function module() {
-  return <U extends Module>(constructor: U) => constructor
+  return <U extends Module | Constructor<Module>>(constructor: U) => constructor
 }

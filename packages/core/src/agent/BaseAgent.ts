@@ -6,7 +6,7 @@ import type { TransportSession } from './TransportService'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
-import { CredentialsModule } from '../modules/credentials/CredentialsModule'
+import { CredentialsApi } from '../modules/credentials/CredentialsApi'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsModule'
@@ -45,7 +45,7 @@ export abstract class BaseAgent {
   public readonly genericRecords: GenericRecordsModule
   public readonly ledger: LedgerModule
   public readonly questionAnswer!: QuestionAnswerModule
-  public readonly credentials: CredentialsModule
+  public readonly credentials: CredentialsApi
   public readonly mediationRecipient: RecipientModule
   public readonly mediator: MediatorModule
   public readonly discovery: DiscoverFeaturesModule
@@ -82,7 +82,7 @@ export abstract class BaseAgent {
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.dependencyManager.resolve(ConnectionsModule)
-    this.credentials = this.dependencyManager.resolve(CredentialsModule) as CredentialsModule
+    this.credentials = this.dependencyManager.resolve(CredentialsApi) as CredentialsApi
     this.proofs = this.dependencyManager.resolve(ProofsModule)
     this.mediator = this.dependencyManager.resolve(MediatorModule)
     this.mediationRecipient = this.dependencyManager.resolve(RecipientModule)

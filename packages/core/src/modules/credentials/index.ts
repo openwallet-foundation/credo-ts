@@ -1,4 +1,4 @@
-export * from './CredentialsModule'
+export * from './CredentialsApi'
 export * from './repository'
 
 export * from './CredentialEvents'
