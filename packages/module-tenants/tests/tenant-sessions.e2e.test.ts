@@ -1,14 +1,12 @@
 import type { InitConfig } from '@aries-framework/core'
 
-import { LogLevel, Agent, DependencyManager } from '@aries-framework/core'
+import { Agent, DependencyManager } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
-import { TestLogger } from '../../core/tests/logger'
+import testLogger from '../../core/tests/logger'
 import { TenantsApi, TenantsModule } from '../src'
 
 jest.setTimeout(2000000)
-
-const logger = new TestLogger(LogLevel.debug)
 
 const agentConfig: InitConfig = {
   label: 'Tenant Agent 1',
@@ -16,7 +14,7 @@ const agentConfig: InitConfig = {
     id: 'Wallet: tenant sessions e2e agent 1',
     key: 'Wallet: tenant sessions e2e agent 1',
   },
-  logger: logger,
+  logger: testLogger,
   endpoints: ['rxjs:tenant-agent1'],
   autoAcceptConnections: true,
 }
