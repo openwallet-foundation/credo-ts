@@ -24,6 +24,7 @@ export enum Title {
   ConfirmTitle = '\n\nAre you sure?',
   CredentialOfferTitle = '\n\nCredential offer received, do you want to accept it?',
   PaymentRequestTitle = '\nDo you want to accept payment request?',
+  PaymentOfferTitle = '\nDo you want to accept payment offer?',
   ProofRequestTitle = '\n\nProof request received, do you want to accept it?',
 }
 

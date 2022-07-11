@@ -90,8 +90,10 @@ export class DidService {
   }
 
   public async getPublicOrCrateNewDid(type: DidType, usePublicDid = false) {
-    const publicDid = await this.findPublicDid()
-    if (usePublicDid && publicDid && publicDid.did === type) return publicDid
+    if (usePublicDid) {
+      const publicDid = await this.findPublicDid()
+      if (publicDid) return publicDid
+    }
     return this.createDID(type)
   }
 

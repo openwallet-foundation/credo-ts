@@ -17,6 +17,7 @@ export const runFaber = async () => {
 }
 
 enum PromptOptions {
+  OfferPay = 'Offer Payment',
   Exit = 'Exit',
   Restart = 'Restart',
 }
@@ -52,6 +53,9 @@ export class GiverInquirer extends BaseInquirer {
     if (this.listener.on) return
 
     switch (choice.options) {
+      case PromptOptions.OfferPay:
+        await this.offerPayment()
+        return
       case PromptOptions.Exit:
         await this.exit()
         break
@@ -60,6 +64,12 @@ export class GiverInquirer extends BaseInquirer {
         return
     }
     await this.processAnswer()
+  }
+
+  public async offerPayment() {
+    const getter = await inquirer.prompt([this.inquireInput('Getter DID')])
+    const witness = await inquirer.prompt([this.inquireInput('Witness DID')])
+    await this.giver.offerPayment(getter.input, witness.input)
   }
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
