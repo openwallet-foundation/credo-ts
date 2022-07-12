@@ -24,13 +24,13 @@
   },
   "dependencies": {
     "@multiformats/base-x": "^4.0.1",
-    "@stablelib/sha256": "^1.0.1",
     "@stablelib/ed25519": "^1.0.2",
+    "@stablelib/sha256": "^1.0.1",
     "buffer": "^6.0.3",
-    "didcomm": "0.3.1",
-    "did-resolver": "^3.2.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
+    "did-resolver": "^3.2.2",
+    "didcomm": "0.3.2",
     "reflect-metadata": "^0.1.13",
     "varint": "^6.0.0"
   },
