@@ -13,8 +13,8 @@ import { SecretResolverService } from './SecretResolverService'
 
 export interface PackMessageParams {
   toDID: string
-  fromDID: string | null | undefined
-  signByDID: string | null | undefined
+  fromDID?: string
+  signByDID?: string
 }
 
 export interface PackMessageSignedParams {

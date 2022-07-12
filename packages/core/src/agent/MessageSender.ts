@@ -76,7 +76,6 @@ export class MessageSender {
       params = {
         toDID: connection?.theirDid,
         fromDID: connection?.did,
-        signByDID: null,
       }
     } else {
       if (!service) {
