@@ -1,7 +1,7 @@
 import type { KeyType } from '../../crypto'
 import type { DidType } from './domain'
 import type { DidRecord } from './repository'
-import type { DidResolutionOptions } from './types'
+import type { DidResolutionOptions, DIDMetadata } from './types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -25,6 +25,10 @@ export class DidsModule {
     return this.resolverService.resolve(didUrl, options)
   }
 
+  public async getById(recordId: string): Promise<DidRecord> {
+    return this.didService.getById(recordId)
+  }
+
   public async getAllDIDs(): Promise<DidRecord[]> {
     return this.didService.getAll()
   }
@@ -39,5 +43,10 @@ export class DidsModule {
 
   public async findAllDIDsByQuery(query: Partial<DidRecord>) {
     return this.didService.findAllByQuery(query)
+  }
+
+  public async setDidMetadata(recordId: string, meta: DIDMetadata) {
+    const didRecord = await this.getById(recordId)
+    return this.didService.setDidMetadata(didRecord, meta)
   }
 }
