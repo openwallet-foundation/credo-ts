@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core",
-    "didcomm-node": "0.3.1",
+    "didcomm-node": "0.3.2",
     "express": "^4.17.1",
     "indy-sdk": "^1.16.0-dev-1636",
     "node-fetch": "^2.6.1",
