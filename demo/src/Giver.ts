@@ -24,9 +24,10 @@ export class Giver extends BaseAgent {
   public static async build(): Promise<Giver> {
     const valueTransferConfig: ValueTransferConfig = {
       witnessTransportForGiverRole: Giver.transport,
+      getterTransport: 'ble',
       verifiableNotes: createVerifiableNotes(10),
     }
-    const giver = new Giver('giver', undefined, [Giver.transport], valueTransferConfig)
+    const giver = new Giver('giver', undefined, [Giver.transport, 'ble'], valueTransferConfig)
     await giver.initializeAgent()
     return giver
   }
@@ -75,8 +76,8 @@ export class Giver extends BaseAgent {
     console.log(record.problemReportMessage)
   }
 
-  public async offerPayment(getter: string, witness: string) {
-    const { record } = await this.agent.valueTransfer.offerPayment({ amount: 1, getter, witness })
+  public async offerPayment(getter: string) {
+    const { record } = await this.agent.valueTransfer.offerPayment({ amount: 1, getter })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nOffer Sent!\n'))
     await this.waitForPayment()

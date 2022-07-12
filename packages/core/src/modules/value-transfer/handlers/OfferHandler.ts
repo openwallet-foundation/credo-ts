@@ -1,29 +1,38 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DIDCommV2Message } from '../../../agent/didcomm'
+import type { ValueTransferResponseCoordinator } from '../ValueTransferResponseCoordinator'
 import type { ValueTransferService } from '../services'
-import type { ValueTransferWitnessService } from '../services/ValueTransferWitnessService'
+import type { ValueTransferGetterService } from '../services/ValueTransferGetterService'
 
+import { ValueTransferRole } from '../ValueTransferRole'
 import { OfferMessage, ProblemReportMessage } from '../messages'
 
 export class OfferHandler implements Handler<typeof DIDCommV2Message> {
   private valueTransferService: ValueTransferService
-  private valueTransferWitnessService: ValueTransferWitnessService
+  private valueTransferGetterService: ValueTransferGetterService
+  private valueTransferResponseCoordinator: ValueTransferResponseCoordinator
 
   public readonly supportedMessages = [OfferMessage]
 
   public constructor(
     valueTransferService: ValueTransferService,
-    valueTransferWitnessService: ValueTransferWitnessService
+    valueTransferWitnessService: ValueTransferGetterService,
+    valueTransferResponseCoordinator: ValueTransferResponseCoordinator
   ) {
     this.valueTransferService = valueTransferService
-    this.valueTransferWitnessService = valueTransferWitnessService
+    this.valueTransferGetterService = valueTransferWitnessService
+    this.valueTransferResponseCoordinator = valueTransferResponseCoordinator
   }
 
   public async handle(messageContext: HandlerInboundMessage<OfferHandler>) {
-    const { message } = await this.valueTransferWitnessService.processOffer(messageContext)
-    if (message.type === ProblemReportMessage.type) {
-      return this.valueTransferService.sendMessageToGiver(message)
+    const { record, message } = await this.valueTransferGetterService.processOffer(messageContext)
+    if (!record || message.type === ProblemReportMessage.type) {
+      return this.valueTransferService.sendMessageToWitness(message, record?.role ?? ValueTransferRole.Getter)
     }
-    return this.valueTransferService.sendMessageToGetter(message)
+
+    if (this.valueTransferResponseCoordinator.shouldAutoRespondToOffer()) {
+      const { message } = await this.valueTransferGetterService.acceptOffer(record)
+      return this.valueTransferService.sendMessageToWitness(message, record.role)
+    }
   }
 }

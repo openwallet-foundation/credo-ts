@@ -40,8 +40,4 @@ export class DidsModule {
   public async findAllDIDsByQuery(query: Partial<DidRecord>) {
     return this.didService.findAllByQuery(query)
   }
-
-  public async getDIDById(recordId: string): Promise<DidRecord> {
-    return this.didService.getById(recordId)
-  }
 }

@@ -3,21 +3,21 @@ import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferService } from '../services'
 import type { ValueTransferGiverService } from '../services/ValueTransferGiverService'
 
-import { CashAcceptedWitnessedMessage, ProblemReportMessage } from '../messages'
+import { OfferAcceptedWitnessedMessage, ProblemReportMessage } from '../messages'
 
-export class CashAcceptedWitnessedHandler implements Handler<typeof DIDCommV2Message> {
+export class OfferAcceptedWitnessedHandler implements Handler<typeof DIDCommV2Message> {
   private valueTransferService: ValueTransferService
   private valueTransferGiverService: ValueTransferGiverService
 
-  public readonly supportedMessages = [CashAcceptedWitnessedMessage]
+  public readonly supportedMessages = [OfferAcceptedWitnessedMessage]
 
   public constructor(valueTransferService: ValueTransferService, valueTransferGiverService: ValueTransferGiverService) {
     this.valueTransferService = valueTransferService
     this.valueTransferGiverService = valueTransferGiverService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<CashAcceptedWitnessedHandler>) {
-    const { message, record } = await this.valueTransferGiverService.processCashAcceptanceWitnessed(messageContext)
+  public async handle(messageContext: HandlerInboundMessage<OfferAcceptedWitnessedHandler>) {
+    const { message, record } = await this.valueTransferGiverService.processOfferAcceptanceWitnessed(messageContext)
     await this.valueTransferService.sendMessageToWitness(message, record.role)
 
     // if message is Problem Report -> remove cash from the wallet
