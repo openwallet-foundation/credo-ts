@@ -1,4 +1,5 @@
 import type { Agent } from '../agent/Agent'
+import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
 import type { OutboundTransport } from './OutboundTransport'
@@ -7,6 +8,7 @@ import type fetch from 'node-fetch'
 import { AbortController } from 'abort-controller'
 
 import { AgentConfig } from '../agent/AgentConfig'
+import { AgentEventTypes } from '../agent/Events'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 
@@ -84,7 +86,13 @@ export class HttpOutboundTransport implements OutboundTransport {
             )
             return
           }
-          await this.agent.receiveMessage(encryptedMessage)
+          // Emit event with the received agent message.
+          this.agent.events.emit<AgentMessageReceivedEvent>({
+            type: AgentEventTypes.AgentMessageReceived,
+            payload: {
+              message: encryptedMessage,
+            },
+          })
         } catch (error) {
           this.logger.debug('Unable to parse response message')
         }
