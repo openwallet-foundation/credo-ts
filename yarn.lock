@@ -85,12 +85,12 @@
     ws "^7.5.3"
 
 "@aries-framework/node@npm:@sicpa-dlab/aries-framework-node":
-  version "0.1.1"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-node/0.1.1/ce9332d4ee660888b1d628d592dbe265a8f3254b0a285fcd42e3144b54d63929#0bcf7172c758b33cfa8ce5691b83c6903fed777d"
-  integrity sha512-cpTIQy088uilI0fXeaChaPr5enQg2TnUler9cd0cKUkqJSKcjOK9kMz4XDAvJBbkL/LpXVxE/MS4UWfwGo4TWQ==
+  version "0.1.2"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-node/0.1.2/5dcfa706dc375ca33d97345932b6001a460b6f818fd43abbe7d002bbeb603694#8f833575ecab08f33af8a07d03f2ad3ed3fe074c"
+  integrity sha512-L+s5XSBvJuho8YV0Cv4rH/71jl4akoouBTshhxCnjMJOYwTuG4bv2+k20tBDD3H1h+M5ML6e407CtOqQUAu42w==
   dependencies:
     "@aries-framework/core" "npm:@sicpa-dlab/aries-framework-core"
-    didcomm-node "0.3.1"
+    didcomm-node "0.3.2"
     express "^4.17.1"
     indy-sdk "^1.16.0-dev-1636"
     node-fetch "^2.6.1"
@@ -4336,11 +4336,6 @@ did-resolver@^3.1.3, did-resolver@^3.2.2:
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/did-resolver/-/did-resolver-3.2.2.tgz#6f4e252a810f785d1b28a10265fad6dffee25158"
   integrity sha512-Eeo2F524VM5N3W4GwglZrnul2y6TLTwMQP3In62JdG34NZoqihYyOZLk+5wUW8sSgvIYIcJM8Dlt3xsdKZZ3tg==
-
-didcomm-node@0.3.1:
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/didcomm-node/-/didcomm-node-0.3.1.tgz#f27f9ba876169bd13322f3da931a1a8fba64650d"
-  integrity sha512-6E6f3VHKPdjYbKjkg5wB88KfuEKOxCBfkB29lodzQXH6VeVegWF3UN9ZHM7FYz0q28uCy5eMI5mXXV6Z+cetSA==
 
 didcomm-node@0.3.2:
   version "0.3.2"
