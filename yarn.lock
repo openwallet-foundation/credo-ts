@@ -4394,6 +4394,11 @@ didcomm-node@0.3.1:
   resolved "https://registry.yarnpkg.com/didcomm-node/-/didcomm-node-0.3.1.tgz#f27f9ba876169bd13322f3da931a1a8fba64650d"
   integrity sha512-6E6f3VHKPdjYbKjkg5wB88KfuEKOxCBfkB29lodzQXH6VeVegWF3UN9ZHM7FYz0q28uCy5eMI5mXXV6Z+cetSA==
 
+didcomm-node@0.3.2:
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/didcomm-node/-/didcomm-node-0.3.2.tgz#c72dba5bade82d20b21c9d9e46ab910afa16516a"
+  integrity sha512-aIzqmypJxKETZMcJNGEB50wZLTrH+nIBE8BCoCU0O8+BBKF10x56kzYeuRKipFep+QdcNZsk8g6BsK5ophNfiA==
+
 didcomm@0.3.1:
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/didcomm/-/didcomm-0.3.1.tgz#6908ca270fd6184d3c0645e22e932505ea0b9ff5"
