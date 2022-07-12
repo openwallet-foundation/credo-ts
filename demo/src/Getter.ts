@@ -24,7 +24,7 @@ export class Getter extends BaseAgent {
     const valueTransferConfig: ValueTransferConfig = {
       witnessTransportForGetterRole: Getter.transport,
     }
-    const getter = new Getter('getter', undefined, [Getter.transport], valueTransferConfig)
+    const getter = new Getter('getter', undefined, [Getter.transport, 'ble'], valueTransferConfig)
     await getter.initializeAgent()
     const publicDid = await getter.agent.getPublicDid()
     console.log(`Getter Public DID: ${publicDid?.did}`)
@@ -45,8 +45,8 @@ export class Getter extends BaseAgent {
     await this.waitForPayment()
   }
 
-  public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {
-    const { record } = await this.agent.valueTransfer.acceptPaymentOffer({ recordId: valueTransferRecord.id })
+  public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord, witness: string) {
+    const { record } = await this.agent.valueTransfer.acceptPaymentOffer({ recordId: valueTransferRecord.id, witness })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nPayment offer accepted!\n'))
     await this.waitForPayment()

@@ -1,12 +1,12 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
-import type { GetterReceiptMessage, RequestAcceptedWitnessedMessage } from '../messages'
-import type { OfferWitnessedMessage } from '../messages/OfferWitnessedMessage'
+import type { GetterReceiptMessage, RequestAcceptedWitnessedMessage, OfferMessage } from '../messages'
 import type { Getter, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { DidType } from '../../dids'
@@ -15,7 +15,7 @@ import { DidInfo, WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
-import { CashAcceptedMessage, ProblemReportMessage, RequestMessage } from '../messages'
+import { CashAcceptedMessage, OfferAcceptedMessage, ProblemReportMessage, RequestMessage } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
 import { ValueTransferRecord, ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
@@ -26,6 +26,7 @@ import { ValueTransferStateService } from './ValueTransferStateService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferGetterService {
+  private config: AgentConfig
   private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository
   private valueTransferService: ValueTransferService
@@ -37,6 +38,7 @@ export class ValueTransferGetterService {
   private getter: Getter
 
   public constructor(
+    config: AgentConfig,
     valueTransferRepository: ValueTransferRepository,
     valueTransferStateRepository: ValueTransferStateRepository,
     valueTransferService: ValueTransferService,
@@ -46,6 +48,7 @@ export class ValueTransferGetterService {
     wellKnownService: WellKnownService,
     eventEmitter: EventEmitter
   ) {
+    this.config = config
     this.valueTransferRepository = valueTransferRepository
     this.valueTransferStateRepository = valueTransferStateRepository
     this.valueTransferService = valueTransferService
@@ -150,20 +153,20 @@ export class ValueTransferGetterService {
    *    * Value Transfer record
    *    * Witnessed Offer Message
    */
-  public async processOfferWitnessed(messageContext: InboundMessageContext<OfferWitnessedMessage>): Promise<{
+  public async processOffer(messageContext: InboundMessageContext<OfferMessage>): Promise<{
     record?: ValueTransferRecord
-    message: OfferWitnessedMessage | ProblemReportMessage
+    message: OfferMessage | ProblemReportMessage
   }> {
-    const { message: offerWitnessedMessage } = messageContext
+    const { message: offerMessage } = messageContext
 
-    const valueTransferMessage = offerWitnessedMessage.valueTransferMessage
+    const valueTransferMessage = offerMessage.valueTransferMessage
     if (!valueTransferMessage) {
       const problemReport = new ProblemReportMessage({
-        to: offerWitnessedMessage.from,
-        pthid: offerWitnessedMessage.id,
+        to: offerMessage.from,
+        pthid: offerMessage.id,
         body: {
           code: 'e.p.req.bad-offer',
-          comment: `Missing required base64 or json encoded attachment data for payment offer with thread id ${offerWitnessedMessage.thid}`,
+          comment: `Missing required base64 or json encoded attachment data for payment offer with thread id ${offerMessage.thid}`,
         },
       })
       return { message: problemReport }
@@ -173,8 +176,8 @@ export class ValueTransferGetterService {
     const did = await this.didService.findById(valueTransferMessage.getterId)
     if (!did) {
       const problemReport = new ProblemReportMessage({
-        to: offerWitnessedMessage.from,
-        pthid: offerWitnessedMessage.id,
+        to: offerMessage.from,
+        pthid: offerMessage.id,
         body: {
           code: 'e.p.req.bad-getter',
           comment: `Requested getter '${valueTransferMessage.getterId}' does not exist in the wallet`,
@@ -194,7 +197,7 @@ export class ValueTransferGetterService {
       role: ValueTransferRole.Getter,
       state: ValueTransferState.OfferReceived,
       status: ValueTransferTransactionStatus.Pending,
-      threadId: offerWitnessedMessage.thid,
+      threadId: offerMessage.id,
       valueTransferMessage,
       getter: getterInfo,
       witness: witnessInfo,
@@ -206,13 +209,14 @@ export class ValueTransferGetterService {
       type: ValueTransferEventTypes.ValueTransferStateChanged,
       payload: { record },
     })
-    return { record, message: offerWitnessedMessage }
+    return { record, message: offerMessage }
   }
 
   /**
    * Accept received {@link OfferMessage} as Getter by sending a cash acceptance message.
    *
    * @param record Value Transfer record containing Payment Offer to accept.
+   * @param witnessDid (Optional) DID ot the Witness which must process transaction (or will be taken from the framework config)
    * @param timeouts (Optional) Getter timeouts to which value transfer must fit
    *
    * @returns
@@ -221,14 +225,20 @@ export class ValueTransferGetterService {
    */
   public async acceptOffer(
     record: ValueTransferRecord,
+    witnessDid?: string,
     timeouts?: Timeouts
   ): Promise<{
     record: ValueTransferRecord
-    message: CashAcceptedMessage | ProblemReportMessage
+    message: OfferAcceptedMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     record.assertRole(ValueTransferRole.Getter)
     record.assertState(ValueTransferState.OfferReceived)
+
+    const witness = witnessDid || this.config.valueTransferConfig?.witnessDid
+    if (!witness) {
+      throw new AriesFrameworkError(`Unable to accept payment offer without specifying of Witness DID.`)
+    }
 
     const activeTransaction = await this.valueTransferService.getActiveTransaction()
     if (activeTransaction.record) {
@@ -244,13 +254,14 @@ export class ValueTransferGetterService {
     const { error, message, delta } = await this.getter.acceptOffer(
       record.getter?.did,
       record.valueTransferMessage,
+      witness,
       timeouts
     )
     if (error || !message || !delta) {
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({
         from: record.getter?.did,
-        to: record.witness?.did,
+        to: witness,
         pthid: record.threadId,
         body: {
           code: error?.code || 'invalid-payment-offer',
@@ -272,21 +283,24 @@ export class ValueTransferGetterService {
     }
 
     // VTP message verification succeed
-    const cashAcceptedMessage = new CashAcceptedMessage({
+    const offerAcceptedMessage = new OfferAcceptedMessage({
       from: record.getter?.did,
-      to: record.witness?.did,
+      to: witness,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
     })
+
+    const witnessInfo = await this.wellKnownService.resolve(witness)
 
     // Update Value Transfer record
     record.valueTransferMessage = message
+    record.witness = witnessInfo
     await this.valueTransferService.updateState(
       record,
       ValueTransferState.CashAcceptanceSent,
       ValueTransferTransactionStatus.InProgress
     )
-    return { record, message: cashAcceptedMessage }
+    return { record, message: offerAcceptedMessage }
   }
 
   /**

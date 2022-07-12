@@ -1,6 +1,11 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
-import type { CashAcceptedWitnessedMessage, GiverReceiptMessage, RequestWitnessedMessage } from '../messages'
+import type {
+  CashAcceptedWitnessedMessage,
+  GiverReceiptMessage,
+  RequestWitnessedMessage,
+  OfferAcceptedWitnessedMessage,
+} from '../messages'
 import type { Giver, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -82,9 +87,9 @@ export class ValueTransferGiverService {
    */
   public async offerPayment(params: {
     amount: number
-    unitOfAmount?: string
-    witness: string
     getter: string
+    unitOfAmount?: string
+    witness?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
   }): Promise<{
@@ -302,6 +307,87 @@ export class ValueTransferGiverService {
       ValueTransferTransactionStatus.InProgress
     )
     return { record, message: requestAcceptedMessage }
+  }
+
+  /**
+   * Process a received {@link CashAcceptedWitnessedMessage}.
+   *   Update Value Transfer record with the information from the message.
+   *
+   * @param messageContext The record context containing the message.
+   * @returns
+   *    * Value Transfer record
+   *    * Witnessed Cash Acceptance Message
+   */
+  public async processOfferAcceptanceWitnessed(
+    messageContext: InboundMessageContext<OfferAcceptedWitnessedMessage>
+  ): Promise<{
+    record: ValueTransferRecord
+    message: CashRemovedMessage | ProblemReportMessage
+  }> {
+    // Verify that we are in appropriate state to perform action
+    const { message: offerAcceptedWitnessedMessage } = messageContext
+
+    const record = await this.valueTransferRepository.getByThread(offerAcceptedWitnessedMessage.thid)
+
+    record.assertRole(ValueTransferRole.Giver)
+    record.assertState(ValueTransferState.OfferSent)
+
+    const valueTransferDelta = offerAcceptedWitnessedMessage.valueTransferDelta
+    if (!valueTransferDelta) {
+      const problemReport = new ProblemReportMessage({
+        from: record.giver?.did,
+        to: record.witness?.did,
+        pthid: record.threadId,
+        body: {
+          code: 'e.p.req.bad-offer-acceptance',
+          comment: `Missing required base64 or json encoded attachment data for cash acceptance with thread id ${record.threadId}`,
+        },
+      })
+      return { record, message: problemReport }
+    }
+
+    // Call VTP package to remove cash
+    const { error, message, delta } = await this.giver.signReceipt(record.valueTransferMessage, valueTransferDelta)
+    if (error || !message || !delta) {
+      // VTP message verification failed
+      const problemReportMessage = new ProblemReportMessage({
+        from: record.giver?.did,
+        to: record.witness?.did,
+        pthid: record.threadId,
+        body: {
+          code: error?.code || 'invalid-offer-accepted',
+          comment: `Offer Acceptance verification failed. Error: ${error}`,
+        },
+      })
+
+      await this.giver.abortTransaction()
+      // Update Value Transfer record
+      record.problemReportMessage = problemReportMessage
+      await this.valueTransferService.updateState(
+        record,
+        ValueTransferState.Failed,
+        ValueTransferTransactionStatus.Finished
+      )
+      return { record, message: problemReportMessage }
+    }
+
+    // VTP message verification succeed
+    const cashRemovedMessage = new CashRemovedMessage({
+      from: record.giver?.did,
+      to: record.witness?.did,
+      thid: record.threadId,
+      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+    })
+
+    // Update Value Transfer record
+    record.valueTransferMessage = message
+
+    await this.valueTransferService.updateState(
+      record,
+      ValueTransferState.CashSignatureSent,
+      ValueTransferTransactionStatus.InProgress
+    )
+    return { record, message: cashRemovedMessage }
   }
 
   /**

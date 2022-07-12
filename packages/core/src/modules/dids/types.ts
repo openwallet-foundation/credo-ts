@@ -14,3 +14,8 @@ export interface DidResolutionResult {
   didDocument: DidDocument | null
   didDocumentMetadata: DidDocumentMetadata
 }
+
+export interface DIDMetadata {
+  label?: string
+  logoUrl?: string
+}

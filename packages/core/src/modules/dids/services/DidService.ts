@@ -1,8 +1,9 @@
 import type { Logger } from '../../../logger'
 import type { DidInfo } from '../../well-known'
-import type { DidReceivedEvent } from '../DidEvents'
+import type { DidReceivedEvent, DidMetadataChangedEvent } from '../DidEvents'
 import type { DidDocument } from '../domain'
 import type { DidTags } from '../repository'
+import type { DIDMetadata } from '../types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -144,6 +145,16 @@ export class DidService {
     this.eventEmitter.emit<DidReceivedEvent>({
       type: DidEventTypes.DidReceived,
       payload: { record: didRecord },
+    })
+  }
+
+  public async setDidMetadata(record: DidRecord, meta: DIDMetadata) {
+    record.label = meta.label
+    record.logoUrl = meta.logoUrl
+    await this.didRepository.update(record)
+    this.eventEmitter.emit<DidMetadataChangedEvent>({
+      type: DidEventTypes.DidMetadataChanged,
+      payload: { record: record },
     })
   }
 

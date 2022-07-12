@@ -3,7 +3,7 @@ import type {
   RequestAcceptedMessage,
   RequestMessage,
   OfferMessage,
-  CashAcceptedMessage,
+  OfferAcceptedMessage,
 } from './messages'
 import type { ValueTransferRecord, ValueTransferTags } from './repository'
 import type { Timeouts, VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -15,7 +15,6 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { ValueTransferResponseCoordinator } from './ValueTransferResponseCoordinator'
 import {
   OfferHandler,
-  OfferWitnessedHandler,
   RequestHandler,
   CashAcceptedHandler,
   CashAcceptedWitnessedHandler,
@@ -27,6 +26,8 @@ import {
   RequestAcceptedWitnessedHandler,
   RequestWitnessedHandler,
 } from './handlers'
+import { OfferAcceptedHandler } from './handlers/OfferAcceptedHandler'
+import { OfferAcceptedWitnessedHandler } from './handlers/OfferAcceptedWitnessedHandler'
 import { ValueTransferService } from './services'
 import { ValueTransferGetterService } from './services/ValueTransferGetterService'
 import { ValueTransferGiverService } from './services/ValueTransferGiverService'
@@ -148,9 +149,9 @@ export class ValueTransferModule {
    */
   public async offerPayment(params: {
     amount: number
-    unitOfAmount?: string
-    witness: string
     getter: string
+    unitOfAmount?: string
+    witness?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
   }): Promise<{ record: ValueTransferRecord; message: OfferMessage }> {
@@ -158,7 +159,7 @@ export class ValueTransferModule {
     const { message, record } = await this.valueTransferGiverService.offerPayment(params)
 
     // Send Payment Request to Witness
-    await this.valueTransferService.sendMessageToWitness(message, record.role)
+    await this.valueTransferService.sendMessageToGetter(message)
     return { message, record }
   }
 
@@ -168,6 +169,7 @@ export class ValueTransferModule {
    * @param params Options to use for accepting offer -
    * {
    *  recordId Id of Value Transfer record
+   *  witness (Optional) DID ot the Witness which must process transaction (or will be taken from the framework config)
    *  timeouts Getter timeouts to which value transfer must fit
    *   {
    *      timeout_elapsed - number (seconds) - how far after start the party wants the transaction to timeout
@@ -177,9 +179,9 @@ export class ValueTransferModule {
    *
    * @returns Value Transfer record and Payment Request Acceptance Message
    */
-  public async acceptPaymentOffer(params: { recordId: string; timeouts?: Timeouts }): Promise<{
+  public async acceptPaymentOffer(params: { recordId: string; witness?: string; timeouts?: Timeouts }): Promise<{
     record: ValueTransferRecord
-    message: CashAcceptedMessage | ProblemReportMessage
+    message: OfferAcceptedMessage | ProblemReportMessage
   }> {
     // Get Value Transfer record
     const record = await this.valueTransferService.getById(params.recordId)
@@ -187,6 +189,7 @@ export class ValueTransferModule {
     // Accept Payment Request
     const { message, record: updatedRecord } = await this.valueTransferGetterService.acceptOffer(
       record,
+      params.witness,
       params.timeouts
     )
 
@@ -309,13 +312,16 @@ export class ValueTransferModule {
     dispatcher.registerHandler(new GetterReceiptHandler(this.valueTransferGetterService))
     dispatcher.registerHandler(new GiverReceiptHandler(this.valueTransferGiverService))
     dispatcher.registerHandler(new ProblemReportHandler(this.valueTransferService))
-    dispatcher.registerHandler(new OfferHandler(this.valueTransferService, this.valueTransferWitnessService))
     dispatcher.registerHandler(
-      new OfferWitnessedHandler(
+      new OfferHandler(
         this.valueTransferService,
         this.valueTransferGetterService,
         this.valueTransferResponseCoordinator
       )
+    )
+    dispatcher.registerHandler(new OfferAcceptedHandler(this.valueTransferService, this.valueTransferWitnessService))
+    dispatcher.registerHandler(
+      new OfferAcceptedWitnessedHandler(this.valueTransferService, this.valueTransferGiverService)
     )
   }
 }
