@@ -349,11 +349,6 @@ describe('W3cCredentialService', () => {
           },
         }
 
-        // FIXME: fails with:
-        /*
-        Failed to convert key
-        at ../../node_modules/@mattrglobal/node-bbs-signatures/src/bls12381toBbs.ts:42:11
-
         const result = await w3cCredentialService.deriveProof(agentContext, {
           credential: vc,
           revealDocument: revealDocument,
@@ -364,7 +359,6 @@ describe('W3cCredentialService', () => {
         expect(orArrayToArray(result.proof)[0].verificationMethod).toBe(
           'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN#zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN'
         )
-        */
       })
     })
     describe('verifyDerived', () => {

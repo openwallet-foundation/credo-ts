@@ -9,9 +9,9 @@ export interface AnonCredsCredentialDefinitionRecordProps {
 
 export type DefaultAnonCredsCredentialDefinitionTags = {
   credentialDefinitionId: string
-  issuerDid?: string
-  schemaId?: string
-  tag?: string
+  issuerDid: string
+  schemaId: string
+  tag: string
 }
 
 export class AnonCredsCredentialDefinitionRecord extends BaseRecord<DefaultAnonCredsCredentialDefinitionTags> {

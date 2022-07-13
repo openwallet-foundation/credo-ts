@@ -1,8 +1,8 @@
 import type { AgentContext } from '../../../agent/context/AgentContext'
+import type { Query } from '../../../storage/StorageService'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
-import { RecordNotFoundError } from '../../../error/RecordNotFoundError'
 import { injectable, inject } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
@@ -23,12 +23,6 @@ export class AnonCredsCredentialDefinitionRepository extends Repository<AnonCred
   }
 
   public async findByCredentialDefinitionId(agentConext: AgentContext, credentialDefinitionId: string) {
-    try {
-      return await this.getByCredentialDefinitionId(agentConext, credentialDefinitionId)
-    } catch (e) {
-      if (e instanceof RecordNotFoundError) return null
-
-      throw e
-    }
+    return this.findSingleByQuery(agentConext, credentialDefinitionId as Query<AnonCredsCredentialDefinitionRecord>)
   }
 }

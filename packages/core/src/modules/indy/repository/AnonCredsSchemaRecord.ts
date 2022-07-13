@@ -15,8 +15,6 @@ export type DefaultAnonCredsSchemaTags = {
 }
 
 export class AnonCredsSchemaRecord extends BaseRecord<DefaultAnonCredsSchemaTags> {
-  public content!: Record<string, unknown>
-
   public static readonly type = 'AnonCredsSchemaRecord'
   public readonly type = AnonCredsSchemaRecord.type
   public readonly schema!: Schema
