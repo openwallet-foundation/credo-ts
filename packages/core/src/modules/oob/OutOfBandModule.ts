@@ -12,7 +12,7 @@ import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { AgentEventTypes } from '../../agent/Events'
+import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { InjectionSymbols } from '../../constants'
@@ -681,6 +681,7 @@ export class OutOfBandModule {
 
     const reuseAcceptedEventPromise = firstValueFrom(
       this.eventEmitter.observable<HandshakeReusedEvent>(OutOfBandEventTypes.HandshakeReused).pipe(
+        filterContextCorrelationId(this.agentContext.contextCorrelationId),
         // Find the first reuse event where the handshake reuse accepted matches the reuse message thread
         // TODO: Should we store the reuse state? Maybe we can keep it in memory for now
         first(

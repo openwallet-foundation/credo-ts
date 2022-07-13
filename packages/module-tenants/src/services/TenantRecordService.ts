@@ -1,12 +1,12 @@
 import type { TenantConfig } from '../models/TenantConfig'
 import type { AgentContext, Key } from '@aries-framework/core'
 
-import { injectable, utils } from '@aries-framework/core'
+import { injectable, utils, KeyDerivationMethod } from '@aries-framework/core'
 
 import { TenantRepository, TenantRecord, TenantRoutingRepository, TenantRoutingRecord } from '../repository'
 
 @injectable()
-export class TenantService {
+export class TenantRecordService {
   private tenantRepository: TenantRepository
   private tenantRoutingRepository: TenantRoutingRepository
 
@@ -28,6 +28,7 @@ export class TenantService {
         walletConfig: {
           id: walletId,
           key: walletKey,
+          keyDerivationMethod: KeyDerivationMethod.Raw,
         },
       },
     })

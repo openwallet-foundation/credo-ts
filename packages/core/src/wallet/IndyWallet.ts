@@ -82,6 +82,15 @@ export class IndyWallet implements Wallet {
     return this.walletConfig.id
   }
 
+  /**
+   * Dispose method is called when an agent context is disposed.
+   */
+  public async dispose() {
+    if (this.isInitialized) {
+      await this.close()
+    }
+  }
+
   private walletStorageConfig(walletConfig: WalletConfig): Indy.WalletConfig {
     const walletStorageConfig: Indy.WalletConfig = {
       id: walletConfig.id,

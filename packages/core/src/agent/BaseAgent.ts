@@ -148,10 +148,6 @@ export abstract class BaseAgent {
     }
   }
 
-  public async shutdown() {
-    // No logic required at the moment
-  }
-
   public get publicDid() {
     return this.agentContext.wallet.publicDid
   }

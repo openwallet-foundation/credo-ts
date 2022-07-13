@@ -20,4 +20,11 @@ export interface AgentContextProvider {
    * for the specified contextCorrelationId.
    */
   getAgentContextForContextCorrelationId(contextCorrelationId: string): Promise<AgentContext>
+
+  /**
+   * End sessions for the provided agent context. This does not necessarily mean the wallet will be closed or the dependency manager will
+   * be disposed, it is to inform the agent context provider this session for the agent context is no longer in use. This should only be
+   * called once for every session and the agent context MUST not be used after this method is called.
+   */
+  endSessionForAgentContext(agentContext: AgentContext): Promise<void>
 }
