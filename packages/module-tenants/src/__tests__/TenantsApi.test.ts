@@ -77,9 +77,9 @@ describe('TenantsApi', () => {
 
       mockFunction(agentContextProvider.getAgentContextForContextCorrelationId).mockResolvedValue(tenantAgentContext)
 
-      let destroySpy: jest.SpyInstance | undefined = undefined
+      let endSessionSpy: jest.SpyInstance | undefined = undefined
       await tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
-        destroySpy = jest.spyOn(tenantAgent, 'destroy')
+        endSessionSpy = jest.spyOn(tenantAgent, 'endSession')
         expect(tenantAgent.isInitialized).toBe(true)
         expect(tenantAgent.wallet.walletConfig).toEqual({
           id: 'Wallet: TenantsApi: tenant-id',
@@ -93,10 +93,10 @@ describe('TenantsApi', () => {
         await tenantAgent.wallet.delete()
       })
 
-      expect(destroySpy).toHaveBeenCalled()
+      expect(endSessionSpy).toHaveBeenCalled()
     })
 
-    test('destroy is called even if the tenant agent callback throws an error', async () => {
+    test('endSession is called even if the tenant agent callback throws an error', async () => {
       expect.assertions(7)
 
       const tenantDependencyManager = rootAgent.dependencyManager.createChild()
@@ -115,10 +115,10 @@ describe('TenantsApi', () => {
 
       mockFunction(agentContextProvider.getAgentContextForContextCorrelationId).mockResolvedValue(tenantAgentContext)
 
-      let destroySpy: jest.SpyInstance | undefined = undefined
+      let endSessionSpy: jest.SpyInstance | undefined = undefined
       await expect(
         tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
-          destroySpy = jest.spyOn(tenantAgent, 'destroy')
+          endSessionSpy = jest.spyOn(tenantAgent, 'endSession')
           expect(tenantAgent.isInitialized).toBe(true)
           expect(tenantAgent.wallet.walletConfig).toEqual({
             id: 'Wallet: TenantsApi: tenant-id',
@@ -135,8 +135,8 @@ describe('TenantsApi', () => {
         })
       ).rejects.toThrow('Uh oh something went wrong')
 
-      // destroy should have been called
-      expect(destroySpy).toHaveBeenCalled()
+      // endSession should have been called
+      expect(endSessionSpy).toHaveBeenCalled()
     })
   })
 
@@ -157,7 +157,7 @@ describe('TenantsApi', () => {
         wallet: {
           delete: jest.fn(),
         },
-        destroy: jest.fn(),
+        endSession: jest.fn(),
       } as unknown as TenantAgent
 
       mockFunction(tenantRecordService.createTenant).mockResolvedValue(tenantRecord)
@@ -196,7 +196,7 @@ describe('TenantsApi', () => {
         wallet: {
           delete: jest.fn(),
         },
-        destroy: jest.fn(),
+        endSession: jest.fn(),
       } as unknown as TenantAgent
       const getTenantAgentSpy = jest.spyOn(tenantsApi, 'getTenantAgent').mockResolvedValue(tenantAgentMock)
 

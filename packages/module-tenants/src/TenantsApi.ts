@@ -50,7 +50,7 @@ export class TenantsApi {
       this.logger.error(`Error in tenant agent callback for tenant '${options.tenantId}'`, { error })
       throw error
     } finally {
-      this.logger.debug(`Destroying tenant agent for tenant '${options.tenantId}'`)
+      this.logger.debug(`Ending tenant agent session for tenant '${options.tenantId}'`)
       await tenantAgent.endSession()
     }
   }
