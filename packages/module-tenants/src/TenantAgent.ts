@@ -3,28 +3,28 @@ import type { AgentContext } from '@aries-framework/core'
 import { AriesFrameworkError, BaseAgent } from '@aries-framework/core'
 
 export class TenantAgent extends BaseAgent {
-  private isDestroyed = false
+  private sessionHasEnded = false
 
   public constructor(agentContext: AgentContext) {
     super(agentContext.config, agentContext.dependencyManager)
   }
 
   public async initialize() {
-    if (this.isDestroyed) {
-      throw new AriesFrameworkError("Can't initialize agent after it has been destroyed")
+    if (this.sessionHasEnded) {
+      throw new AriesFrameworkError("Can't initialize agent after tenant sessions has been ended.")
     }
 
     await super.initialize()
     this._isInitialized = true
   }
 
-  public async destroy() {
+  public async endSession() {
     this.logger.trace(
-      `Destroying tenant agent context with contextCorrelationId '${this.agentContext.contextCorrelationId}'`
+      `Ending session for agent context with contextCorrelationId '${this.agentContext.contextCorrelationId}'`
     )
     await this.agentContext.endSession()
     this._isInitialized = false
-    this.isDestroyed = true
+    this.sessionHasEnded = true
   }
 
   protected registerDependencies() {

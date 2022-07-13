@@ -56,7 +56,7 @@ describe('Tenants Sessions E2E', () => {
 
     const tenantAgents = await Promise.all(tenantAgentPromises)
 
-    await Promise.all(tenantAgents.map((tenantAgent) => tenantAgent.destroy()))
+    await Promise.all(tenantAgents.map((tenantAgent) => tenantAgent.endSession()))
   })
 
   test('create 5 sessions each for 20 tenants in parallel and close them', async () => {
@@ -85,6 +85,6 @@ describe('Tenants Sessions E2E', () => {
 
     const tenantAgents = await Promise.all(tenantAgentPromises)
 
-    await Promise.all(tenantAgents.map((tenantAgent) => tenantAgent.destroy()))
+    await Promise.all(tenantAgents.map((tenantAgent) => tenantAgent.endSession()))
   })
 })

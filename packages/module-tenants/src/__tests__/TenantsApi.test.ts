@@ -53,7 +53,7 @@ describe('TenantsApi', () => {
       expect(tenantAgent.context).toBe(tenantAgentContext)
 
       await tenantAgent.wallet.delete()
-      await tenantAgent.destroy()
+      await tenantAgent.endSession()
     })
   })
 
@@ -171,7 +171,7 @@ describe('TenantsApi', () => {
 
       expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id' })
       expect(createdTenantRecord).toBe(tenantRecord)
-      expect(tenantAgentMock.destroy).toHaveBeenCalled()
+      expect(tenantAgentMock.endSession).toHaveBeenCalled()
       expect(tenantRecordService.createTenant).toHaveBeenCalledWith(rootAgent.context, {
         label: 'test',
       })
@@ -204,7 +204,7 @@ describe('TenantsApi', () => {
 
       expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id' })
       expect(tenantAgentMock.wallet.delete).toHaveBeenCalled()
-      expect(tenantAgentMock.destroy).toHaveBeenCalled()
+      expect(tenantAgentMock.endSession).toHaveBeenCalled()
       expect(tenantRecordService.deleteTenantById).toHaveBeenCalledWith(rootAgent.context, 'tenant-id')
     })
   })

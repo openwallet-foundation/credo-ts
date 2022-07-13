@@ -96,7 +96,7 @@ describe('Tenants E2E', () => {
     const tenantAgent = await agent1TenantsApi.getTenantAgent({
       tenantId: tenantRecord1.id,
     })
-    await tenantAgent.destroy()
+    await tenantAgent.endSession()
 
     // Delete tenant agent
     await agent1TenantsApi.deleteTenantById(tenantRecord1.id)
@@ -150,8 +150,8 @@ describe('Tenants E2E', () => {
     const [connectionRecord] = await tenantAgent1.connections.findAllByOutOfBandId(outOfBandRecord.id)
     await tenantAgent1.connections.returnWhenIsConnected(connectionRecord.id)
 
-    await tenantAgent1.destroy()
-    await tenantAgent2.destroy()
+    await tenantAgent1.endSession()
+    await tenantAgent2.endSession()
 
     // Delete tenants (will also delete wallets)
     await agent1TenantsApi.deleteTenantById(tenantAgent1.context.contextCorrelationId)
@@ -191,8 +191,8 @@ describe('Tenants E2E', () => {
     const [connectionRecord] = await tenantAgent1.connections.findAllByOutOfBandId(outOfBandRecord.id)
     await tenantAgent1.connections.returnWhenIsConnected(connectionRecord.id)
 
-    await tenantAgent1.destroy()
-    await tenantAgent2.destroy()
+    await tenantAgent1.endSession()
+    await tenantAgent2.endSession()
 
     // Delete tenants (will also delete wallets)
     await agent1TenantsApi.deleteTenantById(tenantRecord1.id)
