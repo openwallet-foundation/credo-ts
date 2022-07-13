@@ -1,4 +1,4 @@
-import { Agent } from '@aries-framework/core'
+import { Agent, AgentContext } from '@aries-framework/core'
 
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../core/tests/helpers'
 import { TenantAgent } from '../TenantAgent'
@@ -22,6 +22,7 @@ describe('TenantAgent', () => {
       agentConfig: getAgentConfig('TenantAgent'),
       dependencyManager: tenantDependencyManager,
     })
+    tenantDependencyManager.registerInstance(AgentContext, agentContext)
 
     const tenantAgent = new TenantAgent(agentContext)
 

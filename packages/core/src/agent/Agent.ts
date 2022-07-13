@@ -140,12 +140,10 @@ export class Agent extends BaseAgent {
     const transportPromises = allTransports.map((transport) => transport.stop())
     await Promise.all(transportPromises)
 
-    // close wallet if still initialized
     if (this.wallet.isInitialized) {
       await this.wallet.close()
     }
 
-    await super.shutdown()
     this._isInitialized = false
   }
 
@@ -205,7 +203,10 @@ export class Agent extends BaseAgent {
     // Bind the default agent context to the container for use in modules etc.
     dependencyManager.registerInstance(
       AgentContext,
-      new AgentContext({ dependencyManager, contextCorrelationId: 'default' })
+      new AgentContext({
+        dependencyManager,
+        contextCorrelationId: 'default',
+      })
     )
 
     // If no agent context provider has been registered we use the default agent context provider.

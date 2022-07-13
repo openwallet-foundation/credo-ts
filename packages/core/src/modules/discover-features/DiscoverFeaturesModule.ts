@@ -8,7 +8,7 @@ import { catchError, filter, map, takeUntil, timeout } from 'rxjs/operators'
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { AgentEventTypes } from '../../agent/Events'
+import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { InjectionSymbols } from '../../constants'
@@ -58,6 +58,7 @@ export class DiscoverFeaturesModule {
       .pipe(
         // Stop when the agent shuts down
         takeUntil(this.stop$),
+        filterContextCorrelationId(this.agentContext.contextCorrelationId),
         // filter by connection id and query disclose message type
         filter(
           (e) =>
