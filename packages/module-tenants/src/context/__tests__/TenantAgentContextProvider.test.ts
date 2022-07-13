@@ -5,19 +5,19 @@ import { Key } from '@aries-framework/core'
 import { EventEmitter } from '../../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRecord, TenantRoutingRecord } from '../../repository'
-import { TenantService } from '../../services/TenantService'
+import { TenantRecordService } from '../../services/TenantRecordService'
 import { TenantAgentContextProvider } from '../TenantAgentContextProvider'
 import { TenantSessionCoordinator } from '../TenantSessionCoordinator'
 
 jest.mock('../../../../core/src/agent/EventEmitter')
-jest.mock('../../services/TenantService')
+jest.mock('../../services/TenantRecordService')
 jest.mock('../TenantSessionCoordinator')
 
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
-const TenantServiceMock = TenantService as jest.Mock<TenantService>
+const TenantRecordServiceMock = TenantRecordService as jest.Mock<TenantRecordService>
 const TenantSessionCoordinatorMock = TenantSessionCoordinator as jest.Mock<TenantSessionCoordinator>
 
-const tenantService = new TenantServiceMock()
+const tenantRecordService = new TenantRecordServiceMock()
 const tenantSessionCoordinator = new TenantSessionCoordinatorMock()
 
 const rootAgentContext = getAgentContext()
@@ -25,7 +25,7 @@ const agentConfig = getAgentConfig('TenantAgentContextProvider')
 const eventEmitter = new EventEmitterMock()
 
 const tenantAgentContextProvider = new TenantAgentContextProvider(
-  tenantService,
+  tenantRecordService,
   rootAgentContext,
   eventEmitter,
   tenantSessionCoordinator,
@@ -61,12 +61,12 @@ describe('TenantAgentContextProvider', () => {
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
 
-      mockFunction(tenantService.getTenantById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
 
       const returnedAgentContext = await tenantAgentContextProvider.getAgentContextForContextCorrelationId('tenant1')
 
-      expect(tenantService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
+      expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
       expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord)
       expect(returnedAgentContext).toBe(tenantAgentContext)
     })
@@ -87,7 +87,7 @@ describe('TenantAgentContextProvider', () => {
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
 
-      mockFunction(tenantService.getTenantById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
 
       const returnedAgentContext = await tenantAgentContextProvider.getContextForInboundMessage(
@@ -95,15 +95,15 @@ describe('TenantAgentContextProvider', () => {
         { contextCorrelationId: 'tenant1' }
       )
 
-      expect(tenantService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
+      expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
       expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord)
       expect(returnedAgentContext).toBe(tenantAgentContext)
-      expect(tenantService.findTenantRoutingRecordByRecipientKey).not.toHaveBeenCalled()
+      expect(tenantRecordService.findTenantRoutingRecordByRecipientKey).not.toHaveBeenCalled()
     })
 
     test('throws an error if not contextCorrelationId is provided and no tenant id could be extracted from the inbound message', async () => {
       // no routing records found
-      mockFunction(tenantService.findTenantRoutingRecordByRecipientKey).mockResolvedValue(null)
+      mockFunction(tenantRecordService.findTenantRoutingRecordByRecipientKey).mockResolvedValue(null)
 
       await expect(tenantAgentContextProvider.getContextForInboundMessage(inboundMessage)).rejects.toThrowError(
         "Couldn't determine tenant id for inbound message. Unable to create context"
@@ -128,22 +128,22 @@ describe('TenantAgentContextProvider', () => {
       })
 
       const tenantAgentContext = jest.fn() as unknown as AgentContext
-      mockFunction(tenantService.findTenantRoutingRecordByRecipientKey).mockResolvedValue(tenantRoutingRecord)
+      mockFunction(tenantRecordService.findTenantRoutingRecordByRecipientKey).mockResolvedValue(tenantRoutingRecord)
 
-      mockFunction(tenantService.getTenantById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
 
       const returnedAgentContext = await tenantAgentContextProvider.getContextForInboundMessage(inboundMessage)
 
-      expect(tenantService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
+      expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
       expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord)
       expect(returnedAgentContext).toBe(tenantAgentContext)
-      expect(tenantService.findTenantRoutingRecordByRecipientKey).toHaveBeenCalledWith(
+      expect(tenantRecordService.findTenantRoutingRecordByRecipientKey).toHaveBeenCalledWith(
         rootAgentContext,
         expect.any(Key)
       )
 
-      const actualKey = mockFunction(tenantService.findTenantRoutingRecordByRecipientKey).mock.calls[0][1]
+      const actualKey = mockFunction(tenantRecordService.findTenantRoutingRecordByRecipientKey).mock.calls[0][1]
       // Based on the recipient key from the inboundMessage protected header above
       expect(actualKey.fingerprint).toBe('z6MkkrCJLG5Mr8rqLXDksuWXPtAQfv95q7bHW7a6HqLLPtmt')
     })

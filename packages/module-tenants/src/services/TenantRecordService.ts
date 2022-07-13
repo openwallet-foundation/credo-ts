@@ -6,7 +6,7 @@ import { injectable, utils, KeyDerivationMethod } from '@aries-framework/core'
 import { TenantRepository, TenantRecord, TenantRoutingRepository, TenantRoutingRecord } from '../repository'
 
 @injectable()
-export class TenantService {
+export class TenantRecordService {
   private tenantRepository: TenantRepository
   private tenantRoutingRepository: TenantRoutingRepository
 

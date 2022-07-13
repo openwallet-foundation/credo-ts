@@ -3,22 +3,22 @@ import type { CreateTenantOptions, GetTenantAgentOptions, WithTenantAgentCallbac
 import { AgentContext, inject, InjectionSymbols, AgentContextProvider, injectable, Logger } from '@aries-framework/core'
 
 import { TenantAgent } from './TenantAgent'
-import { TenantService } from './services'
+import { TenantRecordService } from './services'
 
 @injectable()
 export class TenantsApi {
   private agentContext: AgentContext
-  private tenantService: TenantService
+  private tenantRecordService: TenantRecordService
   private agentContextProvider: AgentContextProvider
   private logger: Logger
 
   public constructor(
-    tenantService: TenantService,
+    tenantRecordService: TenantRecordService,
     agentContext: AgentContext,
     @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
-    this.tenantService = tenantService
+    this.tenantRecordService = tenantRecordService
     this.agentContext = agentContext
     this.agentContextProvider = agentContextProvider
     this.logger = logger
@@ -57,7 +57,7 @@ export class TenantsApi {
 
   public async createTenant(options: CreateTenantOptions) {
     this.logger.debug(`Creating tenant with label ${options.config.label}`)
-    const tenantRecord = await this.tenantService.createTenant(this.agentContext, options.config)
+    const tenantRecord = await this.tenantRecordService.createTenant(this.agentContext, options.config)
 
     // This initializes the tenant agent, creates the wallet etc...
     const tenantAgent = await this.getTenantAgent({ tenantId: tenantRecord.id })
@@ -70,7 +70,7 @@ export class TenantsApi {
 
   public async getTenantById(tenantId: string) {
     this.logger.debug(`Getting tenant by id '${tenantId}'`)
-    return this.tenantService.getTenantById(this.agentContext, tenantId)
+    return this.tenantRecordService.getTenantById(this.agentContext, tenantId)
   }
 
   public async deleteTenantById(tenantId: string) {
@@ -83,6 +83,6 @@ export class TenantsApi {
     this.logger.trace(`Shutting down agent for tenant '${tenantId}'`)
     await tenantAgent.destroy()
 
-    return this.tenantService.deleteTenantById(this.agentContext, tenantId)
+    return this.tenantRecordService.deleteTenantById(this.agentContext, tenantId)
   }
 }

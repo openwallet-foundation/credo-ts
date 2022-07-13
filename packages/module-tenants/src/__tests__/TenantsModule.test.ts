@@ -6,7 +6,7 @@ import { TenantsModule } from '../TenantsModule'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'
 import { TenantSessionCoordinator } from '../context/TenantSessionCoordinator'
 import { TenantRepository, TenantRoutingRepository } from '../repository'
-import { TenantService } from '../services'
+import { TenantRecordService } from '../services'
 
 jest.mock('../../../core/src/plugins/DependencyManager')
 const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
@@ -19,7 +19,7 @@ describe('TenantsModule', () => {
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(6)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantsApi)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantRecordService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantRoutingRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(

@@ -5,21 +5,21 @@ import { TenantAgent } from '../TenantAgent'
 import { TenantsApi } from '../TenantsApi'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'
 import { TenantRecord } from '../repository'
-import { TenantService } from '../services/TenantService'
+import { TenantRecordService } from '../services/TenantRecordService'
 
-jest.mock('../services/TenantService')
-const TenantServiceMock = TenantService as jest.Mock<TenantService>
+jest.mock('../services/TenantRecordService')
+const TenantRecordServiceMock = TenantRecordService as jest.Mock<TenantRecordService>
 
 jest.mock('../context/TenantAgentContextProvider')
 const AgentContextProviderMock = TenantAgentContextProvider as jest.Mock<TenantAgentContextProvider>
 
-const tenantService = new TenantServiceMock()
+const tenantRecordService = new TenantRecordServiceMock()
 const agentContextProvider = new AgentContextProviderMock()
 const agentConfig = getAgentConfig('TenantsApi')
 const rootAgent = new Agent(agentConfig, agentDependencies)
 rootAgent.dependencyManager.registerInstance(InjectionSymbols.AgentContextProvider, agentContextProvider)
 
-const tenantsApi = new TenantsApi(tenantService, rootAgent.context, agentContextProvider, agentConfig.logger)
+const tenantsApi = new TenantsApi(tenantRecordService, rootAgent.context, agentContextProvider, agentConfig.logger)
 
 describe('TenantsApi', () => {
   describe('getTenantAgent', () => {
@@ -160,7 +160,7 @@ describe('TenantsApi', () => {
         destroy: jest.fn(),
       } as unknown as TenantAgent
 
-      mockFunction(tenantService.createTenant).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRecordService.createTenant).mockResolvedValue(tenantRecord)
       const getTenantAgentSpy = jest.spyOn(tenantsApi, 'getTenantAgent').mockResolvedValue(tenantAgentMock)
 
       const createdTenantRecord = await tenantsApi.createTenant({
@@ -172,7 +172,7 @@ describe('TenantsApi', () => {
       expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id' })
       expect(createdTenantRecord).toBe(tenantRecord)
       expect(tenantAgentMock.destroy).toHaveBeenCalled()
-      expect(tenantService.createTenant).toHaveBeenCalledWith(rootAgent.context, {
+      expect(tenantRecordService.createTenant).toHaveBeenCalledWith(rootAgent.context, {
         label: 'test',
       })
     })
@@ -181,11 +181,11 @@ describe('TenantsApi', () => {
   describe('getTenantById', () => {
     test('calls get tenant by id on tenant service', async () => {
       const tenantRecord = jest.fn() as unknown as TenantRecord
-      mockFunction(tenantService.getTenantById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
 
       const actualTenantRecord = await tenantsApi.getTenantById('tenant-id')
 
-      expect(tenantService.getTenantById).toHaveBeenCalledWith(rootAgent.context, 'tenant-id')
+      expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgent.context, 'tenant-id')
       expect(actualTenantRecord).toBe(tenantRecord)
     })
   })
@@ -205,7 +205,7 @@ describe('TenantsApi', () => {
       expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id' })
       expect(tenantAgentMock.wallet.delete).toHaveBeenCalled()
       expect(tenantAgentMock.destroy).toHaveBeenCalled()
-      expect(tenantService.deleteTenantById).toHaveBeenCalledWith(rootAgent.context, 'tenant-id')
+      expect(tenantRecordService.deleteTenantById).toHaveBeenCalledWith(rootAgent.context, 'tenant-id')
     })
   })
 })

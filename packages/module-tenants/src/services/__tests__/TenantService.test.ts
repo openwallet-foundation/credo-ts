@@ -6,7 +6,7 @@ import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRecord, TenantRoutingRecord } from '../../repository'
 import { TenantRepository } from '../../repository/TenantRepository'
 import { TenantRoutingRepository } from '../../repository/TenantRoutingRepository'
-import { TenantService } from '../TenantService'
+import { TenantRecordService } from '../TenantRecordService'
 
 jest.mock('../../repository/TenantRepository')
 const TenantRepositoryMock = TenantRepository as jest.Mock<TenantRepository>
@@ -21,16 +21,16 @@ const tenantRepository = new TenantRepositoryMock()
 const tenantRoutingRepository = new TenantRoutingRepositoryMock()
 const agentContext = getAgentContext({ wallet })
 
-const tenantService = new TenantService(tenantRepository, tenantRoutingRepository)
+const tenantRecordService = new TenantRecordService(tenantRepository, tenantRoutingRepository)
 
-describe('TenantService', () => {
+describe('TenantRecordService', () => {
   afterEach(() => {
     jest.clearAllMocks()
   })
 
   describe('createTenant', () => {
     test('creates a tenant record and stores it in the tenant repository', async () => {
-      const tenantRecord = await tenantService.createTenant(agentContext, {
+      const tenantRecord = await tenantRecordService.createTenant(agentContext, {
         label: 'Test Tenant',
         connectionImageUrl: 'https://example.com/connection.png',
       })
@@ -56,7 +56,7 @@ describe('TenantService', () => {
     test('returns value from tenant repository get by id', async () => {
       const tenantRecord = jest.fn() as unknown as TenantRecord
       mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
-      const returnedTenantRecord = await tenantService.getTenantById(agentContext, 'tenantId')
+      const returnedTenantRecord = await tenantRecordService.getTenantById(agentContext, 'tenantId')
 
       expect(returnedTenantRecord).toBe(tenantRecord)
     })
@@ -77,7 +77,7 @@ describe('TenantService', () => {
       mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
       mockFunction(tenantRoutingRepository.findByQuery).mockResolvedValue([])
 
-      await tenantService.deleteTenantById(agentContext, 'tenant-id')
+      await tenantRecordService.deleteTenantById(agentContext, 'tenant-id')
 
       expect(tenantRepository.delete).toHaveBeenCalledWith(agentContext, tenantRecord)
     })
@@ -107,7 +107,7 @@ describe('TenantService', () => {
       mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
       mockFunction(tenantRoutingRepository.findByQuery).mockResolvedValue(tenantRoutingRecords)
 
-      await tenantService.deleteTenantById(agentContext, 'tenant-id')
+      await tenantRecordService.deleteTenantById(agentContext, 'tenant-id')
 
       expect(tenantRoutingRepository.findByQuery).toHaveBeenCalledWith(agentContext, {
         tenantId: 'tenant-id',
@@ -125,7 +125,7 @@ describe('TenantService', () => {
       mockFunction(tenantRoutingRepository.findByRecipientKey).mockResolvedValue(tenantRoutingRecord)
 
       const recipientKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
-      const returnedTenantRoutingRecord = await tenantService.findTenantRoutingRecordByRecipientKey(
+      const returnedTenantRoutingRecord = await tenantRecordService.findTenantRoutingRecordByRecipientKey(
         agentContext,
         recipientKey
       )
@@ -138,7 +138,11 @@ describe('TenantService', () => {
   describe('addTenantRoutingRecord', () => {
     test('creates a tenant routing record and stores it in the tenant routing repository', async () => {
       const recipientKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
-      const tenantRoutingRecord = await tenantService.addTenantRoutingRecord(agentContext, 'tenant-id', recipientKey)
+      const tenantRoutingRecord = await tenantRecordService.addTenantRoutingRecord(
+        agentContext,
+        'tenant-id',
+        recipientKey
+      )
 
       expect(tenantRoutingRepository.save).toHaveBeenCalledWith(agentContext, tenantRoutingRecord)
       expect(tenantRoutingRecord).toMatchObject({
