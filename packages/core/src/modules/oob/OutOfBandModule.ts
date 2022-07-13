@@ -288,7 +288,7 @@ export class OutOfBandModule {
   }
 
   /**
-   * Parses URL containing encoded invitation and returns invitation message. Compatatible with
+   * Parses URL containing encoded invitation and returns invitation message. Compatible with
    * parsing shortened URLs
    *
    * @param invitationUrl URL containing encoded invitation
