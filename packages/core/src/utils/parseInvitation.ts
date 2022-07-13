@@ -85,7 +85,8 @@ export const oobInvitationfromShortUrl = async (response: Response): Promise<Out
 }
 
 /**
- * Parses URL containing encoded invitation and returns invitation message.
+ * Parses URL containing encoded invitation and returns invitation message. Compatible with
+ * parsing short Urls
  *
  * @param invitationUrl URL containing encoded invitation
  *

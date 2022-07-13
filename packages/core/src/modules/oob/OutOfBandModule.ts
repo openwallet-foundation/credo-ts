@@ -23,7 +23,7 @@ import { injectable, module } from '../../plugins'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
-import { parseInvitationUrl } from '../../utils/parseInvitation'
+import { parseInvitationUrl, parseInvitationShortUrl } from '../../utils/parseInvitation'
 import { DidKey } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
 import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
@@ -272,7 +272,7 @@ export class OutOfBandModule {
    * @returns out-of-band record and connection record if one has been created
    */
   public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig = {}) {
-    const message = this.parseInvitation(invitationUrl)
+    const message = await this.parseInvitationShortUrl(invitationUrl)
     return this.receiveInvitation(message, config)
   }
 
@@ -285,6 +285,18 @@ export class OutOfBandModule {
    */
   public parseInvitation(invitationUrl: string): OutOfBandInvitation {
     return parseInvitationUrl(invitationUrl)
+  }
+
+  /**
+   * Parses URL containing encoded invitation and returns invitation message. Compatatible with
+   * parsing shortened URLs
+   *
+   * @param invitationUrl URL containing encoded invitation
+   *
+   * @returns OutOfBandInvitation
+   */
+  public async parseInvitationShortUrl(invitation: string): Promise<OutOfBandInvitation> {
+    return await parseInvitationShortUrl(invitation, this.agentConfig.agentDependencies)
   }
 
   /**
