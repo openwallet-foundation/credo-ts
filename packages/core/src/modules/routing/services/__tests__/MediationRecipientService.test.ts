@@ -14,7 +14,13 @@ import { ConnectionRepository } from '../../../connections/repository/Connection
 import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { Key } from '../../../dids'
 import { DidRepository } from '../../../dids/repository/DidRepository'
-import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../../messages'
+import {
+  DeliveryRequestMessage,
+  MediationGrantMessage,
+  MessageDeliveryMessage,
+  MessagesReceivedMessage,
+  StatusMessage,
+} from '../../messages'
 import { MediationRole, MediationState } from '../../models'
 import { MediationRecord } from '../../repository/MediationRecord'
 import { MediationRepository } from '../../repository/MediationRepository'
@@ -91,6 +97,38 @@ describe('MediationRecipientService', () => {
       mediationRepository,
       eventEmitter
     )
+  })
+
+  describe('processMediationGrant', () => {
+    test('should process base58 encoded routing keys', async () => {
+      mediationRecord.state = MediationState.Requested
+      const mediationGrant = new MediationGrantMessage({
+        endpoint: 'http://agent.com:8080',
+        routingKeys: ['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'],
+        threadId: 'threadId',
+      })
+
+      const messageContext = new InboundMessageContext(mediationGrant, { connection: mockConnection })
+
+      await mediationRecipientService.processMediationGrant(messageContext)
+
+      expect(mediationRecord.routingKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
+    })
+
+    test('should process did:key encoded routing keys', async () => {
+      mediationRecord.state = MediationState.Requested
+      const mediationGrant = new MediationGrantMessage({
+        endpoint: 'http://agent.com:8080',
+        routingKeys: ['did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
+        threadId: 'threadId',
+      })
+
+      const messageContext = new InboundMessageContext(mediationGrant, { connection: mockConnection })
+
+      await mediationRecipientService.processMediationGrant(messageContext)
+
+      expect(mediationRecord.routingKeys).toEqual(['8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'])
+    })
   })
 
   describe('createStatusRequest', () => {

@@ -10,6 +10,7 @@ import { AriesFrameworkError } from '../../../error'
 import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { Wallet } from '../../../wallet/Wallet'
+import { didKeyToVerkey } from '../../dids/helpers'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
   KeylistUpdateAction,
@@ -118,13 +119,18 @@ export class MediatorService {
         recipientKey: update.recipientKey,
         result: KeylistUpdateResult.NoChange,
       })
+
+      // According to RFC 0211 key should be a did key, but base58 encoded verkey was used before
+      // RFC was accepted. This converts the key to a public key base58 it it is a did key.
+      const publicKeyBase58 = didKeyToVerkey(update.recipientKey)
+
       if (update.action === KeylistUpdateAction.add) {
-        mediationRecord.addRecipientKey(update.recipientKey)
+        mediationRecord.addRecipientKey(publicKeyBase58)
         updated.result = KeylistUpdateResult.Success
 
         keylist.push(updated)
       } else if (update.action === KeylistUpdateAction.remove) {
-        const success = mediationRecord.removeRecipientKey(update.recipientKey)
+        const success = mediationRecord.removeRecipientKey(publicKeyBase58)
         updated.result = success ? KeylistUpdateResult.Success : KeylistUpdateResult.NoChange
         keylist.push(updated)
       }
