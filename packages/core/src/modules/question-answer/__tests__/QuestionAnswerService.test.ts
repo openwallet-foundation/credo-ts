@@ -14,6 +14,7 @@ import {
   mockFunction,
 } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
@@ -21,7 +22,6 @@ import { QuestionMessage } from '../messages'
 import { QuestionAnswerState } from '../models'
 import { QuestionAnswerRecord, QuestionAnswerRepository } from '../repository'
 import { QuestionAnswerService } from '../services'
-import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 
 jest.mock('../repository/QuestionAnswerRepository')
 const QuestionAnswerRepositoryMock = QuestionAnswerRepository as jest.Mock<QuestionAnswerRepository>

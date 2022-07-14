@@ -7,12 +7,12 @@ import { Subject } from 'rxjs'
 import { NodeFileSystem } from '../../../../../node/src/NodeFileSystem'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { CacheRepository } from '../../../cache/CacheRepository'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyPool } from '../IndyPool'
 import { IndyLedgerService } from '../services/IndyLedgerService'
 import { IndyPoolService } from '../services/IndyPoolService'
-import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 
 jest.mock('../services/IndyPoolService')
 const IndyPoolServiceMock = IndyPoolService as jest.Mock<IndyPoolService>
