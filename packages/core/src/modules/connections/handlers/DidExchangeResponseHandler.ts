@@ -6,6 +6,7 @@ import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService } from '../services'
 
 import { createOutboundMessage } from '../../../agent/helpers'
+import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../../error'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeResponseMessage } from '../messages'
@@ -97,6 +98,10 @@ export class DidExchangeResponseHandler implements Handler {
     // if auto accept is enable
     if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
       const message = await this.didExchangeProtocol.createComplete(connection, outOfBandRecord)
+      // Disable return routing as we don't want to receive a response for this message over the same channel
+      // This has led to long timeouts as not all clients actually close an http socket if there is no response message
+      message.setReturnRouting(ReturnRouteTypes.none)
+
       if (!outOfBandRecord.reusable) {
         await this.outOfBandService.updateState(outOfBandRecord, OutOfBandState.Done)
       }
