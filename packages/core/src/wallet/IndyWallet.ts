@@ -1,4 +1,4 @@
-import type { BlsKeyPair } from '../crypto/BbsService'
+import type { KeyPair } from '../crypto/signing-provider/SigningProvider'
 import type {
   EncryptedMessage,
   KeyDerivationMethod,
@@ -20,9 +20,9 @@ import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
 
 import { AgentDependencies } from '../agent/AgentDependencies'
 import { InjectionSymbols } from '../constants'
-import { BbsService } from '../crypto/BbsService'
 import { Key } from '../crypto/Key'
 import { KeyType } from '../crypto/KeyType'
+import { SigningProviderRegistry } from '../crypto/signing-provider/SigningProviderRegistry'
 import { AriesFrameworkError, IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
 import { Logger } from '../logger'
 import { inject, injectable } from '../plugins'
@@ -39,14 +39,17 @@ export class IndyWallet implements Wallet {
   private walletHandle?: number
 
   private logger: Logger
+  private signingKeyProviderRegistry: SigningProviderRegistry
   private publicDidInfo: DidInfo | undefined
   private indy: typeof Indy
 
   public constructor(
     @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
-    @inject(InjectionSymbols.Logger) logger: Logger
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    signingKeyProviderRegistry: SigningProviderRegistry
   ) {
     this.logger = logger
+    this.signingKeyProviderRegistry = signingKeyProviderRegistry
     this.indy = agentDependencies.indy
   }
 
@@ -467,6 +470,7 @@ export class IndyWallet implements Wallet {
    */
   public async createKey({ seed, keyType }: CreateKeyOptions): Promise<Key> {
     try {
+      // Ed25519 is supported natively in Indy wallet
       if (keyType === KeyType.Ed25519) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         //@ts-ignore
@@ -474,10 +478,13 @@ export class IndyWallet implements Wallet {
         return Key.fromPublicKeyBase58(verkey, keyType)
       }
 
-      if (keyType === KeyType.Bls12381g1 || keyType === KeyType.Bls12381g2) {
-        const blsKeyPair = await BbsService.createKey({ keyType, seed })
-        await this.storeKeyPair(blsKeyPair)
-        return Key.fromPublicKeyBase58(blsKeyPair.publicKeyBase58, keyType)
+      // Check if there is a signing key provider for the specified key type.
+      if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
+        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
+
+        const keyPair = await signingKeyProvider.createKey({ seed })
+        await this.storeKeyPair(keyPair)
+        return Key.fromPublicKeyBase58(keyPair.publicKeyBase58, keyType)
       }
     } catch (error) {
       if (!isError(error)) {
@@ -501,6 +508,7 @@ export class IndyWallet implements Wallet {
    */
   public async sign({ data, key }: SignOptions): Promise<Buffer> {
     try {
+      // Ed25519 is supported natively in Indy wallet
       if (key.keyType === KeyType.Ed25519) {
         // Checks to see if it is an not an Array of messages, but just a single one
         if (!TypedArrayEncoder.isTypedArray(data)) {
@@ -509,13 +517,18 @@ export class IndyWallet implements Wallet {
         return await this.indy.cryptoSign(this.handle, key.publicKeyBase58, data as Buffer)
       }
 
-      if (key.keyType === KeyType.Bls12381g2) {
-        const blsKeyPair = await this.retrieveKeyPair(key.publicKeyBase58)
-        return BbsService.sign({
-          messages: data,
-          publicKey: key.publicKey,
-          privateKey: TypedArrayEncoder.fromBase58(blsKeyPair.privateKeyBase58),
+      // Check if there is a signing key provider for the specified key type.
+      if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
+
+        const keyPair = await this.retrieveKeyPair(key.publicKeyBase58)
+        const signed = await signingKeyProvider.sign({
+          data,
+          privateKeyBase58: keyPair.privateKeyBase58,
+          publicKeyBase58: key.publicKeyBase58,
         })
+
+        return signed
       }
     } catch (error) {
       if (!isError(error)) {
@@ -542,6 +555,7 @@ export class IndyWallet implements Wallet {
    */
   public async verify({ data, key, signature }: VerifyOptions): Promise<boolean> {
     try {
+      // Ed25519 is supported natively in Indy wallet
       if (key.keyType === KeyType.Ed25519) {
         // Checks to see if it is an not an Array of messages, but just a single one
         if (!TypedArrayEncoder.isTypedArray(data)) {
@@ -550,8 +564,17 @@ export class IndyWallet implements Wallet {
         return await this.indy.cryptoVerify(key.publicKeyBase58, data as Buffer, signature)
       }
 
-      if (key.keyType === KeyType.Bls12381g2) {
-        return await BbsService.verify({ signature, publicKey: key.publicKey, messages: data })
+      // Check if there is a signing key provider for the specified key type.
+      if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
+
+        const signed = await signingKeyProvider.verify({
+          data,
+          signature,
+          publicKeyBase58: key.publicKeyBase58,
+        })
+
+        return signed
       }
     } catch (error) {
       if (!isError(error)) {
@@ -609,11 +632,11 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  private async retrieveKeyPair(publicKeyBase58: string): Promise<BlsKeyPair> {
+  private async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair> {
     try {
-      const { value } = await this.indy.getWalletRecord(this.handle, 'KeyPairRecord', `keypair-${publicKeyBase58}`, {})
+      const { value } = await this.indy.getWalletRecord(this.handle, 'KeyPairRecord', `key-${publicKeyBase58}`, {})
       if (value) {
-        return JsonEncoder.fromString(value) as BlsKeyPair
+        return JsonEncoder.fromString(value) as KeyPair
       } else {
         throw new WalletError(`No content found for record with public key: ${publicKeyBase58}`)
       }
@@ -628,14 +651,16 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  private async storeKeyPair(blsKeyPair: BlsKeyPair): Promise<void> {
+  private async storeKeyPair(keyPair: KeyPair): Promise<void> {
     try {
       await this.indy.addWalletRecord(
         this.handle,
         'KeyPairRecord',
-        `keypair-${blsKeyPair.publicKeyBase58}`,
-        JSON.stringify(blsKeyPair),
-        {}
+        `key-${keyPair.publicKeyBase58}`,
+        JSON.stringify(keyPair),
+        {
+          keyType: keyPair.keyType,
+        }
       )
     } catch (error) {
       if (isIndyError(error, 'WalletItemAlreadyExists')) {

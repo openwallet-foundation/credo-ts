@@ -1,12 +1,13 @@
-import { KeyType } from '../../crypto'
+import type { KeyType } from '../../crypto'
+
 import { AriesFrameworkError } from '../../error'
+import { injectable, injectAll } from '../../plugins'
 
 import { suites } from './libraries/jsonld-signatures'
-import { Ed25519Signature2018 } from './signature-suites'
-import { BbsBlsSignature2020, BbsBlsSignatureProof2020 } from './signature-suites/bbs'
 
 const LinkedDataSignature = suites.LinkedDataSignature
 
+export const SignatureSuiteToken = Symbol('SignatureSuiteToken')
 export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature
   proofType: string
@@ -14,27 +15,13 @@ export interface SuiteInfo {
   keyType: string
 }
 
+@injectable()
 export class SignatureSuiteRegistry {
-  private suiteMapping: SuiteInfo[] = [
-    {
-      suiteClass: Ed25519Signature2018,
-      proofType: 'Ed25519Signature2018',
-      requiredKeyType: 'Ed25519VerificationKey2018',
-      keyType: KeyType.Ed25519,
-    },
-    {
-      suiteClass: BbsBlsSignature2020,
-      proofType: 'BbsBlsSignature2020',
-      requiredKeyType: 'BbsBlsSignatureProof2020',
-      keyType: KeyType.Bls12381g2,
-    },
-    {
-      suiteClass: BbsBlsSignatureProof2020,
-      proofType: 'BbsBlsSignatureProof2020',
-      requiredKeyType: 'BbsBlsSignatureProof2020',
-      keyType: KeyType.Bls12381g2,
-    },
-  ]
+  private suiteMapping: SuiteInfo[]
+
+  public constructor(@injectAll(SignatureSuiteToken) suites: SuiteInfo[]) {
+    this.suiteMapping = suites
+  }
 
   public get supportedProofTypes(): string[] {
     return this.suiteMapping.map((x) => x.proofType)

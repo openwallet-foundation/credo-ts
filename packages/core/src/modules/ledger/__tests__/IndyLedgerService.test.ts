@@ -12,6 +12,7 @@ import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyPool } from '../IndyPool'
 import { IndyLedgerService } from '../services/IndyLedgerService'
 import { IndyPoolService } from '../services/IndyPoolService'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 
 jest.mock('../services/IndyPoolService')
 const IndyPoolServiceMock = IndyPoolService as jest.Mock<IndyPoolService>
@@ -41,7 +42,7 @@ describe('IndyLedgerService', () => {
   let ledgerService: IndyLedgerService
 
   beforeAll(async () => {
-    wallet = new IndyWallet(config.agentDependencies, config.logger)
+    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)

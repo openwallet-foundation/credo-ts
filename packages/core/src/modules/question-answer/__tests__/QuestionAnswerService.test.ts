@@ -21,6 +21,7 @@ import { QuestionMessage } from '../messages'
 import { QuestionAnswerState } from '../models'
 import { QuestionAnswerRecord, QuestionAnswerRepository } from '../repository'
 import { QuestionAnswerService } from '../services'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 
 jest.mock('../repository/QuestionAnswerRepository')
 const QuestionAnswerRepositoryMock = QuestionAnswerRepository as jest.Mock<QuestionAnswerRepository>
@@ -62,7 +63,7 @@ describe('QuestionAnswerService', () => {
 
   beforeAll(async () => {
     agentConfig = getAgentConfig('QuestionAnswerServiceTest')
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
