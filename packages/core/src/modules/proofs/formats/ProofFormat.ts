@@ -1,8 +1,3 @@
-export const INDY_ATTACH_ID = 'indy'
-export const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
-export const V2_INDY_PRESENTATION_REQUEST = 'hlindy/proof-req@v2.0'
-export const V2_INDY_PRESENTATION = 'hlindy/proof@v2.0'
-
 /**
  * Get the payload for a specific method from a list of ProofFormat interfaces and a method
  *
@@ -33,6 +28,8 @@ export interface ProofFormat {
     acceptProposal: unknown
     createRequest: unknown
     acceptRequest: unknown
+    getCredentialsForRequest: unknown
+    credentialForRequest: unknown
   }
   formatData: {
     proposal: unknown

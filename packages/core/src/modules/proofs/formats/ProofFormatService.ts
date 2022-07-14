@@ -1,24 +1,19 @@
 import type { AgentContext } from '../../../agent'
-import type {
-  RetrievedCredentialOptions,
-  ProofRequestFormats,
-  RequestedCredentialsFormats,
-} from '../models/SharedOptions'
-import type { CreateRequestAsResponseOptions, GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
 import type { ProofFormat } from './ProofFormat'
 import type {
   FormatCreateReturn,
   FormatProcessOptions,
   FormatCreateProposalOptions,
   FormatAcceptProposalOptions,
+  FormatCreateRequestOptions,
+  FormatAcceptRequestOptions,
+  FormatGetCredentialsForRequestOptions,
+  CredentialsForRequest,
+  SelectedCredentialsForRequest,
 } from './ProofFormatServiceOptions'
-import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
-import { CreateRequestOptions, CreatePresentationOptions } from '../models/ProofServiceOptions'
-import {
-  ProcessRequestOptions,
-  ProcessPresentationOptions,
-  CreatePresentationFormatsOptions,
-} from './models/ProofFormatServiceOptions'
+
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { JsonEncoder } from '../../../utils'
 
 /**
  * This abstract class is the base class for any proof format
@@ -42,30 +37,51 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
     options: FormatAcceptProposalOptions<PF>
   ): Promise<FormatCreateReturn>
 
-  abstract createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat>
+  abstract createRequest(
+    agentContext: AgentContext,
+    options: FormatCreateRequestOptions<PF>
+  ): Promise<FormatCreateReturn>
+  abstract processRequest(agentContext: AgentContext, options: FormatProcessOptions): Promise<void>
+  abstract acceptRequest(
+    agentContext: AgentContext,
+    options: FormatAcceptRequestOptions<PF>
+  ): Promise<FormatCreateReturn>
 
-  abstract processRequest(options: ProcessRequestOptions): Promise<void>
+  abstract processPresentation(agentContext: AgentContext, options: FormatProcessOptions): Promise<boolean>
 
-  abstract createPresentation(options: CreatePresentationOptions): Promise<ProofAttachmentFormat>
+  abstract getCredentialsForRequest(
+    agentContext: AgentContext,
+    options: FormatGetCredentialsForRequestOptions<PF>
+  ): Promise<CredentialsForRequest<PF>>
 
-  abstract processPresentation(options: ProcessPresentationOptions): Promise<boolean>
+  abstract autoSelectCredentialsForRequest(
+    agentContext: AgentContext,
+    options: CredentialsForRequest<PF>
+  ): Promise<SelectedCredentialsForRequest<PF>>
 
-  abstract createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats>
-
-  public abstract getRequestedCredentialsForProofRequest(
-    options: GetRequestedCredentialsFormat
-  ): Promise<RetrievedCredentialOptions>
-
-  public abstract autoSelectCredentialsForProofRequest(
-    options: RetrievedCredentialOptions
-  ): Promise<RequestedCredentialsFormats>
-
-  abstract proposalAndRequestAreEqual(
-    proposalAttachments: ProofAttachmentFormat[],
-    requestAttachments: ProofAttachmentFormat[]
-  ): boolean
+  // abstract proposalAndRequestAreEqual(
+  //   proposalAttachments: ProofAttachmentFormat[],
+  //   requestAttachments: ProofAttachmentFormat[]
+  // ): boolean
 
   abstract supportsFormat(formatIdentifier: string): boolean
 
-  abstract createRequestAsResponse(options: CreateRequestAsResponseOptions): Promise<ProofAttachmentFormat>
+  /**
+   * Returns an object of type {@link Attachment} for use in presentation exchange messages.
+   * It looks up the correct format identifier and encodes the data as a base64 attachment.
+   *
+   * @param data The data to include in the attach object
+   * @param id the attach id from the formats component of the message
+   */
+  protected getFormatData(data: unknown, id: string): Attachment {
+    const attachment = new Attachment({
+      id,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        base64: JsonEncoder.toBase64(data),
+      }),
+    })
+
+    return attachment
+  }
 }

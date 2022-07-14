@@ -50,6 +50,8 @@ export interface IndyProofFormat extends ProofFormat {
     acceptProposal: IndyAcceptProposalFormat
     createRequest: IndyRequestProofFormat
     acceptRequest: IndyAcceptRequestFormat
+    getCredentialsForRequest: never
+    credentialForRequest: never
   }
   formatData: {
     proposal: unknown

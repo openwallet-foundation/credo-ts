@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { DependencyManager } from '../../plugins'
 import type { MediationRecipientService } from '../routing'
+import type { ProofService } from './ProofService'
 import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
@@ -34,7 +35,7 @@ import { ConnectionService } from '../connections/services/ConnectionService'
 import { RoutingService } from '../routing'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
-import { ProofService } from './ProofService'
+import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
 import { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import { ProofState } from './models/ProofState'
 import { V1ProofService } from './protocol/v1/V1ProofService'
@@ -501,7 +502,9 @@ export class ProofsModule {
     dependencyManager.registerContextScoped(ProofsModule)
 
     // Services
-    dependencyManager.registerSingleton(ProofService)
+    dependencyManager.registerSingleton(V1ProofService)
+    dependencyManager.registerSingleton(V2ProofService)
+    dependencyManager.registerSingleton(IndyProofFormatService)
 
     // Repositories
     dependencyManager.registerSingleton(ProofRepository)

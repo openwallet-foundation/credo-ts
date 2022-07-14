@@ -1,4 +1,5 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
+import type { ProofFormatSpec } from '../models/ProofFormatSpec'
 import type { ProofRecord } from '../repository'
 import type { ProofFormat, ProofFormatPayload } from './ProofFormat'
 import type { ProofFormatService } from './ProofFormatService'
@@ -26,7 +27,7 @@ export type FormatServiceMap<PFs extends ProofFormat[]> = {
  * It requires an attachment and a format to be returned.
  */
 export interface FormatCreateReturn {
-  format: ProofFormatService
+  format: ProofFormatSpec
   attachment: Attachment
 }
 
@@ -54,6 +55,7 @@ export interface FormatAcceptProposalOptions<PF extends ProofFormat> {
 export interface FormatCreateRequestOptions<PF extends ProofFormat> {
   proofRecord: ProofRecord
   proofFormats: ProofFormatPayload<[PF], 'createRequest'>
+  attachId?: string
 }
 
 export interface FormatAcceptRequestOptions<PF extends ProofFormat> {
@@ -63,6 +65,18 @@ export interface FormatAcceptRequestOptions<PF extends ProofFormat> {
 
   requestAttachment: Attachment
   proposalAttachment?: Attachment
+}
+
+export interface FormatGetCredentialsForRequestOptions<PF extends ProofFormat> {
+  proofFormats: ProofFormatPayload<[PF], 'getCredentialsForRequest'>
+}
+
+export interface CredentialsForRequest<PF extends ProofFormat> {
+  proofFormats: ProofFormatPayload<[PF], 'credentialForRequest'>
+}
+
+export interface SelectedCredentialsForRequest<PF extends ProofFormat> {
+  proofFormats: ProofFormatPayload<[PF], 'acceptRequest'>
 }
 
 // Auto accept method interfaces

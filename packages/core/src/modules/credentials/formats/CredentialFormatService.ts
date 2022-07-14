@@ -76,7 +76,6 @@ export abstract class CredentialFormatService<CF extends CredentialFormat = Cred
    *
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
-   * @returns attachment to the credential proposal
    */
   protected getFormatData(data: unknown, id: string): Attachment {
     const attachment = new Attachment({

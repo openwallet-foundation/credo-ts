@@ -126,14 +126,10 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   }
 
   public async processProposal(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
-    const credProposalJson = attachment.getDataAsJson()
+    const proposalJson = attachment.getDataAsJson()
 
-    if (!credProposalJson) {
-      throw new AriesFrameworkError('Missing indy credential proposal data payload')
-    }
-
-    const credProposal = JsonTransformer.fromJSON(credProposalJson, IndyCredPropose)
-    MessageValidator.validateSync(credProposal)
+    // fromJSON also validates
+    JsonTransformer.fromJSON(proposalJson, IndyCredPropose)
   }
 
   public async acceptProposal(
