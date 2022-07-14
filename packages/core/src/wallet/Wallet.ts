@@ -1,4 +1,5 @@
 import type { Key, KeyType } from '../crypto'
+import type { Disposable } from '../plugins'
 import type {
   EncryptedMessage,
   WalletConfig,
@@ -8,7 +9,7 @@ import type {
 } from '../types'
 import type { Buffer } from '../utils/buffer'
 
-export interface Wallet {
+export interface Wallet extends Disposable {
   publicDid: DidInfo | undefined
   isInitialized: boolean
   isProvisioned: boolean

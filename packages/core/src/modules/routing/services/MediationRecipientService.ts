@@ -19,7 +19,7 @@ import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { AgentEventTypes } from '../../../agent/Events'
+import { filterContextCorrelationId, AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { Key, KeyType } from '../../../crypto'
@@ -163,6 +163,7 @@ export class MediationRecipientService {
     // Apply required filters to observable stream and create promise to subscribe to observable
     observable
       .pipe(
+        filterContextCorrelationId(agentContext.contextCorrelationId),
         // Only take event for current mediation record
         filter((event) => mediationRecord.id === event.payload.mediationRecord.id),
         // Only wait for first event that matches the criteria

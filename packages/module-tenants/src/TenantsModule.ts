@@ -6,7 +6,7 @@ import { TenantsApi } from './TenantsApi'
 import { TenantAgentContextProvider } from './context/TenantAgentContextProvider'
 import { TenantSessionCoordinator } from './context/TenantSessionCoordinator'
 import { TenantRepository, TenantRoutingRepository } from './repository'
-import { TenantService } from './services'
+import { TenantRecordService } from './services'
 
 @module()
 export class TenantsModule {
@@ -19,7 +19,7 @@ export class TenantsModule {
     dependencyManager.registerSingleton(TenantsApi)
 
     // Services
-    dependencyManager.registerSingleton(TenantService)
+    dependencyManager.registerSingleton(TenantRecordService)
 
     // Repositories
     dependencyManager.registerSingleton(TenantRepository)

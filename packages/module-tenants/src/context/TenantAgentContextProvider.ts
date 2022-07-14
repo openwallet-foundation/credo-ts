@@ -16,26 +16,26 @@ import {
   isJsonObject,
 } from '@aries-framework/core'
 
-import { TenantService } from '../services'
+import { TenantRecordService } from '../services'
 
 import { TenantSessionCoordinator } from './TenantSessionCoordinator'
 
 @injectable()
 export class TenantAgentContextProvider implements AgentContextProvider {
-  private tenantService: TenantService
+  private tenantRecordService: TenantRecordService
   private rootAgentContext: AgentContext
   private eventEmitter: EventEmitter
   private logger: Logger
   private tenantSessionCoordinator: TenantSessionCoordinator
 
   public constructor(
-    tenantService: TenantService,
+    tenantRecordService: TenantRecordService,
     rootAgentContext: AgentContext,
     eventEmitter: EventEmitter,
     tenantSessionCoordinator: TenantSessionCoordinator,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
-    this.tenantService = tenantService
+    this.tenantRecordService = tenantRecordService
     this.rootAgentContext = rootAgentContext
     this.eventEmitter = eventEmitter
     this.tenantSessionCoordinator = tenantSessionCoordinator
@@ -47,7 +47,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
 
   public async getAgentContextForContextCorrelationId(tenantId: string) {
     // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
-    const tenantRecord = await this.tenantService.getTenantById(this.rootAgentContext, tenantId)
+    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
     const agentContext = this.tenantSessionCoordinator.getContextForSession(tenantRecord)
 
     this.logger.debug(`Created tenant agent context for tenant '${tenantId}'`)
@@ -73,7 +73,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       // the first found recipient multiple times. This is however a case I've never seen before and will add quite some complexity
       // to resolve. I think we're fine to ignore this case for now.
       for (const recipientKey of recipientKeys) {
-        const tenantRoutingRecord = await this.tenantService.findTenantRoutingRecordByRecipientKey(
+        const tenantRoutingRecord = await this.tenantRecordService.findTenantRoutingRecordByRecipientKey(
           this.rootAgentContext,
           recipientKey
         )
@@ -101,6 +101,10 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     return agentContext
   }
 
+  public async endSessionForAgentContext(agentContext: AgentContext) {
+    await this.tenantSessionCoordinator.endAgentContextSession(agentContext)
+  }
+
   private getRecipientKeysFromEncryptedMessage(jwe: EncryptedMessage): Key[] {
     const jweProtected = JsonEncoder.fromBase64(jwe.protected)
     if (!Array.isArray(jweProtected.recipients)) return []
@@ -122,8 +126,8 @@ export class TenantAgentContextProvider implements AgentContextProvider {
 
   private async registerRecipientKeyForTenant(tenantId: string, recipientKey: Key) {
     this.logger.debug(`Registering recipient key ${recipientKey.fingerprint} for tenant ${tenantId}`)
-    const tenantRecord = await this.tenantService.getTenantById(this.rootAgentContext, tenantId)
-    await this.tenantService.addTenantRoutingRecord(this.rootAgentContext, tenantRecord.id, recipientKey)
+    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
+    await this.tenantRecordService.addTenantRoutingRecord(this.rootAgentContext, tenantRecord.id, recipientKey)
   }
 
   private listenForRoutingKeyCreatedEvents() {

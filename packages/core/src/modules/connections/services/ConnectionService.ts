@@ -12,6 +12,7 @@ import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { filterContextCorrelationId } from '../../../agent/Events'
 import { InjectionSymbols } from '../../../constants'
 import { Key } from '../../../crypto'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
@@ -749,6 +750,7 @@ export class ConnectionService {
 
     observable
       .pipe(
+        filterContextCorrelationId(agentContext.contextCorrelationId),
         map((e) => e.payload.connectionRecord),
         first(isConnected), // Do not wait for longer than specified timeout
         timeout(timeoutMs)

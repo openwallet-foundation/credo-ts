@@ -1,1 +1,1 @@
-export * from './TenantService'
+export * from './TenantRecordService'

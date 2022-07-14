@@ -43,4 +43,23 @@ describe('DefaultAgentContextProvider', () => {
       )
     })
   })
+
+  describe('endSessionForAgentContext()', () => {
+    test('resolves when the correct agent context is passed', async () => {
+      const agentContextProvider: AgentContextProvider = new DefaultAgentContextProvider(agentContext)
+
+      await expect(agentContextProvider.endSessionForAgentContext(agentContext)).resolves.toBeUndefined()
+    })
+
+    test('throws an error if the contextCorrelationId does not match with the contextCorrelationId from the constructor agent context', async () => {
+      const agentContextProvider: AgentContextProvider = new DefaultAgentContextProvider(agentContext)
+      const agentContext2 = getAgentContext({
+        contextCorrelationId: 'mock2',
+      })
+
+      await expect(agentContextProvider.endSessionForAgentContext(agentContext2)).rejects.toThrowError(
+        `Could not end session for agent context with contextCorrelationId 'mock2'. Only contextCorrelationId 'mock' is provided by this provider.`
+      )
+    })
+  })
 })
