@@ -1,5 +1,4 @@
 import type { AgentContext } from '../../../agent/context/AgentContext'
-import type { Query } from '../../../storage/StorageService'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
@@ -18,11 +17,11 @@ export class AnonCredsCredentialDefinitionRepository extends Repository<AnonCred
     super(AnonCredsCredentialDefinitionRecord, storageService, eventEmitter)
   }
 
-  public async getByCredentialDefinitionId(agentConext: AgentContext, credentialDefinitionId: string) {
-    return this.getSingleByQuery(agentConext, { credentialDefinitionId })
+  public async getByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
+    return this.getSingleByQuery(agentContext, { credentialDefinitionId })
   }
 
-  public async findByCredentialDefinitionId(agentConext: AgentContext, credentialDefinitionId: string) {
-    return this.findSingleByQuery(agentConext, credentialDefinitionId as Query<AnonCredsCredentialDefinitionRecord>)
+  public async findByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
+    return this.findSingleByQuery(agentContext, { credentialDefinitionId })
   }
 }
