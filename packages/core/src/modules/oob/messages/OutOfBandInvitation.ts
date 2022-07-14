@@ -72,7 +72,6 @@ export class OutOfBandInvitation extends AgentMessage {
   public static fromUrl(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl['oob']
-
     if (typeof encodedInvitation === 'string') {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
       const invitation = this.fromJson(invitationJson)
@@ -123,7 +122,6 @@ export class OutOfBandInvitation extends AgentMessage {
   public readonly goal?: string
 
   public readonly accept?: string[]
-
   @Transform(({ value }) => value?.map(replaceLegacyDidSovPrefix), { toClassOnly: true })
   @Expose({ name: 'handshake_protocols' })
   public handshakeProtocols?: HandshakeProtocol[]
