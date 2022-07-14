@@ -149,7 +149,7 @@ export class ConnectionService {
     messageContext: InboundMessageContext<ConnectionRequestMessage>,
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
-    this.logger.debug(`Process message ${ConnectionRequestMessage.type} start`, messageContext)
+    this.logger.debug(`Process message ${ConnectionRequestMessage.type.messageTypeUri} start`, messageContext)
     outOfBandRecord.assertRole(OutOfBandRole.Sender)
     outOfBandRecord.assertState(OutOfBandState.AwaitResponse)
 
@@ -183,7 +183,7 @@ export class ConnectionService {
     await this.connectionRepository.update(connectionRecord)
     this.emitStateChangedEvent(connectionRecord, null)
 
-    this.logger.debug(`Process message ${ConnectionRequestMessage.type} end`, connectionRecord)
+    this.logger.debug(`Process message ${ConnectionRequestMessage.type.messageTypeUri} end`, connectionRecord)
     return connectionRecord
   }
 
@@ -259,7 +259,7 @@ export class ConnectionService {
     messageContext: InboundMessageContext<ConnectionResponseMessage>,
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
-    this.logger.debug(`Process message ${ConnectionResponseMessage.type} start`, messageContext)
+    this.logger.debug(`Process message ${ConnectionResponseMessage.type.messageTypeUri} start`, messageContext)
     const { connection: connectionRecord, message, recipientKey, senderKey } = messageContext
 
     if (!recipientKey || !senderKey) {
