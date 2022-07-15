@@ -21,6 +21,7 @@ import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { RoutingService } from '../../../../routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
+import { CredentialsModuleConfig } from '../../../CredentialsModuleConfig'
 import { credReq } from '../../../__tests__/fixtures'
 import { CredentialProblemReportReason } from '../../../errors/CredentialProblemReportReason'
 import { IndyCredentialFormatService } from '../../../formats'
@@ -260,7 +261,8 @@ describe('CredentialService', () => {
       eventEmitter,
       credentialRepository,
       indyCredentialFormatService,
-      agentConfig.logger
+      agentConfig.logger,
+      new CredentialsModuleConfig()
     )
   })
 

@@ -1,6 +1,7 @@
 export * from './types'
 export * from './domain'
-export * from './DidsModule'
+export * from './DidsApi'
 export * from './repository'
 export * from './services'
+export * from './DidsModule'
 export { DidKey } from './methods/key/DidKey'

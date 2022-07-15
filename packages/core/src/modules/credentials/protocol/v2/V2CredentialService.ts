@@ -37,6 +37,7 @@ import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
 import { RoutingService } from '../../../routing/services/RoutingService'
+import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
 import { CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { AutoAcceptCredential, CredentialState } from '../../models'
@@ -68,6 +69,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
   private connectionService: ConnectionService
   private credentialFormatCoordinator: CredentialFormatCoordinator<CFs>
   private routingService: RoutingService
+  private credentialsModuleConfig: CredentialsModuleConfig
   private formatServiceMap: { [key: string]: CredentialFormatService }
 
   public constructor(
@@ -78,12 +80,14 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
     indyCredentialFormatService: IndyCredentialFormatService,
-    @inject(InjectionSymbols.Logger) logger: Logger
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    credentialsModuleConfig: CredentialsModuleConfig
   ) {
     super(credentialRepository, didCommMessageRepository, eventEmitter, dispatcher, logger)
     this.connectionService = connectionService
     this.routingService = routingService
     this.credentialFormatCoordinator = new CredentialFormatCoordinator(didCommMessageRepository)
+    this.credentialsModuleConfig = credentialsModuleConfig
 
     // Dynamically build format service map. This will be extracted once services are registered dynamically
     this.formatServiceMap = [indyCredentialFormatService].reduce(
@@ -839,7 +843,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     const { credentialRecord, proposalMessage } = options
     const autoAccept = composeAutoAccept(
       credentialRecord.autoAcceptCredential,
-      agentContext.config.autoAcceptCredentials
+      this.credentialsModuleConfig.autoAcceptCredentials
     )
 
     // Handle always / never cases
@@ -903,7 +907,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     const { credentialRecord, offerMessage } = options
     const autoAccept = composeAutoAccept(
       credentialRecord.autoAcceptCredential,
-      agentContext.config.autoAcceptCredentials
+      this.credentialsModuleConfig.autoAcceptCredentials
     )
 
     // Handle always / never cases
@@ -967,7 +971,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     const { credentialRecord, requestMessage } = options
     const autoAccept = composeAutoAccept(
       credentialRecord.autoAcceptCredential,
-      agentContext.config.autoAcceptCredentials
+      this.credentialsModuleConfig.autoAcceptCredentials
     )
 
     // Handle always / never cases
@@ -1029,7 +1033,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     const { credentialRecord, credentialMessage } = options
     const autoAccept = composeAutoAccept(
       credentialRecord.autoAcceptCredential,
-      agentContext.config.autoAcceptCredentials
+      this.credentialsModuleConfig.autoAcceptCredentials
     )
 
     // Handle always / never cases

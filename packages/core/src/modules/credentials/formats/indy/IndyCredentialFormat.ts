@@ -5,8 +5,8 @@ import type { IndyCredProposeOptions } from './models/IndyCredPropose'
 import type { Cred, CredOffer, CredReq } from 'indy-sdk'
 
 /**
- * This defines the module payload for calling CredentialsModule.createProposal
- * or CredentialsModule.negotiateOffer
+ * This defines the module payload for calling CredentialsApi.createProposal
+ * or CredentialsApi.negotiateOffer
  */
 export interface IndyProposeCredentialFormat extends IndyCredProposeOptions {
   attributes?: CredentialPreviewAttributeOptions[]
@@ -14,7 +14,7 @@ export interface IndyProposeCredentialFormat extends IndyCredProposeOptions {
 }
 
 /**
- * This defines the module payload for calling CredentialsModule.acceptProposal
+ * This defines the module payload for calling CredentialsApi.acceptProposal
  */
 export interface IndyAcceptProposalFormat {
   credentialDefinitionId?: string
@@ -27,8 +27,8 @@ export interface IndyAcceptOfferFormat {
 }
 
 /**
- * This defines the module payload for calling CredentialsModule.offerCredential
- * or CredentialsModule.negotiateProposal
+ * This defines the module payload for calling CredentialsApi.offerCredential
+ * or CredentialsApi.negotiateProposal
  */
 export interface IndyOfferCredentialFormat {
   credentialDefinitionId: string

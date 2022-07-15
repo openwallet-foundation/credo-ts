@@ -1,20 +1,20 @@
 import { getBaseConfig } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
-import { BasicMessagesModule } from '../../modules/basic-messages/BasicMessagesModule'
-import { ConnectionsModule } from '../../modules/connections/ConnectionsModule'
+import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
+import { ConnectionsApi } from '../../modules/connections/ConnectionsApi'
 import { ConnectionRepository } from '../../modules/connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../modules/connections/services/ConnectionService'
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
 import { IndyLedgerService } from '../../modules/ledger'
-import { LedgerModule } from '../../modules/ledger/LedgerModule'
+import { LedgerApi } from '../../modules/ledger/LedgerApi'
 import { ProofRepository, ProofService } from '../../modules/proofs'
-import { ProofsModule } from '../../modules/proofs/ProofsModule'
+import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import {
-  MediatorModule,
-  RecipientModule,
+  MediatorApi,
+  RecipientApi,
   MediationRepository,
   MediatorService,
   MediationRecipientService,
@@ -110,29 +110,29 @@ describe('Agent', () => {
       const container = agent.dependencyManager
 
       // Modules
-      expect(container.resolve(ConnectionsModule)).toBeInstanceOf(ConnectionsModule)
+      expect(container.resolve(ConnectionsApi)).toBeInstanceOf(ConnectionsApi)
       expect(container.resolve(ConnectionService)).toBeInstanceOf(ConnectionService)
       expect(container.resolve(ConnectionRepository)).toBeInstanceOf(ConnectionRepository)
       expect(container.resolve(TrustPingService)).toBeInstanceOf(TrustPingService)
 
-      expect(container.resolve(ProofsModule)).toBeInstanceOf(ProofsModule)
+      expect(container.resolve(ProofsApi)).toBeInstanceOf(ProofsApi)
       expect(container.resolve(ProofService)).toBeInstanceOf(ProofService)
       expect(container.resolve(ProofRepository)).toBeInstanceOf(ProofRepository)
 
       expect(container.resolve(CredentialsApi)).toBeInstanceOf(CredentialsApi)
       expect(container.resolve(CredentialRepository)).toBeInstanceOf(CredentialRepository)
 
-      expect(container.resolve(BasicMessagesModule)).toBeInstanceOf(BasicMessagesModule)
+      expect(container.resolve(BasicMessagesApi)).toBeInstanceOf(BasicMessagesApi)
       expect(container.resolve(BasicMessageService)).toBeInstanceOf(BasicMessageService)
       expect(container.resolve(BasicMessageRepository)).toBeInstanceOf(BasicMessageRepository)
 
-      expect(container.resolve(MediatorModule)).toBeInstanceOf(MediatorModule)
-      expect(container.resolve(RecipientModule)).toBeInstanceOf(RecipientModule)
+      expect(container.resolve(MediatorApi)).toBeInstanceOf(MediatorApi)
+      expect(container.resolve(RecipientApi)).toBeInstanceOf(RecipientApi)
       expect(container.resolve(MediationRepository)).toBeInstanceOf(MediationRepository)
       expect(container.resolve(MediatorService)).toBeInstanceOf(MediatorService)
       expect(container.resolve(MediationRecipientService)).toBeInstanceOf(MediationRecipientService)
 
-      expect(container.resolve(LedgerModule)).toBeInstanceOf(LedgerModule)
+      expect(container.resolve(LedgerApi)).toBeInstanceOf(LedgerApi)
       expect(container.resolve(IndyLedgerService)).toBeInstanceOf(IndyLedgerService)
 
       // Symbols, interface based
@@ -152,29 +152,29 @@ describe('Agent', () => {
       const container = agent.dependencyManager
 
       // Modules
-      expect(container.resolve(ConnectionsModule)).toBe(container.resolve(ConnectionsModule))
+      expect(container.resolve(ConnectionsApi)).toBe(container.resolve(ConnectionsApi))
       expect(container.resolve(ConnectionService)).toBe(container.resolve(ConnectionService))
       expect(container.resolve(ConnectionRepository)).toBe(container.resolve(ConnectionRepository))
       expect(container.resolve(TrustPingService)).toBe(container.resolve(TrustPingService))
 
-      expect(container.resolve(ProofsModule)).toBe(container.resolve(ProofsModule))
+      expect(container.resolve(ProofsApi)).toBe(container.resolve(ProofsApi))
       expect(container.resolve(ProofService)).toBe(container.resolve(ProofService))
       expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
 
       expect(container.resolve(CredentialsApi)).toBe(container.resolve(CredentialsApi))
       expect(container.resolve(CredentialRepository)).toBe(container.resolve(CredentialRepository))
 
-      expect(container.resolve(BasicMessagesModule)).toBe(container.resolve(BasicMessagesModule))
+      expect(container.resolve(BasicMessagesApi)).toBe(container.resolve(BasicMessagesApi))
       expect(container.resolve(BasicMessageService)).toBe(container.resolve(BasicMessageService))
       expect(container.resolve(BasicMessageRepository)).toBe(container.resolve(BasicMessageRepository))
 
-      expect(container.resolve(MediatorModule)).toBe(container.resolve(MediatorModule))
-      expect(container.resolve(RecipientModule)).toBe(container.resolve(RecipientModule))
+      expect(container.resolve(MediatorApi)).toBe(container.resolve(MediatorApi))
+      expect(container.resolve(RecipientApi)).toBe(container.resolve(RecipientApi))
       expect(container.resolve(MediationRepository)).toBe(container.resolve(MediationRepository))
       expect(container.resolve(MediatorService)).toBe(container.resolve(MediatorService))
       expect(container.resolve(MediationRecipientService)).toBe(container.resolve(MediationRecipientService))
 
-      expect(container.resolve(LedgerModule)).toBe(container.resolve(LedgerModule))
+      expect(container.resolve(LedgerApi)).toBe(container.resolve(LedgerApi))
       expect(container.resolve(IndyLedgerService)).toBe(container.resolve(IndyLedgerService))
 
       // Symbols, interface based

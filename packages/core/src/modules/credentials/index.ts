@@ -1,8 +1,9 @@
 export * from './CredentialsApi'
+export * from './CredentialsApiOptions'
 export * from './repository'
-
 export * from './CredentialEvents'
-export * from './CredentialsModuleOptions'
 export * from './models'
 export * from './formats'
 export * from './protocol'
+export * from './CredentialsModule'
+export * from './CredentialsModuleConfig'

@@ -43,9 +43,7 @@ export class RequestPresentationHandler implements Handler {
     const indyProofRequest = record.requestMessage?.indyProofRequest
     const presentationProposal = record.proposalMessage?.presentationProposal
 
-    this.logger.info(
-      `Automatically sending presentation with autoAccept on ${messageContext.agentContext.config.autoAcceptProofs}`
-    )
+    this.logger.info(`Automatically sending presentation with autoAccept`)
 
     if (!indyProofRequest) {
       this.logger.error('Proof request is undefined.')

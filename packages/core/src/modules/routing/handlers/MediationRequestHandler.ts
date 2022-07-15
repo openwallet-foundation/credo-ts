@@ -1,4 +1,5 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MediatorModuleConfig } from '../MediatorModuleConfig'
 import type { MediatorService } from '../services/MediatorService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
@@ -6,10 +7,12 @@ import { MediationRequestMessage } from '../messages/MediationRequestMessage'
 
 export class MediationRequestHandler implements Handler {
   private mediatorService: MediatorService
+  private mediatorModuleConfig: MediatorModuleConfig
   public supportedMessages = [MediationRequestMessage]
 
-  public constructor(mediatorService: MediatorService) {
+  public constructor(mediatorService: MediatorService, mediatorModuleConfig: MediatorModuleConfig) {
     this.mediatorService = mediatorService
+    this.mediatorModuleConfig = mediatorModuleConfig
   }
 
   public async handle(messageContext: HandlerInboundMessage<MediationRequestHandler>) {
@@ -17,7 +20,7 @@ export class MediationRequestHandler implements Handler {
 
     const mediationRecord = await this.mediatorService.processMediationRequest(messageContext)
 
-    if (messageContext.agentContext.config.autoAcceptMediationRequests) {
+    if (this.mediatorModuleConfig.autoAcceptMediationRequests) {
       const { message } = await this.mediatorService.createGrantMediationMessage(
         messageContext.agentContext,
         mediationRecord

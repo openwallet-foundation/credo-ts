@@ -41,7 +41,7 @@ interface BaseOptions {
 }
 
 /**
- * Interface for CredentialsModule.proposeCredential. Will send a proposal.
+ * Interface for CredentialsApi.proposeCredential. Will send a proposal.
  */
 export interface ProposeCredentialOptions<
   CFs extends CredentialFormat[] = CredentialFormat[],
@@ -53,7 +53,7 @@ export interface ProposeCredentialOptions<
 }
 
 /**
- * Interface for CredentialsModule.acceptProposal. Will send an offer
+ * Interface for CredentialsApi.acceptProposal. Will send an offer
  *
  * credentialFormats is optional because this is an accept method
  */
@@ -63,7 +63,7 @@ export interface AcceptProposalOptions<CFs extends CredentialFormat[] = Credenti
 }
 
 /**
- * Interface for CredentialsModule.negotiateProposal. Will send an offer
+ * Interface for CredentialsApi.negotiateProposal. Will send an offer
  */
 export interface NegotiateProposalOptions<CFs extends CredentialFormat[] = CredentialFormat[]> extends BaseOptions {
   credentialRecordId: string
@@ -71,7 +71,7 @@ export interface NegotiateProposalOptions<CFs extends CredentialFormat[] = Crede
 }
 
 /**
- * Interface for CredentialsModule.createOffer. Will create an out of band offer
+ * Interface for CredentialsApi.createOffer. Will create an out of band offer
  */
 export interface CreateOfferOptions<
   CFs extends CredentialFormat[] = CredentialFormat[],
@@ -82,7 +82,7 @@ export interface CreateOfferOptions<
 }
 
 /**
- * Interface for CredentialsModule.offerCredentials. Extends CreateOfferOptions, will send an offer
+ * Interface for CredentialsApi.offerCredentials. Extends CreateOfferOptions, will send an offer
  */
 export interface OfferCredentialOptions<
   CFs extends CredentialFormat[] = CredentialFormat[],
@@ -93,7 +93,7 @@ export interface OfferCredentialOptions<
 }
 
 /**
- * Interface for CredentialsModule.acceptOffer. Will send a request
+ * Interface for CredentialsApi.acceptOffer. Will send a request
  *
  * credentialFormats is optional because this is an accept method
  */
@@ -103,7 +103,7 @@ export interface AcceptOfferOptions<CFs extends CredentialFormat[] = CredentialF
 }
 
 /**
- * Interface for CredentialsModule.negotiateOffer. Will send a proposal.
+ * Interface for CredentialsApi.negotiateOffer. Will send a proposal.
  */
 export interface NegotiateOfferOptions<CFs extends CredentialFormat[] = CredentialFormat[]> extends BaseOptions {
   credentialRecordId: string
@@ -111,7 +111,7 @@ export interface NegotiateOfferOptions<CFs extends CredentialFormat[] = Credenti
 }
 
 /**
- * Interface for CredentialsModule.acceptRequest. Will send a credential
+ * Interface for CredentialsApi.acceptRequest. Will send a credential
  *
  * credentialFormats is optional because this is an accept method
  */
@@ -123,14 +123,14 @@ export interface AcceptRequestOptions<CFs extends CredentialFormat[] = Credentia
 }
 
 /**
- * Interface for CredentialsModule.acceptCredential. Will send an ack message
+ * Interface for CredentialsApi.acceptCredential. Will send an ack message
  */
 export interface AcceptCredentialOptions {
   credentialRecordId: string
 }
 
 /**
- * Interface for CredentialsModule.sendProblemReport. Will send a problem-report message
+ * Interface for CredentialsApi.sendProblemReport. Will send a problem-report message
  */
 export interface SendProblemReportOptions {
   credentialRecordId: string

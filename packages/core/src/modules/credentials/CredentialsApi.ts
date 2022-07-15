@@ -17,7 +17,7 @@ import type {
   ProposeCredentialOptions,
   SendProblemReportOptions,
   ServiceMap,
-} from './CredentialsModuleOptions'
+} from './CredentialsApiOptions'
 import type { CredentialFormat } from './formats'
 import type { IndyCredentialFormat } from './formats/indy/IndyCredentialFormat'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
@@ -30,12 +30,13 @@ import { InjectionSymbols } from '../../constants'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
-import { inject, injectable, module } from '../../plugins'
+import { inject, injectable } from '../../plugins'
 import { DidCommMessageRole } from '../../storage'
 import { DidCommMessageRepository } from '../../storage/didcomm/DidCommMessageRepository'
 import { ConnectionService } from '../connections/services'
 import { RoutingService } from '../routing/services/RoutingService'
 
+import { CredentialsModuleConfig } from './CredentialsModuleConfig'
 import { CredentialState } from './models/CredentialState'
 import { RevocationNotificationService } from './protocol/revocation-notification/services'
 import { V1CredentialService } from './protocol/v1/V1CredentialService'
@@ -90,11 +91,16 @@ export class CredentialsApi<
   CSs extends CredentialService<CFs>[] = [V1CredentialService, V2CredentialService<CFs>]
 > implements CredentialsApi<CFs, CSs>
 {
+  /**
+   * Configuration for the connections module
+   */
+  public readonly config: CredentialsModuleConfig
+
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private credentialRepository: CredentialRepository
   private agentContext: AgentContext
-  private didCommMessageRepo: DidCommMessageRepository
+  private didCommMessageRepository: DidCommMessageRepository
   private routingService: RoutingService
   private logger: Logger
   private serviceMap: ServiceMap<CFs, CSs>
@@ -111,15 +117,17 @@ export class CredentialsApi<
     v2Service: V2CredentialService<CFs>,
     // only injected so the handlers will be registered
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _revocationNotificationService: RevocationNotificationService
+    _revocationNotificationService: RevocationNotificationService,
+    config: CredentialsModuleConfig
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.credentialRepository = credentialRepository
     this.routingService = mediationRecipientService
     this.agentContext = agentContext
-    this.didCommMessageRepo = didCommMessageRepository
+    this.didCommMessageRepository = didCommMessageRepository
     this.logger = logger
+    this.config = config
 
     // Dynamically build service map. This will be extracted once services are registered dynamically
     this.serviceMap = [v1Service, v2Service].reduce(
@@ -322,7 +330,7 @@ export class CredentialsApi<
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
-      await this.didCommMessageRepo.saveOrUpdateAgentMessage(this.agentContext, {
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(this.agentContext, {
         agentMessage: message,
         role: DidCommMessageRole.Sender,
         associatedRecordId: credentialRecord.id,
@@ -444,7 +452,7 @@ export class CredentialsApi<
       const ourService = offerMessage.service
 
       message.service = ourService
-      await this.didCommMessageRepo.saveOrUpdateAgentMessage(this.agentContext, {
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(this.agentContext, {
         agentMessage: message,
         role: DidCommMessageRole.Sender,
         associatedRecordId: credentialRecord.id,

@@ -9,9 +9,11 @@ import {
   injectable,
   InjectionSymbols,
   Logger,
-  WalletModule,
+  WalletApi,
 } from '@aries-framework/core'
 import { Mutex, withTimeout } from 'async-mutex'
+
+import { TenantsModuleConfig } from '../TenantsModuleConfig'
 
 import { TenantSessionMutex } from './TenantSessionMutex'
 
@@ -32,14 +34,24 @@ export class TenantSessionCoordinator {
   private logger: Logger
   private tenantAgentContextMapping: TenantAgentContextMapping = {}
   private sessionMutex: TenantSessionMutex
+  private tenantsModuleConfig: TenantsModuleConfig
 
-  public constructor(rootAgentContext: AgentContext, @inject(InjectionSymbols.Logger) logger: Logger) {
+  public constructor(
+    rootAgentContext: AgentContext,
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    tenantsModuleConfig: TenantsModuleConfig
+  ) {
     this.rootAgentContext = rootAgentContext
     this.logger = logger
+    this.tenantsModuleConfig = tenantsModuleConfig
 
     // TODO: we should make the timeout and the session limit configurable, but until we have the modularization in place with
     // module specific config, it's not easy to do so. Keeping it hardcoded for now
-    this.sessionMutex = new TenantSessionMutex(this.logger, 10000, 1000)
+    this.sessionMutex = new TenantSessionMutex(
+      this.logger,
+      this.tenantsModuleConfig.sessionLimit,
+      this.tenantsModuleConfig.sessionAcquireTimeout
+    )
   }
 
   /**
@@ -146,11 +158,10 @@ export class TenantSessionCoordinator {
       sessionCount: 0,
       mutex: withTimeout(
         new Mutex(),
-        // TODO: we should make the timeout configurable.
         // NOTE: It can take a while to create an indy wallet. We're using RAW key derivation which should
         // be fast enough to not cause a problem. This wil also only be problem when the wallet is being created
         // for the first time or being acquired while wallet initialization is in progress.
-        1000,
+        this.tenantsModuleConfig.sessionAcquireTimeout,
         new AriesFrameworkError(
           `Error acquiring lock for tenant ${tenantId}. Wallet initialization or shutdown took too long.`
         )
@@ -179,11 +190,11 @@ export class TenantSessionCoordinator {
     tenantDependencyManager.registerInstance(AgentContext, agentContext)
     tenantDependencyManager.registerInstance(AgentConfig, tenantConfig)
 
-    // NOTE: we're using the wallet module here because that correctly handle creating if it doesn't exist yet
+    // NOTE: we're using the wallet api here because that correctly handle creating if it doesn't exist yet
     // and will also write the storage version to the storage, which is needed by the update assistant. We either
     // need to move this out of the module, or just keep using the module here.
-    const walletModule = agentContext.dependencyManager.resolve(WalletModule)
-    await walletModule.initialize(tenantRecord.config.walletConfig)
+    const walletApi = agentContext.dependencyManager.resolve(WalletApi)
+    await walletApi.initialize(tenantRecord.config.walletConfig)
 
     return agentContext
   }
