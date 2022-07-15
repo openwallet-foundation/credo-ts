@@ -11,15 +11,14 @@ import { DidRepository } from '../../../repository/DidRepository'
 import { PeerDidRegistrar } from '../PeerDidRegistrar'
 import { PeerDidNumAlgo } from '../didPeer'
 
+import didPeer0z6MksLeFixture from './__fixtures__/didPeer0z6MksLe.json'
+
 jest.mock('../../../repository/DidRepository')
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
-const WalletMock = jest.fn(() => ({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  createKey: (_) => Promise.resolve(Key.fromFingerprint('z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU')),
-})) as jest.Mock<Wallet>
-
-const walletMock = new WalletMock()
+const walletMock = {
+  createKey: jest.fn(() => Key.fromFingerprint('z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU')),
+} as unknown as Wallet
 const agentContext = getAgentContext({ wallet: walletMock })
 
 describe('DidRegistrar', () => {
@@ -53,45 +52,7 @@ describe('DidRegistrar', () => {
           didState: {
             state: 'finished',
             did: 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-            didDocument: {
-              '@context': [
-                'https://w3id.org/did/v1',
-                'https://w3id.org/security/suites/ed25519-2018/v1',
-                'https://w3id.org/security/suites/x25519-2019/v1',
-              ],
-              alsoKnownAs: undefined,
-              controller: undefined,
-              verificationMethod: [
-                {
-                  id: 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-                  type: 'Ed25519VerificationKey2018',
-                  controller: 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-                  publicKeyBase58: 'DtPcLpky6Yi6zPecfW8VZH3xNoDkvQfiGWp8u5n9nAj6',
-                },
-              ],
-              service: undefined,
-              authentication: [
-                'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-              ],
-              assertionMethod: [
-                'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-              ],
-              keyAgreement: [
-                {
-                  id: 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz',
-                  type: 'X25519KeyAgreementKey2019',
-                  controller: 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-                  publicKeyBase58: '7H8ScGrunfcGBwMhhRakDMYguLAWiNWhQ2maYH84J8fE',
-                },
-              ],
-              capabilityInvocation: [
-                'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-              ],
-              capabilityDelegation: [
-                'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-              ],
-              id: 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-            },
+            didDocument: didPeer0z6MksLeFixture,
             secret: {
               seed: '96213c3d7fc8d4d6754c712fd969598e',
             },
@@ -156,13 +117,13 @@ describe('DidRegistrar', () => {
         })
 
         expect(didRepositoryMock.save).toHaveBeenCalledTimes(1)
-        const [didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
+        const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
         expect(didRecord).toMatchObject({
           id: did,
           role: DidDocumentRole.Created,
           _tags: {
-            recipientKeys: [],
+            recipientKeyFingerprints: [],
           },
           didDocument: undefined,
         })
@@ -250,15 +211,14 @@ describe('DidRegistrar', () => {
         })
 
         expect(didRepositoryMock.save).toHaveBeenCalledTimes(1)
-        const [didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
+        const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
         expect(didRecord).toMatchObject({
           id: did,
-          // FIXME: this should actually be the stored variant, not the variant with the id defined
-          didDocument: { ...didDocument.toJSON(), id: did },
+          didDocument,
           role: DidDocumentRole.Created,
           _tags: {
-            recipientKeys: didDocument.recipientKeys,
+            recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
           },
         })
       })
@@ -270,8 +230,8 @@ describe('DidRegistrar', () => {
         key,
         // controller in method 1 did should be #id
         controller: '#id',
-        // Placeholder, will be defined when generating the did document from the did
-        id: '',
+        // Use relative id for peer dids
+        id: '#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16',
       })
 
       const didDocument = new DidDocumentBuilder('')
@@ -301,29 +261,29 @@ describe('DidRegistrar', () => {
           didRegistrationMetadata: {},
           didState: {
             state: 'finished',
-            did: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0',
+            did: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiM0MWZiMmVjNy0xZjhiLTQyYmYtOTFhMi00ZWY5MDkyZGRjMTYiXSwiYSI6WyJkaWRjb21tL2FpcDI7ZW52PXJmYzE5Il19',
             didDocument: {
               '@context': ['https://w3id.org/did/v1'],
-              id: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0',
+              id: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiM0MWZiMmVjNy0xZjhiLTQyYmYtOTFhMi00ZWY5MDkyZGRjMTYiXSwiYSI6WyJkaWRjb21tL2FpcDI7ZW52PXJmYzE5Il19',
               service: [
                 {
                   serviceEndpoint: 'https://example.com',
                   type: 'did-communication',
                   priority: 0,
-                  recipientKeys: [''],
+                  recipientKeys: ['#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16'],
                   accept: ['didcomm/aip2;env=rfc19'],
-                  id: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0#did-communication-0',
+                  id: '#service-0',
                 },
               ],
-              authentication: [
+              verificationMethod: [
                 {
-                  id: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0#6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc',
+                  id: '#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16',
                   type: 'Ed25519VerificationKey2018',
-                  controller:
-                    'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0',
+                  controller: '#id',
                   publicKeyBase58: '7H8ScGrunfcGBwMhhRakDMYguLAWiNWhQ2maYH84J8fE',
                 },
               ],
+              authentication: ['#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16'],
             },
             secret: {},
           },
@@ -331,9 +291,8 @@ describe('DidRegistrar', () => {
       })
 
       it('should store the did without the did document', async () => {
-        const seed = '96213c3d7fc8d4d6754c712fd969598e'
         const did =
-          'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0'
+          'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiM0MWZiMmVjNy0xZjhiLTQyYmYtOTFhMi00ZWY5MDkyZGRjMTYiXSwiYSI6WyJkaWRjb21tL2FpcDI7ZW52PXJmYzE5Il19'
 
         await peerDidRegistrar.create(agentContext, {
           method: 'peer',
@@ -344,13 +303,13 @@ describe('DidRegistrar', () => {
         })
 
         expect(didRepositoryMock.save).toHaveBeenCalledTimes(1)
-        const [didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
+        const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
         expect(didRecord).toMatchObject({
           id: did,
           role: DidDocumentRole.Created,
           _tags: {
-            recipientKeys: didDocument.recipientKeys,
+            recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
           },
           didDocument: undefined,
         })
@@ -358,13 +317,16 @@ describe('DidRegistrar', () => {
     })
 
     it('should return an error state if an unsupported numAlgo is provided', async () => {
-      // @ts-expect-error - this is not a valid numAlgo
-      const result = await peerDidRegistrar.create({
-        method: 'peer',
-        options: {
-          numAlgo: 4,
-        },
-      })
+      const result = await peerDidRegistrar.create(
+        agentContext,
+        // @ts-expect-error - this is not a valid numAlgo
+        {
+          method: 'peer',
+          options: {
+            numAlgo: 4,
+          },
+        }
+      )
 
       expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocumentMetadata: {},
@@ -375,6 +337,7 @@ describe('DidRegistrar', () => {
         },
       })
     })
+
     it('should return an error state when calling update', async () => {
       const result = await peerDidRegistrar.update()
 

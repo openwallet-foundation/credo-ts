@@ -19,12 +19,12 @@ import { DidResolverService } from './services/DidResolverService'
 
 // TODO:
 //  - finish registrars for did:key, did:peer, did:sov.
-//  - Add option to store a did record without publishing it (could be useful when initializing an already registered did. would need the private key material)
-//  - Add option to publish a did without creating private keys. Just publish the did document as passed in
-//  - Add option to publish a did document without storing it or creating keys (useful when writing dids to the ledger for another agent)
+//  - defer: Add option to store a did record without publishing it (could be useful when initializing an already registered did. would need the private key material)
+//  - defer: Add option to publish a did without creating private keys. Just publish the did document as passed in
+//  - defer: Add option to publish a did document without storing it or creating keys (useful when writing dids to the ledger for another agent)
 //  - Add repository methods to the module
 //  - Determine how the dids module should be used in combination with did exchange for public dids (no difference between public and peer dids anymore)
-//  - Determine how dids should be created without first needing to create the keys (some sort of placeholder did document where the keys are generated in the registrar)
+//  - defer? Determine how dids should be created without first needing to create the keys (some sort of placeholder did document where the keys are generated in the registrar)
 //  - Add logging to resolvers / registrars
 @module()
 @injectable()

@@ -116,7 +116,7 @@ export interface KeyDidCreateOptions extends DidCreateOptions {
   did?: never
   didDocument?: never
   options: {
-    keyType: KeyType.Ed25519
+    keyType: KeyType
   }
   secret?: {
     seed?: string

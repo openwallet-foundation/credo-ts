@@ -8,15 +8,15 @@ import { DidDocumentRole } from '../../../domain/DidDocumentRole'
 import { DidRepository } from '../../../repository/DidRepository'
 import { KeyDidRegistrar } from '../KeyDidRegistrar'
 
+import didKeyz6MksLeFixture from './__fixtures__/didKeyz6MksLe.json'
+
 jest.mock('../../../repository/DidRepository')
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
-const WalletMock = jest.fn(() => ({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  createKey: (_) => Promise.resolve(Key.fromFingerprint('z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU')),
-})) as jest.Mock<Wallet>
+const walletMock = {
+  createKey: jest.fn(() => Key.fromFingerprint('z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU')),
+} as unknown as Wallet
 
-const walletMock = new WalletMock()
 const agentContext = getAgentContext({
   wallet: walletMock,
 })
@@ -31,7 +31,7 @@ describe('DidRegistrar', () => {
       keyDidRegistrar = new KeyDidRegistrar(didRepositoryMock)
     })
 
-    it('should correctly create a did:key document using Ed25519 keytype', async () => {
+    it('should correctly create a did:key document using Ed25519 key type', async () => {
       const seed = '96213c3d7fc8d4d6754c712fd969598e'
 
       const result = await keyDidRegistrar.create(agentContext, {
@@ -50,50 +50,14 @@ describe('DidRegistrar', () => {
         didState: {
           state: 'finished',
           did: 'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-          didDocument: {
-            '@context': [
-              'https://w3id.org/did/v1',
-              'https://w3id.org/security/suites/ed25519-2018/v1',
-              'https://w3id.org/security/suites/x25519-2019/v1',
-            ],
-            alsoKnownAs: undefined,
-            controller: undefined,
-            verificationMethod: [
-              {
-                id: 'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-                type: 'Ed25519VerificationKey2018',
-                controller: 'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-                publicKeyBase58: 'DtPcLpky6Yi6zPecfW8VZH3xNoDkvQfiGWp8u5n9nAj6',
-              },
-            ],
-            service: undefined,
-            authentication: [
-              'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-            ],
-            assertionMethod: [
-              'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-            ],
-            keyAgreement: [
-              {
-                id: 'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz',
-                type: 'X25519KeyAgreementKey2019',
-                controller: 'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-                publicKeyBase58: '7H8ScGrunfcGBwMhhRakDMYguLAWiNWhQ2maYH84J8fE',
-              },
-            ],
-            capabilityInvocation: [
-              'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-            ],
-            capabilityDelegation: [
-              'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-            ],
-            id: 'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
-          },
+          didDocument: didKeyz6MksLeFixture,
           secret: {
             seed: '96213c3d7fc8d4d6754c712fd969598e',
           },
         },
       })
+
+      expect(walletMock.createKey).toHaveBeenCalledWith({ keyType: KeyType.Ed25519, seed })
     })
 
     it('should return an error state if no key type is provided', async () => {
@@ -151,7 +115,7 @@ describe('DidRegistrar', () => {
       })
 
       expect(didRepositoryMock.save).toHaveBeenCalledTimes(1)
-      const [didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
+      const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
       expect(didRecord).toMatchObject({
         id: did,
