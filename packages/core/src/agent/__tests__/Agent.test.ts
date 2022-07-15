@@ -1,5 +1,3 @@
-import type { Wallet } from '../../wallet/Wallet'
-
 import { getBaseConfig } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
@@ -8,7 +6,7 @@ import { ConnectionsModule } from '../../modules/connections/ConnectionsModule'
 import { ConnectionRepository } from '../../modules/connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../modules/connections/services/ConnectionService'
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
-import { CredentialRepository, CredentialService } from '../../modules/credentials'
+import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
 import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerModule } from '../../modules/ledger/LedgerModule'
@@ -23,7 +21,6 @@ import {
 } from '../../modules/routing'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../../storage/IndyStorageService'
-import { IndyWallet } from '../../wallet/IndyWallet'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
@@ -38,7 +35,7 @@ describe('Agent', () => {
     let agent: Agent
 
     afterEach(async () => {
-      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      const wallet = agent.context.wallet
 
       if (wallet.isInitialized) {
         await wallet.delete()
@@ -59,7 +56,7 @@ describe('Agent', () => {
       expect.assertions(4)
 
       agent = new Agent(config, dependencies)
-      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      const wallet = agent.context.wallet
 
       expect(agent.isInitialized).toBe(false)
       expect(wallet.isInitialized).toBe(false)
@@ -110,7 +107,7 @@ describe('Agent', () => {
   describe('Dependency Injection', () => {
     it('should be able to resolve registered instances', () => {
       const agent = new Agent(config, dependencies)
-      const container = agent.injectionContainer
+      const container = agent.dependencyManager
 
       // Modules
       expect(container.resolve(ConnectionsModule)).toBeInstanceOf(ConnectionsModule)
@@ -123,7 +120,6 @@ describe('Agent', () => {
       expect(container.resolve(ProofRepository)).toBeInstanceOf(ProofRepository)
 
       expect(container.resolve(CredentialsModule)).toBeInstanceOf(CredentialsModule)
-      expect(container.resolve(CredentialService)).toBeInstanceOf(CredentialService)
       expect(container.resolve(CredentialRepository)).toBeInstanceOf(CredentialRepository)
 
       expect(container.resolve(BasicMessagesModule)).toBeInstanceOf(BasicMessagesModule)
@@ -140,7 +136,6 @@ describe('Agent', () => {
       expect(container.resolve(IndyLedgerService)).toBeInstanceOf(IndyLedgerService)
 
       // Symbols, interface based
-      expect(container.resolve(InjectionSymbols.Wallet)).toBeInstanceOf(IndyWallet)
       expect(container.resolve(InjectionSymbols.Logger)).toBe(config.logger)
       expect(container.resolve(InjectionSymbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
       expect(container.resolve(InjectionSymbols.StorageService)).toBeInstanceOf(IndyStorageService)
@@ -154,7 +149,7 @@ describe('Agent', () => {
 
     it('should return the same instance for consequent resolves', () => {
       const agent = new Agent(config, dependencies)
-      const container = agent.injectionContainer
+      const container = agent.dependencyManager
 
       // Modules
       expect(container.resolve(ConnectionsModule)).toBe(container.resolve(ConnectionsModule))
@@ -167,7 +162,6 @@ describe('Agent', () => {
       expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
 
       expect(container.resolve(CredentialsModule)).toBe(container.resolve(CredentialsModule))
-      expect(container.resolve(CredentialService)).toBe(container.resolve(CredentialService))
       expect(container.resolve(CredentialRepository)).toBe(container.resolve(CredentialRepository))
 
       expect(container.resolve(BasicMessagesModule)).toBe(container.resolve(BasicMessagesModule))
@@ -184,7 +178,6 @@ describe('Agent', () => {
       expect(container.resolve(IndyLedgerService)).toBe(container.resolve(IndyLedgerService))
 
       // Symbols, interface based
-      expect(container.resolve(InjectionSymbols.Wallet)).toBe(container.resolve(InjectionSymbols.Wallet))
       expect(container.resolve(InjectionSymbols.Logger)).toBe(container.resolve(InjectionSymbols.Logger))
       expect(container.resolve(InjectionSymbols.MessageRepository)).toBe(
         container.resolve(InjectionSymbols.MessageRepository)

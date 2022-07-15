@@ -1,33 +1,32 @@
+import type { AgentContext } from '../agent'
 import type { Buffer } from '../utils'
 import type { Jws, JwsGeneralFormat } from './JwsTypes'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
-
-import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
-import { JsonEncoder, BufferEncoder } from '../utils'
-import { Wallet } from '../wallet'
+import { injectable } from '../plugins'
+import { JsonEncoder, TypedArrayEncoder } from '../utils'
 import { WalletError } from '../wallet/error'
+
+import { Key } from './Key'
+import { KeyType } from './KeyType'
 
 // TODO: support more key types, more generic jws format
 const JWS_KEY_TYPE = 'OKP'
 const JWS_CURVE = 'Ed25519'
 const JWS_ALG = 'EdDSA'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class JwsService {
-  private wallet: Wallet
-
-  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet) {
-    this.wallet = wallet
-  }
-
-  public async createJws({ payload, verkey, header }: CreateJwsOptions): Promise<JwsGeneralFormat> {
-    const base64Payload = BufferEncoder.toBase64URL(payload)
+  public async createJws(
+    agentContext: AgentContext,
+    { payload, verkey, header }: CreateJwsOptions
+  ): Promise<JwsGeneralFormat> {
+    const base64Payload = TypedArrayEncoder.toBase64URL(payload)
     const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(verkey))
+    const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
 
-    const signature = BufferEncoder.toBase64URL(
-      await this.wallet.sign(BufferEncoder.fromString(`${base64Protected}.${base64Payload}`), verkey)
+    const signature = TypedArrayEncoder.toBase64URL(
+      await agentContext.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), key })
     )
 
     return {
@@ -38,10 +37,10 @@ export class JwsService {
   }
 
   /**
-   * Verify a a JWS
+   * Verify a JWS
    */
-  public async verifyJws({ jws, payload }: VerifyJwsOptions): Promise<VerifyJwsResult> {
-    const base64Payload = BufferEncoder.toBase64URL(payload)
+  public async verifyJws(agentContext: AgentContext, { jws, payload }: VerifyJwsOptions): Promise<VerifyJwsResult> {
+    const base64Payload = TypedArrayEncoder.toBase64URL(payload)
     const signatures = 'signatures' in jws ? jws.signatures : [jws]
 
     if (signatures.length === 0) {
@@ -60,14 +59,15 @@ export class JwsService {
         throw new AriesFrameworkError('Invalid protected header')
       }
 
-      const data = BufferEncoder.fromString(`${jws.protected}.${base64Payload}`)
-      const signature = BufferEncoder.fromBase64(jws.signature)
+      const data = TypedArrayEncoder.fromString(`${jws.protected}.${base64Payload}`)
+      const signature = TypedArrayEncoder.fromBase64(jws.signature)
 
-      const verkey = BufferEncoder.toBase58(BufferEncoder.fromBase64(protectedJson?.jwk?.x))
+      const verkey = TypedArrayEncoder.toBase58(TypedArrayEncoder.fromBase64(protectedJson?.jwk?.x))
+      const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
       signerVerkeys.push(verkey)
 
       try {
-        const isValid = await this.wallet.verify(verkey, data, signature)
+        const isValid = await agentContext.wallet.verify({ key, data, signature })
 
         if (!isValid) {
           return {
@@ -102,7 +102,7 @@ export class JwsService {
       jwk: {
         kty: 'OKP',
         crv: 'Ed25519',
-        x: BufferEncoder.toBase64URL(BufferEncoder.fromBase58(verkey)),
+        x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(verkey)),
       },
     }
   }

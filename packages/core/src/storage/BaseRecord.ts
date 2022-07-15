@@ -1,11 +1,11 @@
-import { Exclude, Type } from 'class-transformer'
+import { Exclude } from 'class-transformer'
 
 import { JsonTransformer } from '../utils/JsonTransformer'
-import { MetadataTransformer } from '../utils/transformers'
+import { DateTransformer, MetadataTransformer } from '../utils/transformers'
 
 import { Metadata } from './Metadata'
 
-export type TagValue = string | boolean | undefined | Array<string>
+export type TagValue = string | boolean | undefined | Array<string> | null
 export type TagsBase = {
   [key: string]: TagValue
   [key: number]: never
@@ -18,16 +18,16 @@ export type RecordTags<Record extends BaseRecord> = ReturnType<Record['getTags']
 export abstract class BaseRecord<
   DefaultTags extends TagsBase = TagsBase,
   CustomTags extends TagsBase = TagsBase,
-  MetadataValues = undefined
+  MetadataValues = Record<string, unknown>
 > {
   protected _tags: CustomTags = {} as CustomTags
 
   public id!: string
 
-  @Type(() => Date)
+  @DateTransformer()
   public createdAt!: Date
 
-  @Type(() => Date)
+  @DateTransformer()
   public updatedAt?: Date
 
   @Exclude()

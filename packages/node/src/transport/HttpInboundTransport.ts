@@ -2,7 +2,7 @@ import type { InboundTransport, Agent, TransportSession, EncryptedMessage } from
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
-import { DidCommMimeType, AriesFrameworkError, AgentConfig, TransportService, utils } from '@aries-framework/core'
+import { DidCommMimeType, AriesFrameworkError, TransportService, utils, MessageReceiver } from '@aries-framework/core'
 import express, { text } from 'express'
 
 export class HttpInboundTransport implements InboundTransport {
@@ -29,10 +29,10 @@ export class HttpInboundTransport implements InboundTransport {
   }
 
   public async start(agent: Agent) {
-    const transportService = agent.injectionContainer.resolve(TransportService)
-    const config = agent.injectionContainer.resolve(AgentConfig)
+    const transportService = agent.dependencyManager.resolve(TransportService)
+    const messageReceiver = agent.dependencyManager.resolve(MessageReceiver)
 
-    config.logger.debug(`Starting HTTP inbound transport`, {
+    agent.config.logger.debug(`Starting HTTP inbound transport`, {
       port: this.port,
     })
 
@@ -41,15 +41,20 @@ export class HttpInboundTransport implements InboundTransport {
       try {
         const message = req.body
         const encryptedMessage = JSON.parse(message)
-        await agent.receiveMessage(encryptedMessage, session)
+        await messageReceiver.receiveMessage(encryptedMessage, {
+          session,
+        })
 
         // If agent did not use session when processing message we need to send response here.
         if (!res.headersSent) {
           res.status(200).end()
         }
       } catch (error) {
-        config.logger.error(`Error processing inbound message: ${error.message}`, error)
-        res.status(500).send('Error processing message')
+        agent.config.logger.error(`Error processing inbound message: ${error.message}`, error)
+
+        if (!res.headersSent) {
+          res.status(500).send('Error processing message')
+        }
       } finally {
         transportService.removeSession(session)
       }
@@ -73,6 +78,12 @@ export class HttpTransportSession implements TransportSession {
     this.id = id
     this.req = req
     this.res = res
+  }
+
+  public async close(): Promise<void> {
+    if (!this.res.headersSent) {
+      this.res.status(200).end()
+    }
   }
 
   public async send(encryptedMessage: EncryptedMessage): Promise<void> {

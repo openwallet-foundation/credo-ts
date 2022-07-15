@@ -1,65 +1,81 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
+import type { AgentContext } from '../../agent'
+import type { AgentMessage, ConstructableAgentMessage } from '../../agent/AgentMessage'
 import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
-import { inject, scoped, Lifecycle } from 'tsyringe'
-
+import { EventEmitter } from '../../agent/EventEmitter'
 import { InjectionSymbols } from '../../constants'
+import { inject, injectable } from '../../plugins'
+import { parseMessageType } from '../../utils/messageType'
 import { Repository } from '../Repository'
 import { StorageService } from '../StorageService'
 
 import { DidCommMessageRecord } from './DidCommMessageRecord'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
-  public constructor(@inject(InjectionSymbols.StorageService) storageService: StorageService<DidCommMessageRecord>) {
-    super(DidCommMessageRecord, storageService)
+  public constructor(
+    @inject(InjectionSymbols.StorageService) storageService: StorageService<DidCommMessageRecord>,
+    eventEmitter: EventEmitter
+  ) {
+    super(DidCommMessageRecord, storageService, eventEmitter)
   }
 
-  public async saveAgentMessage({ role, agentMessage, associatedRecordId }: SaveAgentMessageOptions) {
+  public async saveAgentMessage(
+    agentContext: AgentContext,
+    { role, agentMessage, associatedRecordId }: SaveAgentMessageOptions
+  ) {
     const didCommMessageRecord = new DidCommMessageRecord({
       message: agentMessage.toJSON() as JsonObject,
       role,
       associatedRecordId,
     })
 
-    await this.save(didCommMessageRecord)
+    await this.save(agentContext, didCommMessageRecord)
   }
 
-  public async saveOrUpdateAgentMessage(options: SaveAgentMessageOptions) {
-    const record = await this.findSingleByQuery({
+  public async saveOrUpdateAgentMessage(agentContext: AgentContext, options: SaveAgentMessageOptions) {
+    const { messageName, protocolName, protocolMajorVersion } = parseMessageType(options.agentMessage.type)
+
+    const record = await this.findSingleByQuery(agentContext, {
       associatedRecordId: options.associatedRecordId,
-      messageType: options.agentMessage.type,
+      messageName: messageName,
+      protocolName: protocolName,
+      protocolMajorVersion: String(protocolMajorVersion),
     })
 
     if (record) {
       record.message = options.agentMessage.toJSON() as JsonObject
       record.role = options.role
-      await this.update(record)
+      await this.update(agentContext, record)
       return
     }
 
-    await this.saveAgentMessage(options)
+    await this.saveAgentMessage(agentContext, options)
   }
 
-  public async getAgentMessage<MessageClass extends typeof AgentMessage = typeof AgentMessage>({
-    associatedRecordId,
-    messageClass,
-  }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass>> {
-    const record = await this.getSingleByQuery({
+  public async getAgentMessage<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>(
+    agentContext: AgentContext,
+    { associatedRecordId, messageClass }: GetAgentMessageOptions<MessageClass>
+  ): Promise<InstanceType<MessageClass>> {
+    const record = await this.getSingleByQuery(agentContext, {
       associatedRecordId,
-      messageType: messageClass.type,
+      messageName: messageClass.type.messageName,
+      protocolName: messageClass.type.protocolName,
+      protocolMajorVersion: String(messageClass.type.protocolMajorVersion),
     })
 
     return record.getMessageInstance(messageClass)
   }
-  public async findAgentMessage<MessageClass extends typeof AgentMessage = typeof AgentMessage>({
-    associatedRecordId,
-    messageClass,
-  }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass> | null> {
-    const record = await this.findSingleByQuery({
+  public async findAgentMessage<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>(
+    agentContext: AgentContext,
+    { associatedRecordId, messageClass }: GetAgentMessageOptions<MessageClass>
+  ): Promise<InstanceType<MessageClass> | null> {
+    const record = await this.findSingleByQuery(agentContext, {
       associatedRecordId,
-      messageType: messageClass.type,
+      messageName: messageClass.type.messageName,
+      protocolName: messageClass.type.protocolName,
+      protocolMajorVersion: String(messageClass.type.protocolMajorVersion),
     })
 
     return record?.getMessageInstance(messageClass) ?? null

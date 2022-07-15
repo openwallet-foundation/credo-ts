@@ -1,5 +1,7 @@
-import { BufferEncoder } from '../../../../utils'
+import { TypedArrayEncoder } from '../../../../utils'
 import { getFullVerkey } from '../../../../utils/did'
+import { SECURITY_X25519_CONTEXT_URL } from '../../../vc/constants'
+import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../../vc/signature-suites/ed25519/constants'
 import { DidDocumentBuilder } from '../../domain'
 import { convertPublicKeyToX25519 } from '../../domain/key-type/ed25519'
 
@@ -8,11 +10,13 @@ export function sovDidDocumentFromDid(fullDid: string, verkey: string) {
   const keyAgreementId = `${fullDid}#key-agreement-1`
 
   const publicKeyBase58 = getFullVerkey(fullDid, verkey)
-  const publicKeyX25519 = BufferEncoder.toBase58(convertPublicKeyToX25519(BufferEncoder.fromBase58(publicKeyBase58)))
+  const publicKeyX25519 = TypedArrayEncoder.toBase58(
+    convertPublicKeyToX25519(TypedArrayEncoder.fromBase58(publicKeyBase58))
+  )
 
   const builder = new DidDocumentBuilder(fullDid)
-    .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
-    .addContext('https://w3id.org/security/suites/x25519-2019/v1')
+    .addContext(ED25519_SUITE_CONTEXT_URL_2018)
+    .addContext(SECURITY_X25519_CONTEXT_URL)
     .addVerificationMethod({
       controller: fullDid,
       id: verificationMethodId,

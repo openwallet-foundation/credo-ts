@@ -1,6 +1,6 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { MediationRecipientService } from '../../routing'
+import type { Logger } from '../../../logger'
+import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../ProofResponseCoordinator'
 import type { ProofRecord } from '../repository'
 import type { ProofService } from '../services'
@@ -11,27 +11,27 @@ import { RequestPresentationMessage } from '../messages'
 
 export class RequestPresentationHandler implements Handler {
   private proofService: ProofService
-  private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
+  private logger: Logger
   public supportedMessages = [RequestPresentationMessage]
 
   public constructor(
     proofService: ProofService,
-    agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
-    mediationRecipientService: MediationRecipientService
+    routingService: RoutingService,
+    logger: Logger
   ) {
     this.proofService = proofService
-    this.agentConfig = agentConfig
     this.proofResponseCoordinator = proofResponseCoordinator
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
+    this.logger = logger
   }
 
   public async handle(messageContext: HandlerInboundMessage<RequestPresentationHandler>) {
     const proofRecord = await this.proofService.processRequest(messageContext)
 
-    if (this.proofResponseCoordinator.shouldAutoRespondToRequest(proofRecord)) {
+    if (this.proofResponseCoordinator.shouldAutoRespondToRequest(messageContext.agentContext, proofRecord)) {
       return await this.createPresentation(proofRecord, messageContext)
     }
   }
@@ -43,32 +43,40 @@ export class RequestPresentationHandler implements Handler {
     const indyProofRequest = record.requestMessage?.indyProofRequest
     const presentationProposal = record.proposalMessage?.presentationProposal
 
-    this.agentConfig.logger.info(
-      `Automatically sending presentation with autoAccept on ${this.agentConfig.autoAcceptProofs}`
+    this.logger.info(
+      `Automatically sending presentation with autoAccept on ${messageContext.agentContext.config.autoAcceptProofs}`
     )
 
     if (!indyProofRequest) {
-      this.agentConfig.logger.error('Proof request is undefined.')
+      this.logger.error('Proof request is undefined.')
       return
     }
 
-    const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(indyProofRequest, {
-      presentationProposal,
-    })
+    const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(
+      messageContext.agentContext,
+      indyProofRequest,
+      {
+        presentationProposal,
+      }
+    )
 
     const requestedCredentials = this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
 
-    const { message, proofRecord } = await this.proofService.createPresentation(record, requestedCredentials)
+    const { message, proofRecord } = await this.proofService.createPresentation(
+      messageContext.agentContext,
+      record,
+      requestedCredentials
+    )
 
     if (messageContext.connection) {
       return createOutboundMessage(messageContext.connection, message)
     } else if (proofRecord.requestMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.routingService.getRouting(messageContext.agentContext)
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
 
       const recipientService = proofRecord.requestMessage.service
@@ -76,15 +84,15 @@ export class RequestPresentationHandler implements Handler {
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
       proofRecord.presentationMessage = message
-      await this.proofService.update(proofRecord)
+      await this.proofService.update(messageContext.agentContext, proofRecord)
 
       return createOutboundServiceMessage({
         payload: message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
       })
     }
 
-    this.agentConfig.logger.error(`Could not automatically create presentation`)
+    this.logger.error(`Could not automatically create presentation`)
   }
 }

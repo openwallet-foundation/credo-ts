@@ -1,5 +1,5 @@
+import type { AgentContext } from '../../../../agent'
 import type { KeyType } from '../../../../crypto'
-import type { Wallet } from '../../../../wallet/Wallet'
 import type { DidDocument } from '../../domain'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidRepository } from '../../repository'
@@ -8,22 +8,24 @@ import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateR
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord } from '../../repository'
 
-import { DidPeer, PeerDidNumAlgo } from './DidPeer'
+import { PeerDidNumAlgo } from './didPeer'
+import { keyToNumAlgo0DidDocument } from './peerDidNumAlgo0'
+import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
+import { didDocumentToNumAlgo2Did } from './peerDidNumAlgo2'
 
 export class PeerDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['peer']
-  private wallet: Wallet
   private didRepository: DidRepository
 
-  public constructor(wallet: Wallet, didRepository: DidRepository) {
-    this.wallet = wallet
+  public constructor(didRepository: DidRepository) {
     this.didRepository = didRepository
   }
 
   public async create(
+    agentContext: AgentContext,
     options: PeerDidNumAlgo0CreateOptions | PeerDidNumAlgo1CreateOptions | PeerDidNumAlgo2CreateOptions
   ): Promise<DidCreateResult> {
-    let didPeer: DidPeer
+    let didDocument: DidDocument
 
     try {
       if (isPeerDidNumAlgo0CreateOptions(options)) {
@@ -52,17 +54,22 @@ export class PeerDidRegistrar implements DidRegistrar {
           }
         }
 
-        const key = await this.wallet.createKey({
+        const key = await agentContext.wallet.createKey({
           keyType,
           seed,
         })
 
-        didPeer = DidPeer.fromKey(key)
+        didDocument = keyToNumAlgo0DidDocument(key)
       } else if (isPeerDidNumAlgo1CreateOptions(options)) {
-        // FIXME: update all id references to the did (allow to retrieve both stored and resolved variant)
-        didPeer = DidPeer.fromDidDocument(options.didDocument, PeerDidNumAlgo.GenesisDoc)
+        const did = didDocumentJsonToNumAlgo1Did(options.didDocument.toJSON())
+        // FIXME: do not mutate input object
+        options.didDocument.id = did
+        didDocument = options.didDocument
       } else if (isPeerDidNumAlgo2CreateOptions(options)) {
-        didPeer = DidPeer.fromDidDocument(options.didDocument, PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
+        const did = didDocumentToNumAlgo2Did(options.didDocument)
+        // FIXME: do not mutate input object
+        options.didDocument.id = did
+        didDocument = options.didDocument
       } else {
         return {
           didDocumentMetadata: {},
@@ -76,24 +83,24 @@ export class PeerDidRegistrar implements DidRegistrar {
 
       // Save the did so we know we created it and can use it for didcomm
       const didRecord = new DidRecord({
-        id: didPeer.did,
+        id: didDocument.id,
         role: DidDocumentRole.Created,
-        didDocument: didPeer.numAlgo === PeerDidNumAlgo.GenesisDoc ? didPeer.didDocument : undefined,
+        didDocument: isPeerDidNumAlgo1CreateOptions(options) ? didDocument : undefined,
         tags: {
           // We need to save the recipientKeys, so we can find the associated did
           // of a key when we receive a message from another connection.
-          recipientKeys: didPeer.didDocument.recipientKeys,
+          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
         },
       })
-      await this.didRepository.save(didRecord)
+      await this.didRepository.save(agentContext, didRecord)
 
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
         didState: {
           state: 'finished',
-          did: didPeer.did,
-          didDocument: didPeer.didDocument,
+          did: didDocument.id,
+          didDocument,
           secret: {
             // FIXME: the uni-registrar creates the seed in the registrar method
             // if it doesn't exist so the seed can always be returned. Currently

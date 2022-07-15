@@ -1,16 +1,19 @@
-import { inject, scoped, Lifecycle } from 'tsyringe'
-
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
+import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
 
 import { MediatorRoutingRecord } from './MediatorRoutingRecord'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MediatorRoutingRepository extends Repository<MediatorRoutingRecord> {
   public readonly MEDIATOR_ROUTING_RECORD_ID = 'MEDIATOR_ROUTING_RECORD'
 
-  public constructor(@inject(InjectionSymbols.StorageService) storageService: StorageService<MediatorRoutingRecord>) {
-    super(MediatorRoutingRecord, storageService)
+  public constructor(
+    @inject(InjectionSymbols.StorageService) storageService: StorageService<MediatorRoutingRecord>,
+    eventEmitter: EventEmitter
+  ) {
+    super(MediatorRoutingRecord, storageService, eventEmitter)
   }
 }

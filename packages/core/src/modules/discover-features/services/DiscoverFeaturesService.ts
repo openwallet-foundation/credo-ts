@@ -1,9 +1,8 @@
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { Dispatcher } from '../../../agent/Dispatcher'
+import { injectable } from '../../../plugins'
 import { QueryMessage, DiscloseMessage } from '../messages'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DiscoverFeaturesService {
   private dispatcher: Dispatcher
 

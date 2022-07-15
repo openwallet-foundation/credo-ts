@@ -4,7 +4,6 @@ import { Transform, TransformationType } from 'class-transformer'
 import { isString, ValidateBy, buildMessage } from 'class-validator'
 import { DateTime } from 'luxon'
 
-import { CredentialMetadataKeys } from '../modules/credentials/repository/credentialMetadataTypes'
 import { Metadata } from '../storage/Metadata'
 
 import { JsonTransformer } from './JsonTransformer'
@@ -48,8 +47,6 @@ export function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
 
 /*
  * Decorator that transforms to and from a metadata instance.
- *
- * @todo remove the conversion at 0.1.0 release via a migration script
  */
 export function MetadataTransformer() {
   return Transform(({ value, type }) => {
@@ -58,21 +55,30 @@ export function MetadataTransformer() {
     }
 
     if (type === TransformationType.PLAIN_TO_CLASS) {
-      const { requestMetadata, schemaId, credentialDefinitionId, ...rest } = value
-      const metadata = new Metadata(rest)
-
-      if (requestMetadata) metadata.add(CredentialMetadataKeys.IndyRequest, { ...value.requestMetadata })
-
-      if (schemaId) metadata.add(CredentialMetadataKeys.IndyCredential, { schemaId: value.schemaId })
-
-      if (credentialDefinitionId)
-        metadata.add(CredentialMetadataKeys.IndyCredential, { credentialDefinitionId: value.credentialDefinitionId })
-
-      return metadata
+      return new Metadata(value)
     }
 
     if (type === TransformationType.CLASS_TO_CLASS) {
-      return value
+      return new Metadata({ ...value.data })
+    }
+  })
+}
+
+/**
+ * Decorator that transforms to and from a date instance.
+ */
+export function DateTransformer() {
+  return Transform(({ value, type }) => {
+    if (type === TransformationType.CLASS_TO_PLAIN) {
+      return value.toISOString()
+    }
+
+    if (type === TransformationType.PLAIN_TO_CLASS) {
+      return new Date(value)
+    }
+
+    if (type === TransformationType.CLASS_TO_CLASS) {
+      return new Date(value.getTime())
     }
   })
 }

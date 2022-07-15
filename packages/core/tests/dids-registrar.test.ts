@@ -1,16 +1,11 @@
 import type { KeyDidCreateOptions } from '../src/modules/dids/methods/key/KeyDidRegistrar'
-import type {
-  PeerDidNumAlgo0CreateOptions,
-  PeerDidNumAlgo1CreateOptions,
-  PeerDidNumAlgo2CreateOptions,
-} from '../src/modules/dids/methods/peer/PeerDidRegistrar'
+import type { PeerDidNumAlgo0CreateOptions } from '../src/modules/dids/methods/peer/PeerDidRegistrar'
 import type { SovDidCreateOptions } from '../src/modules/dids/methods/sov/SovDidRegistrar'
 import type { Wallet } from '@aries-framework/core'
 
 import { Agent } from '../src/agent/Agent'
 import { KeyType } from '../src/crypto'
-import { DidCommService, DidDocumentBuilder } from '../src/modules/dids'
-import { PeerDidNumAlgo } from '../src/modules/dids/methods/peer/DidPeer'
+import { PeerDidNumAlgo } from '../src/modules/dids/methods/peer/didPeer'
 
 import { getBaseConfig } from './helpers'
 

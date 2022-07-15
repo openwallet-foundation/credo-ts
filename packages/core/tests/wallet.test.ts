@@ -2,19 +2,14 @@ import { tmpdir } from 'os'
 import path from 'path'
 
 import { Agent } from '../src/agent/Agent'
+import { BasicMessageRepository, BasicMessageRecord, BasicMessageRole } from '../src/modules/basic-messages'
 import { KeyDerivationMethod } from '../src/types'
 import { uuid } from '../src/utils/uuid'
+import { WalletInvalidKeyError } from '../src/wallet/error'
+import { WalletDuplicateError } from '../src/wallet/error/WalletDuplicateError'
+import { WalletNotFoundError } from '../src/wallet/error/WalletNotFoundError'
 
 import { getBaseConfig } from './helpers'
-
-import {
-  BasicMessageRecord,
-  BasicMessageRepository,
-  BasicMessageRole,
-  WalletDuplicateError,
-  WalletInvalidKeyError,
-  WalletNotFoundError,
-} from '@aries-framework/core'
 
 const aliceConfig = getBaseConfig('wallet-tests-Alice')
 const bobConfig = getBaseConfig('wallet-tests-Bob')
@@ -118,7 +113,7 @@ describe('wallet', () => {
 
   test('when exporting and importing a wallet, content is copied', async () => {
     await bobAgent.initialize()
-    const bobBasicMessageRepository = bobAgent.injectionContainer.resolve(BasicMessageRepository)
+    const bobBasicMessageRepository = bobAgent.dependencyManager.resolve(BasicMessageRepository)
 
     const basicMessageRecord = new BasicMessageRecord({
       id: 'some-id',
@@ -129,7 +124,7 @@ describe('wallet', () => {
     })
 
     // Save in wallet
-    await bobBasicMessageRepository.save(basicMessageRecord)
+    await bobBasicMessageRepository.save(bobAgent.context, basicMessageRecord)
 
     if (!bobAgent.config.walletConfig) {
       throw new Error('No wallet config on bobAgent')
@@ -147,7 +142,7 @@ describe('wallet', () => {
     // This should create a new wallet
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await bobAgent.wallet.initialize(bobConfig.config.walletConfig!)
-    expect(await bobBasicMessageRepository.findById(basicMessageRecord.id)).toBeNull()
+    expect(await bobBasicMessageRepository.findById(bobAgent.context, basicMessageRecord.id)).toBeNull()
     await bobAgent.wallet.delete()
 
     // Import backup with different wallet id and initialize
@@ -155,6 +150,31 @@ describe('wallet', () => {
     await bobAgent.wallet.initialize({ id: backupWalletName, key: backupWalletName })
 
     // Expect same basic message record to exist in new wallet
-    expect(await bobBasicMessageRepository.getById(basicMessageRecord.id)).toMatchObject(basicMessageRecord)
+    expect(await bobBasicMessageRepository.getById(bobAgent.context, basicMessageRecord.id)).toMatchObject(
+      basicMessageRecord
+    )
+  })
+
+  test('changing wallet key', async () => {
+    const walletConfig = {
+      id: 'mywallet',
+      key: 'mysecretwalletkey',
+    }
+
+    await aliceAgent.wallet.createAndOpen(walletConfig)
+    await aliceAgent.initialize()
+
+    //Close agent
+    const walletConfigRekey = {
+      id: 'mywallet',
+      key: 'mysecretwalletkey',
+      rekey: '123',
+    }
+
+    await aliceAgent.shutdown()
+    await aliceAgent.wallet.rotateKey(walletConfigRekey)
+    await aliceAgent.initialize()
+
+    expect(aliceAgent.isInitialized).toBe(true)
   })
 })

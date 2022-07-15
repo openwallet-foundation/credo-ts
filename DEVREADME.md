@@ -2,6 +2,11 @@
 
 This file is intended for developers working on the internals of the framework. If you're just looking how to get started with the framework, see the [docs](./docs)
 
+## Installing dependencies
+
+Right now, as a patch that will later be changed, some platforms will have an "error" when installing the dependencies with yarn. This is because the BBS signatures library that we use is built for Linux x86 and MacOS x86 (and not Windows and MacOS arm). This means that it will show that it could not download the binary.
+This is not an error for developers, the library that fails is `node-bbs-signaturs` and is an optional dependency for perfomance improvements. It will fallback to a, slower, wasm build.
+
 ## Running tests
 
 Test are executed using jest. Some test require either the **mediator agents** or the **ledger** to be running. When running tests that require a connection to the ledger pool, you need to set the `TEST_AGENT_PUBLIC_DID_SEED` and `GENESIS_TXN_PATH` environment variables.
@@ -17,6 +22,18 @@ If you're using the setup as described in this document, you don't need to provi
 - `TEST_AGENT_PUBLIC_DID_SEED`: The seed to use for the public DID. This will be used to do public write operations to the ledger. You should use a seed for a DID that is already registered on the ledger.
   - If using the local or default genesis, use the same seed you used for the `add-did-from-seed` command from the [ledger setup](#setup-ledger) in the previous step. (default is `000000000000000000000000Trustee9`)
   - If using the BuilderNet genesis, make sure your seed is registered on the BuilderNet using [selfserve.sovrin.org](https://selfserve.sovrin.org/) and you have read and accepted the associated [Transaction Author Agreement](https://github.com/sovrin-foundation/sovrin/blob/master/TAA/TAA.md). We are not responsible for any unwanted consequences of using the BuilderNet.
+
+### Setup Postgres
+
+> Note: Setup the postgres plugin first by following the [docs](https://aries.js.org/)
+
+```sh
+# Get postgres docker image
+docker pull postgres
+
+# Run postgres in docker
+docker run --name postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+```
 
 ### Setup Ledger
 
@@ -54,6 +71,18 @@ If you're not using the ledger setup from above, make sure you pass the correct 
 
 ```sh
 GENESIS_TXN_PATH=network/genesis/local-genesis.txn TEST_AGENT_PUBLIC_DID_SEED=000000000000000000000000Trustee9 yarn test
+```
+
+Locally, you might want to run the tests without postgres tests. You can do that by ignoring the tests:
+
+```sh
+yarn test --testPathIgnorePatterns ./packages/core/tests/postgres.test.ts -u
+```
+
+In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client. On a Unix system with default setup you achieve this by running:
+
+```sh
+rm -rf ~/.indy-client
 ```
 
 ## Usage with Docker

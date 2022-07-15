@@ -31,6 +31,7 @@ module.exports = {
     'no-console': 'error',
     '@typescript-eslint/ban-ts-comment': 'warn',
     '@typescript-eslint/consistent-type-imports': 'error',
+    '@typescript-eslint/no-floating-promises': 'error',
     'import/no-cycle': 'error',
     'import/newline-after-import': ['error', { count: 1 }],
     'import/order': [
@@ -54,6 +55,16 @@ module.exports = {
       'error',
       {
         patterns: ['packages/*'],
+      },
+    ],
+    // Do not allow const enums
+    // https://github.com/typescript-eslint/typescript-eslint/issues/561#issuecomment-593059472
+    // https://ncjamieson.com/dont-export-const-enums/
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: 'TSEnumDeclaration[const=true]',
+        message: "Don't declare const enums",
       },
     ],
   },
@@ -88,7 +99,16 @@ module.exports = {
       },
     },
     {
-      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts', 'samples/**', 'demo/**'],
+      files: [
+        '*.test.ts',
+        '**/__tests__/**',
+        '**/tests/**',
+        'jest.*.ts',
+        'samples/**',
+        'demo/**',
+        'scripts/**',
+        '**/tests/**',
+      ],
       env: {
         jest: true,
         node: false,

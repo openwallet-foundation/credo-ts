@@ -12,9 +12,8 @@ export class MediationGrantHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<MediationGrantHandler>) {
-    if (!messageContext.connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
-    }
+    messageContext.assertReadyConnection()
+
     await this.mediationRecipientService.processMediationGrant(messageContext)
   }
 }

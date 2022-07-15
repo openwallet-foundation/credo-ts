@@ -1,0 +1,7 @@
+export * from './V1CredentialAckMessage'
+export * from './V1CredentialPreview'
+export * from './V1RequestCredentialMessage'
+export * from './V1IssueCredentialMessage'
+export * from './V1OfferCredentialMessage'
+export * from './V1ProposeCredentialMessage'
+export * from './V1CredentialProblemReportMessage'

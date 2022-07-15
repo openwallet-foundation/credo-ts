@@ -1,6 +1,6 @@
 import { KeyType } from '../../../../../crypto'
 import { Key } from '../../../../../crypto/Key'
-import { JsonTransformer, BufferEncoder, Buffer } from '../../../../../utils'
+import { Buffer, JsonTransformer, TypedArrayEncoder } from '../../../../../utils'
 import didKeyEd25519Fixture from '../../../__tests__/__fixtures__//didKeyEd25519.json'
 import { VerificationMethod } from '../../../domain/verificationMethod'
 import { keyDidEd25519 } from '../ed25519'
@@ -10,12 +10,12 @@ const TEST_ED25519_FINGERPRINT = 'z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7
 const TEST_ED25519_DID = `did:key:${TEST_ED25519_FINGERPRINT}`
 const TEST_ED25519_PREFIX_BYTES = Buffer.concat([
   new Uint8Array([237, 1]),
-  BufferEncoder.fromBase58(TEST_ED25519_BASE58_KEY),
+  TypedArrayEncoder.fromBase58(TEST_ED25519_BASE58_KEY),
 ])
 
 describe('ed25519', () => {
   it('creates a Key instance from public key bytes and ed25519 key type', async () => {
-    const publicKeyBytes = BufferEncoder.fromBase58(TEST_ED25519_BASE58_KEY)
+    const publicKeyBytes = TypedArrayEncoder.fromBase58(TEST_ED25519_BASE58_KEY)
 
     const didKey = Key.fromPublicKey(publicKeyBytes, KeyType.Ed25519)
 
@@ -39,16 +39,9 @@ describe('ed25519', () => {
 
     expect(didKey.fingerprint).toBe(TEST_ED25519_FINGERPRINT)
     expect(didKey.publicKeyBase58).toBe(TEST_ED25519_BASE58_KEY)
-    expect(didKey.publicKey).toEqual(BufferEncoder.fromBase58(TEST_ED25519_BASE58_KEY))
+    expect(didKey.publicKey).toEqual(TypedArrayEncoder.fromBase58(TEST_ED25519_BASE58_KEY))
     expect(didKey.keyType).toBe(KeyType.Ed25519)
     expect(didKey.prefixedPublicKey.equals(TEST_ED25519_PREFIX_BYTES)).toBe(true)
-  })
-
-  it('should return a valid did:key did document for the did', async () => {
-    const key = Key.fromFingerprint(TEST_ED25519_FINGERPRINT)
-    const didDocument = keyDidEd25519.getDidDocument(TEST_ED25519_DID, key)
-
-    expect(JsonTransformer.toJSON(didDocument)).toMatchObject(didKeyEd25519Fixture)
   })
 
   it('should return a valid verification method', async () => {

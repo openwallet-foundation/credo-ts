@@ -1,6 +1,6 @@
 import type { Wallet } from '../../../../../wallet'
 
-import { mockFunction } from '../../../../../../tests/helpers'
+import { getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { KeyType } from '../../../../../crypto'
 import { Key } from '../../../../../crypto/Key'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
@@ -16,22 +16,25 @@ const WalletMock = jest.fn(() => ({
   createKey: (_) => Promise.resolve(Key.fromFingerprint('z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU')),
 })) as jest.Mock<Wallet>
 
+const walletMock = new WalletMock()
+const agentContext = getAgentContext({
+  wallet: walletMock,
+})
+
 describe('DidRegistrar', () => {
   describe('KeyDidRegistrar', () => {
     let keyDidRegistrar: KeyDidRegistrar
-    let walletMock: Wallet
     let didRepositoryMock: DidRepository
 
     beforeEach(() => {
-      walletMock = new WalletMock()
       didRepositoryMock = new DidRepositoryMock()
-      keyDidRegistrar = new KeyDidRegistrar(walletMock, didRepositoryMock)
+      keyDidRegistrar = new KeyDidRegistrar(didRepositoryMock)
     })
 
     it('should correctly create a did:key document using Ed25519 keytype', async () => {
       const seed = '96213c3d7fc8d4d6754c712fd969598e'
 
-      const result = await keyDidRegistrar.create({
+      const result = await keyDidRegistrar.create(agentContext, {
         method: 'key',
         options: {
           keyType: KeyType.Ed25519,
@@ -94,7 +97,7 @@ describe('DidRegistrar', () => {
     })
 
     it('should return an error state if no key type is provided', async () => {
-      const result = await keyDidRegistrar.create({
+      const result = await keyDidRegistrar.create(agentContext, {
         method: 'key',
         // @ts-expect-error - key type is required in interface
         options: {},
@@ -111,7 +114,7 @@ describe('DidRegistrar', () => {
     })
 
     it('should return an error state if an invalid seed is provided', async () => {
-      const result = await keyDidRegistrar.create({
+      const result = await keyDidRegistrar.create(agentContext, {
         method: 'key',
 
         options: {
@@ -136,7 +139,7 @@ describe('DidRegistrar', () => {
       const seed = '96213c3d7fc8d4d6754c712fd969598e'
       const did = 'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU'
 
-      await keyDidRegistrar.create({
+      await keyDidRegistrar.create(agentContext, {
         method: 'key',
 
         options: {

@@ -1,4 +1,7 @@
-import { mockFunction } from '../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../tests/helpers'
+import { EventEmitter } from '../../agent/EventEmitter'
 import { ConnectionInvitationMessage } from '../../modules/connections'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { IndyStorageService } from '../IndyStorageService'
@@ -16,13 +19,18 @@ const invitationJson = {
   label: 'test',
 }
 
-describe('Repository', () => {
+const config = getAgentConfig('DidCommMessageRepository')
+const agentContext = getAgentContext()
+
+describe('DidCommMessageRepository', () => {
   let repository: DidCommMessageRepository
   let storageMock: IndyStorageService<DidCommMessageRecord>
+  let eventEmitter: EventEmitter
 
   beforeEach(async () => {
     storageMock = new StorageMock()
-    repository = new DidCommMessageRepository(storageMock)
+    eventEmitter = new EventEmitter(config.agentDependencies, new Subject())
+    repository = new DidCommMessageRepository(storageMock, eventEmitter)
   })
 
   const getRecord = ({ id }: { id?: string } = {}) => {
@@ -39,14 +47,16 @@ describe('Repository', () => {
       const record = getRecord({ id: 'test-id' })
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
 
-      const invitation = await repository.getAgentMessage({
+      const invitation = await repository.findAgentMessage(agentContext, {
         messageClass: ConnectionInvitationMessage,
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
-      expect(storageMock.findByQuery).toBeCalledWith(DidCommMessageRecord, {
+      expect(storageMock.findByQuery).toBeCalledWith(agentContext, DidCommMessageRecord, {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-        messageType: 'https://didcomm.org/connections/1.0/invitation',
+        messageName: 'invitation',
+        protocolName: 'connections',
+        protocolMajorVersion: '1',
       })
       expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
     })
@@ -56,28 +66,33 @@ describe('Repository', () => {
       const record = getRecord({ id: 'test-id' })
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
 
-      const invitation = await repository.findAgentMessage({
+      const invitation = await repository.findAgentMessage(agentContext, {
         messageClass: ConnectionInvitationMessage,
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
-      expect(storageMock.findByQuery).toBeCalledWith(DidCommMessageRecord, {
+      expect(storageMock.findByQuery).toBeCalledWith(agentContext, DidCommMessageRecord, {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-        messageType: 'https://didcomm.org/connections/1.0/invitation',
+        messageName: 'invitation',
+        protocolName: 'connections',
+        protocolMajorVersion: '1',
       })
       expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
     })
+
     it("should return null because the record doesn't exist", async () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
 
-      const invitation = await repository.findAgentMessage({
+      const invitation = await repository.findAgentMessage(agentContext, {
         messageClass: ConnectionInvitationMessage,
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
-      expect(storageMock.findByQuery).toBeCalledWith(DidCommMessageRecord, {
+      expect(storageMock.findByQuery).toBeCalledWith(agentContext, DidCommMessageRecord, {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-        messageType: 'https://didcomm.org/connections/1.0/invitation',
+        messageName: 'invitation',
+        protocolName: 'connections',
+        protocolMajorVersion: '1',
       })
       expect(invitation).toBeNull()
     })
@@ -85,13 +100,14 @@ describe('Repository', () => {
 
   describe('saveAgentMessage()', () => {
     it('should transform and save the agent message', async () => {
-      await repository.saveAgentMessage({
+      await repository.saveAgentMessage(agentContext, {
         role: DidCommMessageRole.Receiver,
         agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
       expect(storageMock.save).toBeCalledWith(
+        agentContext,
         expect.objectContaining({
           role: DidCommMessageRole.Receiver,
           message: invitationJson,
@@ -104,13 +120,14 @@ describe('Repository', () => {
   describe('saveOrUpdateAgentMessage()', () => {
     it('should transform and save the agent message', async () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
-      await repository.saveOrUpdateAgentMessage({
+      await repository.saveOrUpdateAgentMessage(agentContext, {
         role: DidCommMessageRole.Receiver,
         agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
       expect(storageMock.save).toBeCalledWith(
+        agentContext,
         expect.objectContaining({
           role: DidCommMessageRole.Receiver,
           message: invitationJson,
@@ -118,16 +135,23 @@ describe('Repository', () => {
         })
       )
     })
+
     it('should transform and update the agent message', async () => {
       const record = getRecord({ id: 'test-id' })
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
-      await repository.saveOrUpdateAgentMessage({
+      await repository.saveOrUpdateAgentMessage(agentContext, {
         role: DidCommMessageRole.Receiver,
         agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
-      expect(storageMock.update).toBeCalledWith(record)
+      expect(storageMock.findByQuery).toBeCalledWith(agentContext, DidCommMessageRecord, {
+        associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
+        messageName: 'invitation',
+        protocolName: 'connections',
+        protocolMajorVersion: '1',
+      })
+      expect(storageMock.update).toBeCalledWith(agentContext, record)
     })
   })
 })

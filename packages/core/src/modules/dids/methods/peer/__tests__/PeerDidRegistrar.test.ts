@@ -1,15 +1,15 @@
 import type { Wallet } from '../../../../../wallet'
 
-import { mockFunction } from '../../../../../../tests/helpers'
+import { getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { KeyType } from '../../../../../crypto'
 import { Key } from '../../../../../crypto/Key'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { DidCommService, DidDocumentBuilder } from '../../../domain'
+import { DidCommV1Service, DidDocumentBuilder } from '../../../domain'
 import { DidDocumentRole } from '../../../domain/DidDocumentRole'
 import { getEd25519VerificationMethod } from '../../../domain/key-type/ed25519'
 import { DidRepository } from '../../../repository/DidRepository'
-import { PeerDidNumAlgo } from '../DidPeer'
 import { PeerDidRegistrar } from '../PeerDidRegistrar'
+import { PeerDidNumAlgo } from '../didPeer'
 
 jest.mock('../../../repository/DidRepository')
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
@@ -19,23 +19,24 @@ const WalletMock = jest.fn(() => ({
   createKey: (_) => Promise.resolve(Key.fromFingerprint('z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU')),
 })) as jest.Mock<Wallet>
 
+const walletMock = new WalletMock()
+const agentContext = getAgentContext({ wallet: walletMock })
+
 describe('DidRegistrar', () => {
   describe('PeerDidRegistrar', () => {
     let peerDidRegistrar: PeerDidRegistrar
-    let walletMock: Wallet
     let didRepositoryMock: DidRepository
 
     beforeEach(() => {
-      walletMock = new WalletMock()
       didRepositoryMock = new DidRepositoryMock()
-      peerDidRegistrar = new PeerDidRegistrar(walletMock, didRepositoryMock)
+      peerDidRegistrar = new PeerDidRegistrar(didRepositoryMock)
     })
 
     describe('did:peer:0', () => {
       it('should correctly create a did:peer:0 document using Ed25519 keytype', async () => {
         const seed = '96213c3d7fc8d4d6754c712fd969598e'
 
-        const result = await peerDidRegistrar.create({
+        const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           options: {
             keyType: KeyType.Ed25519,
@@ -99,7 +100,7 @@ describe('DidRegistrar', () => {
       })
 
       it('should return an error state if no key type is provided', async () => {
-        const result = await peerDidRegistrar.create({
+        const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           // @ts-expect-error - key type is required in interface
           options: {
@@ -118,7 +119,7 @@ describe('DidRegistrar', () => {
       })
 
       it('should return an error state if an invalid seed is provided', async () => {
-        const result = await peerDidRegistrar.create({
+        const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           options: {
             keyType: KeyType.Ed25519,
@@ -143,7 +144,7 @@ describe('DidRegistrar', () => {
         const seed = '96213c3d7fc8d4d6754c712fd969598e'
         const did = 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU'
 
-        await peerDidRegistrar.create({
+        await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           options: {
             keyType: KeyType.Ed25519,
@@ -180,7 +181,7 @@ describe('DidRegistrar', () => {
         .addVerificationMethod(verificationMethod)
         .addAuthentication(verificationMethod.id)
         .addService(
-          new DidCommService({
+          new DidCommV1Service({
             id: '#service-0',
             recipientKeys: [verificationMethod.id],
             serviceEndpoint: 'https://example.com',
@@ -190,7 +191,7 @@ describe('DidRegistrar', () => {
         .build()
 
       it('should correctly create a did:peer:1 document from a did document', async () => {
-        const result = await peerDidRegistrar.create({
+        const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           didDocument: didDocument,
           options: {
@@ -240,7 +241,7 @@ describe('DidRegistrar', () => {
       it('should store the did with the did document', async () => {
         const did = 'did:peer:1zQmUTNcSy2J2sAmX6Ad2bdPvhVnHPUaod8Skpt8DWPpZaiL'
 
-        await peerDidRegistrar.create({
+        await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           didDocument,
           options: {
@@ -277,7 +278,7 @@ describe('DidRegistrar', () => {
         .addVerificationMethod(verificationMethod)
         .addAuthentication(verificationMethod.id)
         .addService(
-          new DidCommService({
+          new DidCommV1Service({
             id: '#service-0',
             recipientKeys: [verificationMethod.id],
             serviceEndpoint: 'https://example.com',
@@ -287,7 +288,7 @@ describe('DidRegistrar', () => {
         .build()
 
       it('should correctly create a did:peer:2 document from a did document', async () => {
-        const result = await peerDidRegistrar.create({
+        const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           didDocument: didDocument,
           options: {
@@ -334,7 +335,7 @@ describe('DidRegistrar', () => {
         const did =
           'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0'
 
-        await peerDidRegistrar.create({
+        await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           didDocument,
           options: {

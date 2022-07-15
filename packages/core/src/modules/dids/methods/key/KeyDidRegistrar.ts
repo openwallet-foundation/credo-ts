@@ -1,5 +1,5 @@
+import type { AgentContext } from '../../../../agent'
 import type { KeyType } from '../../../../crypto'
-import type { Wallet } from '../../../../wallet/Wallet'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidRepository } from '../../repository'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
@@ -11,15 +11,13 @@ import { DidKey } from './DidKey'
 
 export class KeyDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['key']
-  private wallet: Wallet
   private didRepository: DidRepository
 
-  public constructor(wallet: Wallet, didRepository: DidRepository) {
-    this.wallet = wallet
+  public constructor(didRepository: DidRepository) {
     this.didRepository = didRepository
   }
 
-  public async create(options: KeyDidCreateOptions): Promise<DidCreateResult> {
+  public async create(agentContext: AgentContext, options: KeyDidCreateOptions): Promise<DidCreateResult> {
     const keyType = options.options.keyType
     const seed = options.secret?.seed
 
@@ -46,7 +44,7 @@ export class KeyDidRegistrar implements DidRegistrar {
     }
 
     try {
-      const key = await this.wallet.createKey({
+      const key = await agentContext.wallet.createKey({
         keyType,
         seed,
       })
@@ -58,7 +56,7 @@ export class KeyDidRegistrar implements DidRegistrar {
         id: didKey.did,
         role: DidDocumentRole.Created,
       })
-      await this.didRepository.save(didRecord)
+      await this.didRepository.save(agentContext, didRecord)
 
       return {
         didDocumentMetadata: {},

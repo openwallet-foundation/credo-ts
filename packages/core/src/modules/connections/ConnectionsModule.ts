@@ -1,149 +1,113 @@
+import type { DependencyManager } from '../../plugins'
+import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
+import type { Routing } from './services'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
-import { AgentConfig } from '../../agent/AgentConfig'
+import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { MediationRecipientService } from '../routing/services/MediationRecipientService'
+import { AriesFrameworkError } from '../../error'
+import { injectable, module } from '../../plugins'
+import { DidResolverService } from '../dids'
+import { DidRepository } from '../dids/repository'
+import { OutOfBandService } from '../oob/OutOfBandService'
+import { RoutingService } from '../routing/services/RoutingService'
 
+import { DidExchangeProtocol } from './DidExchangeProtocol'
 import {
+  AckMessageHandler,
   ConnectionRequestHandler,
   ConnectionResponseHandler,
-  AckMessageHandler,
+  DidExchangeCompleteHandler,
+  DidExchangeRequestHandler,
+  DidExchangeResponseHandler,
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
-import { ConnectionInvitationMessage } from './messages'
+import { HandshakeProtocol } from './models'
+import { ConnectionRepository } from './repository'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class ConnectionsModule {
-  private agentConfig: AgentConfig
+  private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
+  private outOfBandService: OutOfBandService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
+  private didRepository: DidRepository
+  private didResolverService: DidResolverService
+  private agentContext: AgentContext
 
   public constructor(
     dispatcher: Dispatcher,
-    agentConfig: AgentConfig,
+    didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
+    outOfBandService: OutOfBandService,
     trustPingService: TrustPingService,
-    mediationRecipientService: MediationRecipientService,
-    messageSender: MessageSender
+    routingService: RoutingService,
+    didRepository: DidRepository,
+    didResolverService: DidResolverService,
+    messageSender: MessageSender,
+    agentContext: AgentContext
   ) {
-    this.agentConfig = agentConfig
+    this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
+    this.outOfBandService = outOfBandService
     this.trustPingService = trustPingService
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
+    this.didRepository = didRepository
     this.messageSender = messageSender
+    this.didResolverService = didResolverService
+    this.agentContext = agentContext
+
     this.registerHandlers(dispatcher)
   }
 
-  public async createConnection(config?: {
-    autoAcceptConnection?: boolean
-    alias?: string
-    mediatorId?: string
-    multiUseInvitation?: boolean
-    myLabel?: string
-    myImageUrl?: string
-  }): Promise<{
-    invitation: ConnectionInvitationMessage
-    connectionRecord: ConnectionRecord
-  }> {
-    const myRouting = await this.mediationRecipientService.getRouting({
-      mediatorId: config?.mediatorId,
-      useDefaultMediator: true,
-    })
-
-    const { connectionRecord: connectionRecord, message: invitation } = await this.connectionService.createInvitation({
-      autoAcceptConnection: config?.autoAcceptConnection,
-      alias: config?.alias,
-      routing: myRouting,
-      multiUseInvitation: config?.multiUseInvitation,
-      myLabel: config?.myLabel,
-      myImageUrl: config?.myImageUrl,
-    })
-
-    return { connectionRecord, invitation }
-  }
-
-  /**
-   * Receive connection invitation as invitee and create connection. If auto accepting is enabled
-   * via either the config passed in the function or the global agent config, a connection
-   * request message will be send.
-   *
-   * @param invitationJson json object containing the invitation to receive
-   * @param config config for handling of invitation
-   * @returns new connection record
-   */
-  public async receiveInvitation(
-    invitation: ConnectionInvitationMessage,
-    config?: {
+  public async acceptOutOfBandInvitation(
+    outOfBandRecord: OutOfBandRecord,
+    config: {
       autoAcceptConnection?: boolean
+      label?: string
       alias?: string
-      mediatorId?: string
+      imageUrl?: string
+      protocol: HandshakeProtocol
+      routing?: Routing
     }
-  ): Promise<ConnectionRecord> {
-    const routing = await this.mediationRecipientService.getRouting({ mediatorId: config?.mediatorId })
+  ) {
+    const { protocol, label, alias, imageUrl, autoAcceptConnection } = config
 
-    let connection = await this.connectionService.processInvitation(invitation, {
-      autoAcceptConnection: config?.autoAcceptConnection,
-      alias: config?.alias,
-      routing,
-    })
-    // if auto accept is enabled (either on the record or the global agent config)
-    // we directly send a connection request
-    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      connection = await this.acceptInvitation(connection.id)
+    const routing =
+      config.routing ||
+      (await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId }))
+
+    let result
+    if (protocol === HandshakeProtocol.DidExchange) {
+      result = await this.didExchangeProtocol.createRequest(this.agentContext, outOfBandRecord, {
+        label,
+        alias,
+        routing,
+        autoAcceptConnection,
+      })
+    } else if (protocol === HandshakeProtocol.Connections) {
+      result = await this.connectionService.createRequest(this.agentContext, outOfBandRecord, {
+        label,
+        alias,
+        imageUrl,
+        routing,
+        autoAcceptConnection,
+      })
+    } else {
+      throw new AriesFrameworkError(`Unsupported handshake protocol ${protocol}.`)
     }
-    return connection
-  }
 
-  /**
-   * Receive connection invitation as invitee encoded as url and create connection. If auto accepting is enabled
-   * via either the config passed in the function or the global agent config, a connection
-   * request message will be send.
-   *
-   * @param invitationUrl url containing a base64 encoded invitation to receive
-   * @param config config for handling of invitation
-   * @returns new connection record
-   */
-  public async receiveInvitationFromUrl(
-    invitationUrl: string,
-    config?: {
-      autoAcceptConnection?: boolean
-      alias?: string
-      mediatorId?: string
-    }
-  ): Promise<ConnectionRecord> {
-    const invitation = await ConnectionInvitationMessage.fromUrl(invitationUrl)
-    return this.receiveInvitation(invitation, config)
-  }
-
-  /**
-   * Accept a connection invitation as invitee (by sending a connection request message) for the connection with the specified connection id.
-   * This is not needed when auto accepting of connections is enabled.
-   *
-   * @param connectionId the id of the connection for which to accept the invitation
-   * @returns connection record
-   */
-  public async acceptInvitation(
-    connectionId: string,
-    config?: {
-      autoAcceptConnection?: boolean
-    }
-  ): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createRequest(
-      connectionId,
-      config
-    )
-    const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendMessage(outbound)
-
+    const { message, connectionRecord } = result
+    const outboundMessage = createOutboundMessage(connectionRecord, message, outOfBandRecord)
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     return connectionRecord
   }
 
@@ -155,11 +119,37 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptRequest(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createResponse(connectionId)
+    const connectionRecord = await this.connectionService.findById(this.agentContext, connectionId)
+    if (!connectionRecord) {
+      throw new AriesFrameworkError(`Connection record ${connectionId} not found.`)
+    }
+    if (!connectionRecord.outOfBandId) {
+      throw new AriesFrameworkError(`Connection record ${connectionId} does not have out-of-band record.`)
+    }
 
-    const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendMessage(outbound)
+    const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
+    }
 
+    let outboundMessage
+    if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
+      const message = await this.didExchangeProtocol.createResponse(
+        this.agentContext,
+        connectionRecord,
+        outOfBandRecord
+      )
+      outboundMessage = createOutboundMessage(connectionRecord, message)
+    } else {
+      const { message } = await this.connectionService.createResponse(
+        this.agentContext,
+        connectionRecord,
+        outOfBandRecord
+      )
+      outboundMessage = createOutboundMessage(connectionRecord, message)
+    }
+
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     return connectionRecord
   }
 
@@ -171,18 +161,38 @@ export class ConnectionsModule {
    * @returns connection record
    */
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
-    const { message, connectionRecord: connectionRecord } = await this.connectionService.createTrustPing(connectionId, {
-      responseRequested: false,
-    })
+    const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
-    const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendMessage(outbound)
+    let outboundMessage
+    if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
+      if (!connectionRecord.outOfBandId) {
+        throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
+      }
+      const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
+      if (!outOfBandRecord) {
+        throw new AriesFrameworkError(
+          `OutOfBand record for connection ${connectionRecord.id} with outOfBandId ${connectionRecord.outOfBandId} not found!`
+        )
+      }
+      const message = await this.didExchangeProtocol.createComplete(
+        this.agentContext,
+        connectionRecord,
+        outOfBandRecord
+      )
+      outboundMessage = createOutboundMessage(connectionRecord, message)
+    } else {
+      const { message } = await this.connectionService.createTrustPing(this.agentContext, connectionRecord, {
+        responseRequested: false,
+      })
+      outboundMessage = createOutboundMessage(connectionRecord, message)
+    }
 
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     return connectionRecord
   }
 
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
-    return this.connectionService.returnWhenIsConnected(connectionId, options?.timeoutMs)
+    return this.connectionService.returnWhenIsConnected(this.agentContext, connectionId, options?.timeoutMs)
   }
 
   /**
@@ -191,7 +201,7 @@ export class ConnectionsModule {
    * @returns List containing all connection records
    */
   public getAll() {
-    return this.connectionService.getAll()
+    return this.connectionService.getAll(this.agentContext)
   }
 
   /**
@@ -203,7 +213,7 @@ export class ConnectionsModule {
    *
    */
   public getById(connectionId: string): Promise<ConnectionRecord> {
-    return this.connectionService.getById(connectionId)
+    return this.connectionService.getById(this.agentContext, connectionId)
   }
 
   /**
@@ -213,7 +223,7 @@ export class ConnectionsModule {
    * @returns The connection record or null if not found
    */
   public findById(connectionId: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.findById(connectionId)
+    return this.connectionService.findById(this.agentContext, connectionId)
   }
 
   /**
@@ -222,40 +232,11 @@ export class ConnectionsModule {
    * @param connectionId the connection record id
    */
   public async deleteById(connectionId: string) {
-    return this.connectionService.deleteById(connectionId)
+    return this.connectionService.deleteById(this.agentContext, connectionId)
   }
 
-  /**
-   * Find connection by verkey.
-   *
-   * @param verkey the verkey to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
-   */
-  public findByVerkey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.findByVerkey(verkey)
-  }
-
-  /**
-   * Find connection by their verkey.
-   *
-   * @param verkey the verkey to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
-   */
-  public findByTheirKey(verkey: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.findByTheirKey(verkey)
-  }
-
-  /**
-   * Find connection by Invitation key.
-   *
-   * @param key the invitation key to search for
-   * @returns the connection record, or null if not found
-   * @throws {RecordDuplicateError} if multiple connections are found for the given verkey
-   */
-  public findByInvitationKey(key: string): Promise<ConnectionRecord | null> {
-    return this.connectionService.findByInvitationKey(key)
+  public async findAllByOutOfBandId(outOfBandId: string) {
+    return this.connectionService.findAllByOutOfBandId(this.agentContext, outOfBandId)
   }
 
   /**
@@ -267,16 +248,66 @@ export class ConnectionsModule {
    * @returns The connection record
    */
   public getByThreadId(threadId: string): Promise<ConnectionRecord> {
-    return this.connectionService.getByThreadId(threadId)
+    return this.connectionService.getByThreadId(this.agentContext, threadId)
+  }
+
+  public async findByDid(did: string): Promise<ConnectionRecord | null> {
+    return this.connectionService.findByTheirDid(this.agentContext, did)
+  }
+
+  public async findByInvitationDid(invitationDid: string): Promise<ConnectionRecord[]> {
+    return this.connectionService.findByInvitationDid(this.agentContext, invitationDid)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
-      new ConnectionRequestHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
+      new ConnectionRequestHandler(
+        this.connectionService,
+        this.outOfBandService,
+        this.routingService,
+        this.didRepository
+      )
     )
-    dispatcher.registerHandler(new ConnectionResponseHandler(this.connectionService, this.agentConfig))
+    dispatcher.registerHandler(
+      new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.didResolverService)
+    )
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
+
+    dispatcher.registerHandler(
+      new DidExchangeRequestHandler(
+        this.didExchangeProtocol,
+        this.outOfBandService,
+        this.routingService,
+        this.didRepository
+      )
+    )
+
+    dispatcher.registerHandler(
+      new DidExchangeResponseHandler(
+        this.didExchangeProtocol,
+        this.outOfBandService,
+        this.connectionService,
+        this.didResolverService
+      )
+    )
+    dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
+  }
+
+  /**
+   * Registers the dependencies of the connections module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(ConnectionsModule)
+
+    // Services
+    dependencyManager.registerSingleton(ConnectionService)
+    dependencyManager.registerSingleton(DidExchangeProtocol)
+    dependencyManager.registerSingleton(TrustPingService)
+
+    // Repositories
+    dependencyManager.registerSingleton(ConnectionRepository)
   }
 }

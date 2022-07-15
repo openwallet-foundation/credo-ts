@@ -1,11 +1,12 @@
-import type { AgentConfig } from '../../../../agent/AgentConfig'
-import type { IndyWallet } from '../../../../wallet/IndyWallet'
+import type { AgentContext } from '../../../../agent'
+import type { AgentDependencies } from '../../../../agent/AgentDependencies'
 import type { IndyLedgerService } from '../../../ledger'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidRepository } from '../../repository'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 import type * as Indy from 'indy-sdk'
 
+import { assertIndyWallet } from '../../../../wallet/util/assertIndyWallet'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord } from '../../repository'
 
@@ -13,24 +14,21 @@ import { sovDidDocumentFromDid } from './util'
 
 export class SovDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['sov']
-  private wallet: IndyWallet
   private didRepository: DidRepository
   private indy: typeof Indy
   private indyLedgerService: IndyLedgerService
 
   public constructor(
-    wallet: IndyWallet,
     didRepository: DidRepository,
-    agentConfig: AgentConfig,
-    indyLedgerService: IndyLedgerService
+    indyLedgerService: IndyLedgerService,
+    agentDependencies: AgentDependencies
   ) {
-    this.wallet = wallet
     this.didRepository = didRepository
-    this.indy = agentConfig.agentDependencies.indy
+    this.indy = agentDependencies.indy
     this.indyLedgerService = indyLedgerService
   }
 
-  public async create(options: SovDidCreateOptions): Promise<DidCreateResult> {
+  public async create(agentContext: AgentContext, options: SovDidCreateOptions): Promise<DidCreateResult> {
     const { alias, role, submitterDid } = options.options
     const seed = options.secret?.seed
 
@@ -62,7 +60,8 @@ export class SovDidRegistrar implements DidRegistrar {
       // WalletItemNotFound when it needs to sign ledger transactions using this did. This means we need
       // to rely directly on the indy SDK, as we don't want to expose a createDid method just for.
       // FIXME: once askar/indy-vdr is supported we need to adjust this to work with both indy-sdk and askar
-      const [indyDid, verkey] = await this.indy.createAndStoreMyDid(this.wallet.handle, {
+      assertIndyWallet(agentContext.wallet)
+      const [indyDid, verkey] = await this.indy.createAndStoreMyDid(agentContext.wallet.handle, {
         seed,
       })
 
@@ -72,8 +71,10 @@ export class SovDidRegistrar implements DidRegistrar {
         throw new Error('Submitter did must a valid did:sov did')
       }
 
-      await this.indyLedgerService.registerPublicDid(submitterDid.replace('did:sov:', ''), indyDid, verkey, alias, role)
-      await this.indyLedgerService.setEndpointsForDid(submitterDid.replace('did:sov:', ''), {
+      const unqualifiedDid = submitterDid.replace('did:sov:', '')
+
+      await this.indyLedgerService.registerPublicDid(agentContext, unqualifiedDid, indyDid, verkey, alias, role)
+      await this.indyLedgerService.setEndpointsForDid(agentContext, unqualifiedDid, {
         endpoint: 'http://localhost:8080',
       })
 
@@ -84,10 +85,10 @@ export class SovDidRegistrar implements DidRegistrar {
         id: fullDid,
         role: DidDocumentRole.Created,
         tags: {
-          recipientKeys: didDocument.recipientKeys,
+          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
         },
       })
-      await this.didRepository.save(didRecord)
+      await this.didRepository.save(agentContext, didRecord)
 
       return {
         didDocumentMetadata: {},

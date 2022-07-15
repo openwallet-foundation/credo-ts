@@ -1,13 +1,15 @@
 import type { AgentMessage } from './agent/AgentMessage'
+import type { ResolvedDidCommService } from './agent/MessageSender'
+import type { Key } from './crypto'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
-import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
-import type { DidCommService } from './modules/dids/domain/service/DidCommService'
+import type { AutoAcceptCredential } from './modules/credentials/models/CredentialAutoAcceptType'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
+import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 
-export const enum KeyDerivationMethod {
+export enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
   Argon2IMod = 'ARGON2I_MOD',
   /** less secure, but faster */
@@ -20,6 +22,18 @@ export interface WalletConfig {
   id: string
   key: string
   keyDerivationMethod?: KeyDerivationMethod
+  storage?: {
+    type: string
+    [key: string]: unknown
+  }
+}
+
+export interface WalletConfigRekey {
+  id: string
+  key: string
+  rekey: string
+  keyDerivationMethod?: KeyDerivationMethod
+  rekeyDerivationMethod?: KeyDerivationMethod
 }
 
 export interface WalletExportImportConfig {
@@ -28,7 +42,7 @@ export interface WalletExportImportConfig {
 }
 
 export type EncryptedMessage = {
-  protected: unknown
+  protected: string
   iv: unknown
   ciphertext: unknown
   tag: unknown
@@ -60,9 +74,12 @@ export interface InitConfig {
   clearDefaultMediator?: boolean
   mediatorPollingInterval?: number
   mediatorPickupStrategy?: MediatorPickupStrategy
+  maximumMessagePickup?: number
 
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string
+
+  autoUpdateStorageOnStartup?: boolean
 }
 
 export interface PlaintextMessage {
@@ -71,21 +88,17 @@ export interface PlaintextMessage {
   [key: string]: unknown
 }
 
-export interface DecryptedMessageContext {
-  plaintextMessage: PlaintextMessage
-  senderKey?: string
-  recipientKey?: string
-}
-
 export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   payload: T
   connection: ConnectionRecord
+  sessionId?: string
+  outOfBand?: OutOfBandRecord
 }
 
 export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {
   payload: T
-  service: DidCommService
-  senderKey: string
+  service: ResolvedDidCommService
+  senderKey: Key
 }
 
 export interface OutboundPackage {

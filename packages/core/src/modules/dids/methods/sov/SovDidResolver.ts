@@ -1,10 +1,11 @@
+import type { AgentContext } from '../../../../agent'
 import type { IndyEndpointAttrib, IndyLedgerService } from '../../../ledger'
 import type { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import type { DidResolver } from '../../domain/DidResolver'
-import type { ParsedDid, DidResolutionResult } from '../../types'
+import type { DidResolutionResult, ParsedDid } from '../../types'
 
 import { DidDocumentService } from '../../domain'
-import { DidCommService } from '../../domain/service/DidCommService'
+import { DidCommV1Service } from '../../domain/service/DidCommV1Service'
 import { DidCommV2Service } from '../../domain/service/DidCommV2Service'
 
 import { sovDidDocumentFromDid } from './util'
@@ -18,12 +19,12 @@ export class SovDidResolver implements DidResolver {
 
   public readonly supportedMethods = ['sov']
 
-  public async resolve(did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
+  public async resolve(agentContext: AgentContext, did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 
     try {
-      const nym = await this.indyLedgerService.getPublicDid(parsed.id)
-      const endpoints = await this.indyLedgerService.getEndpointsForDid(did)
+      const nym = await this.indyLedgerService.getPublicDid(agentContext, parsed.id)
+      const endpoints = await this.indyLedgerService.getEndpointsForDid(agentContext, did)
 
       const keyAgreementId = `${parsed.did}#key-agreement-1`
       const builder = sovDidDocumentFromDid(parsed.did, nym.verkey)
@@ -46,6 +47,27 @@ export class SovDidResolver implements DidResolver {
     }
   }
 
+  // Process Indy Attrib Endpoint Types according to: https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html > Read (Resolve) > DID Service Endpoint
+  private processEndpointTypes(types?: string[]) {
+    const expectedTypes = ['endpoint', 'did-communication', 'DIDComm']
+    const defaultTypes = ['endpoint', 'did-communication']
+
+    // Return default types if types "is NOT present [or] empty"
+    if (!types || types?.length <= 0) {
+      return defaultTypes
+    }
+
+    // Return default types if types "contain any other values"
+    for (const type of types) {
+      if (!expectedTypes.includes(type)) {
+        return defaultTypes
+      }
+    }
+
+    // Return provided types
+    return types
+  }
+
   private addServices(
     builder: DidDocumentBuilder,
     parsed: ParsedDid,
@@ -54,20 +76,24 @@ export class SovDidResolver implements DidResolver {
   ) {
     const { endpoint, routingKeys, types, ...otherEndpoints } = endpoints
 
-    // If 'endpoint' type add id to the services array
     if (endpoint) {
-      builder.addService(
-        new DidDocumentService({
-          id: `${parsed.did}#endpoint`,
-          serviceEndpoint: endpoint,
-          type: 'endpoint',
-        })
-      )
+      const processedTypes = this.processEndpointTypes(types)
+
+      // If 'endpoint' included in types, add id to the services array
+      if (processedTypes.includes('endpoint')) {
+        builder.addService(
+          new DidDocumentService({
+            id: `${parsed.did}#endpoint`,
+            serviceEndpoint: endpoint,
+            type: 'endpoint',
+          })
+        )
+      }
 
       // If 'did-communication' included in types, add DIDComm v1 entry
-      if (types?.includes('did-communication')) {
+      if (processedTypes.includes('did-communication')) {
         builder.addService(
-          new DidCommService({
+          new DidCommV1Service({
             id: `${parsed.did}#did-communication`,
             serviceEndpoint: endpoint,
             priority: 0,
@@ -78,7 +104,7 @@ export class SovDidResolver implements DidResolver {
         )
 
         // If 'DIDComm' included in types, add DIDComm v2 entry
-        if (types?.includes('DIDComm')) {
+        if (processedTypes.includes('DIDComm')) {
           builder
             .addService(
               new DidCommV2Service({

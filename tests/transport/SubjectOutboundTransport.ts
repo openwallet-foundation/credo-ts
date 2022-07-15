@@ -1,35 +1,35 @@
-import type { Agent, Logger } from '../../packages/core/src'
-import type { OutboundTransport } from '../../packages/core/src/transport/OutboundTransport'
-import type { OutboundPackage } from '../../packages/core/src/types'
 import type { SubjectMessage } from './SubjectInboundTransport'
-import type { Subject } from 'rxjs'
+import type { OutboundPackage, OutboundTransport, Agent, Logger } from '@aries-framework/core'
 
-import { InjectionSymbols, AriesFrameworkError } from '../../packages/core/src'
+import { takeUntil, Subject, take } from 'rxjs'
+
+import { MessageReceiver, InjectionSymbols, AriesFrameworkError } from '@aries-framework/core'
 
 export class SubjectOutboundTransport implements OutboundTransport {
   private logger!: Logger
-  private ourSubject: Subject<SubjectMessage>
   private subjectMap: { [key: string]: Subject<SubjectMessage> | undefined }
+  private agent!: Agent
+  private stop$!: Subject<boolean>
 
   public supportedSchemes = ['rxjs']
 
-  public constructor(
-    ourSubject: Subject<SubjectMessage>,
-    subjectMap: { [key: string]: Subject<SubjectMessage> | undefined }
-  ) {
-    this.ourSubject = ourSubject
+  public constructor(subjectMap: { [key: string]: Subject<SubjectMessage> | undefined }) {
     this.subjectMap = subjectMap
   }
 
   public async start(agent: Agent): Promise<void> {
-    this.logger = agent.injectionContainer.resolve(InjectionSymbols.Logger)
+    this.agent = agent
+
+    this.logger = agent.dependencyManager.resolve(InjectionSymbols.Logger)
+    this.stop$ = agent.dependencyManager.resolve(InjectionSymbols.Stop$)
   }
 
   public async stop(): Promise<void> {
-    // Nothing required to stop
+    // No logic needed
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
+    const messageReceiver = this.agent.injectionContainer.resolve(MessageReceiver)
     this.logger.debug(`Sending outbound message to endpoint ${outboundPackage.endpoint}`, {
       endpoint: outboundPackage.endpoint,
     })
@@ -45,6 +45,19 @@ export class SubjectOutboundTransport implements OutboundTransport {
       throw new AriesFrameworkError(`No subject found for endpoint ${endpoint}`)
     }
 
-    subject.next({ message: payload, replySubject: this.ourSubject })
+    // Create a replySubject just for this session. Both ends will be able to close it,
+    // mimicking a transport like http or websocket. Close session automatically when agent stops
+    const replySubject = new Subject<SubjectMessage>()
+    this.stop$.pipe(take(1)).subscribe(() => !replySubject.closed && replySubject.complete())
+
+    replySubject.pipe(takeUntil(this.stop$)).subscribe({
+      next: async ({ message }: SubjectMessage) => {
+        this.logger.test('Received message')
+
+        await messageReceiver.receiveMessage(message)
+      },
+    })
+
+    subject.next({ message: payload, replySubject })
   }
 }

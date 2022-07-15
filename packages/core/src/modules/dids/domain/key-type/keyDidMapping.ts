@@ -1,5 +1,4 @@
 import type { Key } from '../../../../crypto/Key'
-import type { DidDocument } from '../DidDocument'
 import type { VerificationMethod } from '../verificationMethod'
 
 import { KeyType } from '../../../../crypto'
@@ -12,7 +11,6 @@ import { keyDidX25519 } from './x25519'
 
 export interface KeyDidMapping {
   getVerificationMethods: (did: string, key: Key) => VerificationMethod[]
-  getDidDocument: (did: string, key: Key) => DidDocument
   getKeyFromVerificationMethod(verificationMethod: VerificationMethod): Key
   supportedVerificationMethodTypes: string[]
 }

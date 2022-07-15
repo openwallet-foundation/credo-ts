@@ -1,15 +1,13 @@
-import { Key } from '../../domain/Key'
-import { getKeyDidMappingByKeyType } from '../../domain/key-type'
+import { Key } from '../../../../crypto'
+import { getDidDocumentForKey } from '../../domain/keyDidDocument'
 import { parseDid } from '../../domain/parse'
 
 import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './didPeer'
 
 export function keyToNumAlgo0DidDocument(key: Key) {
-  const { getDidDocument } = getKeyDidMappingByKeyType(key.keyType)
-
   const did = `did:peer:0${key.fingerprint}`
 
-  return getDidDocument(did, key)
+  return getDidDocumentForKey(did, key)
 }
 
 export function didToNumAlgo0DidDocument(did: string) {
@@ -26,7 +24,5 @@ export function didToNumAlgo0DidDocument(did: string) {
 
   const key = Key.fromFingerprint(parsed.id.substring(1))
 
-  const { getDidDocument } = getKeyDidMappingByKeyType(key.keyType)
-
-  return getDidDocument(did, key)
+  return getDidDocumentForKey(did, key)
 }

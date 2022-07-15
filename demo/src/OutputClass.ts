@@ -6,6 +6,7 @@ export enum Color {
 }
 
 export enum Output {
+  NoConnectionRecordFromOutOfBand = `\nNo connectionRecord has been created from invitation\n`,
   ConnectionEstablished = `\nConnection established!`,
   MissingConnectionRecord = `\nNo connectionRecord ID has been set yet\n`,
   ConnectionLink = `\nRun 'Receive connection invitation' in Faber and paste this invitation link:\n\n`,

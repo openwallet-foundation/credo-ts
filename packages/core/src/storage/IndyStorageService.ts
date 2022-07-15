@@ -1,19 +1,20 @@
+import type { AgentContext } from '../agent'
+import type { IndyWallet } from '../wallet/IndyWallet'
 import type { BaseRecord, TagsBase } from './BaseRecord'
-import type { StorageService, BaseRecordConstructor } from './StorageService'
+import type { BaseRecordConstructor, Query, StorageService } from './StorageService'
 import type { default as Indy, WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
 
-import { scoped, Lifecycle } from 'tsyringe'
-
-import { AgentConfig } from '../agent/AgentConfig'
-import { RecordNotFoundError, RecordDuplicateError, IndySdkError } from '../error'
+import { AgentDependencies } from '../agent/AgentDependencies'
+import { InjectionSymbols } from '../constants'
+import { IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
+import { injectable, inject } from '../plugins'
 import { JsonTransformer } from '../utils/JsonTransformer'
 import { isIndyError } from '../utils/indyError'
 import { isBoolean } from '../utils/type'
-import { IndyWallet } from '../wallet/IndyWallet'
+import { assertIndyWallet } from '../wallet/util/assertIndyWallet'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyStorageService<T extends BaseRecord> implements StorageService<T> {
-  private wallet: IndyWallet
   private indy: typeof Indy
 
   private static DEFAULT_QUERY_OPTIONS = {
@@ -21,9 +22,8 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     retrieveTags: true,
   }
 
-  public constructor(wallet: IndyWallet, agentConfig: AgentConfig) {
-    this.wallet = wallet
-    this.indy = agentConfig.agentDependencies.indy
+  public constructor(@inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies) {
+    this.indy = agentDependencies.indy
   }
 
   private transformToRecordTagValues(tags: { [key: number]: string | undefined }): TagsBase {
@@ -32,8 +32,8 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     for (const [key, value] of Object.entries(tags)) {
       // If the value is a boolean string ('1' or '0')
       // use the boolean val
-      if (value === '1' && value?.includes(':')) {
-        const [tagName, tagValue] = value.split(':')
+      if (value === '1' && key?.includes(':')) {
+        const [tagName, tagValue] = key.split(':')
 
         const transformedValue = transformedTags[tagName]
 
@@ -42,8 +42,15 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
         } else {
           transformedTags[tagName] = [tagValue]
         }
-      } else if (value === '1' || value === '0') {
+      }
+      // Transform '1' and '0' to boolean
+      else if (value === '1' || value === '0') {
         transformedTags[key] = value === '1'
+      }
+      // If 1 or 0 is prefixed with 'n__' we need to remove it. This is to prevent
+      // casting the value to a boolean
+      else if (value === 'n__1' || value === 'n__0') {
+        transformedTags[key] = value === 'n__1' ? '1' : '0'
       }
       // Otherwise just use the value
       else {
@@ -58,10 +65,20 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     const transformedTags: { [key: string]: string | undefined } = {}
 
     for (const [key, value] of Object.entries(tags)) {
+      // If the value is of type null we use the value undefined
+      // Indy doesn't support null as a value
+      if (value === null) {
+        transformedTags[key] = undefined
+      }
       // If the value is a boolean use the indy
       // '1' or '0' syntax
-      if (isBoolean(value)) {
+      else if (isBoolean(value)) {
         transformedTags[key] = value ? '1' : '0'
+      }
+      // If the value is 1 or 0, we need to add something to the value, otherwise
+      // the next time we deserialize the tag values it will be converted to boolean
+      else if (value === '1' || value === '0') {
+        transformedTags[key] = `n__${value}`
       }
       // If the value is an array we create a tag for each array
       // item ("tagName:arrayItem" = "1")
@@ -80,6 +97,31 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
     return transformedTags
   }
 
+  /**
+   * Transforms the search query into a wallet query compatible with indy WQL.
+   *
+   * The format used by AFJ is almost the same as the indy query, with the exception of
+   * the encoding of values, however this is handled by the {@link IndyStorageService.transformToRecordTagValues}
+   * method.
+   */
+  private indyQueryFromSearchQuery(query: Query<T>): Record<string, unknown> {
+    // eslint-disable-next-line prefer-const
+    let { $and, $or, $not, ...tags } = query
+
+    $and = ($and as Query<T>[] | undefined)?.map((q) => this.indyQueryFromSearchQuery(q))
+    $or = ($or as Query<T>[] | undefined)?.map((q) => this.indyQueryFromSearchQuery(q))
+    $not = $not ? this.indyQueryFromSearchQuery($not as Query<T>) : undefined
+
+    const indyQuery = {
+      ...this.transformFromRecordTagValues(tags as unknown as TagsBase),
+      $and,
+      $or,
+      $not,
+    }
+
+    return indyQuery
+  }
+
   private recordToInstance(record: WalletRecord, recordClass: BaseRecordConstructor<T>): T {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const instance = JsonTransformer.deserialize<T>(record.value!, recordClass)
@@ -92,12 +134,14 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   }
 
   /** @inheritDoc */
-  public async save(record: T) {
+  public async save(agentContext: AgentContext, record: T) {
+    assertIndyWallet(agentContext.wallet)
+
     const value = JsonTransformer.serialize(record)
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
-      await this.indy.addWalletRecord(this.wallet.handle, record.type, record.id, value, tags)
+      await this.indy.addWalletRecord(agentContext.wallet.handle, record.type, record.id, value, tags)
     } catch (error) {
       // Record already exists
       if (isIndyError(error, 'WalletItemAlreadyExists')) {
@@ -109,13 +153,15 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   }
 
   /** @inheritDoc */
-  public async update(record: T): Promise<void> {
+  public async update(agentContext: AgentContext, record: T): Promise<void> {
+    assertIndyWallet(agentContext.wallet)
+
     const value = JsonTransformer.serialize(record)
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
-      await this.indy.updateWalletRecordValue(this.wallet.handle, record.type, record.id, value)
-      await this.indy.updateWalletRecordTags(this.wallet.handle, record.type, record.id, tags)
+      await this.indy.updateWalletRecordValue(agentContext.wallet.handle, record.type, record.id, value)
+      await this.indy.updateWalletRecordTags(agentContext.wallet.handle, record.type, record.id, tags)
     } catch (error) {
       // Record does not exist
       if (isIndyError(error, 'WalletItemNotFound')) {
@@ -130,9 +176,11 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   }
 
   /** @inheritDoc */
-  public async delete(record: T) {
+  public async delete(agentContext: AgentContext, record: T) {
+    assertIndyWallet(agentContext.wallet)
+
     try {
-      await this.indy.deleteWalletRecord(this.wallet.handle, record.type, record.id)
+      await this.indy.deleteWalletRecord(agentContext.wallet.handle, record.type, record.id)
     } catch (error) {
       // Record does not exist
       if (isIndyError(error, 'WalletItemNotFound')) {
@@ -147,10 +195,12 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   }
 
   /** @inheritDoc */
-  public async getById(recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
+  public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
+    assertIndyWallet(agentContext.wallet)
+
     try {
       const record = await this.indy.getWalletRecord(
-        this.wallet.handle,
+        agentContext.wallet.handle,
         recordClass.type,
         id,
         IndyStorageService.DEFAULT_QUERY_OPTIONS
@@ -169,8 +219,15 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   }
 
   /** @inheritDoc */
-  public async getAll(recordClass: BaseRecordConstructor<T>): Promise<T[]> {
-    const recordIterator = this.search(recordClass.type, {}, IndyStorageService.DEFAULT_QUERY_OPTIONS)
+  public async getAll(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>): Promise<T[]> {
+    assertIndyWallet(agentContext.wallet)
+
+    const recordIterator = this.search(
+      agentContext.wallet,
+      recordClass.type,
+      {},
+      IndyStorageService.DEFAULT_QUERY_OPTIONS
+    )
     const records = []
     for await (const record of recordIterator) {
       records.push(this.recordToInstance(record, recordClass))
@@ -180,12 +237,20 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
 
   /** @inheritDoc */
   public async findByQuery(
+    agentContext: AgentContext,
     recordClass: BaseRecordConstructor<T>,
-    query: Partial<ReturnType<T['getTags']>>
+    query: Query<T>
   ): Promise<T[]> {
-    const indyQuery = this.transformFromRecordTagValues(query as unknown as TagsBase)
+    assertIndyWallet(agentContext.wallet)
 
-    const recordIterator = this.search(recordClass.type, indyQuery, IndyStorageService.DEFAULT_QUERY_OPTIONS)
+    const indyQuery = this.indyQueryFromSearchQuery(query)
+
+    const recordIterator = this.search(
+      agentContext.wallet,
+      recordClass.type,
+      indyQuery,
+      IndyStorageService.DEFAULT_QUERY_OPTIONS
+    )
     const records = []
     for await (const record of recordIterator) {
       records.push(this.recordToInstance(record, recordClass))
@@ -194,12 +259,13 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   }
 
   private async *search(
+    wallet: IndyWallet,
     type: string,
     query: WalletQuery,
     { limit = Infinity, ...options }: WalletSearchOptions & { limit?: number }
   ) {
     try {
-      const searchHandle = await this.indy.openWalletSearch(this.wallet.handle, type, query, options)
+      const searchHandle = await this.indy.openWalletSearch(wallet.handle, type, query, options)
 
       let records: Indy.WalletRecord[] = []
 
@@ -209,7 +275,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
       // Loop while limit not reached (or no limit specified)
       while (!limit || records.length < limit) {
         // Retrieve records
-        const recordsJson = await this.indy.fetchWalletSearchNextRecords(this.wallet.handle, searchHandle, chunk)
+        const recordsJson = await this.indy.fetchWalletSearchNextRecords(wallet.handle, searchHandle, chunk)
 
         if (recordsJson.records) {
           records = [...records, ...recordsJson.records]
@@ -228,7 +294,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
         }
       }
     } catch (error) {
-      throw new IndySdkError(error)
+      throw new IndySdkError(error, `Searching '${type}' records for query '${JSON.stringify(query)}' failed`)
     }
   }
 }

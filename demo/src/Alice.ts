@@ -1,11 +1,17 @@
-/*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
+import type {
+  ConnectionRecord,
+  ConnectionStateChangedEvent,
+  CredentialExchangeRecord,
+  ProofRecord,
+} from '@aries-framework/core'
+
+import { ConnectionEventTypes } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class Alice extends BaseAgent {
-  public connectionRecordFaberId?: string
+  public outOfBandId?: string
   public connected: boolean
 
   public constructor(port: number, name: string) {
@@ -20,24 +26,61 @@ export class Alice extends BaseAgent {
   }
 
   private async getConnectionRecord() {
-    if (!this.connectionRecordFaberId) {
+    if (!this.outOfBandId) {
       throw Error(redText(Output.MissingConnectionRecord))
     }
-    return await this.agent.connections.getById(this.connectionRecordFaberId)
+
+    const [connection] = await this.agent.connections.findAllByOutOfBandId(this.outOfBandId)
+
+    if (!connection) {
+      throw Error(redText(Output.MissingConnectionRecord))
+    }
+
+    return connection
   }
 
   private async printConnectionInvite() {
-    const invite = await this.agent.connections.createConnection()
-    this.connectionRecordFaberId = invite.connectionRecord.id
+    const outOfBand = await this.agent.oob.createInvitation()
+    this.outOfBandId = outOfBand.id
 
-    console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')
-    return invite.connectionRecord
+    console.log(
+      Output.ConnectionLink,
+      outOfBand.outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }),
+      '\n'
+    )
   }
 
   private async waitForConnection() {
-    const connectionRecord = await this.getConnectionRecord()
+    if (!this.outOfBandId) {
+      throw new Error(redText(Output.MissingConnectionRecord))
+    }
 
     console.log('Waiting for Faber to finish connection...')
+
+    const getConnectionRecord = (outOfBandId: string) =>
+      new Promise<ConnectionRecord>((resolve, reject) => {
+        // Timeout of 20 seconds
+        const timeoutId = setTimeout(() => reject(new Error(redText(Output.MissingConnectionRecord))), 20000)
+
+        // Start listener
+        this.agent.events.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, (e) => {
+          if (e.payload.connectionRecord.outOfBandId !== outOfBandId) return
+
+          clearTimeout(timeoutId)
+          resolve(e.payload.connectionRecord)
+        })
+
+        // Also retrieve the connection record by invitation if the event has already fired
+        void this.agent.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {
+          if (connectionRecord) {
+            clearTimeout(timeoutId)
+            resolve(connectionRecord)
+          }
+        })
+      })
+
+    const connectionRecord = await getConnectionRecord(this.outOfBandId)
+
     try {
       await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
     } catch (e) {
@@ -53,9 +96,10 @@ export class Alice extends BaseAgent {
     await this.waitForConnection()
   }
 
-  public async acceptCredentialOffer(credentialRecord: CredentialRecord) {
-    await this.agent.credentials.acceptOffer(credentialRecord.id)
-    console.log(greenText('\nCredential offer accepted!\n'))
+  public async acceptCredentialOffer(credentialRecord: CredentialExchangeRecord) {
+    await this.agent.credentials.acceptOffer({
+      credentialRecordId: credentialRecord.id,
+    })
   }
 
   public async acceptProofRequest(proofRecord: ProofRecord) {

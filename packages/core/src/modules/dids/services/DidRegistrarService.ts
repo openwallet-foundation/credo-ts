@@ -1,4 +1,4 @@
-import type { Logger } from '../../../logger'
+import type { AgentContext } from '../../../agent'
 import type { DidRegistrar } from '../domain/DidRegistrar'
 import type {
   DidCreateOptions,
@@ -9,10 +9,11 @@ import type {
   DidUpdateResult,
 } from '../types'
 
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
-import { IndyWallet } from '../../../wallet/IndyWallet'
+import { AgentDependencies } from '../../../agent/AgentDependencies'
+import { InjectionSymbols } from '../../../constants'
+import { Logger } from '../../../logger'
 import { IndyLedgerService } from '../../ledger'
 import { parseDid } from '../domain/parse'
 import { KeyDidRegistrar } from '../methods/key/KeyDidRegistrar'
@@ -26,23 +27,22 @@ export class DidRegistrarService {
   private registrars: DidRegistrar[]
 
   public constructor(
-    agentConfig: AgentConfig,
-    // FIXME: we don't want to depend on the indy wallet, but we need it for the indy did resolver
-    // Let's see how we can improve once askar / indy-vdr support is merged in.
-    wallet: IndyWallet,
     didRepository: DidRepository,
-    indyLedgerService: IndyLedgerService
+    indyLedgerService: IndyLedgerService,
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies
   ) {
-    this.logger = agentConfig.logger
+    this.logger = logger
 
     this.registrars = [
-      new KeyDidRegistrar(wallet, didRepository),
-      new PeerDidRegistrar(wallet, didRepository),
-      new SovDidRegistrar(wallet, didRepository, agentConfig, indyLedgerService),
+      new KeyDidRegistrar(didRepository),
+      new PeerDidRegistrar(didRepository),
+      new SovDidRegistrar(didRepository, indyLedgerService, agentDependencies),
     ]
   }
 
   public async create<CreateOptions extends DidCreateOptions = DidCreateOptions>(
+    agentContext: AgentContext,
     options: CreateOptions
   ): Promise<DidCreateResult> {
     this.logger.debug(`creating did ${options.did ?? options.method}`)
@@ -88,10 +88,10 @@ export class DidRegistrarService {
       }
     }
 
-    return await registrar.create(options)
+    return await registrar.create(agentContext, options)
   }
 
-  public async update(options: DidUpdateOptions): Promise<DidUpdateResult> {
+  public async update(agentContext: AgentContext, options: DidUpdateOptions): Promise<DidUpdateResult> {
     this.logger.debug(`updating did ${options.did}`)
 
     const method = parseDid(options.did)?.method
@@ -126,10 +126,10 @@ export class DidRegistrarService {
       }
     }
 
-    return await registrar.update(options)
+    return await registrar.update(agentContext, options)
   }
 
-  public async deactivate(options: DidDeactivateOptions): Promise<DidDeactivateResult> {
+  public async deactivate(agentContext: AgentContext, options: DidDeactivateOptions): Promise<DidDeactivateResult> {
     this.logger.debug(`deactivating did ${options.did}`)
 
     const errorResult = {
@@ -163,7 +163,7 @@ export class DidRegistrarService {
       }
     }
 
-    return await registrar.deactivate(options)
+    return await registrar.deactivate(agentContext, options)
   }
 
   private findRegistrarForMethod(method: string): DidRegistrar | null {

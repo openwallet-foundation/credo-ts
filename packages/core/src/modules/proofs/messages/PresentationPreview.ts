@@ -1,18 +1,19 @@
 import { Expose, Transform, Type } from 'class-transformer'
 import {
-  Equals,
   IsEnum,
   IsInstance,
   IsInt,
   IsMimeType,
   IsOptional,
   IsString,
+  Matches,
   ValidateIf,
   ValidateNested,
 } from 'class-validator'
 
+import { credDefIdRegex } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 import { PredicateType } from '../models/PredicateType'
 
 export interface PresentationPreviewAttributeOptions {
@@ -39,6 +40,7 @@ export class PresentationPreviewAttribute {
   @Expose({ name: 'cred_def_id' })
   @IsString()
   @ValidateIf((o: PresentationPreviewAttribute) => o.referent !== undefined)
+  @Matches(credDefIdRegex)
   public credentialDefinitionId?: string
 
   @Expose({ name: 'mime-type' })
@@ -81,6 +83,7 @@ export class PresentationPreviewPredicate {
 
   @Expose({ name: 'cred_def_id' })
   @IsString()
+  @Matches(credDefIdRegex)
   public credentialDefinitionId!: string
 
   @IsEnum(PredicateType)
@@ -115,12 +118,12 @@ export class PresentationPreview {
   }
 
   @Expose({ name: '@type' })
-  @Equals(PresentationPreview.type)
+  @IsValidMessageType(PresentationPreview.type)
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
     toClassOnly: true,
   })
-  public readonly type = PresentationPreview.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/presentation-preview'
+  public readonly type = PresentationPreview.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/presentation-preview')
 
   @Type(() => PresentationPreviewAttribute)
   @ValidateNested({ each: true })

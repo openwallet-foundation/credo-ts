@@ -4,7 +4,8 @@
   "license": "Apache-2.0",
   "workspaces": [
     "packages/*",
-    "demo"
+    "demo",
+    "samples/*"
   ],
   "repository": {
     "url": "https://github.com/hyperledger/aries-framework-javascript",
@@ -23,7 +24,8 @@
     "lint": "eslint --ignore-path .gitignore .",
     "validate": "yarn lint && yarn check-types && yarn check-format",
     "prepare": "husky install",
-    "run-mediator": "ts-node ./samples/mediator.ts"
+    "run-mediator": "ts-node ./samples/mediator.ts",
+    "next-version-bump": "ts-node ./scripts/get-next-bump.ts"
   },
   "devDependencies": {
     "@types/cors": "^2.8.10",
@@ -32,9 +34,12 @@
     "@types/jest": "^26.0.23",
     "@types/node": "^15.14.4",
     "@types/uuid": "^8.3.1",
+    "@types/varint": "^6.0.0",
     "@types/ws": "^7.4.6",
     "@typescript-eslint/eslint-plugin": "^4.26.1",
     "@typescript-eslint/parser": "^4.26.1",
+    "conventional-changelog-conventionalcommits": "^5.0.0",
+    "conventional-recommended-bump": "^6.1.0",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "eslint": "^7.28.0",
@@ -52,13 +57,14 @@
     "ts-jest": "^27.0.3",
     "ts-node": "^10.0.0",
     "tsconfig-paths": "^3.9.0",
-    "typescript": "~4.6.2",
+    "tsyringe": "^4.7.0",
+    "typescript": "~4.3.0",
     "ws": "^7.4.6"
   },
   "resolutions": {
     "@types/node": "^15.14.4"
   },
   "engines": {
-    "node": ">= 12"
+    "node": ">= 14"
   }
 }

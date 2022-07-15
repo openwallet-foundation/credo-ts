@@ -1,66 +1,79 @@
-import type { Logger } from '../logger'
-import type { DecryptedMessageContext, EncryptedMessage } from '../types'
+import type { EncryptedMessage, PlaintextMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
-
-import { inject, scoped, Lifecycle } from 'tsyringe'
+import type { AgentContext } from './context'
 
 import { InjectionSymbols } from '../constants'
+import { Key, KeyType } from '../crypto'
+import { Logger } from '../logger'
 import { ForwardMessage } from '../modules/routing/messages'
-import { Wallet } from '../wallet/Wallet'
-
-import { AgentConfig } from './AgentConfig'
+import { inject, injectable } from '../plugins'
 
 export interface EnvelopeKeys {
-  recipientKeys: string[]
-  routingKeys: string[]
-  senderKey: string | null
+  recipientKeys: Key[]
+  routingKeys: Key[]
+  senderKey: Key | null
 }
 
-@scoped(Lifecycle.ContainerScoped)
-class EnvelopeService {
-  private wallet: Wallet
+@injectable()
+export class EnvelopeService {
   private logger: Logger
-  private config: AgentConfig
 
-  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, agentConfig: AgentConfig) {
-    this.wallet = wallet
-    this.logger = agentConfig.logger
-    this.config = agentConfig
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
+    this.logger = logger
   }
 
-  public async packMessage(payload: AgentMessage, keys: EnvelopeKeys): Promise<EncryptedMessage> {
-    const { routingKeys, senderKey } = keys
-    let recipientKeys = keys.recipientKeys
+  public async packMessage(
+    agentContext: AgentContext,
+    payload: AgentMessage,
+    keys: EnvelopeKeys
+  ): Promise<EncryptedMessage> {
+    const { recipientKeys, routingKeys, senderKey } = keys
+    let recipientKeysBase58 = recipientKeys.map((key) => key.publicKeyBase58)
+    const routingKeysBase58 = routingKeys.map((key) => key.publicKeyBase58)
+    const senderKeyBase58 = senderKey && senderKey.publicKeyBase58
 
     // pass whether we want to use legacy did sov prefix
-    const message = payload.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
+    const message = payload.toJSON({ useLegacyDidSovPrefix: agentContext.config.useLegacyDidSovPrefix })
 
     this.logger.debug(`Pack outbound message ${message['@type']}`)
 
-    let encryptedMessage = await this.wallet.pack(message, recipientKeys, senderKey ?? undefined)
+    let encryptedMessage = await agentContext.wallet.pack(message, recipientKeysBase58, senderKeyBase58 ?? undefined)
 
     // If the message has routing keys (mediator) pack for each mediator
-    for (const routingKey of routingKeys) {
+    for (const routingKeyBase58 of routingKeysBase58) {
       const forwardMessage = new ForwardMessage({
         // Forward to first recipient key
-        to: recipientKeys[0],
+        to: recipientKeysBase58[0],
         message: encryptedMessage,
       })
-      recipientKeys = [routingKey]
+      recipientKeysBase58 = [routingKeyBase58]
       this.logger.debug('Forward message created', forwardMessage)
 
-      const forwardJson = forwardMessage.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
+      const forwardJson = forwardMessage.toJSON({ useLegacyDidSovPrefix: agentContext.config.useLegacyDidSovPrefix })
 
       // Forward messages are anon packed
-      encryptedMessage = await this.wallet.pack(forwardJson, [routingKey], undefined)
+      encryptedMessage = await agentContext.wallet.pack(forwardJson, [routingKeyBase58], undefined)
     }
 
     return encryptedMessage
   }
 
-  public async unpackMessage(encryptedMessage: EncryptedMessage): Promise<DecryptedMessageContext> {
-    return this.wallet.unpack(encryptedMessage)
+  public async unpackMessage(
+    agentContext: AgentContext,
+    encryptedMessage: EncryptedMessage
+  ): Promise<DecryptedMessageContext> {
+    const decryptedMessage = await agentContext.wallet.unpack(encryptedMessage)
+    const { recipientKey, senderKey, plaintextMessage } = decryptedMessage
+    return {
+      recipientKey: recipientKey ? Key.fromPublicKeyBase58(recipientKey, KeyType.Ed25519) : undefined,
+      senderKey: senderKey ? Key.fromPublicKeyBase58(senderKey, KeyType.Ed25519) : undefined,
+      plaintextMessage,
+    }
   }
 }
 
-export { EnvelopeService }
+export interface DecryptedMessageContext {
+  plaintextMessage: PlaintextMessage
+  senderKey?: Key
+  recipientKey?: Key
+}

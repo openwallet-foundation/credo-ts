@@ -1,3 +1,4 @@
+import type { AgentContext } from '../../../agent'
 import type {
   DidCreateOptions,
   DidDeactivateOptions,
@@ -10,7 +11,7 @@ import type {
 export interface DidRegistrar {
   readonly supportedMethods: string[]
 
-  create(options: DidCreateOptions): Promise<DidCreateResult>
-  update(options: DidUpdateOptions): Promise<DidUpdateResult>
-  deactivate(options: DidDeactivateOptions): Promise<DidDeactivateResult>
+  create(agentContext: AgentContext, options: DidCreateOptions): Promise<DidCreateResult>
+  update(agentContext: AgentContext, options: DidUpdateOptions): Promise<DidUpdateResult>
+  deactivate(agentContext: AgentContext, options: DidDeactivateOptions): Promise<DidDeactivateResult>
 }
