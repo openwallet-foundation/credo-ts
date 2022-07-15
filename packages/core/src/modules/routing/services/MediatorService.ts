@@ -121,7 +121,7 @@ export class MediatorService {
       })
 
       // According to RFC 0211 key should be a did key, but base58 encoded verkey was used before
-      // RFC was accepted. This converts the key to a public key base58 it it is a did key.
+      // RFC was accepted. This converts the key to a public key base58 if it is a did key.
       const publicKeyBase58 = didKeyToVerkey(update.recipientKey)
 
       if (update.action === KeylistUpdateAction.add) {

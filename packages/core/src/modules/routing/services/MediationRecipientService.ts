@@ -115,7 +115,7 @@ export class MediationRecipientService {
     mediationRecord.endpoint = messageContext.message.endpoint
 
     // According to RFC 0211 keys should be a did key, but base58 encoded verkey was used before
-    // RFC was accepted. This converts the key to a public key base58 it it is a did key.
+    // RFC was accepted. This converts the key to a public key base58 if it is a did key.
     mediationRecord.routingKeys = messageContext.message.routingKeys.map(didKeyToVerkey)
     return await this.updateState(mediationRecord, MediationState.Granted)
   }
