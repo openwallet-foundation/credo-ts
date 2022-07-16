@@ -24,7 +24,8 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
 import { parseInvitationUrl, parseInvitationShortUrl } from '../../utils/parseInvitation'
-import { DidKey, DidResolverService } from '../dids'
+import { DidCommDocumentService } from '../didcomm'
+import { DidKey } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
 import { RoutingService } from '../routing/services/RoutingService'
 
@@ -88,7 +89,7 @@ export class OutOfBandModule {
   private eventEmitter: EventEmitter
   private agentConfig: AgentConfig
   private logger: Logger
-  private didResolverService: DidResolverService
+  private didCommDocumentService: DidCommDocumentService
 
   public constructor(
     dispatcher: Dispatcher,
@@ -99,7 +100,7 @@ export class OutOfBandModule {
     didCommMessageRepository: DidCommMessageRepository,
     messageSender: MessageSender,
     eventEmitter: EventEmitter,
-    didResolverService: DidResolverService
+    didCommDocumentService: DidCommDocumentService
   ) {
     this.dispatcher = dispatcher
     this.agentConfig = agentConfig
@@ -110,7 +111,7 @@ export class OutOfBandModule {
     this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.didResolverService = didResolverService
+    this.didCommDocumentService = didCommDocumentService
     this.registerHandlers(dispatcher)
   }
 
@@ -651,10 +652,13 @@ export class OutOfBandModule {
     const [service] = services
 
     if (typeof service === 'string') {
-      const didDocument = await this.didResolverService.resolveDidDocument(service)
-      const documentService = didDocument.service?.[0]
-      serviceEndpoint = documentService?.serviceEndpoint
-      recipientKeys = didDocument?.recipientKeys?.map((key) => key.publicKeyBase58)
+      const didServices = await this.didCommDocumentService.resolveServicesFromDid(service)
+      const didService = didServices?.[0]
+      if (didService) {
+        serviceEndpoint = didService.serviceEndpoint
+        recipientKeys = didService.recipientKeys.map((key) => key.publicKeyBase58)
+        routingKeys = didService.routingKeys.map((key) => key.publicKeyBase58) || []
+      }
     } else {
       serviceEndpoint = service.serviceEndpoint
       recipientKeys = service.recipientKeys.map(didKeyToVerkey)
