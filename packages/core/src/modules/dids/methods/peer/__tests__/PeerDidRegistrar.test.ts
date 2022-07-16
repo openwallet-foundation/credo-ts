@@ -32,7 +32,7 @@ describe('DidRegistrar', () => {
     })
 
     describe('did:peer:0', () => {
-      it('should correctly create a did:peer:0 document using Ed25519 keytype', async () => {
+      it('should correctly create a did:peer:0 document using Ed25519 key type', async () => {
         const seed = '96213c3d7fc8d4d6754c712fd969598e'
 
         const result = await peerDidRegistrar.create(agentContext, {
@@ -202,7 +202,7 @@ describe('DidRegistrar', () => {
       it('should store the did with the did document', async () => {
         const did = 'did:peer:1zQmUTNcSy2J2sAmX6Ad2bdPvhVnHPUaod8Skpt8DWPpZaiL'
 
-        await peerDidRegistrar.create(agentContext, {
+        const { didState } = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           didDocument,
           options: {
@@ -215,7 +215,7 @@ describe('DidRegistrar', () => {
 
         expect(didRecord).toMatchObject({
           id: did,
-          didDocument,
+          didDocument: didState.didDocument,
           role: DidDocumentRole.Created,
           _tags: {
             recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),

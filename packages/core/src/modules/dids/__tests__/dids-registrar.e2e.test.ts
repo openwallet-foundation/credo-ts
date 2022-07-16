@@ -1,17 +1,29 @@
-import type { KeyDidCreateOptions } from '../src/modules/dids/methods/key/KeyDidRegistrar'
-import type { PeerDidNumAlgo0CreateOptions } from '../src/modules/dids/methods/peer/PeerDidRegistrar'
-import type { SovDidCreateOptions } from '../src/modules/dids/methods/sov/SovDidRegistrar'
+import type { KeyDidCreateOptions } from '../methods/key/KeyDidRegistrar'
+import type { PeerDidNumAlgo0CreateOptions } from '../methods/peer/PeerDidRegistrar'
+import type { SovDidCreateOptions } from '../methods/sov/SovDidRegistrar'
 import type { Wallet } from '@aries-framework/core'
 
-import { Agent } from '../src/agent/Agent'
-import { KeyType } from '../src/crypto'
-import { PeerDidNumAlgo } from '../src/modules/dids/methods/peer/didPeer'
+import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 
-import { getBaseConfig } from './helpers'
+import { genesisPath, getBaseConfig } from '../../../../tests/helpers'
+import { Agent } from '../../../agent/Agent'
+import { KeyType } from '../../../crypto'
+import { TypedArrayEncoder } from '../../../utils'
+import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
+import { PeerDidNumAlgo } from '../methods/peer/didPeer'
 
 import { InjectionSymbols, JsonTransformer } from '@aries-framework/core'
 
-const { config, agentDependencies } = getBaseConfig('Faber Dids Registrar')
+const { config, agentDependencies } = getBaseConfig('Faber Dids Registrar', {
+  indyLedgers: [
+    {
+      id: `localhost`,
+      isProduction: false,
+      genesisPath,
+      transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
+    },
+  ],
+})
 
 describe('dids', () => {
   let agent: Agent
@@ -152,57 +164,102 @@ describe('dids', () => {
   })
 
   it('should create a did:sov did', async () => {
+    // Generate a seed and the indy did. This allows us to create a new did every time
+    // but still check if the created output document is as expected.
+    const seed = Array(32 + 1)
+      .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+      .slice(0, 32)
+
+    const publicKeyEd25519 = generateKeyPairFromSeed(TypedArrayEncoder.fromString(seed)).publicKey
+    const x25519PublicKeyBase58 = TypedArrayEncoder.toBase58(convertPublicKeyToX25519(publicKeyEd25519))
+    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyEd25519)
+    const indyDid = indyDidFromPublicKeyBase58(ed25519PublicKeyBase58)
+
     const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
+    const submitterDid = `did:sov:${wallet.publicDid?.did!}`
+
     const did = await agent.dids.create<SovDidCreateOptions>({
       method: 'sov',
       options: {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
-        submitterDid: `did:sov:${wallet.publicDid?.did!}`,
+        submitterDid,
         alias: 'Alias',
+        endpoints: {
+          endpoint: 'https://example.com/endpoint',
+          types: ['DIDComm', 'did-communication', 'endpoint'],
+          routingKeys: ['a-routing-key'],
+        },
       },
       secret: {
-        seed: '00000000000000000000000Trustee12',
+        seed,
       },
     })
 
     expect(JsonTransformer.toJSON(did)).toMatchObject({
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
+      didDocumentMetadata: {
+        qualifiedIndyDid: `did:indy:localhost:${indyDid}`,
+      },
+      didRegistrationMetadata: {
+        indyNamespace: 'localhost',
+      },
       didState: {
         state: 'finished',
-        did: 'did:sov:EC6fzUPMjJ8cAA7XiUSrXn',
+        did: `did:sov:${indyDid}`,
         didDocument: {
           '@context': [
             'https://w3id.org/did/v1',
             'https://w3id.org/security/suites/ed25519-2018/v1',
             'https://w3id.org/security/suites/x25519-2019/v1',
+            'https://didcomm.org/messaging/contexts/v2',
           ],
           alsoKnownAs: undefined,
           controller: undefined,
           verificationMethod: [
             {
-              id: 'did:sov:EC6fzUPMjJ8cAA7XiUSrXn#key-1',
+              id: `did:sov:${indyDid}#key-1`,
               type: 'Ed25519VerificationKey2018',
-              controller: 'did:sov:EC6fzUPMjJ8cAA7XiUSrXn',
-              publicKeyBase58: '8C1FUwFjnDcyv8BLYoLBiDf1aLQNcaVrNhDpKqPku9Hm',
+              controller: `did:sov:${indyDid}`,
+              publicKeyBase58: ed25519PublicKeyBase58,
             },
             {
-              id: 'did:sov:EC6fzUPMjJ8cAA7XiUSrXn#key-agreement-1',
+              id: `did:sov:${indyDid}#key-agreement-1`,
               type: 'X25519KeyAgreementKey2019',
-              controller: 'did:sov:EC6fzUPMjJ8cAA7XiUSrXn',
-              publicKeyBase58: '7c81W1wgTAGJWPkd44DSax8ZSxcLxwYhJDPixnSuzo64',
+              controller: `did:sov:${indyDid}`,
+              publicKeyBase58: x25519PublicKeyBase58,
             },
           ],
-          service: undefined,
-          authentication: ['did:sov:EC6fzUPMjJ8cAA7XiUSrXn#key-1'],
-          assertionMethod: ['did:sov:EC6fzUPMjJ8cAA7XiUSrXn#key-1'],
-          keyAgreement: ['did:sov:EC6fzUPMjJ8cAA7XiUSrXn#key-agreement-1'],
+          service: [
+            {
+              id: `did:sov:${indyDid}#endpoint`,
+              serviceEndpoint: 'https://example.com/endpoint',
+              type: 'endpoint',
+            },
+            {
+              accept: ['didcomm/aip2;env=rfc19'],
+              id: `did:sov:${indyDid}#did-communication`,
+              priority: 0,
+              recipientKeys: [`did:sov:${indyDid}#key-agreement-1`],
+              routingKeys: ['a-routing-key'],
+              serviceEndpoint: 'https://example.com/endpoint',
+              type: 'did-communication',
+            },
+            {
+              accept: ['didcomm/v2'],
+              id: `did:sov:${indyDid}#didcomm-1`,
+              routingKeys: ['a-routing-key'],
+              serviceEndpoint: 'https://example.com/endpoint',
+              type: 'DIDComm',
+            },
+          ],
+          authentication: [`did:sov:${indyDid}#key-1`],
+          assertionMethod: [`did:sov:${indyDid}#key-1`],
+          keyAgreement: [`did:sov:${indyDid}#key-agreement-1`],
           capabilityInvocation: undefined,
           capabilityDelegation: undefined,
-          id: 'did:sov:EC6fzUPMjJ8cAA7XiUSrXn',
+          id: `did:sov:${indyDid}`,
         },
         secret: {
-          seed: '00000000000000000000000Trustee12',
+          seed,
         },
       },
     })

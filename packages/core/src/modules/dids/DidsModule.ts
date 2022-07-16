@@ -75,7 +75,7 @@ export class DidsModule {
     return this.didRepository.findAllByRecipientKey(this.agentContext, recipientKey)
   }
 
-  public getCreatedDids({ method }: { method?: string }) {
+  public getCreatedDids({ method }: { method?: string } = {}) {
     return this.didRepository.getCreatedDids(this.agentContext, { method })
   }
 

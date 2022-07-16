@@ -1,10 +1,11 @@
 import type { AgentContext } from '../../../../agent'
 import type { KeyType } from '../../../../crypto'
-import type { DidDocument } from '../../domain'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidRepository } from '../../repository'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
+import { JsonTransformer } from '../../../../utils'
+import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord } from '../../repository'
 
@@ -59,17 +60,19 @@ export class PeerDidRegistrar implements DidRegistrar {
           seed,
         })
 
+        // TODO: validate did:peer document
+
         didDocument = keyToNumAlgo0DidDocument(key)
       } else if (isPeerDidNumAlgo1CreateOptions(options)) {
-        const did = didDocumentJsonToNumAlgo1Did(options.didDocument.toJSON())
-        // FIXME: do not mutate input object
-        options.didDocument.id = did
-        didDocument = options.didDocument
+        const didDocumentJson = options.didDocument.toJSON()
+        const did = didDocumentJsonToNumAlgo1Did(didDocumentJson)
+
+        didDocument = JsonTransformer.fromJSON({ ...didDocumentJson, id: did }, DidDocument)
       } else if (isPeerDidNumAlgo2CreateOptions(options)) {
+        const didDocumentJson = options.didDocument.toJSON()
         const did = didDocumentToNumAlgo2Did(options.didDocument)
-        // FIXME: do not mutate input object
-        options.didDocument.id = did
-        didDocument = options.didDocument
+
+        didDocument = JsonTransformer.fromJSON({ ...didDocumentJson, id: did }, DidDocument)
       } else {
         return {
           didDocumentMetadata: {},
@@ -188,7 +191,7 @@ export interface PeerDidNumAlgo1CreateOptions extends DidCreateOptions {
 
 export interface PeerDidNumAlgo2CreateOptions extends DidCreateOptions {
   method: 'peer'
-  did?: undefined
+  did?: never
   didDocument: DidDocument
   options: {
     numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc

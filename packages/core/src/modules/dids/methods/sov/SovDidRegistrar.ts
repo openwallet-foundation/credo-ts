@@ -1,6 +1,7 @@
 import type { AgentContext } from '../../../../agent'
 import type { AgentDependencies } from '../../../../agent/AgentDependencies'
-import type { IndyLedgerService } from '../../../ledger'
+import type { Logger } from '../../../../logger'
+import type { IndyEndpointAttrib, IndyLedgerService, IndyPoolService } from '../../../ledger'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidRepository } from '../../repository'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
@@ -10,22 +11,28 @@ import { assertIndyWallet } from '../../../../wallet/util/assertIndyWallet'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord } from '../../repository'
 
-import { sovDidDocumentFromDid } from './util'
+import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './util'
 
 export class SovDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['sov']
   private didRepository: DidRepository
   private indy: typeof Indy
   private indyLedgerService: IndyLedgerService
+  private indyPoolService: IndyPoolService
+  private logger: Logger
 
   public constructor(
     didRepository: DidRepository,
     indyLedgerService: IndyLedgerService,
-    agentDependencies: AgentDependencies
+    indyPoolService: IndyPoolService,
+    agentDependencies: AgentDependencies,
+    logger: Logger
   ) {
     this.didRepository = didRepository
     this.indy = agentDependencies.indy
     this.indyLedgerService = indyLedgerService
+    this.indyPoolService = indyPoolService
+    this.logger = logger
   }
 
   public async create(agentContext: AgentContext, options: SovDidCreateOptions): Promise<DidCreateResult> {
@@ -43,17 +50,6 @@ export class SovDidRegistrar implements DidRegistrar {
       }
     }
 
-    if (options.didDocument) {
-      return {
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'didDocumentNotSupported: providing did document not supported for did:sov dids',
-        },
-      }
-    }
-
     try {
       // NOTE: we need to use the createAndStoreMyDid method from indy to create the did
       // If we just create a key and handle the creating of the did ourselves, indy will throw a
@@ -61,41 +57,71 @@ export class SovDidRegistrar implements DidRegistrar {
       // to rely directly on the indy SDK, as we don't want to expose a createDid method just for.
       // FIXME: once askar/indy-vdr is supported we need to adjust this to work with both indy-sdk and askar
       assertIndyWallet(agentContext.wallet)
-      const [indyDid, verkey] = await this.indy.createAndStoreMyDid(agentContext.wallet.handle, {
+      const [unqualifiedIndyDid, verkey] = await this.indy.createAndStoreMyDid(agentContext.wallet.handle, {
         seed,
       })
 
-      const fullDid = `did:sov:${indyDid}`
+      const qualifiedSovDid = `did:sov:${unqualifiedIndyDid}`
 
       if (!submitterDid.startsWith('did:sov:')) {
         throw new Error('Submitter did must a valid did:sov did')
       }
 
-      const unqualifiedDid = submitterDid.replace('did:sov:', '')
+      const unqualifiedSubmitterDid = submitterDid.replace('did:sov:', '')
 
-      await this.indyLedgerService.registerPublicDid(agentContext, unqualifiedDid, indyDid, verkey, alias, role)
-      await this.indyLedgerService.setEndpointsForDid(agentContext, unqualifiedDid, {
-        endpoint: 'http://localhost:8080',
-      })
+      // TODO: it should be possible to pass the pool used for writing to the indy ledger service.
+      // The easiest way to do this would be to make the submitterDid a fully qualified did, including the indy namespace.
+      await this.indyLedgerService.registerPublicDid(
+        agentContext,
+        unqualifiedSubmitterDid,
+        unqualifiedIndyDid,
+        verkey,
+        alias,
+        role
+      )
 
-      const didDocument = sovDidDocumentFromDid(fullDid, verkey).build()
+      // Create did document
+      const didDocumentBuilder = sovDidDocumentFromDid(qualifiedSovDid, verkey)
+
+      // Add services if endpoints object was passed.
+      if (options.options.endpoints) {
+        await this.indyLedgerService.setEndpointsForDid(agentContext, unqualifiedIndyDid, options.options.endpoints)
+        addServicesFromEndpointsAttrib(
+          didDocumentBuilder,
+          qualifiedSovDid,
+          options.options.endpoints,
+          `${qualifiedSovDid}#key-agreement-1`
+        )
+      }
+
+      // Build did document.
+      const didDocument = didDocumentBuilder.build()
+
+      // FIXME: we need to update this to the `indyNamespace` once https://github.com/hyperledger/aries-framework-javascript/issues/944 has been resolved
+      const indyNamespace = this.indyPoolService.ledgerWritePool.config.id
+      const qualifiedIndyDid = `did:indy:${indyNamespace}:${unqualifiedIndyDid}`
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({
-        id: fullDid,
+        id: qualifiedSovDid,
         role: DidDocumentRole.Created,
         tags: {
           recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+          qualifiedIndyDid,
         },
       })
       await this.didRepository.save(agentContext, didRecord)
 
       return {
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
+        didDocumentMetadata: {
+          qualifiedIndyDid,
+        },
+        didRegistrationMetadata: {
+          indyNamespace,
+        },
         didState: {
           state: 'finished',
-          did: fullDid,
+          did: qualifiedSovDid,
           didDocument,
           secret: {
             // FIXME: the uni-registrar creates the seed in the registrar method
@@ -145,12 +171,13 @@ export class SovDidRegistrar implements DidRegistrar {
 export interface SovDidCreateOptions extends DidCreateOptions {
   method: 'sov'
   did?: undefined
-  // TODO: support setting services. We first need to support setting attrib data
-  // in the indy ledger service. For now we can only create public dids without any services
-  didDocument?: undefined
+  // As did:sov is so limited, we require everything needed to construct the did document to be passed
+  // through the options object. Once we support did:indy we can allow the didDocument property.
+  didDocument?: never
   options: {
     alias: string
     role?: Indy.NymRole
+    endpoints?: IndyEndpointAttrib
     submitterDid: string
   }
   secret?: {

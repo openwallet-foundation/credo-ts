@@ -9,19 +9,19 @@ import type {
   DidUpdateResult,
 } from '../types'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { inject, injectable } from 'tsyringe'
 
 import { AgentDependencies } from '../../../agent/AgentDependencies'
 import { InjectionSymbols } from '../../../constants'
 import { Logger } from '../../../logger'
-import { IndyLedgerService } from '../../ledger'
+import { IndyLedgerService, IndyPoolService } from '../../ledger'
 import { parseDid } from '../domain/parse'
 import { KeyDidRegistrar } from '../methods/key/KeyDidRegistrar'
 import { PeerDidRegistrar } from '../methods/peer/PeerDidRegistrar'
 import { SovDidRegistrar } from '../methods/sov/SovDidRegistrar'
 import { DidRepository } from '../repository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DidRegistrarService {
   private logger: Logger
   private registrars: DidRegistrar[]
@@ -29,6 +29,7 @@ export class DidRegistrarService {
   public constructor(
     didRepository: DidRepository,
     indyLedgerService: IndyLedgerService,
+    indyPoolService: IndyPoolService,
     @inject(InjectionSymbols.Logger) logger: Logger,
     @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies
   ) {
@@ -37,7 +38,7 @@ export class DidRegistrarService {
     this.registrars = [
       new KeyDidRegistrar(didRepository),
       new PeerDidRegistrar(didRepository),
-      new SovDidRegistrar(didRepository, indyLedgerService, agentDependencies),
+      new SovDidRegistrar(didRepository, indyLedgerService, indyPoolService, agentDependencies, logger),
     ]
   }
 

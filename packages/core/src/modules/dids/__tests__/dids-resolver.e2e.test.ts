@@ -1,13 +1,11 @@
-import type { Wallet } from '../src/wallet'
+import type { Wallet } from '../../../wallet'
 
-import { Agent } from '../src/agent/Agent'
-import { InjectionSymbols } from '../src/constants'
-import { Key, KeyType } from '../src/crypto'
-import { convertPublicKeyToX25519 } from '../src/modules/dids/domain/key-type/ed25519'
-import { JsonTransformer } from '../src/utils/JsonTransformer'
-import { sleep } from '../src/utils/sleep'
+import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import { getBaseConfig } from './helpers'
+import { getBaseConfig } from '../../../../tests/helpers'
+import { sleep } from '../../../utils/sleep'
+
+import { InjectionSymbols, Key, KeyType, JsonTransformer, Agent } from '@aries-framework/core'
 
 const { config, agentDependencies } = getBaseConfig('Faber Dids Resolver', {})
 
