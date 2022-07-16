@@ -1,5 +1,5 @@
 import type { ConnectionRecord } from '../modules/connections'
-import type { ResolvedDidCommService } from '../modules/dids'
+import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { Key } from '../modules/dids/domain/Key'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundMessage, OutboundServiceMessage } from '../types'

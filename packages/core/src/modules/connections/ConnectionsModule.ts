@@ -11,6 +11,7 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../error'
 import { injectable, module } from '../../plugins'
+import { DidCommDocumentService } from '../didcomm'
 import { DidResolverService } from '../dids'
 import { DidRepository } from '../dids/repository'
 import { OutOfBandService } from '../oob/OutOfBandService'
@@ -44,6 +45,7 @@ export class ConnectionsModule {
   private routingService: RoutingService
   private didRepository: DidRepository
   private didResolverService: DidResolverService
+  private didCommDocumentService: DidCommDocumentService
 
   public constructor(
     dispatcher: Dispatcher,
@@ -55,6 +57,7 @@ export class ConnectionsModule {
     routingService: RoutingService,
     didRepository: DidRepository,
     didResolverService: DidResolverService,
+    didCommDocumentService: DidCommDocumentService,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
@@ -66,6 +69,7 @@ export class ConnectionsModule {
     this.didRepository = didRepository
     this.messageSender = messageSender
     this.didResolverService = didResolverService
+    this.didCommDocumentService = didCommDocumentService
     this.registerHandlers(dispatcher)
   }
 
@@ -287,7 +291,8 @@ export class ConnectionsModule {
         this.agentConfig,
         this.connectionService,
         this.outOfBandService,
-        this.didResolverService
+        this.didResolverService,
+        this.didCommDocumentService
       )
     )
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))

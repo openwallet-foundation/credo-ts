@@ -26,7 +26,6 @@ import { parseMessageType, supportsIncomingMessageType } from '../../utils/messa
 import { parseInvitationUrl, parseInvitationShortUrl } from '../../utils/parseInvitation'
 import { DidKey, DidResolverService } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
-import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { RoutingService } from '../routing/services/RoutingService'
 
 import { OutOfBandService } from './OutOfBandService'
@@ -410,7 +409,7 @@ export class OutOfBandModule {
     const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
 
-    const existingConnection = await this.findExistingConnection(services)
+    const existingConnection = await this.findExistingConnection(outOfBandInvitation)
 
     await this.outOfBandService.updateState(outOfBandRecord, OutOfBandState.PrepareResponse)
 
@@ -582,25 +581,20 @@ export class OutOfBandModule {
     return handshakeProtocol
   }
 
-  private async findExistingConnection(services: Array<OutOfBandDidCommService | string>) {
-    this.logger.debug('Searching for an existing connection for out-of-band invitation services.', { services })
+  private async findExistingConnection(outOfBandInvitation: OutOfBandInvitation) {
+    this.logger.debug('Searching for an existing connection for out-of-band invitation.', { outOfBandInvitation })
 
-    // TODO: for each did we should look for a connection with the invitation did OR a connection with theirDid that matches the service did
-    for (const didOrService of services) {
-      let did: string
-      if (typeof didOrService === 'string') {
-        did = didOrService
-      } else {
-        did = outOfBandServiceToNumAlgo2Did(didOrService)
-      }
-      const connections = await this.connectionsModule.findByInvitationDid(did)
-      this.logger.debug(`Retrieved ${connections.length} connections for invitation did ${did}`)
+    for (const invitationDid of outOfBandInvitation.invitationDids) {
+      const connections = await this.connectionsModule.findByInvitationDid(invitationDid)
+      this.logger.debug(`Retrieved ${connections.length} connections for invitation did ${invitationDid}`)
 
       if (connections.length === 1) {
         const [firstConnection] = connections
         return firstConnection
       } else if (connections.length > 1) {
-        this.logger.warn(`There is more than one connection created from invitationDid ${did}. Taking the first one.`)
+        this.logger.warn(
+          `There is more than one connection created from invitationDid ${invitationDid}. Taking the first one.`
+        )
         const [firstConnection] = connections
         return firstConnection
       }
@@ -658,7 +652,7 @@ export class OutOfBandModule {
 
     if (typeof service === 'string') {
       const didDocument = await this.didResolverService.resolveDidDocument(service)
-      const documentService = didDocument?.service?.[0]
+      const documentService = didDocument.service?.[0]
       serviceEndpoint = documentService?.serviceEndpoint
       recipientKeys = didDocument?.recipientKeys?.map((key) => key.publicKeyBase58)
     } else {

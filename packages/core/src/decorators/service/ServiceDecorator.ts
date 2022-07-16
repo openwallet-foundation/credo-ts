@@ -1,4 +1,4 @@
-import type { ResolvedDidCommService } from '../../modules/dids'
+import type { ResolvedDidCommService } from '../../modules/didcomm'
 
 import { IsArray, IsOptional, IsString } from 'class-validator'
 

@@ -1,5 +1,6 @@
 import type { ConnectionRecord } from '../../modules/connections'
-import type { DidDocumentService, ResolvedDidCommService } from '../../modules/dids'
+import type { ResolvedDidCommService } from '../../modules/didcomm'
+import type { DidDocumentService } from '../../modules/dids'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
 import type { OutboundMessage, EncryptedMessage } from '../../types'
@@ -9,10 +10,10 @@ import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/
 import testLogger from '../../../tests/logger'
 import { KeyType } from '../../crypto'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { Key, DidDocument, VerificationMethod } from '../../modules/dids'
+import { DidCommDocumentService } from '../../modules/didcomm'
+import { DidResolverService, Key, DidDocument, VerificationMethod } from '../../modules/dids'
 import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Service'
 import { verkeyToInstanceOfKey } from '../../modules/dids/helpers'
-import { DidResolverService } from '../../modules/dids/services/DidResolverService'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
@@ -29,6 +30,7 @@ const logger = testLogger
 
 const TransportServiceMock = TransportService as jest.MockedClass<typeof TransportService>
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
+const DidCommDocumentServiceMock = DidCommDocumentService as jest.Mock<DidCommDocumentService>
 
 class DummyHttpOutboundTransport implements OutboundTransport {
   public start(): Promise<void> {
@@ -76,8 +78,9 @@ describe('MessageSender', () => {
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
 
   const didResolverService = new DidResolverServiceMock()
+  const didCommDocumentService = new DidCommDocumentServiceMock()
   const didResolverServiceResolveMock = mockFunction(didResolverService.resolveDidDocument)
-  const didResolverServiceResolveDidServicesMock = mockFunction(didResolverService.resolveServicesFromDid)
+  const didResolverServiceResolveDidServicesMock = mockFunction(didCommDocumentService.resolveServicesFromDid)
 
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
@@ -131,7 +134,8 @@ describe('MessageSender', () => {
         transportService,
         messageRepository,
         logger,
-        didResolverService
+        didResolverService,
+        didCommDocumentService
       )
       connection = getMockConnection({
         id: 'test-123',
@@ -332,7 +336,8 @@ describe('MessageSender', () => {
         transportService,
         new InMemoryMessageRepository(getAgentConfig('MessageSenderTest')),
         logger,
-        didResolverService
+        didResolverService,
+        didCommDocumentService
       )
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
@@ -412,7 +417,8 @@ describe('MessageSender', () => {
         transportService,
         messageRepository,
         logger,
-        didResolverService
+        didResolverService,
+        didCommDocumentService
       )
       connection = getMockConnection()
 

@@ -1,5 +1,6 @@
 import type { ConnectionRecord } from '../modules/connections'
-import type { DidDocument, Key, ResolvedDidCommService } from '../modules/dids'
+import type { ResolvedDidCommService } from '../modules/didcomm'
+import type { DidDocument, Key } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
@@ -11,6 +12,7 @@ import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
+import { DidCommDocumentService } from '../modules/didcomm'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
@@ -34,6 +36,7 @@ export class MessageSender {
   private messageRepository: MessageRepository
   private logger: Logger
   private didResolverService: DidResolverService
+  private didCommDocumentService: DidCommDocumentService
   public readonly outboundTransports: OutboundTransport[] = []
 
   public constructor(
@@ -41,13 +44,15 @@ export class MessageSender {
     transportService: TransportService,
     @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    didResolverService: DidResolverService
+    didResolverService: DidResolverService,
+    didCommDocumentService: DidCommDocumentService
   ) {
     this.envelopeService = envelopeService
     this.transportService = transportService
     this.messageRepository = messageRepository
     this.logger = logger
     this.didResolverService = didResolverService
+    this.didCommDocumentService = didCommDocumentService
     this.outboundTransports = []
   }
 
@@ -347,7 +352,7 @@ export class MessageSender {
 
     if (connection.theirDid) {
       this.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
-      didCommServices = await this.didResolverService.resolveServicesFromDid(connection.theirDid)
+      didCommServices = await this.didCommDocumentService.resolveServicesFromDid(connection.theirDid)
     } else if (outOfBand) {
       this.logger.debug(`Resolving services from out-of-band record ${outOfBand?.id}.`)
       if (connection.isRequester) {
@@ -355,7 +360,7 @@ export class MessageSender {
           // Resolve dids to DIDDocs to retrieve services
           if (typeof service === 'string') {
             this.logger.debug(`Resolving services for did ${service}.`)
-            didCommServices = await this.didResolverService.resolveServicesFromDid(service)
+            didCommServices = await this.didCommDocumentService.resolveServicesFromDid(service)
           } else {
             // Out of band inline service contains keys encoded as did:key references
             didCommServices.push({

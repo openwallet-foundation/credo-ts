@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DidCommDocumentService } from '../../didcomm'
 import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionService } from '../services/ConnectionService'
@@ -15,6 +16,7 @@ export class ConnectionResponseHandler implements Handler {
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
   private didResolverService: DidResolverService
+  private didCommDocumentService: DidCommDocumentService
 
   public supportedMessages = [ConnectionResponseMessage]
 
@@ -22,12 +24,14 @@ export class ConnectionResponseHandler implements Handler {
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
-    didResolverService: DidResolverService
+    didResolverService: DidResolverService,
+    didCommDocumentService: DidCommDocumentService
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
     this.didResolverService = didResolverService
+    this.didCommDocumentService = didCommDocumentService
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionResponseHandler>) {
@@ -75,9 +79,8 @@ export class ConnectionResponseHandler implements Handler {
     if (!invitationRecipientKeys.length) {
       const publicDidServicesArray = await Promise.all(
         outOfBandRecord.outOfBandInvitation
-          .getServices()
-          .filter((s): s is string => typeof s === 'string')
-          .map((serviceDid) => this.didResolverService.resolveServicesFromDid(serviceDid))
+          .getDidServices()
+          .map((serviceDid) => this.didCommDocumentService.resolveServicesFromDid(serviceDid))
       )
       publicDidServicesArray.forEach((servicesArray) => {
         servicesArray.forEach((service) => {

@@ -100,8 +100,7 @@ export class OutOfBandInvitation extends AgentMessage {
 
   // TODO: this only takes into account inline didcomm services, won't work for public dids
   public getRecipientKeys(): Key[] {
-    return this.getServices()
-      .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
+    return this.getInlineServices()
       .map((s) => s.recipientKeys)
       .reduce((acc, curr) => [...acc, ...curr], [])
       .map((didKey) => DidKey.fromDid(didKey).key)
@@ -113,6 +112,12 @@ export class OutOfBandInvitation extends AgentMessage {
       if (service instanceof String) return service.toString()
       return service
     })
+  }
+  public getDidServices(): Array<string> {
+    return this.getServices().filter((service): service is string => typeof service === 'string')
+  }
+  public getInlineServices(): Array<OutOfBandDidCommService> {
+    return this.getServices().filter((service): service is OutOfBandDidCommService => typeof service !== 'string')
   }
 
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {

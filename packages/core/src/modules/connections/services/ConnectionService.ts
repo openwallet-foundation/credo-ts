@@ -204,11 +204,7 @@ export class ConnectionService {
 
     const didDoc = routing
       ? this.createDidDoc(routing)
-      : this.createDidDocFromOutOfBandDidCommServices(
-          outOfBandRecord.outOfBandInvitation
-            .getServices()
-            .filter((s): s is OutOfBandDidCommService => typeof s !== 'string')
-        )
+      : this.createDidDocFromOutOfBandDidCommServices(outOfBandRecord.outOfBandInvitation.getInlineServices())
 
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Created,
