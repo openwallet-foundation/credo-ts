@@ -680,18 +680,6 @@ describe('out of band', () => {
         new AriesFrameworkError('There is no message in requests~attach supported by agent.')
       )
     })
-
-    test('throw an error when a did is used in the out of band message', async () => {
-      const outOfBandInvitation = new OutOfBandInvitation({
-        label: 'test-connection',
-        handshakeProtocols: [HandshakeProtocol.DidExchange],
-        services: ['somedid'],
-      })
-
-      await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
-        new AriesFrameworkError('Dids are not currently supported in out-of-band invitation services attribute.')
-      )
-    })
   })
 
   describe('createLegacyConnectionlessInvitation', () => {

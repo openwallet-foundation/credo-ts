@@ -25,6 +25,7 @@ import { DummyTransportSession } from './stubs'
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
 jest.mock('../../modules/dids/services/DidResolverService')
+jest.mock('../../modules/didcomm/services/DidCommDocumentService')
 
 const logger = testLogger
 
