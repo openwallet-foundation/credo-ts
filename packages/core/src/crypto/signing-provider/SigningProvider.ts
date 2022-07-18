@@ -19,14 +19,14 @@ export interface VerifyOptions {
   signature: Buffer
 }
 
-export interface CreateKeyOptions {
+export interface CreateKeyPairOptions {
   seed?: string
 }
 
 export interface SigningProvider {
   readonly keyType: KeyType
 
-  createKey(options: CreateKeyOptions): Promise<KeyPair>
+  createKeyPair(options: CreateKeyPairOptions): Promise<KeyPair>
   sign(options: SignOptions): Promise<Buffer>
   verify(options: VerifyOptions): Promise<boolean>
 }

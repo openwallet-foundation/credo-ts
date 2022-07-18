@@ -1,4 +1,4 @@
-import type { SigningProvider, CreateKeyOptions, SignOptions, VerifyOptions, KeyPair } from './SigningProvider'
+import type { SigningProvider, CreateKeyPairOptions, SignOptions, VerifyOptions, KeyPair } from './SigningProvider'
 
 import { bls12381toBbs, verify, sign, generateBls12381G2KeyPair } from '@mattrglobal/bbs-signatures'
 
@@ -21,7 +21,7 @@ export class Bls12381g2SigningProvider implements SigningProvider {
    *
    * @throws {SigningProviderError} When a key could not be created
    */
-  public async createKey({ seed }: CreateKeyOptions): Promise<KeyPair> {
+  public async createKeyPair({ seed }: CreateKeyPairOptions): Promise<KeyPair> {
     // Generate bytes from the seed as required by the bbs-signatures libraries
     const seedBytes = seed ? TypedArrayEncoder.fromString(seed) : undefined
 

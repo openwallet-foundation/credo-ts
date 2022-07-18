@@ -7,7 +7,7 @@ import { SigningProviderRegistry } from '../SigningProviderRegistry'
 class SigningProviderMock implements SigningProvider {
   public readonly keyType = KeyType.Bls12381g2
 
-  public async createKey(): Promise<KeyPair> {
+  public async createKeyPair(): Promise<KeyPair> {
     throw new Error('Method not implemented.')
   }
   public async sign(): Promise<Buffer> {
