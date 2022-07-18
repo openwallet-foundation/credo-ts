@@ -11,6 +11,7 @@ import { AnonCredsCredentialDefinitionRepository } from '../../indy/repository/A
 import { AnonCredsSchemaRecord } from '../../indy/repository/AnonCredsSchemaRecord'
 import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { LedgerApi } from '../LedgerApi'
+import { LedgerModuleConfig } from '../LedgerModuleConfig'
 import { generateCredentialDefinitionId, generateSchemaId } from '../ledgerUtil'
 import { IndyLedgerService } from '../services/IndyLedgerService'
 
@@ -132,7 +133,8 @@ describe('LedgerApi', () => {
       ledgerService,
       agentContext,
       anonCredsCredentialDefinitionRepository,
-      anonCredsSchemaRepository
+      anonCredsSchemaRepository,
+      new LedgerModuleConfig()
     )
   })
 
@@ -141,7 +143,7 @@ describe('LedgerApi', () => {
     describe('connectToPools', () => {
       it('should connect to all pools', async () => {
         mockFunction(ledgerService.connectToPools).mockResolvedValue([1, 2, 4])
-        await expect(ledgerApi.connectToPools()).resolves
+        await expect(ledgerApi.connectToPools()).resolves.toBeUndefined()
         expect(ledgerService.connectToPools).toHaveBeenCalled()
       })
     })

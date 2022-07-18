@@ -1,4 +1,6 @@
 import { DependencyManager } from '../../../plugins/DependencyManager'
+import { AnonCredsCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
+import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { LedgerApi } from '../LedgerApi'
 import { LedgerModule } from '../LedgerModule'
 import { IndyLedgerService, IndyPoolService } from '../services'
@@ -15,8 +17,10 @@ describe('LedgerModule', () => {
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(LedgerApi)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(4)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(IndyLedgerService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(IndyPoolService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsCredentialDefinitionRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsSchemaRepository)
   })
 })
