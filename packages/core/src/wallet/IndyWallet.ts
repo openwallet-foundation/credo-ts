@@ -482,7 +482,7 @@ export class IndyWallet implements Wallet {
       if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
         const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
 
-        const keyPair = await signingKeyProvider.createKey({ seed })
+        const keyPair = await signingKeyProvider.createKeyPair({ seed })
         await this.storeKeyPair(keyPair)
         return Key.fromPublicKeyBase58(keyPair.publicKeyBase58, keyType)
       }
