@@ -253,7 +253,7 @@ export class ConnectionService {
    */
   public async processResponse(
     messageContext: InboundMessageContext<ConnectionResponseMessage>,
-    invitationRecipientKeys: Key[]
+    outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionResponseMessage.type.messageTypeUri} start`, messageContext)
     const { connection: connectionRecord, message, recipientKey, senderKey } = messageContext
@@ -286,7 +286,12 @@ export class ConnectionService {
     // Per the Connection RFC we must check if the key used to sign the connection~sig is the same key
     // as the recipient key(s) in the connection invitation message
     const signerVerkey = message.connectionSig.signer
+
+    const invitationRecipientKeys = outOfBandRecord
+      .getTags()
+      .recipientKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint))
     const invitationKey = invitationRecipientKeys[0]?.publicKeyBase58
+
     if (signerVerkey !== invitationKey) {
       throw new ConnectionProblemReportError(
         `Connection object in connection response message is not signed with same key as recipient key in invitation expected='${invitationKey}' received='${signerVerkey}'`,

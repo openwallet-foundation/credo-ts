@@ -14,6 +14,7 @@ import { DidCommDocumentService } from '../../modules/didcomm'
 import { DidResolverService, Key, DidDocument, VerificationMethod } from '../../modules/dids'
 import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Service'
 import { verkeyToInstanceOfKey } from '../../modules/dids/helpers'
+import { OutOfBandRepository } from '../../modules/oob'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
@@ -26,12 +27,14 @@ jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
 jest.mock('../../modules/dids/services/DidResolverService')
 jest.mock('../../modules/didcomm/services/DidCommDocumentService')
+jest.mock('../../modules/oob/repository/OutOfBandRepository')
 
 const logger = testLogger
 
 const TransportServiceMock = TransportService as jest.MockedClass<typeof TransportService>
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 const DidCommDocumentServiceMock = DidCommDocumentService as jest.Mock<DidCommDocumentService>
+const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandRepository>
 
 class DummyHttpOutboundTransport implements OutboundTransport {
   public start(): Promise<void> {
@@ -80,6 +83,7 @@ describe('MessageSender', () => {
 
   const didResolverService = new DidResolverServiceMock()
   const didCommDocumentService = new DidCommDocumentServiceMock()
+  const outOfBandRepository = new OutOfBandRepositoryMock()
   const didResolverServiceResolveMock = mockFunction(didResolverService.resolveDidDocument)
   const didResolverServiceResolveDidServicesMock = mockFunction(didCommDocumentService.resolveServicesFromDid)
 
@@ -136,7 +140,8 @@ describe('MessageSender', () => {
         messageRepository,
         logger,
         didResolverService,
-        didCommDocumentService
+        didCommDocumentService,
+        outOfBandRepository
       )
       connection = getMockConnection({
         id: 'test-123',
@@ -338,7 +343,8 @@ describe('MessageSender', () => {
         new InMemoryMessageRepository(getAgentConfig('MessageSenderTest')),
         logger,
         didResolverService,
-        didCommDocumentService
+        didCommDocumentService,
+        outOfBandRepository
       )
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
@@ -419,7 +425,8 @@ describe('MessageSender', () => {
         messageRepository,
         logger,
         didResolverService,
-        didCommDocumentService
+        didCommDocumentService,
+        outOfBandRepository
       )
       connection = getMockConnection()
 

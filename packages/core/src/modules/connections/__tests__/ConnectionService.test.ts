@@ -474,13 +474,16 @@ describe('ConnectionService', () => {
         connectionSig,
       })
 
+      const outOfBandRecord = getMockOutOfBand({
+        recipientKeys: [new DidKey(theirKey).did],
+      })
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
         senderKey: theirKey,
         recipientKey: Key.fromPublicKeyBase58(verkey, KeyType.Ed25519),
       })
 
-      const processedConnection = await connectionService.processResponse(messageContext, [theirKey])
+      const processedConnection = await connectionService.processResponse(messageContext, outOfBandRecord)
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const peerDid = didDocumentJsonToNumAlgo1Did(convertToNewDidDocument(otherPartyConnection.didDoc!).toJSON())
@@ -492,18 +495,18 @@ describe('ConnectionService', () => {
     it(`throws an error when connection role is ${DidExchangeRole.Responder} and not ${DidExchangeRole.Requester}`, async () => {
       expect.assertions(1)
 
+      const outOfBandRecord = getMockOutOfBand()
       const connectionRecord = getMockConnection({
         role: DidExchangeRole.Responder,
         state: DidExchangeState.RequestSent,
       })
-      const senderKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
       const messageContext = new InboundMessageContext(jest.fn()(), {
         connection: connectionRecord,
         recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
-        senderKey,
+        senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
       })
 
-      return expect(connectionService.processResponse(messageContext, [senderKey])).rejects.toThrowError(
+      return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
         `Connection record has invalid role ${DidExchangeRole.Responder}. Expected role ${DidExchangeRole.Requester}.`
       )
     })
@@ -554,15 +557,16 @@ describe('ConnectionService', () => {
 
       // Recipient key `verkey` is not the same as theirVerkey which was used to sign message,
       // therefore it should cause a failure.
-      const recipientKeys = [Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)]
-
+      const outOfBandRecord = getMockOutOfBand({
+        recipientKeys: [new DidKey(Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)).did],
+      })
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
         senderKey: theirKey,
         recipientKey: Key.fromPublicKeyBase58(verkey, KeyType.Ed25519),
       })
 
-      return expect(connectionService.processResponse(messageContext, recipientKeys)).rejects.toThrowError(
+      return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
         new RegExp(
           'Connection object in connection response message is not signed with same key as recipient key in invitation'
         )
@@ -588,13 +592,14 @@ describe('ConnectionService', () => {
 
       const connectionResponse = new ConnectionResponseMessage({ threadId: uuid(), connectionSig })
 
+      const outOfBandRecord = getMockOutOfBand({ recipientKeys: [new DidKey(theirKey).did] })
       const messageContext = new InboundMessageContext(connectionResponse, {
         connection: connectionRecord,
         recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
         senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
       })
 
-      return expect(connectionService.processResponse(messageContext, [theirKey])).rejects.toThrowError(
+      return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
         `DID Document is missing.`
       )
     })

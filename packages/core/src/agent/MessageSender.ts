@@ -16,6 +16,7 @@ import { DidCommDocumentService } from '../modules/didcomm'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
+import { OutOfBandRepository } from '../modules/oob/repository'
 import { inject, injectable } from '../plugins'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
@@ -37,6 +38,7 @@ export class MessageSender {
   private logger: Logger
   private didResolverService: DidResolverService
   private didCommDocumentService: DidCommDocumentService
+  private outOfBandRepository: OutOfBandRepository
   public readonly outboundTransports: OutboundTransport[] = []
 
   public constructor(
@@ -45,7 +47,8 @@ export class MessageSender {
     @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
     didResolverService: DidResolverService,
-    didCommDocumentService: DidCommDocumentService
+    didCommDocumentService: DidCommDocumentService,
+    outOfBandRepository: OutOfBandRepository
   ) {
     this.envelopeService = envelopeService
     this.transportService = transportService
@@ -53,6 +56,7 @@ export class MessageSender {
     this.logger = logger
     this.didResolverService = didResolverService
     this.didCommDocumentService = didCommDocumentService
+    this.outOfBandRepository = outOfBandRepository
     this.outboundTransports = []
   }
 
@@ -354,13 +358,26 @@ export class MessageSender {
       this.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
       didCommServices = await this.didCommDocumentService.resolveServicesFromDid(connection.theirDid)
     } else if (outOfBand) {
-      this.logger.debug(`Resolving services from out-of-band record ${outOfBand?.id}.`)
+      this.logger.debug(`Resolving services from out-of-band record ${outOfBand.id}.`)
       if (connection.isRequester) {
         for (const service of outOfBand.outOfBandInvitation.getServices()) {
           // Resolve dids to DIDDocs to retrieve services
           if (typeof service === 'string') {
             this.logger.debug(`Resolving services for did ${service}.`)
             didCommServices = await this.didCommDocumentService.resolveServicesFromDid(service)
+
+            // store recipientKeyFingerprints in the oob record
+            if (!outOfBand.getTag('recipientKeyFingerprints')) {
+              const allRecipientKeys = didCommServices.reduce<Key[]>(
+                (aggr, { recipientKeys }) => [...aggr, ...recipientKeys],
+                []
+              )
+              outOfBand.setTag(
+                'recipientKeyFingerprints',
+                allRecipientKeys.map((key) => key.fingerprint)
+              )
+              await this.outOfBandRepository.update(outOfBand)
+            }
           } else {
             // Out of band inline service contains keys encoded as did:key references
             didCommServices.push({
