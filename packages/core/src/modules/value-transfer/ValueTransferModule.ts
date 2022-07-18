@@ -89,7 +89,7 @@ export class ValueTransferModule {
     const { message, record } = await this.valueTransferGetterService.createRequest(params)
 
     // Send Payment Request to Witness
-    await this.valueTransferService.sendMessageToWitness(message, record.role)
+    await this.valueTransferService.sendMessageToWitness(message, record)
     return { message, record }
   }
 
@@ -122,7 +122,7 @@ export class ValueTransferModule {
     )
 
     // Send Payment Request Acceptance to Witness
-    await this.valueTransferService.sendMessageToWitness(message, record.role)
+    await this.valueTransferService.sendMessageToWitness(message, record)
 
     return { record: updatedRecord, message }
   }
@@ -194,7 +194,7 @@ export class ValueTransferModule {
     )
 
     // Send Payment Request Acceptance to Witness
-    await this.valueTransferService.sendMessageToWitness(message, record.role)
+    await this.valueTransferService.sendMessageToWitness(message, record)
 
     return { record: updatedRecord, message }
   }
@@ -239,7 +239,7 @@ export class ValueTransferModule {
     // Abort transaction
     const { message } = await this.valueTransferService.abortTransaction(record, reason)
     // Send Payment Request Acceptance to Witness
-    if (message && send) await this.valueTransferService.sendMessageToWitness(message, record.role)
+    if (message && send) await this.valueTransferService.sendMessageToWitness(message, record)
 
     return { record, message }
   }

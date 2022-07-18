@@ -30,6 +30,10 @@ export class DIDCommV1Message extends Compose(DIDCommV1BaseMessage, DefaultDecor
     return DIDCommVersion.V1
   }
 
+  public get sender(): string | undefined {
+    return undefined
+  }
+
   public toJSON({ useLegacyDidSovPrefix = false }: { useLegacyDidSovPrefix?: boolean } = {}): Record<string, unknown> {
     const json = JsonTransformer.toJSON(this)
 

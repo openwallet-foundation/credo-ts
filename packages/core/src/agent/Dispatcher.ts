@@ -90,7 +90,6 @@ class Dispatcher {
       type: AgentEventTypes.AgentMessageProcessed,
       payload: {
         message: messageContext.message,
-        connection: messageContext.connection,
       },
     })
   }

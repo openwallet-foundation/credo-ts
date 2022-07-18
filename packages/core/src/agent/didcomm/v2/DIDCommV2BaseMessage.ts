@@ -111,9 +111,9 @@ export class DIDCommV2BaseMessage {
     }
   }
 
-  public getAttachmentDataAsJson(id: string) {
-    if (!this.attachments) return null
-    const attachment = this.attachments?.find((attachment) => attachment.id === id)
+  public getAttachmentDataAsJson(id?: string) {
+    if (!this.attachments || !this.attachments.length) return null
+    const attachment = id ? this.attachments?.find((attachment) => attachment.id === id) : this.attachments[0]
     if (!attachment) return null
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

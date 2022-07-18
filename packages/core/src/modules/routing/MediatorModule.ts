@@ -44,7 +44,7 @@ export class MediatorModule {
 
   public async grantRequestedMediation(mediatorId: string): Promise<MediationRecord> {
     const record = await this.mediatorService.getById(mediatorId)
-    const connectionRecord = await this.connectionService.getById(record.connectionId)
+    const connectionRecord = await this.connectionService.getById(record.did)
 
     const { message, mediationRecord } = await this.mediatorService.createGrantMediationMessage(record)
     const outboundMessage = createOutboundMessage(connectionRecord, message)
@@ -59,10 +59,10 @@ export class MediatorModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateHandler(this.mediatorService))
+    dispatcher.registerHandler(new KeylistUpdateHandler(this.mediatorService, this.messageSender))
     dispatcher.registerHandler(new ForwardHandler(this.mediatorService, this.connectionService, this.messageSender))
-    dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
+    dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService, this.messageSender))
     dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
-    dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig))
+    dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig, this.messageSender))
   }
 }

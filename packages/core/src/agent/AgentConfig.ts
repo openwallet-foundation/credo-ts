@@ -92,8 +92,20 @@ export class AgentConfig {
     return this.initConfig.mediatorPickupStrategy
   }
 
+  public get mediatorDeliveryStrategy() {
+    return this.initConfig.mediatorDeliveryStrategy
+  }
+
+  public get mediatorWebHookEndpoint() {
+    return this.initConfig.mediatorWebHookEndpoint
+  }
+
+  public get mediatorPushToken() {
+    return this.initConfig.mediatorPushToken
+  }
+
   public get endpoints(): [string, ...string[]] {
-    // if endpoints is not set, return queue endpoint
+    // if endpoint is not set, return queue endpoint
     // https://github.com/hyperledger/aries-rfcs/issues/405#issuecomment-582612875
     if (!this.initConfig.endpoints || this.initConfig.endpoints.length === 0) {
       return [DID_COMM_TRANSPORT_QUEUE]
@@ -128,5 +140,9 @@ export class AgentConfig {
 
   public get valueTransferConfig() {
     return this.initConfig.valueTransferConfig
+  }
+
+  public get transports() {
+    return this.initConfig.transports || []
   }
 }

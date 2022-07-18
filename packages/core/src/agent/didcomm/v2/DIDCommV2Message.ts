@@ -19,6 +19,10 @@ export class DIDCommV2Message extends DIDCommV2BaseMessage implements DIDCommMes
     return this.thid
   }
 
+  public get sender(): string | undefined {
+    return this.from
+  }
+
   public serviceDecorator(): ServiceDecorator | undefined {
     return undefined
   }

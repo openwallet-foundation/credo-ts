@@ -1,30 +1,29 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { Transport, ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
+import type { ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
 
-import { ValueTransferState } from '@aries-framework/core'
+import { Transports, ValueTransferState } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class Getter extends BaseAgent {
   public valueTransferRecordId?: string
-  public static transport: Transport = 'ipc'
   public static seed = '6b8b882e2618fa5d45ee7229ca880082'
 
   public constructor(
     name: string,
     port?: number,
-    offlineTransports?: string[],
+    transports?: Transports[],
     valueTransferConfig?: ValueTransferConfig
   ) {
-    super(name, Getter.seed, port, offlineTransports, valueTransferConfig)
+    super(name, Getter.seed, port, transports, valueTransferConfig)
   }
 
   public static async build(): Promise<Getter> {
     const valueTransferConfig: ValueTransferConfig = {
-      witnessTransportForGetterRole: Getter.transport,
+      defaultTransport: Transports.IPC,
     }
-    const getter = new Getter('getter', undefined, [Getter.transport, 'ble'], valueTransferConfig)
+    const getter = new Getter('getter', undefined, [Transports.IPC, Transports.Nearby], valueTransferConfig)
     await getter.initializeAgent()
     const publicDid = await getter.agent.getPublicDid()
     console.log(`Getter Public DID: ${publicDid?.did}`)

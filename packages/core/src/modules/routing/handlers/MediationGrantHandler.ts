@@ -1,21 +1,18 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
+import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { MediationRecipientService } from '../services/MediationRecipientService'
 
-import { MediationGrantMessage } from '../messages'
+import { MediationGrantMessageV2 } from '../messages'
 
-export class MediationGrantHandler implements Handler<typeof DIDCommV1Message> {
+export class MediationGrantHandler implements Handler<typeof DIDCommV2Message> {
   private mediationRecipientService: MediationRecipientService
-  public supportedMessages = [MediationGrantMessage]
+  public supportedMessages = [MediationGrantMessageV2]
 
   public constructor(mediationRecipientService: MediationRecipientService) {
     this.mediationRecipientService = mediationRecipientService
   }
 
   public async handle(messageContext: HandlerInboundMessage<MediationGrantHandler>) {
-    if (!messageContext.connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipient} not found!`)
-    }
     await this.mediationRecipientService.processMediationGrant(messageContext)
   }
 }

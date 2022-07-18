@@ -1,21 +1,18 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
+import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { MediationRecipientService } from '../services'
 
-import { KeylistUpdateResponseMessage } from '../messages'
+import { KeylistUpdateResponseMessageV2 } from '../messages'
 
-export class KeylistUpdateResponseHandler implements Handler<typeof DIDCommV1Message> {
+export class KeylistUpdateResponseHandler implements Handler<typeof DIDCommV2Message> {
   public mediationRecipientService: MediationRecipientService
-  public supportedMessages = [KeylistUpdateResponseMessage]
+  public supportedMessages = [KeylistUpdateResponseMessageV2]
 
   public constructor(mediationRecipientService: MediationRecipientService) {
     this.mediationRecipientService = mediationRecipientService
   }
 
   public async handle(messageContext: HandlerInboundMessage<KeylistUpdateResponseHandler>) {
-    if (!messageContext.connection) {
-      throw new Error(`Connection for verkey ${messageContext.recipient} not found!`)
-    }
     return await this.mediationRecipientService.processKeylistUpdateResults(messageContext)
   }
 }

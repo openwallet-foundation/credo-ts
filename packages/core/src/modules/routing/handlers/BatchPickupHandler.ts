@@ -1,25 +1,24 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
+import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { MessagePickupService } from '../services'
+import type { MessageSender } from '@aries-framework/core'
 
-import { AriesFrameworkError } from '../../../error'
-import { BatchPickupMessage } from '../messages'
+import { BatchPickupMessageV2 } from '../messages'
 
-export class BatchPickupHandler implements Handler<typeof DIDCommV1Message> {
+export class BatchPickupHandler implements Handler<typeof DIDCommV2Message> {
   private messagePickupService: MessagePickupService
-  public supportedMessages = [BatchPickupMessage]
+  private messageSender: MessageSender
+  public supportedMessages = [BatchPickupMessageV2]
 
-  public constructor(messagePickupService: MessagePickupService) {
+  public constructor(messagePickupService: MessagePickupService, messageSender: MessageSender) {
     this.messagePickupService = messagePickupService
+    this.messageSender = messageSender
   }
 
   public async handle(messageContext: HandlerInboundMessage<BatchPickupHandler>) {
-    const { message, connection } = messageContext
-
-    if (!connection) {
-      throw new AriesFrameworkError(`No connection associated with incoming message with id ${message.id}`)
+    const message = await this.messagePickupService.batch(messageContext)
+    if (message) {
+      await this.messageSender.sendDIDCommV2Message(message)
     }
-
-    return this.messagePickupService.batch(messageContext)
   }
 }

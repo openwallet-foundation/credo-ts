@@ -39,7 +39,7 @@ export class ConnectionRequestHandler implements Handler<typeof DIDCommV1Message
     // routing object is required for multi use invitation, because we're creating a
     // new keypair that possibly needs to be registered at a mediator
     if (connectionRecord.multiUseInvitation) {
-      routing = await this.mediationRecipientService.getRouting()
+      routing = await this.mediationRecipientService.getRoutingDid()
     }
 
     connectionRecord = await this.connectionService.processRequest(messageContext, routing)

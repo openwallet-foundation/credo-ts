@@ -1,6 +1,6 @@
 import type { ConnectionRecord } from '../modules/connections'
 import type { DidCommService, IndyAgentService } from '../modules/dids/domain/service'
-import type { AcceptProtocol, Transport } from '../modules/routing/types'
+import type { AcceptProtocol, Transports } from '../modules/routing/types'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundDIDCommV2Message, OutboundMessage, OutboundPackage, SendMessageOptions } from '../types'
 import type { TransportSession } from './TransportService'
@@ -255,49 +255,7 @@ export class MessageSender {
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
   }
 
-  public async sendDIDCommV2Message(
-    outboundMessage: OutboundDIDCommV2Message,
-    transport?: Transport,
-    sendingMessageType: SendingMessageType = SendingMessageType.Encrypted
-  ) {
-    const { payload } = outboundMessage
-
-    if (sendingMessageType === SendingMessageType.Signed) {
-      // send message signed
-      if (!payload.from) {
-        throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
-      }
-      const message = await this.envelopeService.packMessageSigned(payload, { signByDID: payload.from })
-      return await this.sendMessage({ payload: message }, transport)
-    }
-
-    if (sendingMessageType === SendingMessageType.Plain) {
-      // send message plaintext
-      await this.sendMessage({ payload: { ...payload } }, transport)
-      return
-    }
-
-    // send message encrypted
-
-    if (!payload.to?.length) {
-      throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain sender DID.`)
-    }
-
-    const toDID = payload.to[0]
-    const params = {
-      toDID,
-      fromDID: payload.from,
-      signByDID: undefined,
-    }
-    const message = await this.envelopeService.packMessageEncrypted(payload, params)
-
-    if (transport) {
-      // if transport specified explicitly - send message
-      this.logger.debug(`Sending outbound message to transport:`, { transport })
-      return await this.sendMessage({ payload: message }, transport)
-    }
-
-    // else try to resolve transport from DID Document
+  public async sendDIDCommV2EncryptedMessage(toDID: string, outboundMessage: EncryptedMessage) {
     const {
       didDocument,
       didResolutionMetadata: { error, message: errorMessage },
@@ -311,9 +269,74 @@ export class MessageSender {
 
     for await (const service of services) {
       this.logger.debug(`Sending outbound message to service:`, { service })
-      const outboundPackage = { payload: message, endpoint: service.serviceEndpoint }
+      const outboundPackage = { payload: outboundMessage, endpoint: service.serviceEndpoint }
       await this.sendMessage(outboundPackage, service.protocolScheme)
     }
+  }
+
+  public async sendDIDCommV2Message(
+    outboundMessage: OutboundDIDCommV2Message,
+    sendingMessageType: SendingMessageType = SendingMessageType.Encrypted,
+    transports: Transports[] = [],
+    defaultTransport?: Transports
+  ) {
+    const { payload } = outboundMessage
+
+    if (sendingMessageType === SendingMessageType.Signed) {
+      // send message signed
+      if (!payload.from) {
+        throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
+      }
+      const message = await this.envelopeService.packMessageSigned(payload, { signByDID: payload.from })
+      return await this.sendMessage({ payload: message }, defaultTransport)
+    }
+
+    if (sendingMessageType === SendingMessageType.Plain) {
+      // send message plaintext
+      await this.sendMessage({ payload: { ...payload } }, defaultTransport)
+      return
+    }
+
+    // send message encrypted
+
+    if (!payload.to?.length) {
+      throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain sender DID.`)
+    }
+
+    const toDID = payload.to[0]
+
+    const {
+      didDocument,
+      didResolutionMetadata: { error, message: errorMessage },
+    } = await this.didResolverService.resolve(toDID)
+
+    if (!didDocument) {
+      throw new AriesFrameworkError(`Unable to resolve did document for did '${toDID}': ${error} ${errorMessage}`)
+    }
+
+    const services = didDocument?.service || []
+
+    const service = services.find((service) => {
+      const transport = transports.find((transport) => transport.toString() === service.protocolScheme)
+      if (transport) return service
+    })
+
+    const params = {
+      toDID,
+      fromDID: payload.from,
+      signByDID: undefined,
+      serviceId: service?.id,
+    }
+    const message = await this.envelopeService.packMessageEncrypted(payload, params)
+
+    if (!service) {
+      // if transport specified explicitly - send message
+      this.logger.debug(`Sending outbound message to transport:`, { defaultTransport })
+      return await this.sendMessage({ payload: message }, defaultTransport)
+    }
+
+    const outboundPackage = { payload: message, endpoint: service.serviceEndpoint }
+    await this.sendMessage(outboundPackage, service.protocolScheme)
   }
 
   public async packAndSendMessage({

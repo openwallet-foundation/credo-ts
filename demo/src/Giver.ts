@@ -1,7 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { Transport, ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
+import type { ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
 
-import { ValueTransferState } from '@aries-framework/core'
+import { JsonEncoder, OutOfBandGoalCode, Transports, ValueTransferState } from '@aries-framework/core'
 import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'
@@ -9,26 +9,28 @@ import { greenText, Output, redText } from './OutputClass'
 
 export class Giver extends BaseAgent {
   public valueTransferRecordId?: string
-  public static transport: Transport = 'nfc'
   public static seed = '6b8b882e2618fa5d45ee7229ca880083'
 
   public constructor(
     name: string,
     port?: number,
-    offlineTransports?: string[],
+    transports?: Transports[],
     valueTransferConfig?: ValueTransferConfig
   ) {
-    super(name, undefined, port, offlineTransports, valueTransferConfig)
+    super(name, undefined, port, transports, valueTransferConfig)
   }
 
   public static async build(): Promise<Giver> {
     const valueTransferConfig: ValueTransferConfig = {
-      witnessTransportForGiverRole: Giver.transport,
-      getterTransport: 'ble',
+      defaultTransport: Transports.NFC,
       verifiableNotes: createVerifiableNotes(10),
     }
-    const giver = new Giver('giver', undefined, [Giver.transport, 'ble'], valueTransferConfig)
+    const giver = new Giver('giver', undefined, [Transports.NFC, Transports.Nearby], valueTransferConfig)
     await giver.initializeAgent()
+
+    const test = await giver.agent.outOfBand.createInvitation({ goalCode: OutOfBandGoalCode.DidExchange })
+    console.log(JsonEncoder.toString(test))
+
     return giver
   }
 

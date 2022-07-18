@@ -196,9 +196,9 @@ export class ProofsModule {
     const { message, proofRecord } = await this.proofService.createRequest(proofRequest, undefined, config)
 
     // Create and set ~service decorator
-    const routing = await this.mediationRecipientService.getRouting()
+    const routing = await this.mediationRecipientService.getRoutingDid()
     message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
+      serviceEndpoint: routing.endpoint,
       recipientKeys: [routing.verkey],
       routingKeys: routing.routingKeys,
     })
@@ -242,9 +242,9 @@ export class ProofsModule {
     // Use ~service decorator otherwise
     else if (proofRecord.requestMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.mediationRecipientService.getRoutingDid()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
+        serviceEndpoint: routing.endpoint,
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })

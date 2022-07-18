@@ -1,6 +1,6 @@
 import type { InboundTransport, InitConfig, OutboundTransport, ValueTransferConfig } from '@aries-framework/core'
 
-import { Agent, AutoAcceptCredential, AutoAcceptProof, HttpOutboundTransport } from '@aries-framework/core'
+import { Agent, AutoAcceptCredential, AutoAcceptProof, HttpOutboundTransport, Transports } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 
 import { greenText } from './OutputClass'
@@ -24,7 +24,7 @@ export class BaseAgent {
     name: string,
     publicDidSeed?: string,
     port?: number,
-    offlineTransports?: string[],
+    transports: Transports[] = [],
     valueTransferConfig?: ValueTransferConfig
   ) {
     this.name = name
@@ -50,30 +50,51 @@ export class BaseAgent {
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
       valueTransferConfig,
+      transports,
     }
 
     this.config = config
 
     this.agent = new Agent(config, agentDependencies)
 
-    if (port) {
+    if ((transports.includes(Transports.HTTP) || transports.includes(Transports.HTTPS)) && port) {
       this.inBoundTransport = new HttpInboundTransport({ port })
       this.outBoundTransport = new HttpOutboundTransport()
       this.agent.registerInboundTransport(this.inBoundTransport)
       this.agent.registerOutboundTransport(this.outBoundTransport)
     }
 
-    if (offlineTransports) {
-      for (const transport of offlineTransports) {
-        this.inBoundTransport = new FileInboundTransport({ alias: name, schema: transport })
-        this.outBoundTransport = new FileOutboundTransport({
-          alias: name,
-          schema: transport,
-        })
+    if (transports.includes(Transports.NFC)) {
+      this.inBoundTransport = new FileInboundTransport({ alias: name, schema: Transports.NFC })
+      this.outBoundTransport = new FileOutboundTransport({
+        alias: name,
+        schema: Transports.NFC,
+      })
 
-        this.agent.registerInboundTransport(this.inBoundTransport)
-        this.agent.registerOutboundTransport(this.outBoundTransport)
-      }
+      this.agent.registerInboundTransport(this.inBoundTransport)
+      this.agent.registerOutboundTransport(this.outBoundTransport)
+    }
+
+    if (transports.includes(Transports.IPC)) {
+      this.inBoundTransport = new FileInboundTransport({ alias: name, schema: Transports.IPC })
+      this.outBoundTransport = new FileOutboundTransport({
+        alias: name,
+        schema: Transports.IPC,
+      })
+
+      this.agent.registerInboundTransport(this.inBoundTransport)
+      this.agent.registerOutboundTransport(this.outBoundTransport)
+    }
+
+    if (transports.includes(Transports.Nearby)) {
+      this.inBoundTransport = new FileInboundTransport({ alias: name, schema: Transports.Nearby })
+      this.outBoundTransport = new FileOutboundTransport({
+        alias: name,
+        schema: Transports.Nearby,
+      })
+
+      this.agent.registerInboundTransport(this.inBoundTransport)
+      this.agent.registerOutboundTransport(this.outBoundTransport)
     }
   }
 

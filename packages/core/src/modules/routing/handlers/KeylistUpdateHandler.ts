@@ -1,27 +1,25 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
+import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { MediatorService } from '../services/MediatorService'
+import type { MessageSender } from '@aries-framework/core'
 
-import { createOutboundMessage } from '../../../agent/helpers'
-import { AriesFrameworkError } from '../../../error'
-import { KeylistUpdateMessage } from '../messages'
+import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
+import { KeylistUpdateMessageV2 } from '../messages'
 
-export class KeylistUpdateHandler implements Handler<typeof DIDCommV1Message> {
+export class KeylistUpdateHandler implements Handler<typeof DIDCommV2Message> {
   private mediatorService: MediatorService
-  public supportedMessages = [KeylistUpdateMessage]
+  private messageSender: MessageSender
+  public supportedMessages = [KeylistUpdateMessageV2]
 
-  public constructor(mediatorService: MediatorService) {
+  public constructor(mediatorService: MediatorService, messageSender: MessageSender) {
     this.mediatorService = mediatorService
+    this.messageSender = messageSender
   }
 
   public async handle(messageContext: HandlerInboundMessage<KeylistUpdateHandler>) {
-    const { message, connection } = messageContext
-
-    if (!connection) {
-      throw new AriesFrameworkError(`No connection associated with incoming message with id ${message.id}`)
-    }
-
     const response = await this.mediatorService.processKeylistUpdateRequest(messageContext)
-    return createOutboundMessage(connection, response)
+    if (!response) return
+    const outboundMessage = createOutboundDIDCommV2Message(response)
+    await this.messageSender.sendDIDCommV2Message(outboundMessage)
   }
 }

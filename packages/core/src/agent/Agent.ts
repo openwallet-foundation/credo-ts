@@ -213,15 +213,17 @@ export class Agent {
       transport.start(this)
     }
 
+    // Mediator provisioning
+
     // Connect to mediator through provided invitation if provided in config
     // Also requests mediation ans sets as default mediator
     // Because this requires the connections module, we do this in the agent constructor
     if (mediatorConnectionsInvite) {
       await this.mediationRecipient.provision(mediatorConnectionsInvite)
     }
-
     await this.mediationRecipient.initialize()
 
+    // VTP state initialization
     if (valueTransferConfig) {
       await this.valueTransferService.initState(valueTransferConfig)
     }

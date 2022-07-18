@@ -10,6 +10,7 @@ import { JsonEncoder, JsonTransformer } from '../../../utils'
 
 export enum OutOfBandGoalCode {
   DidExchange = 'did-exchange',
+  MediatorProvision = 'mediator-provision',
 }
 
 export type OutOfBandInvitationParams = DIDCommV2MessageParams

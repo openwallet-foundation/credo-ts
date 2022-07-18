@@ -121,7 +121,7 @@ export class ValueTransferGiverService {
 
     const offerMessage = new OfferMessage({
       from: giver.did,
-      to: params.witness,
+      to: params.getter,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
     })
 

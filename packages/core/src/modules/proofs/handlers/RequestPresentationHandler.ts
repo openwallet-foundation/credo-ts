@@ -65,9 +65,9 @@ export class RequestPresentationHandler implements Handler<typeof DIDCommV1Messa
       return createOutboundMessage(messageContext.connection, message)
     } else if (proofRecord.requestMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.mediationRecipientService.getRoutingDid()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
+        serviceEndpoint: routing.endpoint,
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })

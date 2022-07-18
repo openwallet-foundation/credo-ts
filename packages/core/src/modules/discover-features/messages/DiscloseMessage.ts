@@ -1,7 +1,9 @@
-import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString } from 'class-validator'
+import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
+import { Expose, Type } from 'class-transformer'
+import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+
+import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm'
 
 export interface DiscloseProtocolOptions {
   protocolId: string
@@ -51,4 +53,32 @@ export class DiscloseMessage extends DIDCommV1Message {
   @IsInstance(DiscloseProtocol, { each: true })
   @Type(() => DiscloseProtocol)
   public protocols!: DiscloseProtocol[]
+}
+
+export class DiscloseMessageV2Body {
+  @IsInstance(DiscloseProtocol, { each: true })
+  @Type(() => DiscloseProtocol)
+  public protocols!: DiscloseProtocol[]
+}
+
+export type DiscloseMessageV2Options = {
+  body: DiscloseMessageV2Body
+} & DIDCommV2MessageParams
+
+export class DiscloseMessageV2 extends DIDCommV2Message {
+  public constructor(options: DiscloseMessageV2Options) {
+    super(options)
+
+    if (options) {
+      this.body = options.body
+    }
+  }
+
+  @Equals(DiscloseMessageV2.type)
+  public readonly type = DiscloseMessageV2.type
+  public static readonly type = 'https://didcomm.org/discover-features/2.0/disclose'
+
+  @Type(() => DiscloseMessageV2Body)
+  @ValidateNested()
+  public body!: DiscloseMessageV2Body
 }

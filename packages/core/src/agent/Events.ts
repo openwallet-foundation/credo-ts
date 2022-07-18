@@ -1,4 +1,4 @@
-import type { ConnectionRecord } from '../modules/connections'
+import type { ConnectionRecord } from '..'
 import type { DIDCommMessage } from './didcomm'
 
 export enum AgentEventTypes {

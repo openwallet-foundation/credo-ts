@@ -15,6 +15,7 @@ export interface PackMessageParams {
   toDID: string
   fromDID?: string
   signByDID?: string
+  serviceId?: string
 }
 
 export interface PackMessageSignedParams {
@@ -60,7 +61,9 @@ export class DIDCommV2EnvelopeService {
       params.signByDID || null,
       this.didResolverService,
       this.secretResolverService,
-      {}
+      {
+        messaging_service: params.serviceId,
+      }
     )
     return JsonEncoder.fromString(encryptedMsg)
   }
