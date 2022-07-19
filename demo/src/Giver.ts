@@ -9,7 +9,7 @@ import { greenText, Output, redText } from './OutputClass'
 
 export class Giver extends BaseAgent {
   public valueTransferRecordId?: string
-  public static seed = '9ad6a1e205a549dc86ced47630ed7b78'
+  public static seed = '6b8b882e2618fa5d45ee7229ca880083'
 
   public constructor(
     name: string,
