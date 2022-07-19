@@ -35,9 +35,7 @@ export class V2ProposeCredentialHandler implements Handler {
     credentialRecord: CredentialExchangeRecord,
     messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>
   ) {
-    this.logger.info(
-      `Automatically sending offer with autoAccept on ${messageContext.agentContext.config.autoAcceptCredentials}`
-    )
+    this.logger.info(`Automatically sending offer with autoAccept`)
 
     if (!messageContext.connection) {
       this.logger.error('No connection on the messageContext, aborting auto accept')

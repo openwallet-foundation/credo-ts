@@ -1,7 +1,6 @@
-import type { DependencyManager } from '../../plugins'
+import type { DependencyManager, Module } from '../../plugins'
 
 import { KeyType } from '../../crypto'
-import { module } from '../../plugins'
 
 import { SignatureSuiteRegistry, SignatureSuiteToken } from './SignatureSuiteRegistry'
 import { W3cCredentialService } from './W3cCredentialService'
@@ -9,9 +8,8 @@ import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
 import { Ed25519Signature2018 } from './signature-suites'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020 } from './signature-suites/bbs'
 
-@module()
-export class W3cVcModule {
-  public static register(dependencyManager: DependencyManager) {
+export class W3cVcModule implements Module {
+  public register(dependencyManager: DependencyManager) {
     dependencyManager.registerSingleton(W3cCredentialService)
     dependencyManager.registerSingleton(W3cCredentialRepository)
 

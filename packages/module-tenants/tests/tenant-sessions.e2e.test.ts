@@ -23,7 +23,7 @@ const agentConfig: InitConfig = {
 // and register all plugins before initializing the agent. Later, we can add the module registration
 // to the agent constructor.
 const dependencyManager = new DependencyManager()
-dependencyManager.registerModules(TenantsModule)
+dependencyManager.registerModules(new TenantsModule())
 
 // Create multi-tenant agent
 const agent = new Agent(agentConfig, agentDependencies, dependencyManager)
@@ -64,7 +64,7 @@ describe('Tenants Sessions E2E', () => {
     const numberOfSessions = 5
 
     const tenantRecordPromises = []
-    for (let tenantNo = 0; tenantNo <= numberOfTenants; tenantNo++) {
+    for (let tenantNo = 0; tenantNo < numberOfTenants; tenantNo++) {
       const tenantRecord = agentTenantsApi.createTenant({
         config: {
           label: 'Agent 1 Tenant 1',

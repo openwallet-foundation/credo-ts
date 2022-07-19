@@ -24,6 +24,7 @@ import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { RoutingService } from '../../../../routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
+import { CredentialsModuleConfig } from '../../../CredentialsModuleConfig'
 import { credDef, credReq } from '../../../__tests__/fixtures'
 import { CredentialProblemReportReason } from '../../../errors/CredentialProblemReportReason'
 import { IndyCredentialFormatService } from '../../../formats/indy/IndyCredentialFormatService'
@@ -248,7 +249,8 @@ describe('V1CredentialService', () => {
       dispatcher,
       eventEmitter,
       credentialRepository,
-      indyCredentialFormatService
+      indyCredentialFormatService,
+      new CredentialsModuleConfig()
     )
   })
 

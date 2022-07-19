@@ -207,8 +207,6 @@ describe('DidRegistrar', () => {
         },
       })
 
-      expect(result).toMatchSnapshot()
-
       expect(indyLedgerServiceMock.registerPublicDid).toHaveBeenCalledWith(
         agentContext,
         // Unqualified submitter did

@@ -4,6 +4,7 @@ import type { UpdateConfig } from './updates'
 
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
+import { isIndyError } from '../../utils/indyError'
 import { isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
 import { WalletError } from '../../wallet/error/WalletError'
 
@@ -125,6 +126,18 @@ export class UpdateAssistant<Agent extends BaseAgent = BaseAgent> {
         throw error
       }
     } catch (error) {
+      // Backup already exists at path
+      if (error instanceof AriesFrameworkError && isIndyError(error.cause, 'CommonIOError')) {
+        const backupPath = this.getBackupPath(updateIdentifier)
+        const errorMessage = `Error updating storage with updateIdentifier ${updateIdentifier} because of an IO error. This is probably because the backup at path ${backupPath} already exists`
+        this.agent.config.logger.fatal(errorMessage, {
+          error,
+          updateIdentifier,
+          backupPath,
+        })
+        throw new StorageUpdateError(errorMessage, { cause: error })
+      }
+
       this.agent.config.logger.error(`Error updating storage (updateIdentifier: ${updateIdentifier})`, {
         cause: error,
       })
