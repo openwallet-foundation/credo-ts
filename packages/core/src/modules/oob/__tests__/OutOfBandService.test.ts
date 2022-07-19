@@ -14,6 +14,7 @@ import {
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { KeyType, Key } from '../../../crypto'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { AriesFrameworkError } from '../../../error'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { DidExchangeState } from '../../connections/models'
@@ -39,7 +40,7 @@ describe('OutOfBandService', () => {
   let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)

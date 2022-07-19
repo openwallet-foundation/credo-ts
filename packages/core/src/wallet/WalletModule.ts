@@ -4,6 +4,7 @@ import type { Wallet } from './Wallet'
 
 import { AgentContext } from '../agent'
 import { InjectionSymbols } from '../constants'
+import { Bls12381g2SigningProvider, SigningProviderToken } from '../crypto/signing-provider'
 import { Logger } from '../logger'
 import { inject, injectable, module } from '../plugins'
 import { StorageUpdateService } from '../storage'
@@ -114,5 +115,8 @@ export class WalletModule {
   public static register(dependencyManager: DependencyManager) {
     // Api
     dependencyManager.registerContextScoped(WalletModule)
+
+    // Signing providers.
+    dependencyManager.registerSingleton(SigningProviderToken, Bls12381g2SigningProvider)
   }
 }

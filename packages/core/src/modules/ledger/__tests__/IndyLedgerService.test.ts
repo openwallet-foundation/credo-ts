@@ -7,6 +7,7 @@ import { Subject } from 'rxjs'
 import { NodeFileSystem } from '../../../../../node/src/NodeFileSystem'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { CacheRepository } from '../../../cache/CacheRepository'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyPool } from '../IndyPool'
@@ -41,7 +42,7 @@ describe('IndyLedgerService', () => {
   let ledgerService: IndyLedgerService
 
   beforeAll(async () => {
-    wallet = new IndyWallet(config.agentDependencies, config.logger)
+    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)

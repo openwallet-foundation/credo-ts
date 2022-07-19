@@ -6,6 +6,7 @@ import { Subject } from 'rxjs'
 import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { Key, KeyType } from '../../../crypto'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
@@ -31,7 +32,7 @@ describe('peer dids', () => {
   let eventEmitter: EventEmitter
 
   beforeEach(async () => {
-    wallet = new IndyWallet(config.agentDependencies, config.logger)
+    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext({ wallet })
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)

@@ -37,10 +37,14 @@ export class W3cCredentialService {
   private didResolver: DidResolverService
   private suiteRegistry: SignatureSuiteRegistry
 
-  public constructor(w3cCredentialRepository: W3cCredentialRepository, didResolver: DidResolverService) {
+  public constructor(
+    w3cCredentialRepository: W3cCredentialRepository,
+    didResolver: DidResolverService,
+    suiteRegistry: SignatureSuiteRegistry
+  ) {
     this.w3cCredentialRepository = w3cCredentialRepository
     this.didResolver = didResolver
-    this.suiteRegistry = new SignatureSuiteRegistry()
+    this.suiteRegistry = suiteRegistry
   }
 
   /**
