@@ -1,38 +1,37 @@
 import type { AgentContext } from '../../../../agent'
-import type { AgentDependencies } from '../../../../agent/AgentDependencies'
-import type { Logger } from '../../../../logger'
-import type { IndyEndpointAttrib, IndyLedgerService, IndyPoolService } from '../../../ledger'
+import type { IndyEndpointAttrib } from '../../../ledger'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
-import type { DidRepository } from '../../repository'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 import type * as Indy from 'indy-sdk'
 
+import { AgentDependencies } from '../../../../agent/AgentDependencies'
+import { InjectionSymbols } from '../../../../constants'
+import { inject, injectable } from '../../../../plugins'
 import { assertIndyWallet } from '../../../../wallet/util/assertIndyWallet'
+import { IndyLedgerService, IndyPoolService } from '../../../ledger'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
-import { DidRecord } from '../../repository'
+import { DidRecord, DidRepository } from '../../repository'
 
 import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './util'
 
+@injectable()
 export class SovDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['sov']
   private didRepository: DidRepository
   private indy: typeof Indy
   private indyLedgerService: IndyLedgerService
   private indyPoolService: IndyPoolService
-  private logger: Logger
 
   public constructor(
     didRepository: DidRepository,
     indyLedgerService: IndyLedgerService,
     indyPoolService: IndyPoolService,
-    agentDependencies: AgentDependencies,
-    logger: Logger
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies
   ) {
     this.didRepository = didRepository
     this.indy = agentDependencies.indy
     this.indyLedgerService = indyLedgerService
     this.indyPoolService = indyPoolService
-    this.logger = logger
   }
 
   public async create(agentContext: AgentContext, options: SovDidCreateOptions): Promise<DidCreateResult> {

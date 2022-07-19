@@ -8,6 +8,8 @@ import type {
   DidDeactivateResult,
 } from '../types'
 
+export const DidRegistrarToken = Symbol('DidRegistrar')
+
 export interface DidRegistrar {
   readonly supportedMethods: string[]
 

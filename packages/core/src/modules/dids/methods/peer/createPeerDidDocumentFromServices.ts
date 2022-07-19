@@ -1,18 +1,17 @@
-import type { ResolvedDidCommService } from '../../../agent/MessageSender'
+import type { ResolvedDidCommService } from '../../../../agent/MessageSender'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import { KeyType, Key } from '../../../crypto'
-import { AriesFrameworkError } from '../../../error'
-import { uuid } from '../../../utils/uuid'
-import { DidKey } from '../methods/key'
+import { KeyType, Key } from '../../../../crypto'
+import { AriesFrameworkError } from '../../../../error'
+import { uuid } from '../../../../utils/uuid'
+import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
+import { getEd25519VerificationMethod } from '../../domain/key-type/ed25519'
+import { getX25519VerificationMethod } from '../../domain/key-type/x25519'
+import { DidCommV1Service } from '../../domain/service/DidCommV1Service'
+import { DidKey } from '../key'
 
-import { DidDocumentBuilder } from './DidDocumentBuilder'
-import { getEd25519VerificationMethod } from './key-type/ed25519'
-import { getX25519VerificationMethod } from './key-type/x25519'
-import { DidCommV1Service } from './service/DidCommV1Service'
-
-export function createDidDocumentFromServices(services: ResolvedDidCommService[]) {
+export function createPeerDidDocumentFromServices(services: ResolvedDidCommService[]) {
   const didDocumentBuilder = new DidDocumentBuilder('')
 
   // Keep track off all added key id based on the fingerprint so we can add them to the recipientKeys as references

@@ -1,19 +1,20 @@
 import type { AgentContext } from '../../../../agent'
 import type { KeyType } from '../../../../crypto'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
-import type { DidRepository } from '../../repository'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
+import { injectable } from '../../../../plugins'
 import { JsonTransformer } from '../../../../utils'
 import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
-import { DidRecord } from '../../repository'
+import { DidRepository, DidRecord } from '../../repository'
 
 import { PeerDidNumAlgo } from './didPeer'
 import { keyToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
 import { didDocumentToNumAlgo2Did } from './peerDidNumAlgo2'
 
+@injectable()
 export class PeerDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['peer']
   private didRepository: DidRepository

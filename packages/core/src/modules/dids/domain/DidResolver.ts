@@ -1,6 +1,8 @@
 import type { AgentContext } from '../../../agent'
 import type { ParsedDid, DidResolutionResult, DidResolutionOptions } from '../types'
 
+export const DidResolverToken = Symbol('DidResolver')
+
 export interface DidResolver {
   readonly supportedMethods: string[]
   resolve(

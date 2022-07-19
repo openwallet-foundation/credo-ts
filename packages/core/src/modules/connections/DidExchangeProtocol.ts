@@ -2,7 +2,7 @@ import type { AgentContext } from '../../agent'
 import type { ResolvedDidCommService } from '../../agent/MessageSender'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { ParsedMessageType } from '../../utils/messageType'
-import type { PeerDidCreateOptions } from '../dids/methods/peer/PeerDidRegistrar'
+import type { PeerDidCreateOptions } from '../dids'
 import type { OutOfBandDidCommService } from '../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
@@ -17,13 +17,17 @@ import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
-import { DidDocument, DidRegistrarService } from '../dids'
-import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
-import { createDidDocumentFromServices } from '../dids/domain/createPeerDidFromServices'
+import {
+  DidDocument,
+  DidRegistrarService,
+  DidDocumentRole,
+  createPeerDidDocumentFromServices,
+  DidKey,
+  getNumAlgoFromPeerDid,
+  PeerDidNumAlgo,
+} from '../dids'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../dids/helpers'
-import { DidKey } from '../dids/methods/key/DidKey'
-import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../dids/methods/peer/didPeer'
 import { DidRecord, DidRepository } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
@@ -412,7 +416,7 @@ export class DidExchangeProtocol {
 
   private async createPeerDidDoc(agentContext: AgentContext, services: ResolvedDidCommService[]) {
     // Create did document without the id property
-    const didDocument = createDidDocumentFromServices(services)
+    const didDocument = createPeerDidDocumentFromServices(services)
 
     // Register did:peer document. This will generate the id property and save it to a did record
     const result = await this.didRegistrarService.create<PeerDidCreateOptions>(agentContext, {

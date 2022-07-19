@@ -1,10 +1,13 @@
 import type { AgentContext } from '../../../../agent'
-import type { IndyLedgerService } from '../../../ledger'
 import type { DidResolver } from '../../domain/DidResolver'
 import type { DidResolutionResult, ParsedDid } from '../../types'
 
+import { injectable } from '../../../../plugins'
+import { IndyLedgerService } from '../../../ledger'
+
 import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './util'
 
+@injectable()
 export class SovDidResolver implements DidResolver {
   private indyLedgerService: IndyLedgerService
 

@@ -11,11 +11,14 @@ import type {
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
 
+import { DidsModuleConfig } from './DidsModuleConfig'
 import { DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
 
 @injectable()
 export class DidsApi {
+  public config: DidsModuleConfig
+
   private resolverService: DidResolverService
   private registrarService: DidRegistrarService
   private didRepository: DidRepository
@@ -25,12 +28,14 @@ export class DidsApi {
     resolverService: DidResolverService,
     registrarService: DidRegistrarService,
     didRepository: DidRepository,
-    agentContext: AgentContext
+    agentContext: AgentContext,
+    config: DidsModuleConfig
   ) {
     this.resolverService = resolverService
     this.registrarService = registrarService
     this.didRepository = didRepository
     this.agentContext = agentContext
+    this.config = config
   }
 
   /**

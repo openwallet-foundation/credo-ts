@@ -9,17 +9,11 @@ import type {
   DidUpdateResult,
 } from '../types'
 
-import { inject, injectable } from 'tsyringe'
-
-import { AgentDependencies } from '../../../agent/AgentDependencies'
 import { InjectionSymbols } from '../../../constants'
 import { Logger } from '../../../logger'
-import { IndyLedgerService, IndyPoolService } from '../../ledger'
-import { parseDid, tryParseDid } from '../domain/parse'
-import { KeyDidRegistrar } from '../methods/key/KeyDidRegistrar'
-import { PeerDidRegistrar } from '../methods/peer/PeerDidRegistrar'
-import { SovDidRegistrar } from '../methods/sov/SovDidRegistrar'
-import { DidRepository } from '../repository'
+import { inject, injectable, injectAll } from '../../../plugins'
+import { DidRegistrarToken } from '../domain/DidRegistrar'
+import { tryParseDid } from '../domain/parse'
 
 @injectable()
 export class DidRegistrarService {
@@ -27,19 +21,11 @@ export class DidRegistrarService {
   private registrars: DidRegistrar[]
 
   public constructor(
-    didRepository: DidRepository,
-    indyLedgerService: IndyLedgerService,
-    indyPoolService: IndyPoolService,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies
+    @injectAll(DidRegistrarToken) registrars: DidRegistrar[]
   ) {
     this.logger = logger
-
-    this.registrars = [
-      new KeyDidRegistrar(didRepository),
-      new PeerDidRegistrar(didRepository),
-      new SovDidRegistrar(didRepository, indyLedgerService, indyPoolService, agentDependencies, logger),
-    ]
+    this.registrars = registrars
   }
 
   public async create<CreateOptions extends DidCreateOptions = DidCreateOptions>(
