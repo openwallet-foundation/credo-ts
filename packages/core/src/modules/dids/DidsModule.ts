@@ -1,4 +1,3 @@
-import type { Key } from '../../crypto'
 import type { DependencyManager } from '../../plugins'
 import type {
   DidCreateOptions,
@@ -17,16 +16,6 @@ import { DidRepository } from './repository'
 import { DidRegistrarService } from './services/DidRegistrarService'
 import { DidResolverService } from './services/DidResolverService'
 
-// TODO:
-//  - check: finish registrars for did:key, did:peer, did:sov.
-//  - defer: Add option to store a did record without publishing it (could be useful when initializing an already registered did. would need the private key material)
-//  - defer: Add option to publish a did without creating private keys. Just publish the did document as passed in
-//  - defer: Add option to publish a did document without storing it or creating keys (useful when writing dids to the ledger for another agent)
-//  - defer: Add repository methods to the module
-//  - Determine how the dids module should be used in combination with did exchange for public dids (no difference between public and peer dids anymore)
-//  - defer: Determine how dids should be created without first needing to create the keys (some sort of placeholder did document where the keys are generated in the registrar)
-//  - Add logging to resolvers / registrars
-//  -
 @module()
 @injectable()
 export class DidsModule {
@@ -47,35 +36,64 @@ export class DidsModule {
     this.agentContext = agentContext
   }
 
+  /**
+   * Resolve a did to a did document.
+   *
+   * Follows the interface as defined in https://w3c-ccg.github.io/did-resolution/
+   */
   public resolve(didUrl: string, options?: DidResolutionOptions) {
     return this.resolverService.resolve(this.agentContext, didUrl, options)
   }
 
+  /**
+   * Create, register and store a did and did document.
+   *
+   * Follows the interface as defined in https://identity.foundation/did-registration
+   */
   public create<CreateOptions extends DidCreateOptions = DidCreateOptions>(
     options: CreateOptions
   ): Promise<DidCreateResult> {
     return this.registrarService.create<CreateOptions>(this.agentContext, options)
   }
-  public update(options: DidUpdateOptions): Promise<DidUpdateResult> {
+
+  /**
+   * Update an existing did document.
+   *
+   * Follows the interface as defined in https://identity.foundation/did-registration
+   */
+  public update<UpdateOptions extends DidUpdateOptions = DidUpdateOptions>(
+    options: UpdateOptions
+  ): Promise<DidUpdateResult> {
     return this.registrarService.update(this.agentContext, options)
   }
 
-  public deactivate(options: DidDeactivateOptions): Promise<DidDeactivateResult> {
+  /**
+   * Deactivate an existing did.
+   *
+   * Follows the interface as defined in https://identity.foundation/did-registration
+   */
+  public deactivate<DeactivateOptions extends DidDeactivateOptions = DidDeactivateOptions>(
+    options: DeactivateOptions
+  ): Promise<DidDeactivateResult> {
     return this.registrarService.deactivate(this.agentContext, options)
   }
 
+  /**
+   * Resolve a did to a did document. This won't return the associated metadata as defined
+   * in the did resolution specification, and will throw an error if the did document could not
+   * be resolved.
+   */
   public resolveDidDocument(didUrl: string) {
     return this.resolverService.resolveDidDocument(this.agentContext, didUrl)
   }
 
-  public findByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findByRecipientKey(this.agentContext, recipientKey)
-  }
-
-  public findAllByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findAllByRecipientKey(this.agentContext, recipientKey)
-  }
-
+  /**
+   * Get a list of all dids created by the agent. This will return a list of {@link DidRecord} objects.
+   * Each document will have an id property with the value of the did. Optionally, it will contain a did document,
+   * but this is only for documents that can't be resolved from the did itself or remotely.
+   *
+   * You can call `${@link DidsModule.resolve} to resolve the did document based on the did itself.
+   */
   public getCreatedDids({ method }: { method?: string } = {}) {
     return this.didRepository.getCreatedDids(this.agentContext, { method })
   }

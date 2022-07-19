@@ -64,7 +64,7 @@ export class SovDidRegistrar implements DidRegistrar {
       const qualifiedSovDid = `did:sov:${unqualifiedIndyDid}`
 
       if (!submitterDid.startsWith('did:sov:')) {
-        throw new Error('Submitter did must a valid did:sov did')
+        throw new Error('Submitter did must be a valid did:sov did')
       }
 
       const unqualifiedSubmitterDid = submitterDid.replace('did:sov:', '')

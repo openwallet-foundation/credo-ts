@@ -15,7 +15,7 @@ import { AgentDependencies } from '../../../agent/AgentDependencies'
 import { InjectionSymbols } from '../../../constants'
 import { Logger } from '../../../logger'
 import { IndyLedgerService, IndyPoolService } from '../../ledger'
-import { parseDid } from '../domain/parse'
+import { parseDid, tryParseDid } from '../domain/parse'
 import { KeyDidRegistrar } from '../methods/key/KeyDidRegistrar'
 import { PeerDidRegistrar } from '../methods/peer/PeerDidRegistrar'
 import { SovDidRegistrar } from '../methods/sov/SovDidRegistrar'
@@ -67,7 +67,7 @@ export class DidRegistrarService {
       }
     }
 
-    const method = options.method ?? parseDid(options.did as string)?.method
+    const method = options.method ?? tryParseDid(options.did as string)?.method
     if (!method) {
       return {
         ...errorResult,
@@ -95,7 +95,7 @@ export class DidRegistrarService {
   public async update(agentContext: AgentContext, options: DidUpdateOptions): Promise<DidUpdateResult> {
     this.logger.debug(`updating did ${options.did}`)
 
-    const method = parseDid(options.did)?.method
+    const method = tryParseDid(options.did)?.method
 
     const errorResult = {
       didDocumentMetadata: {},
@@ -142,7 +142,7 @@ export class DidRegistrarService {
       },
     } as const
 
-    const method = parseDid(options.did)?.method
+    const method = tryParseDid(options.did)?.method
     if (!method) {
       return {
         ...errorResult,

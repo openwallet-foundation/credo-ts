@@ -1,16 +1,15 @@
-import type { IndyLedgerService } from '../../ledger'
-import type { DidRepository } from '../repository'
+import type { IndyLedgerService } from '../../../ledger'
+import type { DidRepository } from '../../repository'
 
-import { getAgentConfig, getAgentContext, mockProperty } from '../../../../tests/helpers'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { DidDocument } from '../domain'
-import { parseDid } from '../domain/parse'
-import { KeyDidResolver } from '../methods/key/KeyDidResolver'
-import { DidResolverService } from '../services/DidResolverService'
+import { getAgentConfig, getAgentContext, mockProperty } from '../../../../../tests/helpers'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import didKeyEd25519Fixture from '../../__tests__/__fixtures__/didKeyEd25519.json'
+import { DidDocument } from '../../domain'
+import { parseDid } from '../../domain/parse'
+import { KeyDidResolver } from '../../methods/key/KeyDidResolver'
+import { DidResolverService } from '../DidResolverService'
 
-import didKeyEd25519Fixture from './__fixtures__/didKeyEd25519.json'
-
-jest.mock('../methods/key/KeyDidResolver')
+jest.mock('../../methods/key/KeyDidResolver')
 
 const agentConfig = getAgentConfig('DidResolverService')
 const agentContext = getAgentContext()
