@@ -1,5 +1,3 @@
-import type { KeyType } from '../../crypto'
-import type { DidType } from './domain'
 import type { DidRecord } from './repository'
 import type { DidResolutionOptions, DIDMetadata } from './types'
 
@@ -15,10 +13,6 @@ export class DidsModule {
   public constructor(didService: DidService, resolverService: DidResolverService) {
     this.didService = didService
     this.resolverService = resolverService
-  }
-
-  public create(didType: DidType, keyType?: KeyType, seed?: string) {
-    return this.didService.createDID(didType, keyType, seed)
   }
 
   public resolve(didUrl: string, options?: DidResolutionOptions) {

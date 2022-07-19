@@ -194,7 +194,11 @@ export class Agent {
 
         // create DID in DIDComm V DID storage
         const didType = publicDidType || DidType.PeerDid
-        await this.didService.createDID(didType, undefined, publicDidSeed, true)
+        await this.didService.createDID({
+          didType,
+          seed: publicDidSeed,
+          isPublic: true,
+        })
       }
     }
 

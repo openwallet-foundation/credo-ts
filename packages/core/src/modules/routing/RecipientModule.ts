@@ -19,7 +19,7 @@ import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
 import { parseMessageType } from '../../utils/messageType'
 import { ConnectionService } from '../connections/services'
-import { DidService, DidType } from '../dids'
+import { DidService } from '../dids'
 import { DiscloseMessage, DiscloseMessageV2, DiscoverFeaturesModule } from '../discover-features'
 import { OutOfBandGoalCode, OutOfBandInvitationMessage } from '../out-of-band'
 
@@ -324,7 +324,10 @@ export class RecipientModule {
       return existingMediationRecord
     }
 
-    const didForMediator = await this.didService.createDID(DidType.PeerDid)
+    const didForMediator = await this.didService.createDID({
+      transports: [],
+      requestMediation: false,
+    })
     const mediationRecord = await this.requestAndAwaitGrant(didForMediator.did, 60000) // TODO: put timeout as a config parameter
     await this.setDefaultMediator(mediationRecord)
   }

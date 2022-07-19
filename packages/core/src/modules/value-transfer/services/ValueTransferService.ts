@@ -22,7 +22,7 @@ import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
-import { DidResolverService, DidType } from '../../dids'
+import { DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { Transports } from '../../routing/types'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
@@ -222,7 +222,7 @@ export class ValueTransferService {
 
     if (record.role === ValueTransferRole.Giver) {
       await this.valueTransfer.giver().abortTransaction()
-      from = record.giver?.did || (await this.didService.createDID(DidType.PeerDid)).id
+      from = record.giver?.did || (await this.didService.createDID({})).id
     } else if (record.role === ValueTransferRole.Getter) {
       await this.valueTransfer.getter().abortTransaction()
       from = record.getter?.did
