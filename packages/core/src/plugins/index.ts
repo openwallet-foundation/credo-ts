@@ -1,3 +1,3 @@
 export * from './DependencyManager'
 export * from './Module'
-export { inject, injectable, Disposable } from 'tsyringe'
+export { inject, injectable, Disposable, injectAll } from 'tsyringe'
