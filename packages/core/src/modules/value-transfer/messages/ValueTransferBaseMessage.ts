@@ -1,7 +1,7 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 import type { Attachment } from 'didcomm'
 
-import { ValueTransferMessage, ValueTransferDelta } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Receipt, ValueTransferDelta } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
 import { IsInstance, ValidateNested } from 'class-validator'
 
@@ -24,19 +24,19 @@ export class ValueTransferBaseMessage extends DIDCommV2Message {
   @IsInstance(ValueTransferMessageBody)
   public body!: ValueTransferMessageBody
 
-  public static createValueTransferBase64Attachment(message: ValueTransferDelta | ValueTransferMessage): Attachment {
+  public static createValueTransferBase64Attachment(message: ValueTransferDelta | Receipt): Attachment {
     return ValueTransferBaseMessage.createBase64Attachment(
       VALUE_TRANSFER_ATTACHMENT_ID,
       JsonTransformer.serialize(message)
     )
   }
 
-  public static createValueTransferJSONAttachment(message: ValueTransferDelta | ValueTransferMessage): Attachment {
+  public static createValueTransferJSONAttachment(message: ValueTransferDelta | Receipt): Attachment {
     return ValueTransferBaseMessage.createJSONAttachment(VALUE_TRANSFER_ATTACHMENT_ID, JsonTransformer.toJSON(message))
   }
 
-  public get valueTransferMessage(): ValueTransferMessage | null {
-    return this.attachedMessage(ValueTransferMessage)
+  public get valueTransferMessage(): Receipt | null {
+    return this.attachedMessage(Receipt)
   }
 
   public get valueTransferDelta(): ValueTransferDelta | null {

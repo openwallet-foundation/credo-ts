@@ -130,8 +130,8 @@ export class ValueTransferWitnessService {
     }
 
     //Call VTP package to process received Payment Request request
-    const { error, message } = await this.witness.processRequest(did?.did, valueTransferMessage)
-    if (error || !message) {
+    const { error, receipt } = await this.witness.processRequest(did?.did, valueTransferMessage)
+    if (error || !receipt) {
       // send problem report back to Getter
       const problemReportMessage = new ProblemReportMessage({
         from: did.did,
@@ -153,7 +153,7 @@ export class ValueTransferWitnessService {
       from: did.did,
       to: giverDid,
       thid: requestMessage.id,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
+      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
     })
 
     const getterInfo = new DidInfo({ did: valueTransferMessage.getterId })
@@ -166,7 +166,7 @@ export class ValueTransferWitnessService {
       state: ValueTransferState.RequestSent,
       status: ValueTransferTransactionStatus.Pending,
       threadId: requestMessage.id,
-      valueTransferMessage: message,
+      receipt,
       getter: getterInfo,
       giver: giverInfo,
       witness: witnessInfo,
@@ -237,8 +237,8 @@ export class ValueTransferWitnessService {
     }
 
     //Call VTP package to process received Payment Request request
-    const { error, message, delta } = await this.witness.processOfferAccepted(did.did, valueTransferMessage)
-    if (error || !message || !delta) {
+    const { error, receipt, delta } = await this.witness.processOfferAccepted(did.did, valueTransferMessage)
+    if (error || !receipt || !delta) {
       // send problem report back to Getter
       const problemReportMessage = new ProblemReportMessage({
         from: did.did,
@@ -256,7 +256,7 @@ export class ValueTransferWitnessService {
     // next protocol message
     const offerAcceptedWitnessedMessage = new OfferAcceptedWitnessedMessage({
       from: did.did,
-      to: message.payment.giver?.id,
+      to: receipt.giver?.id,
       thid: offerAcceptanceMessage.thid,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
     })
@@ -271,7 +271,7 @@ export class ValueTransferWitnessService {
       state: ValueTransferState.OfferAcceptanceSent,
       status: ValueTransferTransactionStatus.InProgress,
       threadId: offerAcceptanceMessage.thid,
-      valueTransferMessage: message,
+      receipt,
       getter: getterInfo,
       giver: giverInfo,
       witness: witnessInfo,
@@ -325,12 +325,9 @@ export class ValueTransferWitnessService {
     }
 
     // Witness: Call VTP package to process received request acceptance
-    const { error, message, delta } = await this.witness.processRequestAccepted(
-      record.valueTransferMessage,
-      valueTransferDelta
-    )
+    const { error, receipt, delta } = await this.witness.processRequestAccepted(record.receipt, valueTransferDelta)
     // change state
-    if (error || !message || !delta) {
+    if (error || !receipt || !delta) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
         from: record.witness?.did,
@@ -361,8 +358,8 @@ export class ValueTransferWitnessService {
     })
 
     // Update Value Transfer record
-    record.valueTransferMessage = message
-    record.giver = new DidInfo({ did: message.giverId })
+    record.receipt = receipt
+    record.giver = new DidInfo({ did: receipt.giverId })
 
     await this.valueTransferService.updateState(
       record,
@@ -410,12 +407,9 @@ export class ValueTransferWitnessService {
     }
 
     // Witness: Call VTP package to process received cash acceptance
-    const { error, message, delta } = await this.witness.processCashAccepted(
-      record.valueTransferMessage,
-      valueTransferDelta
-    )
+    const { error, receipt, delta } = await this.witness.processCashAccepted(record.receipt, valueTransferDelta)
     // change state
-    if (error || !message || !delta) {
+    if (error || !receipt || !delta) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
         from: record.witness?.did,
@@ -446,7 +440,7 @@ export class ValueTransferWitnessService {
     })
 
     // Update Value Transfer record
-    record.valueTransferMessage = message
+    record.receipt = receipt
     await this.valueTransferService.updateState(
       record,
       ValueTransferState.CashAcceptanceSent,
@@ -495,12 +489,10 @@ export class ValueTransferWitnessService {
     }
 
     // Call VTP package to create receipt
-    const {
-      error,
-      message: receipt,
-      getterDelta,
-      giverDelta,
-    } = await this.witness.createReceipt(record.valueTransferMessage, valueTransferDelta)
+    const { error, receipt, getterDelta, giverDelta } = await this.witness.createReceipt(
+      record.receipt,
+      valueTransferDelta
+    )
     if (error || !receipt || !getterDelta || !giverDelta) {
       // VTP message verification failed
       const getterProblemReport = new ProblemReportMessage({
@@ -546,7 +538,6 @@ export class ValueTransferWitnessService {
     })
 
     // Update Value Transfer record and raise event
-    record.valueTransferMessage = receipt
     record.receipt = receipt
 
     await this.valueTransferService.updateState(

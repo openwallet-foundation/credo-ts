@@ -81,7 +81,7 @@ export class Listener {
 
   private printRequest(valueTransferRecord: ValueTransferRecord) {
     console.log('\n\nPayment Request:')
-    console.log(purpleText(JsonEncoder.toString(valueTransferRecord.valueTransferMessage)))
+    console.log(purpleText(JsonEncoder.toString(valueTransferRecord.receipt)))
   }
 
   private async newPaymentRequestPrompt(valueTransferRecord: ValueTransferRecord, giverInquirer: GiverInquirer) {
