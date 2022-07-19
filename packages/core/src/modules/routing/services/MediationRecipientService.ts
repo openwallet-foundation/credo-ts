@@ -47,9 +47,13 @@ export class MediationRecipientService {
     this.messageSender = messageSender
   }
 
-  public async createRequest(did: string): Promise<MediationProtocolMsgReturnType<MediationRequestMessageV2>> {
+  public async createRequest(
+    did: string,
+    mediatorDid: string
+  ): Promise<MediationProtocolMsgReturnType<MediationRequestMessageV2>> {
     const message = new MediationRequestMessageV2({
       from: did,
+      to: mediatorDid,
       body: {
         deliveryType: this.config.mediatorDeliveryStrategy,
         deliveryData: this.config.mediatorPushToken || this.config.mediatorWebHookEndpoint || undefined,

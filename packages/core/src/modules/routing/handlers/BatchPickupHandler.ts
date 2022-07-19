@@ -1,7 +1,7 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageSender } from '../../../agent/MessageSender'
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { MessagePickupService } from '../services'
-import type { MessageSender } from '@aries-framework/core'
 
 import { BatchPickupMessageV2 } from '../messages'
 

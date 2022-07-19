@@ -1,6 +1,6 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-import { Type } from 'class-transformer'
+import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
@@ -17,6 +17,7 @@ export type OutOfBandInvitationParams = DIDCommV2MessageParams
 
 export class OutOfBandInvitationBody {
   @IsString()
+  @Expose({ name: 'goal_code' })
   public goalCode!: OutOfBandGoalCode
 
   @IsString()

@@ -19,7 +19,7 @@ import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
 import { parseMessageType } from '../../utils/messageType'
 import { ConnectionService } from '../connections/services'
-import { DidService } from '../dids'
+import { DidService, DidType } from '../dids'
 import { DiscloseMessage, DiscloseMessageV2, DiscoverFeaturesModule } from '../discover-features'
 import { OutOfBandGoalCode, OutOfBandInvitationMessage } from '../out-of-band'
 
@@ -273,8 +273,8 @@ export class RecipientModule {
     return this.mediationRecipientService.findDefaultMediator()
   }
 
-  public async requestAndAwaitGrant(did: string, timeoutMs = 10000): Promise<MediationRecord> {
-    const { mediationRecord, message } = await this.mediationRecipientService.createRequest(did)
+  public async requestAndAwaitGrant(did: string, mediatorDid: string, timeoutMs = 10000): Promise<MediationRecord> {
+    const { mediationRecord, message } = await this.mediationRecipientService.createRequest(did, mediatorDid)
 
     // Create observable for event
     const observable = this.eventEmitter.observable<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged)
@@ -328,7 +328,7 @@ export class RecipientModule {
       transports: [],
       requestMediation: false,
     })
-    const mediationRecord = await this.requestAndAwaitGrant(didForMediator.did, 60000) // TODO: put timeout as a config parameter
+    const mediationRecord = await this.requestAndAwaitGrant(didForMediator.did, invitation.from, 60000) // TODO: put timeout as a config parameter
     await this.setDefaultMediator(mediationRecord)
   }
 

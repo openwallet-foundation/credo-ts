@@ -1,7 +1,14 @@
 import type { InboundTransport, InitConfig, OutboundTransport, ValueTransferConfig } from '@aries-framework/core'
 
-import { Agent, AutoAcceptCredential, AutoAcceptProof, HttpOutboundTransport, Transports } from '@aries-framework/core'
-import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
+import {
+  Agent,
+  AutoAcceptCredential,
+  AutoAcceptProof,
+  HttpOutboundTransport,
+  MediatorPickupStrategy,
+  Transports,
+} from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/node'
 
 import { greenText } from './OutputClass'
 import { FileInboundTransport } from './transports/FileInboundTransport'
@@ -25,7 +32,8 @@ export class BaseAgent {
     publicDidSeed?: string,
     port?: number,
     transports: Transports[] = [],
-    valueTransferConfig?: ValueTransferConfig
+    valueTransferConfig?: ValueTransferConfig,
+    mediatorConnectionsInvite?: string
   ) {
     this.name = name
     this.port = port
@@ -49,18 +57,18 @@ export class BaseAgent {
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
+      mediatorPickupStrategy: MediatorPickupStrategy.Explicit,
       valueTransferConfig,
       transports,
+      mediatorConnectionsInvite,
     }
 
     this.config = config
 
     this.agent = new Agent(config, agentDependencies)
 
-    if ((transports.includes(Transports.HTTP) || transports.includes(Transports.HTTPS)) && port) {
-      this.inBoundTransport = new HttpInboundTransport({ port })
+    if (transports.includes(Transports.HTTP) || transports.includes(Transports.HTTPS)) {
       this.outBoundTransport = new HttpOutboundTransport()
-      this.agent.registerInboundTransport(this.inBoundTransport)
       this.agent.registerOutboundTransport(this.outBoundTransport)
     }
 

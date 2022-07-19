@@ -17,6 +17,7 @@ import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 
+import { AgentConfig } from './AgentConfig'
 import { TransportService } from './TransportService'
 import { DIDCommVersion } from './didcomm/DIDCommMessage'
 import { EnvelopeService } from './didcomm/EnvelopeService'
@@ -29,6 +30,7 @@ export interface TransportPriorityOptions {
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessageSender {
+  private agentConfig: AgentConfig
   private envelopeService: EnvelopeService
   private transportService: TransportService
   private messageRepository: MessageRepository
@@ -37,12 +39,14 @@ export class MessageSender {
   public readonly outboundTransports: OutboundTransport[] = []
 
   public constructor(
+    agentConfig: AgentConfig,
     envelopeService: EnvelopeService,
     transportService: TransportService,
     @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
     didResolverService: DidResolverService
   ) {
+    this.agentConfig = agentConfig
     this.envelopeService = envelopeService
     this.transportService = transportService
     this.messageRepository = messageRepository
@@ -277,7 +281,7 @@ export class MessageSender {
   public async sendDIDCommV2Message(
     outboundMessage: OutboundDIDCommV2Message,
     sendingMessageType: SendingMessageType = SendingMessageType.Encrypted,
-    transports: Transports[] = [],
+    transports?: Transports[],
     defaultTransport?: Transports
   ) {
     const { payload } = outboundMessage
@@ -300,7 +304,7 @@ export class MessageSender {
     // send message encrypted
 
     if (!payload.to?.length) {
-      throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain sender DID.`)
+      throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain recipient DID.`)
     }
 
     const toDID = payload.to[0]
@@ -316,8 +320,10 @@ export class MessageSender {
 
     const services = didDocument?.service || []
 
+    const availableTransports = transports ?? this.agentConfig.transports
+
     const service = services.find((service) => {
-      const transport = transports.find((transport) => transport.toString() === service.protocolScheme)
+      const transport = availableTransports.find((transport) => transport.toString() === service.protocolScheme)
       if (transport) return service
     })
 

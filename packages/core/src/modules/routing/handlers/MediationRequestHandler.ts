@@ -1,8 +1,8 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageSender } from '../../../agent/MessageSender'
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { MediatorService } from '../services/MediatorService'
-import type { MessageSender } from '@aries-framework/core'
 
 import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { MediationRequestMessageV2 } from '../messages/MediationRequestMessage'
