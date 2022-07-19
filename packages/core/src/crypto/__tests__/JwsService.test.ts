@@ -8,6 +8,7 @@ import { IndyWallet } from '../../wallet/IndyWallet'
 import { JwsService } from '../JwsService'
 import { Key } from '../Key'
 import { KeyType } from '../KeyType'
+import { SigningProviderRegistry } from '../signing-provider'
 
 import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
 import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
@@ -19,7 +20,7 @@ describe('JwsService', () => {
 
   beforeAll(async () => {
     const config = getAgentConfig('JwsService')
-    wallet = new IndyWallet(config.agentDependencies, config.logger)
+    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext({
       wallet,
     })

@@ -4,6 +4,7 @@ import type { CredentialDefinitionTemplate } from '../services/IndyLedgerService
 import type * as Indy from 'indy-sdk'
 
 import { getAgentConfig, getAgentContext, mockFunction, mockProperty } from '../../../../tests/helpers'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AnonCredsCredentialDefinitionRecord } from '../../indy/repository/AnonCredsCredentialDefinitionRecord'
@@ -108,7 +109,7 @@ describe('LedgerApi', () => {
   })
 
   beforeEach(async () => {
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
   })

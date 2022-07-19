@@ -3,6 +3,7 @@ import type { TagsBase } from '../BaseRecord'
 import type * as Indy from 'indy-sdk'
 
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../tests/helpers'
+import { SigningProviderRegistry } from '../../crypto/signing-provider'
 import { RecordDuplicateError, RecordNotFoundError } from '../../error'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { IndyStorageService } from '../IndyStorageService'
@@ -18,7 +19,7 @@ describe('IndyStorageService', () => {
   beforeEach(async () => {
     const agentConfig = getAgentConfig('IndyStorageServiceTest')
     indy = agentConfig.agentDependencies.indy
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext({
       wallet,
       agentConfig,

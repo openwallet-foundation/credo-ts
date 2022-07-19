@@ -6,6 +6,7 @@ import { SIGNATURE_LENGTH as ED25519_SIGNATURE_LENGTH } from '@stablelib/ed25519
 import { agentDependencies } from '../../tests/helpers'
 import testLogger from '../../tests/logger'
 import { KeyType } from '../crypto'
+import { Bls12381g2SigningProvider, SigningProviderRegistry } from '../crypto/signing-provider'
 import { KeyDerivationMethod } from '../types'
 import { TypedArrayEncoder } from '../utils'
 
@@ -26,7 +27,11 @@ describe('IndyWallet', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    indyWallet = new IndyWallet(agentDependencies, testLogger)
+    indyWallet = new IndyWallet(
+      agentDependencies,
+      testLogger,
+      new SigningProviderRegistry([new Bls12381g2SigningProvider()])
+    )
     await indyWallet.createAndOpen(walletConfig)
   })
 
@@ -79,13 +84,6 @@ describe('IndyWallet', () => {
     })
   })
 
-  test('Create blsg12381g1 keypair', async () => {
-    await expect(indyWallet.createKey({ seed, keyType: KeyType.Bls12381g1 })).resolves.toMatchObject({
-      publicKeyBase58: '6RhvX1RK5rA9uXdTtV6WvHWNQqcCW86BQxz1aBPr6ebBcppCYMD3LLy7QLg4cGcWaq',
-      keyType: KeyType.Bls12381g1,
-    })
-  })
-
   test('Create bls12381g2 keypair', async () => {
     await expect(indyWallet.createKey({ seed, keyType: KeyType.Bls12381g2 })).resolves.toMatchObject({
       publicKeyBase58:
@@ -118,16 +116,6 @@ describe('IndyWallet', () => {
       key: bls12381g2Key,
     })
     expect(signature.length).toStrictEqual(BBS_SIGNATURE_LENGTH)
-  })
-
-  test('Fail to create a signature with a bls12381g1 keypair', async () => {
-    const bls12381g1Key = await indyWallet.createKey({ seed, keyType: KeyType.Bls12381g1 })
-    await expect(
-      indyWallet.sign({
-        data: message,
-        key: bls12381g1Key,
-      })
-    ).rejects.toThrowError(WalletError)
   })
 
   test('Verify a signed message with a ed25519 publicKey', async () => {

@@ -8,6 +8,7 @@ import { AgentEventTypes } from '../../../../agent/Events'
 import { MessageSender } from '../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import { Key } from '../../../../crypto'
+import { SigningProviderRegistry } from '../../../../crypto/signing-provider'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
@@ -61,7 +62,7 @@ describe('MediationRecipientService', () => {
   let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndyWallet(config.agentDependencies, config.logger)
+    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext({
       agentConfig: config,
     })
