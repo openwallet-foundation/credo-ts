@@ -2,6 +2,7 @@ import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { RoutingService } from '../../routing/services/RoutingService'
+import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { createOutboundMessage } from '../../../agent/helpers'
@@ -14,18 +15,21 @@ export class DidExchangeRequestHandler implements Handler {
   private outOfBandService: OutOfBandService
   private routingService: RoutingService
   private didRepository: DidRepository
+  private connectionsModuleConfig: ConnectionsModuleConfig
   public supportedMessages = [DidExchangeRequestMessage]
 
   public constructor(
     didExchangeProtocol: DidExchangeProtocol,
     outOfBandService: OutOfBandService,
     routingService: RoutingService,
-    didRepository: DidRepository
+    didRepository: DidRepository,
+    connectionsModuleConfig: ConnectionsModuleConfig
   ) {
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
     this.routingService = routingService
     this.didRepository = didRepository
+    this.connectionsModuleConfig = connectionsModuleConfig
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeRequestHandler>) {
@@ -68,7 +72,7 @@ export class DidExchangeRequestHandler implements Handler {
 
     const connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, outOfBandRecord)
 
-    if (connectionRecord.autoAcceptConnection ?? messageContext.agentContext.config.autoAcceptConnections) {
+    if (connectionRecord.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
       // TODO We should add an option to not pass routing and therefore do not rotate keys and use the keys from the invitation
       // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
       const routing = outOfBandRecord.reusable

@@ -3,6 +3,7 @@ import { InjectionSymbols } from '@aries-framework/core'
 import { DependencyManager } from '../../../core/src/plugins/DependencyManager'
 import { TenantsApi } from '../TenantsApi'
 import { TenantsModule } from '../TenantsModule'
+import { TenantsModuleConfig } from '../TenantsModuleConfig'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'
 import { TenantSessionCoordinator } from '../context/TenantSessionCoordinator'
 import { TenantRepository, TenantRoutingRepository } from '../repository'
@@ -15,7 +16,8 @@ const dependencyManager = new DependencyManagerMock()
 
 describe('TenantsModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    TenantsModule.register(dependencyManager)
+    const tenantsModule = new TenantsModule()
+    tenantsModule.register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(6)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantsApi)
@@ -27,5 +29,8 @@ describe('TenantsModule', () => {
       TenantAgentContextProvider
     )
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantSessionCoordinator)
+
+    expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(TenantsModuleConfig, tenantsModule.config)
   })
 })

@@ -1,4 +1,5 @@
-export * from './DiscoverFeaturesModule'
+export * from './DiscoverFeaturesApi'
 export * from './handlers'
 export * from './messages'
 export * from './services'
+export * from './DiscoverFeaturesModule'

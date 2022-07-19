@@ -1,48 +1,16 @@
-import type { Key } from '../../crypto'
-import type { DependencyManager } from '../../plugins'
-import type { DidResolutionOptions } from './types'
+import type { DependencyManager, Module } from '../../plugins'
 
-import { AgentContext } from '../../agent'
-import { injectable, module } from '../../plugins'
-
+import { DidsApi } from './DidsApi'
 import { DidRepository } from './repository'
-import { DidResolverService } from './services/DidResolverService'
+import { DidResolverService } from './services'
 
-@module()
-@injectable()
-export class DidsModule {
-  private resolverService: DidResolverService
-  private didRepository: DidRepository
-  private agentContext: AgentContext
-
-  public constructor(resolverService: DidResolverService, didRepository: DidRepository, agentContext: AgentContext) {
-    this.resolverService = resolverService
-    this.didRepository = didRepository
-    this.agentContext = agentContext
-  }
-
-  public resolve(didUrl: string, options?: DidResolutionOptions) {
-    return this.resolverService.resolve(this.agentContext, didUrl, options)
-  }
-
-  public resolveDidDocument(didUrl: string) {
-    return this.resolverService.resolveDidDocument(this.agentContext, didUrl)
-  }
-
-  public findByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findByRecipientKey(this.agentContext, recipientKey)
-  }
-
-  public findAllByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findAllByRecipientKey(this.agentContext, recipientKey)
-  }
-
+export class DidsModule implements Module {
   /**
    * Registers the dependencies of the dids module module on the dependency manager.
    */
-  public static register(dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager) {
     // Api
-    dependencyManager.registerContextScoped(DidsModule)
+    dependencyManager.registerContextScoped(DidsApi)
 
     // Services
     dependencyManager.registerSingleton(DidResolverService)
