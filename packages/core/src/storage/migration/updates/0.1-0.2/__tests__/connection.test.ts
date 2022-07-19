@@ -383,7 +383,7 @@ describe('0.1-0.2 | Connection', () => {
 
       expect(outOfBandRecord.toJSON()).toEqual({
         id: expect.any(String),
-        _tags: {},
+        _tags: { recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'] },
         metadata: {},
         // Checked below
         outOfBandInvitation: {
