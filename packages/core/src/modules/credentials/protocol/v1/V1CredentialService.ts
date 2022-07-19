@@ -14,7 +14,7 @@ import type {
   NegotiateOfferOptions,
   NegotiateProposalOptions,
 } from '../../CredentialServiceOptions'
-import type { GetFormatDataReturn } from '../../CredentialsModuleOptions'
+import type { GetFormatDataReturn } from '../../CredentialsApiOptions'
 import type { CredentialFormat } from '../../formats'
 import type { IndyCredentialFormat } from '../../formats/indy/IndyCredentialFormat'
 
@@ -32,6 +32,7 @@ import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services'
 import { RoutingService } from '../../../routing/services/RoutingService'
+import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
 import { CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
 import { IndyCredPropose } from '../../formats/indy/models'
@@ -68,6 +69,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
   private connectionService: ConnectionService
   private formatService: IndyCredentialFormatService
   private routingService: RoutingService
+  private credentialsModuleConfig: CredentialsModuleConfig
 
   public constructor(
     connectionService: ConnectionService,
@@ -77,12 +79,14 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     dispatcher: Dispatcher,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
-    formatService: IndyCredentialFormatService
+    formatService: IndyCredentialFormatService,
+    credentialsModuleConfig: CredentialsModuleConfig
   ) {
     super(credentialRepository, didCommMessageRepository, eventEmitter, dispatcher, logger)
     this.connectionService = connectionService
     this.formatService = formatService
     this.routingService = routingService
+    this.credentialsModuleConfig = credentialsModuleConfig
 
     this.registerHandlers()
   }
@@ -963,7 +967,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     const { credentialRecord, proposalMessage } = options
     const autoAccept = composeAutoAccept(
       credentialRecord.autoAcceptCredential,
-      agentContext.config.autoAcceptCredentials
+      this.credentialsModuleConfig.autoAcceptCredentials
     )
 
     // Handle always / never cases
@@ -999,7 +1003,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     const { credentialRecord, offerMessage } = options
     const autoAccept = composeAutoAccept(
       credentialRecord.autoAcceptCredential,
-      agentContext.config.autoAcceptCredentials
+      this.credentialsModuleConfig.autoAcceptCredentials
     )
 
     // Handle always / never cases
@@ -1035,7 +1039,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     const { credentialRecord, requestMessage } = options
     const autoAccept = composeAutoAccept(
       credentialRecord.autoAcceptCredential,
-      agentContext.config.autoAcceptCredentials
+      this.credentialsModuleConfig.autoAcceptCredentials
     )
 
     // Handle always / never cases
@@ -1067,7 +1071,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     const { credentialRecord, credentialMessage } = options
     const autoAccept = composeAutoAccept(
       credentialRecord.autoAcceptCredential,
-      agentContext.config.autoAcceptCredentials
+      this.credentialsModuleConfig.autoAcceptCredentials
     )
 
     // Handle always / never cases

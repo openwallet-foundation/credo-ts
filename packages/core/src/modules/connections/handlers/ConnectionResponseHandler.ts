@@ -1,6 +1,7 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
@@ -12,17 +13,20 @@ export class ConnectionResponseHandler implements Handler {
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
   private didResolverService: DidResolverService
+  private connectionsModuleConfig: ConnectionsModuleConfig
 
   public supportedMessages = [ConnectionResponseMessage]
 
   public constructor(
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
-    didResolverService: DidResolverService
+    didResolverService: DidResolverService,
+    connectionsModuleConfig: ConnectionsModuleConfig
   ) {
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
     this.didResolverService = didResolverService
+    this.connectionsModuleConfig = connectionsModuleConfig
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionResponseHandler>) {
@@ -72,7 +76,7 @@ export class ConnectionResponseHandler implements Handler {
     // TODO: should we only send ping message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the ping. So for now we'll only do it
     // if auto accept is enable
-    if (connection.autoAcceptConnection ?? messageContext.agentContext.config.autoAcceptConnections) {
+    if (connection.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
       const { message } = await this.connectionService.createTrustPing(messageContext.agentContext, connection, {
         responseRequested: false,
       })

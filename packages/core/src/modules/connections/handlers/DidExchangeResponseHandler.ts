@@ -1,6 +1,7 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService } from '../services'
 
@@ -16,18 +17,21 @@ export class DidExchangeResponseHandler implements Handler {
   private outOfBandService: OutOfBandService
   private connectionService: ConnectionService
   private didResolverService: DidResolverService
+  private connectionsModuleConfig: ConnectionsModuleConfig
   public supportedMessages = [DidExchangeResponseMessage]
 
   public constructor(
     didExchangeProtocol: DidExchangeProtocol,
     outOfBandService: OutOfBandService,
     connectionService: ConnectionService,
-    didResolverService: DidResolverService
+    didResolverService: DidResolverService,
+    connectionsModuleConfig: ConnectionsModuleConfig
   ) {
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
     this.connectionService = connectionService
     this.didResolverService = didResolverService
+    this.connectionsModuleConfig = connectionsModuleConfig
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeResponseHandler>) {
@@ -98,7 +102,7 @@ export class DidExchangeResponseHandler implements Handler {
     // TODO: should we only send complete message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the complete. So for now we'll only do it
     // if auto accept is enabled
-    if (connection.autoAcceptConnection ?? messageContext.agentContext.config.autoAcceptConnections) {
+    if (connection.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
       const message = await this.didExchangeProtocol.createComplete(
         messageContext.agentContext,
         connection,

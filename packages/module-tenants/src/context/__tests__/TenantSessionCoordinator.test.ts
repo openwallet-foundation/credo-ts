@@ -1,11 +1,12 @@
 import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
 import type { DependencyManager } from '@aries-framework/core'
 
-import { WalletModule, AgentContext, AgentConfig } from '@aries-framework/core'
+import { AgentContext, AgentConfig, WalletApi } from '@aries-framework/core'
 import { Mutex, withTimeout } from 'async-mutex'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
+import { TenantsModuleConfig } from '../../TenantsModuleConfig'
 import { TenantRecord } from '../../repository'
 import { TenantSessionCoordinator } from '../TenantSessionCoordinator'
 import { TenantSessionMutex } from '../TenantSessionMutex'
@@ -21,16 +22,17 @@ type PublicTenantAgentContextMapping = Omit<TenantSessionCoordinator, 'tenantAge
 
 const wallet = {
   initialize: jest.fn(),
-} as unknown as WalletModule
+} as unknown as WalletApi
 
 const agentContext = getAgentContext({
   agentConfig: getAgentConfig('TenantSessionCoordinator'),
 })
 
-agentContext.dependencyManager.registerInstance(WalletModule, wallet)
+agentContext.dependencyManager.registerInstance(WalletApi, wallet)
 const tenantSessionCoordinator = new TenantSessionCoordinator(
   agentContext,
-  testLogger
+  testLogger,
+  new TenantsModuleConfig()
 ) as unknown as PublicTenantAgentContextMapping
 
 const tenantSessionMutexMock = TenantSessionMutexMock.mock.instances[0]

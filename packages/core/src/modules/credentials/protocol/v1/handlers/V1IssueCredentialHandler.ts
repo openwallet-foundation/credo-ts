@@ -40,9 +40,7 @@ export class V1IssueCredentialHandler implements Handler {
     credentialRecord: CredentialExchangeRecord,
     messageContext: HandlerInboundMessage<V1IssueCredentialHandler>
   ) {
-    this.logger.info(
-      `Automatically sending acknowledgement with autoAccept on ${messageContext.agentContext.config.autoAcceptCredentials}`
-    )
+    this.logger.info(`Automatically sending acknowledgement with autoAccept`)
     const { message } = await this.credentialService.acceptCredential(messageContext.agentContext, {
       credentialRecord,
     })

@@ -1,6 +1,6 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { AcceptOfferOptions, AcceptRequestOptions, CreateOfferOptions } from '../../../CredentialsModuleOptions'
+import type { AcceptOfferOptions, AcceptRequestOptions, CreateOfferOptions } from '../../../CredentialsApiOptions'
 
 import { ReplaySubject, Subject } from 'rxjs'
 

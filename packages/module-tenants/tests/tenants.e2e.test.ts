@@ -36,10 +36,10 @@ const agent2Config: InitConfig = {
 // and register all plugins before initializing the agent. Later, we can add the module registration
 // to the agent constructor.
 const agent1DependencyManager = new DependencyManager()
-agent1DependencyManager.registerModules(TenantsModule)
+agent1DependencyManager.registerModules(new TenantsModule())
 
 const agent2DependencyManager = new DependencyManager()
-agent2DependencyManager.registerModules(TenantsModule)
+agent2DependencyManager.registerModules(new TenantsModule())
 
 // Create multi-tenant agents
 const agent1 = new Agent(agent1Config, agentDependencies, agent1DependencyManager)

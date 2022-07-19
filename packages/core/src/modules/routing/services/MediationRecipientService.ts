@@ -24,6 +24,7 @@ import { JsonTransformer } from '../../../utils'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { didKeyToVerkey } from '../../dids/helpers'
 import { ProblemReportError } from '../../problem-reports'
+import { RecipientModuleConfig } from '../RecipientModuleConfig'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { RoutingProblemReportReason } from '../error'
 import { KeylistUpdateAction, MediationRequestMessage } from '../messages'
@@ -39,17 +40,20 @@ export class MediationRecipientService {
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
   private messageSender: MessageSender
+  private recipientModuleConfig: RecipientModuleConfig
 
   public constructor(
     connectionService: ConnectionService,
     messageSender: MessageSender,
     mediatorRepository: MediationRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    recipientModuleConfig: RecipientModuleConfig
   ) {
     this.mediationRepository = mediatorRepository
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
+    this.recipientModuleConfig = recipientModuleConfig
   }
 
   public async createStatusRequest(
@@ -272,7 +276,7 @@ export class MediationRecipientService {
 
       return null
     }
-    const { maximumMessagePickup } = messageContext.agentContext.config
+    const { maximumMessagePickup } = this.recipientModuleConfig
     const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
 
     const deliveryRequestMessage = new DeliveryRequestMessage({

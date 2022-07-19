@@ -4,22 +4,22 @@ import type { AgentConfig } from './AgentConfig'
 import type { TransportSession } from './TransportService'
 
 import { AriesFrameworkError } from '../error'
-import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
-import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
-import { CredentialsModule } from '../modules/credentials/CredentialsModule'
-import { DidsModule } from '../modules/dids/DidsModule'
-import { DiscoverFeaturesModule } from '../modules/discover-features'
-import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsModule'
-import { LedgerModule } from '../modules/ledger/LedgerModule'
-import { OutOfBandModule } from '../modules/oob/OutOfBandModule'
-import { ProofsModule } from '../modules/proofs/ProofsModule'
-import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerModule'
-import { MediatorModule } from '../modules/routing/MediatorModule'
-import { RecipientModule } from '../modules/routing/RecipientModule'
+import { BasicMessagesApi } from '../modules/basic-messages/BasicMessagesApi'
+import { ConnectionsApi } from '../modules/connections/ConnectionsApi'
+import { CredentialsApi } from '../modules/credentials/CredentialsApi'
+import { DidsApi } from '../modules/dids/DidsApi'
+import { DiscoverFeaturesApi } from '../modules/discover-features'
+import { GenericRecordsApi } from '../modules/generic-records/GenericRecordsApi'
+import { LedgerApi } from '../modules/ledger/LedgerApi'
+import { OutOfBandApi } from '../modules/oob/OutOfBandApi'
+import { ProofsApi } from '../modules/proofs/ProofsApi'
+import { QuestionAnswerApi } from '../modules/question-answer/QuestionAnswerApi'
+import { MediatorApi } from '../modules/routing/MediatorApi'
+import { RecipientApi } from '../modules/routing/RecipientApi'
 import { StorageUpdateService } from '../storage'
 import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
 import { DEFAULT_UPDATE_CONFIG } from '../storage/migration/updates'
-import { WalletModule } from '../wallet/WalletModule'
+import { WalletApi } from '../wallet/WalletApi'
 import { WalletError } from '../wallet/error'
 
 import { EventEmitter } from './EventEmitter'
@@ -39,19 +39,19 @@ export abstract class BaseAgent {
   protected _isInitialized = false
   protected agentContext: AgentContext
 
-  public readonly connections: ConnectionsModule
-  public readonly proofs: ProofsModule
-  public readonly basicMessages: BasicMessagesModule
-  public readonly genericRecords: GenericRecordsModule
-  public readonly ledger: LedgerModule
-  public readonly questionAnswer!: QuestionAnswerModule
-  public readonly credentials: CredentialsModule
-  public readonly mediationRecipient: RecipientModule
-  public readonly mediator: MediatorModule
-  public readonly discovery: DiscoverFeaturesModule
-  public readonly dids: DidsModule
-  public readonly wallet: WalletModule
-  public readonly oob: OutOfBandModule
+  public readonly connections: ConnectionsApi
+  public readonly proofs: ProofsApi
+  public readonly basicMessages: BasicMessagesApi
+  public readonly genericRecords: GenericRecordsApi
+  public readonly ledger: LedgerApi
+  public readonly questionAnswer!: QuestionAnswerApi
+  public readonly credentials: CredentialsApi
+  public readonly mediationRecipient: RecipientApi
+  public readonly mediator: MediatorApi
+  public readonly discovery: DiscoverFeaturesApi
+  public readonly dids: DidsApi
+  public readonly wallet: WalletApi
+  public readonly oob: OutOfBandApi
 
   public constructor(agentConfig: AgentConfig, dependencyManager: DependencyManager) {
     this.dependencyManager = dependencyManager
@@ -81,19 +81,19 @@ export abstract class BaseAgent {
     this.agentContext = this.dependencyManager.resolve(AgentContext)
 
     // We set the modules in the constructor because that allows to set them as read-only
-    this.connections = this.dependencyManager.resolve(ConnectionsModule)
-    this.credentials = this.dependencyManager.resolve(CredentialsModule) as CredentialsModule
-    this.proofs = this.dependencyManager.resolve(ProofsModule)
-    this.mediator = this.dependencyManager.resolve(MediatorModule)
-    this.mediationRecipient = this.dependencyManager.resolve(RecipientModule)
-    this.basicMessages = this.dependencyManager.resolve(BasicMessagesModule)
-    this.questionAnswer = this.dependencyManager.resolve(QuestionAnswerModule)
-    this.genericRecords = this.dependencyManager.resolve(GenericRecordsModule)
-    this.ledger = this.dependencyManager.resolve(LedgerModule)
-    this.discovery = this.dependencyManager.resolve(DiscoverFeaturesModule)
-    this.dids = this.dependencyManager.resolve(DidsModule)
-    this.wallet = this.dependencyManager.resolve(WalletModule)
-    this.oob = this.dependencyManager.resolve(OutOfBandModule)
+    this.connections = this.dependencyManager.resolve(ConnectionsApi)
+    this.credentials = this.dependencyManager.resolve(CredentialsApi) as CredentialsApi
+    this.proofs = this.dependencyManager.resolve(ProofsApi)
+    this.mediator = this.dependencyManager.resolve(MediatorApi)
+    this.mediationRecipient = this.dependencyManager.resolve(RecipientApi)
+    this.basicMessages = this.dependencyManager.resolve(BasicMessagesApi)
+    this.questionAnswer = this.dependencyManager.resolve(QuestionAnswerApi)
+    this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
+    this.ledger = this.dependencyManager.resolve(LedgerApi)
+    this.discovery = this.dependencyManager.resolve(DiscoverFeaturesApi)
+    this.dids = this.dependencyManager.resolve(DidsApi)
+    this.wallet = this.dependencyManager.resolve(WalletApi)
+    this.oob = this.dependencyManager.resolve(OutOfBandApi)
   }
 
   public get isInitialized() {

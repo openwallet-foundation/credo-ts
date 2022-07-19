@@ -16,6 +16,7 @@ import { ConnectionService } from '../../../../connections/services/ConnectionSe
 import { IndyLedgerService } from '../../../../ledger/services'
 import { RoutingService } from '../../../../routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
+import { CredentialsModuleConfig } from '../../../CredentialsModuleConfig'
 import { credDef, schema } from '../../../__tests__/fixtures'
 import { IndyCredentialFormatService } from '../../../formats/indy/IndyCredentialFormatService'
 import { CredentialFormatSpec } from '../../../models'
@@ -103,7 +104,8 @@ describe('V2CredentialServiceOffer', () => {
       eventEmitter,
       credentialRepository,
       indyCredentialFormatService,
-      agentConfig.logger
+      agentConfig.logger,
+      new CredentialsModuleConfig()
     )
   })
 

@@ -12,26 +12,25 @@ import { CacheRepository } from '../cache'
 import { InjectionSymbols } from '../constants'
 import { JwsService } from '../crypto/JwsService'
 import { AriesFrameworkError } from '../error'
-import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
-import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
-import { CredentialsModule } from '../modules/credentials/CredentialsModule'
-import { DidsModule } from '../modules/dids/DidsModule'
+import { BasicMessagesModule } from '../modules/basic-messages'
+import { ConnectionsModule } from '../modules/connections'
+import { CredentialsModule } from '../modules/credentials'
+import { DidsModule } from '../modules/dids'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
-import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsModule'
-import { IndyModule } from '../modules/indy/module'
-import { LedgerModule } from '../modules/ledger/LedgerModule'
-import { OutOfBandModule } from '../modules/oob/OutOfBandModule'
-import { ProofsModule } from '../modules/proofs/ProofsModule'
-import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerModule'
-import { MediatorModule } from '../modules/routing/MediatorModule'
-import { RecipientModule } from '../modules/routing/RecipientModule'
-import { W3cVcModule } from '../modules/vc/module'
+import { GenericRecordsModule } from '../modules/generic-records'
+import { IndyModule } from '../modules/indy'
+import { LedgerModule } from '../modules/ledger'
+import { OutOfBandModule } from '../modules/oob'
+import { ProofsModule } from '../modules/proofs'
+import { QuestionAnswerModule } from '../modules/question-answer'
+import { MediatorModule, RecipientModule } from '../modules/routing'
+import { W3cVcModule } from '../modules/vc'
 import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
+import { WalletModule } from '../wallet'
 import { IndyWallet } from '../wallet/IndyWallet'
-import { WalletModule } from '../wallet/WalletModule'
 
 import { AgentConfig } from './AgentConfig'
 import { BaseAgent } from './BaseAgent'
@@ -94,14 +93,12 @@ export class Agent extends BaseAgent {
   }
 
   public async initialize() {
-    const { connectToIndyLedgersOnStartup, mediatorConnectionsInvite } = this.agentConfig
-
     await super.initialize()
 
     // set the pools on the ledger.
-    this.ledger.setPools(this.agentContext.config.indyLedgers)
+    this.ledger.setPools(this.ledger.config.indyLedgers)
     // As long as value isn't false we will async connect to all genesis pools on startup
-    if (connectToIndyLedgersOnStartup) {
+    if (this.ledger.config.connectToIndyLedgersOnStartup) {
       this.ledger.connectToPools().catch((error) => {
         this.logger.warn('Error connecting to ledger, will try to reconnect when needed.', { error })
       })
@@ -118,9 +115,13 @@ export class Agent extends BaseAgent {
     // Connect to mediator through provided invitation if provided in config
     // Also requests mediation ans sets as default mediator
     // Because this requires the connections module, we do this in the agent constructor
-    if (mediatorConnectionsInvite) {
-      this.logger.debug('Provision mediation with invitation', { mediatorConnectionsInvite })
-      const mediationConnection = await this.getMediationConnection(mediatorConnectionsInvite)
+    if (this.mediationRecipient.config.mediatorInvitationUrl) {
+      this.logger.debug('Provision mediation with invitation', {
+        mediatorInvitationUrl: this.mediationRecipient.config.mediatorInvitationUrl,
+      })
+      const mediationConnection = await this.getMediationConnection(
+        this.mediationRecipient.config.mediatorInvitationUrl
+      )
       await this.mediationRecipient.provision(mediationConnection)
     }
     await this.mediator.initialize()
@@ -182,21 +183,37 @@ export class Agent extends BaseAgent {
 
     // Register all modules
     dependencyManager.registerModules(
-      ConnectionsModule,
-      CredentialsModule,
-      ProofsModule,
-      MediatorModule,
-      RecipientModule,
-      BasicMessagesModule,
-      QuestionAnswerModule,
-      GenericRecordsModule,
-      LedgerModule,
-      DiscoverFeaturesModule,
-      DidsModule,
-      WalletModule,
-      OutOfBandModule,
-      IndyModule,
-      W3cVcModule
+      new ConnectionsModule({
+        autoAcceptConnections: this.agentConfig.autoAcceptConnections,
+      }),
+      new CredentialsModule({
+        autoAcceptCredentials: this.agentConfig.autoAcceptCredentials,
+      }),
+      new ProofsModule({
+        autoAcceptProofs: this.agentConfig.autoAcceptProofs,
+      }),
+      new MediatorModule({
+        autoAcceptMediationRequests: this.agentConfig.autoAcceptMediationRequests,
+      }),
+      new RecipientModule({
+        maximumMessagePickup: this.agentConfig.maximumMessagePickup,
+        mediatorInvitationUrl: this.agentConfig.mediatorConnectionsInvite,
+        mediatorPickupStrategy: this.agentConfig.mediatorPickupStrategy,
+        mediatorPollingInterval: this.agentConfig.mediatorPollingInterval,
+      }),
+      new BasicMessagesModule(),
+      new QuestionAnswerModule(),
+      new GenericRecordsModule(),
+      new LedgerModule({
+        connectToIndyLedgersOnStartup: this.agentConfig.connectToIndyLedgersOnStartup,
+        indyLedgers: this.agentConfig.indyLedgers,
+      }),
+      new DiscoverFeaturesModule(),
+      new DidsModule(),
+      new WalletModule(),
+      new OutOfBandModule(),
+      new IndyModule(),
+      new W3cVcModule()
     )
 
     // TODO: contextCorrelationId for base wallet

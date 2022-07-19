@@ -1,15 +1,12 @@
-import type { DependencyManager } from '../../plugins'
-
-import { module } from '../../plugins'
+import type { DependencyManager, Module } from '../../plugins'
 
 import { IndyRevocationService, IndyUtilitiesService } from './services'
 import { IndyHolderService } from './services/IndyHolderService'
 import { IndyIssuerService } from './services/IndyIssuerService'
 import { IndyVerifierService } from './services/IndyVerifierService'
 
-@module()
-export class IndyModule {
-  public static register(dependencyManager: DependencyManager) {
+export class IndyModule implements Module {
+  public register(dependencyManager: DependencyManager) {
     dependencyManager.registerSingleton(IndyIssuerService)
     dependencyManager.registerSingleton(IndyHolderService)
     dependencyManager.registerSingleton(IndyVerifierService)
