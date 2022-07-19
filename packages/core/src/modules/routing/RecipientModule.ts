@@ -324,7 +324,9 @@ export class RecipientModule {
       return existingMediationRecord
     }
 
-    const didForMediator = await this.didService.createDID(DidType.PeerDid)
+    const didForMediator = await this.didService.createDID({
+      requestMediation: false,
+    })
     const mediationRecord = await this.requestAndAwaitGrant(didForMediator.did, 60000) // TODO: put timeout as a config parameter
     await this.setDefaultMediator(mediationRecord)
   }

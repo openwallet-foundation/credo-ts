@@ -51,15 +51,23 @@ export class DidService {
     this.eventEmitter = eventEmitter
   }
 
-  public async createDID(didType?: DidType, keyType?: KeyType, seed?: string, isPublic?: boolean): Promise<DidRecord> {
-    const didType_ = didType || DidType.KeyDid
-    const keyType_ = keyType || KeyType.Ed25519
+  public async createDID(
+    params: {
+      didType?: DidType
+      keyType?: KeyType
+      seed?: string
+      isPublic?: boolean
+      requestMediation?: boolean
+    } = {}
+  ): Promise<DidRecord> {
+    const didType_ = params.didType || DidType.PeerDid
+    const keyType_ = params.keyType || KeyType.Ed25519
 
     const transports = this.agentConfig.transports || []
 
     this.logger.debug(`creating DID with type ${didType_}`)
 
-    const ed25519KeyPair = await this.keysService.createKey({ keyType: keyType_, seed })
+    const ed25519KeyPair = await this.keysService.createKey({ keyType: keyType_, seed: params.seed })
     const ed25519Key = Key.fromPublicKey(ed25519KeyPair.publicKey, keyType_)
 
     const x25519KeyPair = await this.keysService.convertEd25519ToX25519Key({ keyPair: ed25519KeyPair })
@@ -101,9 +109,10 @@ export class DidService {
       )
     }
 
+    const didDocument = didDocumentBuilder.build()
     const didPeer =
-      transports.length > 0
-        ? DidPeer.fromDidDocument(didDocumentBuilder.build(), PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
+      didDocument.service.length > 0
+        ? DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
         : DidPeer.fromKey(ed25519Key)
 
     await this.keysService.storeKey({
@@ -120,7 +129,7 @@ export class DidService {
       keyType: KeyType.X25519,
     })
 
-    if (hasOnlineTransport(transports)) {
+    if (hasOnlineTransport(transports) && (params.requestMediation || params.requestMediation === undefined)) {
       await this.mediationRecipientService.getRouting(x25519KeyRecord.kid, { useDefaultMediator: true })
     }
 
@@ -128,7 +137,7 @@ export class DidService {
       id: didPeer.did,
       didDocument: didPeer.didDocument,
       role: DidDocumentRole.Created,
-      isPublic,
+      isPublic: params.isPublic,
     })
 
     await this.didRepository.save(didRecord)
@@ -141,7 +150,7 @@ export class DidService {
       const publicDid = await this.findPublicDid()
       if (publicDid) return publicDid
     }
-    return this.createDID(type)
+    return this.createDID({ didType: type })
   }
 
   public async getDIDDoc(did: string): Promise<DidDocument> {

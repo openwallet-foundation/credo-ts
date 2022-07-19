@@ -222,7 +222,7 @@ export class ValueTransferService {
 
     if (record.role === ValueTransferRole.Giver) {
       await this.valueTransfer.giver().abortTransaction()
-      from = record.giver?.did || (await this.didService.createDID(DidType.PeerDid)).id
+      from = record.giver?.did || (await this.didService.createDID({})).id
     } else if (record.role === ValueTransferRole.Getter) {
       await this.valueTransfer.getter().abortTransaction()
       from = record.getter?.did

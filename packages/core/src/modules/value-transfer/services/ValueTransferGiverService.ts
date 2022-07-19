@@ -242,7 +242,7 @@ export class ValueTransferGiverService {
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.RequestReceived)
 
-    const giverDid = record.giver ? record.giver.did : (await this.didService.createDID(DidType.PeerDid)).id
+    const giverDid = record.giver ? record.giver.did : (await this.didService.createDID()).id
 
     const activeTransaction = await this.valueTransferService.getActiveTransaction()
     if (activeTransaction.record) {
