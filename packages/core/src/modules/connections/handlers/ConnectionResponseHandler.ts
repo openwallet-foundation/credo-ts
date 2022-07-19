@@ -1,6 +1,5 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DidCommDocumentService } from '../../didcomm'
 import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionService } from '../services/ConnectionService'
@@ -15,7 +14,6 @@ export class ConnectionResponseHandler implements Handler {
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
   private didResolverService: DidResolverService
-  private didCommDocumentService: DidCommDocumentService
 
   public supportedMessages = [ConnectionResponseMessage]
 
@@ -23,14 +21,12 @@ export class ConnectionResponseHandler implements Handler {
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
-    didResolverService: DidResolverService,
-    didCommDocumentService: DidCommDocumentService
+    didResolverService: DidResolverService
   ) {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
     this.didResolverService = didResolverService
-    this.didCommDocumentService = didCommDocumentService
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionResponseHandler>) {

@@ -652,8 +652,7 @@ export class OutOfBandModule {
     const [service] = services
 
     if (typeof service === 'string') {
-      const didServices = await this.didCommDocumentService.resolveServicesFromDid(service)
-      const didService = didServices?.[0]
+      const [didService] = await this.didCommDocumentService.resolveServicesFromDid(service)
       if (didService) {
         serviceEndpoint = didService.serviceEndpoint
         recipientKeys = didService.recipientKeys.map((key) => key.publicKeyBase58)

@@ -172,7 +172,7 @@ describe('out of band', () => {
       expect(outOfBandInvitation.getRequests()).toBeUndefined()
 
       // expect contains services
-      const [service] = outOfBandInvitation.getServices() as OutOfBandDidCommService[]
+      const [service] = outOfBandInvitation.getInlineServices()
       expect(service).toMatchObject(
         new OutOfBandDidCommService({
           id: expect.any(String),
@@ -220,7 +220,7 @@ describe('out of band', () => {
       expect(outOfBandInvitation.getRequests()).toHaveLength(1)
 
       // expect contains services
-      const [service] = outOfBandInvitation.getServices() as OutOfBandDidCommService[]
+      const [service] = outOfBandInvitation.getInlineServices()
       expect(service).toMatchObject(
         new OutOfBandDidCommService({
           id: expect.any(String),
@@ -467,8 +467,8 @@ describe('out of band', () => {
       const outOfBandRecord2 = await faberAgent.oob.createInvitation(makeConnectionConfig)
 
       // Take over the recipientKeys from the first invitation so they match when encoded
-      const firstInvitationService = outOfBandRecord.outOfBandInvitation.getServices()[0] as OutOfBandDidCommService
-      const secondInvitationService = outOfBandRecord2.outOfBandInvitation.getServices()[0] as OutOfBandDidCommService
+      const [firstInvitationService] = outOfBandRecord.outOfBandInvitation.getInlineServices()
+      const [secondInvitationService] = outOfBandRecord2.outOfBandInvitation.getInlineServices()
       secondInvitationService.recipientKeys = firstInvitationService.recipientKeys
 
       aliceAgent.events.on(OutOfBandEventTypes.HandshakeReused, aliceReuseListener)
