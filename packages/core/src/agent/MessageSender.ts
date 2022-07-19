@@ -367,7 +367,8 @@ export class MessageSender {
             didCommServices = await this.didCommDocumentService.resolveServicesFromDid(service)
 
             // store recipientKeyFingerprints in the oob record
-            if (!outOfBand.getTag('recipientKeyFingerprints')) {
+            const oldRecipientKeyFingerprints = outOfBand.getTag('recipientKeyFingerprints') as string[]
+            if (!oldRecipientKeyFingerprints?.length) {
               const allRecipientKeys = didCommServices.reduce<Key[]>(
                 (aggr, { recipientKeys }) => [...aggr, ...recipientKeys],
                 []
