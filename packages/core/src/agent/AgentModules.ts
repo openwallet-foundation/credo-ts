@@ -89,7 +89,7 @@ export type DefaultAgentApi = AgentApi<DefaultAgentModules>
  * and will only construct the module if the method is called. This prevents the modules from being initialized if they are already configured by the end
  * user using the `module` property in the agent constructor.
  */
-export function getDefaultAgentModules(agentConfig: AgentConfig) {
+function getDefaultAgentModules(agentConfig: AgentConfig) {
   return {
     connections: () =>
       new ConnectionsModule({
@@ -189,13 +189,13 @@ export function extendModulesWithDefaultModules<AgentModules extends AgentModule
  */
 export function getAgentApi<AgentModules extends ModulesMap>(
   dependencyManager: DependencyManager
-): DefaultAgentApi & AgentApi<AgentModules> {
+): AgentApi<AgentModules> {
   // Create the api object based on the `api` properties on the modules. If no `api` exists
   // on the module it will be ignored.
   const api = Object.entries(dependencyManager.registeredModules).reduce((api, [moduleKey, module]) => {
     if (!module.api) return api
     return { ...api, [moduleKey]: dependencyManager.resolve(module.api) }
-  }, {}) as DefaultAgentApi & AgentApi<AgentModules>
+  }, {}) as AgentApi<AgentModules>
 
   return api
 }

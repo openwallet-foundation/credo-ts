@@ -56,7 +56,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = DefaultAgentMo
     this.agentContext = this.dependencyManager.resolve(AgentContext)
 
     // Set the api of the registered modules on the agent
-    this.api = getAgentApi(this.dependencyManager)
+    this.api = getAgentApi(this.dependencyManager) as DefaultAgentApi & AgentApi<AgentModules>
   }
 
   public get isInitialized() {

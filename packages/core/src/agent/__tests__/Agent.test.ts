@@ -1,3 +1,8 @@
+import type { DependencyManager, Module } from '../../plugins'
+
+import { injectable } from 'tsyringe'
+
+import { DidsApi, OutOfBandApi, QuestionAnswerApi } from '../..'
 import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
@@ -8,6 +13,8 @@ import { ConnectionService } from '../../modules/connections/services/Connection
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
+import { DiscoverFeaturesApi } from '../../modules/discover-features'
+import { GenericRecordsApi } from '../../modules/generic-records'
 import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerApi } from '../../modules/ledger/LedgerApi'
 import { ProofRepository } from '../../modules/proofs'
@@ -15,14 +22,16 @@ import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import { V1ProofService } from '../../modules/proofs/protocol/v1'
 import { V2ProofService } from '../../modules/proofs/protocol/v2'
 import {
-  MediatorApi,
-  RecipientApi,
-  MediationRepository,
-  MediatorService,
   MediationRecipientService,
+  MediationRepository,
+  MediatorApi,
+  MediatorService,
+  RecipientApi,
+  RecipientModule,
 } from '../../modules/routing'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../../storage/IndyStorageService'
+import { WalletApi } from '../../wallet'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
@@ -32,7 +41,100 @@ import { MessageSender } from '../MessageSender'
 
 const agentOptions = getAgentOptions('Agent Class Test')
 
+const myModuleMethod = jest.fn()
+@injectable()
+class MyApi {
+  public myModuleMethod = myModuleMethod
+}
+
+class MyModule implements Module {
+  public api = MyApi
+  public register(dependencyManager: DependencyManager) {
+    dependencyManager.registerContextScoped(MyApi)
+  }
+}
+
 describe('Agent', () => {
+  describe('Module registration', () => {
+    test('registers default modules if no modules were provided', () => {
+      const agent = new Agent(agentOptions)
+
+      expect(agent.api).toEqual({
+        connections: expect.any(ConnectionsApi),
+        credentials: expect.any(CredentialsApi),
+        proofs: expect.any(ProofsApi),
+        mediator: expect.any(MediatorApi),
+        mediationRecipient: expect.any(RecipientApi),
+        basicMessages: expect.any(BasicMessagesApi),
+        questionAnswer: expect.any(QuestionAnswerApi),
+        genericRecords: expect.any(GenericRecordsApi),
+        ledger: expect.any(LedgerApi),
+        discovery: expect.any(DiscoverFeaturesApi),
+        dids: expect.any(DidsApi),
+        wallet: expect.any(WalletApi),
+        oob: expect.any(OutOfBandApi),
+      })
+    })
+
+    test('registers custom and default modules if custom modules are provided', () => {
+      const agent = new Agent({
+        ...agentOptions,
+        modules: {
+          myModule: new MyModule(),
+        },
+      })
+
+      expect(agent.api.myModule.myModuleMethod).toBe(myModuleMethod)
+      expect(agent.api).toEqual({
+        connections: expect.any(ConnectionsApi),
+        credentials: expect.any(CredentialsApi),
+        proofs: expect.any(ProofsApi),
+        mediator: expect.any(MediatorApi),
+        mediationRecipient: expect.any(RecipientApi),
+        basicMessages: expect.any(BasicMessagesApi),
+        questionAnswer: expect.any(QuestionAnswerApi),
+        genericRecords: expect.any(GenericRecordsApi),
+        ledger: expect.any(LedgerApi),
+        discovery: expect.any(DiscoverFeaturesApi),
+        dids: expect.any(DidsApi),
+        wallet: expect.any(WalletApi),
+        oob: expect.any(OutOfBandApi),
+        myModule: expect.any(MyApi),
+      })
+    })
+
+    test('override default module configuration', () => {
+      const agent = new Agent({
+        ...agentOptions,
+        modules: {
+          myModule: new MyModule(),
+          mediationRecipient: new RecipientModule({
+            maximumMessagePickup: 42,
+          }),
+        },
+      })
+
+      // Should be custom module config property, not the default value
+      expect(agent.api.mediationRecipient.config.maximumMessagePickup).toBe(42)
+      expect(agent.api).toEqual({
+        connections: expect.any(ConnectionsApi),
+        credentials: expect.any(CredentialsApi),
+        proofs: expect.any(ProofsApi),
+        mediator: expect.any(MediatorApi),
+        mediationRecipient: expect.any(RecipientApi),
+        basicMessages: expect.any(BasicMessagesApi),
+        questionAnswer: expect.any(QuestionAnswerApi),
+        genericRecords: expect.any(GenericRecordsApi),
+        ledger: expect.any(LedgerApi),
+        discovery: expect.any(DiscoverFeaturesApi),
+        dids: expect.any(DidsApi),
+        wallet: expect.any(WalletApi),
+        oob: expect.any(OutOfBandApi),
+        myModule: expect.any(MyApi),
+      })
+    })
+  })
+
   describe('Initialization', () => {
     let agent: Agent
 
@@ -88,21 +190,6 @@ describe('Agent', () => {
       await agent.initialize()
       expect(agent.wallet.isInitialized).toBe(true)
       expect(agent.isInitialized).toBe(true)
-    })
-  })
-
-  describe('Change label', () => {
-    let agent: Agent
-
-    it('should return new label after setter is called', async () => {
-      expect.assertions(2)
-      const newLabel = 'Agent: Agent Class Test 2'
-
-      agent = new Agent(agentOptions)
-      expect(agent.config.label).toBe(agentOptions.config.label)
-
-      agent.config.label = newLabel
-      expect(agent.config.label).toBe(newLabel)
     })
   })
 
