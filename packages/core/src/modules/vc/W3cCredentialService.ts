@@ -337,8 +337,8 @@ export class W3cCredentialService {
   }
 
   public async removeCredentialRecord(id: string) {
-    const cred = await this.w3cCredentialRepository.getById(id)
-    await this.w3cCredentialRepository.delete(cred)
+    const credential = await this.w3cCredentialRepository.getById(id)
+    await this.w3cCredentialRepository.delete(credential)
   }
 
   public async getAllCredentialRecords(): Promise<W3cCredentialRecord[]> {
