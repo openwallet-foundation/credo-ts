@@ -28,7 +28,8 @@ export async function e2eTest({
 
   // Request mediation from mediator
   const mediationRecord = await recipientAgent.mediationRecipient.requestAndAwaitGrant(
-    mediatorAgent.publicDid?.did || ''
+    mediatorAgent.publicDid?.did || '',
+    ''
   )
   expect(mediationRecord.state).toBe(MediationState.Granted)
 

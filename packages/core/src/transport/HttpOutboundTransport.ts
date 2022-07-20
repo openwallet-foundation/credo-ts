@@ -49,11 +49,16 @@ export class HttpOutboundTransport implements OutboundTransport {
 
       let response
       let responseMessage
+
       try {
         response = await this.fetch(endpoint, {
           method: 'POST',
-          body: JSON.stringify(payload),
-          headers: { 'Content-Type': this.agentConfig.didCommMimeType },
+          body: JSON.stringify({ message: JSON.stringify(payload) }),
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          // headers: { 'Content-Type': this.agentConfig.didCommMimeType },
           signal: abortController.signal,
         })
         clearTimeout(id)
@@ -78,13 +83,14 @@ export class HttpOutboundTransport implements OutboundTransport {
 
         try {
           const encryptedMessage = JsonEncoder.fromString(responseMessage)
-          if (!isValidJweStructure(encryptedMessage)) {
+          const message = JsonEncoder.fromString(encryptedMessage.data.message)
+          if (!isValidJweStructure(message)) {
             this.logger.error(
               `Received a response from the other agent but the structure of the incoming message is not a DIDComm message: ${responseMessage}`
             )
             return
           }
-          this.agent.receiveMessage(encryptedMessage)
+          this.agent.receiveMessage(message)
         } catch (error) {
           this.logger.debug('Unable to parse response message')
         }

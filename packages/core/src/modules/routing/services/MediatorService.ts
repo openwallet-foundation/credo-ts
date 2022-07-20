@@ -149,10 +149,11 @@ export class MediatorService {
   }
 
   public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessageV2>) {
-    if (!messageContext.message.from) return
+    if (!messageContext.message.from || !messageContext.message.to?.length) return
 
     const mediationRecord = new MediationRecord({
       did: messageContext.message.from,
+      mediatorDid: messageContext.message.to[0],
       role: MediationRole.Mediator,
       state: MediationState.Requested,
       threadId: messageContext.message.threadId || messageContext.message.id,

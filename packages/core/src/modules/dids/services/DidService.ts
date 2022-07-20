@@ -87,27 +87,20 @@ export class DidService {
       }
       didDocumentBuilder.addService(
         new DidCommV2Service({
-          id: `did#endpoint`,
+          id: Transports.HTTP,
           serviceEndpoint: mediator.endpoint,
           routingKeys: mediator.routingKeys,
-          accept: ['didcomm/v2'],
         })
       )
     }
     if (transports.includes(Transports.NFC)) {
-      didDocumentBuilder.addService(
-        new DidCommV2Service({ id: ``, serviceEndpoint: Transports.NFC, accept: ['didcomm/v2'] })
-      )
+      didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.NFC, serviceEndpoint: Transports.NFC }))
     }
     if (transports.includes(Transports.IPC)) {
-      didDocumentBuilder.addService(
-        new DidCommV2Service({ id: ``, serviceEndpoint: Transports.IPC, accept: ['didcomm/v2'] })
-      )
+      didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.IPC, serviceEndpoint: Transports.IPC }))
     }
     if (transports.includes(Transports.Nearby)) {
-      didDocumentBuilder.addService(
-        new DidCommV2Service({ id: ``, serviceEndpoint: Transports.Nearby, accept: ['didcomm/v2'] })
-      )
+      didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.Nearby, serviceEndpoint: Transports.Nearby }))
     }
 
     const didDocument = didDocumentBuilder.build()

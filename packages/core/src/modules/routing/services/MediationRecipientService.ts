@@ -65,6 +65,7 @@ export class MediationRecipientService {
       state: MediationState.Requested,
       role: MediationRole.Recipient,
       did,
+      mediatorDid,
     })
     await this.mediatorRepository.save(mediationRecord)
     this.eventEmitter.emit<MediationStateChangedEvent>({
@@ -126,7 +127,7 @@ export class MediationRecipientService {
     verKey: string,
     timeoutMs = 15000 // TODO: this should be a configurable value in agent config
   ): Promise<MediationRecord> {
-    const message = this.createKeylistUpdateMessage(mediationRecord.did, verKey)
+    const message = this.createKeylistUpdateMessage(mediationRecord, verKey)
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Recipient)
@@ -154,9 +155,10 @@ export class MediationRecipientService {
     return keylistUpdate.payload.mediationRecord
   }
 
-  public createKeylistUpdateMessage(did: string, verkey: string): KeylistUpdateMessageV2 {
+  public createKeylistUpdateMessage(mediationRecord: MediationRecord, verkey: string): KeylistUpdateMessageV2 {
     const keylistUpdateMessage = new KeylistUpdateMessageV2({
-      from: did,
+      from: mediationRecord.did,
+      to: mediationRecord.mediatorDid,
       body: {
         updates: [
           new KeylistUpdate({
@@ -304,10 +306,10 @@ export class MediationRecipientService {
   }
 
   private async getMediationRecord(messageContext: InboundMessageContext<DIDCommV2Message>): Promise<MediationRecord> {
-    if (!messageContext.message.from) {
-      throw new Error(`No mediation has been requested for this connection id: ${messageContext.message.from}`)
+    if (!messageContext.message.to || !messageContext.message.to.length) {
+      throw new Error(`No mediation has been requested for this did: ${messageContext.message.to}`)
     }
-    const mediationRecord = await this.mediatorRepository.getByDid(messageContext.message.from)
+    const mediationRecord = await this.mediatorRepository.getByDid(messageContext.message.to[0])
 
     if (!mediationRecord) {
       throw new Error(`No mediation has been requested for this connection id: ${messageContext.message.from}`)

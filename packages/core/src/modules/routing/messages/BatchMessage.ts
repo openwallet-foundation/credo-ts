@@ -60,7 +60,6 @@ export class BatchMessageV2Body {
   @IsArray()
   @ValidateNested()
   @IsInstance(BatchMessageMessage, { each: true })
-  @Expose({ name: 'messages' })
   public messages!: BatchMessageMessage[]
 }
 

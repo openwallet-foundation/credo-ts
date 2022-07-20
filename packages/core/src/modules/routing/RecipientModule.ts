@@ -19,7 +19,7 @@ import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
 import { parseMessageType } from '../../utils/messageType'
 import { ConnectionService } from '../connections/services'
-import { DidService, DidType } from '../dids'
+import { DidService } from '../dids'
 import { DiscloseMessage, DiscloseMessageV2, DiscoverFeaturesModule } from '../discover-features'
 import { OutOfBandGoalCode, OutOfBandInvitationMessage } from '../out-of-band'
 
@@ -249,6 +249,7 @@ export class RecipientModule {
   public async pickupMessages(mediator: MediationRecord) {
     const batchPickupMessage = new BatchPickupMessageV2({
       from: mediator.did,
+      to: mediator.mediatorDid,
       body: { batchSize: 10 },
     })
     const outboundMessage = createOutboundDIDCommV2Message(batchPickupMessage)
@@ -259,8 +260,8 @@ export class RecipientModule {
     return this.mediationRecipientService.setDefaultMediator(mediatorRecord)
   }
 
-  public async notifyKeylistUpdate(did: string, verkey: string) {
-    const message = this.mediationRecipientService.createKeylistUpdateMessage(did, verkey)
+  public async notifyKeylistUpdate(mediatorRecord: MediationRecord, verkey: string) {
+    const message = this.mediationRecipientService.createKeylistUpdateMessage(mediatorRecord, verkey)
     const outboundMessage = createOutboundDIDCommV2Message(message)
     await this.sendMessage(outboundMessage)
   }

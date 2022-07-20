@@ -103,6 +103,7 @@ describe('MessageSender', () => {
       outboundTransport = new DummyOutboundTransport()
       messageRepository = new InMemoryMessageRepository(getAgentConfig('MessageSender'))
       messageSender = new MessageSender(
+        getAgentConfig('MessageSenderTest'),
         enveloperService,
         transportService,
         messageRepository,
@@ -273,6 +274,7 @@ describe('MessageSender', () => {
     beforeEach(() => {
       outboundTransport = new DummyOutboundTransport()
       messageSender = new MessageSender(
+        getAgentConfig('MessageSenderTest'),
         enveloperService,
         transportService,
         new InMemoryMessageRepository(getAgentConfig('MessageSenderTest')),
@@ -342,6 +344,7 @@ describe('MessageSender', () => {
       outboundTransport = new DummyOutboundTransport()
       messageRepository = new InMemoryMessageRepository(getAgentConfig('PackMessage'))
       messageSender = new MessageSender(
+        getAgentConfig('MessageSenderTest'),
         enveloperService,
         transportService,
         messageRepository,

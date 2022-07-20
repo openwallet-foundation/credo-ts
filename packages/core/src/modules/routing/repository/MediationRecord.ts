@@ -12,6 +12,7 @@ export interface MediationRecordProps {
   role: MediationRole
   createdAt?: Date
   did: string
+  mediatorDid: string
   connectionId?: string
   threadId: string
   endpoint?: string
@@ -39,6 +40,7 @@ export class MediationRecord
   public state!: MediationState
   public role!: MediationRole
   public did!: string
+  public mediatorDid!: string
   public connectionId?: string
   public threadId!: string
   public endpoint?: string
@@ -56,6 +58,7 @@ export class MediationRecord
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.did = props.did
+      this.mediatorDid = props.mediatorDid
       this.connectionId = props.connectionId
       this.threadId = props.threadId
       this.recipientKeys = props.recipientKeys || []
