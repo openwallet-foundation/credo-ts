@@ -11,12 +11,12 @@ import { loadPostgresPlugin, WalletScheme } from '../../node/src'
 import { Agent } from '../src/agent/Agent'
 import { HandshakeProtocol } from '../src/modules/connections'
 
-import { waitForBasicMessage, getBasePostgresConfig } from './helpers'
+import { waitForBasicMessage, getPostgresAgentOptions } from './helpers'
 
-const alicePostgresConfig = getBasePostgresConfig('AgentsAlice', {
+const alicePostgresAgentOptions = getPostgresAgentOptions('AgentsAlice', {
   endpoints: ['rxjs:alice'],
 })
-const bobPostgresConfig = getBasePostgresConfig('AgentsBob', {
+const bobPostgresAgentOptions = getPostgresAgentOptions('AgentsBob', {
   endpoints: ['rxjs:bob'],
 })
 
@@ -59,12 +59,12 @@ describe('postgres agents', () => {
     // loading the postgres wallet plugin
     loadPostgresPlugin(storageConfig.config, storageConfig.credentials)
 
-    aliceAgent = new Agent(alicePostgresConfig.config, alicePostgresConfig.agentDependencies)
+    aliceAgent = new Agent(alicePostgresAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    bobAgent = new Agent(bobPostgresConfig.config, bobPostgresConfig.agentDependencies)
+    bobAgent = new Agent(bobPostgresAgentOptions)
     bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()

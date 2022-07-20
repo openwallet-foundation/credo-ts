@@ -1,10 +1,11 @@
 import type { InitConfig } from '@aries-framework/core'
 
-import { Agent, DependencyManager } from '@aries-framework/core'
+import { Agent } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
 import testLogger from '../../core/tests/logger'
-import { TenantsApi, TenantsModule } from '../src'
+
+import { TenantsModule } from '@aries-framework/module-tenants'
 
 jest.setTimeout(2000000)
 
@@ -19,15 +20,14 @@ const agentConfig: InitConfig = {
   autoAcceptConnections: true,
 }
 
-// Register tenant module. For now we need to create a custom dependency manager
-// and register all plugins before initializing the agent. Later, we can add the module registration
-// to the agent constructor.
-const dependencyManager = new DependencyManager()
-dependencyManager.registerModules(new TenantsModule())
-
 // Create multi-tenant agent
-const agent = new Agent(agentConfig, agentDependencies, dependencyManager)
-const agentTenantsApi = agent.dependencyManager.resolve(TenantsApi)
+const agent = new Agent({
+  config: agentConfig,
+  dependencies: agentDependencies,
+  modules: {
+    tenants: new TenantsModule(),
+  },
+})
 
 describe('Tenants Sessions E2E', () => {
   beforeAll(async () => {
@@ -42,7 +42,7 @@ describe('Tenants Sessions E2E', () => {
   test('create 100 sessions in parallel for the same tenant and close them', async () => {
     const numberOfSessions = 100
 
-    const tenantRecord = await agentTenantsApi.createTenant({
+    const tenantRecord = await agent.tenants.createTenant({
       config: {
         label: 'Agent 1 Tenant 1',
       },
@@ -51,7 +51,7 @@ describe('Tenants Sessions E2E', () => {
     const tenantAgentPromises = []
 
     for (let session = 0; session < numberOfSessions; session++) {
-      tenantAgentPromises.push(agentTenantsApi.getTenantAgent({ tenantId: tenantRecord.id }))
+      tenantAgentPromises.push(agent.tenants.getTenantAgent({ tenantId: tenantRecord.id }))
     }
 
     const tenantAgents = await Promise.all(tenantAgentPromises)
@@ -65,7 +65,7 @@ describe('Tenants Sessions E2E', () => {
 
     const tenantRecordPromises = []
     for (let tenantNo = 0; tenantNo < numberOfTenants; tenantNo++) {
-      const tenantRecord = agentTenantsApi.createTenant({
+      const tenantRecord = agent.tenants.createTenant({
         config: {
           label: 'Agent 1 Tenant 1',
         },
@@ -79,7 +79,7 @@ describe('Tenants Sessions E2E', () => {
     const tenantAgentPromises = []
     for (const tenantRecord of tenantRecords) {
       for (let session = 0; session < numberOfSessions; session++) {
-        tenantAgentPromises.push(agentTenantsApi.getTenantAgent({ tenantId: tenantRecord.id }))
+        tenantAgentPromises.push(agent.tenants.getTenantAgent({ tenantId: tenantRecord.id }))
       }
     }
 

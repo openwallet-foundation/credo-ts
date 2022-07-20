@@ -9,6 +9,7 @@ import { ConnectionService, TrustPingService } from './services'
 
 export class ConnectionsModule implements Module {
   public readonly config: ConnectionsModuleConfig
+  public readonly api = ConnectionsApi
 
   public constructor(config?: ConnectionsModuleConfigOptions) {
     this.config = new ConnectionsModuleConfig(config)

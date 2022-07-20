@@ -3,9 +3,9 @@ import type { GenericRecord } from '../src/modules/generic-records/repository/Ge
 import { Agent } from '../src/agent/Agent'
 import { RecordNotFoundError } from '../src/error'
 
-import { getBaseConfig } from './helpers'
+import { getAgentOptions } from './helpers'
 
-const aliceConfig = getBaseConfig('Generic Records Alice', {
+const aliceAgentOptions = getAgentOptions('Generic Records Alice', {
   endpoints: ['rxjs:alice'],
 })
 
@@ -24,7 +24,7 @@ describe('genericRecords', () => {
   })
 
   test('store generic-record record', async () => {
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
     await aliceAgent.initialize()
 
     // Save genericRecord message (Minimal)

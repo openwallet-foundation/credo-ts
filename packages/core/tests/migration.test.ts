@@ -3,13 +3,13 @@ import type { VersionString } from '../src/utils/version'
 import { Agent } from '../src/agent/Agent'
 import { UpdateAssistant } from '../src/storage/migration/UpdateAssistant'
 
-import { getBaseConfig } from './helpers'
+import { getAgentOptions } from './helpers'
 
-const { config, agentDependencies } = getBaseConfig('Migration', { publicDidSeed: undefined, indyLedgers: [] })
+const agentOptions = getAgentOptions('Migration', { publicDidSeed: undefined, indyLedgers: [] })
 
 describe('migration', () => {
   test('manually initiating the update assistant to perform an update', async () => {
-    const agent = new Agent(config, agentDependencies)
+    const agent = new Agent(agentOptions)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: { mediationRoleUpdateStrategy: 'allMediator' },
@@ -30,7 +30,7 @@ describe('migration', () => {
     // The storage version will normally be stored in e.g. persistent storage on a mobile device
     let currentStorageVersion: VersionString = '0.1'
 
-    const agent = new Agent(config, agentDependencies)
+    const agent = new Agent(agentOptions)
 
     if (currentStorageVersion !== UpdateAssistant.frameworkStorageVersion) {
       const updateAssistant = new UpdateAssistant(agent, {
@@ -51,7 +51,7 @@ describe('migration', () => {
   })
 
   test('Automatic update on agent startup', async () => {
-    const agent = new Agent({ ...config, autoUpdateStorageOnStartup: true }, agentDependencies)
+    const agent = new Agent({ ...agentOptions, config: { ...agentOptions.config, autoUpdateStorageOnStartup: true } })
 
     await agent.initialize()
     await agent.shutdown()

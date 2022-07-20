@@ -4,6 +4,8 @@ import { DiscoverFeaturesApi } from './DiscoverFeaturesApi'
 import { DiscoverFeaturesService } from './services'
 
 export class DiscoverFeaturesModule implements Module {
+  public readonly api = DiscoverFeaturesApi
+
   /**
    * Registers the dependencies of the discover features module on the dependency manager.
    */

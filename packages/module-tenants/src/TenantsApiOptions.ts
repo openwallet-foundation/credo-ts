@@ -1,11 +1,14 @@
 import type { TenantAgent } from './TenantAgent'
 import type { TenantConfig } from './models/TenantConfig'
+import type { ModulesMap } from '@aries-framework/core/src'
 
 export interface GetTenantAgentOptions {
   tenantId: string
 }
 
-export type WithTenantAgentCallback = (tenantAgent: TenantAgent) => Promise<void>
+export type WithTenantAgentCallback<AgentModules extends ModulesMap> = (
+  tenantAgent: TenantAgent<AgentModules>
+) => Promise<void>
 
 export interface CreateTenantOptions {
   config: Omit<TenantConfig, 'walletConfig'>

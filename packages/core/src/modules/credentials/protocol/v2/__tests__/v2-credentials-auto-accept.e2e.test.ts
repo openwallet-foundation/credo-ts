@@ -219,7 +219,10 @@ describe('v2 credentials', () => {
       await faberAgent.credentials.acceptProposal(options)
 
       testLogger.test('Alice waits for credential from Faber')
-      const aliceCredReceivedRecord = await aliceCredReceivedPromise
+      aliceCredentialExchangeRecord = await waitForCredentialRecord(aliceAgent, {
+        threadId: faberCredentialExchangeRecord.threadId,
+        state: CredentialState.CredentialReceived,
+      })
 
       expect(aliceCredReceivedRecord).toMatchObject({
         type: CredentialExchangeRecord.type,

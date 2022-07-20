@@ -9,6 +9,7 @@ import { MediatorService } from './services'
 
 export class MediatorModule implements Module {
   public readonly config: MediatorModuleConfig
+  public readonly api = MediatorApi
 
   public constructor(config?: MediatorModuleConfigOptions) {
     this.config = new MediatorModuleConfig(config)

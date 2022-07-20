@@ -1,4 +1,5 @@
 import type { CreateTenantOptions, GetTenantAgentOptions, WithTenantAgentCallback } from './TenantsApiOptions'
+import type { DefaultAgentModules, ModulesMap } from '@aries-framework/core'
 
 import { AgentContext, inject, InjectionSymbols, AgentContextProvider, injectable, Logger } from '@aries-framework/core'
 
@@ -6,7 +7,7 @@ import { TenantAgent } from './TenantAgent'
 import { TenantRecordService } from './services'
 
 @injectable()
-export class TenantsApi {
+export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
   private agentContext: AgentContext
   private tenantRecordService: TenantRecordService
   private agentContextProvider: AgentContextProvider
@@ -24,12 +25,12 @@ export class TenantsApi {
     this.logger = logger
   }
 
-  public async getTenantAgent({ tenantId }: GetTenantAgentOptions): Promise<TenantAgent> {
+  public async getTenantAgent({ tenantId }: GetTenantAgentOptions): Promise<TenantAgent<AgentModules>> {
     this.logger.debug(`Getting tenant agent for tenant '${tenantId}'`)
     const tenantContext = await this.agentContextProvider.getAgentContextForContextCorrelationId(tenantId)
 
     this.logger.trace(`Got tenant context for tenant '${tenantId}'`)
-    const tenantAgent = new TenantAgent(tenantContext)
+    const tenantAgent = new TenantAgent<AgentModules>(tenantContext)
     await tenantAgent.initialize()
     this.logger.trace(`Initializing tenant agent for tenant '${tenantId}'`)
 
@@ -38,7 +39,7 @@ export class TenantsApi {
 
   public async withTenantAgent(
     options: GetTenantAgentOptions,
-    withTenantAgentCallback: WithTenantAgentCallback
+    withTenantAgentCallback: WithTenantAgentCallback<AgentModules>
   ): Promise<void> {
     this.logger.debug(`Getting tenant agent for tenant '${options.tenantId}' in with tenant agent callback`)
     const tenantAgent = await this.getTenantAgent(options)

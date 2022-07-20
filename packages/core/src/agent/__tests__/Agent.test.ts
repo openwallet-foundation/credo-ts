@@ -1,4 +1,4 @@
-import { getBaseConfig } from '../../../tests/helpers'
+import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
@@ -30,7 +30,7 @@ import { EnvelopeService } from '../EnvelopeService'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
 
-const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test')
+const agentOptions = getAgentOptions('Agent Class Test')
 
 describe('Agent', () => {
   describe('Initialization', () => {
@@ -47,7 +47,7 @@ describe('Agent', () => {
     it('isInitialized should only return true after initialization', async () => {
       expect.assertions(2)
 
-      agent = new Agent(config, dependencies)
+      agent = new Agent(agentOptions)
 
       expect(agent.isInitialized).toBe(false)
       await agent.initialize()
@@ -57,7 +57,7 @@ describe('Agent', () => {
     it('wallet isInitialized should return true after agent initialization if wallet config is set in agent constructor', async () => {
       expect.assertions(4)
 
-      agent = new Agent(config, dependencies)
+      agent = new Agent(agentOptions)
       const wallet = agent.context.wallet
 
       expect(agent.isInitialized).toBe(false)
@@ -70,8 +70,8 @@ describe('Agent', () => {
     it('wallet must be initialized if wallet config is not set before agent can be initialized', async () => {
       expect.assertions(9)
 
-      const { walletConfig, ...withoutWalletConfig } = config
-      agent = new Agent(withoutWalletConfig, dependencies)
+      const { walletConfig, ...withoutWalletConfig } = agentOptions.config
+      agent = new Agent({ ...agentOptions, config: withoutWalletConfig })
 
       expect(agent.isInitialized).toBe(false)
       expect(agent.wallet.isInitialized).toBe(false)
@@ -98,8 +98,8 @@ describe('Agent', () => {
       expect.assertions(2)
       const newLabel = 'Agent: Agent Class Test 2'
 
-      agent = new Agent(config, dependencies)
-      expect(agent.config.label).toBe(config.label)
+      agent = new Agent(agentOptions)
+      expect(agent.config.label).toBe(agentOptions.config.label)
 
       agent.config.label = newLabel
       expect(agent.config.label).toBe(newLabel)
@@ -108,7 +108,7 @@ describe('Agent', () => {
 
   describe('Dependency Injection', () => {
     it('should be able to resolve registered instances', () => {
-      const agent = new Agent(config, dependencies)
+      const agent = new Agent(agentOptions)
       const container = agent.dependencyManager
 
       // Modules
@@ -139,7 +139,7 @@ describe('Agent', () => {
       expect(container.resolve(IndyLedgerService)).toBeInstanceOf(IndyLedgerService)
 
       // Symbols, interface based
-      expect(container.resolve(InjectionSymbols.Logger)).toBe(config.logger)
+      expect(container.resolve(InjectionSymbols.Logger)).toBe(agentOptions.config.logger)
       expect(container.resolve(InjectionSymbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
       expect(container.resolve(InjectionSymbols.StorageService)).toBeInstanceOf(IndyStorageService)
 
@@ -151,7 +151,7 @@ describe('Agent', () => {
     })
 
     it('should return the same instance for consequent resolves', () => {
-      const agent = new Agent(config, dependencies)
+      const agent = new Agent(agentOptions)
       const container = agent.dependencyManager
 
       // Modules
