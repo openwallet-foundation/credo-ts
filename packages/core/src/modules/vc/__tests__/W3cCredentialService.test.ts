@@ -264,65 +264,6 @@ describe('W3cCredentialService', () => {
         expect(result.verified).toBe(true)
       })
     })
-    describe('Credential Storage', () => {
-      let w3cCredentialRecord: W3cCredentialRecord
-
-      beforeEach(async () => {
-        const credential = JsonTransformer.fromJSON(
-          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
-          W3cVerifiableCredential
-        )
-
-        w3cCredentialRecord = await credentialRecordFactory(credential)
-
-        mockFunction(w3cCredentialRepository.getById).mockResolvedValue(w3cCredentialRecord)
-        mockFunction(w3cCredentialRepository.getAll).mockResolvedValue([w3cCredentialRecord])
-      })
-      describe('storeCredential', () => {
-        it('should store a credential and expand the tags correctly', async () => {
-          const credential = JsonTransformer.fromJSON(
-            Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
-            W3cVerifiableCredential
-          )
-
-          w3cCredentialRecord = await w3cCredentialService.storeCredential({ credential: credential })
-
-          expect(w3cCredentialRecord).toMatchObject({
-            type: 'W3cCredentialRecord',
-            id: expect.any(String),
-            createdAt: expect.any(Date),
-            credential: expect.any(W3cVerifiableCredential),
-          })
-
-          expect(w3cCredentialRecord.getTags()).toMatchObject({
-            expandedTypes: [
-              'https://www.w3.org/2018/credentials#VerifiableCredential',
-              'https://example.org/examples#UniversityDegreeCredential',
-            ],
-          })
-        })
-      })
-      describe('getAllCredentialRecords', () => {
-        it('should retrieve all W3cCredentialRecords', async () => {
-          const credential = JsonTransformer.fromJSON(
-            Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
-            W3cVerifiableCredential
-          )
-          await w3cCredentialService.storeCredential({ credential: credential })
-
-          const records = await w3cCredentialService.getAllCredentialRecords()
-
-          expect(records.length).toEqual(1)
-        })
-      })
-      describe('getCredentialRecordById', () => {
-        it('should retrieve a W3cCredentialRecord by id', async () => {
-          const credential = await w3cCredentialService.getCredentialRecordById(w3cCredentialRecord.id)
-
-          expect(credential.id).toEqual(w3cCredentialRecord.id)
-        })
-      })
-    })
   })
 
   describe('BbsBlsSignature2020', () => {
@@ -465,6 +406,80 @@ describe('W3cCredentialService', () => {
         })
 
         expect(result.verified).toBe(true)
+      })
+    })
+  })
+  describe('Credential Storage', () => {
+    let w3cCredentialRecord: W3cCredentialRecord
+    let w3cCredentialRepositoryDeleteMock: jest.MockedFunction<(record: W3cCredentialRecord) => Promise<void>>
+
+    beforeEach(async () => {
+      const credential = JsonTransformer.fromJSON(
+        Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+        W3cVerifiableCredential
+      )
+
+      w3cCredentialRecord = await credentialRecordFactory(credential)
+
+      mockFunction(w3cCredentialRepository.getById).mockResolvedValue(w3cCredentialRecord)
+      mockFunction(w3cCredentialRepository.getAll).mockResolvedValue([w3cCredentialRecord])
+      w3cCredentialRepositoryDeleteMock = mockFunction(w3cCredentialRepository.delete).mockResolvedValue()
+    })
+    describe('storeCredential', () => {
+      it('should store a credential and expand the tags correctly', async () => {
+        const credential = JsonTransformer.fromJSON(
+          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+          W3cVerifiableCredential
+        )
+
+        w3cCredentialRecord = await w3cCredentialService.storeCredential({ credential: credential })
+
+        expect(w3cCredentialRecord).toMatchObject({
+          type: 'W3cCredentialRecord',
+          id: expect.any(String),
+          createdAt: expect.any(Date),
+          credential: expect.any(W3cVerifiableCredential),
+        })
+
+        expect(w3cCredentialRecord.getTags()).toMatchObject({
+          expandedTypes: [
+            'https://www.w3.org/2018/credentials#VerifiableCredential',
+            'https://example.org/examples#UniversityDegreeCredential',
+          ],
+        })
+      })
+    })
+    describe('removeCredentialRecord', () => {
+      it('should remove a credential', async () => {
+        const credential = JsonTransformer.fromJSON(
+          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+          W3cVerifiableCredential
+        )
+
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        await w3cCredentialService.removeCredentialRecord(credential.id!)
+
+        expect(w3cCredentialRepositoryDeleteMock).toBeCalledWith(w3cCredentialRecord)
+      })
+    })
+    describe('getAllCredentialRecords', () => {
+      it('should retrieve all W3cCredentialRecords', async () => {
+        const credential = JsonTransformer.fromJSON(
+          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+          W3cVerifiableCredential
+        )
+        await w3cCredentialService.storeCredential({ credential: credential })
+
+        const records = await w3cCredentialService.getAllCredentialRecords()
+
+        expect(records.length).toEqual(1)
+      })
+    })
+    describe('getCredentialRecordById', () => {
+      it('should retrieve a W3cCredentialRecord by id', async () => {
+        const credential = await w3cCredentialService.getCredentialRecordById(w3cCredentialRecord.id)
+
+        expect(credential.id).toEqual(w3cCredentialRecord.id)
       })
     })
   })
