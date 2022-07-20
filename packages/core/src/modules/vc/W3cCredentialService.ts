@@ -341,7 +341,7 @@ export class W3cCredentialService {
   ): Promise<W3cCredentialRecord> {
     // Get the expanded types
     const expandedTypes = (
-      await jsonld.expand(JsonTransformer.toJSON(options.record), {
+      await jsonld.expand(JsonTransformer.toJSON(options.credential), {
         documentLoader: this.documentLoaderWithContext(agentContext),
       })
     )[0]['@type']
@@ -359,8 +359,8 @@ export class W3cCredentialService {
   }
 
   public async removeCredentialRecord(agentContext: AgentContext, id: string) {
-    const cred = await this.w3cCredentialRepository.getById(agentContext, id)
-    await this.w3cCredentialRepository.delete(agentContext, cred)
+    const credential = await this.w3cCredentialRepository.getById(agentContext, id)
+    await this.w3cCredentialRepository.delete(agentContext, credential)
   }
 
   public async getAllCredentialRecords(agentContext: AgentContext): Promise<W3cCredentialRecord[]> {
