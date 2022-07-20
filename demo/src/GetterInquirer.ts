@@ -9,7 +9,7 @@ import { Getter } from './Getter'
 import { Listener } from './Listener'
 import { greenText, Title } from './OutputClass'
 
-export const runFaber = async () => {
+export const runGetter = async () => {
   clear()
   console.log(textSync('Getter', { horizontalLayout: 'full' }))
   const getter = await GetterInquirer.build()
@@ -65,7 +65,8 @@ export class GetterInquirer extends BaseInquirer {
   }
 
   public async requestPayment() {
-    await this.getter.requestPayment()
+    const giver = await inquirer.prompt([this.inquireInput('Giver DID')])
+    await this.getter.requestPayment(giver.input)
   }
 
   public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {
@@ -96,9 +97,9 @@ export class GetterInquirer extends BaseInquirer {
       return
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.getter.restart()
-      await runFaber()
+      await runGetter()
     }
   }
 }
 
-void runFaber()
+void runGetter()

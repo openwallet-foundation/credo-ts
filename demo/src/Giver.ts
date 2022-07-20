@@ -9,7 +9,7 @@ import { greenText, Output, redText } from './OutputClass'
 
 export class Giver extends BaseAgent {
   public valueTransferRecordId?: string
-  public static seed = '6b8b882e2618fa5d45ee7229ca880083'
+  public static seed = '9ad6a1e205a549dc86ced47630ed7b78'
 
   public constructor(
     name: string,
@@ -18,18 +18,18 @@ export class Giver extends BaseAgent {
     valueTransferConfig?: ValueTransferConfig,
     mediatorConnectionsInvite?: string
   ) {
-    super(name, undefined, port, transports, valueTransferConfig, mediatorConnectionsInvite)
+    super(name, Giver.seed, port, transports, valueTransferConfig, mediatorConnectionsInvite)
   }
 
   public static async build(): Promise<Giver> {
     const valueTransferConfig: ValueTransferConfig = {
-      defaultTransport: Transports.NFC,
+      defaultTransport: Transports.HTTP,
       verifiableNotes: createVerifiableNotes(10),
     }
     const giver = new Giver(
       'giver',
       undefined,
-      [Transports.NFC, Transports.Nearby, Transports.HTTP],
+      [Transports.HTTP],
       valueTransferConfig,
       'http://localhost:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6IjMyNGJiODQzLWFlOTYtNDBlOC04OTIzLWZiZDkwOGE3YTIwNCIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTcUpmbjdmeW15TE5SM0Fxc1VXbzEzZTMxc3JRcGFMOUYxb2NVbk5hc1VwOVYuVno2TWtwQnRSUGt1M0dVbUtqeU5DV2YyQnR4U0JoTmlGTWtTeGtBSlpzNnlXY24yeS5TZXlKeklqb2lhSFIwY0RvdkwyeHZZMkZzYUc5emREb3pNREF3TDJGd2FTOTJNU0lzSW5RaU9pSmtiU0lzSW5JaU9sdGRMQ0poSWpwYkltUnBaR052YlcwdmRqSWlYWDAiLCJib2R5Ijp7ImdvYWxfY29kZSI6Im1lZGlhdG9yLXByb3Zpc2lvbiJ9LCJ0eXBlIjoiaHR0cHM6Ly9kaWRjb21tLm9yZy9vdXQtb2YtYmFuZC8yLjAvaW52aXRhdGlvbiJ9'
     )

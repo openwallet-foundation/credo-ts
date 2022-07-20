@@ -9,7 +9,7 @@ import { Giver } from './Giver'
 import { Listener } from './Listener'
 import { greenText, Title } from './OutputClass'
 
-export const runFaber = async () => {
+export const runGiver = async () => {
   clear()
   console.log(textSync('Giver', { horizontalLayout: 'full' }))
   const giver = await GiverInquirer.build()
@@ -98,9 +98,9 @@ export class GiverInquirer extends BaseInquirer {
       return
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.giver.restart()
-      await runFaber()
+      await runGiver()
     }
   }
 }
 
-void runFaber()
+void runGiver()

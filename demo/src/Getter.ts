@@ -14,16 +14,23 @@ export class Getter extends BaseAgent {
     name: string,
     port?: number,
     transports?: Transports[],
-    valueTransferConfig?: ValueTransferConfig
+    valueTransferConfig?: ValueTransferConfig,
+    mediatorConnectionsInvite?: string
   ) {
-    super(name, Getter.seed, port, transports, valueTransferConfig)
+    super(name, Getter.seed, port, transports, valueTransferConfig, mediatorConnectionsInvite)
   }
 
   public static async build(): Promise<Getter> {
     const valueTransferConfig: ValueTransferConfig = {
-      defaultTransport: Transports.IPC,
+      defaultTransport: Transports.HTTP,
     }
-    const getter = new Getter('getter', undefined, [Transports.IPC, Transports.Nearby], valueTransferConfig)
+    const getter = new Getter(
+      'getter',
+      undefined,
+      [Transports.HTTP],
+      valueTransferConfig,
+      'http://localhost:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6IjMyNGJiODQzLWFlOTYtNDBlOC04OTIzLWZiZDkwOGE3YTIwNCIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTcUpmbjdmeW15TE5SM0Fxc1VXbzEzZTMxc3JRcGFMOUYxb2NVbk5hc1VwOVYuVno2TWtwQnRSUGt1M0dVbUtqeU5DV2YyQnR4U0JoTmlGTWtTeGtBSlpzNnlXY24yeS5TZXlKeklqb2lhSFIwY0RvdkwyeHZZMkZzYUc5emREb3pNREF3TDJGd2FTOTJNU0lzSW5RaU9pSmtiU0lzSW5JaU9sdGRMQ0poSWpwYkltUnBaR052YlcwdmRqSWlYWDAiLCJib2R5Ijp7ImdvYWxfY29kZSI6Im1lZGlhdG9yLXByb3Zpc2lvbiJ9LCJ0eXBlIjoiaHR0cHM6Ly9kaWRjb21tLm9yZy9vdXQtb2YtYmFuZC8yLjAvaW52aXRhdGlvbiJ9'
+    )
     await getter.initializeAgent()
     const publicDid = await getter.agent.getPublicDid()
     console.log(`Getter Public DID: ${publicDid?.did}`)
@@ -37,8 +44,8 @@ export class Getter extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  public async requestPayment() {
-    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1 })
+  public async requestPayment(giver: string) {
+    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1, giver })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()
