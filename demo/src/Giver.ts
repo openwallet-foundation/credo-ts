@@ -38,6 +38,9 @@ export class Giver extends BaseAgent {
     const test = await giver.agent.outOfBand.createInvitation({ goalCode: OutOfBandGoalCode.MediatorProvision })
     console.log(test.toUrl({ domain: 'http://localhost:3000/api/v1' }))
 
+    const publicDid = await giver.agent.getPublicDid()
+    console.log(`Giver Public DID: ${publicDid?.did}`)
+
     return giver
   }
 

@@ -1,8 +1,8 @@
 import type { DIDCommMessage, DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Routing } from '../../connections/services'
-import type { KeylistUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
-import type { KeylistUpdateResponseMessageV2, MediationDenyMessageV2, MediationGrantMessageV2 } from '../messages'
+import type { DidListUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
+import type { MediationDenyMessageV2, MediationGrantMessageV2, DidListUpdateResponseMessage } from '../messages'
 import type { GetRoutingOptions } from '../types'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -18,7 +18,7 @@ import { AriesFrameworkError } from '../../../error'
 import { Wallet } from '../../../wallet'
 import { ConnectionService } from '../../connections/services'
 import { RoutingEventTypes } from '../RoutingEvents'
-import { KeylistUpdateAction, KeylistUpdateMessageV2, MediationRequestMessageV2, KeylistUpdate } from '../messages'
+import { ListUpdateAction, DidListUpdateMessage, MediationRequestMessageV2, DidListUpdate } from '../messages'
 import { MediationRole, MediationState } from '../models'
 import { MediationRecord, MediationRepository } from '../repository'
 
@@ -93,7 +93,7 @@ export class MediationRecipientService {
     return await this.updateState(mediationRecord, MediationState.Granted)
   }
 
-  public async processKeylistUpdateResults(messageContext: InboundMessageContext<KeylistUpdateResponseMessageV2>) {
+  public async processDidListUpdateResults(messageContext: InboundMessageContext<DidListUpdateResponseMessage>) {
     // Mediation record must already exist to be updated
     const mediationRecord = await this.getMediationRecord(messageContext)
 
@@ -101,40 +101,40 @@ export class MediationRecipientService {
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Recipient)
 
-    const keylist = messageContext.message.body.updated
+    const didList = messageContext.message.body.updated
 
     // update keylist in mediationRecord
-    for (const update of keylist) {
-      if (update.action === KeylistUpdateAction.add) {
-        mediationRecord.addRecipientKey(update.recipientKey)
-      } else if (update.action === KeylistUpdateAction.remove) {
-        mediationRecord.removeRecipientKey(update.recipientKey)
+    for (const update of didList) {
+      if (update.action === ListUpdateAction.add) {
+        mediationRecord.addRecipientKey(update.recipientDid)
+      } else if (update.action === ListUpdateAction.remove) {
+        mediationRecord.removeRecipientKey(update.recipientDid)
       }
     }
 
     await this.mediatorRepository.update(mediationRecord)
-    this.eventEmitter.emit<KeylistUpdatedEvent>({
-      type: RoutingEventTypes.RecipientKeylistUpdated,
+    this.eventEmitter.emit<DidListUpdatedEvent>({
+      type: RoutingEventTypes.RecipientDidListUpdated,
       payload: {
         mediationRecord,
-        keylist,
+        didList,
       },
     })
   }
 
-  public async keylistUpdateAndAwait(
+  public async didListUpdateAndAwait(
     mediationRecord: MediationRecord,
-    verKey: string,
+    did: string,
     timeoutMs = 15000 // TODO: this should be a configurable value in agent config
   ): Promise<MediationRecord> {
-    const message = this.createKeylistUpdateMessage(mediationRecord, verKey)
+    const message = this.createKeylistUpdateMessage(mediationRecord, did)
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Recipient)
 
     // Create observable for event
-    const observable = this.eventEmitter.observable<KeylistUpdatedEvent>(RoutingEventTypes.RecipientKeylistUpdated)
-    const subject = new ReplaySubject<KeylistUpdatedEvent>(1)
+    const observable = this.eventEmitter.observable<DidListUpdatedEvent>(RoutingEventTypes.RecipientDidListUpdated)
+    const subject = new ReplaySubject<DidListUpdatedEvent>(1)
 
     // Apply required filters to observable stream and create promise to subscribe to observable
     observable
@@ -155,15 +155,15 @@ export class MediationRecipientService {
     return keylistUpdate.payload.mediationRecord
   }
 
-  public createKeylistUpdateMessage(mediationRecord: MediationRecord, verkey: string): KeylistUpdateMessageV2 {
-    const keylistUpdateMessage = new KeylistUpdateMessageV2({
+  public createKeylistUpdateMessage(mediationRecord: MediationRecord, did: string): DidListUpdateMessage {
+    const keylistUpdateMessage = new DidListUpdateMessage({
       from: mediationRecord.did,
       to: mediationRecord.mediatorDid,
       body: {
         updates: [
-          new KeylistUpdate({
-            action: KeylistUpdateAction.add,
-            recipientKey: verkey,
+          new DidListUpdate({
+            action: ListUpdateAction.add,
+            recipientDid: did,
           }),
         ],
       },
@@ -183,7 +183,7 @@ export class MediationRecipientService {
   }
 
   public async getRouting(
-    keyId: string,
+    did: string,
     { mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}
   ): Promise<Routing> {
     let mediationRecord: MediationRecord | null = null
@@ -202,7 +202,7 @@ export class MediationRecipientService {
 
     // Create and store new key
     // new did has been created and mediator needs to be updated with the public key.
-    mediationRecord = await this.keylistUpdateAndAwait(mediationRecord, keyId)
+    mediationRecord = await this.didListUpdateAndAwait(mediationRecord, did)
 
     return {
       endpoint: mediationRecord.endpoint || '',

@@ -25,7 +25,7 @@ import { OutOfBandGoalCode, OutOfBandInvitationMessage } from '../out-of-band'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RoutingEventTypes } from './RoutingEvents'
-import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
+import { DidListUpdateResponseHandler } from './handlers/DidListUpdateResponseHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { BatchPickupMessageV2 } from './messages/BatchPickupMessage'
@@ -335,7 +335,7 @@ export class RecipientModule {
 
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new DidListUpdateResponseHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
     //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this

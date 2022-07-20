@@ -116,7 +116,7 @@ export class DidService {
       keyType: keyType_,
     })
 
-    const x25519KeyRecord = await this.keysService.storeKey({
+    await this.keysService.storeKey({
       keyPair: x25519KeyPair,
       controller: didPeer.did,
       kid: x25519Key.buildKeyId(didPeer.did),
@@ -124,7 +124,7 @@ export class DidService {
     })
 
     if (hasOnlineTransport(transports) && (params.requestMediation || params.requestMediation === undefined)) {
-      await this.mediationRecipientService.getRouting(x25519KeyRecord.kid, { useDefaultMediator: true })
+      await this.mediationRecipientService.getRouting(didPeer.did, { useDefaultMediator: true })
     }
 
     const didRecord = new DidRecord({

@@ -1,7 +1,7 @@
 import type { EncryptedMessage } from '../../../agent/didcomm/types'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
-import type { ForwardMessageV2, KeylistUpdateMessageV2, MediationRequestMessageV2 } from '../messages'
+import type { ForwardMessageV2, DidListUpdateMessage, MediationRequestMessageV2 } from '../messages'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -11,11 +11,11 @@ import { InjectionSymbols } from '../../../constants'
 import { Wallet } from '../../../wallet/Wallet'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
-  KeylistUpdateAction,
-  KeylistUpdateResult,
-  KeylistUpdated,
-  KeylistUpdateResponseMessageV2,
+  ListUpdateAction,
+  ListUpdateResult,
   MediationGrantMessageV2,
+  DidListUpdated,
+  DidListUpdateResponseMessage,
 } from '../messages'
 import { MediationRole } from '../models/MediationRole'
 import { MediationState } from '../models/MediationState'
@@ -94,9 +94,9 @@ export class MediatorService {
     }
   }
 
-  public async processKeylistUpdateRequest(messageContext: InboundMessageContext<KeylistUpdateMessageV2>) {
+  public async processDidListUpdateRequest(messageContext: InboundMessageContext<DidListUpdateMessage>) {
     const { message } = messageContext
-    const keylist: KeylistUpdated[] = []
+    const didList: DidListUpdated[] = []
 
     if (!message.from) return
     const mediationRecord = await this.mediationRepository.getByDid(message.from)
@@ -105,28 +105,28 @@ export class MediatorService {
     mediationRecord.assertRole(MediationRole.Mediator)
 
     for (const update of message.body.updates) {
-      const updated = new KeylistUpdated({
+      const updated = new DidListUpdated({
         action: update.action,
-        recipientKey: update.recipientKey,
-        result: KeylistUpdateResult.NoChange,
+        recipientDid: update.recipientDid,
+        result: ListUpdateResult.NoChange,
       })
-      if (update.action === KeylistUpdateAction.add) {
-        mediationRecord.addRecipientKey(update.recipientKey)
-        updated.result = KeylistUpdateResult.Success
+      if (update.action === ListUpdateAction.add) {
+        mediationRecord.addRecipientKey(update.recipientDid)
+        updated.result = ListUpdateResult.Success
 
-        keylist.push(updated)
-      } else if (update.action === KeylistUpdateAction.remove) {
-        const success = mediationRecord.removeRecipientKey(update.recipientKey)
-        updated.result = success ? KeylistUpdateResult.Success : KeylistUpdateResult.NoChange
-        keylist.push(updated)
+        didList.push(updated)
+      } else if (update.action === ListUpdateAction.remove) {
+        const success = mediationRecord.removeRecipientKey(update.recipientDid)
+        updated.result = success ? ListUpdateResult.Success : ListUpdateResult.NoChange
+        didList.push(updated)
       }
     }
 
     await this.mediationRepository.update(mediationRecord)
 
-    return new KeylistUpdateResponseMessageV2({
+    return new DidListUpdateResponseMessage({
       from: mediationRecord.did,
-      body: { updated: keylist },
+      body: { updated: didList },
     })
   }
 

@@ -4,20 +4,20 @@ import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { MediatorService } from '../services/MediatorService'
 
 import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
-import { KeylistUpdateMessageV2 } from '../messages'
+import { DidListUpdateMessage } from '../messages'
 
-export class KeylistUpdateHandler implements Handler<typeof DIDCommV2Message> {
+export class DidListUpdateHandler implements Handler<typeof DIDCommV2Message> {
   private mediatorService: MediatorService
   private messageSender: MessageSender
-  public supportedMessages = [KeylistUpdateMessageV2]
+  public supportedMessages = [DidListUpdateMessage]
 
   public constructor(mediatorService: MediatorService, messageSender: MessageSender) {
     this.mediatorService = mediatorService
     this.messageSender = messageSender
   }
 
-  public async handle(messageContext: HandlerInboundMessage<KeylistUpdateHandler>) {
-    const response = await this.mediatorService.processKeylistUpdateRequest(messageContext)
+  public async handle(messageContext: HandlerInboundMessage<DidListUpdateHandler>) {
+    const response = await this.mediatorService.processDidListUpdateRequest(messageContext)
     if (!response) return
     const outboundMessage = createOutboundDIDCommV2Message(response)
     await this.messageSender.sendDIDCommV2Message(outboundMessage)
