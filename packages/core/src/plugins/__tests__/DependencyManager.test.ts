@@ -1,7 +1,8 @@
+import type { Module } from '../Module'
+
 import { container as rootContainer, injectable, Lifecycle } from 'tsyringe'
 
 import { DependencyManager } from '../DependencyManager'
-import { module } from '../Module'
 
 class Instance {
   public random = Math.random()
@@ -19,24 +20,25 @@ describe('DependencyManager', () => {
 
   describe('registerModules', () => {
     it('calls the register method for all module plugins', () => {
-      @module()
       @injectable()
-      class Module1 {
-        public static register = jest.fn()
+      class Module1 implements Module {
+        public register = jest.fn()
       }
 
-      @module()
       @injectable()
-      class Module2 {
-        public static register = jest.fn()
+      class Module2 implements Module {
+        public register = jest.fn()
       }
 
-      dependencyManager.registerModules(Module1, Module2)
-      expect(Module1.register).toHaveBeenCalledTimes(1)
-      expect(Module1.register).toHaveBeenLastCalledWith(dependencyManager)
+      const module1 = new Module1()
+      const module2 = new Module2()
 
-      expect(Module2.register).toHaveBeenCalledTimes(1)
-      expect(Module2.register).toHaveBeenLastCalledWith(dependencyManager)
+      dependencyManager.registerModules(module1, module2)
+      expect(module1.register).toHaveBeenCalledTimes(1)
+      expect(module1.register).toHaveBeenLastCalledWith(dependencyManager)
+
+      expect(module2.register).toHaveBeenCalledTimes(1)
+      expect(module2.register).toHaveBeenLastCalledWith(dependencyManager)
     })
   })
 

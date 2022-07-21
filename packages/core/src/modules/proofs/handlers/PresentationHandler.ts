@@ -28,9 +28,7 @@ export class PresentationHandler implements Handler {
   }
 
   private async createAck(record: ProofRecord, messageContext: HandlerInboundMessage<PresentationHandler>) {
-    this.logger.info(
-      `Automatically sending acknowledgement with autoAccept on ${messageContext.agentContext.config.autoAcceptProofs}`
-    )
+    this.logger.info(`Automatically sending acknowledgement with autoAccept`)
 
     const { message, proofRecord } = await this.proofService.createAck(messageContext.agentContext, record)
 

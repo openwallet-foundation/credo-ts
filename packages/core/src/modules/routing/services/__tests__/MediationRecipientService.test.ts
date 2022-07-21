@@ -8,6 +8,7 @@ import { AgentEventTypes } from '../../../../agent/Events'
 import { MessageSender } from '../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import { Key } from '../../../../crypto'
+import { SigningProviderRegistry } from '../../../../crypto/signing-provider'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
@@ -15,6 +16,7 @@ import { DidExchangeState } from '../../../connections'
 import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { DidRepository } from '../../../dids/repository/DidRepository'
+import { RecipientModuleConfig } from '../../RecipientModuleConfig'
 import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../../messages'
 import { MediationRole, MediationState } from '../../models'
 import { MediationRecord } from '../../repository/MediationRecord'
@@ -60,7 +62,7 @@ describe('MediationRecipientService', () => {
   let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndyWallet(config.agentDependencies, config.logger)
+    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext({
       agentConfig: config,
     })
@@ -93,7 +95,8 @@ describe('MediationRecipientService', () => {
       connectionService,
       messageSender,
       mediationRepository,
-      eventEmitter
+      eventEmitter,
+      new RecipientModuleConfig()
     )
   })
 
@@ -239,12 +242,14 @@ describe('MediationRecipientService', () => {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: { first: 'value' },
+          contextCorrelationId: agentContext.contextCorrelationId,
         },
       })
       expect(eventEmitter.emit).toHaveBeenNthCalledWith(2, agentContext, {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: { second: 'value' },
+          contextCorrelationId: agentContext.contextCorrelationId,
         },
       })
     })

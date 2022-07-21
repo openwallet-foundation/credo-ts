@@ -3,12 +3,14 @@ import type { AgentContext } from '../../../agent'
 import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
 import { Key } from '../../../crypto/Key'
+import { Bls12381g2SigningProvider, SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { WalletError } from '../../../wallet/error'
 import { DidKey, DidResolverService } from '../../dids'
 import { DidRepository } from '../../dids/repository'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
+import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
 import { W3cCredentialService } from '../W3cCredentialService'
 import { orArrayToArray } from '../jsonldUtil'
 import { purposes } from '../libraries/jsonld-signatures'
@@ -18,9 +20,34 @@ import { W3cPresentation } from '../models/presentation/W3Presentation'
 import { W3cVerifiablePresentation } from '../models/presentation/W3cVerifiablePresentation'
 import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuancePurpose'
 import { W3cCredentialRepository } from '../repository/W3cCredentialRepository'
+import { Ed25519Signature2018 } from '../signature-suites'
+import { BbsBlsSignature2020, BbsBlsSignatureProof2020 } from '../signature-suites/bbs'
 
 import { customDocumentLoader } from './documentLoader'
 import { BbsBlsSignature2020Fixtures, Ed25519Signature2018Fixtures } from './fixtures'
+
+const signatureSuiteRegistry = new SignatureSuiteRegistry([
+  {
+    suiteClass: Ed25519Signature2018,
+    proofType: 'Ed25519Signature2018',
+    requiredKeyType: 'Ed25519VerificationKey2018',
+    keyType: KeyType.Ed25519,
+  },
+  {
+    suiteClass: BbsBlsSignature2020,
+    proofType: 'BbsBlsSignature2020',
+    requiredKeyType: 'BbsBlsSignatureProof2020',
+    keyType: KeyType.Bls12381g2,
+  },
+  {
+    suiteClass: BbsBlsSignatureProof2020,
+    proofType: 'BbsBlsSignatureProof2020',
+    requiredKeyType: 'BbsBlsSignatureProof2020',
+    keyType: KeyType.Bls12381g2,
+  },
+])
+
+const signingProviderRegistry = new SigningProviderRegistry([new Bls12381g2SigningProvider()])
 
 jest.mock('../../ledger/services/IndyLedgerService')
 
@@ -41,7 +68,7 @@ describe('W3cCredentialService', () => {
   const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, signingProviderRegistry)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
     agentContext = getAgentContext({
@@ -54,7 +81,7 @@ describe('W3cCredentialService', () => {
       agentConfig.logger
     )
     w3cCredentialRepository = new W3cCredentialRepositoryMock()
-    w3cCredentialService = new W3cCredentialService(w3cCredentialRepository, didResolverService)
+    w3cCredentialService = new W3cCredentialService(w3cCredentialRepository, didResolverService, signatureSuiteRegistry)
     w3cCredentialService.documentLoaderWithContext = () => customDocumentLoader
   })
 

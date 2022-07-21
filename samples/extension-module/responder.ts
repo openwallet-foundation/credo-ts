@@ -34,7 +34,7 @@ const run = async () => {
   )
 
   // Register the DummyModule
-  agent.dependencyManager.registerModules(DummyModule)
+  agent.dependencyManager.registerModules(new DummyModule())
 
   // Register transports
   agent.registerInboundTransport(httpInboundTransport)

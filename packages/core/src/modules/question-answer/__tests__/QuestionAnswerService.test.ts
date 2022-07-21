@@ -14,6 +14,7 @@ import {
   mockFunction,
 } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
@@ -62,7 +63,7 @@ describe('QuestionAnswerService', () => {
 
   beforeAll(async () => {
     agentConfig = getAgentConfig('QuestionAnswerServiceTest')
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
@@ -99,6 +100,9 @@ describe('QuestionAnswerService', () => {
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'QuestionAnswerStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: null,
           questionAnswerRecord: expect.objectContaining({
@@ -146,6 +150,9 @@ describe('QuestionAnswerService', () => {
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'QuestionAnswerStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: QuestionAnswerState.QuestionReceived,
           questionAnswerRecord: expect.objectContaining({

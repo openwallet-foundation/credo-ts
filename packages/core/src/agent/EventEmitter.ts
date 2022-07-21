@@ -1,5 +1,5 @@
-import type { AgentContext } from './AgentContext'
 import type { BaseEvent } from './Events'
+import type { AgentContext } from './context'
 import type { EventEmitter as NativeEventEmitter } from 'events'
 
 import { fromEventPattern, Subject } from 'rxjs'
@@ -9,6 +9,8 @@ import { InjectionSymbols } from '../constants'
 import { injectable, inject } from '../plugins'
 
 import { AgentDependencies } from './AgentDependencies'
+
+type EmitEvent<T extends BaseEvent> = Omit<T, 'metadata'>
 
 @injectable()
 export class EventEmitter {
@@ -24,8 +26,13 @@ export class EventEmitter {
   }
 
   // agentContext is currently not used, but already making required as it will be used soon
-  public emit<T extends BaseEvent>(agentContext: AgentContext, data: T) {
-    this.eventEmitter.emit(data.type, data)
+  public emit<T extends BaseEvent>(agentContext: AgentContext, data: EmitEvent<T>) {
+    this.eventEmitter.emit(data.type, {
+      ...data,
+      metadata: {
+        contextCorrelationId: agentContext.contextCorrelationId,
+      },
+    })
   }
 
   public on<T extends BaseEvent>(event: T['type'], listener: (data: T) => void | Promise<void>) {

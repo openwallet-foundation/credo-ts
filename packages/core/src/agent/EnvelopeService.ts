@@ -1,6 +1,6 @@
 import type { EncryptedMessage, PlaintextMessage } from '../types'
-import type { AgentContext } from './AgentContext'
 import type { AgentMessage } from './AgentMessage'
+import type { AgentContext } from './context'
 
 import { InjectionSymbols } from '../constants'
 import { Key, KeyType } from '../crypto'

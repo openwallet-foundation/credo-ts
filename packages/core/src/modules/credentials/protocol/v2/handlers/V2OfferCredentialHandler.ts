@@ -49,9 +49,7 @@ export class V2OfferCredentialHandler implements Handler {
     messageContext: HandlerInboundMessage<V2OfferCredentialHandler>,
     offerMessage?: V2OfferCredentialMessage
   ) {
-    this.logger.info(
-      `Automatically sending request with autoAccept on ${messageContext.agentContext.config.autoAcceptCredentials}`
-    )
+    this.logger.info(`Automatically sending request with autoAccept`)
 
     if (messageContext.connection) {
       const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, {

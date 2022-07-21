@@ -1,7 +1,7 @@
 import type { Key } from '../../crypto'
 import type { ConnectionRecord } from '../../modules/connections'
-import type { AgentContext } from '../AgentContext'
 import type { AgentMessage } from '../AgentMessage'
+import type { AgentContext } from '../context'
 
 import { AriesFrameworkError } from '../../error'
 
@@ -44,5 +44,15 @@ export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
     this.connection.assertReady()
 
     return this.connection
+  }
+
+  public toJSON() {
+    return {
+      message: this.message,
+      recipientKey: this.recipientKey?.fingerprint,
+      senderKey: this.senderKey?.fingerprint,
+      sessionId: this.sessionId,
+      agentContext: this.agentContext.toJSON(),
+    }
   }
 }

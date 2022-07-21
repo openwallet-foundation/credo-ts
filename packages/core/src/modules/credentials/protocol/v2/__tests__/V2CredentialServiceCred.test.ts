@@ -21,6 +21,7 @@ import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { RoutingService } from '../../../../routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
+import { CredentialsModuleConfig } from '../../../CredentialsModuleConfig'
 import { credReq } from '../../../__tests__/fixtures'
 import { CredentialProblemReportReason } from '../../../errors/CredentialProblemReportReason'
 import { IndyCredentialFormatService } from '../../../formats'
@@ -260,7 +261,8 @@ describe('CredentialService', () => {
       eventEmitter,
       credentialRepository,
       indyCredentialFormatService,
-      agentConfig.logger
+      agentConfig.logger,
+      new CredentialsModuleConfig()
     )
   })
 
@@ -484,6 +486,9 @@ describe('CredentialService', () => {
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: CredentialState.RequestReceived,
           credentialRecord: expect.objectContaining({
@@ -590,6 +595,9 @@ describe('CredentialService', () => {
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: CredentialState.CredentialReceived,
           credentialRecord: expect.objectContaining({
@@ -887,6 +895,9 @@ describe('CredentialService', () => {
       const [[event]] = eventListenerMock.mock.calls
       expect(event).toMatchObject({
         type: 'CredentialStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: CredentialState.OfferReceived,
           credentialRecord: expect.objectContaining({

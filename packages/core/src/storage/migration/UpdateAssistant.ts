@@ -1,10 +1,10 @@
-import type { Agent } from '../../agent/Agent'
+import type { BaseAgent } from '../../agent/BaseAgent'
 import type { FileSystem } from '../FileSystem'
 import type { UpdateConfig } from './updates'
 
-import { AgentContext } from '../../agent'
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
+import { isIndyError } from '../../utils/indyError'
 import { isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
 import { WalletError } from '../../wallet/error/WalletError'
 
@@ -12,11 +12,10 @@ import { StorageUpdateService } from './StorageUpdateService'
 import { StorageUpdateError } from './error/StorageUpdateError'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION, supportedUpdates } from './updates'
 
-export class UpdateAssistant {
+export class UpdateAssistant<Agent extends BaseAgent = BaseAgent> {
   private agent: Agent
   private storageUpdateService: StorageUpdateService
   private updateConfig: UpdateConfig
-  private agentContext: AgentContext
   private fileSystem: FileSystem
 
   public constructor(agent: Agent, updateConfig: UpdateConfig) {
@@ -24,7 +23,6 @@ export class UpdateAssistant {
     this.updateConfig = updateConfig
 
     this.storageUpdateService = this.agent.dependencyManager.resolve(StorageUpdateService)
-    this.agentContext = this.agent.dependencyManager.resolve(AgentContext)
     this.fileSystem = this.agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
   }
 
@@ -46,11 +44,11 @@ export class UpdateAssistant {
   }
 
   public async isUpToDate() {
-    return this.storageUpdateService.isUpToDate(this.agentContext)
+    return this.storageUpdateService.isUpToDate(this.agent.context)
   }
 
   public async getCurrentAgentStorageVersion() {
-    return this.storageUpdateService.getCurrentStorageVersion(this.agentContext)
+    return this.storageUpdateService.getCurrentStorageVersion(this.agent.context)
   }
 
   public static get frameworkStorageVersion() {
@@ -59,7 +57,7 @@ export class UpdateAssistant {
 
   public async getNeededUpdates() {
     const currentStorageVersion = parseVersionString(
-      await this.storageUpdateService.getCurrentStorageVersion(this.agentContext)
+      await this.storageUpdateService.getCurrentStorageVersion(this.agent.context)
     )
 
     // Filter updates. We don't want older updates we already applied
@@ -113,7 +111,7 @@ export class UpdateAssistant {
           await update.doUpdate(this.agent, this.updateConfig)
 
           // Update the framework version in storage
-          await this.storageUpdateService.setCurrentStorageVersion(this.agentContext, update.toVersion)
+          await this.storageUpdateService.setCurrentStorageVersion(this.agent.context, update.toVersion)
           this.agent.config.logger.info(
             `Successfully updated agent storage from version ${update.fromVersion} to version ${update.toVersion}`
           )
@@ -128,6 +126,18 @@ export class UpdateAssistant {
         throw error
       }
     } catch (error) {
+      // Backup already exists at path
+      if (error instanceof AriesFrameworkError && isIndyError(error.cause, 'CommonIOError')) {
+        const backupPath = this.getBackupPath(updateIdentifier)
+        const errorMessage = `Error updating storage with updateIdentifier ${updateIdentifier} because of an IO error. This is probably because the backup at path ${backupPath} already exists`
+        this.agent.config.logger.fatal(errorMessage, {
+          error,
+          updateIdentifier,
+          backupPath,
+        })
+        throw new StorageUpdateError(errorMessage, { cause: error })
+      }
+
       this.agent.config.logger.error(`Error updating storage (updateIdentifier: ${updateIdentifier})`, {
         cause: error,
       })

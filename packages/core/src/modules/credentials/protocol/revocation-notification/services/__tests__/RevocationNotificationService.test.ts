@@ -103,6 +103,9 @@ describe('RevocationNotificationService', () => {
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'RevocationNotificationReceived',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           credentialRecord: expect.any(CredentialExchangeRecord),
         },
@@ -208,6 +211,9 @@ describe('RevocationNotificationService', () => {
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'RevocationNotificationReceived',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           credentialRecord: expect.any(CredentialExchangeRecord),
         },

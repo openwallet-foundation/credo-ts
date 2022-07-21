@@ -2,6 +2,7 @@ import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { RoutingService } from '../../routing/services/RoutingService'
+import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
@@ -13,18 +14,21 @@ export class ConnectionRequestHandler implements Handler {
   private outOfBandService: OutOfBandService
   private routingService: RoutingService
   private didRepository: DidRepository
+  private connectionsModuleConfig: ConnectionsModuleConfig
   public supportedMessages = [ConnectionRequestMessage]
 
   public constructor(
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
     routingService: RoutingService,
-    didRepository: DidRepository
+    didRepository: DidRepository,
+    connectionsModuleConfig: ConnectionsModuleConfig
   ) {
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
     this.routingService = routingService
     this.didRepository = didRepository
+    this.connectionsModuleConfig = connectionsModuleConfig
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionRequestHandler>) {
@@ -53,7 +57,7 @@ export class ConnectionRequestHandler implements Handler {
 
     const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord)
 
-    if (connectionRecord?.autoAcceptConnection ?? messageContext.agentContext.config.autoAcceptConnections) {
+    if (connectionRecord?.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
       // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
       const routing = outOfBandRecord.reusable
         ? await this.routingService.getRouting(messageContext.agentContext)

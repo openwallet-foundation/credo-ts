@@ -49,7 +49,7 @@
     "query-string": "^7.0.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0",
-    "tsyringe": "^4.5.0",
+    "tsyringe": "^4.7.0",
     "uuid": "^8.3.2",
     "varint": "^6.0.0",
     "web-did-resolver": "^2.0.8"

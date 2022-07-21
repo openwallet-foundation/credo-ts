@@ -19,7 +19,7 @@ import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { AgentEventTypes } from '../../../agent/Events'
+import { filterContextCorrelationId, AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { Key, KeyType } from '../../../crypto'
@@ -28,6 +28,7 @@ import { injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { ProblemReportError } from '../../problem-reports'
+import { RecipientModuleConfig } from '../RecipientModuleConfig'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { RoutingProblemReportReason } from '../error'
 import {
@@ -48,17 +49,20 @@ export class MediationRecipientService {
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
   private messageSender: MessageSender
+  private recipientModuleConfig: RecipientModuleConfig
 
   public constructor(
     connectionService: ConnectionService,
     messageSender: MessageSender,
     mediatorRepository: MediationRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    recipientModuleConfig: RecipientModuleConfig
   ) {
     this.mediationRepository = mediatorRepository
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
+    this.recipientModuleConfig = recipientModuleConfig
   }
 
   public async createStatusRequest(
@@ -163,6 +167,7 @@ export class MediationRecipientService {
     // Apply required filters to observable stream and create promise to subscribe to observable
     observable
       .pipe(
+        filterContextCorrelationId(agentContext.contextCorrelationId),
         // Only take event for current mediation record
         filter((event) => mediationRecord.id === event.payload.mediationRecord.id),
         // Only wait for first event that matches the criteria
@@ -282,7 +287,7 @@ export class MediationRecipientService {
 
       return null
     }
-    const { maximumMessagePickup } = messageContext.agentContext.config
+    const { maximumMessagePickup } = this.recipientModuleConfig
     const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
 
     const deliveryRequestMessage = new DeliveryRequestMessage({
@@ -316,6 +321,7 @@ export class MediationRecipientService {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: attachment.getDataAsJson<EncryptedMessage>(),
+          contextCorrelationId: messageContext.agentContext.contextCorrelationId,
         },
       })
     }

@@ -3,12 +3,12 @@ import type { V0_1ToV0_2UpdateConfig } from '../updates/0.1-0.2'
 
 import { unlinkSync, readFileSync } from 'fs'
 import path from 'path'
-import { container as baseContainer } from 'tsyringe'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { Agent } from '../../../../src'
 import { agentDependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
+import { DependencyManager } from '../../../plugins'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
@@ -36,9 +36,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     )
 
     for (const mediationRoleUpdateStrategy of mediationRoleUpdateStrategies) {
-      const container = baseContainer.createChildContainer()
+      const dependencyManager = new DependencyManager()
       const storageService = new InMemoryStorageService()
-      container.registerInstance(InjectionSymbols.StorageService, storageService)
+      dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
       const agent = new Agent(
         {
@@ -46,7 +46,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
           walletConfig,
         },
         agentDependencies,
-        container
+        dependencyManager
       )
 
       const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
@@ -96,10 +96,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const container = baseContainer.createChildContainer()
+    const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
-
-    container.registerInstance(InjectionSymbols.StorageService, storageService)
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     const agent = new Agent(
       {
@@ -107,7 +106,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         walletConfig,
       },
       agentDependencies,
-      container
+      dependencyManager
     )
 
     const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
@@ -159,10 +158,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const container = baseContainer.createChildContainer()
+    const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
-
-    container.registerInstance(InjectionSymbols.StorageService, storageService)
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     const agent = new Agent(
       {
@@ -171,7 +169,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         autoUpdateStorageOnStartup: true,
       },
       agentDependencies,
-      container
+      dependencyManager
     )
 
     const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
@@ -210,10 +208,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const container = baseContainer.createChildContainer()
+    const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
-
-    container.registerInstance(InjectionSymbols.StorageService, storageService)
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     const agent = new Agent(
       {
@@ -222,7 +219,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         autoUpdateStorageOnStartup: true,
       },
       agentDependencies,
-      container
+      dependencyManager
     )
 
     const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)

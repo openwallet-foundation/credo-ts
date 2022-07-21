@@ -31,9 +31,7 @@ export class ProposePresentationHandler implements Handler {
     proofRecord: ProofRecord,
     messageContext: HandlerInboundMessage<ProposePresentationHandler>
   ) {
-    this.logger.info(
-      `Automatically sending request with autoAccept on ${messageContext.agentContext.config.autoAcceptProofs}`
-    )
+    this.logger.info(`Automatically sending request with autoAccept`)
 
     if (!messageContext.connection) {
       this.logger.error('No connection on the messageContext')
