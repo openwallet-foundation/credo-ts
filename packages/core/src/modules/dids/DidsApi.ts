@@ -19,20 +19,20 @@ import { DidRegistrarService, DidResolverService } from './services'
 export class DidsApi {
   public config: DidsModuleConfig
 
-  private resolverService: DidResolverService
-  private registrarService: DidRegistrarService
+  private didResolverService: DidResolverService
+  private didRegistrarService: DidRegistrarService
   private didRepository: DidRepository
   private agentContext: AgentContext
 
   public constructor(
-    resolverService: DidResolverService,
-    registrarService: DidRegistrarService,
+    didResolverService: DidResolverService,
+    didRegistrarService: DidRegistrarService,
     didRepository: DidRepository,
     agentContext: AgentContext,
     config: DidsModuleConfig
   ) {
-    this.resolverService = resolverService
-    this.registrarService = registrarService
+    this.didResolverService = didResolverService
+    this.didRegistrarService = didRegistrarService
     this.didRepository = didRepository
     this.agentContext = agentContext
     this.config = config
@@ -44,7 +44,7 @@ export class DidsApi {
    * Follows the interface as defined in https://w3c-ccg.github.io/did-resolution/
    */
   public resolve(didUrl: string, options?: DidResolutionOptions) {
-    return this.resolverService.resolve(this.agentContext, didUrl, options)
+    return this.didResolverService.resolve(this.agentContext, didUrl, options)
   }
 
   /**
@@ -55,7 +55,7 @@ export class DidsApi {
   public create<CreateOptions extends DidCreateOptions = DidCreateOptions>(
     options: CreateOptions
   ): Promise<DidCreateResult> {
-    return this.registrarService.create<CreateOptions>(this.agentContext, options)
+    return this.didRegistrarService.create<CreateOptions>(this.agentContext, options)
   }
 
   /**
@@ -66,7 +66,7 @@ export class DidsApi {
   public update<UpdateOptions extends DidUpdateOptions = DidUpdateOptions>(
     options: UpdateOptions
   ): Promise<DidUpdateResult> {
-    return this.registrarService.update(this.agentContext, options)
+    return this.didRegistrarService.update(this.agentContext, options)
   }
 
   /**
@@ -77,7 +77,7 @@ export class DidsApi {
   public deactivate<DeactivateOptions extends DidDeactivateOptions = DidDeactivateOptions>(
     options: DeactivateOptions
   ): Promise<DidDeactivateResult> {
-    return this.registrarService.deactivate(this.agentContext, options)
+    return this.didRegistrarService.deactivate(this.agentContext, options)
   }
 
   /**
@@ -86,7 +86,7 @@ export class DidsApi {
    * be resolved.
    */
   public resolveDidDocument(didUrl: string) {
-    return this.resolverService.resolveDidDocument(this.agentContext, didUrl)
+    return this.didResolverService.resolveDidDocument(this.agentContext, didUrl)
   }
 
   /**
