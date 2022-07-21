@@ -285,7 +285,7 @@ describe('DidRegistrar', () => {
 
     it('should store the did document', async () => {
       const seed = '96213c3d7fc8d4d6754c712fd969598e'
-      const result = await sovDidRegistrar.create(agentContext, {
+      await sovDidRegistrar.create(agentContext, {
         method: 'sov',
         options: {
           alias: 'Hello',
