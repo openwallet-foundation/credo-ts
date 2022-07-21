@@ -2,13 +2,13 @@ import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Type, Expose } from 'class-transformer'
 import { Equals, Matches, IsArray, ValidateNested, IsObject, IsInstance } from 'class-validator'
+import { Attachment } from 'didcomm'
 
-import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm'
-import { EncryptedMessage } from '../../../agent/didcomm/types'
+import { DIDCommV1Message, DIDCommV2Message, EncryptedMessage } from '../../../agent/didcomm'
 import { MessageIdRegExp } from '../../../agent/didcomm/validation'
 import { uuid } from '../../../utils/uuid'
 
-export class BatchMessageMessage {
+export class BatchMessageItem {
   public constructor(options: { id?: string; message: EncryptedMessage }) {
     if (options) {
       this.id = options.id || uuid()
@@ -25,7 +25,7 @@ export class BatchMessageMessage {
 
 export interface BatchMessageOptions {
   id?: string
-  messages: BatchMessageMessage[]
+  messages: BatchMessageItem[]
 }
 
 /**
@@ -47,20 +47,35 @@ export class BatchMessage extends DIDCommV1Message {
   public readonly type = BatchMessage.type
   public static readonly type = 'https://didcomm.org/messagepickup/1.0/batch'
 
-  @Type(() => BatchMessageMessage)
+  @Type(() => BatchMessageItem)
   @IsArray()
   @ValidateNested()
-  @IsInstance(BatchMessageMessage, { each: true })
+  @IsInstance(BatchMessageItem, { each: true })
   @Expose({ name: 'messages~attach' })
-  public messages!: BatchMessageMessage[]
+  public messages!: BatchMessageItem[]
+}
+
+export class BatchMessageItemV2 {
+  public constructor(options: { id?: string; message: Attachment }) {
+    if (options) {
+      this.id = options.id || uuid()
+      this.message = options.message
+    }
+  }
+
+  @Matches(MessageIdRegExp)
+  public id!: string
+
+  @IsObject()
+  public message!: Attachment
 }
 
 export class BatchMessageV2Body {
-  @Type(() => BatchMessageMessage)
+  @Type(() => BatchMessageItemV2)
   @IsArray()
   @ValidateNested()
-  @IsInstance(BatchMessageMessage, { each: true })
-  public messages!: BatchMessageMessage[]
+  @IsInstance(BatchMessageItemV2, { each: true })
+  public messages!: BatchMessageItemV2[]
 }
 
 export type BatchMessageV2Options = {

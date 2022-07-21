@@ -44,15 +44,18 @@ export class Getter extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  public async requestPayment(giver: string) {
-    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1, giver })
+  public async requestPayment(giver: string, witness: string) {
+    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1, giver, witness })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()
   }
 
-  public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord, witness: string) {
-    const { record } = await this.agent.valueTransfer.acceptPaymentOffer({ recordId: valueTransferRecord.id, witness })
+  public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {
+    const { record } = await this.agent.valueTransfer.acceptPaymentOffer({
+      recordId: valueTransferRecord.id,
+      witness: valueTransferRecord.witness?.did,
+    })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nPayment offer accepted!\n'))
     await this.waitForPayment()

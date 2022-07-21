@@ -66,7 +66,8 @@ export class GetterInquirer extends BaseInquirer {
 
   public async requestPayment() {
     const giver = await inquirer.prompt([this.inquireInput('Giver DID')])
-    await this.getter.requestPayment(giver.input)
+    const witness = await inquirer.prompt([this.inquireInput('Witness DID')])
+    await this.getter.requestPayment(giver.input, witness.input)
   }
 
   public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {
@@ -76,8 +77,7 @@ export class GetterInquirer extends BaseInquirer {
     if (confirm.options === ConfirmOptions.No) {
       await this.getter.abortPaymentOffer(valueTransferRecord)
     } else if (confirm.options === ConfirmOptions.Yes) {
-      const witness = await inquirer.prompt([this.inquireInput('Witness DID')])
-      await this.getter.acceptPaymentOffer(valueTransferRecord, witness.input)
+      await this.getter.acceptPaymentOffer(valueTransferRecord)
     }
   }
 

@@ -21,7 +21,7 @@ export class BatchHandler implements Handler<typeof DIDCommV2Message> {
       this.eventEmitter.emit<AgentMessageReceivedEvent>({
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
-          message: message.message,
+          message: BatchMessageV2.unpackAttachmentAsJson(message.message),
         },
       })
     })

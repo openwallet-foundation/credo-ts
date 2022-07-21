@@ -111,13 +111,9 @@ export class DIDCommV2BaseMessage {
     }
   }
 
-  public getAttachmentDataAsJson(id?: string) {
-    if (!this.attachments || !this.attachments.length) return null
-    const attachment = id ? this.attachments?.find((attachment) => attachment.id === id) : this.attachments[0]
-    if (!attachment) return null
-
+  public static unpackAttachmentAsJson(attachment: Attachment) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = attachment.data as any // FIXME: didcomm package doesn't provide convenient way to process attachment
+    const data = attachment.data as any //FIXME: didcomm package doesn't provide convenient way to process attachment
     if (typeof data.base64 === 'string') {
       return JsonEncoder.fromBase64(data.base64)
     } else if (data.json) {
@@ -125,5 +121,11 @@ export class DIDCommV2BaseMessage {
     } else {
       return null
     }
+  }
+
+  public getAttachmentDataAsJson(id?: string) {
+    if (!this.attachments || !this.attachments.length) return null
+    const attachment = id ? this.attachments?.find((attachment) => attachment.id === id) : this.attachments[0]
+    return attachment ? DIDCommV2BaseMessage.unpackAttachmentAsJson(attachment) : null
   }
 }

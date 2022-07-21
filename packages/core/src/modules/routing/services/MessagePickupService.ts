@@ -7,7 +7,8 @@ import { inject, scoped, Lifecycle } from 'tsyringe'
 import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { MessageRepository } from '../../../storage/MessageRepository'
-import { BatchMessageMessage, BatchMessageV2 } from '../messages'
+import { uuid } from '../../../utils/uuid'
+import { BatchMessageItemV2, BatchMessageV2 } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessagePickupService {
@@ -28,8 +29,8 @@ export class MessagePickupService {
     // of batch message
     const batchMessages = messages.map(
       (msg) =>
-        new BatchMessageMessage({
-          message: msg,
+        new BatchMessageItemV2({
+          message: BatchMessageV2.createJSONAttachment(uuid(), msg),
         })
     )
 

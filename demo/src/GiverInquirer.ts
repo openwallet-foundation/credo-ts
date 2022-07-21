@@ -68,7 +68,8 @@ export class GiverInquirer extends BaseInquirer {
 
   public async offerPayment() {
     const getter = await inquirer.prompt([this.inquireInput('Getter DID')])
-    await this.giver.offerPayment(getter.input)
+    const witness = await inquirer.prompt([this.inquireInput('Witness DID')])
+    await this.giver.offerPayment(getter.input, witness.input)
   }
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
