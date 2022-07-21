@@ -484,6 +484,7 @@ describe('W3cCredentialService', () => {
         })
       })
     })
+
     describe('removeCredentialRecord', () => {
       it('should remove a credential', async () => {
         const credential = JsonTransformer.fromJSON(
@@ -494,9 +495,10 @@ describe('W3cCredentialService', () => {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         await w3cCredentialService.removeCredentialRecord(agentContext, credential.id!)
 
-        expect(w3cCredentialRepositoryDeleteMock).toBeCalledWith(w3cCredentialRecord)
+        expect(w3cCredentialRepositoryDeleteMock).toBeCalledWith(agentContext, w3cCredentialRecord)
       })
     })
+
     describe('getAllCredentialRecords', () => {
       it('should retrieve all W3cCredentialRecords', async () => {
         const credential = JsonTransformer.fromJSON(
