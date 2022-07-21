@@ -66,7 +66,7 @@ export function isStringArray(value: any): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'string')
 }
 
-export const UriValidator = new RegExp('w+:(/?/?)[^s]+')
+export const UriValidator = /\w+:(\/?\/?)[^\s]+/
 
 export function IsUri(validationOptions?: ValidationOptions): PropertyDecorator {
   return ValidateBy(

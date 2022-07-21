@@ -1,34 +1,19 @@
-import type { Key } from '../../crypto'
-import type { DidResolutionOptions } from './types'
+import type { DependencyManager, Module } from '../../plugins'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
+import { DidsApi } from './DidsApi'
 import { DidRepository } from './repository'
-import { DidResolverService } from './services/DidResolverService'
+import { DidResolverService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
-export class DidsModule {
-  private resolverService: DidResolverService
-  private didRepository: DidRepository
+export class DidsModule implements Module {
+  /**
+   * Registers the dependencies of the dids module module on the dependency manager.
+   */
+  public register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(DidsApi)
 
-  public constructor(resolverService: DidResolverService, didRepository: DidRepository) {
-    this.resolverService = resolverService
-    this.didRepository = didRepository
-  }
-
-  public resolve(didUrl: string, options?: DidResolutionOptions) {
-    return this.resolverService.resolve(didUrl, options)
-  }
-
-  public resolveDidDocument(didUrl: string) {
-    return this.resolverService.resolveDidDocument(didUrl)
-  }
-
-  public findByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findByRecipientKey(recipientKey)
-  }
-
-  public findAllByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findAllByRecipientKey(recipientKey)
+    // Services
+    dependencyManager.registerSingleton(DidResolverService)
+    dependencyManager.registerSingleton(DidRepository)
   }
 }

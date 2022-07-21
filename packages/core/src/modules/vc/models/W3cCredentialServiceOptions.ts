@@ -25,7 +25,7 @@ export interface VerifyCredentialOptions {
 }
 
 export interface StoreCredentialOptions {
-  credential: W3cVerifiableCredential
+  record: W3cVerifiableCredential
 }
 
 export interface CreatePresentationOptions {

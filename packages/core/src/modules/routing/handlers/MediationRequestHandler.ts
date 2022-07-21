@@ -1,31 +1,31 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MediatorModuleConfig } from '../MediatorModuleConfig'
 import type { MediatorService } from '../services/MediatorService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
-import { AriesFrameworkError } from '../../../error'
 import { MediationRequestMessage } from '../messages/MediationRequestMessage'
 
 export class MediationRequestHandler implements Handler {
   private mediatorService: MediatorService
-  private agentConfig: AgentConfig
+  private mediatorModuleConfig: MediatorModuleConfig
   public supportedMessages = [MediationRequestMessage]
 
-  public constructor(mediatorService: MediatorService, agentConfig: AgentConfig) {
+  public constructor(mediatorService: MediatorService, mediatorModuleConfig: MediatorModuleConfig) {
     this.mediatorService = mediatorService
-    this.agentConfig = agentConfig
+    this.mediatorModuleConfig = mediatorModuleConfig
   }
 
   public async handle(messageContext: HandlerInboundMessage<MediationRequestHandler>) {
-    if (!messageContext.connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientKey} not found!`)
-    }
+    const connection = messageContext.assertReadyConnection()
 
     const mediationRecord = await this.mediatorService.processMediationRequest(messageContext)
 
-    if (this.agentConfig.autoAcceptMediationRequests) {
-      const { message } = await this.mediatorService.createGrantMediationMessage(mediationRecord)
-      return createOutboundMessage(messageContext.connection, message)
+    if (this.mediatorModuleConfig.autoAcceptMediationRequests) {
+      const { message } = await this.mediatorService.createGrantMediationMessage(
+        messageContext.agentContext,
+        mediationRecord
+      )
+      return createOutboundMessage(connection, message)
     }
   }
 }

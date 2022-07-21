@@ -2,7 +2,7 @@
   "name": "@aries-framework/core",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "files": [
     "build"
   ],
@@ -32,7 +32,7 @@
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/random": "^1.0.1",
     "@stablelib/sha256": "^1.0.1",
-    "@types/indy-sdk": "^1.16.16",
+    "@types/indy-sdk": "^1.16.19",
     "@types/node-fetch": "^2.5.10",
     "@types/ws": "^7.4.6",
     "abort-controller": "^3.0.0",
@@ -49,7 +49,7 @@
     "query-string": "^7.0.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0",
-    "tsyringe": "^4.5.0",
+    "tsyringe": "^4.7.0",
     "uuid": "^8.3.2",
     "varint": "^6.0.0",
     "web-did-resolver": "^2.0.8"

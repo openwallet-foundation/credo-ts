@@ -1,8 +1,8 @@
-import type { Logger } from '../../../logger'
-import type { AcceptanceMechanisms, AuthorAgreement, IndyPool } from '../IndyPool'
+import type { AgentContext } from '../../../agent'
+import type { AcceptanceMechanisms, AuthorAgreement, IndyPool, IndyPoolConfig } from '../IndyPool'
 import type {
-  default as Indy,
   CredDef,
+  default as Indy,
   LedgerReadReplyResponse,
   LedgerRequest,
   LedgerWriteReplyResponse,
@@ -10,25 +10,25 @@ import type {
   Schema,
 } from 'indy-sdk'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
-import { AgentConfig } from '../../../agent/AgentConfig'
+import { AgentDependencies } from '../../../agent/AgentDependencies'
+import { InjectionSymbols } from '../../../constants'
 import { IndySdkError } from '../../../error/IndySdkError'
+import { Logger } from '../../../logger'
+import { injectable, inject } from '../../../plugins'
 import {
-  didFromSchemaId,
   didFromCredentialDefinitionId,
   didFromRevocationRegistryDefinitionId,
+  didFromSchemaId,
 } from '../../../utils/did'
 import { isIndyError } from '../../../utils/indyError'
-import { IndyWallet } from '../../../wallet/IndyWallet'
+import { assertIndyWallet } from '../../../wallet/util/assertIndyWallet'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { LedgerError } from '../error/LedgerError'
 
 import { IndyPoolService } from './IndyPoolService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyLedgerService {
-  private wallet: IndyWallet
   private indy: typeof Indy
   private logger: Logger
 
@@ -36,16 +36,19 @@ export class IndyLedgerService {
   private indyPoolService: IndyPoolService
 
   public constructor(
-    wallet: IndyWallet,
-    agentConfig: AgentConfig,
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
+    @inject(InjectionSymbols.Logger) logger: Logger,
     indyIssuer: IndyIssuerService,
     indyPoolService: IndyPoolService
   ) {
-    this.wallet = wallet
-    this.indy = agentConfig.agentDependencies.indy
-    this.logger = agentConfig.logger
+    this.indy = agentDependencies.indy
+    this.logger = logger
     this.indyIssuer = indyIssuer
     this.indyPoolService = indyPoolService
+  }
+
+  public setPools(poolConfigs: IndyPoolConfig[]) {
+    return this.indyPoolService.setPools(poolConfigs)
   }
 
   public async connectToPools() {
@@ -53,6 +56,7 @@ export class IndyLedgerService {
   }
 
   public async registerPublicDid(
+    agentContext: AgentContext,
     submitterDid: string,
     targetDid: string,
     verkey: string,
@@ -66,7 +70,7 @@ export class IndyLedgerService {
 
       const request = await this.indy.buildNymRequest(submitterDid, targetDid, verkey, alias, role || null)
 
-      const response = await this.submitWriteRequest(pool, request, submitterDid)
+      const response = await this.submitWriteRequest(agentContext, pool, request, submitterDid)
 
       this.logger.debug(`Registered public did '${targetDid}' on ledger '${pool.id}'`, {
         response,
@@ -88,15 +92,15 @@ export class IndyLedgerService {
     }
   }
 
-  public async getPublicDid(did: string) {
+  public async getPublicDid(agentContext: AgentContext, did: string) {
     // Getting the pool for a did also retrieves the DID. We can just use that
-    const { did: didResponse } = await this.indyPoolService.getPoolForDid(did)
+    const { did: didResponse } = await this.indyPoolService.getPoolForDid(agentContext, did)
 
     return didResponse
   }
 
-  public async getEndpointsForDid(did: string) {
-    const { pool } = await this.indyPoolService.getPoolForDid(did)
+  public async getEndpointsForDid(agentContext: AgentContext, did: string) {
+    const { pool } = await this.indyPoolService.getPoolForDid(agentContext, did)
 
     try {
       this.logger.debug(`Get endpoints for did '${did}' from ledger '${pool.id}'`)
@@ -124,17 +128,21 @@ export class IndyLedgerService {
     }
   }
 
-  public async registerSchema(did: string, schemaTemplate: SchemaTemplate): Promise<Schema> {
+  public async registerSchema(
+    agentContext: AgentContext,
+    did: string,
+    schemaTemplate: SchemaTemplate
+  ): Promise<Schema> {
     const pool = this.indyPoolService.ledgerWritePool
 
     try {
       this.logger.debug(`Register schema on ledger '${pool.id}' with did '${did}'`, schemaTemplate)
       const { name, attributes, version } = schemaTemplate
-      const schema = await this.indyIssuer.createSchema({ originDid: did, name, version, attributes })
+      const schema = await this.indyIssuer.createSchema(agentContext, { originDid: did, name, version, attributes })
 
       const request = await this.indy.buildSchemaRequest(did, schema)
 
-      const response = await this.submitWriteRequest(pool, request, did)
+      const response = await this.submitWriteRequest(agentContext, pool, request, did)
       this.logger.debug(`Registered schema '${schema.id}' on ledger '${pool.id}'`, {
         response,
         schema,
@@ -154,9 +162,9 @@ export class IndyLedgerService {
     }
   }
 
-  public async getSchema(schemaId: string) {
+  public async getSchema(agentContext: AgentContext, schemaId: string) {
     const did = didFromSchemaId(schemaId)
-    const { pool } = await this.indyPoolService.getPoolForDid(did)
+    const { pool } = await this.indyPoolService.getPoolForDid(agentContext, did)
 
     try {
       this.logger.debug(`Getting schema '${schemaId}' from ledger '${pool.id}'`)
@@ -187,6 +195,7 @@ export class IndyLedgerService {
   }
 
   public async registerCredentialDefinition(
+    agentContext: AgentContext,
     did: string,
     credentialDefinitionTemplate: CredentialDefinitionTemplate
   ): Promise<CredDef> {
@@ -199,7 +208,7 @@ export class IndyLedgerService {
       )
       const { schema, tag, signatureType, supportRevocation } = credentialDefinitionTemplate
 
-      const credentialDefinition = await this.indyIssuer.createCredentialDefinition({
+      const credentialDefinition = await this.indyIssuer.createCredentialDefinition(agentContext, {
         issuerDid: did,
         schema,
         tag,
@@ -209,7 +218,7 @@ export class IndyLedgerService {
 
       const request = await this.indy.buildCredDefRequest(did, credentialDefinition)
 
-      const response = await this.submitWriteRequest(pool, request, did)
+      const response = await this.submitWriteRequest(agentContext, pool, request, did)
 
       this.logger.debug(`Registered credential definition '${credentialDefinition.id}' on ledger '${pool.id}'`, {
         response,
@@ -231,9 +240,9 @@ export class IndyLedgerService {
     }
   }
 
-  public async getCredentialDefinition(credentialDefinitionId: string) {
+  public async getCredentialDefinition(agentContext: AgentContext, credentialDefinitionId: string) {
     const did = didFromCredentialDefinitionId(credentialDefinitionId)
-    const { pool } = await this.indyPoolService.getPoolForDid(did)
+    const { pool } = await this.indyPoolService.getPoolForDid(agentContext, did)
 
     this.logger.debug(`Using ledger '${pool.id}' to retrieve credential definition '${credentialDefinitionId}'`)
 
@@ -267,10 +276,11 @@ export class IndyLedgerService {
   }
 
   public async getRevocationRegistryDefinition(
+    agentContext: AgentContext,
     revocationRegistryDefinitionId: string
   ): Promise<ParseRevocationRegistryDefinitionTemplate> {
     const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
-    const { pool } = await this.indyPoolService.getPoolForDid(did)
+    const { pool } = await this.indyPoolService.getPoolForDid(agentContext, did)
 
     this.logger.debug(
       `Using ledger '${pool.id}' to retrieve revocation registry definition '${revocationRegistryDefinitionId}'`
@@ -314,15 +324,16 @@ export class IndyLedgerService {
     }
   }
 
-  //Retrieves the accumulated state of a revocation registry by id given a revocation interval from & to (used primarily for proof creation)
+  // Retrieves the accumulated state of a revocation registry by id given a revocation interval from & to (used primarily for proof creation)
   public async getRevocationRegistryDelta(
+    agentContext: AgentContext,
     revocationRegistryDefinitionId: string,
     to: number = new Date().getTime(),
     from = 0
   ): Promise<ParseRevocationRegistryDeltaTemplate> {
     //TODO - implement a cache
     const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
-    const { pool } = await this.indyPoolService.getPoolForDid(did)
+    const { pool } = await this.indyPoolService.getPoolForDid(agentContext, did)
 
     this.logger.debug(
       `Using ledger '${pool.id}' to retrieve revocation registry delta with revocation registry definition id: '${revocationRegistryDefinitionId}'`,
@@ -370,14 +381,15 @@ export class IndyLedgerService {
     }
   }
 
-  //Retrieves the accumulated state of a revocation registry by id given a timestamp (used primarily for verification)
+  // Retrieves the accumulated state of a revocation registry by id given a timestamp (used primarily for verification)
   public async getRevocationRegistry(
+    agentContext: AgentContext,
     revocationRegistryDefinitionId: string,
     timestamp: number
   ): Promise<ParseRevocationRegistryTemplate> {
     //TODO - implement a cache
     const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
-    const { pool } = await this.indyPoolService.getPoolForDid(did)
+    const { pool } = await this.indyPoolService.getPoolForDid(agentContext, did)
 
     this.logger.debug(
       `Using ledger '${pool.id}' to retrieve revocation registry accumulated state with revocation registry definition id: '${revocationRegistryDefinitionId}'`,
@@ -418,13 +430,14 @@ export class IndyLedgerService {
   }
 
   private async submitWriteRequest(
+    agentContext: AgentContext,
     pool: IndyPool,
     request: LedgerRequest,
     signDid: string
   ): Promise<LedgerWriteReplyResponse> {
     try {
       const requestWithTaa = await this.appendTaa(pool, request)
-      const signedRequestWithTaa = await this.signRequest(signDid, requestWithTaa)
+      const signedRequestWithTaa = await this.signRequest(agentContext, signDid, requestWithTaa)
 
       const response = await pool.submitWriteRequest(signedRequestWithTaa)
 
@@ -444,9 +457,11 @@ export class IndyLedgerService {
     }
   }
 
-  private async signRequest(did: string, request: LedgerRequest): Promise<LedgerRequest> {
+  private async signRequest(agentContext: AgentContext, did: string, request: LedgerRequest): Promise<LedgerRequest> {
+    assertIndyWallet(agentContext.wallet)
+
     try {
-      return this.indy.signRequest(this.wallet.handle, did, request)
+      return this.indy.signRequest(agentContext.wallet.handle, did, request)
     } catch (error) {
       throw isIndyError(error) ? new IndySdkError(error) : error
     }

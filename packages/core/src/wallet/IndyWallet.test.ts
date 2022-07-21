@@ -1,33 +1,46 @@
+import type { WalletConfig } from '../types'
+
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 import { SIGNATURE_LENGTH as ED25519_SIGNATURE_LENGTH } from '@stablelib/ed25519'
 
-import { getBaseConfig } from '../../tests/helpers'
-import { Agent } from '../agent/Agent'
+import { agentDependencies } from '../../tests/helpers'
+import testLogger from '../../tests/logger'
 import { KeyType } from '../crypto'
+import { Bls12381g2SigningProvider, SigningProviderRegistry } from '../crypto/signing-provider'
+import { KeyDerivationMethod } from '../types'
 import { TypedArrayEncoder } from '../utils'
 
 import { IndyWallet } from './IndyWallet'
 import { WalletError } from './error'
 
+// use raw key derivation method to speed up wallet creating / opening / closing between tests
+const walletConfig: WalletConfig = {
+  id: 'Wallet: IndyWalletTest',
+  // generated using indy.generateWalletKey
+  key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
+  keyDerivationMethod: KeyDerivationMethod.Raw,
+}
+
 describe('IndyWallet', () => {
   let indyWallet: IndyWallet
-  let agent: Agent
   const seed = 'sample-seed'
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    const { config, agentDependencies } = getBaseConfig('IndyWallettest')
-    agent = new Agent(config, agentDependencies)
-    indyWallet = agent.injectionContainer.resolve(IndyWallet)
-    await agent.initialize()
+    indyWallet = new IndyWallet(
+      agentDependencies,
+      testLogger,
+      new SigningProviderRegistry([new Bls12381g2SigningProvider()])
+    )
+    await indyWallet.createAndOpen(walletConfig)
   })
 
   afterEach(async () => {
-    await agent.shutdown()
-    await agent.wallet.delete()
+    await indyWallet.delete()
   })
 
-  test('Get the public DID', () => {
+  test('Get the public DID', async () => {
+    await indyWallet.initPublicDid({ seed: '000000000000000000000000Trustee9' })
     expect(indyWallet.publicDid).toMatchObject({
       did: expect.any(String),
       verkey: expect.any(String),
@@ -35,7 +48,7 @@ describe('IndyWallet', () => {
   })
 
   test('Get the Master Secret', () => {
-    expect(indyWallet.masterSecretId).toEqual('Wallet: IndyWallettest')
+    expect(indyWallet.masterSecretId).toEqual('Wallet: IndyWalletTest')
   })
 
   test('Get the wallet handle', () => {
@@ -71,13 +84,6 @@ describe('IndyWallet', () => {
     })
   })
 
-  test('Create blsg12381g1 keypair', async () => {
-    await expect(indyWallet.createKey({ seed, keyType: KeyType.Bls12381g1 })).resolves.toMatchObject({
-      publicKeyBase58: '6RhvX1RK5rA9uXdTtV6WvHWNQqcCW86BQxz1aBPr6ebBcppCYMD3LLy7QLg4cGcWaq',
-      keyType: KeyType.Bls12381g1,
-    })
-  })
-
   test('Create bls12381g2 keypair', async () => {
     await expect(indyWallet.createKey({ seed, keyType: KeyType.Bls12381g2 })).resolves.toMatchObject({
       publicKeyBase58:
@@ -110,16 +116,6 @@ describe('IndyWallet', () => {
       key: bls12381g2Key,
     })
     expect(signature.length).toStrictEqual(BBS_SIGNATURE_LENGTH)
-  })
-
-  test('Fail to create a signature with a bls12381g1 keypair', async () => {
-    const bls12381g1Key = await indyWallet.createKey({ seed, keyType: KeyType.Bls12381g1 })
-    await expect(
-      indyWallet.sign({
-        data: message,
-        key: bls12381g1Key,
-      })
-    ).rejects.toThrowError(WalletError)
   })
 
   test('Verify a signed message with a ed25519 publicKey', async () => {

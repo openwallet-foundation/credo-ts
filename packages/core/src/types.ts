@@ -9,7 +9,7 @@ import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 
-export const enum KeyDerivationMethod {
+export enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
   Argon2IMod = 'ARGON2I_MOD',
   /** less secure, but faster */
@@ -42,7 +42,7 @@ export interface WalletExportImportConfig {
 }
 
 export type EncryptedMessage = {
-  protected: unknown
+  protected: string
   iv: unknown
   ciphertext: unknown
   tag: unknown

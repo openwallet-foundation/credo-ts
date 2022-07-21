@@ -1,30 +1,35 @@
+import type { AgentContext } from '../../../agent'
 import type * as Indy from 'indy-sdk'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
-import { AgentConfig } from '../../../agent/AgentConfig'
+import { AgentDependencies } from '../../../agent/AgentDependencies'
+import { InjectionSymbols } from '../../../constants'
 import { IndySdkError } from '../../../error'
+import { injectable, inject } from '../../../plugins'
 import { isIndyError } from '../../../utils/indyError'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyVerifierService {
   private indy: typeof Indy
   private ledgerService: IndyLedgerService
 
-  public constructor(agentConfig: AgentConfig, ledgerService: IndyLedgerService) {
-    this.indy = agentConfig.agentDependencies.indy
+  public constructor(
+    ledgerService: IndyLedgerService,
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies
+  ) {
+    this.indy = agentDependencies.indy
     this.ledgerService = ledgerService
   }
 
-  public async verifyProof({
-    proofRequest,
-    proof,
-    schemas,
-    credentialDefinitions,
-  }: VerifyProofOptions): Promise<boolean> {
+  public async verifyProof(
+    agentContext: AgentContext,
+    { proofRequest, proof, schemas, credentialDefinitions }: VerifyProofOptions
+  ): Promise<boolean> {
     try {
-      const { revocationRegistryDefinitions, revocationRegistryStates } = await this.getRevocationRegistries(proof)
+      const { revocationRegistryDefinitions, revocationRegistryStates } = await this.getRevocationRegistries(
+        agentContext,
+        proof
+      )
 
       return await this.indy.verifierVerifyProof(
         proofRequest,
@@ -39,7 +44,7 @@ export class IndyVerifierService {
     }
   }
 
-  private async getRevocationRegistries(proof: Indy.IndyProof) {
+  private async getRevocationRegistries(agentContext: AgentContext, proof: Indy.IndyProof) {
     const revocationRegistryDefinitions: Indy.RevocRegDefs = {}
     const revocationRegistryStates: Indy.RevStates = Object.create(null)
     for (const identifier of proof.identifiers) {
@@ -49,6 +54,7 @@ export class IndyVerifierService {
       //Fetch Revocation Registry Definition if not already fetched
       if (revocationRegistryId && !revocationRegistryDefinitions[revocationRegistryId]) {
         const { revocationRegistryDefinition } = await this.ledgerService.getRevocationRegistryDefinition(
+          agentContext,
           revocationRegistryId
         )
         revocationRegistryDefinitions[revocationRegistryId] = revocationRegistryDefinition
@@ -59,7 +65,11 @@ export class IndyVerifierService {
         if (!revocationRegistryStates[revocationRegistryId]) {
           revocationRegistryStates[revocationRegistryId] = Object.create(null)
         }
-        const { revocationRegistry } = await this.ledgerService.getRevocationRegistry(revocationRegistryId, timestamp)
+        const { revocationRegistry } = await this.ledgerService.getRevocationRegistry(
+          agentContext,
+          revocationRegistryId,
+          timestamp
+        )
         revocationRegistryStates[revocationRegistryId][timestamp] = revocationRegistry
       }
     }

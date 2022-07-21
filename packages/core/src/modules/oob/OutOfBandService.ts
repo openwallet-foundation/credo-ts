@@ -1,13 +1,13 @@
+import type { AgentContext } from '../../agent'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Key } from '../../crypto'
 import type { ConnectionRecord } from '../connections'
 import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
 import type { OutOfBandRecord } from './repository'
 
-import { scoped, Lifecycle } from 'tsyringe'
-
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../error'
+import { injectable } from '../../plugins'
 import { JsonTransformer } from '../../utils'
 
 import { OutOfBandEventTypes } from './domain/OutOfBandEvents'
@@ -17,7 +17,7 @@ import { HandshakeReuseMessage } from './messages'
 import { HandshakeReuseAcceptedMessage } from './messages/HandshakeReuseAcceptedMessage'
 import { OutOfBandRepository } from './repository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class OutOfBandService {
   private outOfBandRepository: OutOfBandRepository
   private eventEmitter: EventEmitter
@@ -35,7 +35,7 @@ export class OutOfBandService {
       throw new AriesFrameworkError('handshake-reuse message must have a parent thread id')
     }
 
-    const outOfBandRecord = await this.findByInvitationId(parentThreadId)
+    const outOfBandRecord = await this.findByInvitationId(messageContext.agentContext, parentThreadId)
     if (!outOfBandRecord) {
       throw new AriesFrameworkError('No out of band record found for handshake-reuse message')
     }
@@ -50,7 +50,7 @@ export class OutOfBandService {
     }
 
     const reusedConnection = messageContext.assertReadyConnection()
-    this.eventEmitter.emit<HandshakeReusedEvent>({
+    this.eventEmitter.emit<HandshakeReusedEvent>(messageContext.agentContext, {
       type: OutOfBandEventTypes.HandshakeReused,
       payload: {
         reuseThreadId: reuseMessage.threadId,
@@ -61,7 +61,7 @@ export class OutOfBandService {
 
     // If the out of band record is not reusable we can set the state to done
     if (!outOfBandRecord.reusable) {
-      await this.updateState(outOfBandRecord, OutOfBandState.Done)
+      await this.updateState(messageContext.agentContext, outOfBandRecord, OutOfBandState.Done)
     }
 
     const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
@@ -80,7 +80,7 @@ export class OutOfBandService {
       throw new AriesFrameworkError('handshake-reuse-accepted message must have a parent thread id')
     }
 
-    const outOfBandRecord = await this.findByInvitationId(parentThreadId)
+    const outOfBandRecord = await this.findByInvitationId(messageContext.agentContext, parentThreadId)
     if (!outOfBandRecord) {
       throw new AriesFrameworkError('No out of band record found for handshake-reuse-accepted message')
     }
@@ -101,7 +101,7 @@ export class OutOfBandService {
       throw new AriesFrameworkError('handshake-reuse-accepted is not in response to a handshake-reuse message.')
     }
 
-    this.eventEmitter.emit<HandshakeReusedEvent>({
+    this.eventEmitter.emit<HandshakeReusedEvent>(messageContext.agentContext, {
       type: OutOfBandEventTypes.HandshakeReused,
       payload: {
         reuseThreadId: reuseAcceptedMessage.threadId,
@@ -111,35 +111,43 @@ export class OutOfBandService {
     })
 
     // receiver role is never reusable, so we can set the state to done
-    await this.updateState(outOfBandRecord, OutOfBandState.Done)
+    await this.updateState(messageContext.agentContext, outOfBandRecord, OutOfBandState.Done)
   }
 
-  public async createHandShakeReuse(outOfBandRecord: OutOfBandRecord, connectionRecord: ConnectionRecord) {
+  public async createHandShakeReuse(
+    agentContext: AgentContext,
+    outOfBandRecord: OutOfBandRecord,
+    connectionRecord: ConnectionRecord
+  ) {
     const reuseMessage = new HandshakeReuseMessage({ parentThreadId: outOfBandRecord.outOfBandInvitation.id })
 
     // Store the reuse connection id
     outOfBandRecord.reuseConnectionId = connectionRecord.id
-    await this.outOfBandRepository.update(outOfBandRecord)
+    await this.outOfBandRepository.update(agentContext, outOfBandRecord)
 
     return reuseMessage
   }
 
-  public async save(outOfBandRecord: OutOfBandRecord) {
-    return this.outOfBandRepository.save(outOfBandRecord)
+  public async save(agentContext: AgentContext, outOfBandRecord: OutOfBandRecord) {
+    return this.outOfBandRepository.save(agentContext, outOfBandRecord)
   }
 
-  public async updateState(outOfBandRecord: OutOfBandRecord, newState: OutOfBandState) {
+  public async updateState(agentContext: AgentContext, outOfBandRecord: OutOfBandRecord, newState: OutOfBandState) {
     const previousState = outOfBandRecord.state
     outOfBandRecord.state = newState
-    await this.outOfBandRepository.update(outOfBandRecord)
+    await this.outOfBandRepository.update(agentContext, outOfBandRecord)
 
-    this.emitStateChangedEvent(outOfBandRecord, previousState)
+    this.emitStateChangedEvent(agentContext, outOfBandRecord, previousState)
   }
 
-  public emitStateChangedEvent(outOfBandRecord: OutOfBandRecord, previousState: OutOfBandState | null) {
+  public emitStateChangedEvent(
+    agentContext: AgentContext,
+    outOfBandRecord: OutOfBandRecord,
+    previousState: OutOfBandState | null
+  ) {
     const clonedOutOfBandRecord = JsonTransformer.clone(outOfBandRecord)
 
-    this.eventEmitter.emit<OutOfBandStateChangedEvent>({
+    this.eventEmitter.emit<OutOfBandStateChangedEvent>(agentContext, {
       type: OutOfBandEventTypes.OutOfBandStateChanged,
       payload: {
         outOfBandRecord: clonedOutOfBandRecord,
@@ -148,28 +156,30 @@ export class OutOfBandService {
     })
   }
 
-  public async findById(outOfBandRecordId: string) {
-    return this.outOfBandRepository.findById(outOfBandRecordId)
+  public async findById(agentContext: AgentContext, outOfBandRecordId: string) {
+    return this.outOfBandRepository.findById(agentContext, outOfBandRecordId)
   }
 
-  public async getById(outOfBandRecordId: string) {
-    return this.outOfBandRepository.getById(outOfBandRecordId)
+  public async getById(agentContext: AgentContext, outOfBandRecordId: string) {
+    return this.outOfBandRepository.getById(agentContext, outOfBandRecordId)
   }
 
-  public async findByInvitationId(invitationId: string) {
-    return this.outOfBandRepository.findSingleByQuery({ invitationId })
+  public async findByInvitationId(agentContext: AgentContext, invitationId: string) {
+    return this.outOfBandRepository.findSingleByQuery(agentContext, { invitationId })
   }
 
-  public async findByRecipientKey(recipientKey: Key) {
-    return this.outOfBandRepository.findSingleByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
+  public async findByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
+    return this.outOfBandRepository.findSingleByQuery(agentContext, {
+      recipientKeyFingerprints: [recipientKey.fingerprint],
+    })
   }
 
-  public async getAll() {
-    return this.outOfBandRepository.getAll()
+  public async getAll(agentContext: AgentContext) {
+    return this.outOfBandRepository.getAll(agentContext)
   }
 
-  public async deleteById(outOfBandId: string) {
-    const outOfBandRecord = await this.getById(outOfBandId)
-    return this.outOfBandRepository.delete(outOfBandRecord)
+  public async deleteById(agentContext: AgentContext, outOfBandId: string) {
+    const outOfBandRecord = await this.getById(agentContext, outOfBandId)
+    return this.outOfBandRepository.delete(agentContext, outOfBandRecord)
   }
 }

@@ -1,19 +1,21 @@
 import type { InboundTransport, Agent } from '../../packages/core/src'
 import type { TransportSession } from '../../packages/core/src/agent/TransportService'
 import type { EncryptedMessage } from '../../packages/core/src/types'
-import type { Subject, Subscription } from 'rxjs'
+import type { Subscription } from 'rxjs'
 
-import { AgentConfig } from '../../packages/core/src/agent/AgentConfig'
+import { Subject } from 'rxjs'
+
+import { MessageReceiver } from '../../packages/core/src'
 import { TransportService } from '../../packages/core/src/agent/TransportService'
 import { uuid } from '../../packages/core/src/utils/uuid'
 
 export type SubjectMessage = { message: EncryptedMessage; replySubject?: Subject<SubjectMessage> }
 
 export class SubjectInboundTransport implements InboundTransport {
-  private ourSubject: Subject<SubjectMessage>
+  public readonly ourSubject: Subject<SubjectMessage>
   private subscription?: Subscription
 
-  public constructor(ourSubject: Subject<SubjectMessage>) {
+  public constructor(ourSubject = new Subject<SubjectMessage>()) {
     this.ourSubject = ourSubject
   }
 
@@ -26,8 +28,9 @@ export class SubjectInboundTransport implements InboundTransport {
   }
 
   private subscribe(agent: Agent) {
-    const logger = agent.injectionContainer.resolve(AgentConfig).logger
-    const transportService = agent.injectionContainer.resolve(TransportService)
+    const logger = agent.config.logger
+    const transportService = agent.dependencyManager.resolve(TransportService)
+    const messageReceiver = agent.dependencyManager.resolve(MessageReceiver)
 
     this.subscription = this.ourSubject.subscribe({
       next: async ({ message, replySubject }: SubjectMessage) => {
@@ -45,7 +48,7 @@ export class SubjectInboundTransport implements InboundTransport {
           })
         }
 
-        await agent.receiveMessage(message, session)
+        await messageReceiver.receiveMessage(message, { session })
       },
     })
   }

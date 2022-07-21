@@ -12,6 +12,7 @@ import type {
   ProofPredicateInfo,
   ProofStateChangedEvent,
   SchemaTemplate,
+  Wallet,
 } from '../src'
 import type { AcceptOfferOptions } from '../src/modules/credentials'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
@@ -28,14 +29,17 @@ import { agentDependencies, WalletScheme } from '../../node/src'
 import {
   Agent,
   AgentConfig,
+  AgentContext,
   AriesFrameworkError,
   BasicMessageEventTypes,
   ConnectionRecord,
   CredentialEventTypes,
   CredentialState,
+  DependencyManager,
   DidExchangeRole,
   DidExchangeState,
   HandshakeProtocol,
+  InjectionSymbols,
   LogLevel,
   PredicateType,
   PresentationPreview,
@@ -132,6 +136,22 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
 export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const { config, agentDependencies } = getBaseConfig(name, extraConfig)
   return new AgentConfig(config, agentDependencies)
+}
+
+export function getAgentContext({
+  dependencyManager = new DependencyManager(),
+  wallet,
+  agentConfig,
+  contextCorrelationId = 'mock',
+}: {
+  dependencyManager?: DependencyManager
+  wallet?: Wallet
+  agentConfig?: AgentConfig
+  contextCorrelationId?: string
+} = {}) {
+  if (wallet) dependencyManager.registerInstance(InjectionSymbols.Wallet, wallet)
+  if (agentConfig) dependencyManager.registerInstance(AgentConfig, agentConfig)
+  return new AgentContext({ dependencyManager, contextCorrelationId })
 }
 
 export async function waitForProofRecord(
@@ -277,6 +297,7 @@ export function getMockOutOfBand({
   state,
   reusable,
   reuseConnectionId,
+  imageUrl,
 }: {
   label?: string
   serviceEndpoint?: string
@@ -286,9 +307,11 @@ export function getMockOutOfBand({
   state?: OutOfBandState
   reusable?: boolean
   reuseConnectionId?: string
+  imageUrl?: string
 } = {}) {
   const options = {
     label: label ?? 'label',
+    imageUrl: imageUrl ?? undefined,
     accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
     handshakeProtocols: [HandshakeProtocol.DidExchange],
     services: [
