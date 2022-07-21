@@ -24,10 +24,10 @@ export class Giver extends BaseAgent {
   public static async build(): Promise<Giver> {
     const valueTransferConfig: ValueTransferConfig = {
       witnessTransportForGiverRole: Giver.transport,
-      getterTransport: 'ble',
+      getterTransport: 'androidnearby',
       verifiableNotes: createVerifiableNotes(10),
     }
-    const giver = new Giver('giver', undefined, [Giver.transport, 'ble'], valueTransferConfig)
+    const giver = new Giver('giver', undefined, [Giver.transport, 'androidnearby'], valueTransferConfig)
     await giver.initializeAgent()
     return giver
   }

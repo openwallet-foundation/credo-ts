@@ -24,7 +24,7 @@ export class Getter extends BaseAgent {
     const valueTransferConfig: ValueTransferConfig = {
       witnessTransportForGetterRole: Getter.transport,
     }
-    const getter = new Getter('getter', undefined, [Getter.transport, 'ble'], valueTransferConfig)
+    const getter = new Getter('getter', undefined, [Getter.transport, 'androidnearby'], valueTransferConfig)
     await getter.initializeAgent()
     const publicDid = await getter.agent.getPublicDid()
     console.log(`Getter Public DID: ${publicDid?.did}`)

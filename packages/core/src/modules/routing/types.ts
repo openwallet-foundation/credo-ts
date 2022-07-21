@@ -1,7 +1,7 @@
-export const offlineTransports = ['nfc', 'ipc', 'ble']
+export const offlineTransports = ['nfc', 'ipc', 'androidnearby']
 export const onlineTransports = ['http', 'https', 'ws', 'wss']
 
-export type Transport = 'http' | 'https' | 'ws' | 'wss' | 'nfc' | 'ipc' | 'ble'
+export type Transport = 'http' | 'https' | 'ws' | 'wss' | 'nfc' | 'ipc' | 'androidnearby'
 export type AcceptProtocol = 'didcomm/aip1' | 'didcomm/v2'
 
 export interface GetRoutingOptions {
