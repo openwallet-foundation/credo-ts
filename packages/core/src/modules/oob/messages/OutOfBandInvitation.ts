@@ -1,6 +1,5 @@
 import type { PlaintextMessage } from '../../../types'
 import type { HandshakeProtocol } from '../../connections'
-import type { Key } from '../../dids'
 
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
@@ -13,7 +12,6 @@ import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 import { IsStringOrInstance } from '../../../utils/validators'
-import { DidKey } from '../../dids'
 import { outOfBandServiceToNumAlgo2Did } from '../../dids/methods/peer/peerDidNumAlgo2'
 import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 
@@ -96,14 +94,6 @@ export class OutOfBandInvitation extends AgentMessage {
       return outOfBandServiceToNumAlgo2Did(didOrService)
     })
     return dids
-  }
-
-  // TODO: this only takes into account inline didcomm services, won't work for public dids
-  public getRecipientKeys(): Key[] {
-    return this.getInlineServices()
-      .map((s) => s.recipientKeys)
-      .reduce((acc, curr) => [...acc, ...curr], [])
-      .map((didKey) => DidKey.fromDid(didKey).key)
   }
 
   // shorthand for services without the need to deal with the String DIDs

@@ -7,6 +7,7 @@ import { Type } from 'class-transformer'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
+import { DidKey } from '../../dids'
 import { OutOfBandInvitation } from '../messages'
 
 type DefaultOutOfBandRecordTags = {
@@ -60,7 +61,11 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       this.mediatorId = props.mediatorId
       this.reuseConnectionId = props.reuseConnectionId
       this._tags = props.tags ?? {
-        recipientKeyFingerprints: props.outOfBandInvitation.getRecipientKeys().map((key) => key.fingerprint),
+        recipientKeyFingerprints: props.outOfBandInvitation
+          .getInlineServices()
+          .map((s) => s.recipientKeys)
+          .reduce((acc, curr) => [...acc, ...curr], [])
+          .map((didKey) => DidKey.fromDid(didKey).key.fingerprint),
       }
     }
   }

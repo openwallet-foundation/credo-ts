@@ -296,7 +296,9 @@ export class DidExchangeProtocol {
 
     const didDocument = await this.extractDidDocument(
       message,
-      outOfBandRecord.outOfBandInvitation.getRecipientKeys().map((key) => key.publicKeyBase58)
+      outOfBandRecord
+        .getTags()
+        .recipientKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint).publicKeyBase58)
     )
     const didRecord = new DidRecord({
       id: message.did,
