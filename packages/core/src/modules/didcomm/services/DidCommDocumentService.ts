@@ -5,9 +5,9 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { KeyType } from '../../../crypto'
 import { injectable } from '../../../plugins'
 import { DidResolverService } from '../../dids'
-import { DidCommV1Service, IndyAgentService, Key, keyReferenceToKey } from '../../dids/domain'
-import { convertPublicKeyToX25519 } from '../../dids/domain/key-type/ed25519'
+import { DidCommV1Service, IndyAgentService, keyReferenceToKey } from '../../dids/domain'
 import { verkeyToInstanceOfKey } from '../../dids/helpers'
+import { findMatchingEd25519Key } from '../util/matchingEd25519Key'
 
 @injectable()
 export class DidCommDocumentService {
@@ -48,17 +48,10 @@ export class DidCommDocumentService {
         // Dereference recipientKeys
         const recipientKeys = didCommService.recipientKeys.map((recipientKeyReference) => {
           const key = keyReferenceToKey(didDocument, recipientKeyReference)
+
+          // try to find a matching Ed25519 key (https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html#did-document-notes)
           if (key.keyType === KeyType.X25519) {
-            // try to find a matching Ed25519 key (https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html#did-document-notes)
-            const matchingEd25519Key = didDocument.verificationMethod
-              ?.map((method) =>
-                recipientKeyReference !== method.id ? keyReferenceToKey(didDocument, method.id) : null
-              )
-              .find((matchingKey) => {
-                if (matchingKey?.keyType !== KeyType.Ed25519) return false
-                const keyX25519 = Key.fromPublicKey(convertPublicKeyToX25519(matchingKey.publicKey), KeyType.X25519)
-                return keyX25519.publicKeyBase58 === key.publicKeyBase58
-              })
+            const matchingEd25519Key = findMatchingEd25519Key(key, didDocument)
             if (matchingEd25519Key) return matchingEd25519Key
           }
           return key
