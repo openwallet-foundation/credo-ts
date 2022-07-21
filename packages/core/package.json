@@ -32,7 +32,7 @@
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/random": "^1.0.1",
     "@stablelib/sha256": "^1.0.1",
-    "@types/indy-sdk": "^1.16.19",
+    "@types/indy-sdk": "^1.16.21",
     "@types/node-fetch": "^2.5.10",
     "@types/ws": "^7.4.6",
     "abort-controller": "^3.0.0",

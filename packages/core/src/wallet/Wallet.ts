@@ -2,9 +2,9 @@ import type { Key, KeyType } from '../crypto'
 import type { Disposable } from '../plugins'
 import type {
   EncryptedMessage,
+  PlaintextMessage,
   WalletConfig,
   WalletConfigRekey,
-  PlaintextMessage,
   WalletExportImportConfig,
 } from '../types'
 import type { Buffer } from '../utils/buffer'

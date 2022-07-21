@@ -18,15 +18,17 @@ import type {
 } from './Wallet'
 import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
 
+import { inject, injectable } from 'tsyringe'
+
 import { AgentDependencies } from '../agent/AgentDependencies'
 import { InjectionSymbols } from '../constants'
+import { KeyType } from '../crypto'
 import { Key } from '../crypto/Key'
-import { KeyType } from '../crypto/KeyType'
 import { SigningProviderRegistry } from '../crypto/signing-provider/SigningProviderRegistry'
 import { AriesFrameworkError, IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
 import { Logger } from '../logger'
-import { inject, injectable } from '../plugins'
-import { JsonEncoder, TypedArrayEncoder } from '../utils'
+import { TypedArrayEncoder } from '../utils'
+import { JsonEncoder } from '../utils/JsonEncoder'
 import { isError } from '../utils/error'
 import { isIndyError } from '../utils/indyError'
 
