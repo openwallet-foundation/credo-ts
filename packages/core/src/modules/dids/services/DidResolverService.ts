@@ -5,14 +5,9 @@ import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../ty
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
 import { Logger } from '../../../logger'
-import { injectable, inject } from '../../../plugins'
-import { IndyLedgerService } from '../../ledger'
+import { injectable, inject, injectAll } from '../../../plugins'
+import { DidResolverToken } from '../domain/DidResolver'
 import { parseDid } from '../domain/parse'
-import { KeyDidResolver } from '../methods/key/KeyDidResolver'
-import { PeerDidResolver } from '../methods/peer/PeerDidResolver'
-import { SovDidResolver } from '../methods/sov/SovDidResolver'
-import { WebDidResolver } from '../methods/web/WebDidResolver'
-import { DidRepository } from '../repository'
 
 @injectable()
 export class DidResolverService {
@@ -20,18 +15,11 @@ export class DidResolverService {
   private resolvers: DidResolver[]
 
   public constructor(
-    indyLedgerService: IndyLedgerService,
-    didRepository: DidRepository,
-    @inject(InjectionSymbols.Logger) logger: Logger
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    @injectAll(DidResolverToken) resolvers: DidResolver[]
   ) {
     this.logger = logger
-
-    this.resolvers = [
-      new SovDidResolver(indyLedgerService),
-      new WebDidResolver(),
-      new KeyDidResolver(),
-      new PeerDidResolver(didRepository),
-    ]
+    this.resolvers = resolvers
   }
 
   public async resolve(

@@ -1,5 +1,4 @@
 import type { AgentContext } from '../../../agent'
-import type { IndyLedgerService } from '../../ledger'
 
 import { Subject } from 'rxjs'
 
@@ -14,6 +13,7 @@ import { DidCommV1Service, DidDocument, DidDocumentBuilder } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../domain/key-type/x25519'
+import { PeerDidResolver } from '../methods'
 import { DidKey } from '../methods/key'
 import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../methods/peer/didPeer'
 import { didDocumentJsonToNumAlgo1Did } from '../methods/peer/peerDidNumAlgo1'
@@ -42,7 +42,7 @@ describe('peer dids', () => {
     didRepository = new DidRepository(storageService, eventEmitter)
 
     // Mocking IndyLedgerService as we're only interested in the did:peer resolver
-    didResolverService = new DidResolverService({} as unknown as IndyLedgerService, didRepository, config.logger)
+    didResolverService = new DidResolverService(config.logger, [new PeerDidResolver(didRepository)])
   })
 
   afterEach(async () => {

@@ -8,8 +8,6 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { WalletError } from '../../../wallet/error'
 import { DidKey, DidResolverService } from '../../dids'
-import { DidRepository } from '../../dids/repository'
-import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
 import { W3cCredentialService } from '../W3cCredentialService'
 import { orArrayToArray } from '../jsonldUtil'
@@ -52,9 +50,6 @@ const signingProviderRegistry = new SigningProviderRegistry([new Bls12381g2Signi
 
 jest.mock('../../ledger/services/IndyLedgerService')
 
-const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
-const DidRepositoryMock = DidRepository as unknown as jest.Mock<DidRepository>
-
 jest.mock('../repository/W3cCredentialRepository')
 const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
 
@@ -89,11 +84,7 @@ describe('W3cCredentialService', () => {
       agentConfig,
       wallet,
     })
-    didResolverService = new DidResolverService(
-      new IndyLedgerServiceMock(),
-      new DidRepositoryMock(),
-      agentConfig.logger
-    )
+    didResolverService = new DidResolverService(agentConfig.logger, [])
     w3cCredentialRepository = new W3cCredentialRepositoryMock()
     w3cCredentialService = new W3cCredentialService(w3cCredentialRepository, didResolverService, signatureSuiteRegistry)
     w3cCredentialService.documentLoaderWithContext = () => customDocumentLoader

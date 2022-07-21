@@ -5,9 +5,11 @@ import type { ParsedDid, DidResolutionResult, DidResolutionOptions } from '../..
 import { Resolver } from 'did-resolver'
 import * as didWeb from 'web-did-resolver'
 
+import { injectable } from '../../../../plugins'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { DidDocument } from '../../domain'
 
+@injectable()
 export class WebDidResolver implements DidResolver {
   public readonly supportedMethods
 

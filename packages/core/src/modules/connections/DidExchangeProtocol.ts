@@ -2,6 +2,7 @@ import type { AgentContext } from '../../agent'
 import type { ResolvedDidCommService } from '../../agent/MessageSender'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { ParsedMessageType } from '../../utils/messageType'
+import type { PeerDidCreateOptions } from '../dids'
 import type { OutOfBandDidCommService } from '../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
@@ -16,14 +17,17 @@ import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
-import { DidDocument } from '../dids'
-import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
-import { createDidDocumentFromServices } from '../dids/domain/createPeerDidFromServices'
+import {
+  DidDocument,
+  DidRegistrarService,
+  DidDocumentRole,
+  createPeerDidDocumentFromServices,
+  DidKey,
+  getNumAlgoFromPeerDid,
+  PeerDidNumAlgo,
+} from '../dids'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../dids/helpers'
-import { DidKey } from '../dids/methods/key/DidKey'
-import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../dids/methods/peer/didPeer'
-import { didDocumentJsonToNumAlgo1Did } from '../dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
@@ -48,17 +52,20 @@ interface DidExchangeRequestParams {
 @injectable()
 export class DidExchangeProtocol {
   private connectionService: ConnectionService
+  private didRegistrarService: DidRegistrarService
   private jwsService: JwsService
   private didRepository: DidRepository
   private logger: Logger
 
   public constructor(
     connectionService: ConnectionService,
+    didRegistrarService: DidRegistrarService,
     didRepository: DidRepository,
     jwsService: JwsService,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.connectionService = connectionService
+    this.didRegistrarService = didRegistrarService
     this.didRepository = didRepository
     this.jwsService = jwsService
     this.logger = logger
@@ -165,6 +172,8 @@ export class DidExchangeProtocol {
       )
     }
 
+    // TODO: Move this into the didcomm module, and add a method called store received did document.
+    // This can be called from both the did exchange and the connection protocol.
     const didDocument = await this.extractDidDocument(messageContext.agentContext, message)
     const didRecord = new DidRecord({
       id: message.did,
@@ -406,32 +415,28 @@ export class DidExchangeProtocol {
   }
 
   private async createPeerDidDoc(agentContext: AgentContext, services: ResolvedDidCommService[]) {
-    const didDocument = createDidDocumentFromServices(services)
+    // Create did document without the id property
+    const didDocument = createPeerDidDocumentFromServices(services)
 
-    const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
-    didDocument.id = peerDid
-
-    const didRecord = new DidRecord({
-      id: peerDid,
-      role: DidDocumentRole.Created,
+    // Register did:peer document. This will generate the id property and save it to a did record
+    const result = await this.didRegistrarService.create<PeerDidCreateOptions>(agentContext, {
+      method: 'peer',
       didDocument,
-      tags: {
-        // We need to save the recipientKeys, so we can find the associated did
-        // of a key when we receive a message from another connection.
-        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+      options: {
+        numAlgo: PeerDidNumAlgo.GenesisDoc,
       },
     })
 
-    this.logger.debug('Saving DID record', {
-      id: didRecord.id,
-      role: didRecord.role,
-      tags: didRecord.getTags(),
-      didDocument: 'omitted...',
+    if (result.didState?.state !== 'finished') {
+      throw new AriesFrameworkError(`Did document creation failed: ${JSON.stringify(result.didState)}`)
+    }
+
+    this.logger.debug(`Did document with did ${result.didState.did} created.`, {
+      did: result.didState.did,
+      didDocument: result.didState.didDocument,
     })
 
-    await this.didRepository.save(agentContext, didRecord)
-    this.logger.debug('Did record created.', didRecord)
-    return didDocument
+    return result.didState.didDocument
   }
 
   private async createSignedAttachment(agentContext: AgentContext, didDoc: DidDocument, verkeys: string[]) {

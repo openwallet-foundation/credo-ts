@@ -1,15 +1,17 @@
 import type { AgentContext } from '../../../../agent'
 import type { DidDocument } from '../../domain'
 import type { DidResolver } from '../../domain/DidResolver'
-import type { DidRepository } from '../../repository'
 import type { DidResolutionResult } from '../../types'
 
 import { AriesFrameworkError } from '../../../../error'
+import { injectable } from '../../../../plugins'
+import { DidRepository } from '../../repository'
 
 import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './didPeer'
 import { didToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
 
+@injectable()
 export class PeerDidResolver implements DidResolver {
   public readonly supportedMethods = ['peer']
 
