@@ -36,13 +36,10 @@ const agentContext = getAgentContext({
 
 const didRepositoryMock = new DidRepositoryMock()
 const indyLedgerServiceMock = new IndyLedgerServiceMock()
-const sovDidRegistrar = new SovDidRegistrar(
-  didRepositoryMock,
-  indyLedgerServiceMock,
-  indyPoolServiceMock,
-  { ...agentConfig.agentDependencies, indy: { createAndStoreMyDid: createDidMock } as unknown as typeof Indy },
-  agentConfig.logger
-)
+const sovDidRegistrar = new SovDidRegistrar(didRepositoryMock, indyLedgerServiceMock, indyPoolServiceMock, {
+  ...agentConfig.agentDependencies,
+  indy: { createAndStoreMyDid: createDidMock } as unknown as typeof Indy,
+})
 
 describe('DidRegistrar', () => {
   describe('SovDidRegistrar', () => {
@@ -114,7 +111,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: 'unknownError: Submitter did must be a valid did:sov did',
+          reason: 'Submitter did must be a valid did:sov did',
         },
       })
     })
@@ -327,7 +324,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `notSupported: cannot update did:sov did`,
+          reason: `notImplemented: updating did:sov not implemented yet`,
         },
       })
     })
@@ -340,7 +337,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `notSupported: cannot deactivate did:sov did`,
+          reason: `notImplemented: deactivating did:sov not implemented yet`,
         },
       })
     })

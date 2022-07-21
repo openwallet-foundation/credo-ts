@@ -133,7 +133,7 @@ export class PeerDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notSupported: cannot update did:peer did`,
+        reason: `notImplemented: updating did:peer not implemented yet`,
       },
     }
   }
@@ -144,7 +144,7 @@ export class PeerDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notSupported: cannot deactivate did:peer did`,
+        reason: `notImplemented: deactivating did:peer not implemented yet`,
       },
     }
   }

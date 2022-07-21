@@ -16,6 +16,7 @@ import { DidExchangeState } from '../../../connections'
 import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { DidRepository } from '../../../dids/repository/DidRepository'
+import { DidRegistrarService } from '../../../dids/services/DidRegistrarService'
 import { RecipientModuleConfig } from '../../RecipientModuleConfig'
 import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../../messages'
 import { MediationRole, MediationState } from '../../models'
@@ -38,6 +39,9 @@ const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 jest.mock('../../../../agent/MessageSender')
 const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 
+jest.mock('../../../dids/services/DidRegistrarService')
+const DidRegistrarServiceMock = DidRegistrarService as jest.Mock<DidRegistrarService>
+
 const connectionImageUrl = 'https://example.com/image.png'
 
 const mockConnection = getMockConnection({
@@ -53,6 +57,7 @@ describe('MediationRecipientService', () => {
   let wallet: Wallet
   let mediationRepository: MediationRepository
   let didRepository: DidRepository
+  let didRegistrarService: DidRegistrarService
   let eventEmitter: EventEmitter
   let connectionService: ConnectionService
   let connectionRepository: ConnectionRepository
@@ -78,7 +83,14 @@ describe('MediationRecipientService', () => {
     eventEmitter = new EventEmitterMock()
     connectionRepository = new ConnectionRepositoryMock()
     didRepository = new DidRepositoryMock()
-    connectionService = new ConnectionService(config.logger, connectionRepository, didRepository, eventEmitter)
+    didRegistrarService = new DidRegistrarServiceMock()
+    connectionService = new ConnectionService(
+      config.logger,
+      connectionRepository,
+      didRepository,
+      didRegistrarService,
+      eventEmitter
+    )
     mediationRepository = new MediationRepositoryMock()
     messageSender = new MessageSenderMock()
 

@@ -346,7 +346,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `notSupported: cannot update did:peer did`,
+          reason: `notImplemented: updating did:peer not implemented yet`,
         },
       })
     })
@@ -359,7 +359,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `notSupported: cannot deactivate did:peer did`,
+          reason: `notImplemented: deactivating did:peer not implemented yet`,
         },
       })
     })

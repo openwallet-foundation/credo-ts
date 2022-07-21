@@ -49,6 +49,17 @@ export class SovDidRegistrar implements DidRegistrar {
       }
     }
 
+    if (!submitterDid.startsWith('did:sov:')) {
+      return {
+        didDocumentMetadata: {},
+        didRegistrationMetadata: {},
+        didState: {
+          state: 'failed',
+          reason: 'Submitter did must be a valid did:sov did',
+        },
+      }
+    }
+
     try {
       // NOTE: we need to use the createAndStoreMyDid method from indy to create the did
       // If we just create a key and handle the creating of the did ourselves, indy will throw a
@@ -61,11 +72,6 @@ export class SovDidRegistrar implements DidRegistrar {
       })
 
       const qualifiedSovDid = `did:sov:${unqualifiedIndyDid}`
-
-      if (!submitterDid.startsWith('did:sov:')) {
-        throw new Error('Submitter did must be a valid did:sov did')
-      }
-
       const unqualifiedSubmitterDid = submitterDid.replace('did:sov:', '')
 
       // TODO: it should be possible to pass the pool used for writing to the indy ledger service.
@@ -150,7 +156,7 @@ export class SovDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notSupported: cannot update did:sov did`,
+        reason: `notImplemented: updating did:sov not implemented yet`,
       },
     }
   }
@@ -161,7 +167,7 @@ export class SovDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notSupported: cannot deactivate did:sov did`,
+        reason: `notImplemented: deactivating did:sov not implemented yet`,
       },
     }
   }
