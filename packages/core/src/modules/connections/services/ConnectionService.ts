@@ -287,10 +287,7 @@ export class ConnectionService {
     // as the recipient key(s) in the connection invitation message
     const signerVerkey = message.connectionSig.signer
 
-    const invitationRecipientKeys = outOfBandRecord
-      .getTags()
-      .recipientKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint))
-    const invitationKey = invitationRecipientKeys[0]?.publicKeyBase58
+    const invitationKey = Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58
 
     if (signerVerkey !== invitationKey) {
       throw new ConnectionProblemReportError(
