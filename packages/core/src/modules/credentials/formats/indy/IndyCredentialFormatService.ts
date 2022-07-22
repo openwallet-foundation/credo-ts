@@ -129,7 +129,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       schemaId: proposal.schemaId,
       credentialDefinitionId: proposal.credentialDefinitionId,
     })
-    this.credentialRepository.update(credentialRecord)
+    await this.credentialRepository.update(credentialRecord)
 
     return { format, attachment, previewAttributes }
   }
@@ -224,7 +224,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       credentialDefinitionId: credentialOffer.cred_def_id,
       schemaId: credentialOffer.schema_id,
     })
-    this.credentialRepository.update(credentialRecord)
+    await this.credentialRepository.update(credentialRecord)
   }
 
   public async acceptOffer({
@@ -250,7 +250,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       credentialDefinitionId: credentialOffer.cred_def_id,
       schemaId: credentialOffer.schema_id,
     })
-    this.credentialRepository.update(credentialRecord)
+    await this.credentialRepository.update(credentialRecord)
 
     const format = new CredentialFormatSpec({
       attachId,
@@ -484,7 +484,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       schemaId: offer.schema_id,
       credentialDefinitionId: offer.cred_def_id,
     })
-    this.credentialRepository.update(credentialRecord)
+    await this.credentialRepository.update(credentialRecord)
 
     const attachment = this.getFormatData(offer, format.attachId)
 
