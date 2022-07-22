@@ -107,7 +107,7 @@ export class ValueTransferGiverService {
 
     // Call VTP package to create payment request
     const givenTotal = new TaggedPrice({ amount: params.amount, uoa: params.unitOfAmount })
-    const { error, message } = await this.giver.offerPayment({
+    const { error, receipt } = await this.giver.offerPayment({
       giverId: giver.did,
       getterId: params.getter,
       witnessId: params.witness,
@@ -115,14 +115,14 @@ export class ValueTransferGiverService {
       timeouts: params.timeouts,
       notesToSpend,
     })
-    if (error || !message) {
+    if (error || !receipt) {
       throw new AriesFrameworkError(`VTP: Failed to create Payment Offer: ${error?.message}`)
     }
 
     const offerMessage = new OfferMessage({
       from: giver.did,
       to: params.getter,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(message)],
+      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
     })
 
     const getterInfo = await this.wellKnownService.resolve(params.getter)
@@ -134,7 +134,7 @@ export class ValueTransferGiverService {
       role: ValueTransferRole.Giver,
       state: ValueTransferState.OfferSent,
       threadId: offerMessage.id,
-      valueTransferMessage: message,
+      receipt,
       getter: getterInfo,
       witness: witnessInfo,
       giver: giverInfo,
@@ -166,8 +166,8 @@ export class ValueTransferGiverService {
   }> {
     const { message: requestWitnessedMessage } = messageContext
 
-    const valueTransferMessage = requestWitnessedMessage.valueTransferMessage
-    if (!valueTransferMessage) {
+    const receipt = requestWitnessedMessage.valueTransferMessage
+    if (!receipt) {
       const problemReport = new ProblemReportMessage({
         to: requestWitnessedMessage.from,
         pthid: requestWitnessedMessage.id,
@@ -179,16 +179,16 @@ export class ValueTransferGiverService {
       return { message: problemReport }
     }
 
-    if (valueTransferMessage.isGiverSet) {
+    if (receipt.isGiverSet) {
       // ensure that DID exist in the wallet
-      const did = await this.didService.findById(valueTransferMessage.giverId)
+      const did = await this.didService.findById(receipt.giverId)
       if (!did) {
         const problemReport = new ProblemReportMessage({
           to: requestWitnessedMessage.from,
           pthid: requestWitnessedMessage.id,
           body: {
             code: 'e.p.req.bad-giver',
-            comment: `Requested giver '${valueTransferMessage.giverId}' does not exist in the wallet`,
+            comment: `Requested giver '${receipt.giverId}' does not exist in the wallet`,
           },
         })
         return {
@@ -197,9 +197,9 @@ export class ValueTransferGiverService {
       }
     }
 
-    const getterInfo = await this.wellKnownService.resolve(valueTransferMessage.getterId)
-    const witnessInfo = new DidInfo({ did: valueTransferMessage.witnessId })
-    const giverInfo = valueTransferMessage.isGiverSet ? new DidInfo({ did: valueTransferMessage.giverId }) : undefined
+    const getterInfo = await this.wellKnownService.resolve(receipt.getterId)
+    const witnessInfo = new DidInfo({ did: receipt.witnessId })
+    const giverInfo = receipt.isGiverSet ? new DidInfo({ did: receipt.giverId }) : undefined
 
     // Create Value Transfer record and raise event
     const record = new ValueTransferRecord({
@@ -207,7 +207,7 @@ export class ValueTransferGiverService {
       state: ValueTransferState.RequestReceived,
       status: ValueTransferTransactionStatus.Pending,
       threadId: requestWitnessedMessage.thid,
-      valueTransferMessage,
+      receipt,
       getter: getterInfo,
       witness: witnessInfo,
       giver: giverInfo,
@@ -252,20 +252,18 @@ export class ValueTransferGiverService {
     }
 
     // Call VTP to accept payment request
-    const { error: pickNotesError, notes: notesToSpend } = await this.giver.pickNotesToSpend(
-      record.valueTransferMessage.amount
-    )
+    const { error: pickNotesError, notes: notesToSpend } = await this.giver.pickNotesToSpend(record.receipt.amount)
     if (pickNotesError || !notesToSpend) {
-      throw new AriesFrameworkError(`Not enough notes to pay: ${record.valueTransferMessage.amount}`)
+      throw new AriesFrameworkError(`Not enough notes to pay: ${record.receipt.amount}`)
     }
 
-    const { error, message, delta } = await this.giver.acceptPaymentRequest(
-      giverDid,
-      record.valueTransferMessage,
+    const { error, receipt, delta } = await this.giver.acceptPaymentRequest({
+      giverId: giverDid,
+      receipt: record.receipt,
       notesToSpend,
-      timeouts
-    )
-    if (error || !message || !delta) {
+      timeouts,
+    })
+    if (error || !receipt || !delta) {
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({
         from: giverDid,
@@ -300,7 +298,7 @@ export class ValueTransferGiverService {
 
     // Update Value Transfer record
     record.giver = new DidInfo({ did: giverDid })
-    record.valueTransferMessage = message
+    record.receipt = receipt
     await this.valueTransferService.updateState(
       record,
       ValueTransferState.RequestAcceptanceSent,
@@ -347,8 +345,8 @@ export class ValueTransferGiverService {
     }
 
     // Call VTP package to remove cash
-    const { error, message, delta } = await this.giver.signReceipt(record.valueTransferMessage, valueTransferDelta)
-    if (error || !message || !delta) {
+    const { error, receipt, delta } = await this.giver.signReceipt(record.receipt, valueTransferDelta)
+    if (error || !receipt || !delta) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
         from: record.giver?.did,
@@ -380,7 +378,7 @@ export class ValueTransferGiverService {
     })
 
     // Update Value Transfer record
-    record.valueTransferMessage = message
+    record.receipt = receipt
 
     await this.valueTransferService.updateState(
       record,
@@ -428,8 +426,8 @@ export class ValueTransferGiverService {
     }
 
     // Call VTP package to remove cash
-    const { error, message, delta } = await this.giver.signReceipt(record.valueTransferMessage, valueTransferDelta)
-    if (error || !message || !delta) {
+    const { error, receipt, delta } = await this.giver.signReceipt(record.receipt, valueTransferDelta)
+    if (error || !receipt || !delta) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
         from: record.giver?.did,
@@ -461,7 +459,7 @@ export class ValueTransferGiverService {
     })
 
     // Update Value Transfer record
-    record.valueTransferMessage = message
+    record.receipt = receipt
 
     await this.valueTransferService.updateState(
       record,
@@ -556,8 +554,8 @@ export class ValueTransferGiverService {
     }
 
     // Call VTP to process Receipt
-    const { error, message } = await this.giver.processReceipt(record.valueTransferMessage, valueTransferDelta)
-    if (error || !message) {
+    const { error, receipt } = await this.giver.processReceipt(record.receipt, valueTransferDelta)
+    if (error || !receipt) {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
         pthid: receiptMessage.thid,
@@ -578,8 +576,7 @@ export class ValueTransferGiverService {
     }
 
     // VTP message verification succeed
-    record.valueTransferMessage = message
-    record.receipt = message
+    record.receipt = receipt
 
     await this.valueTransferService.updateState(
       record,

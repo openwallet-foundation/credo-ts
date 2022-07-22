@@ -5,7 +5,7 @@ export enum Transports {
   WSS = 'wss',
   NFC = 'nfc',
   IPC = 'ipc',
-  Nearby = 'nearby',
+  Nearby = 'androidnearby',
 }
 
 export const offlineTransports = [Transports.NFC, Transports.IPC, Transports.Nearby]

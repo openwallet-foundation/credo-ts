@@ -3,7 +3,7 @@ import type { DidInfo } from '../../well-known'
 import type { ValueTransferRole } from '../ValueTransferRole'
 import type { ValueTransferState } from '../ValueTransferState'
 
-import { ValueTransferMessage } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Receipt } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
@@ -35,9 +35,8 @@ export interface ValueTransferStorageProps {
   getter?: DidInfo
   giver?: DidInfo
   witness?: DidInfo
-  valueTransferMessage: ValueTransferMessage
   problemReportMessage?: ProblemReportMessage
-  receipt?: ValueTransferMessage
+  receipt: Receipt
 
   status?: ValueTransferTransactionStatus
   tags?: CustomValueTransferTags
@@ -55,11 +54,8 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   public state!: ValueTransferState
   public status?: ValueTransferTransactionStatus
 
-  @Type(() => ValueTransferMessage)
-  public valueTransferMessage!: ValueTransferMessage
-
-  @Type(() => ValueTransferMessage)
-  public receipt?: ValueTransferMessage
+  @Type(() => Receipt)
+  public receipt!: Receipt
 
   @Type(() => ProblemReportMessage)
   public problemReportMessage?: ProblemReportMessage
@@ -80,7 +76,6 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       this.role = props.role
       this.state = props.state
       this.status = props.status
-      this.valueTransferMessage = props.valueTransferMessage
       this.receipt = props.receipt
       this.problemReportMessage = props.problemReportMessage
       this._tags = props.tags ?? {}
@@ -94,7 +89,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       getterDid: this.getter?.did,
       giverDid: this.giver?.did,
       threadId: this.threadId,
-      txnId: this.valueTransferMessage?.txnId,
+      txnId: this.receipt?.txn_id,
       role: this.role,
       state: this.state,
       status: this.status,
@@ -102,7 +97,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   }
 
   public get givenTotal() {
-    return this.valueTransferMessage.payment.given_total
+    return this.receipt.given_total
   }
 
   public assertRole(expectedRoles: ValueTransferRole | ValueTransferRole[]) {
