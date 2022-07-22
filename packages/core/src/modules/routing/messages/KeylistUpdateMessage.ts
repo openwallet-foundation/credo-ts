@@ -4,10 +4,7 @@ import { Verkey } from 'indy-sdk'
 
 import { DIDCommV1Message } from '../../../agent/didcomm'
 
-export enum ListUpdateAction {
-  add = 'add',
-  remove = 'remove',
-}
+import { ListUpdateAction } from './ListUpdateAction'
 
 export class KeylistUpdate {
   public constructor(options: { recipientDid: Verkey; action: ListUpdateAction }) {

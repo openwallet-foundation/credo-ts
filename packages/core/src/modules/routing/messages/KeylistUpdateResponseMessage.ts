@@ -1,19 +1,10 @@
-import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
-
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
 import { Verkey } from 'indy-sdk'
 
-import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 
-import { ListUpdateAction } from './KeylistUpdateMessage'
-
-export enum ListUpdateResult {
-  ClientError = 'client_error',
-  ServerError = 'server_error',
-  NoChange = 'no_change',
-  Success = 'success',
-}
+import { ListUpdateAction, ListUpdateResult } from './ListUpdateAction'
 
 export class KeylistUpdated {
   public constructor(options: { recipientKey: Verkey; action: ListUpdateAction; result: ListUpdateResult }) {

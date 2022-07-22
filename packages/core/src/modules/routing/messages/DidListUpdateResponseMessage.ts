@@ -5,8 +5,7 @@ import { Equals, IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'c
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 
-import { ListUpdateAction } from './KeylistUpdateMessage'
-import { ListUpdateResult } from './KeylistUpdateResponseMessage'
+import { ListUpdateAction, ListUpdateResult } from './ListUpdateAction'
 
 export class DidListUpdated {
   public constructor(options: { recipientDid: string; action: ListUpdateAction; result: ListUpdateResult }) {

@@ -1,9 +1,7 @@
-import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
-
 import { Type } from 'class-transformer'
 import { Equals, IsArray, ValidateNested } from 'class-validator'
 
-import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 
 export interface KeylistMessageOptions {
   id?: string
