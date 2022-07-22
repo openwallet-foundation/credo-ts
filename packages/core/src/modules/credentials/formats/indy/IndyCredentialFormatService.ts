@@ -129,6 +129,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       schemaId: proposal.schemaId,
       credentialDefinitionId: proposal.credentialDefinitionId,
     })
+    this.credentialRepository.update(credentialRecord)
 
     return { format, attachment, previewAttributes }
   }
@@ -211,13 +212,19 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   public async processOffer({ attachment, credentialRecord }: FormatProcessOptions) {
     this.logger.debug(`Processing indy credential offer for credential record ${credentialRecord.id}`)
 
-    const credOffer = attachment.getDataAsJson<Indy.CredOffer>()
+    const credentialOffer = attachment.getDataAsJson<Indy.CredOffer>()
 
-    if (!credOffer.schema_id || !credOffer.cred_def_id) {
+    if (!credentialOffer.schema_id || !credentialOffer.cred_def_id) {
       throw new CredentialProblemReportError('Invalid credential offer', {
         problemCode: CredentialProblemReportReason.IssuanceAbandoned,
       })
     }
+
+    credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
+      credentialDefinitionId: credentialOffer.cred_def_id,
+      schemaId: credentialOffer.schema_id,
+    })
+    this.credentialRepository.update(credentialRecord)
   }
 
   public async acceptOffer({
@@ -243,6 +250,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       credentialDefinitionId: credentialOffer.cred_def_id,
       schemaId: credentialOffer.schema_id,
     })
+    this.credentialRepository.update(credentialRecord)
 
     const format = new CredentialFormatSpec({
       attachId,
@@ -476,6 +484,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       schemaId: offer.schema_id,
       credentialDefinitionId: offer.cred_def_id,
     })
+    this.credentialRepository.update(credentialRecord)
 
     const attachment = this.getFormatData(offer, format.attachId)
 
