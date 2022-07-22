@@ -12,7 +12,7 @@ import { getKeyDidMappingByVerificationMethod } from './key-type'
 import { IndyAgentService, ServiceTransformer, DidCommV1Service } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
 
-type DidPurpose =
+export type DidPurpose =
   | 'authentication'
   | 'keyAgreement'
   | 'assertionMethod'

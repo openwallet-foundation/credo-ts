@@ -1,5 +1,5 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { DidDocument, DidDocumentService, VerificationMethod } from '../../dids'
+import type { DidDocument, DidDocumentService, DidPurpose, VerificationMethod } from '../../dids'
 import type { SignCredentialOptionsRFC0593 } from '../../vc/models/W3cCredentialServiceOptions'
 import type { CredentialFormatService } from '../formats'
 import type { JsonLdAcceptRequestOptions, JsonLdCredentialFormat } from '../formats/jsonld/JsonLdCredentialFormat'

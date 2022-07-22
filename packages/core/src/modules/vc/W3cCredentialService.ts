@@ -77,6 +77,8 @@ export class W3cCredentialService {
 
     const SuiteClass = suiteInfo.suiteClass
 
+        console.log('** verification method = ', options.verificationMethod)
+
     const suite = new SuiteClass({
       key: keyPair,
       LDKeyClass: WalletKeyPair,
@@ -86,6 +88,8 @@ export class W3cCredentialService {
       useNativeCanonize: false,
       date: options.created ?? w3cDate(),
     })
+
+    console.log('** suite = ', suite.proof)
 
     const result = await vc.issue({
       credential: JsonTransformer.toJSON(options.credential),
