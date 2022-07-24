@@ -160,7 +160,7 @@ export class RecipientModule {
         delayWhen(() => timer(interval))
       )
       .subscribe(async () => {
-        this.logger.warn(
+        this.logger.debug(
           `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
         )
         try {
@@ -359,7 +359,7 @@ export class RecipientModule {
       await this.setDefaultMediator(mediation)
       this.logger.debug('Default mediator set')
     } else {
-      this.agentConfig.logger.warn(
+      this.agentConfig.logger.debug(
         `Mediator invitation has already been ${mediation.isReady ? 'granted' : 'requested'}`
       )
     }
