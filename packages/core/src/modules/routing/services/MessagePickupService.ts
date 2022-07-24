@@ -21,7 +21,7 @@ export class MessagePickupService {
     const connection = messageContext.assertReadyConnection()
 
     const { message } = messageContext
-    const messages = this.messageRepository.takeFromQueue(connection.id, message.batchSize)
+    const messages = await this.messageRepository.takeFromQueue(connection.id, message.batchSize)
 
     // TODO: each message should be stored with an id. to be able to conform to the id property
     // of batch message
@@ -39,7 +39,7 @@ export class MessagePickupService {
     return createOutboundMessage(connection, batchMessage)
   }
 
-  public queueMessage(connectionId: string, message: EncryptedMessage) {
-    this.messageRepository.add(connectionId, message)
+  public async queueMessage(connectionId: string, message: EncryptedMessage) {
+    await this.messageRepository.add(connectionId, message)
   }
 }
