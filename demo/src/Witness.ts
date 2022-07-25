@@ -23,13 +23,15 @@ export class Witness extends BaseAgent {
   public static async build(): Promise<Witness> {
     const valueTransferConfig: ValueTransferConfig = {
       isWitness: true,
+      // defaultTransport: Transports.NFC,
       defaultTransport: Transports.HTTP,
       verifiableNotes: createVerifiableNotes(10),
     }
+    // const witness = new Witness('witness', undefined, [Transports.NFC, Transports.IPC], valueTransferConfig)
     const witness = new Witness(
       'witness',
       undefined,
-      [Transports.HTTP],
+      [Transports.NFC, Transports.IPC, Transports.HTTP],
       valueTransferConfig,
       BaseAgent.defaultMediatorConnectionInvite
     )

@@ -23,13 +23,15 @@ export class Giver extends BaseAgent {
 
   public static async build(): Promise<Giver> {
     const valueTransferConfig: ValueTransferConfig = {
+      // defaultTransport: Transports.NFC,
       defaultTransport: Transports.HTTP,
       verifiableNotes: createVerifiableNotes(10),
     }
+    // const giver = new Giver('giver', undefined, [Transports.NFC, Transports.Nearby], valueTransferConfig)
     const giver = new Giver(
       'giver',
       undefined,
-      [Transports.HTTP],
+      [Transports.NFC, Transports.Nearby, Transports.HTTP],
       valueTransferConfig,
       BaseAgent.defaultMediatorConnectionInvite
     )

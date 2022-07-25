@@ -22,12 +22,14 @@ export class Getter extends BaseAgent {
 
   public static async build(): Promise<Getter> {
     const valueTransferConfig: ValueTransferConfig = {
+      // defaultTransport: Transports.IPC,
       defaultTransport: Transports.HTTP,
     }
+    // const getter = new Getter('getter', undefined, [Transports.IPC, Transports.Nearby], valueTransferConfig)
     const getter = new Getter(
       'getter',
       undefined,
-      [Transports.HTTP],
+      [Transports.IPC, Transports.Nearby, Transports.HTTP],
       valueTransferConfig,
       BaseAgent.defaultMediatorConnectionInvite
     )

@@ -1,4 +1,5 @@
 import type { Logger } from '../../../logger'
+import type { MediationRecord } from '../../routing/repository'
 import type { DidInfo } from '../../well-known'
 import type { DidMetadataChangedEvent, DidReceivedEvent } from '../DidEvents'
 import type { DidDocument } from '../domain'
@@ -80,18 +81,19 @@ export class DidService {
       .addAuthentication(getEd25519VerificationMethod({ controller: '', id: '', key: ed25519Key }))
       .addKeyAgreement(getX25519VerificationMethod({ controller: '', id: '', key: x25519Key }))
 
+    let mediator: MediationRecord | null = null
+
     if (hasOnlineTransport(transports)) {
-      const mediator = await this.mediationRecipientService.findDefaultMediator()
-      if (!mediator || !mediator.endpoint) {
-        throw new Error('HTTP transport cannot be used because there is no connected Mediator')
+      mediator = await this.mediationRecipientService.findDefaultMediator()
+      if (mediator && mediator.endpoint) {
+        didDocumentBuilder.addService(
+          new DidCommV2Service({
+            id: Transports.HTTP,
+            serviceEndpoint: mediator.endpoint,
+            routingKeys: mediator.routingKeys,
+          })
+        )
       }
-      didDocumentBuilder.addService(
-        new DidCommV2Service({
-          id: Transports.HTTP,
-          serviceEndpoint: mediator.endpoint,
-          routingKeys: mediator.routingKeys,
-        })
-      )
     }
     if (transports.includes(Transports.NFC)) {
       didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.NFC, serviceEndpoint: Transports.NFC }))
@@ -123,7 +125,8 @@ export class DidService {
       keyType: KeyType.X25519,
     })
 
-    if (hasOnlineTransport(transports) && (params.requestMediation || params.requestMediation === undefined)) {
+    const requestMediation = params.requestMediation || params.requestMediation === undefined
+    if (hasOnlineTransport(transports) && requestMediation && mediator) {
       await this.mediationRecipientService.getRouting(didPeer.did, { useDefaultMediator: true })
     }
 
