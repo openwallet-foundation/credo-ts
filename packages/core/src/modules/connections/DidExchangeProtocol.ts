@@ -8,13 +8,7 @@ import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
 import type { Routing } from './services/ConnectionService'
 
-<<<<<<< HEAD
-import { Lifecycle, scoped } from 'tsyringe'
-
-import { AgentConfig } from '../../agent/AgentConfig'
-=======
 import { InjectionSymbols } from '../../constants'
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
 import { Key, KeyType } from '../../crypto'
 import { JwsService } from '../../crypto/JwsService'
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
@@ -23,11 +17,6 @@ import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
-<<<<<<< HEAD
-import { DidDocument } from '../dids'
-import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
-import { createDidDocumentFromServices } from '../dids/domain/createPeerDidFromServices'
-=======
 import {
   DidDocument,
   DidRegistrarService,
@@ -37,7 +26,6 @@ import {
   getNumAlgoFromPeerDid,
   PeerDidNumAlgo,
 } from '../dids'
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../dids/helpers'
 import { DidRecord, DidRepository } from '../dids/repository'

@@ -22,12 +22,7 @@ import { Logger } from '../../../logger'
 import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
-<<<<<<< HEAD
-import { Wallet } from '../../../wallet/Wallet'
-import { DidKey, IndyAgentService } from '../../dids'
-=======
 import { DidKey, DidRegistrarService, IndyAgentService } from '../../dids'
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
 import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
 import { didKeyToVerkey } from '../../dids/helpers'
 import { PeerDidNumAlgo } from '../../dids/methods/peer/didPeer'
