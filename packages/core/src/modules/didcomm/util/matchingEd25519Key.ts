@@ -15,8 +15,10 @@ export function findMatchingEd25519Key(x25519Key: Key, didDocument: DidDocument)
 
   const verificationMethods = didDocument.verificationMethod ?? []
   const keyAgreements = didDocument.keyAgreement ?? []
+  const authentications = didDocument.authentication ?? []
   const allKeyReferences: VerificationMethod[] = [
     ...verificationMethods,
+    ...authentications.filter((keyAgreement): keyAgreement is VerificationMethod => typeof keyAgreement !== 'string'),
     ...keyAgreements.filter((keyAgreement): keyAgreement is VerificationMethod => typeof keyAgreement !== 'string'),
   ]
 
