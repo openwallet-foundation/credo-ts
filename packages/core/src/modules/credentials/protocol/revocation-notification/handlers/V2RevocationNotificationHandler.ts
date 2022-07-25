@@ -1,5 +1,5 @@
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
-import type { RevocationNotificationService } from '../../../services'
+import type { RevocationNotificationService } from '../services'
 
 import { V2RevocationNotificationMessage } from '../messages/V2RevocationNotificationMessage'
 

@@ -213,7 +213,7 @@ describe('Did | DidDocument', () => {
   })
 
   describe('findVerificationMethodByKeyType', () => {
-    it('return first verfication method that match key type', async () => {
+    it('return first verification method that match key type', async () => {
       expect(await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocumentInstance)).toBeInstanceOf(
         VerificationMethod
       )

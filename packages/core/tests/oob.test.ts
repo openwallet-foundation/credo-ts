@@ -244,6 +244,9 @@ describe('out of band', () => {
 
       expect(eventListener).toHaveBeenCalledWith({
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord,
           previousState: null,
@@ -583,6 +586,9 @@ describe('out of band', () => {
       // Receiving the invitation
       expect(eventListener).toHaveBeenNthCalledWith(1, {
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord: expect.objectContaining({ state: OutOfBandState.Initial }),
           previousState: null,
@@ -592,6 +598,9 @@ describe('out of band', () => {
       // Accepting the invitation
       expect(eventListener).toHaveBeenNthCalledWith(2, {
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord,
           previousState: OutOfBandState.Initial,
@@ -700,7 +709,7 @@ describe('out of band', () => {
     test('updates the message in the didCommMessageRepository', async () => {
       const { message, credentialRecord } = await faberAgent.credentials.createOffer(credentialTemplate)
 
-      const didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
+      const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
 
       const saveOrUpdateSpy = jest.spyOn(didCommMessageRepository, 'saveOrUpdateAgentMessage')
       saveOrUpdateSpy.mockResolvedValue()
@@ -711,7 +720,7 @@ describe('out of band', () => {
         message,
       })
 
-      expect(saveOrUpdateSpy).toHaveBeenCalledWith({
+      expect(saveOrUpdateSpy).toHaveBeenCalledWith(expect.anything(), {
         agentMessage: message,
         associatedRecordId: credentialRecord.id,
         role: DidCommMessageRole.Sender,

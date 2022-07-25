@@ -1,6 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
-import type { AcceptOfferOptions, AcceptProposalOptions } from '../../../CredentialsModuleOptions'
+import type { AcceptOfferOptions, AcceptProposalOptions } from '../../../CredentialsApiOptions'
 import type { Schema } from 'indy-sdk'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'

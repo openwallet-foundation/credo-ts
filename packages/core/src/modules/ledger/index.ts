@@ -1,3 +1,4 @@
 export * from './services'
-export * from './LedgerModule'
+export * from './LedgerApi'
 export * from './IndyPool'
+export * from './LedgerModule'

@@ -1,8 +1,11 @@
-import type { IndyLedgerService } from '../../ledger'
+import type { AgentContext } from '../../../agent'
 
-import { getAgentConfig } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { Key, KeyType } from '../../../crypto'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
@@ -10,6 +13,7 @@ import { DidCommV1Service, DidDocument, DidDocumentBuilder } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../domain/key-type/x25519'
+import { PeerDidResolver } from '../methods'
 import { DidKey } from '../methods/key'
 import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../methods/peer/didPeer'
 import { didDocumentJsonToNumAlgo1Did } from '../methods/peer/peerDidNumAlgo1'
@@ -24,19 +28,21 @@ describe('peer dids', () => {
   let didRepository: DidRepository
   let didResolverService: DidResolverService
   let wallet: IndyWallet
+  let agentContext: AgentContext
   let eventEmitter: EventEmitter
 
   beforeEach(async () => {
-    wallet = new IndyWallet(config)
+    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
+    agentContext = getAgentContext({ wallet })
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
 
-    const storageService = new IndyStorageService<DidRecord>(wallet, config)
-    eventEmitter = new EventEmitter(config)
+    const storageService = new IndyStorageService<DidRecord>(config.agentDependencies)
+    eventEmitter = new EventEmitter(config.agentDependencies, new Subject())
     didRepository = new DidRepository(storageService, eventEmitter)
 
     // Mocking IndyLedgerService as we're only interested in the did:peer resolver
-    didResolverService = new DidResolverService(config, {} as unknown as IndyLedgerService, didRepository)
+    didResolverService = new DidResolverService(config.logger, [new PeerDidResolver(didRepository)])
   })
 
   afterEach(async () => {
@@ -124,7 +130,7 @@ describe('peer dids', () => {
       },
     })
 
-    await didRepository.save(didDocumentRecord)
+    await didRepository.save(agentContext, didDocumentRecord)
   })
 
   test('receive a did and did document', async () => {
@@ -161,13 +167,13 @@ describe('peer dids', () => {
       },
     })
 
-    await didRepository.save(didDocumentRecord)
+    await didRepository.save(agentContext, didDocumentRecord)
 
     // Then we save the did (not the did document) in the connection record
     // connectionRecord.theirDid = didPeer.did
 
     // Then when we want to send a message we can resolve the did document
-    const { didDocument: resolvedDidDocument } = await didResolverService.resolve(did)
+    const { didDocument: resolvedDidDocument } = await didResolverService.resolve(agentContext, did)
     expect(resolvedDidDocument).toBeInstanceOf(DidDocument)
     expect(resolvedDidDocument?.toJSON()).toMatchObject(didPeer1zQmY)
   })
