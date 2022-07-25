@@ -18,6 +18,16 @@ export class DidDocumentBuilder {
     return this
   }
 
+  public addEd25519Context() {
+    this.addContext('https://w3id.org/security/suites/ed25519-2018/v1')
+    return this
+  }
+
+  public addX25519Context() {
+    this.addContext('https://w3id.org/security/suites/x25519-2019/v1')
+    return this
+  }
+
   public addService(service: DidDocumentService) {
     this.didDocument.service = [...this.didDocument.service, service]
 

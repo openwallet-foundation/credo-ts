@@ -2,7 +2,7 @@ import type { JsonObject } from '../../../../types'
 import type { DidDocument, VerificationMethod } from '../../domain'
 
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
-import { DidDocumentService, Key } from '../../domain'
+import { DidCommV2Service, Key } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { getKeyDidMappingByKeyType, getKeyDidMappingByVerificationMethod } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
@@ -64,7 +64,7 @@ export function didToNumAlgo2DidDocument(did: string) {
 
         service.id = `${did}#${service.type.toLowerCase()}-${serviceIndex++}`
 
-        didDocument.addService(JsonTransformer.fromJSON(service, DidDocumentService))
+        didDocument.addService(JsonTransformer.fromJSON(service, DidCommV2Service))
       }
     }
     // Otherwise we can be sure it is a key
@@ -79,7 +79,7 @@ export function didToNumAlgo2DidDocument(did: string) {
         // FIXME: the peer did uses key identifiers without the multi base prefix
         // However method 0 (and thus did:key) do use the multi base prefix in the
         // key identifier. Fixing it like this for now, before making something more complex
-        verificationMethod.id = verificationMethod.id.replace('#z', '#')
+        // verificationMethod.id = verificationMethod.id.replace('#z', '#')
         addVerificationMethodToDidDocument(didDocument, verificationMethod, purpose)
       }
     }

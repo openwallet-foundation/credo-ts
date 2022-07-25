@@ -4,7 +4,6 @@ import type { ValueTransferResponseCoordinator } from '../ValueTransferResponseC
 import type { ValueTransferService } from '../services'
 import type { ValueTransferGetterService } from '../services/ValueTransferGetterService'
 
-import { ValueTransferRole } from '../ValueTransferRole'
 import { OfferMessage, ProblemReportMessage } from '../messages'
 
 export class OfferHandler implements Handler<typeof DIDCommV2Message> {
@@ -27,12 +26,12 @@ export class OfferHandler implements Handler<typeof DIDCommV2Message> {
   public async handle(messageContext: HandlerInboundMessage<OfferHandler>) {
     const { record, message } = await this.valueTransferGetterService.processOffer(messageContext)
     if (!record || message.type === ProblemReportMessage.type) {
-      return this.valueTransferService.sendMessageToWitness(message, record?.role ?? ValueTransferRole.Getter)
+      return this.valueTransferService.sendMessageToWitness(message, record)
     }
 
     if (this.valueTransferResponseCoordinator.shouldAutoRespondToOffer()) {
       const { message } = await this.valueTransferGetterService.acceptOffer(record)
-      return this.valueTransferService.sendMessageToWitness(message, record.role)
+      return this.valueTransferService.sendMessageToWitness(message, record)
     }
   }
 }

@@ -121,7 +121,7 @@ export class ValueTransferGiverService {
 
     const offerMessage = new OfferMessage({
       from: giver.did,
-      to: params.witness,
+      to: params.getter,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
     })
 
@@ -242,7 +242,7 @@ export class ValueTransferGiverService {
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.RequestReceived)
 
-    const giverDid = record.giver ? record.giver.did : (await this.didService.createDID(DidType.PeerDid)).id
+    const giverDid = record.giver ? record.giver.did : (await this.didService.createDID()).id
 
     const activeTransaction = await this.valueTransferService.getActiveTransaction()
     if (activeTransaction.record) {

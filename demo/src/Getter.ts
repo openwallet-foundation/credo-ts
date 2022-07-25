@@ -1,30 +1,38 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { Transport, ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
+import type { ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
 
-import { ValueTransferState } from '@aries-framework/core'
+import { Transports, ValueTransferState } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class Getter extends BaseAgent {
   public valueTransferRecordId?: string
-  public static transport: Transport = 'ipc'
   public static seed = '6b8b882e2618fa5d45ee7229ca880082'
 
   public constructor(
     name: string,
     port?: number,
-    offlineTransports?: string[],
-    valueTransferConfig?: ValueTransferConfig
+    transports?: Transports[],
+    valueTransferConfig?: ValueTransferConfig,
+    mediatorConnectionsInvite?: string
   ) {
-    super(name, Getter.seed, port, offlineTransports, valueTransferConfig)
+    super(name, Getter.seed, port, transports, valueTransferConfig, mediatorConnectionsInvite)
   }
 
   public static async build(): Promise<Getter> {
     const valueTransferConfig: ValueTransferConfig = {
-      witnessTransportForGetterRole: Getter.transport,
+      // defaultTransport: Transports.IPC,
+      defaultTransport: Transports.HTTP,
     }
-    const getter = new Getter('getter', undefined, [Getter.transport, 'androidnearby'], valueTransferConfig)
+    // const getter = new Getter('getter', undefined, [Transports.IPC, Transports.Nearby], valueTransferConfig)
+    const getter = new Getter(
+      'getter',
+      undefined,
+      [Transports.IPC, Transports.Nearby, Transports.HTTP],
+      valueTransferConfig,
+      BaseAgent.defaultMediatorConnectionInvite
+    )
     await getter.initializeAgent()
     const publicDid = await getter.agent.getPublicDid()
     console.log(`Getter Public DID: ${publicDid?.did}`)
@@ -38,15 +46,18 @@ export class Getter extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  public async requestPayment() {
-    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1 })
+  public async requestPayment(giver: string, witness: string) {
+    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1, giver, witness })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()
   }
 
-  public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord, witness: string) {
-    const { record } = await this.agent.valueTransfer.acceptPaymentOffer({ recordId: valueTransferRecord.id, witness })
+  public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {
+    const { record } = await this.agent.valueTransfer.acceptPaymentOffer({
+      recordId: valueTransferRecord.id,
+      witness: valueTransferRecord.witness?.did,
+    })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nPayment offer accepted!\n'))
     await this.waitForPayment()

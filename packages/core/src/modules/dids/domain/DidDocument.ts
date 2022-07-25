@@ -105,7 +105,7 @@ export class DidDocument {
   }
 
   /**
-   * Returns all of the service endpoints matching the given type.
+   * Returns all of the service endpoint matching the given type.
    *
    * @param type The type of service(s) to query.
    */
@@ -114,7 +114,7 @@ export class DidDocument {
   }
 
   /**
-   * Returns all of the service endpoints matching the given class
+   * Returns all of the service endpoint matching the given class
    *
    * @param classType The class to query services.
    */
@@ -151,17 +151,17 @@ export class DidDocument {
     return TypedArrayEncoder.toBase58(this.verificationMethod[0].keyBytes)
   }
 
-  public getVerificationMethod(): VerificationMethod {
+  public getVerificationMethod(): VerificationMethod | undefined {
     // get first available verification method
-    return this.verificationMethod[0]
+    return this.verificationMethod && this.verificationMethod[0] ? this.verificationMethod[0] : undefined
   }
 
-  public get verificationKeyId(): string {
+  public get verificationKeyId(): string | undefined {
     // get id of first available verification key
-    return this.verificationMethod[0].id
+    return this.verificationMethod && this.verificationMethod[0] ? this.verificationMethod[0].id : undefined
   }
 
-  public getKeyAgreement(): VerificationMethod {
+  public getKeyAgreement(): VerificationMethod | undefined {
     const keyAgreement = this.keyAgreement[0]
     if (keyAgreement) {
       if (typeof keyAgreement === 'string') {
@@ -179,7 +179,7 @@ export class DidDocument {
     return this.getVerificationMethod()
   }
 
-  public get agreementKeyId(): string {
+  public get agreementKeyId(): string | undefined {
     // get id of first available agreement key
     const keyAgreement = this.keyAgreement[0]
     if (keyAgreement) {
@@ -187,6 +187,38 @@ export class DidDocument {
         return keyAgreement
       } else {
         return keyAgreement.id
+      }
+    }
+    // else return id of verification key
+    return this.verificationKeyId
+  }
+
+  public getAuthentication(): VerificationMethod | undefined {
+    const authentication = this.authentication[0]
+    if (authentication) {
+      if (typeof authentication === 'string') {
+        const verificationMethod = this.verificationMethod.find(
+          (verificationMethod) => authentication === verificationMethod.id
+        )
+        if (!verificationMethod) {
+          throw new Error(`Unable to locate verification with id '${authentication}'`)
+        }
+        return verificationMethod
+      } else {
+        return authentication
+      }
+    }
+    return this.getVerificationMethod()
+  }
+
+  public get authenticationKeyId(): string | undefined {
+    // get id of first available agreement key
+    const authentication = this.authentication[0]
+    if (authentication) {
+      if (typeof authentication === 'string') {
+        return authentication
+      } else {
+        return authentication.id
       }
     }
     // else return id of verification key

@@ -1,13 +1,12 @@
 import type { AgentMessageProcessedEvent } from '../../agent/Events'
 import type { Logger } from '../../logger'
 import type { OutboundWebSocketClosedEvent } from '../../transport'
-import type { OutboundMessage } from '../../types'
-import type { ConnectionRecord } from '../connections'
+import type { OutboundDIDCommV2Message } from '../../types'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
 
 import { firstValueFrom, interval, of, ReplaySubject, timer } from 'rxjs'
-import { filter, first, takeUntil, throttleTime, timeout, tap, delayWhen, catchError, map } from 'rxjs/operators'
+import { catchError, delayWhen, filter, first, map, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -15,20 +14,21 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { createOutboundDIDCommV2Message, createOutboundMessage } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
 import { parseMessageType } from '../../utils/messageType'
-import { ConnectionInvitationMessage } from '../connections'
 import { ConnectionService } from '../connections/services'
-import { DiscloseMessage, DiscoverFeaturesModule } from '../discover-features'
+import { DidService } from '../dids'
+import { DiscloseMessage, DiscloseMessageV2, DiscoverFeaturesModule } from '../discover-features'
+import { OutOfBandGoalCode, OutOfBandInvitationMessage } from '../out-of-band'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RoutingEventTypes } from './RoutingEvents'
-import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
+import { DidListUpdateResponseHandler } from './handlers/DidListUpdateResponseHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
-import { BatchPickupMessage } from './messages/BatchPickupMessage'
+import { BatchPickupMessageV2 } from './messages/BatchPickupMessage'
 import { MediationState } from './models/MediationState'
 import { MediationRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
@@ -37,6 +37,7 @@ import { MediationRecipientService } from './services/MediationRecipientService'
 export class RecipientModule {
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
+  private didService: DidService
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
@@ -48,6 +49,7 @@ export class RecipientModule {
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     mediationRecipientService: MediationRecipientService,
+    didService: DidService,
     connectionService: ConnectionService,
     messageSender: MessageSender,
     eventEmitter: EventEmitter,
@@ -55,6 +57,7 @@ export class RecipientModule {
     mediationRepository: MediationRepository
   ) {
     this.agentConfig = agentConfig
+    this.didService = didService
     this.connectionService = connectionService
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
@@ -85,25 +88,12 @@ export class RecipientModule {
     }
   }
 
-  private async sendMessage(outboundMessage: OutboundMessage) {
-    const { mediatorPickupStrategy } = this.agentConfig
-    const transportPriority =
-      mediatorPickupStrategy === MediatorPickupStrategy.Implicit
-        ? { schemes: ['wss', 'ws'], restrictive: true }
-        : undefined
-
-    await this.messageSender.sendDIDCommV1Message(outboundMessage, {
-      transportPriority,
-      // TODO: add keepAlive: true to enforce through the public api
-      // we need to keep the socket alive. It already works this way, but would
-      // be good to make more explicit from the public facing API.
-      // This would also make it easier to change the internal API later on.
-      // keepAlive: true,
-    })
+  private async sendMessage(outboundMessage: OutboundDIDCommV2Message) {
+    await this.messageSender.sendDIDCommV2Message(outboundMessage)
   }
 
   private async openMediationWebSocket(mediator: MediationRecord) {
-    const { message, connectionRecord } = await this.connectionService.createTrustPing(mediator.connectionId, {
+    const { message, connectionRecord } = await this.connectionService.createTrustPing(mediator.did, {
       responseRequested: false,
     })
 
@@ -145,7 +135,7 @@ export class RecipientModule {
       .pipe(
         // Stop when the agent shuts down
         takeUntil(this.agentConfig.stop$),
-        filter((e) => e.payload.connectionId === mediator.connectionId),
+        filter((e) => e.payload.did === mediator.did),
         // Make sure we're not reconnecting multiple times
         throttleTime(interval),
         // Increase the interval (recursive back-off)
@@ -155,7 +145,7 @@ export class RecipientModule {
       )
       .subscribe(async () => {
         this.logger.warn(
-          `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
+          `Websocket connection to mediator with connectionId '${mediator.did}' is closed, attempting to reconnect...`
         )
         this.openMediationWebSocket(mediator)
       })
@@ -165,8 +155,9 @@ export class RecipientModule {
 
   public async initiateMessagePickup(mediator: MediationRecord) {
     const { mediatorPollingInterval } = this.agentConfig
-    const mediatorPickupStrategy = await this.getPickupStrategyForMediator(mediator)
-    const mediatorConnection = await this.connectionService.getById(mediator.connectionId)
+    // Discover if mediator can do push notification
+    // const mediatorPickupStrategy = await this.getPickupStrategyForMediator(mediator)
+    const mediatorPickupStrategy = this.agentConfig.mediatorPickupStrategy
 
     // Explicit means polling every X seconds with batch message
     if (mediatorPickupStrategy === MediatorPickupStrategy.Explicit) {
@@ -174,7 +165,7 @@ export class RecipientModule {
       const subscription = interval(mediatorPollingInterval)
         .pipe(takeUntil(this.agentConfig.stop$))
         .subscribe(async () => {
-          await this.pickupMessages(mediatorConnection)
+          await this.pickupMessages(mediator)
         })
 
       return subscription
@@ -214,7 +205,7 @@ export class RecipientModule {
   }
 
   private async isBatchPickupSupportedByMediator(mediator: MediationRecord) {
-    const { protocolUri } = parseMessageType(BatchPickupMessage.type)
+    const { protocolUri } = parseMessageType(BatchPickupMessageV2.type)
 
     // Listen for response to our feature query
     const replaySubject = new ReplaySubject(1)
@@ -225,12 +216,14 @@ export class RecipientModule {
         takeUntil(this.agentConfig.stop$),
         // filter by mediator connection id and query disclose message type
         filter(
-          (e) => e.payload.connection?.id === mediator.connectionId && e.payload.message.type === DiscloseMessage.type
+          (e) =>
+            (e.payload.message?.sender === mediator.did && e.payload.message.type === DiscloseMessageV2.type) ||
+            (e.payload.connection?.id === mediator.connectionId && e.payload.message.type === DiscloseMessage.type)
         ),
         // Return whether the protocol is supported
         map((e) => {
-          const message = e.payload.message as DiscloseMessage
-          return message.protocols.map((p) => p.protocolId).includes(protocolUri)
+          const message = e.payload.message as DiscloseMessageV2
+          return message.body.protocols.map((p) => p.protocolId).includes(protocolUri)
         }),
         // TODO: make configurable
         // If we don't have an answer in 7 seconds (no response, not supported, etc...) error
@@ -240,7 +233,7 @@ export class RecipientModule {
       )
       .subscribe(replaySubject)
 
-    await this.discoverFeaturesModule.queryFeatures(mediator.connectionId, {
+    await this.discoverFeaturesModule.queryFeatures(mediator.did, {
       query: protocolUri,
       comment: 'Detect if batch pickup is supported to determine pickup strategy for messages',
     })
@@ -253,11 +246,13 @@ export class RecipientModule {
     return this.mediationRecipientService.discoverMediation()
   }
 
-  public async pickupMessages(mediatorConnection: ConnectionRecord) {
-    mediatorConnection.assertReady()
-
-    const batchPickupMessage = new BatchPickupMessage({ batchSize: 10 })
-    const outboundMessage = createOutboundMessage(mediatorConnection, batchPickupMessage)
+  public async pickupMessages(mediator: MediationRecord) {
+    const batchPickupMessage = new BatchPickupMessageV2({
+      from: mediator.did,
+      to: mediator.mediatorDid,
+      body: { batchSize: 10 },
+    })
+    const outboundMessage = createOutboundDIDCommV2Message(batchPickupMessage)
     await this.sendMessage(outboundMessage)
   }
 
@@ -265,22 +260,10 @@ export class RecipientModule {
     return this.mediationRecipientService.setDefaultMediator(mediatorRecord)
   }
 
-  public async requestMediation(connection: ConnectionRecord): Promise<MediationRecord> {
-    const { mediationRecord, message } = await this.mediationRecipientService.createRequest(connection)
-    const outboundMessage = createOutboundMessage(connection, message)
-
+  public async notifyKeylistUpdate(mediatorRecord: MediationRecord, verkey: string) {
+    const message = this.mediationRecipientService.createKeylistUpdateMessage(mediatorRecord, verkey)
+    const outboundMessage = createOutboundDIDCommV2Message(message)
     await this.sendMessage(outboundMessage)
-    return mediationRecord
-  }
-
-  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string) {
-    const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey)
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.sendMessage(outboundMessage)
-  }
-
-  public async findByConnectionId(connectionId: string) {
-    return await this.mediationRecipientService.findByConnectionId(connectionId)
   }
 
   public async getMediators() {
@@ -291,18 +274,8 @@ export class RecipientModule {
     return this.mediationRecipientService.findDefaultMediator()
   }
 
-  public async findDefaultMediatorConnection(): Promise<ConnectionRecord | null> {
-    const mediatorRecord = await this.findDefaultMediator()
-
-    if (mediatorRecord) {
-      return this.connectionService.getById(mediatorRecord.connectionId)
-    }
-
-    return null
-  }
-
-  public async requestAndAwaitGrant(connection: ConnectionRecord, timeoutMs = 10000): Promise<MediationRecord> {
-    const { mediationRecord, message } = await this.mediationRecipientService.createRequest(connection)
+  public async requestAndAwaitGrant(did: string, mediatorDid: string, timeoutMs = 10000): Promise<MediationRecord> {
+    const { mediationRecord, message } = await this.mediationRecipientService.createRequest(did, mediatorDid)
 
     // Create observable for event
     const observable = this.eventEmitter.observable<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged)
@@ -324,7 +297,7 @@ export class RecipientModule {
       .subscribe(subject)
 
     // Send mediation request message
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundDIDCommV2Message(message)
     await this.sendMessage(outboundMessage)
 
     const event = await firstValueFrom(subject)
@@ -336,64 +309,33 @@ export class RecipientModule {
     // Connect to mediator through provided invitation
     // Also requests mediation and sets as default mediator
     // Assumption: processInvitation is a URL-encoded invitation
-    const invitation = await ConnectionInvitationMessage.fromUrl(mediatorConnInvite)
+    const invitation = await OutOfBandInvitationMessage.fromUrl(mediatorConnInvite)
 
-    // Check if invitation has been used already
-    if (!invitation || !invitation.recipientKeys || !invitation.recipientKeys[0]) {
-      throw new AriesFrameworkError(`Invalid mediation invitation. Invitation must have at least one recipient key.`)
+    if (invitation.body.goalCode !== OutOfBandGoalCode.MediatorProvision) {
+      throw new AriesFrameworkError(
+        `Invalid mediation invitation. Invitation goalCode is different: ${invitation.body.goalCode}.`
+      )
     }
 
-    let mediationRecord: MediationRecord | null = null
-
-    const connection = await this.connectionService.findByInvitationKey(invitation.recipientKeys[0])
-    if (!connection) {
-      this.logger.debug('Mediation Connection does not exist, creating connection')
-      // We don't want to use the current default mediator when connecting to another mediator
-      const routing = await this.mediationRecipientService.getRouting({ useDefaultMediator: false })
-
-      const invitationConnectionRecord = await this.connectionService.processInvitation(invitation, {
-        autoAcceptConnection: true,
-        routing,
-      })
-      this.logger.debug('Processed mediation invitation', {
-        connectionId: invitationConnectionRecord,
-      })
-      const { message, connectionRecord } = await this.connectionService.createRequest(invitationConnectionRecord.id)
-      const outbound = createOutboundMessage(connectionRecord, message)
-      await this.messageSender.sendDIDCommV1Message(outbound)
-
-      const completedConnectionRecord = await this.connectionService.returnWhenIsConnected(connectionRecord.id)
-      this.logger.debug('Connection completed, requesting mediation')
-      mediationRecord = await this.requestAndAwaitGrant(completedConnectionRecord, 60000) // TODO: put timeout as a config parameter
-      this.logger.debug('Mediation Granted, setting as default mediator')
-      await this.setDefaultMediator(mediationRecord)
-      this.logger.debug('Default mediator set')
-    } else if (connection && !connection.isReady) {
-      const connectionRecord = await this.connectionService.returnWhenIsConnected(connection.id)
-      mediationRecord = await this.requestAndAwaitGrant(connectionRecord, 60000) // TODO: put timeout as a config parameter
-      await this.setDefaultMediator(mediationRecord)
-    } else {
-      this.agentConfig.logger.warn('Mediator Invitation in configuration has already been used to create a connection.')
-      const mediator = await this.findByConnectionId(connection.id)
-      if (!mediator) {
-        this.agentConfig.logger.warn('requesting mediation over connection.')
-        mediationRecord = await this.requestAndAwaitGrant(connection, 60000) // TODO: put timeout as a config parameter
-        await this.setDefaultMediator(mediationRecord)
-      } else {
-        this.agentConfig.logger.warn(
-          `Mediator Invitation in configuration has already been ${
-            mediator.isReady ? 'granted' : 'requested'
-          } mediation`
-        )
-      }
+    const existingMediationRecord = await this.mediationRecipientService.findDefaultMediator()
+    if (existingMediationRecord) {
+      this.agentConfig.logger.warn(
+        `Mediator Invitation in configuration has already been ${existingMediationRecord.state} mediation`
+      )
+      return existingMediationRecord
     }
 
-    return mediationRecord
+    const didForMediator = await this.didService.createDID({
+      transports: [],
+      requestMediation: false,
+    })
+    const mediationRecord = await this.requestAndAwaitGrant(didForMediator.did, invitation.from, 60000) // TODO: put timeout as a config parameter
+    await this.setDefaultMediator(mediationRecord)
   }
 
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
+    dispatcher.registerHandler(new DidListUpdateResponseHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
     //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this

@@ -11,7 +11,9 @@ export interface MediationRecordProps {
   state: MediationState
   role: MediationRole
   createdAt?: Date
-  connectionId: string
+  did: string
+  mediatorDid: string
+  connectionId?: string
   threadId: string
   endpoint?: string
   recipientKeys?: string[]
@@ -26,7 +28,7 @@ export type CustomMediationTags = {
 
 export type DefaultMediationTags = {
   role: MediationRole
-  connectionId: string
+  did: string
   state: MediationState
   threadId: string
 }
@@ -37,7 +39,9 @@ export class MediationRecord
 {
   public state!: MediationState
   public role!: MediationRole
-  public connectionId!: string
+  public did!: string
+  public mediatorDid!: string
+  public connectionId?: string
   public threadId!: string
   public endpoint?: string
   public recipientKeys!: string[]
@@ -53,6 +57,8 @@ export class MediationRecord
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
+      this.did = props.did
+      this.mediatorDid = props.mediatorDid
       this.connectionId = props.connectionId
       this.threadId = props.threadId
       this.recipientKeys = props.recipientKeys || []
@@ -70,7 +76,7 @@ export class MediationRecord
       ...this._tags,
       state: this.state,
       role: this.role,
-      connectionId: this.connectionId,
+      did: this.did,
       threadId: this.threadId,
       recipientKeys: this.recipientKeys,
     }

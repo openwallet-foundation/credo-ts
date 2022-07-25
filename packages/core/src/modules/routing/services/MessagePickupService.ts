@@ -1,13 +1,14 @@
 import type { EncryptedMessage } from '../../../agent/didcomm/types'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { BatchPickupMessage } from '../messages'
+import type { BatchPickupMessageV2 } from '../messages'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { MessageRepository } from '../../../storage/MessageRepository'
-import { BatchMessage, BatchMessageMessage } from '../messages'
+import { uuid } from '../../../utils/uuid'
+import { BatchMessageItemV2, BatchMessageV2 } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class MessagePickupService {
@@ -17,27 +18,30 @@ export class MessagePickupService {
     this.messageRepository = messageRepository
   }
 
-  public async batch(messageContext: InboundMessageContext<BatchPickupMessage>) {
+  public async batch(messageContext: InboundMessageContext<BatchPickupMessageV2>) {
     // Assert ready connection
-    const connection = messageContext.assertReadyConnection()
 
     const { message } = messageContext
-    const messages = this.messageRepository.takeFromQueue(connection.id, message.batchSize)
+    if (!message.from) return
+    const messages = this.messageRepository.takeFromQueue(message.from, message.body.batchSize)
 
     // TODO: each message should be stored with an id. to be able to conform to the id property
     // of batch message
     const batchMessages = messages.map(
       (msg) =>
-        new BatchMessageMessage({
-          message: msg,
+        new BatchMessageItemV2({
+          message: BatchMessageV2.createJSONAttachment(uuid(), msg),
         })
     )
 
-    const batchMessage = new BatchMessage({
-      messages: batchMessages,
+    const batchMessage = new BatchMessageV2({
+      from: message.from,
+      body: {
+        messages: batchMessages,
+      },
     })
 
-    return createOutboundMessage(connection, batchMessage)
+    return createOutboundDIDCommV2Message(batchMessage)
   }
 
   public queueMessage(connectionId: string, message: EncryptedMessage) {

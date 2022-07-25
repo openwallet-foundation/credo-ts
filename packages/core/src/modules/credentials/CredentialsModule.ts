@@ -228,9 +228,9 @@ export class CredentialsModule {
     const { message, credentialRecord } = await this.credentialService.createOffer(credentialTemplate)
 
     // Create and set ~service decorator
-    const routing = await this.mediationRecipientService.getRouting()
+    const routing = await this.mediationRecipientService.getRoutingDid()
     message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
+      serviceEndpoint: routing.endpoint,
       recipientKeys: [routing.verkey],
       routingKeys: routing.routingKeys,
     })
@@ -273,9 +273,9 @@ export class CredentialsModule {
     // Use ~service decorator otherwise
     else if (record.offerMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.mediationRecipientService.getRoutingDid()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
+        serviceEndpoint: routing.endpoint,
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })

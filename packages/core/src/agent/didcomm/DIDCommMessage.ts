@@ -12,6 +12,7 @@ export interface DIDCommMessage {
   get version(): DIDCommVersion
   get id(): string
   get threadId(): string | undefined
+  get sender(): string | undefined
 
   serviceDecorator(): ServiceDecorator | undefined
 

@@ -1,10 +1,11 @@
-import type { DidDocumentService, VerificationMethod } from '../../../modules/dids'
+import type { DidDocumentService, VerificationMethod } from '../../../modules/dids/domain'
 import type { DIDDoc, DIDResolver } from 'didcomm'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../../../error'
-import { DidCommService, DidCommV2Service, DidResolverService, IndyAgentService } from '../../../modules/dids'
+import { DidCommService, DidCommV2Service, IndyAgentService } from '../../../modules/dids/domain'
+import { DidResolverService } from '../../../modules/dids/services/DidResolverService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class DIDResolverService implements DIDResolver {
@@ -16,7 +17,7 @@ export class DIDResolverService implements DIDResolver {
 
   public async resolve(did: string): Promise<DIDDoc | null> {
     const result = await this.resolverService.resolve(did)
-    if (!result.didDocument || !result.didDocument.verificationMethod.length) {
+    if (!result.didDocument) {
       throw new AriesFrameworkError(`Unable to resolve DIDDoc for ${did}`)
     }
 

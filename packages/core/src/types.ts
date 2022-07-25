@@ -7,7 +7,8 @@ import type { DidType } from './modules/dids'
 import type { DidCommService } from './modules/dids/domain/service/DidCommService'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
-import type { MediatorPickupStrategy, Transport } from './modules/routing'
+import type { MediatorPickupStrategy, MediatorDeliveryStrategy } from './modules/routing'
+import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
@@ -42,10 +43,7 @@ export interface WalletExportImportConfig {
 export interface ValueTransferConfig {
   isWitness?: boolean
   witnessDid?: string
-  getterTransport?: Transport
-  giverTransport?: Transport
-  witnessTransportForGetterRole?: Transport
-  witnessTransportForGiverRole?: Transport
+  defaultTransport?: Transports
   verifiableNotes?: VerifiableNote[]
   autoAcceptPaymentOffer?: AutoAcceptValueTransfer
   autoAcceptPaymentRequest?: AutoAcceptValueTransfer
@@ -73,12 +71,17 @@ export interface InitConfig {
   indyLedgers?: IndyPoolConfig[]
   connectToIndyLedgersOnStartup?: boolean
 
+  transports?: Transports[]
+
   autoAcceptMediationRequests?: boolean
   mediatorConnectionsInvite?: string
   defaultMediatorId?: string
   clearDefaultMediator?: boolean
   mediatorPollingInterval?: number
   mediatorPickupStrategy?: MediatorPickupStrategy
+  mediatorDeliveryStrategy?: MediatorDeliveryStrategy
+  mediatorPushToken?: string
+  mediatorWebHookEndpoint?: string
 
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string

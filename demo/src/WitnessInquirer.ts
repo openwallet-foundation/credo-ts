@@ -7,7 +7,7 @@ import { Listener } from './Listener'
 import { Title } from './OutputClass'
 import { Witness } from './Witness'
 
-export const runFaber = async () => {
+export const runWitness = async () => {
   clear()
   console.log(textSync('Witness', { horizontalLayout: 'full' }))
   const witness = await WitnessInquirer.build()
@@ -72,9 +72,9 @@ export class WitnessInquirer extends BaseInquirer {
       return
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.witness.restart()
-      await runFaber()
+      await runWitness()
     }
   }
 }
 
-void runFaber()
+void runWitness()

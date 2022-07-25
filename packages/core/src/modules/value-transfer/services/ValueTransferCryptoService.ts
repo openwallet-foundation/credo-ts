@@ -17,24 +17,44 @@ export class ValueTransferCryptoService implements CryptoInterface {
   }
 
   public async sign(payload: Buffer, did: string): Promise<Buffer> {
-    const kid = (await this.didService.getDIDDoc(did)).verificationKeyId
+    const didDoc = await this.didService.getDIDDoc(did)
+    const kid = didDoc.verificationKeyId || didDoc.authenticationKeyId
+    if (!kid) {
+      throw new Error(`Unable to locate signing key for DID '${did}'`)
+    }
     return await this.keysService.sign({ payload, kid })
   }
 
   public async verify(payload: Buffer, signature: Buffer, did: string): Promise<boolean> {
-    const key = (await this.didService.getDIDDoc(did)).getVerificationMethod()
+    const didDoc = await this.didService.getDIDDoc(did)
+    const key = didDoc.getVerificationMethod() || didDoc.getAuthentication()
+    if (!key) {
+      throw new Error(`Unable to locate verification key for DID '${did}'`)
+    }
     return this.keysService.verify({ payload, signature, key })
   }
 
   public async encrypt(payload: Buffer, senderDID: string, recipientDID: string): Promise<Buffer> {
     const senderKid = (await this.didService.getDIDDoc(senderDID)).agreementKeyId
     const recipientKey = (await this.didService.getDIDDoc(recipientDID)).getKeyAgreement()
+    if (!senderKid) {
+      throw new Error(`Unable to locate encryption key for DID '${senderDID}'`)
+    }
+    if (!recipientKey) {
+      throw new Error(`Unable to locate encryption key for DID '${recipientKey}'`)
+    }
     return this.keysService.encrypt({ payload, senderKid, recipientKey })
   }
 
   public async decrypt(payload: Buffer, senderDID: string, recipientDID: string): Promise<Buffer> {
     const recipientKid = (await this.didService.getDIDDoc(recipientDID)).agreementKeyId
     const senderKey = (await this.didService.getDIDDoc(senderDID)).getKeyAgreement()
+    if (!recipientKid) {
+      throw new Error(`Unable to locate encryption key for DID '${recipientDID}'`)
+    }
+    if (!senderKey) {
+      throw new Error(`Unable to locate encryption key for DID '${senderKey}'`)
+    }
     return this.keysService.decrypt({ payload, senderKey, recipientKid })
   }
 }

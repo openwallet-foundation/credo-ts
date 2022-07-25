@@ -49,11 +49,15 @@ export class HttpOutboundTransport implements OutboundTransport {
 
       let response
       let responseMessage
+
       try {
         response = await this.fetch(endpoint, {
           method: 'POST',
           body: JSON.stringify(payload),
-          headers: { 'Content-Type': this.agentConfig.didCommMimeType },
+          headers: {
+            Accept: this.agentConfig.didCommMimeType,
+            'Content-Type': this.agentConfig.didCommMimeType,
+          },
           signal: abortController.signal,
         })
         clearTimeout(id)

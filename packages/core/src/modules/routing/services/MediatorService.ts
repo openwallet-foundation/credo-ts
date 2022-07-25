@@ -1,22 +1,21 @@
 import type { EncryptedMessage } from '../../../agent/didcomm/types'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
-import type { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage } from '../messages'
+import type { ForwardMessageV2, DidListUpdateMessage, MediationRequestMessageV2 } from '../messages'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
-import { AriesFrameworkError } from '../../../error'
 import { Wallet } from '../../../wallet/Wallet'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
-  KeylistUpdateAction,
-  KeylistUpdateResult,
-  KeylistUpdated,
-  MediationGrantMessage,
-  KeylistUpdateResponseMessage,
+  ListUpdateAction,
+  ListUpdateResult,
+  MediationGrantMessageV2,
+  DidListUpdated,
+  DidListUpdateResponseMessage,
 } from '../messages'
 import { MediationRole } from '../models/MediationRole'
 import { MediationState } from '../models/MediationState'
@@ -79,60 +78,56 @@ export class MediatorService {
   }
 
   public async processForwardMessage(
-    messageContext: InboundMessageContext<ForwardMessage>
+    messageContext: InboundMessageContext<ForwardMessageV2>
   ): Promise<{ mediationRecord: MediationRecord; encryptedMessage: EncryptedMessage }> {
     const { message } = messageContext
 
-    // TODO: update to class-validator validation
-    if (!message.to) {
-      throw new AriesFrameworkError('Invalid Message: Missing required attribute "to"')
-    }
-
-    const mediationRecord = await this.mediationRepository.getSingleByRecipientKey(message.to)
+    const mediationRecord = await this.mediationRepository.getSingleByRecipientKey(message.body.next)
 
     // Assert mediation record is ready to be used
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Mediator)
 
     return {
-      encryptedMessage: message.message,
+      encryptedMessage: message.getAttachmentDataAsJson(),
       mediationRecord,
     }
   }
 
-  public async processKeylistUpdateRequest(messageContext: InboundMessageContext<KeylistUpdateMessage>) {
-    // Assert Ready connection
-    const connection = messageContext.assertReadyConnection()
-
+  public async processDidListUpdateRequest(messageContext: InboundMessageContext<DidListUpdateMessage>) {
     const { message } = messageContext
-    const keylist: KeylistUpdated[] = []
+    const didList: DidListUpdated[] = []
 
-    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
+    if (!message.from) return
+    const mediationRecord = await this.mediationRepository.getByDid(message.from)
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Mediator)
 
-    for (const update of message.updates) {
-      const updated = new KeylistUpdated({
+    for (const update of message.body.updates) {
+      const updated = new DidListUpdated({
         action: update.action,
-        recipientKey: update.recipientKey,
-        result: KeylistUpdateResult.NoChange,
+        recipientDid: update.recipientDid,
+        result: ListUpdateResult.NoChange,
       })
-      if (update.action === KeylistUpdateAction.add) {
-        mediationRecord.addRecipientKey(update.recipientKey)
-        updated.result = KeylistUpdateResult.Success
+      if (update.action === ListUpdateAction.add) {
+        mediationRecord.addRecipientKey(update.recipientDid)
+        updated.result = ListUpdateResult.Success
 
-        keylist.push(updated)
-      } else if (update.action === KeylistUpdateAction.remove) {
-        const success = mediationRecord.removeRecipientKey(update.recipientKey)
-        updated.result = success ? KeylistUpdateResult.Success : KeylistUpdateResult.NoChange
-        keylist.push(updated)
+        didList.push(updated)
+      } else if (update.action === ListUpdateAction.remove) {
+        const success = mediationRecord.removeRecipientKey(update.recipientDid)
+        updated.result = success ? ListUpdateResult.Success : ListUpdateResult.NoChange
+        didList.push(updated)
       }
     }
 
     await this.mediationRepository.update(mediationRecord)
 
-    return new KeylistUpdateResponseMessage({ keylist, threadId: message.threadId })
+    return new DidListUpdateResponseMessage({
+      from: mediationRecord.did,
+      body: { updated: didList },
+    })
   }
 
   public async createGrantMediationMessage(mediationRecord: MediationRecord) {
@@ -142,24 +137,26 @@ export class MediatorService {
 
     await this.updateState(mediationRecord, MediationState.Granted)
 
-    const message = new MediationGrantMessage({
-      endpoint: this.agentConfig.endpoints[0],
-      routingKeys: await this.getRoutingKeys(),
-      threadId: mediationRecord.threadId,
+    const message = new MediationGrantMessageV2({
+      from: mediationRecord.did,
+      body: {
+        endpoint: this.agentConfig.endpoints[0],
+        routingKeys: await this.getRoutingKeys(),
+      },
     })
 
     return { mediationRecord, message }
   }
 
-  public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessage>) {
-    // Assert ready connection
-    const connection = messageContext.assertReadyConnection()
+  public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessageV2>) {
+    if (!messageContext.message.from || !messageContext.message.to?.length) return
 
     const mediationRecord = new MediationRecord({
-      connectionId: connection.id,
+      did: messageContext.message.from,
+      mediatorDid: messageContext.message.to[0],
       role: MediationRole.Mediator,
       state: MediationState.Requested,
-      threadId: messageContext.message.threadId,
+      threadId: messageContext.message.threadId || messageContext.message.id,
     })
 
     await this.mediationRepository.save(mediationRecord)

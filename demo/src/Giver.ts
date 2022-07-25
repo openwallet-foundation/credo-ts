@@ -1,7 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { Transport, ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
+import type { ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
 
-import { ValueTransferState } from '@aries-framework/core'
+import { OutOfBandGoalCode, Transports, ValueTransferState } from '@aries-framework/core'
 import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'
@@ -9,26 +9,37 @@ import { greenText, Output, redText } from './OutputClass'
 
 export class Giver extends BaseAgent {
   public valueTransferRecordId?: string
-  public static transport: Transport = 'nfc'
-  public static seed = '6b8b882e2618fa5d45ee7229ca880083'
+  public static seed = '9ad6a1e205a549dc86ced47630ed7b78'
 
   public constructor(
     name: string,
     port?: number,
-    offlineTransports?: string[],
-    valueTransferConfig?: ValueTransferConfig
+    transports?: Transports[],
+    valueTransferConfig?: ValueTransferConfig,
+    mediatorConnectionsInvite?: string
   ) {
-    super(name, undefined, port, offlineTransports, valueTransferConfig)
+    super(name, Giver.seed, port, transports, valueTransferConfig, mediatorConnectionsInvite)
   }
 
   public static async build(): Promise<Giver> {
     const valueTransferConfig: ValueTransferConfig = {
-      witnessTransportForGiverRole: Giver.transport,
-      getterTransport: 'androidnearby',
+      // defaultTransport: Transports.NFC,
+      defaultTransport: Transports.HTTP,
       verifiableNotes: createVerifiableNotes(10),
     }
-    const giver = new Giver('giver', undefined, [Giver.transport, 'androidnearby'], valueTransferConfig)
+    // const giver = new Giver('giver', undefined, [Transports.NFC, Transports.Nearby], valueTransferConfig)
+    const giver = new Giver(
+      'giver',
+      undefined,
+      [Transports.NFC, Transports.Nearby, Transports.HTTP],
+      valueTransferConfig,
+      BaseAgent.defaultMediatorConnectionInvite
+    )
     await giver.initializeAgent()
+
+    const publicDid = await giver.agent.getPublicDid()
+    console.log(`Giver Public DID: ${publicDid?.did}`)
+
     return giver
   }
 
@@ -76,8 +87,8 @@ export class Giver extends BaseAgent {
     console.log(record.problemReportMessage)
   }
 
-  public async offerPayment(getter: string) {
-    const { record } = await this.agent.valueTransfer.offerPayment({ amount: 1, getter })
+  public async offerPayment(getter: string, witness: string) {
+    const { record } = await this.agent.valueTransfer.offerPayment({ amount: 1, getter, witness })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nOffer Sent!\n'))
     await this.waitForPayment()

@@ -1,7 +1,6 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferConfig } from '../../../types'
-import type { Transport } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -23,8 +22,9 @@ import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
-import { DidType } from '../../dids'
+import { DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
+import { Transports } from '../../routing/types'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
@@ -50,6 +50,7 @@ export class ValueTransferService {
   private valueTransferStateService: ValueTransferStateService
   private witnessStateRepository: WitnessStateRepository
   private didService: DidService
+  private didResolverService: DidResolverService
   private eventEmitter: EventEmitter
   private messageSender: MessageSender
 
@@ -61,6 +62,7 @@ export class ValueTransferService {
     valueTransferStateService: ValueTransferStateService,
     witnessStateRepository: WitnessStateRepository,
     didService: DidService,
+    didResolverService: DidResolverService,
     eventEmitter: EventEmitter,
     messageSender: MessageSender
   ) {
@@ -71,6 +73,7 @@ export class ValueTransferService {
     this.valueTransferStateService = valueTransferStateService
     this.witnessStateRepository = witnessStateRepository
     this.didService = didService
+    this.didResolverService = didResolverService
     this.eventEmitter = eventEmitter
     this.messageSender = messageSender
 
@@ -219,7 +222,7 @@ export class ValueTransferService {
 
     if (record.role === ValueTransferRole.Giver) {
       await this.valueTransfer.giver().abortTransaction()
-      from = record.giver?.did || (await this.didService.createDID(DidType.PeerDid)).id
+      from = record.giver?.did || (await this.didService.createDID({})).id
     } else if (record.role === ValueTransferRole.Getter) {
       await this.valueTransfer.getter().abortTransaction()
       from = record.getter?.did
@@ -299,28 +302,33 @@ export class ValueTransferService {
     await Promise.all([this.sendMessageToGetter(getterProblemReport), this.sendMessageToGiver(giverProblemReport)])
   }
 
-  public async sendMessageToWitness(message: DIDCommV2Message, senderRole: ValueTransferRole) {
+  public async sendMessageToWitness(message: DIDCommV2Message, record?: ValueTransferRecord) {
     // Workaround for different witness transports as now User-wallet can have both Giver/Getter roles in different transactions
-    const { witnessTransportForGetterRole, witnessTransportForGiverRole } = this.config.valueTransferConfig ?? {}
-    const witnessTransport =
-      senderRole === ValueTransferRole.Giver ? witnessTransportForGiverRole : witnessTransportForGetterRole
-    return this.sendMessage(message, witnessTransport)
+    const transports =
+      record?.role === ValueTransferRole.Witness
+        ? this.config.transports
+        : record?.role === ValueTransferRole.Getter
+        ? this.config.transports.filter((transport) => transport !== Transports.NFC)
+        : record?.role === ValueTransferRole.Giver
+        ? this.config.transports.filter((transport) => transport !== Transports.IPC)
+        : this.config.transports
+    return this.sendMessage(message, transports, this.config.valueTransferConfig?.defaultTransport)
   }
 
   public async sendMessageToGiver(message: DIDCommV2Message) {
-    const giverTransport = this.config.valueTransferConfig?.giverTransport
-    return this.sendMessage(message, giverTransport)
+    const transports = this.config.transports.filter((transport) => transport !== Transports.IPC)
+    return this.sendMessage(message, transports, this.config.valueTransferConfig?.defaultTransport)
   }
 
   public async sendMessageToGetter(message: DIDCommV2Message) {
-    const getterTransport = this.config.valueTransferConfig?.getterTransport
-    return this.sendMessage(message, getterTransport)
+    const transports = this.config.transports.filter((transport) => transport !== Transports.NFC)
+    return this.sendMessage(message, transports, this.config.valueTransferConfig?.defaultTransport)
   }
 
-  private async sendMessage(message: DIDCommV2Message, transport?: Transport) {
+  private async sendMessage(message: DIDCommV2Message, transports: Transports[], defaultTransport?: Transports) {
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.messageSender.sendDIDCommV2Message(outboundMessage, transport, sendingMessageType)
+    await this.messageSender.sendDIDCommV2Message(outboundMessage, sendingMessageType, transports, defaultTransport)
   }
 
   public async getBalance(): Promise<number> {

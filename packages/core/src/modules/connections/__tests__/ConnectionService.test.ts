@@ -57,7 +57,7 @@ describe('ConnectionService', () => {
     myRouting = {
       did: 'fakeDid',
       verkey: 'fakeVerkey',
-      endpoints: config.endpoints ?? [],
+      endpoint: config.endpoints[0],
       routingKeys: [],
       mediatorId: 'fakeMediatorId',
     }

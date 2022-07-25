@@ -185,19 +185,6 @@ export class Agent {
       )
     }
 
-    if (publicDidSeed) {
-      // If an agent has publicDid it will be used as routing key.
-      const publicDid = await this.didService.findPublicDid()
-      if (!publicDid) {
-        // create DID in DIDComm V1 DID storage
-        await this.walletService.initPublicDid({ seed: publicDidSeed })
-
-        // create DID in DIDComm V DID storage
-        const didType = publicDidType || DidType.PeerDid
-        await this.didService.createDID(didType, undefined, publicDidSeed, true)
-      }
-    }
-
     // As long as value isn't false we will async connect to all genesis pools on startup
     if (connectToIndyLedgersOnStartup) {
       this.ledger.connectToPools().catch((error) => {
@@ -213,15 +200,34 @@ export class Agent {
       transport.start(this)
     }
 
+    // Mediator provisioning
+
     // Connect to mediator through provided invitation if provided in config
-    // Also requests mediation ans sets as default mediator
+    // Also requests mediation and sets as default mediator
     // Because this requires the connections module, we do this in the agent constructor
     if (mediatorConnectionsInvite) {
       await this.mediationRecipient.provision(mediatorConnectionsInvite)
     }
-
     await this.mediationRecipient.initialize()
 
+    if (publicDidSeed) {
+      // If an agent has publicDid it will be used as routing key.
+      const publicDid = await this.didService.findPublicDid()
+      if (!publicDid) {
+        // create DID in DIDComm V1 DID storage
+        await this.walletService.initPublicDid({ seed: publicDidSeed })
+
+        // create DID in DIDComm V2 DID storage
+        const didType = publicDidType || DidType.PeerDid
+        await this.didService.createDID({
+          didType,
+          seed: publicDidSeed,
+          isPublic: true,
+        })
+      }
+    }
+
+    // VTP state initialization
     if (valueTransferConfig) {
       await this.valueTransferService.initState(valueTransferConfig)
     }

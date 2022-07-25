@@ -77,7 +77,7 @@ export function didToNumAlgo2DidDocument(did: string) {
         // FIXME: the peer did uses key identifiers without the multi base prefix
         // However method 0 (and thus did:key) do use the multi base prefix in the
         // key identifier. Fixing it like this for now, before making something more complex
-        verificationMethod.id = verificationMethod.id.replace('#z', '#')
+        // verificationMethod.id = verificationMethod.id.replace('#z', '#')
         addVerificationMethodToDidDocument(didDocument, verificationMethod, purpose)
       }
     }

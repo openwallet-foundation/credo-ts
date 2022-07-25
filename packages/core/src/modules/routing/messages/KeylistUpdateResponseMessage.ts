@@ -2,19 +2,12 @@ import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
 import { Verkey } from 'indy-sdk'
 
-import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 
-import { KeylistUpdateAction } from './KeylistUpdateMessage'
-
-export enum KeylistUpdateResult {
-  ClientError = 'client_error',
-  ServerError = 'server_error',
-  NoChange = 'no_change',
-  Success = 'success',
-}
+import { ListUpdateAction, ListUpdateResult } from './ListUpdateAction'
 
 export class KeylistUpdated {
-  public constructor(options: { recipientKey: Verkey; action: KeylistUpdateAction; result: KeylistUpdateResult }) {
+  public constructor(options: { recipientKey: Verkey; action: ListUpdateAction; result: ListUpdateResult }) {
     if (options) {
       this.recipientKey = options.recipientKey
       this.action = options.action
@@ -26,11 +19,11 @@ export class KeylistUpdated {
   @Expose({ name: 'recipient_key' })
   public recipientKey!: Verkey
 
-  @IsEnum(KeylistUpdateAction)
-  public action!: KeylistUpdateAction
+  @IsEnum(ListUpdateAction)
+  public action!: ListUpdateAction
 
-  @IsEnum(KeylistUpdateResult)
-  public result!: KeylistUpdateResult
+  @IsEnum(ListUpdateResult)
+  public result!: ListUpdateResult
 }
 
 export interface KeylistUpdateResponseMessageOptions {
