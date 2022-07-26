@@ -1,7 +1,7 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { SignCredentialOptionsRFC0593 } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { AcceptRequestOptions } from '../../../CredentialsModuleOptions'
+import type { AcceptRequestOptions, CreateOfferOptions } from '../../../CredentialsApiOptions'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -124,16 +124,17 @@ describe('credentials', () => {
   })
 
   test('Faber starts with V2 W3C connection-less credential offer to Alice', async () => {
-    testLogger.test('Faber sends credential offer to Alice')
-
-    // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
+    const offerOptions: CreateOfferOptions = {
       comment: 'V2 Out of Band offer (W3C)',
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
       protocolVersion: 'v2',
-    })
+    }
+    testLogger.test('Faber sends credential offer to Alice')
+
+    // eslint-disable-next-line prefer-const
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer(offerOptions)
 
     const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,

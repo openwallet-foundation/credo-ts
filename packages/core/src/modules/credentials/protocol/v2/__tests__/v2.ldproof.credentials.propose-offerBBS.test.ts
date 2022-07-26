@@ -1,9 +1,10 @@
+import type { AgentContext } from '../../../../../agent'
 import type { Agent } from '../../../../../agent/Agent'
 import type { SignCredentialOptionsRFC0593 } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
 import type { ConnectionRecord } from '../../../../connections'
-import type { AcceptProposalOptions } from '../../../CredentialsModuleOptions'
+import type { AcceptProposalOptions } from '../../../CredentialsApiOptions'
 
-import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
+import { getAgentContext, setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { KeyType } from '../../../../../crypto/KeyType'
 import { DidKey } from '../../../../../modules/dids'
@@ -29,7 +30,10 @@ let signCredentialOptions: SignCredentialOptionsRFC0593
 let verificationMethod: string
 const seed = 'testseed000000000000000000000001'
 describe('credentials, BBS+ signature', () => {
+  let agentContext: AgentContext
+
   beforeAll(async () => {
+    agentContext = getAgentContext()
     ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD BBS+',
       'Alice Agent Credentials LD BBS+'
@@ -85,7 +89,6 @@ describe('credentials, BBS+ signature', () => {
       threadId: credentialExchangeRecord.threadId,
       state: CredentialState.ProposalReceived,
     })
-
     const options: AcceptProposalOptions = {
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
@@ -104,7 +107,7 @@ describe('credentials, BBS+ signature', () => {
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
-    const offerMessage = await didCommMessageRepository.findAgentMessage({
+    const offerMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2OfferCredentialMessage,
     })
@@ -195,7 +198,7 @@ describe('credentials, BBS+ signature', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    const credentialMessage = await didCommMessageRepository.getAgentMessage({
+    const credentialMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2IssueCredentialMessage,
     })

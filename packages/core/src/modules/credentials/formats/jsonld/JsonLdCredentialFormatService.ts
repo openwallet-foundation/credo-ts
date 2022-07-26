@@ -7,6 +7,7 @@ import type {
   FormatCreateReturn,
   FormatProcessOptions,
 } from '..'
+import type { AgentContext } from '../../../../agent'
 import type { SignCredentialOptionsRFC0593 } from '../../../vc/models/W3cCredentialServiceOptions'
 import type {
   FormatAcceptRequestOptions,
@@ -28,7 +29,7 @@ import { MessageValidator } from '../../../../utils/MessageValidator'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
 import { proofTypeKeyTypeMapping } from '../../../dids/domain/key-type/keyDidMapping'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
-import { W3cCredentialService } from '../../../vc'
+import { W3cCredentialService } from '../../../vc/W3cCredentialService'
 import { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 import { CredentialRepository } from '../../repository/CredentialRepository'
@@ -65,13 +66,15 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    * @returns object containing associated attachment, formats and filtersAttach elements
    *
    */
-  public async createProposal({
-    credentialFormats,
-  }: FormatCreateProposalOptions<JsonLdCredentialFormat>): Promise<FormatCreateProposalReturn> {
+  public async createProposal(
+    agentContext: AgentContext,
+    { credentialFormats }: FormatCreateProposalOptions<JsonLdCredentialFormat>
+  ): Promise<FormatCreateProposalReturn> {
     const format = new CredentialFormatSpec({
       format: JSONLD_VC_DETAIL,
     })
 
+    console.log(">>>>>>>>>>>>> QUACK credential formats = ", credentialFormats)
     const jsonLdFormat = credentialFormats.jsonld
 
     if (!jsonLdFormat) {
@@ -79,7 +82,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     const jsonLdCredential = new JsonLdCredential(jsonLdFormat)
-    await MessageValidator.validateSync(jsonLdCredential)
+    MessageValidator.validateSync(jsonLdCredential)
 
     // FIXME: this doesn't follow RFC0593
 
@@ -93,7 +96,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    * Method called on reception of a propose credential message
    * @param options the options needed to accept the proposal
    */
-  public async processProposal({ attachment }: FormatProcessOptions): Promise<void> {
+  public async processProposal(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
     // FIXME: SignCredentialOptions doesn't follow RFC0593
     const credProposalJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
@@ -104,14 +107,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // FIXME: validating an interface doesn't work.
 
     const messageToValidate = new JsonLdCredential(credProposalJson)
-    await MessageValidator.validateSync(messageToValidate)
+    MessageValidator.validateSync(messageToValidate)
   }
 
-  public async acceptProposal({
-    attachId,
-    credentialFormats,
-    proposalAttachment,
-  }: FormatAcceptProposalOptions<JsonLdCredentialFormat>): Promise<FormatCreateOfferReturn> {
+  public async acceptProposal(
+    agentContext: AgentContext,
+    { attachId, credentialFormats, proposalAttachment }: FormatAcceptProposalOptions<JsonLdCredentialFormat>
+  ): Promise<FormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
     const format = new CredentialFormatSpec({
       attachId,
@@ -137,10 +139,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    * @returns object containing associated attachment, formats and offersAttach elements
    *
    */
-  public async createOffer({
-    attachId,
-    credentialFormats,
-  }: FormatCreateOfferOptions<JsonLdCredentialFormat>): Promise<FormatCreateOfferReturn> {
+  public async createOffer(
+    agentContext: AgentContext,
+    { credentialFormats, attachId }: FormatCreateOfferOptions<JsonLdCredentialFormat>
+  ): Promise<FormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
     const format = new CredentialFormatSpec({
       attachId,
@@ -155,7 +157,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     return { format, attachment }
   }
 
-  public async processOffer({ attachment }: FormatProcessOptions) {
+  public async processOffer(agentContext: AgentContext, { attachment }: FormatProcessOptions) {
     // FIXME: SignCredentialOptions doesn't follow RFC0593
     const credentialOfferJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
@@ -164,14 +166,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     // FIXME: validating an interface doesn't work.
-    await MessageValidator.validateSync(credentialOfferJson)
+    MessageValidator.validateSync(credentialOfferJson)
   }
 
-  public async acceptOffer({
-    credentialFormats,
-    attachId,
-    offerAttachment,
-  }: FormatAcceptOfferOptions<JsonLdCredentialFormat>): Promise<FormatCreateReturn> {
+  public async acceptOffer(
+    agentContext: AgentContext,
+    { credentialFormats, attachId, offerAttachment }: FormatAcceptOfferOptions<JsonLdCredentialFormat>
+  ): Promise<FormatCreateReturn> {
     const jsonLdFormat = credentialFormats?.jsonld
 
     // FIXME: SignCredentialOptions doesn't follow RFC0593
@@ -195,10 +196,11 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    * @returns object containing associated attachment, formats and requestAttach elements
    *
    */
-  public async createRequest({
-    credentialFormats,
-  }: FormatCreateRequestOptions<JsonLdCredentialFormat>): Promise<FormatCreateReturn> {
-    const jsonLdFormat = credentialFormats.jsonld
+  public async createRequest(
+    agentContext: AgentContext,
+    { credentialFormats }: FormatCreateRequestOptions<JsonLdCredentialFormat>
+  ): Promise<FormatCreateReturn> {
+    const jsonLdFormat = credentialFormats?.jsonld
 
     const format = new CredentialFormatSpec({
       format: JSONLD_VC_DETAIL,
@@ -209,7 +211,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     // FIXME: validating an interface doesn't work.
-    await MessageValidator.validateSync(jsonLdFormat)
+    MessageValidator.validateSync(jsonLdFormat)
 
     // FIXME: SignCredentialOptions doesn't follow RFC0593
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
@@ -217,7 +219,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     return { format, attachment }
   }
 
-  public async processRequest({ attachment }: FormatProcessOptions): Promise<void> {
+  public async processRequest(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
     // FIXME: SignCredentialOptions doesn't follow RFC0593
     const requestJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
@@ -226,14 +228,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     // FIXME: validating an interface doesn't work.
-    await MessageValidator.validateSync(requestJson)
+    MessageValidator.validateSync(requestJson)
   }
 
-  public async acceptRequest({
-    attachId,
-    requestAttachment,
-    credentialFormats,
-  }: FormatAcceptRequestOptions<JsonLdCredentialFormat>): Promise<FormatCreateReturn> {
+  public async acceptRequest(
+    agentContext: AgentContext,
+    { credentialFormats, attachId, requestAttachment }: FormatAcceptRequestOptions<JsonLdCredentialFormat>
+  ): Promise<FormatCreateReturn> {
     const jsonLdFormat = credentialFormats?.jsonld
 
     // sign credential here. credential to be signed is received as the request attachment
@@ -250,7 +251,11 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // FIXME: we're not using all properties from the interface. If we're not using them,
     // they shouldn't be in the interface.
     if (!verificationMethod) {
-      verificationMethod = await this.deriveVerificationMethod(credentialData.credential, credentialRequest)
+      verificationMethod = await this.deriveVerificationMethod(
+        agentContext,
+        credentialData.credential,
+        credentialRequest
+      )
       if (!verificationMethod) {
         throw new AriesFrameworkError('Missing verification method in credential data')
       }
@@ -259,7 +264,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       attachId,
       format: JSONLD_VC,
     })
-    const verifiableCredential = await this.w3cCredentialService.signCredential({
+    const verifiableCredential = await this.w3cCredentialService.signCredential(agentContext, {
       credential: JsonTransformer.fromJSON(credentialData.credential, W3cCredential),
       proofType: credentialData.options.proofType,
       verificationMethod: verificationMethod,
@@ -275,6 +280,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    * @return the verification method derived from this credential and its associated issuer did, keys etc.
    */
   public async deriveVerificationMethod(
+    agentContext: AgentContext,
     credential: W3cCredential,
     credentialRequest: SignCredentialOptionsRFC0593
   ): Promise<string> {
@@ -285,7 +291,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       issuerDid = issuerDid.id
     }
     // this will throw an error if the issuer did is invalid
-    const issuerDidDocument = await this.didResolver.resolveDidDocument(issuerDid)
+    const issuerDidDocument = await this.didResolver.resolveDidDocument(agentContext, issuerDid)
 
     // find first key which matches proof type
     const proofType = credentialRequest.options.proofType
@@ -309,10 +315,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    * @param options the issue credential message wrapped inside this object
    * @param credentialRecord the credential exchange record for this credential
    */
-  public async processCredential({ credentialRecord, attachment }: FormatProcessOptions): Promise<void> {
+  public async processCredential(
+    agentContext: AgentContext,
+    { credentialRecord, attachment }: FormatProcessOptions
+  ): Promise<void> {
     const credentialAsJson = attachment.getDataAsJson<W3cVerifiableCredential>()
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
-    await MessageValidator.validateSync(credential)
+    MessageValidator.validateSync(credential)
 
     // FIXME: we should verify the signature of the credential here to make sure we can work
     // with the credential we received.
@@ -320,8 +329,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // we requested. We can take an example of the ACA-Py implementation:
     // https://github.com/hyperledger/aries-cloudagent-python/blob/main/aries_cloudagent/protocols/issue_credential/v2_0/formats/ld_proof/handler.py#L492
 
-    const verifiableCredential = await this.w3cCredentialService.storeCredential({
-      record: credential,
+    const verifiableCredential = await this.w3cCredentialService.storeCredential(agentContext, {
+      credential: credential,
     })
 
     credentialRecord.credentials.push({
@@ -340,15 +349,24 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     throw new Error('Method not implemented.')
   }
 
-  public shouldAutoRespondToProposal({ offerAttachment, proposalAttachment }: FormatAutoRespondProposalOptions) {
+  public shouldAutoRespondToProposal(
+    agentContext: AgentContext,
+    { offerAttachment, proposalAttachment }: FormatAutoRespondProposalOptions
+  ) {
     return this.areCredentialsEqual(proposalAttachment, offerAttachment)
   }
 
-  public shouldAutoRespondToOffer({ offerAttachment, proposalAttachment }: FormatAutoRespondOfferOptions) {
+  public shouldAutoRespondToOffer(
+    agentContext: AgentContext,
+    { offerAttachment, proposalAttachment }: FormatAutoRespondOfferOptions
+  ) {
     return this.areCredentialsEqual(proposalAttachment, offerAttachment)
   }
 
-  public shouldAutoRespondToRequest({ offerAttachment, requestAttachment }: FormatAutoRespondRequestOptions) {
+  public shouldAutoRespondToRequest(
+    agentContext: AgentContext,
+    { offerAttachment, requestAttachment }: FormatAutoRespondRequestOptions
+  ) {
     return this.areCredentialsEqual(offerAttachment, requestAttachment)
   }
 

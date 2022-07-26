@@ -70,14 +70,11 @@ const connectionService = new ConnectionServiceMock()
 // @ts-ignore
 indyCredentialFormatService.formatKey = 'indy'
 
-<<<<<<< HEAD
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 jsonLdCredentialFormatService.formatKey = 'jsonld'
-=======
 const agentConfig = getAgentConfig('V2CredentialServiceCredTest')
 const agentContext = getAgentContext()
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
 
 const connection = getMockConnection({
   id: '123',
@@ -271,12 +268,9 @@ describe('CredentialService', () => {
       eventEmitter,
       credentialRepository,
       indyCredentialFormatService,
-<<<<<<< HEAD
-      jsonLdCredentialFormatService
-=======
+      jsonLdCredentialFormatService,
       agentConfig.logger,
       new CredentialsModuleConfig()
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
     )
   })
 

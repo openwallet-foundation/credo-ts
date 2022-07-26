@@ -16,20 +16,14 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Key, KeyType } from '../../../crypto'
-<<<<<<< HEAD
-=======
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
 import { DidKey, IndyAgentService } from '../../dids'
-<<<<<<< HEAD
-=======
 import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
 import { DidCommV1Service } from '../../dids/domain/service/DidCommV1Service'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../dids/repository'

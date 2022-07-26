@@ -13,10 +13,7 @@ import type {
   CreateRequestOptions,
   CredentialProtocolMsgReturnType,
   FormatDataMessagePayload,
-<<<<<<< HEAD
-=======
   CreateProblemReportOptions,
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
   GetFormatDataReturn,
   NegotiateOfferOptions,
   NegotiateProposalOptions,
@@ -43,13 +40,8 @@ import { RoutingService } from '../../../routing/services/RoutingService'
 import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
 import { CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
-<<<<<<< HEAD
 import { JsonLdCredentialFormatService } from '../../formats/jsonld/JsonLdCredentialFormatService'
-import { AutoAcceptCredential } from '../../models/CredentialAutoAcceptType'
-import { CredentialState } from '../../models/CredentialState'
-=======
 import { AutoAcceptCredential, CredentialState } from '../../models'
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
 import { CredentialExchangeRecord, CredentialRepository } from '../../repository'
 import { CredentialService } from '../../services/CredentialService'
 import { composeAutoAccept } from '../../util/composeAutoAccept'
@@ -89,12 +81,9 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
     indyCredentialFormatService: IndyCredentialFormatService,
-<<<<<<< HEAD
-    jsonLdCredentialFormatService: JsonLdCredentialFormatService
-=======
+    jsonLdCredentialFormatService: JsonLdCredentialFormatService,
     @inject(InjectionSymbols.Logger) logger: Logger,
     credentialsModuleConfig: CredentialsModuleConfig
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
   ) {
     super(credentialRepository, didCommMessageRepository, eventEmitter, dispatcher, logger)
     this.connectionService = connectionService
@@ -156,12 +145,8 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
       autoAcceptCredential,
       protocolVersion: 'v2',
     })
-<<<<<<< HEAD
-    const proposalMessage = await this.credentialFormatCoordinator.createProposal({
-=======
 
     const proposalMessage = await this.credentialFormatCoordinator.createProposal(agentContext, {
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
       credentialFormats,
       credentialRecord,
       formatServices,
@@ -867,12 +852,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     if (autoAccept === AutoAcceptCredential.Always) return true
     if (autoAccept === AutoAcceptCredential.Never) return false
 
-<<<<<<< HEAD
-    const offerMessage = await this.findOfferMessage(credentialRecord.id)
-
-=======
     const offerMessage = await this.findOfferMessage(agentContext, credentialRecord.id)
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
     if (!offerMessage) return false
 
     // NOTE: we take the formats from the offerMessage so we always check all services that we last sent

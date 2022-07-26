@@ -48,7 +48,6 @@ import {
   V1RequestCredentialMessage,
   V1CredentialPreview,
 } from '../messages'
-import { V1CredentialPreview } from '../messages/V1CredentialPreview'
 
 // Mock classes
 jest.mock('../../../repository/CredentialRepository')

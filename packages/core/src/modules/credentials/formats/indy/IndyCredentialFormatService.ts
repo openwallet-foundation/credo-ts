@@ -129,15 +129,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     return { format, attachment, previewAttributes }
   }
 
-<<<<<<< HEAD
-  /**
-   * Method called on reception of a propose credential message
-   * @param options the options needed to accept the proposal
-   */
-  public async processProposal({ attachment }: FormatProcessOptions): Promise<void> {
-=======
   public async processProposal(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
     const credProposalJson = attachment.getDataAsJson()
 
     if (!credProposalJson) {
@@ -386,10 +378,6 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     return supportedFormats.includes(format)
   }
 
-<<<<<<< HEAD
-  public async deleteCredentialById(credentialRecordId: string): Promise<void> {
-    await this.indyHolderService.deleteCredential(credentialRecordId)
-=======
   /**
    * Gets the attachment object for a given attachId. We need to get out the correct attachId for
    * indy and then find the corresponding attachment (if there is one)
@@ -409,7 +397,6 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
 
   public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
     await this.indyHolderService.deleteCredential(agentContext, credentialRecordId)
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
   }
 
   public shouldAutoRespondToProposal(

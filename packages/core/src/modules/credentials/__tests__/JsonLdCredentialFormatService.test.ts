@@ -1,3 +1,4 @@
+import type { AgentContext } from '../../../agent'
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { DidDocument, DidDocumentService, DidPurpose, VerificationMethod } from '../../dids'
 import type { SignCredentialOptionsRFC0593 } from '../../vc/models/W3cCredentialServiceOptions'
@@ -8,7 +9,9 @@ import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2
 import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
 import type { CredentialRepository } from '../repository/CredentialRepository'
 
-import { getAgentConfig, mockFunction } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils'
@@ -232,9 +235,11 @@ let w3cCredentialService: W3cCredentialService
 let didResolver: DidResolverService
 
 describe('JsonLd CredentialFormatService', () => {
+  let agentContext: AgentContext
   beforeEach(async () => {
+    agentContext = getAgentContext()
     agentConfig = getAgentConfig('JsonLdCredentialFormatServiceTest')
-    eventEmitter = new EventEmitter(agentConfig)
+    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     w3cCredentialService = new W3cCredentialServiceMock()
     didResolver = new DidResolverServiceMock()
     jsonldFormatService = new JsonLdCredentialFormatService(
@@ -248,7 +253,7 @@ describe('JsonLd CredentialFormatService', () => {
   describe('Create JsonLd Credential Proposal / Offer', () => {
     test(`Creates JsonLd Credential Proposal`, async () => {
       // when
-      const { attachment, format } = await jsonldFormatService.createProposal({
+      const { attachment, format } = await jsonldFormatService.createProposal(agentContext, {
         credentialRecord: mockCredentialRecord(),
         credentialFormats: {
           jsonld: signCredentialOptions,
@@ -281,7 +286,7 @@ describe('JsonLd CredentialFormatService', () => {
 
     test(`Creates JsonLd Credential Offer`, async () => {
       // when
-      const { attachment, previewAttributes, format } = await jsonldFormatService.createOffer({
+      const { attachment, previewAttributes, format } = await jsonldFormatService.createOffer(agentContext, {
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
@@ -318,7 +323,7 @@ describe('JsonLd CredentialFormatService', () => {
   describe('Accept Credential Offer', () => {
     test('returns credential request message base on existing credential offer message', async () => {
       // when
-      const { attachment, format } = await jsonldFormatService.acceptOffer({
+      const { attachment, format } = await jsonldFormatService.acceptOffer(agentContext, {
         credentialFormats: {
           jsonld: undefined,
         },
@@ -364,6 +369,7 @@ describe('JsonLd CredentialFormatService', () => {
       const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
       const verificationMethod = await service.deriveVerificationMethod(
+        agentContext,
         signCredentialOptions.credential,
         credentialRequest
       )
@@ -387,7 +393,7 @@ describe('JsonLd CredentialFormatService', () => {
         verificationMethod,
       }
 
-      const { format, attachment } = await jsonldFormatService.acceptRequest({
+      const { format, attachment } = await jsonldFormatService.acceptRequest(agentContext, {
         credentialRecord,
         credentialFormats: {
           jsonld: acceptRequestOptions,
@@ -438,10 +444,10 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       // given
-      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
 
       // when
-      await jsonldFormatService.processCredential({ attachment: credentialAttachment, credentialRecord })
+      await jsonldFormatService.processCredential(agentContext, { attachment: credentialAttachment, credentialRecord })
 
       // then
       expect(w3cCredentialService.storeCredential).toHaveBeenCalledTimes(1)

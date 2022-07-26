@@ -4,6 +4,7 @@ import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
 import { IndyCredentialFormatService } from './formats/indy'
+import { JsonLdCredentialFormatService } from './formats/jsonld/JsonLdCredentialFormatService'
 import { RevocationNotificationService } from './protocol/revocation-notification/services'
 import { V1CredentialService } from './protocol/v1'
 import { V2CredentialService } from './protocol/v2'
@@ -36,5 +37,6 @@ export class CredentialsModule implements Module {
 
     // Credential Formats
     dependencyManager.registerSingleton(IndyCredentialFormatService)
+    dependencyManager.registerSingleton(JsonLdCredentialFormatService)
   }
 }

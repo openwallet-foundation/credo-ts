@@ -20,6 +20,7 @@ import type {
 } from './CredentialsApiOptions'
 import type { CredentialFormat } from './formats'
 import type { IndyCredentialFormat } from './formats/indy/IndyCredentialFormat'
+import type { JsonLdCredentialFormat } from './formats/jsonld/JsonLdCredentialFormat'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
 import type { CredentialService } from './services/CredentialService'
 
@@ -87,7 +88,7 @@ export interface CredentialsApi<CFs extends CredentialFormat[], CSs extends Cred
 
 @injectable()
 export class CredentialsApi<
-  CFs extends CredentialFormat[] = [IndyCredentialFormat],
+  CFs extends CredentialFormat[] = [IndyCredentialFormat, JsonLdCredentialFormat],
   CSs extends CredentialService<CFs>[] = [V1CredentialService, V2CredentialService<CFs>]
 > implements CredentialsApi<CFs, CSs>
 {

@@ -1,10 +1,15 @@
+import type { ProposeCredentialOptions } from '../../..'
 import type { Agent } from '../../../../../agent/Agent'
 import type { SignCredentialOptionsRFC0593 } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
+import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type { AcceptOfferOptions, AcceptProposalOptions } from '../../../CredentialsModuleOptions'
+import type { AcceptOfferOptions, AcceptProposalOptions } from '../../../CredentialsApiOptions'
+import type { JsonLdCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { V2CredentialService } from '../V2CredentialService'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
+import { InjectionSymbols } from '../../../../../constants'
 import { KeyType } from '../../../../../crypto'
 import { Key } from '../../../../../crypto/Key'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
@@ -13,7 +18,6 @@ import { Ed25519Signature2018Fixtures } from '../../../../../modules/vc/__tests_
 import { W3cCredential } from '../../../../../modules/vc/models'
 import { JsonTransformer } from '../../../../../utils'
 import { sleep } from '../../../../../utils/sleep'
-import { IndyWallet } from '../../../../../wallet/IndyWallet'
 import { AutoAcceptCredential, CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V2CredentialPreview } from '../messages'
@@ -25,7 +29,7 @@ describe('credentials', () => {
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
-  let wallet: IndyWallet
+  let wallet
   let issuerDidKey: DidKey
   let verificationMethod: string
   let credential: W3cCredential
@@ -34,12 +38,14 @@ describe('credentials', () => {
   describe('Auto accept on `always`', () => {
     const seed = 'testseed000000000000000000000001'
     beforeAll(async () => {
-      ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
+      ; ({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
         'faber agent: always v2 jsonld',
         'alice agent: always v2 jsonld',
         AutoAcceptCredential.Always
       ))
-      wallet = faberAgent.injectionContainer.resolve(IndyWallet)
+
+      wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+
       const issuerDidInfo = await wallet.createDid({ seed })
       const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
       issuerDidKey = new DidKey(issuerKey)
@@ -67,14 +73,21 @@ describe('credentials', () => {
     test('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
       testLogger.test('Alice sends credential proposal to Faber')
 
-      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
+      const options: ProposeCredentialOptions<
+        [JsonLdCredentialFormat],
+        [V2CredentialService<[JsonLdCredentialFormat]>]
+      > = {
         connectionId: aliceConnection.id,
         protocolVersion: 'v2',
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
         comment: 'v2 propose credential test',
-      })
+      }
+
+      console.log('>>>>>>>>>>>>>>>>> 1 MJR ******* credentialFormats = ', options.credentialFormats)
+      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential(options)
+
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: aliceCredentialExchangeRecord.threadId,
@@ -149,17 +162,16 @@ describe('credentials', () => {
     const seed = 'testseed000000000000000000000001'
 
     beforeAll(async () => {
-      ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
+      ; ({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
         'faber agent: content-approved v2 jsonld',
         'alice agent: content-approved v2 jsonld',
         AutoAcceptCredential.ContentApproved
       ))
-      wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-      const issuerDidInfo = await wallet.createDid({ seed })
-      const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
-      issuerDidKey = new DidKey(issuerKey)
+      // wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      // const issuerDidInfo = await wallet.createDid({ seed })
+      // const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+      // issuerDidKey = new DidKey(issuerKey)
       credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
-      verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
 
       signCredentialOptions = {
         credential,
