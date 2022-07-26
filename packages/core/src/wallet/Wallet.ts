@@ -1,14 +1,15 @@
 import type { Key, KeyType } from '../crypto'
+import type { Disposable } from '../plugins'
 import type {
   EncryptedMessage,
+  PlaintextMessage,
   WalletConfig,
   WalletConfigRekey,
-  PlaintextMessage,
   WalletExportImportConfig,
 } from '../types'
 import type { Buffer } from '../utils/buffer'
 
-export interface Wallet {
+export interface Wallet extends Disposable {
   publicDid: DidInfo | undefined
   isInitialized: boolean
   isProvisioned: boolean
@@ -31,6 +32,7 @@ export interface Wallet {
   pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
   unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
   generateNonce(): Promise<string>
+  generateWalletKey(): Promise<string>
 }
 
 export interface DidInfo {

@@ -1,7 +1,7 @@
-import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { Logger } from '../../../../../logger'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
+import type { RoutingService } from '../../../../routing/services/RoutingService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
@@ -12,27 +12,27 @@ import { V1OfferCredentialMessage } from '../messages'
 
 export class V1OfferCredentialHandler implements Handler {
   private credentialService: V1CredentialService
-  private agentConfig: AgentConfig
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private didCommMessageRepository: DidCommMessageRepository
+  private logger: Logger
   public supportedMessages = [V1OfferCredentialMessage]
 
   public constructor(
     credentialService: V1CredentialService,
-    agentConfig: AgentConfig,
-    mediationRecipientService: MediationRecipientService,
-    didCommMessageRepository: DidCommMessageRepository
+    routingService: RoutingService,
+    didCommMessageRepository: DidCommMessageRepository,
+    logger: Logger
   ) {
     this.credentialService = credentialService
-    this.agentConfig = agentConfig
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.didCommMessageRepository = didCommMessageRepository
+    this.logger = logger
   }
 
   public async handle(messageContext: HandlerInboundMessage<V1OfferCredentialHandler>) {
     const credentialRecord = await this.credentialService.processOffer(messageContext)
 
-    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToOffer({
+    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToOffer(messageContext.agentContext, {
       credentialRecord,
       offerMessage: messageContext.message,
     })
@@ -46,15 +46,13 @@ export class V1OfferCredentialHandler implements Handler {
     credentialRecord: CredentialExchangeRecord,
     messageContext: HandlerInboundMessage<V1OfferCredentialHandler>
   ) {
-    this.agentConfig.logger.info(
-      `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptCredentials}`
-    )
+    this.logger.info(`Automatically sending request with autoAccept`)
     if (messageContext.connection) {
-      const { message } = await this.credentialService.acceptOffer({ credentialRecord })
+      const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, { credentialRecord })
 
       return createOutboundMessage(messageContext.connection, message)
     } else if (messageContext.message.service) {
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.routingService.getRouting(messageContext.agentContext)
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
@@ -62,7 +60,7 @@ export class V1OfferCredentialHandler implements Handler {
       })
       const recipientService = messageContext.message.service
 
-      const { message } = await this.credentialService.acceptOffer({
+      const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, {
         credentialRecord,
         credentialFormats: {
           indy: {
@@ -73,7 +71,7 @@ export class V1OfferCredentialHandler implements Handler {
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: message,
         role: DidCommMessageRole.Sender,
         associatedRecordId: credentialRecord.id,
@@ -86,6 +84,6 @@ export class V1OfferCredentialHandler implements Handler {
       })
     }
 
-    this.agentConfig.logger.error(`Could not automatically create credential request`)
+    this.logger.error(`Could not automatically create credential request`)
   }
 }

@@ -43,7 +43,7 @@ export function createWalletKeyPairClass(wallet: Wallet) {
 
     public static async from(verificationMethod: VerificationMethod): Promise<WalletKeyPair> {
       const vMethod = JsonTransformer.fromJSON(verificationMethod, VerificationMethod)
-      await MessageValidator.validateSync(vMethod)
+      MessageValidator.validateSync(vMethod)
       const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(vMethod)
       const key = getKeyFromVerificationMethod(vMethod)
 

@@ -1,5 +1,5 @@
+import type { AgentContext } from '../../../agent'
 import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { Wallet } from '../../../wallet'
 import type { ParseRevocationRegistryDefinitionTemplate } from '../../ledger/services/IndyLedgerService'
 import type { CredentialFormatService } from '../formats'
 import type { IndyCredentialFormat } from '../formats/indy/IndyCredentialFormat'
@@ -9,7 +9,9 @@ import type { CustomCredentialTags } from '../repository/CredentialExchangeRecor
 import type { CredentialRepository } from '../repository/CredentialRepository'
 import type { RevocRegDef } from 'indy-sdk'
 
-import { getAgentConfig, mockFunction } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
@@ -174,15 +176,18 @@ let agentConfig: AgentConfig
 let credentialRecord: CredentialExchangeRecord
 
 describe('Indy CredentialFormatService', () => {
+  let agentContext: AgentContext
   beforeEach(async () => {
+    agentContext = getAgentContext()
     agentConfig = getAgentConfig('CredentialServiceTest')
-    eventEmitter = new EventEmitter(agentConfig)
+    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
 
     indyIssuerService = new IndyIssuerServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     indyLedgerService = new IndyLedgerServiceMock()
     didResolverService = new DidResolverServiceMock()
     connectionService = new ConnectionServiceMock()
+
     indyFormatService = new IndyCredentialFormatService(
       credentialRepository,
       eventEmitter,
@@ -191,8 +196,7 @@ describe('Indy CredentialFormatService', () => {
       indyHolderService,
       connectionService,
       didResolverService,
-      agentConfig,
-      {} as unknown as Wallet
+      agentConfig.logger
     )
 
     mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
@@ -201,7 +205,7 @@ describe('Indy CredentialFormatService', () => {
   describe('Create Credential Proposal / Offer', () => {
     test(`Creates Credential Proposal`, async () => {
       // when
-      const { attachment, previewAttributes, format } = await indyFormatService.createProposal({
+      const { attachment, previewAttributes, format } = await indyFormatService.createProposal(agentContext, {
         credentialRecord: mockCredentialRecord(),
         credentialFormats: {
           indy: {
@@ -255,7 +259,7 @@ describe('Indy CredentialFormatService', () => {
 
     test(`Creates Credential Offer`, async () => {
       // when
-      const { attachment, previewAttributes, format } = await indyFormatService.createOffer({
+      const { attachment, previewAttributes, format } = await indyFormatService.createOffer(agentContext, {
         credentialRecord: mockCredentialRecord(),
         credentialFormats: {
           indy: {
@@ -314,7 +318,7 @@ describe('Indy CredentialFormatService', () => {
       })
 
       // when
-      await indyFormatService.processOffer({ attachment: offerAttachment, credentialRecord })
+      await indyFormatService.processOffer(agentContext, { attachment: offerAttachment, credentialRecord })
     })
   })
 
@@ -330,7 +334,7 @@ describe('Indy CredentialFormatService', () => {
       mockFunction(indyLedgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
 
       // when
-      const { format, attachment } = await indyFormatService.acceptOffer({
+      const { format, attachment } = await indyFormatService.acceptOffer(agentContext, {
         credentialRecord,
         credentialFormats: {
           indy: {
@@ -383,7 +387,7 @@ describe('Indy CredentialFormatService', () => {
       mockFunction(indyIssuerService.createCredential).mockReturnValue(Promise.resolve([cred, 'x']))
 
       // when
-      const { format, attachment } = await indyFormatService.acceptRequest({
+      const { format, attachment } = await indyFormatService.acceptRequest(agentContext, {
         credentialRecord,
         requestAttachment,
         offerAttachment,
@@ -427,7 +431,7 @@ describe('Indy CredentialFormatService', () => {
       mockFunction(indyHolderService.storeCredential).mockReturnValue(Promise.resolve('100'))
 
       // when
-      await indyFormatService.processCredential({ attachment: credentialAttachment, credentialRecord })
+      await indyFormatService.processCredential(agentContext, { attachment: credentialAttachment, credentialRecord })
 
       // then
       expect(indyHolderService.storeCredential).toHaveBeenCalledTimes(1)

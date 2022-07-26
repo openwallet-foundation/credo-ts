@@ -1,23 +1,22 @@
+import type { AgentContext } from '../../agent/context'
 import type { ProofRecord } from './repository'
 
-import { scoped, Lifecycle } from 'tsyringe'
-
-import { AgentConfig } from '../../agent/AgentConfig'
+import { injectable } from '../../plugins'
 
 import { AutoAcceptProof } from './ProofAutoAcceptType'
+import { ProofsModuleConfig } from './ProofsModuleConfig'
 
 /**
  * This class handles all the automation with all the messages in the present proof protocol
  * Every function returns `true` if it should automate the flow and `false` if not
  */
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ProofResponseCoordinator {
-  private agentConfig: AgentConfig
+  private proofsModuleConfig: ProofsModuleConfig
 
-  public constructor(agentConfig: AgentConfig) {
-    this.agentConfig = agentConfig
+  public constructor(proofsModuleConfig: ProofsModuleConfig) {
+    this.proofsModuleConfig = proofsModuleConfig
   }
-
   /**
    * Returns the proof auto accept config based on priority:
    *	- The record config takes first priority
@@ -34,10 +33,10 @@ export class ProofResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a proposal
    */
-  public shouldAutoRespondToProposal(proofRecord: ProofRecord) {
+  public shouldAutoRespondToProposal(agentContext: AgentContext, proofRecord: ProofRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
       proofRecord.autoAcceptProof,
-      this.agentConfig.autoAcceptProofs
+      this.proofsModuleConfig.autoAcceptProofs
     )
 
     if (autoAccept === AutoAcceptProof.Always) {
@@ -49,10 +48,10 @@ export class ProofResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a request
    */
-  public shouldAutoRespondToRequest(proofRecord: ProofRecord) {
+  public shouldAutoRespondToRequest(agentContext: AgentContext, proofRecord: ProofRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
       proofRecord.autoAcceptProof,
-      this.agentConfig.autoAcceptProofs
+      this.proofsModuleConfig.autoAcceptProofs
     )
 
     if (
@@ -68,10 +67,10 @@ export class ProofResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a presentation of proof
    */
-  public shouldAutoRespondToPresentation(proofRecord: ProofRecord) {
+  public shouldAutoRespondToPresentation(agentContext: AgentContext, proofRecord: ProofRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
       proofRecord.autoAcceptProof,
-      this.agentConfig.autoAcceptProofs
+      this.proofsModuleConfig.autoAcceptProofs
     )
 
     if (

@@ -1,9 +1,6 @@
 import type { Logger } from '../logger'
-import type { FileSystem } from '../storage/FileSystem'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
-
-import { Subject } from 'rxjs'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'
@@ -17,17 +14,12 @@ export class AgentConfig {
   public label: string
   public logger: Logger
   public readonly agentDependencies: AgentDependencies
-  public readonly fileSystem: FileSystem
-
-  // $stop is used for agent shutdown signal
-  public readonly stop$ = new Subject<boolean>()
 
   public constructor(initConfig: InitConfig, agentDependencies: AgentDependencies) {
     this.initConfig = initConfig
     this.label = initConfig.label
     this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
     this.agentDependencies = agentDependencies
-    this.fileSystem = new agentDependencies.FileSystem()
 
     const { mediatorConnectionsInvite, clearDefaultMediator, defaultMediatorId } = this.initConfig
 
@@ -39,30 +31,51 @@ export class AgentConfig {
     }
   }
 
+  /**
+   * @deprecated use connectToIndyLedgersOnStartup from the `LedgerModuleConfig` class
+   */
   public get connectToIndyLedgersOnStartup() {
     return this.initConfig.connectToIndyLedgersOnStartup ?? true
   }
 
+  /**
+   * @todo remove once did registrar module is available
+   */
   public get publicDidSeed() {
     return this.initConfig.publicDidSeed
   }
 
+  /**
+   * @deprecated use indyLedgers from the `LedgerModuleConfig` class
+   */
   public get indyLedgers() {
     return this.initConfig.indyLedgers ?? []
   }
 
+  /**
+   * @todo move to context configuration
+   */
   public get walletConfig() {
     return this.initConfig.walletConfig
   }
 
+  /**
+   * @deprecated use autoAcceptConnections from the `ConnectionsModuleConfig` class
+   */
   public get autoAcceptConnections() {
     return this.initConfig.autoAcceptConnections ?? false
   }
 
+  /**
+   * @deprecated use autoAcceptProofs from the `ProofsModuleConfig` class
+   */
   public get autoAcceptProofs() {
     return this.initConfig.autoAcceptProofs ?? AutoAcceptProof.Never
   }
 
+  /**
+   * @deprecated use autoAcceptCredentials from the `CredentialsModuleConfig` class
+   */
   public get autoAcceptCredentials() {
     return this.initConfig.autoAcceptCredentials ?? AutoAcceptCredential.Never
   }
@@ -71,14 +84,23 @@ export class AgentConfig {
     return this.initConfig.didCommMimeType ?? DidCommMimeType.V0
   }
 
+  /**
+   * @deprecated use mediatorPollingInterval from the `RecipientModuleConfig` class
+   */
   public get mediatorPollingInterval() {
     return this.initConfig.mediatorPollingInterval ?? 5000
   }
 
+  /**
+   * @deprecated use mediatorPickupStrategy from the `RecipientModuleConfig` class
+   */
   public get mediatorPickupStrategy() {
     return this.initConfig.mediatorPickupStrategy
   }
 
+  /**
+   * @deprecated use maximumMessagePickup from the `RecipientModuleConfig` class
+   */
   public get maximumMessagePickup() {
     return this.initConfig.maximumMessagePickup ?? 10
   }
@@ -93,18 +115,30 @@ export class AgentConfig {
     return this.initConfig.endpoints as [string, ...string[]]
   }
 
+  /**
+   * @deprecated use mediatorInvitationUrl from the `RecipientModuleConfig` class
+   */
   public get mediatorConnectionsInvite() {
     return this.initConfig.mediatorConnectionsInvite
   }
 
+  /**
+   * @deprecated use autoAcceptMediationRequests from the `MediatorModuleConfig` class
+   */
   public get autoAcceptMediationRequests() {
     return this.initConfig.autoAcceptMediationRequests ?? false
   }
 
+  /**
+   * @deprecated you can use `RecipientApi.setDefaultMediator` to set the default mediator.
+   */
   public get defaultMediatorId() {
     return this.initConfig.defaultMediatorId
   }
 
+  /**
+   * @deprecated you can set the `default` tag to `false` (or remove it completely) to clear the default mediator.
+   */
   public get clearDefaultMediator() {
     return this.initConfig.clearDefaultMediator ?? false
   }
@@ -113,11 +147,30 @@ export class AgentConfig {
     return this.initConfig.useLegacyDidSovPrefix ?? false
   }
 
+  /**
+   * @todo move to context configuration
+   */
   public get connectionImageUrl() {
     return this.initConfig.connectionImageUrl
   }
 
   public get autoUpdateStorageOnStartup() {
     return this.initConfig.autoUpdateStorageOnStartup ?? false
+  }
+
+  public extend(config: Partial<InitConfig>): AgentConfig {
+    return new AgentConfig(
+      { ...this.initConfig, logger: this.logger, label: this.label, ...config },
+      this.agentDependencies
+    )
+  }
+
+  public toJSON() {
+    return {
+      ...this.initConfig,
+      logger: this.logger !== undefined,
+      agentDependencies: this.agentDependencies != undefined,
+      label: this.label,
+    }
   }
 }

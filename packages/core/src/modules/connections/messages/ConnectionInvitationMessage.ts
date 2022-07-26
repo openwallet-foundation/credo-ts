@@ -1,3 +1,5 @@
+import type { Attachment } from '../../../decorators/attachment/Attachment'
+
 import { Transform } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
 import { parseUrl } from 'query-string'
@@ -12,6 +14,7 @@ export interface BaseInvitationOptions {
   id?: string
   label: string
   imageUrl?: string
+  appendedAttachments?: Attachment[]
 }
 
 export interface InlineInvitationOptions {
@@ -41,6 +44,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
       this.id = options.id || this.generateId()
       this.label = options.label
       this.imageUrl = options.imageUrl
+      this.appendedAttachments = options.appendedAttachments
 
       if (isDidInvitation(options)) {
         this.did = options.did

@@ -1,14 +1,13 @@
+import type { AgentContext } from '../../../../../agent'
 import type { Agent } from '../../../../../agent/Agent'
+import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
 import type { SignCredentialOptionsRFC0593 } from '../../../../vc/models/W3cCredentialServiceOptions'
-import type { AcceptRequestOptions } from '../../../CredentialsModuleOptions'
+import type { AcceptProposalOptions, AcceptRequestOptions } from '../../../CredentialsApiOptions'
 
-import { Key } from '../../../../../../src/crypto/Key'
-import { DidKey } from '../../../../../../src/modules/dids'
-import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
-import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
+import { getAgentContext, setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
-import { KeyType } from '../../../../../crypto/KeyType'
+import { InjectionSymbols } from '../../../../../constants'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
@@ -21,13 +20,10 @@ import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 describe('credentials', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credDefId: string
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
   let faberCredentialRecord: CredentialExchangeRecord
-  let wallet: IndyWallet
-  let issuerDidKey: DidKey
-  let verificationMethod: string
+
   let didCommMessageRepository: DidCommMessageRepository
 
   const inputDoc = {
@@ -64,19 +60,17 @@ describe('credentials', () => {
 
   let signCredentialOptions: SignCredentialOptionsRFC0593
 
-  const seed = 'testseed000000000000000000000001'
+  let agentContext: AgentContext
+  let wallet
 
   beforeAll(async () => {
-    ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
+    agentContext = getAgentContext()
+    ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD',
       'Alice Agent Credentials LD'
     ))
-    wallet = faberAgent.injectionContainer.resolve(IndyWallet)
+    wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
 
-    const issuerDidInfo = await wallet.createDid({ seed })
-    const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
-    issuerDidKey = new DidKey(issuerKey)
-    verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
     signCredentialOptions = {
       credential,
       options: {
@@ -133,9 +127,9 @@ describe('credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+    didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
 
-    const offerMessage = await didCommMessageRepository.findAgentMessage({
+    const offerMessage = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2OfferCredentialMessage,
     })
@@ -230,7 +224,7 @@ describe('credentials', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    const credentialMessage = await didCommMessageRepository.findAgentMessage({
+    const credentialMessage = await didCommMessageRepository.findAgentMessage(aliceAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2IssueCredentialMessage,
     })
@@ -312,27 +306,27 @@ describe('credentials', () => {
     })
 
     testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.credentials.acceptProposal({
+
+    const options: AcceptProposalOptions = {
       credentialRecordId: faberCredentialRecord.id,
-      comment: 'V2 Indy Offer',
+      comment: 'V2 W3C Offer',
       credentialFormats: {
-        indy: {
-          credentialDefinitionId: credDefId,
-          attributes: credentialPreview.attributes,
-        },
         jsonld: signCredentialOptions,
       },
-    })
+    }
+    await faberAgent.credentials.acceptProposal(options)
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
+    const wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
 
-    didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
+    // didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
+    didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
 
-    const offerMessage = await didCommMessageRepository.findAgentMessage({
+    const offerMessage = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2OfferCredentialMessage,
     })
@@ -437,7 +431,7 @@ describe('credentials', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    const credentialMessage = await didCommMessageRepository.getAgentMessage({
+    const credentialMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2IssueCredentialMessage,
     })

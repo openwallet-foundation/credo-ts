@@ -1,4 +1,4 @@
-import type { Agent } from '../../../../agent/Agent'
+import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { CredentialMetadata, CredentialExchangeRecord } from '../../../../modules/credentials'
 import type { JsonObject } from '../../../../types'
 
@@ -16,12 +16,12 @@ import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } fr
  * The following transformations are applied:
  *  - {@link updateIndyMetadata}
  */
-export async function migrateCredentialRecordToV0_2(agent: Agent) {
+export async function migrateCredentialRecordToV0_2<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating credential records to storage version 0.2')
-  const credentialRepository = agent.injectionContainer.resolve(CredentialRepository)
+  const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
 
   agent.config.logger.debug(`Fetching all credential records from storage`)
-  const allCredentials = await credentialRepository.getAll()
+  const allCredentials = await credentialRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${allCredentials.length} credential records to update.`)
   for (const credentialRecord of allCredentials) {
@@ -31,7 +31,7 @@ export async function migrateCredentialRecordToV0_2(agent: Agent) {
     await migrateInternalCredentialRecordProperties(agent, credentialRecord)
     await moveDidCommMessages(agent, credentialRecord)
 
-    await credentialRepository.update(credentialRecord)
+    await credentialRepository.update(agent.context, credentialRecord)
 
     agent.config.logger.debug(
       `Successfully migrated credential record with id ${credentialRecord.id} to storage version 0.2`
@@ -115,7 +115,10 @@ export function getCredentialRole(credentialRecord: CredentialExchangeRecord) {
  * }
  * ```
  */
-export async function updateIndyMetadata(agent: Agent, credentialRecord: CredentialExchangeRecord) {
+export async function updateIndyMetadata<Agent extends BaseAgent>(
+  agent: Agent,
+  credentialRecord: CredentialExchangeRecord
+) {
   agent.config.logger.debug(`Updating indy metadata to use the generic metadata api available to records.`)
 
   const { requestMetadata, schemaId, credentialDefinitionId, ...rest } = credentialRecord.metadata.data
@@ -173,7 +176,7 @@ export async function updateIndyMetadata(agent: Agent, credentialRecord: Credent
  * }
  * ```
  */
-export async function migrateInternalCredentialRecordProperties(
+export async function migrateInternalCredentialRecordProperties<Agent extends BaseAgent>(
   agent: Agent,
   credentialRecord: CredentialExchangeRecord
 ) {
@@ -210,11 +213,14 @@ export async function migrateInternalCredentialRecordProperties(
  * This migration scripts extracts all message (proposalMessage, offerMessage, requestMessage, credentialMessage) and moves
  * them into the DidCommMessageRepository.
  */
-export async function moveDidCommMessages(agent: Agent, credentialRecord: CredentialExchangeRecord) {
+export async function moveDidCommMessages<Agent extends BaseAgent>(
+  agent: Agent,
+  credentialRecord: CredentialExchangeRecord
+) {
   agent.config.logger.debug(
     `Moving didcomm messages from credential record with id ${credentialRecord.id} to DidCommMessageRecord`
   )
-  const didCommMessageRepository = agent.injectionContainer.resolve(DidCommMessageRepository)
+  const didCommMessageRepository = agent.dependencyManager.resolve(DidCommMessageRepository)
 
   for (const messageKey of credentialRecordMessageKeys) {
     agent.config.logger.debug(
@@ -232,7 +238,7 @@ export async function moveDidCommMessages(agent: Agent, credentialRecord: Creden
         associatedRecordId: credentialRecord.id,
         message,
       })
-      await didCommMessageRepository.save(didCommMessageRecord)
+      await didCommMessageRepository.save(agent.context, didCommMessageRecord)
 
       agent.config.logger.debug(
         `Successfully moved ${messageKey} from credential record with id ${credentialRecord.id} to DIDCommMessageRecord`

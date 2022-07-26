@@ -1,9 +1,10 @@
-import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { CreateOfferOptions } from '../../../CredentialServiceOptions'
 import type { IndyCredentialFormat } from '../../../formats/indy/IndyCredentialFormat'
 
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
@@ -13,8 +14,9 @@ import { JsonTransformer } from '../../../../../utils'
 import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { IndyLedgerService } from '../../../../ledger/services'
-import { MediationRecipientService } from '../../../../routing/services/MediationRecipientService'
+import { RoutingService } from '../../../../routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
+import { CredentialsModuleConfig } from '../../../CredentialsModuleConfig'
 import { credDef, schema } from '../../../__tests__/fixtures'
 import { IndyCredentialFormatService } from '../../../formats/indy/IndyCredentialFormatService'
 import { JsonLdCredentialFormatService } from '../../../formats/jsonld/JsonLdCredentialFormatService'
@@ -32,7 +34,7 @@ jest.mock('../../../../ledger/services/IndyLedgerService')
 jest.mock('../../../formats/indy/IndyCredentialFormatService')
 jest.mock('../../../formats/jsonld/JsonLdCredentialFormatService')
 jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
-jest.mock('../../../../routing/services/MediationRecipientService')
+jest.mock('../../../../routing/services/RoutingService')
 jest.mock('../../../../connections/services/ConnectionService')
 jest.mock('../../../../../agent/Dispatcher')
 
@@ -42,13 +44,13 @@ const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyCredentialFormatServiceMock = IndyCredentialFormatService as jest.Mock<IndyCredentialFormatService>
 const JsonLdCredentialFormatServiceMock = JsonLdCredentialFormatService as jest.Mock<JsonLdCredentialFormatService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
+const RoutingServiceMock = RoutingService as jest.Mock<RoutingService>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
-const mediationRecipientService = new MediationRecipientServiceMock()
+const routingService = new RoutingServiceMock()
 const indyLedgerService = new IndyLedgerServiceMock()
 const indyCredentialFormatService = new IndyCredentialFormatServiceMock()
 const jsonLdCredentialFormatService = new JsonLdCredentialFormatServiceMock()
@@ -62,6 +64,8 @@ indyCredentialFormatService.formatKey = 'indy'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 jsonLdCredentialFormatService.formatKey = 'jsonld'
+const agentConfig = getAgentConfig('V2CredentialServiceOfferTest')
+const agentContext = getAgentContext()
 
 const connection = getMockConnection({
   id: '123',
@@ -88,13 +92,11 @@ const offerAttachment = new Attachment({
 
 describe('V2CredentialServiceOffer', () => {
   let eventEmitter: EventEmitter
-  let agentConfig: AgentConfig
   let credentialService: V2CredentialService
 
   beforeEach(async () => {
     // real objects
-    agentConfig = getAgentConfig('V2CredentialServiceOfferTest')
-    eventEmitter = new EventEmitter(agentConfig)
+    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
 
     // mock function implementations
     mockFunction(connectionService.getById).mockResolvedValue(connection)
@@ -104,13 +106,14 @@ describe('V2CredentialServiceOffer', () => {
     credentialService = new V2CredentialService(
       connectionService,
       didCommMessageRepository,
-      agentConfig,
-      mediationRecipientService,
+      routingService,
       dispatcher,
       eventEmitter,
       credentialRepository,
       indyCredentialFormatService,
-      jsonLdCredentialFormatService
+      jsonLdCredentialFormatService,
+      agentConfig.logger,
+      new CredentialsModuleConfig()
     )
   })
 
@@ -138,11 +141,12 @@ describe('V2CredentialServiceOffer', () => {
       })
 
       // when
-      await credentialService.createOffer(offerOptions)
+      await credentialService.createOffer(agentContext, offerOptions)
 
       // then
       expect(credentialRepository.save).toHaveBeenNthCalledWith(
         1,
+        agentContext,
         expect.objectContaining({
           type: CredentialExchangeRecord.type,
           id: expect.any(String),
@@ -163,10 +167,13 @@ describe('V2CredentialServiceOffer', () => {
       const eventListenerMock = jest.fn()
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
-      await credentialService.createOffer(offerOptions)
+      await credentialService.createOffer(agentContext, offerOptions)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: null,
           credentialRecord: expect.objectContaining({
@@ -184,7 +191,7 @@ describe('V2CredentialServiceOffer', () => {
         previewAttributes: credentialPreview.attributes,
       })
 
-      const { message: credentialOffer } = await credentialService.createOffer(offerOptions)
+      const { message: credentialOffer } = await credentialService.createOffer(agentContext, offerOptions)
 
       expect(credentialOffer.toJSON()).toMatchObject({
         '@id': expect.any(String),
@@ -219,9 +226,7 @@ describe('V2CredentialServiceOffer', () => {
       offerAttachments: [offerAttachment],
     })
 
-    const messageContext = new InboundMessageContext(credentialOfferMessage, {
-      connection,
-    })
+    const messageContext = new InboundMessageContext(credentialOfferMessage, { agentContext, connection })
 
     test(`creates and return credential record in ${CredentialState.OfferReceived} state with offer, thread ID`, async () => {
       mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
@@ -232,6 +237,7 @@ describe('V2CredentialServiceOffer', () => {
       // then
       expect(credentialRepository.save).toHaveBeenNthCalledWith(
         1,
+        agentContext,
         expect.objectContaining({
           type: CredentialExchangeRecord.type,
           id: expect.any(String),
@@ -255,6 +261,9 @@ describe('V2CredentialServiceOffer', () => {
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: null,
           credentialRecord: expect.objectContaining({

@@ -20,14 +20,11 @@ export interface SignCredentialOptions {
   }
 }
 
-// FIXME move this into the jsonld format service
-
 // feel free to rename this, the RFC suffix is useful during dev
 
 export interface SignCredentialOptionsRFC0593 {
   credential: W3cCredential
   options: JsonLdOptionsRFC0593
-  // verificationMethod: string
 }
 
 export interface VerifyCredentialOptions {
@@ -36,7 +33,7 @@ export interface VerifyCredentialOptions {
 }
 
 export interface StoreCredentialOptions {
-  record: W3cVerifiableCredential
+  credential: W3cVerifiableCredential
 }
 
 export interface CreatePresentationOptions {

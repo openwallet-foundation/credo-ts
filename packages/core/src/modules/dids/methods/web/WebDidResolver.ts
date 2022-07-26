@@ -1,12 +1,15 @@
+import type { AgentContext } from '../../../../agent'
 import type { DidResolver } from '../../domain/DidResolver'
 import type { ParsedDid, DidResolutionResult, DidResolutionOptions } from '../../types'
 
 import { Resolver } from 'did-resolver'
 import * as didWeb from 'web-did-resolver'
 
+import { injectable } from '../../../../plugins'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { DidDocument } from '../../domain'
 
+@injectable()
 export class WebDidResolver implements DidResolver {
   public readonly supportedMethods
 
@@ -19,6 +22,7 @@ export class WebDidResolver implements DidResolver {
   }
 
   public async resolve(
+    agentContext: AgentContext,
     did: string,
     parsed: ParsedDid,
     didResolutionOptions: DidResolutionOptions

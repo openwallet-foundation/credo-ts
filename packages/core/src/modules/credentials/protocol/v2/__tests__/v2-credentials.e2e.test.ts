@@ -114,8 +114,8 @@ describe('v2 credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    const didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
-    const offerMessage = await didCommMessageRepository.findAgentMessage({
+    const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
+    const offerMessage = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2OfferCredentialMessage,
     })
@@ -220,14 +220,18 @@ describe('v2 credentials', () => {
     // test that delete credential removes from both repository and wallet
     // latter is tested by spying on holder service (Indy) to
     // see if deleteCredential is called
-    const holderService = aliceAgent.injectionContainer.resolve(IndyHolderService)
+    const holderService = aliceAgent.dependencyManager.resolve(IndyHolderService)
 
     const deleteCredentialSpy = jest.spyOn(holderService, 'deleteCredential')
     await aliceAgent.credentials.deleteById(holderCredential.id, {
       deleteAssociatedCredentials: true,
       deleteAssociatedDidCommMessages: true,
     })
-    expect(deleteCredentialSpy).toHaveBeenNthCalledWith(1, holderCredential.credentials[0].credentialRecordId)
+    expect(deleteCredentialSpy).toHaveBeenNthCalledWith(
+      1,
+      aliceAgent.context,
+      holderCredential.credentials[0].credentialRecordId
+    )
 
     return expect(aliceAgent.credentials.getById(holderCredential.id)).rejects.toThrowError(
       `CredentialRecord: record with id ${holderCredential.id} not found.`

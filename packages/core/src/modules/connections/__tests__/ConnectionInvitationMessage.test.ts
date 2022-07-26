@@ -1,6 +1,7 @@
 import { validateOrReject } from 'class-validator'
 import { parseUrl } from 'query-string'
 
+import { Attachment } from '../../../decorators/attachment/Attachment'
 import { ClassValidationError } from '../../../error/ClassValidationError'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -71,6 +72,16 @@ describe('ConnectionInvitationMessage', () => {
         serviceEndpoint: 'https://example.com',
         label: 'test',
         imageUrl: 'test-image-path',
+        appendedAttachments: [
+          new Attachment({
+            id: 'test-attachment',
+            data: {
+              json: {
+                value: 'test',
+              },
+            },
+          }),
+        ],
       })
 
       const invitationUrl = invitation.toUrl({

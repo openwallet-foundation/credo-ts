@@ -1,20 +1,33 @@
+import type { AgentContext } from '../../../agent'
 import type { Wallet } from '../../../wallet/Wallet'
+import type { DidDocument } from '../../dids'
 import type { Routing } from '../services/ConnectionService'
 
-import { getAgentConfig, getMockConnection, getMockOutOfBand, mockFunction } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import {
+  getAgentConfig,
+  getAgentContext,
+  getMockConnection,
+  getMockOutOfBand,
+  mockFunction,
+} from '../../../../tests/helpers'
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Key, KeyType } from '../../../crypto'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
 import { DidKey, IndyAgentService } from '../../dids'
+import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
 import { DidCommV1Service } from '../../dids/domain/service/DidCommV1Service'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
-import { DidRepository } from '../../dids/repository'
+import { DidRecord, DidRepository } from '../../dids/repository'
+import { DidRegistrarService } from '../../dids/services/DidRegistrarService'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
@@ -33,27 +46,42 @@ import { ConnectionService } from '../services/ConnectionService'
 import { convertToNewDidDocument } from '../services/helpers'
 
 jest.mock('../repository/ConnectionRepository')
+jest.mock('../../dids/services/DidRegistrarService')
 jest.mock('../../dids/repository/DidRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+const DidRegistrarServiceMock = DidRegistrarService as jest.Mock<DidRegistrarService>
+
+const didRegistrarService = new DidRegistrarServiceMock()
+mockFunction(didRegistrarService.create).mockResolvedValue({
+  didDocumentMetadata: {},
+  didRegistrationMetadata: {},
+  didState: {
+    state: 'finished',
+    did: 'did:peer:123',
+    didDocument: {} as DidDocument,
+  },
+})
 
 const connectionImageUrl = 'https://example.com/image.png'
 
-describe('ConnectionService', () => {
-  const agentConfig = getAgentConfig('ConnectionServiceTest', {
-    endpoints: ['http://agent.com:8080'],
-    connectionImageUrl,
-  })
+const agentConfig = getAgentConfig('ConnectionServiceTest', {
+  endpoints: ['http://agent.com:8080'],
+  connectionImageUrl,
+})
 
+describe('ConnectionService', () => {
   let wallet: Wallet
   let connectionRepository: ConnectionRepository
   let didRepository: DidRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
   let myRouting: Routing
+  let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
+    agentContext = getAgentContext({ wallet, agentConfig })
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
   })
@@ -63,16 +91,29 @@ describe('ConnectionService', () => {
   })
 
   beforeEach(async () => {
-    eventEmitter = new EventEmitter(agentConfig)
+    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     connectionRepository = new ConnectionRepositoryMock()
     didRepository = new DidRepositoryMock()
-    connectionService = new ConnectionService(wallet, agentConfig, connectionRepository, didRepository, eventEmitter)
+    connectionService = new ConnectionService(
+      agentConfig.logger,
+      connectionRepository,
+      didRepository,
+      didRegistrarService,
+      eventEmitter
+    )
     myRouting = {
       recipientKey: Key.fromFingerprint('z6MkwFkSP4uv5PhhKJCGehtjuZedkotC7VF64xtMsxuM8R3W'),
       endpoints: agentConfig.endpoints ?? [],
       routingKeys: [],
       mediatorId: 'fakeMediatorId',
     }
+
+    mockFunction(didRepository.getById).mockResolvedValue(
+      new DidRecord({
+        id: 'did:peer:123',
+        role: DidDocumentRole.Created,
+      })
+    )
   })
 
   describe('createRequest', () => {
@@ -82,7 +123,7 @@ describe('ConnectionService', () => {
       const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse })
       const config = { routing: myRouting }
 
-      const { connectionRecord, message } = await connectionService.createRequest(outOfBand, config)
+      const { connectionRecord, message } = await connectionService.createRequest(agentContext, outOfBand, config)
 
       expect(connectionRecord.state).toBe(DidExchangeState.RequestSent)
       expect(message.label).toBe(agentConfig.label)
@@ -119,7 +160,7 @@ describe('ConnectionService', () => {
       const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse })
       const config = { label: 'Custom label', routing: myRouting }
 
-      const { message } = await connectionService.createRequest(outOfBand, config)
+      const { message } = await connectionService.createRequest(agentContext, outOfBand, config)
 
       expect(message.label).toBe('Custom label')
     })
@@ -130,7 +171,7 @@ describe('ConnectionService', () => {
       const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse, imageUrl: connectionImageUrl })
       const config = { label: 'Custom label', routing: myRouting }
 
-      const { connectionRecord } = await connectionService.createRequest(outOfBand, config)
+      const { connectionRecord } = await connectionService.createRequest(agentContext, outOfBand, config)
 
       expect(connectionRecord.imageUrl).toBe(connectionImageUrl)
     })
@@ -141,7 +182,7 @@ describe('ConnectionService', () => {
       const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse })
       const config = { imageUrl: 'custom-image-url', routing: myRouting }
 
-      const { message } = await connectionService.createRequest(outOfBand, config)
+      const { message } = await connectionService.createRequest(agentContext, outOfBand, config)
 
       expect(message.imageUrl).toBe('custom-image-url')
     })
@@ -152,7 +193,7 @@ describe('ConnectionService', () => {
       const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.PrepareResponse })
       const config = { routing: myRouting }
 
-      return expect(connectionService.createRequest(outOfBand, config)).rejects.toThrowError(
+      return expect(connectionService.createRequest(agentContext, outOfBand, config)).rejects.toThrowError(
         `Invalid out-of-band record role ${OutOfBandRole.Sender}, expected is ${OutOfBandRole.Receiver}.`
       )
     })
@@ -166,7 +207,7 @@ describe('ConnectionService', () => {
         const outOfBand = getMockOutOfBand({ state })
         const config = { routing: myRouting }
 
-        return expect(connectionService.createRequest(outOfBand, config)).rejects.toThrowError(
+        return expect(connectionService.createRequest(agentContext, outOfBand, config)).rejects.toThrowError(
           `Invalid out-of-band record state ${state}, valid states are: ${OutOfBandState.PrepareResponse}.`
         )
       }
@@ -208,6 +249,7 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {
+        agentContext,
         senderKey: theirKey,
         recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
       })
@@ -265,6 +307,7 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {
+        agentContext,
         connection: connectionRecord,
         senderKey: theirKey,
         recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
@@ -297,6 +340,7 @@ describe('ConnectionService', () => {
       })
 
       const messageContext = new InboundMessageContext(connectionRequest, {
+        agentContext,
         recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
         senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
       })
@@ -312,6 +356,7 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const inboundMessage = new InboundMessageContext(jest.fn()(), {
+        agentContext,
         recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
         senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
       })
@@ -329,7 +374,7 @@ describe('ConnectionService', () => {
       (state) => {
         expect.assertions(1)
 
-        const inboundMessage = new InboundMessageContext(jest.fn()(), {})
+        const inboundMessage = new InboundMessageContext(jest.fn()(), { agentContext })
         const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state })
 
         return expect(connectionService.processRequest(inboundMessage, outOfBand)).rejects.toThrowError(
@@ -376,6 +421,7 @@ describe('ConnectionService', () => {
       })
 
       const { message, connectionRecord: connectionRecord } = await connectionService.createResponse(
+        agentContext,
         mockConnection,
         outOfBand
       )
@@ -398,7 +444,7 @@ describe('ConnectionService', () => {
         state: DidExchangeState.RequestReceived,
       })
       const outOfBand = getMockOutOfBand()
-      return expect(connectionService.createResponse(connection, outOfBand)).rejects.toThrowError(
+      return expect(connectionService.createResponse(agentContext, connection, outOfBand)).rejects.toThrowError(
         `Connection record has invalid role ${DidExchangeRole.Requester}. Expected role ${DidExchangeRole.Responder}.`
       )
     })
@@ -420,7 +466,7 @@ describe('ConnectionService', () => {
 
         const connection = getMockConnection({ state })
         const outOfBand = getMockOutOfBand()
-        return expect(connectionService.createResponse(connection, outOfBand)).rejects.toThrowError(
+        return expect(connectionService.createResponse(agentContext, connection, outOfBand)).rejects.toThrowError(
           `Connection record is in invalid state ${state}. Valid states are: ${DidExchangeState.RequestReceived}.`
         )
       }
@@ -478,6 +524,7 @@ describe('ConnectionService', () => {
         recipientKeys: [new DidKey(theirKey).did],
       })
       const messageContext = new InboundMessageContext(connectionResponse, {
+        agentContext,
         connection: connectionRecord,
         senderKey: theirKey,
         recipientKey: Key.fromPublicKeyBase58(verkey, KeyType.Ed25519),
@@ -501,6 +548,7 @@ describe('ConnectionService', () => {
         state: DidExchangeState.RequestSent,
       })
       const messageContext = new InboundMessageContext(jest.fn()(), {
+        agentContext,
         connection: connectionRecord,
         recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
         senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
@@ -561,6 +609,7 @@ describe('ConnectionService', () => {
         recipientKeys: [new DidKey(Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)).did],
       })
       const messageContext = new InboundMessageContext(connectionResponse, {
+        agentContext,
         connection: connectionRecord,
         senderKey: theirKey,
         recipientKey: Key.fromPublicKeyBase58(verkey, KeyType.Ed25519),
@@ -594,6 +643,7 @@ describe('ConnectionService', () => {
 
       const outOfBandRecord = getMockOutOfBand({ recipientKeys: [new DidKey(theirKey).did] })
       const messageContext = new InboundMessageContext(connectionResponse, {
+        agentContext,
         connection: connectionRecord,
         recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
         senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
@@ -611,7 +661,10 @@ describe('ConnectionService', () => {
 
       const mockConnection = getMockConnection({ state: DidExchangeState.ResponseReceived })
 
-      const { message, connectionRecord: connectionRecord } = await connectionService.createTrustPing(mockConnection)
+      const { message, connectionRecord: connectionRecord } = await connectionService.createTrustPing(
+        agentContext,
+        mockConnection
+      )
 
       expect(connectionRecord.state).toBe(DidExchangeState.Completed)
       expect(message).toEqual(expect.any(TrustPingMessage))
@@ -632,7 +685,7 @@ describe('ConnectionService', () => {
         expect.assertions(1)
         const connection = getMockConnection({ state })
 
-        return expect(connectionService.createTrustPing(connection)).rejects.toThrowError(
+        return expect(connectionService.createTrustPing(agentContext, connection)).rejects.toThrowError(
           `Connection record is in invalid state ${state}. Valid states are: ${DidExchangeState.ResponseReceived}, ${DidExchangeState.Completed}.`
         )
       }
@@ -648,7 +701,7 @@ describe('ConnectionService', () => {
         threadId: 'thread-id',
       })
 
-      const messageContext = new InboundMessageContext(ack, {})
+      const messageContext = new InboundMessageContext(ack, { agentContext })
 
       return expect(connectionService.processAck(messageContext)).rejects.toThrowError(
         'Unable to process connection ack: connection for recipient key undefined not found'
@@ -668,7 +721,7 @@ describe('ConnectionService', () => {
         threadId: 'thread-id',
       })
 
-      const messageContext = new InboundMessageContext(ack, { connection })
+      const messageContext = new InboundMessageContext(ack, { agentContext, connection })
 
       const updatedConnection = await connectionService.processAck(messageContext)
 
@@ -688,7 +741,7 @@ describe('ConnectionService', () => {
         threadId: 'thread-id',
       })
 
-      const messageContext = new InboundMessageContext(ack, { connection })
+      const messageContext = new InboundMessageContext(ack, { agentContext, connection })
 
       const updatedConnection = await connectionService.processAck(messageContext)
 
@@ -701,6 +754,7 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const messageContext = new InboundMessageContext(new AgentMessage(), {
+        agentContext,
         connection: getMockConnection({ state: DidExchangeState.Completed }),
       })
 
@@ -711,6 +765,7 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const messageContext = new InboundMessageContext(new AgentMessage(), {
+        agentContext,
         connection: getMockConnection({ state: DidExchangeState.InvitationReceived }),
       })
 
@@ -728,7 +783,7 @@ describe('ConnectionService', () => {
         serviceEndpoint: '',
         routingKeys: [],
       })
-      const messageContext = new InboundMessageContext(message)
+      const messageContext = new InboundMessageContext(message, { agentContext })
 
       expect(() => connectionService.assertConnectionOrServiceDecorator(messageContext)).not.toThrow()
     })
@@ -759,7 +814,7 @@ describe('ConnectionService', () => {
         serviceEndpoint: '',
         routingKeys: [],
       })
-      const messageContext = new InboundMessageContext(message, { recipientKey, senderKey })
+      const messageContext = new InboundMessageContext(message, { agentContext, recipientKey, senderKey })
 
       expect(() =>
         connectionService.assertConnectionOrServiceDecorator(messageContext, {
@@ -780,7 +835,7 @@ describe('ConnectionService', () => {
       })
 
       const message = new AgentMessage()
-      const messageContext = new InboundMessageContext(message)
+      const messageContext = new InboundMessageContext(message, { agentContext })
 
       expect(() =>
         connectionService.assertConnectionOrServiceDecorator(messageContext, {
@@ -802,7 +857,7 @@ describe('ConnectionService', () => {
       })
 
       const message = new AgentMessage()
-      const messageContext = new InboundMessageContext(message, { recipientKey })
+      const messageContext = new InboundMessageContext(message, { agentContext, recipientKey })
 
       expect(() =>
         connectionService.assertConnectionOrServiceDecorator(messageContext, {
@@ -824,7 +879,7 @@ describe('ConnectionService', () => {
       })
 
       const message = new AgentMessage()
-      const messageContext = new InboundMessageContext(message)
+      const messageContext = new InboundMessageContext(message, { agentContext })
 
       expect(() =>
         connectionService.assertConnectionOrServiceDecorator(messageContext, {
@@ -847,6 +902,7 @@ describe('ConnectionService', () => {
 
       const message = new AgentMessage()
       const messageContext = new InboundMessageContext(message, {
+        agentContext,
         senderKey: Key.fromPublicKeyBase58(senderKey, KeyType.Ed25519),
       })
 
@@ -864,8 +920,8 @@ describe('ConnectionService', () => {
     it('getById should return value from connectionRepository.getById', async () => {
       const expected = getMockConnection()
       mockFunction(connectionRepository.getById).mockReturnValue(Promise.resolve(expected))
-      const result = await connectionService.getById(expected.id)
-      expect(connectionRepository.getById).toBeCalledWith(expected.id)
+      const result = await connectionService.getById(agentContext, expected.id)
+      expect(connectionRepository.getById).toBeCalledWith(agentContext, expected.id)
 
       expect(result).toBe(expected)
     })
@@ -873,8 +929,8 @@ describe('ConnectionService', () => {
     it('getByThreadId should return value from connectionRepository.getSingleByQuery', async () => {
       const expected = getMockConnection()
       mockFunction(connectionRepository.getByThreadId).mockReturnValue(Promise.resolve(expected))
-      const result = await connectionService.getByThreadId('threadId')
-      expect(connectionRepository.getByThreadId).toBeCalledWith('threadId')
+      const result = await connectionService.getByThreadId(agentContext, 'threadId')
+      expect(connectionRepository.getByThreadId).toBeCalledWith(agentContext, 'threadId')
 
       expect(result).toBe(expected)
     })
@@ -882,8 +938,8 @@ describe('ConnectionService', () => {
     it('findById should return value from connectionRepository.findById', async () => {
       const expected = getMockConnection()
       mockFunction(connectionRepository.findById).mockReturnValue(Promise.resolve(expected))
-      const result = await connectionService.findById(expected.id)
-      expect(connectionRepository.findById).toBeCalledWith(expected.id)
+      const result = await connectionService.findById(agentContext, expected.id)
+      expect(connectionRepository.findById).toBeCalledWith(agentContext, expected.id)
 
       expect(result).toBe(expected)
     })
@@ -892,8 +948,8 @@ describe('ConnectionService', () => {
       const expected = [getMockConnection(), getMockConnection()]
 
       mockFunction(connectionRepository.getAll).mockReturnValue(Promise.resolve(expected))
-      const result = await connectionService.getAll()
-      expect(connectionRepository.getAll).toBeCalledWith()
+      const result = await connectionService.getAll(agentContext)
+      expect(connectionRepository.getAll).toBeCalledWith(agentContext)
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })

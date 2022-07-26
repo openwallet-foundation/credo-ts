@@ -1,7 +1,10 @@
+import type { AgentContext } from '../../../../../../agent'
 import type { RevocationNotificationReceivedEvent } from '../../../../CredentialEvents'
 
+import { Subject } from 'rxjs'
+
 import { CredentialExchangeRecord, CredentialState, InboundMessageContext } from '../../../../../..'
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../../../../tests/helpers'
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../../tests/helpers'
 import { Dispatcher } from '../../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../../agent/EventEmitter'
 import { DidExchangeState } from '../../../../../connections'
@@ -25,6 +28,7 @@ const connection = getMockConnection({
 
 describe('RevocationNotificationService', () => {
   let revocationNotificationService: RevocationNotificationService
+  let agentContext: AgentContext
   let eventEmitter: EventEmitter
 
   beforeEach(() => {
@@ -32,12 +36,14 @@ describe('RevocationNotificationService', () => {
       indyLedgers: [],
     })
 
-    eventEmitter = new EventEmitter(agentConfig)
+    agentContext = getAgentContext()
+
+    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     revocationNotificationService = new RevocationNotificationService(
       credentialRepository,
       eventEmitter,
-      agentConfig,
-      dispatcher
+      dispatcher,
+      agentConfig.logger
     )
   })
 
@@ -82,6 +88,7 @@ describe('RevocationNotificationService', () => {
       })
       const messageContext = new InboundMessageContext(revocationNotificationMessage, {
         connection,
+        agentContext,
       })
 
       await revocationNotificationService.v1ProcessRevocationNotification(messageContext)
@@ -96,6 +103,9 @@ describe('RevocationNotificationService', () => {
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'RevocationNotificationReceived',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           credentialRecord: expect.any(CredentialExchangeRecord),
         },
@@ -123,7 +133,7 @@ describe('RevocationNotificationService', () => {
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { connection })
+      const messageContext = new InboundMessageContext(revocationNotificationMessage, { connection, agentContext })
 
       await revocationNotificationService.v1ProcessRevocationNotification(messageContext)
 
@@ -143,7 +153,7 @@ describe('RevocationNotificationService', () => {
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage)
+      const messageContext = new InboundMessageContext(revocationNotificationMessage, { agentContext })
 
       await revocationNotificationService.v1ProcessRevocationNotification(messageContext)
 
@@ -187,9 +197,7 @@ describe('RevocationNotificationService', () => {
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, {
-        connection,
-      })
+      const messageContext = new InboundMessageContext(revocationNotificationMessage, { agentContext, connection })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 
@@ -203,6 +211,9 @@ describe('RevocationNotificationService', () => {
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'RevocationNotificationReceived',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           credentialRecord: expect.any(CredentialExchangeRecord),
         },
@@ -231,7 +242,7 @@ describe('RevocationNotificationService', () => {
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { connection })
+      const messageContext = new InboundMessageContext(revocationNotificationMessage, { connection, agentContext })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 
@@ -252,7 +263,7 @@ describe('RevocationNotificationService', () => {
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage)
+      const messageContext = new InboundMessageContext(revocationNotificationMessage, { agentContext })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 
