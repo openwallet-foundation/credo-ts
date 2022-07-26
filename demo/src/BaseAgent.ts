@@ -31,6 +31,7 @@ export class BaseAgent {
         {
           genesisTransactions: bcovrin,
           id: 'greenlights' + name,
+          didIndyNamespace: 'greenlights' + name,
           isProduction: false,
         },
       ],

@@ -88,7 +88,8 @@ const credentialDefinitionId = generateCredentialDefinitionId(
 
 const pools: IndyPoolConfig[] = [
   {
-    id: 'sovrinMain',
+    id: '7Tqg6BwSSWapxgUDm9KKgg',
+    didIndyNamespace: 'sovrinMain',
     isProduction: true,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
@@ -210,11 +211,14 @@ describe('LedgerApi', () => {
 
       it('should return the schema from anonCreds when it already exists', async () => {
         mockProperty(wallet, 'publicDid', { did: did, verkey: 'abcde' })
-        mockFunction(anonCredsSchemaRepository.findBySchemaId).mockResolvedValueOnce(
-          new AnonCredsSchemaRecord({ schema: schema })
+        mockFunction(anonCredsSchemaRepository.findByUnqualifiedIdentifier).mockResolvedValueOnce(
+          new AnonCredsSchemaRecord({ schema: schema, didIndyNamespace: 'sovrinMain' })
         )
         await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toEqual(schema)
-        expect(anonCredsSchemaRepository.findBySchemaId).toHaveBeenCalledWith(agentContext, schemaIdGenerated)
+        expect(anonCredsSchemaRepository.findByUnqualifiedIdentifier).toHaveBeenCalledWith(
+          agentContext,
+          schemaIdGenerated
+        )
       })
 
       it('should return the schema from the ledger when it already exists', async () => {
@@ -222,7 +226,7 @@ describe('LedgerApi', () => {
         jest
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .spyOn(LedgerApi.prototype as any, 'findBySchemaIdOnLedger')
-          .mockResolvedValueOnce(new AnonCredsSchemaRecord({ schema: schema }))
+          .mockResolvedValueOnce(new AnonCredsSchemaRecord({ schema: schema, didIndyNamespace: 'sovrinMain' }))
         await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toHaveProperty(
           'schema',
           schema
@@ -255,15 +259,16 @@ describe('LedgerApi', () => {
         const anonCredsCredentialDefinitionRecord: AnonCredsCredentialDefinitionRecord =
           new AnonCredsCredentialDefinitionRecord({
             credentialDefinition: credDef,
+            didIndyNamespace: 'sovrinMain',
           })
-        mockFunction(anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId).mockResolvedValueOnce(
+        mockFunction(anonCredsCredentialDefinitionRepository.findByUnqualifiedIdentifier).mockResolvedValueOnce(
           anonCredsCredentialDefinitionRecord
         )
         await expect(ledgerApi.registerCredentialDefinition(credentialDefinitionTemplate)).resolves.toHaveProperty(
           'value.primary',
           credentialDefinition
         )
-        expect(anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId).toHaveBeenCalledWith(
+        expect(anonCredsCredentialDefinitionRepository.findByUnqualifiedIdentifier).toHaveBeenCalledWith(
           agentContext,
           credentialDefinitionId
         )

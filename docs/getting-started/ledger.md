@@ -18,11 +18,13 @@ const agentConfig: InitConfig = {
   indyLedgers: [
     {
       id: 'sovrin-main',
+      didIndyNamespace: 'sovrin-main',
       isProduction: true,
       genesisPath: './genesis/sovrin-main.txn',
     },
     {
       id: 'bcovrin-test',
+      didIndyNamespace: 'bcovrin-test',
       isProduction: false,
       genesisTransactions: 'XXXX',
     },

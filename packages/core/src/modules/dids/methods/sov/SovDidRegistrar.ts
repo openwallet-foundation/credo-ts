@@ -7,6 +7,7 @@ import type * as Indy from 'indy-sdk'
 import { AgentDependencies } from '../../../../agent/AgentDependencies'
 import { InjectionSymbols } from '../../../../constants'
 import { inject, injectable } from '../../../../plugins'
+import { createQualifiedIdentifier } from '../../../../utils/indyIdentifiers'
 import { assertIndyWallet } from '../../../../wallet/util/assertIndyWallet'
 import { IndyLedgerService, IndyPoolService } from '../../../ledger'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
@@ -102,9 +103,8 @@ export class SovDidRegistrar implements DidRegistrar {
       // Build did document.
       const didDocument = didDocumentBuilder.build()
 
-      // FIXME: we need to update this to the `indyNamespace` once https://github.com/hyperledger/aries-framework-javascript/issues/944 has been resolved
-      const indyNamespace = this.indyPoolService.ledgerWritePool.config.id
-      const qualifiedIndyDid = `did:indy:${indyNamespace}:${unqualifiedIndyDid}`
+      const indyNamespace = this.indyPoolService.ledgerWritePool.config.didIndyNamespace
+      const qualifiedIndyDid = createQualifiedIdentifier(indyNamespace, unqualifiedIndyDid)
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({

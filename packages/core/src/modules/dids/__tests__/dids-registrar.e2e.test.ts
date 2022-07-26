@@ -20,6 +20,7 @@ const { config, agentDependencies } = getBaseConfig('Faber Dids Registrar', {
       id: `localhost`,
       isProduction: false,
       genesisPath,
+      didIndyNamespace: 'localhost',
       transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
     },
   ],

@@ -1,39 +1,54 @@
+import type { DidIndyNamespace } from '../../../utils/indyIdentifiers'
 import type { CredDef } from 'indy-sdk'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
-import { didFromCredentialDefinitionId } from '../../../utils/did'
+import {
+  createQualifiedIdentifier,
+  getDidFromSchemaOrCredentialDefinitionId,
+  createUnqualifiedIdentifier,
+} from '../../../utils/indyIdentifiers'
 
 export interface AnonCredsCredentialDefinitionRecordProps {
   credentialDefinition: CredDef
+  didIndyNamespace: DidIndyNamespace
 }
 
 export type DefaultAnonCredsCredentialDefinitionTags = {
-  credentialDefinitionId: string
-  issuerDid: string
-  schemaId: string
-  tag: string
+  qualifiedIdentifier: string
+  unqualifiedIdentifier: string
 }
 
 export class AnonCredsCredentialDefinitionRecord extends BaseRecord<DefaultAnonCredsCredentialDefinitionTags> {
   public static readonly type = 'AnonCredsCredentialDefinitionRecord'
   public readonly type = AnonCredsCredentialDefinitionRecord.type
   public readonly credentialDefinition!: CredDef
+  private readonly identifier!: string
 
   public constructor(props: AnonCredsCredentialDefinitionRecordProps) {
     super()
 
     if (props) {
       this.credentialDefinition = props.credentialDefinition
+      this.identifier = createQualifiedIdentifier(
+        props.didIndyNamespace,
+        getDidFromSchemaOrCredentialDefinitionId(this.credentialDefinition.id)
+      )
     }
+  }
+
+  public get qualifiedIdentifier() {
+    return this.identifier
+  }
+
+  public get unqualifiedIdentifier() {
+    return createUnqualifiedIdentifier(this.identifier)
   }
 
   public getTags() {
     return {
       ...this._tags,
-      credentialDefinitionId: this.credentialDefinition.id,
-      issuerDid: didFromCredentialDefinitionId(this.credentialDefinition.id),
-      schemaId: this.credentialDefinition.schemaId,
-      tag: this.credentialDefinition.tag,
+      qualifiedIdentifier: this.identifier,
+      unqualifiedIdentifier: createUnqualifiedIdentifier(this.identifier),
     }
   }
 }

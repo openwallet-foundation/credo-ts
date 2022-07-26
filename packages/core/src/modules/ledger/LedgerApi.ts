@@ -76,7 +76,7 @@ export class LedgerApi {
     const schemaId = generateSchemaId(did, schema.name, schema.version)
 
     // Try find the schema in the wallet
-    const schemaRecord = await this.anonCredsSchemaRepository.findBySchemaId(this.agentContext, schemaId)
+    const schemaRecord = await this.anonCredsSchemaRepository.findByUnqualifiedIdentifier(this.agentContext, schemaId)
     //  Schema in wallet
     if (schemaRecord) return schemaRecord.schema
 
@@ -122,7 +122,7 @@ export class LedgerApi {
     )
 
     // Check if the credential exists in wallet. If so, return it
-    const credentialDefinitionRecord = await this.anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId(
+    const credentialDefinitionRecord = await this.anonCredsCredentialDefinitionRepository.findByUnqualifiedIdentifier(
       this.agentContext,
       credentialDefinitionId
     )
