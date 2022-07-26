@@ -171,6 +171,10 @@ describe('v2 credentials', () => {
       let faberCredentialExchangeRecord: CredentialExchangeRecord
       let aliceCredentialExchangeRecord: CredentialExchangeRecord
 
+      const faberCredentialExchangeRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: CredentialState.ProposalReceived,
+      })
+
       aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
         connectionId: aliceConnection.id,
         protocolVersion: 'v2',
@@ -183,10 +187,7 @@ describe('v2 credentials', () => {
       })
 
       testLogger.test('Faber waits for credential proposal from Alice')
-      faberCredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {
-        threadId: aliceCredentialExchangeRecord.threadId,
-        state: CredentialState.ProposalReceived,
-      })
+      faberCredentialExchangeRecord = await faberCredentialExchangeRecordPromise
 
       const options: AcceptProposalOptions = {
         credentialRecordId: faberCredentialExchangeRecord.id,
@@ -342,6 +343,10 @@ describe('v2 credentials', () => {
     })
 
     test('Alice starts with V2 credential proposal to Faber, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
+      const faberCredentialExchangeRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: CredentialState.ProposalReceived,
+      })
+
       testLogger.test('Alice sends credential proposal to Faber')
       const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
         connectionId: aliceConnection.id,
@@ -354,14 +359,17 @@ describe('v2 credentials', () => {
         },
         comment: 'v2 propose credential test',
       })
+      expect(aliceCredentialExchangeRecord.state).toBe(CredentialState.ProposalSent)
 
       testLogger.test('Faber waits for credential proposal from Alice')
-      let faberCredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {
-        threadId: aliceCredentialExchangeRecord.threadId,
-        state: CredentialState.ProposalReceived,
+      let faberCredentialExchangeRecord = await faberCredentialExchangeRecordPromise
+
+      const aliceCredentialExchangeRecordPromise = waitForCredentialRecord(aliceAgent, {
+        threadId: faberCredentialExchangeRecord.threadId,
+        state: CredentialState.OfferReceived,
       })
 
-      await faberAgent.credentials.negotiateProposal({
+      faberCredentialExchangeRecord = await faberAgent.credentials.negotiateProposal({
         credentialRecordId: faberCredentialExchangeRecord.id,
         credentialFormats: {
           indy: {
@@ -372,11 +380,7 @@ describe('v2 credentials', () => {
       })
 
       testLogger.test('Alice waits for credential offer from Faber')
-
-      const record = await waitForCredentialRecord(aliceAgent, {
-        threadId: faberCredentialExchangeRecord.threadId,
-        state: CredentialState.OfferReceived,
-      })
+      const record = await aliceCredentialExchangeRecordPromise
 
       // below values are not in json object
       expect(record.id).not.toBeNull()
@@ -396,6 +400,10 @@ describe('v2 credentials', () => {
     })
 
     test('Faber starts with V2 credential offer to Alice, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
+      const aliceCredentialExchangeRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+      })
+
       testLogger.test('Faber sends credential offer to Alice')
       let faberCredentialExchangeRecord = await faberAgent.credentials.offerCredential({
         comment: 'some comment about credential',
@@ -410,10 +418,7 @@ describe('v2 credentials', () => {
       })
 
       testLogger.test('Alice waits for credential offer from Faber')
-      let aliceCredentialExchangeRecord = await waitForCredentialRecord(aliceAgent, {
-        threadId: faberCredentialExchangeRecord.threadId,
-        state: CredentialState.OfferReceived,
-      })
+      let aliceCredentialExchangeRecord = await aliceCredentialExchangeRecordPromise
 
       // below values are not in json object
       expect(aliceCredentialExchangeRecord.id).not.toBeNull()
@@ -422,6 +427,10 @@ describe('v2 credentials', () => {
         state: aliceCredentialExchangeRecord.state,
         connectionId: aliceConnection.id,
         credentialIds: [],
+      })
+
+      const faberCredentialExchangeRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: CredentialState.ProposalReceived,
       })
 
       testLogger.test('Alice sends credential request to Faber')
@@ -437,10 +446,7 @@ describe('v2 credentials', () => {
       })
 
       testLogger.test('Faber waits for credential proposal from Alice')
-      faberCredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {
-        threadId: aliceExchangeCredentialRecord.threadId,
-        state: CredentialState.ProposalReceived,
-      })
+      faberCredentialExchangeRecord = await faberCredentialExchangeRecordPromise
 
       await sleep(5000)
 
