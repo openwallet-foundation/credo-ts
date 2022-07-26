@@ -74,7 +74,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       format: JSONLD_VC_DETAIL,
     })
 
-    console.log(">>>>>>>>>>>>> QUACK credential formats = ", credentialFormats)
     const jsonLdFormat = credentialFormats.jsonld
 
     if (!jsonLdFormat) {
@@ -264,6 +263,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       attachId,
       format: JSONLD_VC,
     })
+
     const verifiableCredential = await this.w3cCredentialService.signCredential(agentContext, {
       credential: JsonTransformer.fromJSON(credentialData.credential, W3cCredential),
       proofType: credentialData.options.proofType,

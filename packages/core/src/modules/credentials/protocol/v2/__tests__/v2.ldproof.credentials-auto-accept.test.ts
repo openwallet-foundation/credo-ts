@@ -13,7 +13,6 @@ import { InjectionSymbols } from '../../../../../constants'
 import { KeyType } from '../../../../../crypto'
 import { Key } from '../../../../../crypto/Key'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
-import { DidKey } from '../../../../../modules/dids'
 import { Ed25519Signature2018Fixtures } from '../../../../../modules/vc/__tests__/fixtures'
 import { W3cCredential } from '../../../../../modules/vc/models'
 import { JsonTransformer } from '../../../../../utils'
@@ -29,30 +28,22 @@ describe('credentials', () => {
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
-  let wallet
-  let issuerDidKey: DidKey
-  let verificationMethod: string
   let credential: W3cCredential
   let signCredentialOptions: SignCredentialOptionsRFC0593
+  let wallet
+  const seed = 'testseed000000000000000000000001'
 
   describe('Auto accept on `always`', () => {
-    const seed = 'testseed000000000000000000000001'
     beforeAll(async () => {
-      ; ({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
+      ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
         'faber agent: always v2 jsonld',
         'alice agent: always v2 jsonld',
         AutoAcceptCredential.Always
       ))
 
-      wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-
-      const issuerDidInfo = await wallet.createDid({ seed })
-      const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
-      issuerDidKey = new DidKey(issuerKey)
-      verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
-
       credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
-
+      wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      await wallet.createDid({ seed })
       signCredentialOptions = {
         credential,
         options: {
@@ -84,8 +75,6 @@ describe('credentials', () => {
         },
         comment: 'v2 propose credential test',
       }
-
-      console.log('>>>>>>>>>>>>>>>>> 1 MJR ******* credentialFormats = ', options.credentialFormats)
       const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential(options)
 
       testLogger.test('Alice waits for credential from Faber')
@@ -159,20 +148,15 @@ describe('credentials', () => {
   })
 
   describe('Auto accept on `contentApproved`', () => {
-    const seed = 'testseed000000000000000000000001'
-
     beforeAll(async () => {
-      ; ({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
+      ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection } = await setupCredentialTests(
         'faber agent: content-approved v2 jsonld',
         'alice agent: content-approved v2 jsonld',
         AutoAcceptCredential.ContentApproved
       ))
-      // wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-      // const issuerDidInfo = await wallet.createDid({ seed })
-      // const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
-      // issuerDidKey = new DidKey(issuerKey)
       credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
-
+      wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      await wallet.createDid({ seed })
       signCredentialOptions = {
         credential,
         options: {
