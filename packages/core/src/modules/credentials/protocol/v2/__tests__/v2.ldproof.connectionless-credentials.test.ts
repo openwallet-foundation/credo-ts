@@ -1,5 +1,7 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
+import type { DidKey } from '../../../../../../src/modules/dids'
 import type { SignCredentialOptionsRFC0593 } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
+import type { Wallet } from '../../../../../wallet'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { AcceptRequestOptions, CreateOfferOptions } from '../../../CredentialsApiOptions'
 
@@ -7,14 +9,12 @@ import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { KeyType } from '../../../../../../src/crypto'
-import { Key } from '../../../../../../src/crypto/Key'
-import { DidKey } from '../../../../../../src/modules/dids'
 import { JsonTransformer } from '../../../../../../src/utils'
-import { IndyWallet } from '../../../../../../src/wallet/IndyWallet'
 import { getBaseConfig, prepareForIssuance, waitForCredentialRecordSubject } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
+import { InjectionSymbols } from '../../../../../constants'
+import { Ed25519Signature2018Fixtures } from '../../../../../modules/vc/__tests__/fixtures'
 import { W3cCredential } from '../../../../vc/models/'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialState } from '../../../models'
@@ -28,7 +28,7 @@ const aliceConfig = getBaseConfig('Alice LD connection-less Credentials V2', {
   endpoints: ['rxjs:alice'],
 })
 
-let wallet: IndyWallet
+let wallet
 let credential: W3cCredential
 let signCredentialOptions: SignCredentialOptionsRFC0593
 
@@ -38,7 +38,6 @@ describe('credentials', () => {
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
   let issuerDidKey: DidKey
-  let verificationMethod: string
   const seed = 'testseed000000000000000000000001'
 
   beforeEach(async () => {
@@ -70,42 +69,10 @@ describe('credentials', () => {
     aliceAgent.events
       .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
       .subscribe(aliceReplay)
-    wallet = faberAgent.injectionContainer.resolve(IndyWallet)
-    const issuerDidInfo = await wallet.createDid({ seed })
-    const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
-    issuerDidKey = new DidKey(issuerKey)
-    verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
-    const inputDoc = {
-      '@context': [
-        'https://www.w3.org/2018/credentials/v1',
-        'https://w3id.org/citizenship/v1',
-        'https://w3id.org/security/bbs/v1',
-      ],
-      id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
-      type: ['VerifiableCredential', 'PermanentResidentCard'],
-      issuer: issuerDidKey.did,
-      identifier: '83627465',
-      name: 'Permanent Resident Card',
-      description: 'Government of Example Permanent Resident Card.',
-      issuanceDate: '2019-12-03T12:19:52Z',
-      expirationDate: '2029-12-03T12:19:52Z',
-      credentialSubject: {
-        id: 'did:example:b34ca6cd37bbf23',
-        type: ['PermanentResident', 'Person'],
-        givenName: 'JOHN',
-        familyName: 'SMITH',
-        gender: 'Male',
-        image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-        residentSince: '2015-01-01',
-        lprCategory: 'C09',
-        lprNumber: '999-999-999',
-        commuterClassification: 'C1',
-        birthCountry: 'Bahamas',
-        birthDate: '1958-07-17',
-      },
-    }
+    wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+    await wallet.createDid({ seed })
 
-    credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
+    credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
 
     signCredentialOptions = {
       credential,
