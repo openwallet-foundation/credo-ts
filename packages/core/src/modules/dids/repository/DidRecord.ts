@@ -4,7 +4,7 @@ import { Type } from 'class-transformer'
 import { IsBoolean, IsEnum, IsOptional, ValidateNested } from 'class-validator'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
-import { DidDocument } from '../domain'
+import { DidDocument, DidMarker, DidType } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { parseDid } from '../domain/parse'
 
@@ -15,6 +15,8 @@ export interface DidRecordProps {
   isPublic?: boolean
   label?: string
   logoUrl?: string
+  didType: DidType
+  marker?: DidMarker
   createdAt?: Date
   tags?: CustomDidTags
 }
@@ -25,7 +27,10 @@ interface CustomDidTags extends TagsBase {
 
 type DefaultDidTags = {
   role: DidDocumentRole
+  isPublic: boolean
   method: string
+  didType: DidType
+  marker?: DidMarker
 }
 
 export type DidTags = RecordTags<DidRecord>
@@ -38,6 +43,9 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
   @IsEnum(DidDocumentRole)
   public role!: DidDocumentRole
 
+  @IsEnum(DidType)
+  public didType!: DidType
+
   @IsOptional()
   public label?: string
 
@@ -46,6 +54,9 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
 
   @IsBoolean()
   public isPublic!: boolean
+
+  @IsEnum(DidMarker)
+  public marker?: DidMarker
 
   public static readonly type = 'DidDocumentRecord'
   public readonly type = DidRecord.type
@@ -59,7 +70,9 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
       this.didDocument = props.didDocument
       this.label = props.label
       this.logoUrl = props.logoUrl
+      this.didType = props.didType
       this.isPublic = props.isPublic || false
+      this.marker = props.marker
       this.createdAt = props.createdAt ?? new Date()
       this._tags = props.tags ?? {}
     }
@@ -77,6 +90,8 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
       role: this.role,
       isPublic: this.isPublic,
       method: did.method,
+      didType: this.didType,
+      marker: this.marker,
     }
   }
 }

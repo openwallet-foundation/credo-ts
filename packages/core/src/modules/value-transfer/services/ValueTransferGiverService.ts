@@ -3,8 +3,8 @@ import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type {
   CashAcceptedWitnessedMessage,
   GiverReceiptMessage,
-  RequestWitnessedMessage,
   OfferAcceptedWitnessedMessage,
+  RequestWitnessedMessage,
 } from '../messages'
 import type { Giver, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
@@ -13,7 +13,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
-import { DidService, DidType } from '../../dids'
+import { DidService } from '../../dids'
 import { DidInfo, WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
@@ -97,7 +97,10 @@ export class ValueTransferGiverService {
     message: OfferMessage
   }> {
     // Get payment public DID from the storage or generate a new one if requested
-    const giver = await this.didService.getPublicOrCrateNewDid(DidType.PeerDid, params.usePublicDid)
+    const giver = await this.valueTransferService.getTransactionDid({
+      role: ValueTransferRole.Giver,
+      usePublicDid: params.usePublicDid,
+    })
 
     // Call VTP to accept payment request
     const { error: pickNotesError, notes: notesToSpend } = await this.giver.pickNotesToSpend(params.amount)
@@ -242,7 +245,9 @@ export class ValueTransferGiverService {
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.RequestReceived)
 
-    const giverDid = record.giver ? record.giver.did : (await this.didService.createDID()).id
+    const giverDid = record.giver
+      ? record.giver.did
+      : (await this.valueTransferService.getTransactionDid({ role: ValueTransferRole.Giver })).id
 
     const activeTransaction = await this.valueTransferService.getActiveTransaction()
     if (activeTransaction.record) {

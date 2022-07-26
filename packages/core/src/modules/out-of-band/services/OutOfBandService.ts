@@ -1,16 +1,19 @@
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../../../agent/AgentConfig'
 import { AriesFrameworkError } from '../../../error'
-import { DidService, DidType } from '../../dids'
+import { DidService } from '../../dids'
 import { WellKnownService } from '../../well-known'
 import { OutOfBandGoalCode, OutOfBandInvitationMessage } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandService {
+  private agentConfig: AgentConfig
   private didService: DidService
   private wellKnownService: WellKnownService
 
-  public constructor(didService: DidService, wellKnownService: WellKnownService) {
+  public constructor(agentConfig: AgentConfig, didService: DidService, wellKnownService: WellKnownService) {
+    this.agentConfig = agentConfig
     this.didService = didService
     this.wellKnownService = wellKnownService
   }
@@ -24,7 +27,7 @@ export class OutOfBandService {
     goal?: string
     usePublicDid?: boolean
   }) {
-    const did = await this.didService.getPublicOrCrateNewDid(DidType.PeerDid, usePublicDid)
+    const did = await this.didService.getPublicDidOrCreateNew(usePublicDid)
     return new OutOfBandInvitationMessage({
       from: did.did,
       body: {

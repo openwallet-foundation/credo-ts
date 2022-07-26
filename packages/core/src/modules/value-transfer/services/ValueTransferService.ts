@@ -222,7 +222,7 @@ export class ValueTransferService {
 
     if (record.role === ValueTransferRole.Giver) {
       await this.valueTransfer.giver().abortTransaction()
-      from = record.giver?.did || (await this.didService.createDID({})).id
+      from = record.giver?.did
     } else if (record.role === ValueTransferRole.Getter) {
       await this.valueTransfer.getter().abortTransaction()
       from = record.getter?.did
@@ -312,17 +312,17 @@ export class ValueTransferService {
         : record?.role === ValueTransferRole.Giver
         ? this.config.transports.filter((transport) => transport !== Transports.IPC)
         : this.config.transports
-    return this.sendMessage(message, transports, this.config.valueTransferConfig?.defaultTransport)
+    return this.sendMessage(message, transports, this.config.defaultTransport)
   }
 
   public async sendMessageToGiver(message: DIDCommV2Message) {
     const transports = this.config.transports.filter((transport) => transport !== Transports.IPC)
-    return this.sendMessage(message, transports, this.config.valueTransferConfig?.defaultTransport)
+    return this.sendMessage(message, transports, this.config.defaultTransport)
   }
 
   public async sendMessageToGetter(message: DIDCommV2Message) {
     const transports = this.config.transports.filter((transport) => transport !== Transports.NFC)
-    return this.sendMessage(message, transports, this.config.valueTransferConfig?.defaultTransport)
+    return this.sendMessage(message, transports, this.config.defaultTransport)
   }
 
   private async sendMessage(message: DIDCommV2Message, transports: Transports[], defaultTransport?: Transports) {
@@ -384,6 +384,18 @@ export class ValueTransferService {
     })
     await this.valueTransferStateRepository.save(state)
     return state
+  }
+
+  public async getTransactionDid(params: { role: ValueTransferRole; usePublicDid?: boolean }) {
+    // Witness MUST use public DID
+    if (params.role === ValueTransferRole.Witness) {
+      const publicDid = await this.didService.getPublicDid()
+      if (!publicDid) {
+        throw new AriesFrameworkError('Witness public DID not found')
+      }
+    }
+
+    return this.didService.getPublicDidOrCreateNew(params.usePublicDid)
   }
 
   private static generateInitialPartyStateHashes(statesCount = DEFAULT_SUPPORTED_PARTIES_COUNT) {

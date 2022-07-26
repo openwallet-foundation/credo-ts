@@ -10,6 +10,7 @@ import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
 import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
 import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
+import { offlineTransports, onlineTransports } from '../modules/routing/types'
 import { AutoAcceptValueTransfer } from '../modules/value-transfer/ValueTransferAutoAcceptType'
 import { DidCommMimeType } from '../types'
 
@@ -46,6 +47,10 @@ export class AgentConfig {
 
   public get publicDidSeed() {
     return this.initConfig.publicDidSeed
+  }
+
+  public get staticDids() {
+    return this.initConfig.staticDids || []
   }
 
   public get publicDidType() {
@@ -144,5 +149,24 @@ export class AgentConfig {
 
   public get transports() {
     return this.initConfig.transports || []
+  }
+
+  public get defaultTransport() {
+    return this.initConfig.defaultTransport
+  }
+
+  public get onlineTransports() {
+    return this.transports.filter((transport) => onlineTransports.includes(transport))
+  }
+
+  public get offlineTransports() {
+    return this.transports.filter((transport) => offlineTransports.includes(transport))
+  }
+
+  public async hasInternetAccess() {
+    return this.agentDependencies
+      .fetch('https://google.com') // FIXME: find better way to detect internet connectivity status
+      .then(() => true)
+      .catch(() => false)
   }
 }

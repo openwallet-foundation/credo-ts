@@ -1,7 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
+import type { ValueTransferRecord } from '@aries-framework/core'
 
-import { Transports, ValueTransferState } from '@aries-framework/core'
+import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
@@ -10,29 +10,31 @@ export class Getter extends BaseAgent {
   public valueTransferRecordId?: string
   public static seed = '6b8b882e2618fa5d45ee7229ca880082'
 
-  public constructor(
-    name: string,
-    port?: number,
-    transports?: Transports[],
-    valueTransferConfig?: ValueTransferConfig,
-    mediatorConnectionsInvite?: string
-  ) {
-    super(name, Getter.seed, port, transports, valueTransferConfig, mediatorConnectionsInvite)
+  public constructor(name: string, port?: number) {
+    super({
+      name,
+      port,
+      transports: [Transports.IPC, Transports.Nearby, Transports.HTTP],
+      defaultTransport: Transports.HTTP,
+      mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
+      staticDids: [
+        {
+          seed: '6b8b882e2618fa5d45ee7229ca880082',
+          transports: [Transports.IPC, Transports.Nearby],
+          marker: DidMarker.Offline,
+        },
+        {
+          seed: '6b8b882e2618fa5d45ee7229ca880080',
+          transports: [Transports.IPC, Transports.Nearby, Transports.HTTP],
+          marker: DidMarker.Online,
+        },
+      ],
+      valueTransferConfig: {},
+    })
   }
 
   public static async build(): Promise<Getter> {
-    const valueTransferConfig: ValueTransferConfig = {
-      // defaultTransport: Transports.IPC,
-      defaultTransport: Transports.HTTP,
-    }
-    // const getter = new Getter('getter', undefined, [Transports.IPC, Transports.Nearby], valueTransferConfig)
-    const getter = new Getter(
-      'getter',
-      undefined,
-      [Transports.IPC, Transports.Nearby, Transports.HTTP],
-      valueTransferConfig,
-      BaseAgent.defaultMediatorConnectionInvite
-    )
+    const getter = new Getter('getter', undefined)
     await getter.initializeAgent()
     const publicDid = await getter.agent.getPublicDid()
     console.log(`Getter Public DID: ${publicDid?.did}`)

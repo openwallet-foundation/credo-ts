@@ -292,7 +292,8 @@ export class MessageSender {
         throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
       }
       const message = await this.envelopeService.packMessageSigned(payload, { signByDID: payload.from })
-      return await this.sendMessage({ payload: message }, defaultTransport)
+      await this.sendMessage({ payload: message }, defaultTransport)
+      return
     }
 
     if (sendingMessageType === SendingMessageType.Plain) {

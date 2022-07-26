@@ -16,7 +16,7 @@ import { KeyService } from '../../keys'
 import { MediationRecipientService } from '../../routing/services'
 import { hasOnlineTransport, Transports } from '../../routing/types'
 import { DidEventTypes } from '../DidEvents'
-import { DidCommV2Service, DidDocumentBuilder, DidType, Key } from '../domain'
+import { DidCommV2Service, DidDocumentBuilder, DidMarker, DidType, Key } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { getEd25519VerificationMethod } from '../domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../domain/key-type/x25519'
@@ -60,14 +60,21 @@ export class DidService {
       isPublic?: boolean
       requestMediation?: boolean
       transports?: Transports[]
+      marker?: DidMarker
     } = {}
   ): Promise<DidRecord> {
     const didType_ = params.didType || DidType.PeerDid
     const keyType_ = params.keyType || KeyType.Ed25519
 
-    const transports = params.transports || this.agentConfig.transports || []
-
     this.logger.debug(`creating DID with type ${didType_}`)
+
+    // restrict transports for offline if there is no internet connection
+    const hasInternetAccess = await this.agentConfig.hasInternetAccess()
+    const transports = params.transports
+      ? params.transports
+      : hasInternetAccess
+      ? this.agentConfig.transports
+      : this.agentConfig.offlineTransports
 
     const ed25519KeyPair = await this.keysService.createKey({ keyType: keyType_, seed: params.seed })
     const ed25519Key = Key.fromPublicKey(ed25519KeyPair.publicKey, keyType_)
@@ -135,6 +142,8 @@ export class DidService {
       didDocument: didPeer.didDocument,
       role: DidDocumentRole.Created,
       isPublic: params.isPublic,
+      didType: didType_,
+      marker: params.marker,
     })
 
     await this.didRepository.save(didRecord)
@@ -142,12 +151,34 @@ export class DidService {
     return didRecord
   }
 
-  public async getPublicOrCrateNewDid(type: DidType, usePublicDid = false) {
+  public async getPublicDid() {
+    const hasInternetAccess = await this.agentConfig.hasInternetAccess()
+    if (!hasInternetAccess) {
+      // find for a public DID which supports Offline transports only
+      const offlinePublicDid = await this.findPublicOfflineDid()
+      if (offlinePublicDid) return offlinePublicDid
+    }
+
+    if (hasInternetAccess) {
+      // find for a public DID which supports Online transports
+      const onlinePublicDid = await this.findPublicOnlineDid()
+      if (onlinePublicDid) return onlinePublicDid
+    }
+
+    // find for a public DID which is not marked
+    const publicDid = await this.findPublicDid()
+    if (publicDid) return publicDid
+  }
+
+  public async getPublicDidOrCreateNew(usePublicDid?: boolean) {
+    // find for public DID if requested
     if (usePublicDid) {
-      const publicDid = await this.findPublicDid()
+      const publicDid = await this.getPublicDid()
       if (publicDid) return publicDid
     }
-    return this.createDID({ didType: type })
+
+    // create new DID
+    return this.createDID()
   }
 
   public async getDIDDoc(did: string): Promise<DidDocument> {
@@ -171,6 +202,7 @@ export class DidService {
       logoUrl: logoUrl,
       didDocument: didDocument.didDocument,
       role: DidDocumentRole.Received,
+      didType: didDocument.didType,
     })
 
     await this.didRepository.save(didRecord)
@@ -219,8 +251,24 @@ export class DidService {
   }
 
   public async findPublicDid() {
+    const publicDids = await this.didRepository.findByQuery({
+      isPublic: true,
+    })
+    if (publicDids.length) return publicDids[0]
+    return undefined
+  }
+
+  public async findPublicOnlineDid() {
     return this.didRepository.findSingleByQuery({
       isPublic: true,
+      marker: DidMarker.Online,
+    })
+  }
+
+  public async findPublicOfflineDid() {
+    return this.didRepository.findSingleByQuery({
+      isPublic: true,
+      marker: DidMarker.Offline,
     })
   }
 }

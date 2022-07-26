@@ -18,7 +18,7 @@ import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
-import { DidService, DidType } from '../modules/dids'
+import { DidMarker, DidService } from '../modules/dids'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { KeysModule } from '../modules/keys'
@@ -163,6 +163,7 @@ export class Agent {
     const {
       connectToIndyLedgersOnStartup,
       publicDidSeed,
+      staticDids,
       walletConfig,
       mediatorConnectionsInvite,
       valueTransferConfig,
@@ -211,19 +212,31 @@ export class Agent {
     await this.mediationRecipient.initialize()
 
     if (publicDidSeed) {
-      // If an agent has publicDid it will be used as routing key.
-      const publicDid = await this.didService.findPublicDid()
-      if (!publicDid) {
-        // create DID in DIDComm V1 DID storage
-        await this.walletService.initPublicDid({ seed: publicDidSeed })
+      staticDids.push({
+        seed: publicDidSeed,
+        type: publicDidType,
+        transports: this.agentConfig.transports,
+        marker: this.agentConfig.onlineTransports.length ? DidMarker.Online : DidMarker.Offline,
+      })
+    }
 
-        // create DID in DIDComm V2 DID storage
-        const didType = publicDidType || DidType.PeerDid
-        await this.didService.createDID({
-          didType,
-          seed: publicDidSeed,
-          isPublic: true,
-        })
+    if (staticDids.length) {
+      // If an agent has publicDid it will be used as routing key.
+      const existingPublicDid = await this.didService.findPublicDid()
+      if (!existingPublicDid) {
+        for (const staticDid of staticDids) {
+          // create DID in DIDComm V1 DID storage
+          await this.walletService.initPublicDid({ seed: staticDid.seed })
+
+          // create DID in DIDComm V2 DID storage
+          await this.didService.createDID({
+            seed: staticDid.seed,
+            didType: staticDid.type,
+            marker: staticDid.marker,
+            transports: staticDid.transports,
+            isPublic: true,
+          })
+        }
       }
     }
 

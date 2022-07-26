@@ -6,7 +6,7 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
 import { TypedArrayEncoder } from '../../../../utils/TypedArrayEncoder'
 import { getFullVerkey } from '../../../../utils/did'
-import { DidDocumentService, VerificationMethod } from '../../domain'
+import { DidDocumentService, DidType, VerificationMethod } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { DidCommService } from '../../domain/service/DidCommService'
 import { DidCommV2Service } from '../../domain/service/DidCommV2Service'
@@ -64,6 +64,7 @@ export class IndyDidResolver implements DidResolver {
         didDocument: builder.build(),
         didDocumentMetadata,
         didResolutionMetadata: { contentType: 'application/did+ld+json' },
+        didType: DidType.Indy,
       }
     } catch (error) {
       return {
@@ -73,6 +74,7 @@ export class IndyDidResolver implements DidResolver {
           error: 'notFound',
           message: `resolver_error: Unable to resolve did '${did}': ${error}`,
         },
+        didType: DidType.Indy,
       }
     }
   }

@@ -31,3 +31,6 @@ export const hasOnlineTransport = (transports: Transports[]) =>
   transports.includes(Transports.HTTP) ||
   transports.includes(Transports.WSS) ||
   transports.includes(Transports.WS)
+
+export const hasOfflineTransport = (transports: Transports[]) =>
+  transports.includes(Transports.NFC) || transports.includes(Transports.Nearby) || transports.includes(Transports.IPC)

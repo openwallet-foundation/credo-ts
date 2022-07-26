@@ -1,4 +1,10 @@
-import type { InboundTransport, InitConfig, OutboundTransport, ValueTransferConfig } from '@aries-framework/core'
+import type {
+  DidProps,
+  InboundTransport,
+  InitConfig,
+  OutboundTransport,
+  ValueTransferConfig,
+} from '@aries-framework/core'
 
 import {
   Agent,
@@ -30,45 +36,51 @@ export class BaseAgent {
   public inBoundTransport!: InboundTransport
   public outBoundTransport!: OutboundTransport
 
-  public constructor(
-    name: string,
-    publicDidSeed?: string,
-    port?: number,
-    transports: Transports[] = [],
-    valueTransferConfig?: ValueTransferConfig,
+  public constructor(props: {
+    name: string
+    publicDidSeed?: string
+    staticDids?: DidProps[]
+    port?: number
+    transports?: Transports[]
+    defaultTransport: Transports
+    valueTransferConfig?: ValueTransferConfig
     mediatorConnectionsInvite?: string
-  ) {
-    this.name = name
-    this.port = port
+  }) {
+    this.name = props.name
+    this.port = props.port
 
     const config: InitConfig = {
-      label: name,
+      label: props.name,
       walletConfig: {
-        id: name,
-        key: name,
+        id: props.name,
+        key: props.name,
       },
-      publicDidSeed,
+      publicDidSeed: props.publicDidSeed,
+      staticDids: props.staticDids,
       indyLedgers: [
         {
           genesisTransactions: bcovrin,
-          id: 'greenlights' + name,
+          id: 'greenlights' + props.name,
           isProduction: false,
         },
       ],
       connectToIndyLedgersOnStartup: false,
-      endpoints: port ? [`http://localhost:${this.port}`] : undefined,
+      endpoints: props.port ? [`http://localhost:${this.port}`] : undefined,
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
       mediatorPickupStrategy: MediatorPickupStrategy.Explicit,
-      valueTransferConfig,
-      transports,
-      mediatorConnectionsInvite,
+      valueTransferConfig: props.valueTransferConfig,
+      transports: props.transports,
+      defaultTransport: props.defaultTransport,
+      mediatorConnectionsInvite: props.mediatorConnectionsInvite,
     }
 
     this.config = config
 
     this.agent = new Agent(config, agentDependencies)
+
+    const transports = props.transports || []
 
     if (transports.includes(Transports.HTTP) || transports.includes(Transports.HTTPS)) {
       this.outBoundTransport = new HttpOutboundTransport()
@@ -76,9 +88,9 @@ export class BaseAgent {
     }
 
     if (transports.includes(Transports.NFC)) {
-      this.inBoundTransport = new FileInboundTransport({ alias: name, schema: Transports.NFC })
+      this.inBoundTransport = new FileInboundTransport({ alias: props.name, schema: Transports.NFC })
       this.outBoundTransport = new FileOutboundTransport({
-        alias: name,
+        alias: props.name,
         schema: Transports.NFC,
       })
 
@@ -87,9 +99,9 @@ export class BaseAgent {
     }
 
     if (transports.includes(Transports.IPC)) {
-      this.inBoundTransport = new FileInboundTransport({ alias: name, schema: Transports.IPC })
+      this.inBoundTransport = new FileInboundTransport({ alias: props.name, schema: Transports.IPC })
       this.outBoundTransport = new FileOutboundTransport({
-        alias: name,
+        alias: props.name,
         schema: Transports.IPC,
       })
 
@@ -98,9 +110,9 @@ export class BaseAgent {
     }
 
     if (transports.includes(Transports.Nearby)) {
-      this.inBoundTransport = new FileInboundTransport({ alias: name, schema: Transports.Nearby })
+      this.inBoundTransport = new FileInboundTransport({ alias: props.name, schema: Transports.Nearby })
       this.outBoundTransport = new FileOutboundTransport({
-        alias: name,
+        alias: props.name,
         schema: Transports.Nearby,
       })
 

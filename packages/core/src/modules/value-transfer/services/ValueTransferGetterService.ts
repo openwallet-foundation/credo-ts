@@ -1,6 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
-import type { GetterReceiptMessage, RequestAcceptedWitnessedMessage, OfferMessage } from '../messages'
+import type { GetterReceiptMessage, OfferMessage, RequestAcceptedWitnessedMessage } from '../messages'
 import type { Getter, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -9,7 +9,6 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
-import { DidType } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { DidInfo, WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
@@ -98,7 +97,7 @@ export class ValueTransferGetterService {
   }> {
     // Get payment public DID from the storage or generate a new one if requested
     const usePublicDid = params.usePublicDid || true
-    const getter = await this.didService.getPublicOrCrateNewDid(DidType.PeerDid, usePublicDid)
+    const getter = await this.valueTransferService.getTransactionDid({ role: ValueTransferRole.Getter, usePublicDid })
 
     // Call VTP package to create payment request
     const givenTotal = new TaggedPrice({ amount: params.amount, uoa: params.unitOfAmount })

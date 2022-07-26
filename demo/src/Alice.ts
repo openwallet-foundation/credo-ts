@@ -1,6 +1,8 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
 
+import { Transports } from '@aries-framework/core'
+
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
@@ -10,7 +12,12 @@ export class Alice extends BaseAgent {
   public static seed = '6b8b882e2618fa5d45ee7229ca880083'
 
   public constructor(port: number, name: string) {
-    super(name, Alice.seed, port, undefined, undefined)
+    super({
+      port,
+      name,
+      publicDidSeed: Alice.seed,
+      defaultTransport: Transports.HTTP,
+    })
     this.connected = false
   }
 
