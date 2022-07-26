@@ -23,7 +23,7 @@ const CacheRepositoryMock = CacheRepository as jest.Mock<CacheRepository>
 
 const pools: IndyPoolConfig[] = [
   {
-    id: '7Tqg6BwSSWapxgUDm9KKgg',
+    id: 'sovrinMain',
     didIndyNamespace: 'sovrinMain',
     isProduction: true,
     genesisTransactions: 'xxx',
