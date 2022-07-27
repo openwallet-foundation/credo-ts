@@ -20,12 +20,19 @@ export class CashRemovedHandler implements Handler<typeof DIDCommV2Message> {
   }
 
   public async handle(messageContext: HandlerInboundMessage<CashRemovedHandler>) {
-    const { giverMessage, getterMessage } = await this.valueTransferWitnessService.processCashRemoved(messageContext)
+    const { record, giverMessage, getterMessage, problemReport } =
+      await this.valueTransferWitnessService.processCashRemoval(messageContext)
 
-    await Promise.all([
-      this.valueTransferService.sendMessageToGetter(getterMessage),
-      this.valueTransferService.sendMessageToGiver(giverMessage),
-    ])
-    return
+    if (problemReport) {
+      return await this.valueTransferService.sendProblemReportToGetterAndGiver(problemReport, record)
+    }
+
+    if (giverMessage && getterMessage) {
+      await Promise.all([
+        this.valueTransferService.sendMessageToGetter(getterMessage),
+        this.valueTransferService.sendMessageToGiver(giverMessage),
+      ])
+      return
+    }
   }
 }

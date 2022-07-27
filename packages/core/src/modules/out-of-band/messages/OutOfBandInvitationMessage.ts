@@ -1,4 +1,5 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
+import type { Attachment } from 'didcomm'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
@@ -11,7 +12,10 @@ import { JsonEncoder, JsonTransformer } from '../../../utils'
 export enum OutOfBandGoalCode {
   DidExchange = 'did-exchange',
   MediatorProvision = 'mediator-provision',
+  AndroidNearbyHandshake = 'android-nearby-handshake',
 }
+
+export const ATTACHMENT_ID = 'oob-attachment'
 
 export type OutOfBandInvitationParams = DIDCommV2MessageParams
 
@@ -63,5 +67,15 @@ export class OutOfBandInvitationMessage extends DIDCommV2Message {
 
   public static fromJson(json: Record<string, unknown>) {
     return JsonTransformer.fromJSON(json, OutOfBandInvitationMessage)
+  }
+
+  public static createOutOfBandJSONAttachment(attachment: Record<string, unknown>): Attachment {
+    return this.createJSONAttachment(ATTACHMENT_ID, JsonTransformer.toJSON(attachment))
+  }
+
+  public getOutOfBandAttachment(): Record<string, unknown> | null {
+    const attachment = this.getAttachmentDataAsJson(ATTACHMENT_ID)
+    if (!attachment) return null
+    return typeof attachment === 'string' ? JSON.parse(attachment) : attachment
   }
 }

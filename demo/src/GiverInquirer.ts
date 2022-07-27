@@ -33,6 +33,7 @@ export class GiverInquirer extends BaseInquirer {
     this.listener = new Listener()
     this.promptOptionsString = Object.values(PromptOptions)
     this.listener.messageListener(this.giver.agent, this.giver.name)
+    this.listener.paymentRequestListener(this.giver, this)
   }
 
   public static async build(): Promise<GiverInquirer> {
@@ -47,8 +48,6 @@ export class GiverInquirer extends BaseInquirer {
   }
 
   public async processAnswer() {
-    this.listener.paymentRequestListener(this.giver, this)
-
     const choice = await this.getPromptChoice()
     if (this.listener.on) return
 

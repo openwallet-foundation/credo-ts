@@ -1,7 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
+import type { ValueTransferRecord } from '@aries-framework/core'
 
-import { OutOfBandGoalCode, Transports, ValueTransferState } from '@aries-framework/core'
+import { Transports, ValueTransferState } from '@aries-framework/core'
 import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'
@@ -9,32 +9,27 @@ import { greenText, Output, redText } from './OutputClass'
 
 export class Giver extends BaseAgent {
   public valueTransferRecordId?: string
-  public static seed = '9ad6a1e205a549dc86ced47630ed7b78'
 
-  public constructor(
-    name: string,
-    port?: number,
-    transports?: Transports[],
-    valueTransferConfig?: ValueTransferConfig,
-    mediatorConnectionsInvite?: string
-  ) {
-    super(name, Giver.seed, port, transports, valueTransferConfig, mediatorConnectionsInvite)
+  public constructor(name: string, port?: number) {
+    super({
+      name,
+      port,
+      transports: [Transports.Nearby, Transports.HTTP],
+      defaultTransport: Transports.Nearby,
+      mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
+      staticDids: [
+        {
+          seed: '9ad6a1e205a549dc86ced47630ed7b78',
+        },
+      ],
+      valueTransferConfig: {
+        verifiableNotes: createVerifiableNotes(10),
+      },
+    })
   }
 
   public static async build(): Promise<Giver> {
-    const valueTransferConfig: ValueTransferConfig = {
-      // defaultTransport: Transports.NFC,
-      defaultTransport: Transports.HTTP,
-      verifiableNotes: createVerifiableNotes(10),
-    }
-    // const giver = new Giver('giver', undefined, [Transports.NFC, Transports.Nearby], valueTransferConfig)
-    const giver = new Giver(
-      'giver',
-      undefined,
-      [Transports.NFC, Transports.Nearby, Transports.HTTP],
-      valueTransferConfig,
-      BaseAgent.defaultMediatorConnectionInvite
-    )
+    const giver = new Giver('giver', undefined)
     await giver.initializeAgent()
 
     const publicDid = await giver.agent.getPublicDid()

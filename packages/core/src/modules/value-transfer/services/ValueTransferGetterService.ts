@@ -1,6 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
-import type { GetterReceiptMessage, RequestAcceptedWitnessedMessage, OfferMessage } from '../messages'
+import type { GetterReceiptMessage, OfferMessage, RequestAcceptedWitnessedMessage } from '../messages'
 import type { Getter, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -9,7 +9,6 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
-import { DidType } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { DidInfo, WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
@@ -74,8 +73,9 @@ export class ValueTransferGetterService {
    * @param params Options to use for request creation -
    * {
    *  amount - Amount to pay
+   *  witness - DID of witness validating and signing transaction
    *  unitOfAmount - (Optional) Currency code that represents the unit of account
-   *  witness - (Optional) DID of witness if it's known in advance
+   *  witness - DID of witness validating and signing transaction
    *  giver - (Optional) DID of giver if it's known in advance
    *  usePublicDid - (Optional) Whether to use public DID of Getter in the request or create a new random one (True by default)
    *  timeouts - (Optional) Giver timeouts to which value transfer must fit
@@ -88,7 +88,7 @@ export class ValueTransferGetterService {
   public async createRequest(params: {
     amount: number
     unitOfAmount?: string
-    witness?: string
+    witness: string
     giver?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
@@ -98,7 +98,7 @@ export class ValueTransferGetterService {
   }> {
     // Get payment public DID from the storage or generate a new one if requested
     const usePublicDid = params.usePublicDid || true
-    const getter = await this.didService.getPublicOrCrateNewDid(DidType.PeerDid, usePublicDid)
+    const getter = await this.valueTransferService.getTransactionDid({ role: ValueTransferRole.Getter, usePublicDid })
 
     // Call VTP package to create payment request
     const givenTotal = new TaggedPrice({ amount: params.amount, uoa: params.unitOfAmount })
@@ -115,7 +115,7 @@ export class ValueTransferGetterService {
 
     const requestMessage = new RequestMessage({
       from: getter.did,
-      to: params.witness,
+      to: params.giver,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
     })
 

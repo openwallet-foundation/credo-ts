@@ -1,6 +1,7 @@
 import type { DIDDoc } from 'didcomm'
 
 import { mockFunction } from '../../../../../tests/helpers'
+import { DidType } from '../../../../modules/dids/domain/Did'
 import { DidDocument } from '../../../../modules/dids/domain/DidDocument'
 import { DidCommService } from '../../../../modules/dids/domain/service/DidCommService'
 import { DidCommV2Service } from '../../../../modules/dids/domain/service/DidCommV2Service'
@@ -67,6 +68,7 @@ describe('DIDResolverService', () => {
     didResolutionMetadata: {},
     didDocument: didDocument,
     didDocumentMetadata: {},
+    didType: DidType.Unknown,
   })
 
   it('converts DidDocumentService of Mediator type into didcomm lib Service of Other kind', async () => {

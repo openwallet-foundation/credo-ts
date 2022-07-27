@@ -4,6 +4,7 @@ import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
 import type { DidType } from './modules/dids'
+import type { DidProps } from './modules/dids/domain/Did'
 import type { DidCommService } from './modules/dids/domain/service/DidCommService'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
@@ -72,6 +73,7 @@ export interface InitConfig {
   connectToIndyLedgersOnStartup?: boolean
 
   transports?: Transports[]
+  defaultTransport?: Transports
 
   autoAcceptMediationRequests?: boolean
   mediatorConnectionsInvite?: string
@@ -82,6 +84,8 @@ export interface InitConfig {
   mediatorDeliveryStrategy?: MediatorDeliveryStrategy
   mediatorPushToken?: string
   mediatorWebHookEndpoint?: string
+
+  staticDids?: DidProps[]
 
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string

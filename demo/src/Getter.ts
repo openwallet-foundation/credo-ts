@@ -1,7 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
+import type { ValueTransferRecord } from '@aries-framework/core'
 
-import { Transports, ValueTransferState } from '@aries-framework/core'
+import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
@@ -10,31 +10,33 @@ export class Getter extends BaseAgent {
   public valueTransferRecordId?: string
   public static seed = '6b8b882e2618fa5d45ee7229ca880082'
 
-  public constructor(
-    name: string,
-    port?: number,
-    transports?: Transports[],
-    valueTransferConfig?: ValueTransferConfig,
-    mediatorConnectionsInvite?: string
-  ) {
-    super(name, Getter.seed, port, transports, valueTransferConfig, mediatorConnectionsInvite)
+  public constructor(name: string, port?: number) {
+    super({
+      name,
+      port,
+      transports: [Transports.Nearby, Transports.HTTP],
+      defaultTransport: Transports.Nearby,
+      mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
+      staticDids: [
+        {
+          seed: '6b8b882e2618fa5d45ee7229ca880082',
+          transports: [Transports.Nearby],
+          marker: DidMarker.Offline,
+        },
+        {
+          seed: '6b8b882e2618fa5d45ee7229ca880080',
+          transports: [Transports.Nearby, Transports.HTTP],
+          marker: DidMarker.Online,
+        },
+      ],
+      valueTransferConfig: {},
+    })
   }
 
   public static async build(): Promise<Getter> {
-    const valueTransferConfig: ValueTransferConfig = {
-      // defaultTransport: Transports.IPC,
-      defaultTransport: Transports.HTTP,
-    }
-    // const getter = new Getter('getter', undefined, [Transports.IPC, Transports.Nearby], valueTransferConfig)
-    const getter = new Getter(
-      'getter',
-      undefined,
-      [Transports.IPC, Transports.Nearby, Transports.HTTP],
-      valueTransferConfig,
-      BaseAgent.defaultMediatorConnectionInvite
-    )
+    const getter = new Getter('getter', undefined)
     await getter.initializeAgent()
-    const publicDid = await getter.agent.getPublicDid()
+    const publicDid = await getter.agent.getOnlinePublicDid()
     console.log(`Getter Public DID: ${publicDid?.did}`)
     return getter
   }
@@ -46,8 +48,8 @@ export class Getter extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  public async requestPayment(giver: string, witness: string) {
-    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1, giver, witness })
+  public async requestPayment(witness: string) {
+    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1, witness })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()

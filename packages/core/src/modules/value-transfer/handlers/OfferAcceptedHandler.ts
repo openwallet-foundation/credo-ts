@@ -3,7 +3,7 @@ import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferService } from '../services'
 import type { ValueTransferWitnessService } from '../services/ValueTransferWitnessService'
 
-import { OfferAcceptedMessage, ProblemReportMessage } from '../messages'
+import { OfferAcceptedMessage } from '../messages'
 
 export class OfferAcceptedHandler implements Handler<typeof DIDCommV2Message> {
   private valueTransferService: ValueTransferService
@@ -20,15 +20,20 @@ export class OfferAcceptedHandler implements Handler<typeof DIDCommV2Message> {
   }
 
   public async handle(messageContext: HandlerInboundMessage<OfferAcceptedHandler>) {
-    const { record, message } = await this.valueTransferWitnessService.processOfferAcceptance(messageContext)
+    const { record, message, problemReport } = await this.valueTransferWitnessService.processOfferAcceptance(
+      messageContext
+    )
 
     // if message is Problem Report -> also send it to Giver as well
-    if (message.type === ProblemReportMessage.type) {
-      await this.valueTransferService.sendProblemReportToGetterAndGiver(message, record)
+    if (problemReport) {
+      await this.valueTransferService.sendProblemReportToGetterAndGiver(problemReport, record)
       return
     }
 
-    // send success message to Giver
-    await this.valueTransferService.sendMessageToGiver(message)
+    if (message) {
+      // send success message to Giver
+      await this.valueTransferService.sendMessageToGiver(message)
+      return
+    }
   }
 }

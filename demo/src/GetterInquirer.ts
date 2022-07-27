@@ -33,6 +33,7 @@ export class GetterInquirer extends BaseInquirer {
     this.listener = new Listener()
     this.promptOptionsString = Object.values(PromptOptions)
     this.listener.messageListener(this.getter.agent, this.getter.name)
+    this.listener.paymentOfferListener(this.getter, this)
   }
 
   public static async build(): Promise<GetterInquirer> {
@@ -45,8 +46,6 @@ export class GetterInquirer extends BaseInquirer {
   }
 
   public async processAnswer() {
-    this.listener.paymentOfferListener(this.getter, this)
-
     const choice = await this.getPromptChoice()
     if (this.listener.on) return
 
@@ -65,9 +64,8 @@ export class GetterInquirer extends BaseInquirer {
   }
 
   public async requestPayment() {
-    const giver = await inquirer.prompt([this.inquireInput('Giver DID')])
     const witness = await inquirer.prompt([this.inquireInput('Witness DID')])
-    await this.getter.requestPayment(giver.input, witness.input)
+    await this.getter.requestPayment(witness.input)
   }
 
   public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {
