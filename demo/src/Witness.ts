@@ -21,11 +21,6 @@ export class Witness extends BaseAgent {
           transports: [Transports.NFC, Transports.IPC, Transports.HTTP],
           marker: DidMarker.Online,
         },
-        {
-          seed: '6b8b882e2618fa5d45ee7229ca880083',
-          transports: [Transports.NFC, Transports.IPC],
-          marker: DidMarker.Offline,
-        },
       ],
       valueTransferConfig: {
         isWitness: true,

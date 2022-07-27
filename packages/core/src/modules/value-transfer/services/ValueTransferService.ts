@@ -312,23 +312,28 @@ export class ValueTransferService {
         : record?.role === ValueTransferRole.Giver
         ? this.config.transports.filter((transport) => transport !== Transports.IPC)
         : this.config.transports
-    return this.sendMessage(message, transports, this.config.defaultTransport)
+    return this.sendMessage(message, transports)
   }
 
   public async sendMessageToGiver(message: DIDCommV2Message) {
     const transports = this.config.transports.filter((transport) => transport !== Transports.IPC)
-    return this.sendMessage(message, transports, this.config.defaultTransport)
+    return this.sendMessage(message, transports)
   }
 
   public async sendMessageToGetter(message: DIDCommV2Message) {
     const transports = this.config.transports.filter((transport) => transport !== Transports.NFC)
-    return this.sendMessage(message, transports, this.config.defaultTransport)
+    return this.sendMessage(message, transports)
   }
 
-  private async sendMessage(message: DIDCommV2Message, transports: Transports[], defaultTransport?: Transports) {
+  private async sendMessage(message: DIDCommV2Message, transports: Transports[]) {
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.messageSender.sendDIDCommV2Message(outboundMessage, sendingMessageType, transports, defaultTransport)
+    await this.messageSender.sendDIDCommV2Message(
+      outboundMessage,
+      sendingMessageType,
+      transports,
+      this.config.defaultTransport
+    )
   }
 
   public async getBalance(): Promise<number> {

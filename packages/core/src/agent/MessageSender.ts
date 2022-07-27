@@ -339,7 +339,8 @@ export class MessageSender {
     if (!service) {
       // if transport specified explicitly - send message
       this.logger.debug(`Sending outbound message to transport:`, { defaultTransport })
-      return await this.sendMessage({ payload: message }, defaultTransport)
+      await this.sendMessage({ payload: message }, defaultTransport)
+      return
     }
 
     const outboundPackage = { payload: message, endpoint: service.serviceEndpoint }

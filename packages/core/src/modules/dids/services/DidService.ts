@@ -155,13 +155,13 @@ export class DidService {
     const hasInternetAccess = await this.agentConfig.hasInternetAccess()
     if (!hasInternetAccess) {
       // find for a public DID which supports Offline transports only
-      const offlinePublicDid = await this.findPublicOfflineDid()
+      const offlinePublicDid = await this.findOfflinePublicDid()
       if (offlinePublicDid) return offlinePublicDid
     }
 
     if (hasInternetAccess) {
       // find for a public DID which supports Online transports
-      const onlinePublicDid = await this.findPublicOnlineDid()
+      const onlinePublicDid = await this.findOnlinePublicDid()
       if (onlinePublicDid) return onlinePublicDid
     }
 
@@ -258,14 +258,14 @@ export class DidService {
     return undefined
   }
 
-  public async findPublicOnlineDid() {
+  public async findOnlinePublicDid() {
     return this.didRepository.findSingleByQuery({
       isPublic: true,
       marker: DidMarker.Online,
     })
   }
 
-  public async findPublicOfflineDid() {
+  public async findOfflinePublicDid() {
     return this.didRepository.findSingleByQuery({
       isPublic: true,
       marker: DidMarker.Offline,

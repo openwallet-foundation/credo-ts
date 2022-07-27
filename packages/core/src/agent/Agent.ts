@@ -276,6 +276,14 @@ export class Agent {
     return await this.didService.findPublicDid()
   }
 
+  public async getOfflinePublicDid() {
+    return await this.didService.findOfflinePublicDid()
+  }
+
+  public async getOnlinePublicDid() {
+    return await this.didService.findOnlinePublicDid()
+  }
+
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
     return await this.messageReceiver.receiveMessage(inboundMessage, session)
   }
