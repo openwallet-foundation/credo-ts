@@ -60,13 +60,12 @@ describe('credentials', () => {
 
   let signCredentialOptions: SignCredentialOptionsRFC0593
 
-  let agentContext: AgentContext
   let wallet
   const seed = 'testseed000000000000000000000001'
+  let credDefId: string
 
   beforeAll(async () => {
-    agentContext = getAgentContext()
-    ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
+    ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD',
       'Alice Agent Credentials LD'
     ))
@@ -264,7 +263,7 @@ describe('credentials', () => {
     })
   })
 
-  xtest('Multiple Formats: Alice starts with V2 (both ld and indy formats) credential proposal to Faber', async () => {
+  test('Multiple Formats: Alice starts with V2 (both ld and indy formats) credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
     // set the propose options - using both indy and ld credential formats here
     const credentialPreview = V2CredentialPreview.fromRecord({
@@ -278,7 +277,7 @@ describe('credentials', () => {
       schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
       schemaName: 'ahoy',
       schemaVersion: '1.0',
-      schemaId: '1560364003',
+      schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
       issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
       credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
     }
@@ -310,8 +309,12 @@ describe('credentials', () => {
 
     const options: AcceptProposalOptions = {
       credentialRecordId: faberCredentialRecord.id,
-      comment: 'V2 W3C Offer',
+      comment: 'V2 W3C & INDY Proposals',
       credentialFormats: {
+        indy: {
+          credentialDefinitionId: credDefId,
+          attributes: credentialPreview.attributes,
+        },
         jsonld: signCredentialOptions,
       },
     }
@@ -322,8 +325,6 @@ describe('credentials', () => {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
-    const wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-
     // didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
     didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
 
@@ -334,7 +335,7 @@ describe('credentials', () => {
     expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
       '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
       '@id': expect.any(String),
-      comment: 'V2 Indy Offer',
+      comment: 'V2 W3C & INDY Proposals',
       formats: [
         {
           attach_id: expect.any(String),
@@ -432,7 +433,7 @@ describe('credentials', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    const credentialMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
+    const credentialMessage = await didCommMessageRepository.getAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2IssueCredentialMessage,
     })
