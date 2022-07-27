@@ -37,7 +37,6 @@ describe('credentials', () => {
   let aliceAgent: Agent
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
-  let issuerDidKey: DidKey
   const seed = 'testseed000000000000000000000001'
 
   beforeEach(async () => {

@@ -1,17 +1,18 @@
 import type { AgentContext } from '../../../../../agent'
 import type { Agent } from '../../../../../agent/Agent'
 import type { SignCredentialOptionsRFC0593 } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
+import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
 import type { AcceptProposalOptions } from '../../../CredentialsApiOptions'
 
 import { getAgentContext, setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
+import { InjectionSymbols } from '../../../../../constants'
 import { KeyType } from '../../../../../crypto/KeyType'
 import { DidKey } from '../../../../../modules/dids'
 import { BbsBlsSignature2020Fixtures } from '../../../../../modules/vc/__tests__/fixtures'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { IndyWallet } from '../../../../../wallet/IndyWallet'
 import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
 import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -23,12 +24,12 @@ let aliceAgent: Agent
 let aliceConnection: ConnectionRecord
 let aliceCredentialRecord: CredentialExchangeRecord
 let faberCredentialRecord: CredentialExchangeRecord
-let wallet: IndyWallet
+let wallet
 let issuerDidKey: DidKey
 let didCommMessageRepository: DidCommMessageRepository
 let signCredentialOptions: SignCredentialOptionsRFC0593
-let verificationMethod: string
 const seed = 'testseed000000000000000000000001'
+
 describe('credentials, BBS+ signature', () => {
   let agentContext: AgentContext
 
@@ -38,11 +39,11 @@ describe('credentials, BBS+ signature', () => {
       'Faber Agent Credentials LD BBS+',
       'Alice Agent Credentials LD BBS+'
     ))
-    wallet = faberAgent.injectionContainer.resolve(IndyWallet)
+    wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+    await wallet.createDid({ seed })
     const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
 
     issuerDidKey = new DidKey(key)
-    verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
   })
 
   afterAll(async () => {
@@ -58,6 +59,7 @@ describe('credentials, BBS+ signature', () => {
 
     const credentialJson = BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT
     credentialJson.issuer = issuerDidKey.did
+
     const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
     signCredentialOptions = {
@@ -105,10 +107,10 @@ describe('credentials, BBS+ signature', () => {
       state: CredentialState.OfferReceived,
     })
 
-    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+    didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
 
-    const offerMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
-      associatedRecordId: faberCredentialRecord.id,
+    const offerMessage = await didCommMessageRepository.findAgentMessage(aliceAgent.context, {
+      associatedRecordId: aliceCredentialRecord.id,
       messageClass: V2OfferCredentialMessage,
     })
 
