@@ -4,7 +4,7 @@
  * */
 export enum ValueTransferState {
   RequestSent = 'request-sent',
-  OfferSent = 'offe-sent',
+  OfferSent = 'offer-sent',
   OfferAcceptanceSent = 'offer-acceptance-sent',
   RequestReceived = 'request-received',
   OfferReceived = 'offer-received',

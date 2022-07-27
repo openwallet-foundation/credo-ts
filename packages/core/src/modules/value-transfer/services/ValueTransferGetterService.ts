@@ -73,8 +73,9 @@ export class ValueTransferGetterService {
    * @param params Options to use for request creation -
    * {
    *  amount - Amount to pay
+   *  witness - DID of witness validating and signing transaction
    *  unitOfAmount - (Optional) Currency code that represents the unit of account
-   *  witness - (Optional) DID of witness if it's known in advance
+   *  witness - DID of witness validating and signing transaction
    *  giver - (Optional) DID of giver if it's known in advance
    *  usePublicDid - (Optional) Whether to use public DID of Getter in the request or create a new random one (True by default)
    *  timeouts - (Optional) Giver timeouts to which value transfer must fit
@@ -87,7 +88,7 @@ export class ValueTransferGetterService {
   public async createRequest(params: {
     amount: number
     unitOfAmount?: string
-    witness?: string
+    witness: string
     giver?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
@@ -114,7 +115,7 @@ export class ValueTransferGetterService {
 
     const requestMessage = new RequestMessage({
       from: getter.did,
-      to: params.witness,
+      to: params.giver,
       attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
     })
 

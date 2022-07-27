@@ -12,13 +12,13 @@ export class Witness extends BaseAgent {
     super({
       name,
       port,
-      transports: [Transports.NFC, Transports.IPC, Transports.HTTP],
-      defaultTransport: Transports.NFC,
+      transports: [Transports.HTTP],
+      defaultTransport: Transports.HTTP,
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
           seed: '6b8b882e2618fa5d45ee7229ca880084',
-          transports: [Transports.NFC, Transports.IPC, Transports.HTTP],
+          transports: [Transports.HTTP],
           marker: DidMarker.Online,
         },
       ],

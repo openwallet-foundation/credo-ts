@@ -70,6 +70,7 @@ export class BaseAgent {
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
       mediatorPickupStrategy: MediatorPickupStrategy.Explicit,
+      mediatorPollingInterval: 2000,
       valueTransferConfig: props.valueTransferConfig,
       transports: props.transports,
       defaultTransport: props.defaultTransport,

@@ -15,7 +15,6 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { ValueTransferResponseCoordinator } from './ValueTransferResponseCoordinator'
 import {
   OfferHandler,
-  RequestHandler,
   CashAcceptedHandler,
   CashAcceptedWitnessedHandler,
   CashRemovedHandler,
@@ -24,7 +23,7 @@ import {
   ProblemReportHandler,
   RequestAcceptedHandler,
   RequestAcceptedWitnessedHandler,
-  RequestWitnessedHandler,
+  RequestHandler,
 } from './handlers'
 import { OfferAcceptedHandler } from './handlers/OfferAcceptedHandler'
 import { OfferAcceptedWitnessedHandler } from './handlers/OfferAcceptedWitnessedHandler'
@@ -65,7 +64,7 @@ export class ValueTransferModule {
    * {
    *  amount - Amount to pay
    *  unitOfAmount - (Optional) Currency code that represents the unit of account
-   *  witness - (Optional) DID of witness if it's known in advance
+   *  witness - DID of witness validating and signing transaction
    *  giver - (Optional) DID of giver if it's known in advance
    *  usePublicDid - (Optional) Whether to use public DID of Getter in the request or create a new random one (True by default)
    *  timeouts (Optional) - Getter timeouts to which value transfer must fit
@@ -80,7 +79,7 @@ export class ValueTransferModule {
   public async requestPayment(params: {
     amount: number
     unitOfAmount?: string
-    witness?: string
+    witness: string
     giver?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
@@ -89,7 +88,7 @@ export class ValueTransferModule {
     const { message, record } = await this.valueTransferGetterService.createRequest(params)
 
     // Send Payment Request to Witness
-    await this.valueTransferService.sendMessageToWitness(message, record)
+    await this.valueTransferService.sendMessageToGiver(message)
     return { message, record }
   }
 
@@ -292,9 +291,8 @@ export class ValueTransferModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new RequestHandler(this.valueTransferService, this.valueTransferWitnessService))
     dispatcher.registerHandler(
-      new RequestWitnessedHandler(
+      new RequestHandler(
         this.valueTransferService,
         this.valueTransferGiverService,
         this.valueTransferResponseCoordinator

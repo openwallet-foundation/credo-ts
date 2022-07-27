@@ -14,18 +14,18 @@ export class Getter extends BaseAgent {
     super({
       name,
       port,
-      transports: [Transports.IPC, Transports.Nearby, Transports.HTTP],
-      defaultTransport: Transports.HTTP,
+      transports: [Transports.Nearby, Transports.HTTP],
+      defaultTransport: Transports.Nearby,
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
           seed: '6b8b882e2618fa5d45ee7229ca880082',
-          transports: [Transports.IPC, Transports.Nearby],
+          transports: [Transports.Nearby],
           marker: DidMarker.Offline,
         },
         {
           seed: '6b8b882e2618fa5d45ee7229ca880080',
-          transports: [Transports.IPC, Transports.Nearby, Transports.HTTP],
+          transports: [Transports.Nearby, Transports.HTTP],
           marker: DidMarker.Online,
         },
       ],
@@ -36,7 +36,7 @@ export class Getter extends BaseAgent {
   public static async build(): Promise<Getter> {
     const getter = new Getter('getter', undefined)
     await getter.initializeAgent()
-    const publicDid = await getter.agent.getPublicDid()
+    const publicDid = await getter.agent.getOnlinePublicDid()
     console.log(`Getter Public DID: ${publicDid?.did}`)
     return getter
   }
@@ -48,8 +48,8 @@ export class Getter extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  public async requestPayment(giver: string, witness: string) {
-    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1, giver, witness })
+  public async requestPayment(witness: string) {
+    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1, witness })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()
