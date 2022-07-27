@@ -3,7 +3,7 @@ import { MessageValidator } from '../../../utils/MessageValidator'
 import { ProofRequest } from '../formats/indy/models/ProofRequest'
 
 describe('ProofRequest', () => {
-  it('should successfully validate if the proof request json contains a valid structure', async () => {
+  it('should successfully validate if the proof request JSON contains a valid structure', async () => {
     const proofRequest = JsonTransformer.fromJSON(
       {
         name: 'ProofRequest',
