@@ -5,9 +5,7 @@ import type { Schema } from 'indy-sdk'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { sleep } from '../../../../../utils/sleep'
 import { AutoAcceptCredential } from '../../../models/CredentialAutoAcceptType'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -61,7 +59,7 @@ describe('v2 credentials', () => {
       })
 
       testLogger.test('Alice sends credential proposal to Faber')
-      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
+      await aliceAgent.credentials.proposeCredential({
         connectionId: aliceConnection.id,
         protocolVersion: 'v2',
         credentialFormats: {
@@ -108,7 +106,7 @@ describe('v2 credentials', () => {
 
       testLogger.test('Faber sends credential offer to Alice')
       const schemaId = schema.id
-      const faberCredentialExchangeRecord = await faberAgent.credentials.offerCredential({
+      await faberAgent.credentials.offerCredential({
         comment: 'some comment about credential',
         connectionId: faberConnection.id,
         credentialFormats: {
@@ -218,7 +216,7 @@ describe('v2 credentials', () => {
       }
       testLogger.test('Faber sends credential offer to Alice')
       options.credentialRecordId = faberPropReceivedRecord.id
-      const faberAcceptPropRecord = await faberAgent.credentials.acceptProposal(options)
+      await faberAgent.credentials.acceptProposal(options)
 
       testLogger.test('Alice waits for credential from Faber')
       const aliceCredReceivedRecord = await aliceCredReceivedPromise
@@ -272,7 +270,7 @@ describe('v2 credentials', () => {
 
       testLogger.test('Faber sends credential offer to Alice')
       const schemaId = schema.id
-      const faberOfferCredRecord = await faberAgent.credentials.offerCredential({
+      await faberAgent.credentials.offerCredential({
         comment: 'some comment about credential',
         connectionId: faberConnection.id,
         credentialFormats: {
@@ -314,7 +312,7 @@ describe('v2 credentials', () => {
         credentialRecordId: aliceOfferReceivedRecord.id,
       }
       testLogger.test('alice sends credential request to faber')
-      const faberOfferedCredRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
+      await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
 
       testLogger.test('Alice waits for credential from Faber')
       const aliceCredReceivedRecord = await aliceCredReceivedPromise
@@ -417,7 +415,7 @@ describe('v2 credentials', () => {
       })
 
       testLogger.test('Faber sends credential offer to Alice')
-      const faberOfferCredentialRecord = await faberAgent.credentials.offerCredential({
+      await faberAgent.credentials.offerCredential({
         comment: 'some comment about credential',
         connectionId: faberConnection.id,
         credentialFormats: {
