@@ -1,5 +1,4 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import type { DidKey } from '../../../../../../src/modules/dids'
 import type { SignCredentialOptionsRFC0593 } from '../../../../../../src/modules/vc/models/W3cCredentialServiceOptions'
 import type { Wallet } from '../../../../../wallet'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'

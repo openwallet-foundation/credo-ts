@@ -1,11 +1,10 @@
-import type { AgentContext } from '../../../../../agent'
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
 import type { SignCredentialOptionsRFC0593 } from '../../../../vc/models/W3cCredentialServiceOptions'
 import type { AcceptProposalOptions, AcceptRequestOptions } from '../../../CredentialsApiOptions'
 
-import { getAgentContext, setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
+import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { InjectionSymbols } from '../../../../../constants'
 import { DidCommMessageRepository } from '../../../../../storage'

@@ -295,9 +295,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     // find first key which matches proof type
     const proofType = credentialRequest.options.proofType
-    const proofTypeEnum: ProofType = (<any>ProofType)[proofType]
 
-    const keyType: string | undefined = proofTypeKeyTypeMapping[proofTypeEnum]
+    const keyType: string | undefined = proofTypeKeyTypeMapping[proofType]
     if (!keyType) {
       throw new AriesFrameworkError(`No Key Type found for proofType ${proofType}`)
     }

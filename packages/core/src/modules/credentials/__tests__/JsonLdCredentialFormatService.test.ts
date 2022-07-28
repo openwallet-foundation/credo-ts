@@ -35,7 +35,7 @@ jest.mock('../../dids/services/DidResolverService')
 const W3cCredentialServiceMock = W3cCredentialService as jest.Mock<W3cCredentialService>
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 
-const didDocument: DidDocument = {
+const didDocument = {
   context: [
     'https://w3id.org/did/v1',
     'https://w3id.org/security/suites/ed25519-2018/v1',
@@ -81,32 +81,8 @@ const didDocument: DidDocument = {
       ethereumAddress: undefined,
     },
   ],
-  capabilityInvocation: [
-    'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-  ],
-  capabilityDelegation: [
-    'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-  ],
-  dereferenceVerificationMethod: function (keyId: string): VerificationMethod {
-    throw new Error('Function not implemented.')
-  },
-  dereferenceKey: function (keyId: string, allowedPurposes?: DidPurpose[]): VerificationMethod {
-    throw new Error('Function not implemented.')
-  },
-  getServicesByType: function <S extends DidDocumentService = DidDocumentService>(type: string): S[] {
-    throw new Error('Function not implemented.')
-  },
-  getServicesByClassType: function <S extends DidDocumentService = DidDocumentService>(
-    classType: new (...args: never[]) => S
-  ): S[] {
-    throw new Error('Function not implemented.')
-  },
-  didCommServices: [],
-  recipientKeys: [],
-  toJSON: function (): Record<string, any> {
-    throw new Error('Function not implemented.')
-  },
 }
+
 const vcJson = {
   ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
   credentialSubject: {
@@ -363,7 +339,7 @@ describe('JsonLd CredentialFormatService', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
 
     test('Derive Verification Method', async () => {
-      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument as any))
 
       const service = jsonldFormatService as JsonLdCredentialFormatService
       const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()

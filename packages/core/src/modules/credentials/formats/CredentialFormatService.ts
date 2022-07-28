@@ -103,8 +103,8 @@ export abstract class CredentialFormatService<CF extends CredentialFormat = Cred
 
   public areCredentialsEqual = (message1: Attachment, message2: Attachment): boolean => {
     // FIXME: this implementation doesn't make sense. We can't loop over stringified objects...
-    const obj1: any = message1.getDataAsJson()
-    const obj2: any = message2.getDataAsJson()
+    const obj1 = message1.getDataAsJson()
+    const obj2 = message2.getDataAsJson()
 
     return deepEqual(obj1, obj2)
   }

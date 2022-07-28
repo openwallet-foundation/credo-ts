@@ -85,7 +85,6 @@ export class W3cCredentialService {
       useNativeCanonize: false,
       date: options.created ?? w3cDate(),
     })
-
     const result = await vc.issue({
       credential: JsonTransformer.toJSON(options.credential),
       suite: suite,

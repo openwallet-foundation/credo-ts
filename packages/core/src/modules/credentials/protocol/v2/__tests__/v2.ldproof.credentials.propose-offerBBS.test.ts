@@ -24,17 +24,16 @@ let aliceAgent: Agent
 let aliceConnection: ConnectionRecord
 let aliceCredentialRecord: CredentialExchangeRecord
 let faberCredentialRecord: CredentialExchangeRecord
-let wallet
-let issuerDidKey: DidKey
-let didCommMessageRepository: DidCommMessageRepository
-let signCredentialOptions: SignCredentialOptionsRFC0593
-const seed = 'testseed000000000000000000000001'
 
 describe('credentials, BBS+ signature', () => {
   let agentContext: AgentContext
-
+  let wallet
+  let issuerDidKey: DidKey
+  let didCommMessageRepository: DidCommMessageRepository
+  let signCredentialOptions: SignCredentialOptionsRFC0593
+  let verificationMethod: string
+  const seed = 'testseed000000000000000000000001'
   beforeAll(async () => {
-    agentContext = getAgentContext()
     ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD BBS+',
       'Alice Agent Credentials LD BBS+'
@@ -65,7 +64,7 @@ describe('credentials, BBS+ signature', () => {
     signCredentialOptions = {
       credential,
       options: {
-        proofType: 'BbsBlsSignatureProof2020',
+        proofType: 'BbsBlsSignature2020',
         proofPurpose: 'assertionMethod',
       },
     }
@@ -200,7 +199,7 @@ describe('credentials, BBS+ signature', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    const credentialMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
+    const credentialMessage = await didCommMessageRepository.getAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2IssueCredentialMessage,
     })
@@ -237,8 +236,7 @@ describe('credentials, BBS+ signature', () => {
         birthDate: '1958-07-17',
       },
       proof: {
-        type: 'BbsBlsSignatureProof2020', // this is BbsBlsSignature2020 in the other BBS+ tests
-        // but that isn't a recognized proof type in the pex library
+        type: 'BbsBlsSignature2020',
         created: expect.any(String),
         verificationMethod:
           'did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa#zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa',
