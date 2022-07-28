@@ -17,19 +17,11 @@ export class AnonCredsCredentialDefinitionRepository extends Repository<AnonCred
     super(AnonCredsCredentialDefinitionRecord, storageService, eventEmitter)
   }
 
-  public async getByUnqualifiedIdentifier(agentContext: AgentContext, unqualifiedIdentifier: string) {
-    return this.getSingleByQuery(agentContext, { unqualifiedIdentifier })
+  public async getByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
+    return this.getSingleByQuery(agentContext, { credentialDefinitionId })
   }
 
-  public async findByUnqualifiedIdentifier(agentContext: AgentContext, unqualifiedIdentifier: string) {
-    return this.findSingleByQuery(agentContext, { unqualifiedIdentifier })
-  }
-
-  public async getByQualifiedIdentifier(agentContext: AgentContext, qualifiedIdentifier: string) {
-    return this.getSingleByQuery(agentContext, { qualifiedIdentifier })
-  }
-
-  public async findByQualifiedIdentifier(agentContext: AgentContext, qualifiedIdentifier: string) {
-    return this.findSingleByQuery(agentContext, { qualifiedIdentifier })
+  public async findByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
+    return this.findSingleByQuery(agentContext, { credentialDefinitionId })
   }
 }

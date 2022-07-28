@@ -201,7 +201,7 @@ describe('dids', () => {
         qualifiedIndyDid: `did:indy:localhost:${indyDid}`,
       },
       didRegistrationMetadata: {
-        indyNamespace: 'localhost',
+        didIndyNamespace: 'localhost',
       },
       didState: {
         state: 'finished',

@@ -24,35 +24,35 @@ const CacheRepositoryMock = CacheRepository as jest.Mock<CacheRepository>
 const pools: IndyPoolConfig[] = [
   {
     id: 'sovrinMain',
-    didIndyNamespace: 'sovrinMain',
+    didIndyNamespace: 'sovrin',
     isProduction: true,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
     id: 'sovrinBuilder',
-    didIndyNamespace: 'sovrinBuilder',
+    didIndyNamespace: 'sovrin:builder',
     isProduction: false,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
     id: 'sovringStaging',
-    didIndyNamespace: 'sovringStaging',
+    didIndyNamespace: 'sovrin:staging',
     isProduction: false,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
     id: 'indicioMain',
-    didIndyNamespace: 'indicioMain',
+    didIndyNamespace: 'indicio',
     isProduction: true,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
     id: 'bcovrinTest',
-    didIndyNamespace: 'bcovrinTest',
+    didIndyNamespace: 'bcovrin:test',
     isProduction: false,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
@@ -285,6 +285,7 @@ describe('IndyPoolService', () => {
       const { pool } = await poolService.getPoolForDid(agentContext, did)
 
       expect(pool.config.id).toBe('sovrinBuilder')
+      expect(pool.config.didIndyNamespace).toBe('sovrin:builder')
 
       const cacheRecord = spy.mock.calls[0][1]
       expect(cacheRecord.entries.length).toBe(1)

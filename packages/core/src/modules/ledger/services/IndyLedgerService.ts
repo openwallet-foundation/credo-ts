@@ -109,8 +109,6 @@ export class IndyLedgerService {
     try {
       this.logger.debug(`Set endpoints for did '${did}' on ledger '${pool.id}'`, endpoints)
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
       const request = await this.indy.buildAttribRequest(did, did, null, { endpoint: endpoints }, null)
 
       const response = await this.submitWriteRequest(agentContext, pool, request, did)

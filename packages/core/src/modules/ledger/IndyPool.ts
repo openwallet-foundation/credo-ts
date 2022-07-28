@@ -8,7 +8,7 @@ import type { Subject } from 'rxjs'
 
 import { AriesFrameworkError, IndySdkError } from '../../error'
 import { isIndyError } from '../../utils/indyError'
-import { createQualifiedIdentifier } from '../../utils/indyIdentifiers'
+import { getQualifiedIdentifier } from '../../utils/indyIdentifiers'
 
 import { LedgerError } from './error/LedgerError'
 import { isLedgerRejectResponse, isLedgerReqnackResponse } from './ledgerUtil'
@@ -36,7 +36,7 @@ export class IndyPool {
   private poolConnected?: Promise<number>
   public authorAgreement?: AuthorAgreement | null
   // aka the qualified identifier
-  public indyNamespace: IndyNamespace
+  public didIndyNamespace: string
 
   public constructor(
     poolConfig: IndyPoolConfig,
@@ -49,7 +49,7 @@ export class IndyPool {
     this.fileSystem = fileSystem
     this.poolConfig = poolConfig
     this.logger = logger
-    this.indyNamespace = createQualifiedIdentifier(this.poolConfig.didIndyNamespace, this.poolConfig.id)
+    this.didIndyNamespace = this.config.didIndyNamespace
 
     // Listen to stop$ (shutdown) and close pool
     stop$.subscribe(async () => {

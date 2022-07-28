@@ -17,19 +17,11 @@ export class AnonCredsSchemaRepository extends Repository<AnonCredsSchemaRecord>
     super(AnonCredsSchemaRecord, storageService, eventEmitter)
   }
 
-  public async getByUnqualifiedIdentifier(agentContext: AgentContext, unqualifiedIdentifier: string) {
-    return this.getSingleByQuery(agentContext, { unqualifiedIdentifier })
+  public async getBySchemaId(agentContext: AgentContext, schemaId: string) {
+    return this.getSingleByQuery(agentContext, { schemaId: schemaId })
   }
 
-  public async findByUnqualifiedIdentifier(agentContext: AgentContext, unqualifiedIdentifier: string) {
-    return await this.findSingleByQuery(agentContext, { unqualifiedIdentifier })
-  }
-
-  public async getByQualifiedIdentifier(agentContext: AgentContext, qualifiedIdentifier: string) {
-    return this.getSingleByQuery(agentContext, { qualifiedIdentifier })
-  }
-
-  public async findByQualifiedIdentifier(agentContext: AgentContext, qualifiedIdentifier: string) {
-    return await this.findSingleByQuery(agentContext, { qualifiedIdentifier })
+  public async findBySchemaId(agentContext: AgentContext, schemaId: string) {
+    return await this.findSingleByQuery(agentContext, { schemaId: schemaId })
   }
 }

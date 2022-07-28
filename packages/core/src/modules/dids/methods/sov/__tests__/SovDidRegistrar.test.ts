@@ -148,7 +148,7 @@ describe('DidRegistrar', () => {
           qualifiedIndyDid: 'did:indy:pool1:R1xKJw17sUoXhejEpugMYJ',
         },
         didRegistrationMetadata: {
-          indyNamespace: 'pool1',
+          didIndyNamespace: 'pool1',
         },
         didState: {
           state: 'finished',
@@ -222,7 +222,7 @@ describe('DidRegistrar', () => {
           qualifiedIndyDid: 'did:indy:pool1:R1xKJw17sUoXhejEpugMYJ',
         },
         didRegistrationMetadata: {
-          indyNamespace: 'pool1',
+          didIndyNamespace: 'pool1',
         },
         didState: {
           state: 'finished',

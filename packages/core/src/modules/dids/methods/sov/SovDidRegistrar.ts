@@ -7,7 +7,7 @@ import type * as Indy from 'indy-sdk'
 import { AgentDependencies } from '../../../../agent/AgentDependencies'
 import { InjectionSymbols } from '../../../../constants'
 import { inject, injectable } from '../../../../plugins'
-import { createQualifiedIdentifier } from '../../../../utils/indyIdentifiers'
+import { getQualifiedIdentifier } from '../../../../utils/indyIdentifiers'
 import { assertIndyWallet } from '../../../../wallet/util/assertIndyWallet'
 import { IndyLedgerService, IndyPoolService } from '../../../ledger'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
@@ -103,8 +103,9 @@ export class SovDidRegistrar implements DidRegistrar {
       // Build did document.
       const didDocument = didDocumentBuilder.build()
 
-      const indyNamespace = this.indyPoolService.ledgerWritePool.config.didIndyNamespace
-      const qualifiedIndyDid = createQualifiedIdentifier(indyNamespace, unqualifiedIndyDid)
+      // FIXME: create qualified identifier
+      const didIndyNamespace = this.indyPoolService.ledgerWritePool.config.didIndyNamespace
+      const qualifiedIndyDid = `did:indy:${didIndyNamespace}:${unqualifiedIndyDid}`
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({
@@ -122,7 +123,7 @@ export class SovDidRegistrar implements DidRegistrar {
           qualifiedIndyDid,
         },
         didRegistrationMetadata: {
-          indyNamespace,
+          didIndyNamespace,
         },
         didState: {
           state: 'finished',
