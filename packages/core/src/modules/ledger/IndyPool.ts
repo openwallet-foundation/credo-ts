@@ -138,7 +138,7 @@ export class IndyPool {
   public async submitWriteRequest(request: Indy.LedgerRequest) {
     const response = await this.submitRequest(request)
 
-    if (isLedgerRejectResponse(response)) {
+    if (isLedgerRejectResponse(response) || isLedgerReqnackResponse(response)) {
       throw new LedgerError(`Ledger '${this.id}' rejected write transaction request: ${response.reason}`)
     }
 
