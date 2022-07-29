@@ -49,7 +49,7 @@ export class OutOfBandService {
     const did = await this.didService.getPublicDidOrCreateNew(usePublicDid)
     const body = {
       goal,
-      goal_code: goalCode,
+      goalCode,
     }
 
     if (goalCode === OutOfBandGoalCode.AndroidNearbyHandshake) {
