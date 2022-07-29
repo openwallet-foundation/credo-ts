@@ -14,8 +14,7 @@ export class Giver extends BaseAgent {
     super({
       name,
       port,
-      transports: [Transports.Nearby, Transports.HTTP],
-      defaultTransport: Transports.Nearby,
+      transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
@@ -82,8 +81,12 @@ export class Giver extends BaseAgent {
     console.log(record.problemReportMessage)
   }
 
-  public async offerPayment(getter: string, witness: string) {
-    const { record } = await this.agent.valueTransfer.offerPayment({ amount: 1, getter, witness })
+  public async offerPayment(getter: string) {
+    const { record } = await this.agent.valueTransfer.offerPayment({
+      amount: 1,
+      getter,
+      transport: Transports.NFC,
+    })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nOffer Sent!\n'))
     await this.waitForPayment()

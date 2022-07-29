@@ -1,5 +1,4 @@
 import type { OutOfBandEvent } from '../OutOfBandEvents'
-import type { ValueTransferStateChangedEvent } from '@aries-framework/core'
 
 import { Lifecycle, scoped } from 'tsyringe'
 

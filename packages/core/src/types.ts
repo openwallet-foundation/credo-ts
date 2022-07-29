@@ -73,7 +73,6 @@ export interface InitConfig {
   connectToIndyLedgersOnStartup?: boolean
 
   transports?: Transports[]
-  defaultTransport?: Transports
 
   autoAcceptMediationRequests?: boolean
   mediatorConnectionsInvite?: string

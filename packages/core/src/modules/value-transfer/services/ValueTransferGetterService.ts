@@ -10,7 +10,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { DidService } from '../../dids/services/DidService'
-import { DidInfo, WellKnownService } from '../../well-known'
+import { WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
@@ -189,7 +189,7 @@ export class ValueTransferGetterService {
     }
 
     const getterInfo = await this.wellKnownService.resolve(receipt.getterId)
-    const witnessInfo = await this.wellKnownService.resolve(receipt.witnessId)
+    const witnessInfo = receipt.isWitnessSet ? await this.wellKnownService.resolve(receipt.witnessId) : undefined
     const giverInfo = await this.wellKnownService.resolve(receipt.giverId)
 
     // Create Value Transfer record and raise event
@@ -235,7 +235,7 @@ export class ValueTransferGetterService {
     record.assertRole(ValueTransferRole.Getter)
     record.assertState(ValueTransferState.OfferReceived)
 
-    const witness = witnessDid || this.config.valueTransferConfig?.witnessDid
+    const witness = witnessDid || this.config.valueTransferConfig?.witnessDid || record.witness?.did
     if (!witness) {
       throw new AriesFrameworkError(`Unable to accept payment offer without specifying of Witness DID.`)
     }
@@ -378,7 +378,7 @@ export class ValueTransferGetterService {
     // Update Value Transfer record
     // Update Value Transfer record and raise event
 
-    const witnessInfo = record.witness?.did ? record.witness : new DidInfo({ did: receipt.witnessId })
+    const witnessInfo = record.witness?.did ? record.witness : await this.wellKnownService.resolve(receipt.witnessId)
     const giverInfo = record.giver?.did ? record.giver : await this.wellKnownService.resolve(receipt.giverId)
 
     record.receipt = receipt

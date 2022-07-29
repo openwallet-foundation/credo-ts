@@ -1,6 +1,7 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferConfig } from '../../../types'
+import type { Transports } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -24,7 +25,6 @@ import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 import { DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
-import { Transports } from '../../routing/types'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
@@ -302,38 +302,22 @@ export class ValueTransferService {
     await Promise.all([this.sendMessageToGetter(getterProblemReport), this.sendMessageToGiver(giverProblemReport)])
   }
 
-  public async sendMessageToWitness(message: DIDCommV2Message, record?: ValueTransferRecord) {
-    // Workaround for different witness transports as now User-wallet can have both Giver/Getter roles in different transactions
-    const transports =
-      record?.role === ValueTransferRole.Witness
-        ? this.config.transports
-        : record?.role === ValueTransferRole.Getter
-        ? this.config.transports.filter((transport) => transport !== Transports.NFC)
-        : record?.role === ValueTransferRole.Giver
-        ? this.config.transports.filter((transport) => transport !== Transports.IPC)
-        : this.config.transports
-    return this.sendMessage(message, transports)
+  public async sendMessageToWitness(message: DIDCommV2Message, transport?: Transports) {
+    return this.sendMessage(message, transport)
   }
 
-  public async sendMessageToGiver(message: DIDCommV2Message) {
-    const transports = this.config.transports.filter((transport) => transport !== Transports.IPC)
-    return this.sendMessage(message, transports)
+  public async sendMessageToGiver(message: DIDCommV2Message, transport?: Transports) {
+    return this.sendMessage(message, transport)
   }
 
-  public async sendMessageToGetter(message: DIDCommV2Message) {
-    const transports = this.config.transports.filter((transport) => transport !== Transports.NFC)
-    return this.sendMessage(message, transports)
+  public async sendMessageToGetter(message: DIDCommV2Message, transport?: Transports) {
+    return this.sendMessage(message, transport)
   }
 
-  private async sendMessage(message: DIDCommV2Message, transports: Transports[]) {
+  private async sendMessage(message: DIDCommV2Message, transport?: Transports) {
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.messageSender.sendDIDCommV2Message(
-      outboundMessage,
-      sendingMessageType,
-      transports,
-      this.config.defaultTransport
-    )
+    await this.messageSender.sendDIDCommV2Message(outboundMessage, sendingMessageType, transport)
   }
 
   public async getBalance(): Promise<number> {
@@ -398,9 +382,10 @@ export class ValueTransferService {
       if (!publicDid) {
         throw new AriesFrameworkError('Witness public DID not found')
       }
+      return publicDid
+    } else {
+      return this.didService.getPublicDidOrCreateNew(params.usePublicDid)
     }
-
-    return this.didService.getPublicDidOrCreateNew(params.usePublicDid)
   }
 
   private static generateInitialPartyStateHashes(statesCount = DEFAULT_SUPPORTED_PARTIES_COUNT) {

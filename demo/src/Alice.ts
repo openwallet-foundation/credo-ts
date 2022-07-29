@@ -16,7 +16,6 @@ export class Alice extends BaseAgent {
       port,
       name,
       publicDidSeed: Alice.seed,
-      defaultTransport: Transports.HTTP,
     })
     this.connected = false
   }

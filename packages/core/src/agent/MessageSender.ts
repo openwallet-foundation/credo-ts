@@ -282,16 +282,15 @@ export class MessageSender {
   public async sendDIDCommV2Message(
     outboundMessage: OutboundDIDCommV2Message,
     sendingMessageType: SendingMessageType = SendingMessageType.Encrypted,
-    transports?: Transports[],
-    defaultTransport?: Transports
+    transport?: Transports
   ) {
     const { payload } = outboundMessage
 
     // recipient is not specified -> send to defaultTransport
-    if (!payload.to?.length && defaultTransport) {
+    if (!payload.to?.length && transport) {
       const service = new DidCommV2Service({
-        id: defaultTransport,
-        serviceEndpoint: defaultTransport,
+        id: transport,
+        serviceEndpoint: transport,
       })
 
       if (sendingMessageType === SendingMessageType.Plain) {
@@ -309,8 +308,11 @@ export class MessageSender {
       return
     }
 
+    // recipient is not specified and transport is not passed explicitly
+    if (!payload.to?.length && !transport) return
+
     // else find service and send message there
-    const service = await this.findRecipientService(payload, transports)
+    const service = await this.findRecipientService(payload, transport)
 
     if (sendingMessageType === SendingMessageType.Plain) {
       // send message plaintext
@@ -362,10 +364,7 @@ export class MessageSender {
     await this.sendMessage(outboundPackage, service.protocolScheme)
   }
 
-  private async findRecipientService(
-    message: DIDCommV2Message,
-    supportedTransports?: Transports[]
-  ): Promise<DidDocumentService> {
+  private async findRecipientService(message: DIDCommV2Message, transport?: Transports): Promise<DidDocumentService> {
     if (!message.to?.length) {
       throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain recipient DID.`)
     }
@@ -381,13 +380,19 @@ export class MessageSender {
       throw new AriesFrameworkError(`Unable to resolve did document for did '${toDID}': ${error} ${errorMessage}`)
     }
 
-    const services = didDocument?.service || []
+    let services = didDocument?.service || []
 
-    const availableTransports = supportedTransports ?? this.agentConfig.transports
+    const supportedTransports = transport ? [transport, ...this.agentConfig.transports] : this.agentConfig.transports
+
+    // Sort services according to supported transports
+    const priority = supportedTransports.map((transport) => transport.toString())
+
+    services = services.sort(function (a, b) {
+      return priority.indexOf(a.protocolScheme) - priority.indexOf(b.protocolScheme)
+    })
 
     const service = services.find((service) => {
-      const transport = availableTransports.find((transport) => transport.toString() === service.protocolScheme)
-      if (transport) return service
+      if (priority.includes(service.protocolScheme)) return service
     })
 
     if (!service) {

@@ -13,7 +13,6 @@ export class Witness extends BaseAgent {
       name,
       port,
       transports: [Transports.HTTP],
-      defaultTransport: Transports.HTTP,
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {

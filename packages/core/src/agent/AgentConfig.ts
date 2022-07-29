@@ -151,10 +151,6 @@ export class AgentConfig {
     return this.initConfig.transports || []
   }
 
-  public get defaultTransport() {
-    return this.initConfig.defaultTransport
-  }
-
   public get onlineTransports() {
     return this.transports.filter((transport) => onlineTransports.includes(transport))
   }

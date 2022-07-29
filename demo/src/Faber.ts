@@ -19,7 +19,6 @@ export class Faber extends BaseAgent {
       port,
       name,
       publicDidSeed: Faber.seed,
-      defaultTransport: Transports.HTTP,
     })
     this.ui = new ui.BottomBar()
   }
