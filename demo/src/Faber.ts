@@ -2,7 +2,7 @@ import type { ConnectionRecord } from '@aries-framework/core'
 import type { CredDef, Schema } from 'indy-sdk-react-native'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { AttributeFilter, CredentialPreview, ProofAttributeInfo, Transports, utils } from '@aries-framework/core'
+import { AttributeFilter, CredentialPreview, ProofAttributeInfo, utils } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'

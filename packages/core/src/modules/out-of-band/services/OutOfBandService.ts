@@ -38,39 +38,60 @@ export class OutOfBandService {
   public async createOutOfBandInvitation({
     goal,
     goalCode,
-    attachment,
+    attachments,
     usePublicDid,
   }: {
     goalCode: string
     goal?: string
-    attachment?: Record<string, unknown>
+    attachments?: Record<string, unknown>[]
     usePublicDid?: boolean
   }) {
     const did = await this.didService.getPublicDidOrCreateNew(usePublicDid)
-    let attachmentObject: AndroidNearbyHandshakeAttachment | PaymentOfferAttachment | undefined = undefined
+    const body = {
+      goal,
+      goal_code: goalCode,
+    }
 
     if (goalCode === OutOfBandGoalCode.AndroidNearbyHandshake) {
-      if (!attachment) {
+      if (!attachments || !attachments.length) {
         throw new AriesFrameworkError(`Attachment must be passed for 'AndroidNearbyHandshake' goal code`)
       }
-      attachmentObject = JsonTransformer.fromJSON(attachment, AndroidNearbyHandshakeAttachment)
+      const handshakeAttachment = JsonTransformer.fromJSON(attachments[0], AndroidNearbyHandshakeAttachment)
+      return new OutOfBandInvitationMessage({
+        from: did.did,
+        body,
+        attachments: [OutOfBandInvitationMessage.createAndroidNearbyHandshakeJSONAttachment(handshakeAttachment)],
+      })
     }
     if (goalCode === OutOfBandGoalCode.PaymentOffer) {
-      if (!attachment) {
+      if (!attachments || !attachments.length) {
         throw new AriesFrameworkError(`Attachment must be passed for 'OfferPayment' goal code`)
       }
-      attachmentObject = JsonTransformer.fromJSON(attachment, PaymentOfferAttachment)
+      const messageAttachments = []
+
+      const offerAttachment = JsonTransformer.fromJSON(attachments[0], PaymentOfferAttachment)
+      messageAttachments.push(OutOfBandInvitationMessage.createPaymentOfferJSONAttachment(offerAttachment))
+
+      if (attachments[1]) {
+        const handshakeAttachment = JsonTransformer.fromJSON(attachments[1], AndroidNearbyHandshakeAttachment)
+        messageAttachments.push(
+          OutOfBandInvitationMessage.createAndroidNearbyHandshakeJSONAttachment(handshakeAttachment)
+        )
+      }
+
+      return new OutOfBandInvitationMessage({
+        from: did.did,
+        body,
+        attachments: messageAttachments,
+      })
     }
 
     return new OutOfBandInvitationMessage({
       from: did.did,
-      body: {
-        goal,
-        goal_code: goalCode,
-      },
-      attachments: attachmentObject
-        ? [OutOfBandInvitationMessage.createOutOfBandJSONAttachment(attachmentObject)]
-        : undefined,
+      body,
+      attachments: attachments?.map((attachment) =>
+        OutOfBandInvitationMessage.createOutOfBandJSONAttachment(attachment)
+      ),
     })
   }
 

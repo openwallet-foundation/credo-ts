@@ -7,8 +7,10 @@ import { IsInstance, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 import { JsonTransformer } from '../../../utils'
+import { ANDROID_NEARBY_HANDSHAKE_ATTACHMENT_ID, AndroidNearbyHandshakeAttachment } from '../../out-of-band/messages'
 
 export const VALUE_TRANSFER_ATTACHMENT_ID = 'vtp'
+export const ATTACHMENT_ID = 'acustom-attachment'
 
 export type ValueTransferMessageParams = DIDCommV2MessageParams
 
@@ -35,12 +37,32 @@ export class ValueTransferBaseMessage extends DIDCommV2Message {
     return ValueTransferBaseMessage.createJSONAttachment(VALUE_TRANSFER_ATTACHMENT_ID, JsonTransformer.toJSON(message))
   }
 
+  public static createCustomJSONAttachment(attachment: Record<string, unknown>): Attachment {
+    const handshakeAttachment = JsonTransformer.fromJSON(attachment, AndroidNearbyHandshakeAttachment)
+    if (handshakeAttachment) {
+      return this.createJSONAttachment(
+        ANDROID_NEARBY_HANDSHAKE_ATTACHMENT_ID,
+        JsonTransformer.toJSON(handshakeAttachment)
+      )
+    } else {
+      return this.createJSONAttachment(ATTACHMENT_ID, JsonTransformer.toJSON(attachment))
+    }
+  }
+
   public get valueTransferMessage(): Receipt | null {
     return this.attachedMessage(Receipt)
   }
 
   public get valueTransferDelta(): ValueTransferDelta | null {
     return this.attachedMessage(ValueTransferDelta)
+  }
+
+  public get getAndroidNearbyHandshakeAttachment(): Record<string, unknown> | null {
+    return this.getAttachmentDataAsJson(ANDROID_NEARBY_HANDSHAKE_ATTACHMENT_ID)
+  }
+
+  public get getCustomAttachment(): Record<string, unknown> | null {
+    return this.getAttachmentDataAsJson(ATTACHMENT_ID)
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

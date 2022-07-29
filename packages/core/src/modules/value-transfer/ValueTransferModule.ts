@@ -85,6 +85,7 @@ export class ValueTransferModule {
     usePublicDid?: boolean
     timeouts?: Timeouts
     transport?: Transports
+    attachment?: Record<string, unknown>
   }): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
     // Create Payment Request and Value Transfer record
     const { message, record } = await this.valueTransferGetterService.createRequest(params)
@@ -157,6 +158,7 @@ export class ValueTransferModule {
     usePublicDid?: boolean
     timeouts?: Timeouts
     transport?: Transports
+    attachment?: Record<string, unknown>
   }): Promise<{ record: ValueTransferRecord; message: OfferMessage }> {
     // Create Payment Request and Value Transfer record
     const { message, record } = await this.valueTransferGiverService.offerPayment(params)

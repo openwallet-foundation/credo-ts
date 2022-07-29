@@ -92,6 +92,7 @@ export class ValueTransferGiverService {
     witness?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
+    attachment?: Record<string, unknown>
   }): Promise<{
     record: ValueTransferRecord
     message: OfferMessage
@@ -122,10 +123,15 @@ export class ValueTransferGiverService {
       throw new AriesFrameworkError(`VTP: Failed to create Payment Offer: ${error?.message}`)
     }
 
+    const attachments = [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)]
+    if (params.attachment) {
+      attachments.push(ValueTransferBaseMessage.createCustomJSONAttachment(params.attachment))
+    }
+
     const offerMessage = new OfferMessage({
       from: giver.did,
       to: params.getter,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
+      attachments,
     })
 
     const getterInfo = await this.wellKnownService.resolve(params.getter)
