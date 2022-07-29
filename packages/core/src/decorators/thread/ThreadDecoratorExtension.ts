@@ -21,6 +21,10 @@ export function ThreadDecorated<T extends BaseMessageConstructor>(Base: T) {
       return this.thread?.threadId ?? this.id
     }
 
+    public get parentThreadId(): string | undefined {
+      return this.thread?.parentThreadId
+    }
+
     public setThread(options: Partial<ThreadDecorator>) {
       this.thread = new ThreadDecorator(options)
     }

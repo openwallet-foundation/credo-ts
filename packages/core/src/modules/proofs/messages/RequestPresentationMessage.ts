@@ -10,6 +10,7 @@ import { ProofRequest } from '../models'
 export interface RequestPresentationOptions {
   id?: string
   comment?: string
+  parentThreadId?: string
   requestPresentationAttachments: Attachment[]
 }
 
@@ -28,6 +29,12 @@ export class RequestPresentationMessage extends AgentMessage {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
       this.requestPresentationAttachments = options.requestPresentationAttachments
+      if (options.parentThreadId) {
+        this.setThread({
+          threadId: this.id,
+          parentThreadId: options.parentThreadId,
+        })
+      }
     }
   }
 

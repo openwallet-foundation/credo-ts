@@ -110,6 +110,7 @@ export class ProofService {
     config?: {
       comment?: string
       autoAcceptProof?: AutoAcceptProof
+      parentThreadId?: string
     }
   ): Promise<ProofProtocolMsgReturnType<ProposePresentationMessage>> {
     // Assert
@@ -119,12 +120,14 @@ export class ProofService {
     const proposalMessage = new ProposePresentationMessage({
       comment: config?.comment,
       presentationProposal,
+      parentThreadId: config?.parentThreadId,
     })
 
     // Create record
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord.id,
       threadId: proposalMessage.threadId,
+      parentThreadId: proposalMessage.parentThreadId,
       state: ProofState.ProposalSent,
       proposalMessage,
       autoAcceptProof: config?.autoAcceptProof,
@@ -160,7 +163,7 @@ export class ProofService {
       comment: config?.comment,
       presentationProposal,
     })
-    proposalMessage.setThread({ threadId: proofRecord.threadId })
+    proposalMessage.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
 
     // Update record
     proofRecord.proposalMessage = proposalMessage
@@ -218,6 +221,7 @@ export class ProofService {
       proofRecord = new ProofRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
+        parentThreadId: proposalMessage.parentThreadId,
         proposalMessage,
         state: ProofState.ProposalReceived,
       })
@@ -270,6 +274,7 @@ export class ProofService {
     })
     requestPresentationMessage.setThread({
       threadId: proofRecord.threadId,
+      parentThreadId: proofRecord.parentThreadId,
     })
 
     // Update record
@@ -294,6 +299,7 @@ export class ProofService {
     config?: {
       comment?: string
       autoAcceptProof?: AutoAcceptProof
+      parentThreadId?: string
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
     this.logger.debug(`Creating proof request`)
@@ -315,12 +321,14 @@ export class ProofService {
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
       requestPresentationAttachments: [attachment],
+      parentThreadId: config?.parentThreadId,
     })
 
     // Create record
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord?.id,
       threadId: requestPresentationMessage.threadId,
+      parentThreadId: requestPresentationMessage.parentThreadId,
       requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
       autoAcceptProof: config?.autoAcceptProof,
@@ -383,6 +391,7 @@ export class ProofService {
       proofRecord = new ProofRecord({
         connectionId: connection?.id,
         threadId: proofRequestMessage.threadId,
+        parentThreadId: proofRequestMessage.parentThreadId,
         requestMessage: proofRequestMessage,
         state: ProofState.RequestReceived,
       })
@@ -450,7 +459,7 @@ export class ProofService {
       presentationAttachments: [attachment],
       attachments,
     })
-    presentationMessage.setThread({ threadId: proofRecord.threadId })
+    presentationMessage.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
 
     // Update record
     proofRecord.presentationMessage = presentationMessage
@@ -528,6 +537,7 @@ export class ProofService {
     const ackMessage = new PresentationAckMessage({
       status: AckStatus.OK,
       threadId: proofRecord.threadId,
+      parentThreadId: proofRecord.parentThreadId,
     })
 
     // Update record
@@ -974,6 +984,17 @@ export class ProofService {
    */
   public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<ProofRecord> {
     return this.proofRepository.getSingleByQuery({ threadId, connectionId })
+  }
+
+  /**
+   * Retrieve proof records by connection id and parent thread id
+   *
+   * @param connectionId The connection id
+   * @param parentThreadId The parent thread id
+   * @returns List containing all proof records matching the given query
+   */
+  public async getByParentThreadAndConnectionId(parentThreadId: string, connectionId?: string): Promise<ProofRecord[]> {
+    return this.proofRepository.findByQuery({ parentThreadId, connectionId })
   }
 
   public update(proofRecord: ProofRecord) {
