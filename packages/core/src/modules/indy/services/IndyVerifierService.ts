@@ -1,17 +1,18 @@
 import type * as Indy from 'indy-sdk'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { InjectionSymbols } from '../../../constants'
 import { IndySdkError } from '../../../error'
-import { injectable } from '../../../plugins'
+import { inject, injectable } from '../../../plugins'
 import { isIndyError } from '../../../utils/indyError'
-import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
+import { LedgerService } from '../../ledger/services/LedgerService'
 
 @injectable()
 export class IndyVerifierService {
   private indy: typeof Indy
-  private ledgerService: IndyLedgerService
+  private ledgerService: LedgerService
 
-  public constructor(agentConfig: AgentConfig, ledgerService: IndyLedgerService) {
+  public constructor(agentConfig: AgentConfig, @inject(InjectionSymbols.LedgerService) ledgerService: LedgerService) {
     this.indy = agentConfig.agentDependencies.indy
     this.ledgerService = ledgerService
   }

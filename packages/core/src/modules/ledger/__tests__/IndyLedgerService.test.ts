@@ -1,13 +1,11 @@
-import type { IndyPoolConfig } from '../IndyPool'
+import type { IndyPoolConfig } from '../services/indy'
 import type { LedgerReadReplyResponse, LedgerWriteReplyResponse } from 'indy-sdk'
 
 import { getAgentConfig, mockFunction } from '../../../../tests/helpers'
 import { CacheRepository } from '../../../cache/CacheRepository'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
-import { IndyPool } from '../IndyPool'
-import { IndyLedgerService } from '../services/IndyLedgerService'
-import { IndyPoolService } from '../services/IndyPoolService'
+import { IndyPool, IndyPoolService, IndyLedgerService } from '../services/indy'
 
 jest.mock('../services/IndyPoolService')
 const IndyPoolServiceMock = IndyPoolService as jest.Mock<IndyPoolService>

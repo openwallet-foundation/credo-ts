@@ -34,7 +34,7 @@ import { Wallet } from '../../../../wallet/Wallet'
 import { ConnectionService } from '../../../connections'
 import { DidResolverService, findVerificationMethodByKeyType } from '../../../dids'
 import { IndyHolderService, IndyIssuerService } from '../../../indy'
-import { IndyLedgerService } from '../../../ledger'
+import { LedgerService } from '../../../ledger'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 import { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
@@ -53,7 +53,7 @@ const INDY_CRED = 'hlindy/cred@v2.0'
 @injectable()
 export class IndyCredentialFormatService extends CredentialFormatService<IndyCredentialFormat> {
   private indyIssuerService: IndyIssuerService
-  private indyLedgerService: IndyLedgerService
+  private ledgerService: LedgerService
   private indyHolderService: IndyHolderService
   private connectionService: ConnectionService
   private didResolver: DidResolverService
@@ -64,7 +64,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
     indyIssuerService: IndyIssuerService,
-    indyLedgerService: IndyLedgerService,
+    @inject(InjectionSymbols.LedgerService) ledgerService: LedgerService,
     indyHolderService: IndyHolderService,
     connectionService: ConnectionService,
     didResolver: DidResolverService,
@@ -73,7 +73,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   ) {
     super(credentialRepository, eventEmitter)
     this.indyIssuerService = indyIssuerService
-    this.indyLedgerService = indyLedgerService
+    this.ledgerService = ledgerService
     this.indyHolderService = indyHolderService
     this.connectionService = connectionService
     this.didResolver = didResolver
@@ -231,7 +231,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     const holderDid = indyFormat?.holderDid ?? (await this.getIndyHolderDid(credentialRecord))
 
     const credentialOffer = offerAttachment.getDataAsJson<Indy.CredOffer>()
-    const credentialDefinition = await this.indyLedgerService.getCredentialDefinition(credentialOffer.cred_def_id)
+    const credentialDefinition = await this.ledgerService.getCredentialDefinition(credentialOffer.cred_def_id)
 
     const [credentialRequest, credentialRequestMetadata] = await this.indyHolderService.createCredentialRequest({
       holderDid,
@@ -328,9 +328,9 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     }
 
     const indyCredential = attachment.getDataAsJson<Indy.Cred>()
-    const credentialDefinition = await this.indyLedgerService.getCredentialDefinition(indyCredential.cred_def_id)
+    const credentialDefinition = await this.ledgerService.getCredentialDefinition(indyCredential.cred_def_id)
     const revocationRegistry = indyCredential.rev_reg_id
-      ? await this.indyLedgerService.getRevocationRegistryDefinition(indyCredential.rev_reg_id)
+      ? await this.ledgerService.getRevocationRegistryDefinition(indyCredential.rev_reg_id)
       : null
 
     if (!credentialRecord.credentialAttributes) {
@@ -486,7 +486,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     offer: Indy.CredOffer,
     attributes: CredentialPreviewAttribute[]
   ): Promise<void> {
-    const schema = await this.indyLedgerService.getSchema(offer.schema_id)
+    const schema = await this.ledgerService.getSchema(offer.schema_id)
 
     IndyCredentialUtils.checkAttributesMatch(schema, attributes)
   }

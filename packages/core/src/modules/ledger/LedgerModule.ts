@@ -1,5 +1,5 @@
 import type { DependencyManager } from '../../plugins'
-import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
+import type { SchemaTemplate, CredentialDefinitionTemplate } from './services/LedgerService'
 import type { NymRole } from 'indy-sdk'
 
 import { InjectionSymbols } from '../../constants'
@@ -7,15 +7,19 @@ import { AriesFrameworkError } from '../../error'
 import { injectable, module, inject } from '../../plugins'
 import { Wallet } from '../../wallet/Wallet'
 
-import { IndyPoolService, IndyLedgerService } from './services'
+import { LedgerService } from './services/LedgerService'
+import { IndyLedgerService, IndyPoolService } from './services/indy'
 
 @module()
 @injectable()
 export class LedgerModule {
-  private ledgerService: IndyLedgerService
+  private ledgerService: LedgerService
   private wallet: Wallet
 
-  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, ledgerService: IndyLedgerService) {
+  public constructor(
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
+    @inject(InjectionSymbols.LedgerService) ledgerService: LedgerService
+  ) {
     this.ledgerService = ledgerService
     this.wallet = wallet
   }
@@ -94,7 +98,7 @@ export class LedgerModule {
     dependencyManager.registerContextScoped(LedgerModule)
 
     // Services
-    dependencyManager.registerSingleton(IndyLedgerService)
+    dependencyManager.registerSingleton(InjectionSymbols.LedgerService, IndyLedgerService)
     dependencyManager.registerSingleton(IndyPoolService)
   }
 }

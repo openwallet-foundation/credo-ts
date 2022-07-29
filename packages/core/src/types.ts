@@ -4,7 +4,7 @@ import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/models/CredentialAutoAcceptType'
 import type { Key } from './modules/dids/domain/Key'
-import type { IndyPoolConfig } from './modules/ledger/IndyPool'
+import type { IndyPoolConfig } from './modules/ledger/services/indy'
 import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
@@ -66,7 +66,7 @@ export interface InitConfig {
   didCommMimeType?: DidCommMimeType
 
   indyLedgers?: IndyPoolConfig[]
-  connectToIndyLedgersOnStartup?: boolean
+  connectToLedgersOnStartup?: boolean
 
   autoAcceptMediationRequests?: boolean
   mediatorConnectionsInvite?: string

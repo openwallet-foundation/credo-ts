@@ -1,13 +1,12 @@
-import type { AgentConfig } from '../../agent/AgentConfig'
-import type { Logger } from '../../logger'
-import type { FileSystem } from '../../storage/FileSystem'
+import type { AgentConfig } from '../../../../agent/AgentConfig'
+import type { Logger } from '../../../../logger'
+import type { FileSystem } from '../../../../storage/FileSystem'
 import type * as Indy from 'indy-sdk'
 
-import { AriesFrameworkError, IndySdkError } from '../../error'
-import { isIndyError } from '../../utils/indyError'
-
-import { LedgerError } from './error/LedgerError'
-import { isLedgerRejectResponse, isLedgerReqnackResponse } from './ledgerUtil'
+import { AriesFrameworkError, IndySdkError } from '../../../../error'
+import { isIndyError } from '../../../../utils/indyError'
+import { LedgerError } from '../../error/LedgerError'
+import { isLedgerRejectResponse, isLedgerReqnackResponse } from '../../ledgerUtil'
 
 export interface TransactionAuthorAgreement {
   version: `${number}.${number}` | `${number}`
