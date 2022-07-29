@@ -10,17 +10,17 @@ import {
 } from '../indyIdentifiers'
 
 const indyNamespace = 'some:staging'
-const unqualifiedIdentifier = 'q7ATwTYbQDgiigVijUAej'
-const qualifiedIdentifierSchema = `did:indy:${indyNamespace}:${unqualifiedIdentifier}/anoncreds/v0/SCHEMA/awesomeSchema/1`
-const qualifiedIdentifierCredDef = `did:indy:${indyNamespace}:${unqualifiedIdentifier}/anoncreds/v0/CLAIM_DEF/awesomeCredDef/sth`
-const schemaId = `${unqualifiedIdentifier}:2:SomeName:4.2.0`
+const did = 'q7ATwTYbQDgiigVijUAej'
+const qualifiedIdentifierSchema = `did:indy:${indyNamespace}:${did}/anoncreds/v0/SCHEMA/awesomeSchema/4.2.0`
+const qualifiedIdentifierCredDef = `did:indy:${indyNamespace}:${did}/anoncreds/v0/CLAIM_DEF/awesomeCredDef/sth`
+const schemaId = `${did}:2:awesomeSchema:4.2.0`
 
 const schema: Schema = {
   id: schemaId,
   attrNames: ['hello', 'world'],
   name: 'awesomeSchema',
-  version: '1',
-  ver: '1',
+  version: '4.2.0',
+  ver: '4.2.0',
   seqNo: 99,
 }
 
@@ -43,7 +43,7 @@ const credDef: CredDef = {
   ver: '1',
 }
 
-const schemaUrlTrunk = 'q7ATwTYbQDgiigVijUAej/anoncreds/v0/SCHEMA/awesomeSchema/1'
+const schemaUrlTrunk = 'q7ATwTYbQDgiigVijUAej/anoncreds/v0/SCHEMA/awesomeSchema/4.2.0'
 const credDefUrlTrunk = 'abcde/anoncreds/v0/CLAIM_DEF/99/someTag'
 describe('Mangle indy identifiers', () => {
   test('is a qualified identifier', async () => {
@@ -51,15 +51,15 @@ describe('Mangle indy identifiers', () => {
   })
 
   test('is NOT a qualified identifier', async () => {
-    expect(isQualifiedIdentifier(unqualifiedIdentifier)).toBe(false)
+    expect(isQualifiedIdentifier(did)).toBe(false)
   })
 
   describe('unqualify a qualified Indy did', () => {
     it('should successfully unqualify a qualified identifier', () => {
-      expect(unqualifyIndyDid(qualifiedIdentifierSchema)).toBe(unqualifiedIdentifier)
+      expect(unqualifyIndyDid(qualifiedIdentifierSchema)).toBe(schemaId)
     })
-    it('should return the unqualified identifier if ti is passed to unqualify', () => {
-      expect(unqualifyIndyDid(unqualifiedIdentifier)).toBe(unqualifiedIdentifier)
+    it('should return the unqualified identifier if it is passed to unqualify', () => {
+      expect(unqualifyIndyDid(schemaId)).toBe(schemaId)
     })
   })
 

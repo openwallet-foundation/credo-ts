@@ -27,7 +27,7 @@ const AnonCredsSchemaRepositoryMock = AnonCredsSchemaRepository as jest.Mock<Ano
 
 const did = 'Y5bj4SjCiTM9PgeheKAiXx'
 
-const schemaId = 'abcd'
+const schemaId = 'abcd:2:awesomeSchema:1'
 
 const schema: Indy.Schema = {
   id: schemaId,
@@ -39,7 +39,7 @@ const schema: Indy.Schema = {
 }
 
 const credentialDefinition = {
-  schema: 'abcde',
+  schema: schema,
   tag: 'someTag',
   signatureType: 'CL',
   supportRevocation: true,
@@ -221,7 +221,10 @@ describe('LedgerApi', () => {
           connectToIndyLedgersOnStartup: true,
           indyLedgers: pools,
         } as LedgerModuleConfig)
-        await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toEqual(schema)
+        await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toEqual({
+          ...schema,
+          didIndyNamespace: 'sovrin',
+        })
         expect(anonCredsSchemaRepository.findById).toHaveBeenCalledWith(agentContext, schemaIdQualified)
       })
 
@@ -237,7 +240,7 @@ describe('LedgerApi', () => {
         } as LedgerModuleConfig)
         await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toHaveProperty(
           'schema',
-          schema
+          { ...schema, didIndyNamespace: 'sovrin' }
         )
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect(jest.spyOn(LedgerApi.prototype as any, 'findBySchemaIdOnLedger')).toHaveBeenCalledWith(schemaIdGenerated)

@@ -7,6 +7,7 @@ import { DateTime } from 'luxon'
 import { Metadata } from '../storage/Metadata'
 
 import { JsonTransformer } from './JsonTransformer'
+import { getQualifiedIdentifier, unqualifyIndyDid } from './indyIdentifiers'
 
 /**
  * Decorator that transforms json to and from corresponding record.
@@ -38,6 +39,49 @@ export function RecordTransformer<T>(Class: { new (...args: any[]): T }) {
           }),
           {}
         )
+
+      default:
+        return value
+    }
+  })
+}
+
+export function CredentialDefinitionTransformer() {
+  return Transform(({ value, type }) => {
+    switch (type) {
+      // go to qualified identifier
+      case TransformationType.CLASS_TO_PLAIN:
+        value.id = getQualifiedIdentifier(value.didIndyNamespace, {
+          ...value,
+          schemaSeqNo: value.schemaSeqNo,
+        })
+        return value
+
+      // go to unqualified identifier
+      case TransformationType.PLAIN_TO_CLASS:
+        value.id = unqualifyIndyDid(value.id)
+        return value
+
+      default:
+        return value
+    }
+  })
+}
+
+export function SchemaTransformer() {
+  return Transform(({ value, type }) => {
+    switch (type) {
+      // go to qualified identifier
+      case TransformationType.CLASS_TO_PLAIN:
+        value.id = getQualifiedIdentifier(value.didIndyNamespace, {
+          ...value,
+        })
+        return value
+
+      // go to unqualified identifier
+      case TransformationType.PLAIN_TO_CLASS:
+        value.id = unqualifyIndyDid(value.id)
+        return value
 
       default:
         return value

@@ -1,6 +1,7 @@
 import type { CredDef, Schema } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { generateCredentialDefinitionId, generateSchemaId } from '../modules/ledger/ledgerUtil'
 
 import { didFromCredentialDefinitionId, didFromSchemaId } from './did'
 
@@ -25,13 +26,25 @@ export function isQualifiedIdentifier(identifier: string | undefined): boolean {
 }
 
 export function unqualifyIndyDid(qualifiedIdentifier: string): string {
-  //  get 1234/anoncreds/v0/SCHEMA/myschema/1.0.0 from did:indy:test:1234/anoncreds/v0/SCHEMA/myschema/1.0.0
   if (!isQualifiedIdentifier(qualifiedIdentifier)) return qualifiedIdentifier
+
   const lastColonIndex = qualifiedIdentifier.lastIndexOf(':')
   const identifierTrunk = qualifiedIdentifier.substring(lastColonIndex + 1)
-  const identifierParts = identifierTrunk.split('/')
-  // // create unqualified identifier of the form 1234
-  return identifierParts[0]
+  const txType = identifierTrunk.split('/')[3]
+
+  if (txType === 'SCHEMA') {
+    // did:indy:sovrin:F72i3Y3Q4i466efjYJYCHM/anoncreds/v0/SCHEMA/npdb/4.3.4 -> F72i3Y3Q4i466efjYJYCHM:2:npdb:4.3.4
+    const [id, , , , name, version] = identifierTrunk.split('/')
+    return generateSchemaId(id, name, version)
+  } else if (txType === 'CLAIM_DEF') {
+    // did:indy:sovrin:5nDyJVP1NrcPAttP3xwMB9/anoncreds/v0/CLAIM_DEF/56495/npdb -> 5nDyJVP1NrcPAttP3xwMB9:3:CL:56495:npbd
+    const [id, , , , seqNo, name] = identifierTrunk.split('/')
+    return generateCredentialDefinitionId(id, +seqNo, name)
+  } else {
+    // indy Union Indy Ledger w/o url syntax
+    // did:indy:idunion:test:2MZYuPv2Km7Q1eD4GCsSb6 -> 2MZYuPv2Km7Q1eD4GCsSb6
+    return identifierTrunk
+  }
 }
 
 /**

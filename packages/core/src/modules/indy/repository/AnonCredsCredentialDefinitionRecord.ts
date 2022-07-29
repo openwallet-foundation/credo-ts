@@ -3,6 +3,7 @@ import type { CredDef } from 'indy-sdk'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { getQualifiedIdentifier } from '../../../utils/indyIdentifiers'
+import { CredentialDefinitionTransformer } from '../../../utils/transformers'
 import { uuid } from '../../../utils/uuid'
 
 export interface AnonCredsCredentialDefinitionRecordProps {
@@ -14,7 +15,10 @@ export interface AnonCredsCredentialDefinitionRecordProps {
 export class AnonCredsCredentialDefinitionRecord extends BaseRecord {
   public static readonly type = 'AnonCredsCredentialDefinitionRecord'
   public readonly type = AnonCredsCredentialDefinitionRecord.type
-  public readonly credentialDefinition!: CredDef
+
+  @CredentialDefinitionTransformer()
+  public readonly credentialDefinition!: CredDef & { didIndyNamespace?: DidIndyNamespace; schemaSeqNo?: number }
+
   public readonly schemaSeqNo!: number
 
   public constructor(props: AnonCredsCredentialDefinitionRecordProps) {
@@ -22,7 +26,11 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord {
 
     this.id = uuid()
     if (props) {
-      this.credentialDefinition = props.credentialDefinition
+      this.credentialDefinition = {
+        ...props.credentialDefinition,
+        didIndyNamespace: props.didIndyNamespace,
+        schemaSeqNo: props.schemaSeqNo,
+      }
       this.schemaSeqNo = props.schemaSeqNo
       this._tags.id = getQualifiedIdentifier(props.didIndyNamespace, {
         ...this.credentialDefinition,
