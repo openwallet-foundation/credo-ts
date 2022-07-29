@@ -106,9 +106,16 @@ export class OutOfBandService {
   }
 
   public async receiveOutOfBandInvitation(message: OutOfBandInvitationMessage) {
+    const senderInfo = await this.wellKnownService.resolve(message.from)
+    if (!senderInfo) {
+      throw new AriesFrameworkError(`Unable to resolve info for the DID: ${message.from}`)
+    }
     this.eventEmitter.emit<OutOfBandEvent>({
       type: OutOfBandEventTypes.OutOfBandInvitationReceived,
-      payload: { message },
+      payload: {
+        message,
+        senderInfo,
+      },
     })
   }
 }

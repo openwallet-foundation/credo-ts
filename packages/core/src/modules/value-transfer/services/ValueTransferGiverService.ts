@@ -123,7 +123,7 @@ export class ValueTransferGiverService {
       throw new AriesFrameworkError(`VTP: Failed to create Payment Offer: ${error?.message}`)
     }
 
-    const attachments = [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)]
+    const attachments = [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)]
     if (params.attachment) {
       attachments.push(ValueTransferBaseMessage.createCustomJSONAttachment(params.attachment))
     }
@@ -220,6 +220,7 @@ export class ValueTransferGiverService {
       getter: getterInfo,
       witness: witnessInfo,
       giver: giverInfo,
+      attachment: requestMessage.getCustomAttachment,
     })
 
     await this.valueTransferRepository.save(record)
@@ -303,7 +304,7 @@ export class ValueTransferGiverService {
       from: giverDid,
       to: record.witness?.did,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
+      attachments: [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)],
     })
 
     // Update Value Transfer record
@@ -384,7 +385,7 @@ export class ValueTransferGiverService {
       from: record.giver?.did,
       to: receipt.witnessId,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
@@ -466,7 +467,7 @@ export class ValueTransferGiverService {
       from: record.giver?.did,
       to: record.witness?.did,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
     // Update Value Transfer record

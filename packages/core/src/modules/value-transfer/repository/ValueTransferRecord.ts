@@ -5,6 +5,7 @@ import type { ValueTransferState } from '../ValueTransferState'
 
 import { Receipt } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
+import { IsOptional } from 'class-validator'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -40,6 +41,8 @@ export interface ValueTransferStorageProps {
 
   status?: ValueTransferTransactionStatus
   tags?: CustomValueTransferTags
+
+  attachment?: Record<string, unknown>
 }
 
 export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, CustomValueTransferTags> {
@@ -63,6 +66,9 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   public static readonly type = 'ValueTransferRecord'
   public readonly type = ValueTransferRecord.type
 
+  @IsOptional()
+  public attachment?: Record<string, unknown>
+
   public constructor(props: ValueTransferStorageProps) {
     super()
 
@@ -78,6 +84,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
       this.status = props.status
       this.receipt = props.receipt
       this.problemReportMessage = props.problemReportMessage
+      this.attachment = props.attachment
       this._tags = props.tags ?? {}
     }
   }

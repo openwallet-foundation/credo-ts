@@ -130,7 +130,7 @@ export class ValueTransferWitnessService {
       from: did.did,
       to: receipt.giver?.id,
       thid: offerAcceptanceMessage.thid,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
     const getterInfo = await this.wellKnownService.resolve(receipt.getterId)
@@ -220,7 +220,7 @@ export class ValueTransferWitnessService {
       from: witnessDid.did,
       to: receipt.getter?.id,
       thid: requestAcceptanceMessage.thid,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
     const getterInfo = await this.wellKnownService.resolve(valueTransferMessage.getterId)
@@ -316,7 +316,7 @@ export class ValueTransferWitnessService {
       ...cashAcceptedMessage,
       from: record.witness?.did,
       to: record.giver?.did,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
@@ -400,14 +400,14 @@ export class ValueTransferWitnessService {
       from: record.witness?.did,
       to: record.getter?.did,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(getterDelta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(getterDelta)],
     })
 
     const giverReceiptMessage = new GiverReceiptMessage({
       from: record.witness?.did,
       to: record.giver?.did,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(giverDelta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(giverDelta)],
     })
 
     // Update Value Transfer record and raise event

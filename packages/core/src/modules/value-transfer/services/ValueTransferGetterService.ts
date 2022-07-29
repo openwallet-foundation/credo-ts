@@ -114,7 +114,7 @@ export class ValueTransferGetterService {
       throw new AriesFrameworkError(`VTP: Failed to create Payment Request: ${error?.message}`)
     }
 
-    const attachments = [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)]
+    const attachments = [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)]
     if (params.attachment) {
       attachments.push(ValueTransferBaseMessage.createCustomJSONAttachment(params.attachment))
     }
@@ -208,6 +208,7 @@ export class ValueTransferGetterService {
       getter: getterInfo,
       witness: witnessInfo,
       giver: giverInfo,
+      attachment: offerMessage.getCustomAttachment,
     })
 
     await this.valueTransferRepository.save(record)
@@ -293,7 +294,7 @@ export class ValueTransferGetterService {
       from: record.getter?.did,
       to: witness,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
+      attachments: [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)],
     })
 
     const witnessInfo = await this.wellKnownService.resolve(witness)
@@ -378,7 +379,7 @@ export class ValueTransferGetterService {
       from: record.getter?.did,
       to: record.witness?.did,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
