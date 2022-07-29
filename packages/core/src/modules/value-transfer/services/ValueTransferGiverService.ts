@@ -92,6 +92,7 @@ export class ValueTransferGiverService {
     witness?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
+    attachment?: Record<string, unknown>
   }): Promise<{
     record: ValueTransferRecord
     message: OfferMessage
@@ -122,10 +123,15 @@ export class ValueTransferGiverService {
       throw new AriesFrameworkError(`VTP: Failed to create Payment Offer: ${error?.message}`)
     }
 
+    const attachments = [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)]
+    if (params.attachment) {
+      attachments.push(ValueTransferBaseMessage.createCustomJSONAttachment(params.attachment))
+    }
+
     const offerMessage = new OfferMessage({
       from: giver.did,
       to: params.getter,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
+      attachments,
     })
 
     const getterInfo = await this.wellKnownService.resolve(params.getter)
@@ -201,8 +207,8 @@ export class ValueTransferGiverService {
     }
 
     const getterInfo = await this.wellKnownService.resolve(receipt.getterId)
-    const witnessInfo = new DidInfo({ did: receipt.witnessId })
-    const giverInfo = receipt.isGiverSet ? new DidInfo({ did: receipt.giverId }) : undefined
+    const witnessInfo = await this.wellKnownService.resolve(receipt.witnessId)
+    const giverInfo = receipt.isGiverSet ? await this.wellKnownService.resolve(receipt.giverId) : undefined
 
     // Create Value Transfer record and raise event
     const record = new ValueTransferRecord({
@@ -214,6 +220,7 @@ export class ValueTransferGiverService {
       getter: getterInfo,
       witness: witnessInfo,
       giver: giverInfo,
+      attachment: requestMessage.getCustomAttachment,
     })
 
     await this.valueTransferRepository.save(record)
@@ -297,7 +304,7 @@ export class ValueTransferGiverService {
       from: giverDid,
       to: record.witness?.did,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
+      attachments: [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)],
     })
 
     // Update Value Transfer record
@@ -338,7 +345,7 @@ export class ValueTransferGiverService {
     if (!valueTransferDelta) {
       const problemReport = new ProblemReportMessage({
         from: record.giver?.did,
-        to: record.witness?.did,
+        to: messageContext.sender,
         pthid: record.threadId,
         body: {
           code: 'e.p.req.bad-offer-acceptance',
@@ -354,7 +361,7 @@ export class ValueTransferGiverService {
       // VTP message verification failed
       const problemReportMessage = new ProblemReportMessage({
         from: record.giver?.did,
-        to: record.witness?.did,
+        to: messageContext.sender,
         pthid: record.threadId,
         body: {
           code: error?.code || 'invalid-offer-accepted',
@@ -376,13 +383,14 @@ export class ValueTransferGiverService {
     // VTP message verification succeed
     const cashRemovedMessage = new CashRemovedMessage({
       from: record.giver?.did,
-      to: record.witness?.did,
+      to: receipt.witnessId,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
     record.receipt = receipt
+    record.witness = await this.wellKnownService.resolve(receipt.witnessId)
 
     await this.valueTransferService.updateState(
       record,
@@ -459,7 +467,7 @@ export class ValueTransferGiverService {
       from: record.giver?.did,
       to: record.witness?.did,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
     // Update Value Transfer record

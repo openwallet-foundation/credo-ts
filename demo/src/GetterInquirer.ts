@@ -75,7 +75,8 @@ export class GetterInquirer extends BaseInquirer {
     if (confirm.options === ConfirmOptions.No) {
       await this.getter.abortPaymentOffer(valueTransferRecord)
     } else if (confirm.options === ConfirmOptions.Yes) {
-      await this.getter.acceptPaymentOffer(valueTransferRecord)
+      const witness = await inquirer.prompt([this.inquireInput('Witness DID')])
+      await this.getter.acceptPaymentOffer(valueTransferRecord, witness.input)
     }
   }
 

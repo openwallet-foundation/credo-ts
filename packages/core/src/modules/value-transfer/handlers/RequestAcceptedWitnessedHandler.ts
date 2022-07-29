@@ -20,7 +20,7 @@ export class RequestAcceptedWitnessedHandler implements Handler<typeof DIDCommV2
   }
 
   public async handle(messageContext: HandlerInboundMessage<RequestAcceptedWitnessedHandler>) {
-    const { message, record } = await this.valueTransferGetterService.processRequestAcceptanceWitnessed(messageContext)
-    return this.valueTransferService.sendMessageToWitness(message, record)
+    const { message } = await this.valueTransferGetterService.processRequestAcceptanceWitnessed(messageContext)
+    return this.valueTransferService.sendMessageToWitness(message)
   }
 }

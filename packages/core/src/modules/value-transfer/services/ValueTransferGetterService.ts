@@ -10,7 +10,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { DidService } from '../../dids/services/DidService'
-import { DidInfo, WellKnownService } from '../../well-known'
+import { WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
@@ -92,6 +92,7 @@ export class ValueTransferGetterService {
     giver?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
+    attachment?: Record<string, unknown>
   }): Promise<{
     record: ValueTransferRecord
     message: RequestMessage
@@ -113,10 +114,15 @@ export class ValueTransferGetterService {
       throw new AriesFrameworkError(`VTP: Failed to create Payment Request: ${error?.message}`)
     }
 
+    const attachments = [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)]
+    if (params.attachment) {
+      attachments.push(ValueTransferBaseMessage.createCustomJSONAttachment(params.attachment))
+    }
+
     const requestMessage = new RequestMessage({
       from: getter.did,
       to: params.giver,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
+      attachments,
     })
 
     const getterInfo = await this.wellKnownService.resolve(getter.did)
@@ -189,7 +195,7 @@ export class ValueTransferGetterService {
     }
 
     const getterInfo = await this.wellKnownService.resolve(receipt.getterId)
-    const witnessInfo = await this.wellKnownService.resolve(receipt.witnessId)
+    const witnessInfo = receipt.isWitnessSet ? await this.wellKnownService.resolve(receipt.witnessId) : undefined
     const giverInfo = await this.wellKnownService.resolve(receipt.giverId)
 
     // Create Value Transfer record and raise event
@@ -202,6 +208,7 @@ export class ValueTransferGetterService {
       getter: getterInfo,
       witness: witnessInfo,
       giver: giverInfo,
+      attachment: offerMessage.getCustomAttachment,
     })
 
     await this.valueTransferRepository.save(record)
@@ -235,7 +242,7 @@ export class ValueTransferGetterService {
     record.assertRole(ValueTransferRole.Getter)
     record.assertState(ValueTransferState.OfferReceived)
 
-    const witness = witnessDid || this.config.valueTransferConfig?.witnessDid
+    const witness = witnessDid || this.config.valueTransferConfig?.witnessDid || record.witness?.did
     if (!witness) {
       throw new AriesFrameworkError(`Unable to accept payment offer without specifying of Witness DID.`)
     }
@@ -287,7 +294,7 @@ export class ValueTransferGetterService {
       from: record.getter?.did,
       to: witness,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(receipt)],
+      attachments: [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)],
     })
 
     const witnessInfo = await this.wellKnownService.resolve(witness)
@@ -372,13 +379,13 @@ export class ValueTransferGetterService {
       from: record.getter?.did,
       to: record.witness?.did,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
     // Update Value Transfer record and raise event
 
-    const witnessInfo = record.witness?.did ? record.witness : new DidInfo({ did: receipt.witnessId })
+    const witnessInfo = record.witness?.did ? record.witness : await this.wellKnownService.resolve(receipt.witnessId)
     const giverInfo = record.giver?.did ? record.giver : await this.wellKnownService.resolve(receipt.giverId)
 
     record.receipt = receipt

@@ -5,9 +5,15 @@ import { IsArray, IsString, ValidateNested } from 'class-validator'
 
 import { TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { onlineTransports } from '../../routing/types'
 
 import { IndyAgentService, ServiceTransformer, DidCommService } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
+
+export enum DidConnectivity {
+  Online = 'online',
+  Offline = 'offline',
+}
 
 interface DidDocumentOptions {
   context?: string[]
@@ -229,7 +235,9 @@ export class DidDocument {
     return JsonTransformer.toJSON(this)
   }
 
-  public static extractDidFromKid(kid: string): string {
-    return kid.includes('#') ? kid.split('#')[0] : kid
+  public get connectivity() {
+    const transports = onlineTransports.map((transport) => transport.toString())
+    const service = this.service.find((service) => transports.includes(service.protocolScheme))
+    return service ? DidConnectivity.Online : DidConnectivity.Offline
   }
 }

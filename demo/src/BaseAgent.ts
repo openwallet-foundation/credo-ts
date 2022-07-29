@@ -42,7 +42,6 @@ export class BaseAgent {
     staticDids?: DidProps[]
     port?: number
     transports?: Transports[]
-    defaultTransport: Transports
     valueTransferConfig?: ValueTransferConfig
     mediatorConnectionsInvite?: string
   }) {
@@ -70,10 +69,9 @@ export class BaseAgent {
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
       mediatorPickupStrategy: MediatorPickupStrategy.Explicit,
-      mediatorPollingInterval: 2000,
+      mediatorPollingInterval: 1000,
       valueTransferConfig: props.valueTransferConfig,
       transports: props.transports,
-      defaultTransport: props.defaultTransport,
       mediatorConnectionsInvite: props.mediatorConnectionsInvite,
     }
 

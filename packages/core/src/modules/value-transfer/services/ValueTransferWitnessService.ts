@@ -9,7 +9,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { DidService } from '../../dids'
-import { DidInfo } from '../../well-known'
+import { WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
@@ -39,6 +39,7 @@ export class ValueTransferWitnessService {
   private didService: DidService
   private eventEmitter: EventEmitter
   private witness: Witness
+  private wellKnownService: WellKnownService
 
   public constructor(
     valueTransferRepository: ValueTransferRepository,
@@ -47,7 +48,8 @@ export class ValueTransferWitnessService {
     valueTransferStateService: ValueTransferStateService,
     witnessStateRepository: WitnessStateRepository,
     didService: DidService,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    wellKnownService: WellKnownService
   ) {
     this.valueTransferRepository = valueTransferRepository
     this.valueTransferService = valueTransferService
@@ -56,6 +58,7 @@ export class ValueTransferWitnessService {
     this.witnessStateRepository = witnessStateRepository
     this.didService = didService
     this.eventEmitter = eventEmitter
+    this.wellKnownService = wellKnownService
 
     this.witness = new ValueTransfer(
       {
@@ -127,12 +130,12 @@ export class ValueTransferWitnessService {
       from: did.did,
       to: receipt.giver?.id,
       thid: offerAcceptanceMessage.thid,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
-    const getterInfo = new DidInfo({ did: valueTransferMessage.getterId })
-    const giverInfo = new DidInfo({ did: valueTransferMessage.giverId })
-    const witnessInfo = new DidInfo({ did: did.did })
+    const getterInfo = await this.wellKnownService.resolve(receipt.getterId)
+    const giverInfo = await this.wellKnownService.resolve(receipt.giverId)
+    const witnessInfo = await this.wellKnownService.resolve(did.did)
 
     // Create Value Transfer record and raise event
     const record = new ValueTransferRecord({
@@ -217,12 +220,12 @@ export class ValueTransferWitnessService {
       from: witnessDid.did,
       to: receipt.getter?.id,
       thid: requestAcceptanceMessage.thid,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
-    const getterInfo = new DidInfo({ did: valueTransferMessage.getterId })
-    const giverInfo = new DidInfo({ did: valueTransferMessage.giverId })
-    const witnessInfo = new DidInfo({ did: witnessDid.did })
+    const getterInfo = await this.wellKnownService.resolve(valueTransferMessage.getterId)
+    const giverInfo = await this.wellKnownService.resolve(valueTransferMessage.giverId)
+    const witnessInfo = await this.wellKnownService.resolve(witnessDid.did)
 
     // Create Value Transfer record and raise event
     const record = new ValueTransferRecord({
@@ -313,7 +316,7 @@ export class ValueTransferWitnessService {
       ...cashAcceptedMessage,
       from: record.witness?.did,
       to: record.giver?.did,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(delta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
     })
 
     // Update Value Transfer record
@@ -397,14 +400,14 @@ export class ValueTransferWitnessService {
       from: record.witness?.did,
       to: record.getter?.did,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(getterDelta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(getterDelta)],
     })
 
     const giverReceiptMessage = new GiverReceiptMessage({
       from: record.witness?.did,
       to: record.giver?.did,
       thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createValueTransferJSONAttachment(giverDelta)],
+      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(giverDelta)],
     })
 
     // Update Value Transfer record and raise event

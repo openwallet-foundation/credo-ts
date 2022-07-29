@@ -1,3 +1,4 @@
+import type { Transports } from '../routing/types'
 import type {
   ProblemReportMessage,
   RequestAcceptedMessage,
@@ -83,12 +84,14 @@ export class ValueTransferModule {
     giver?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
+    transport?: Transports
+    attachment?: Record<string, unknown>
   }): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
     // Create Payment Request and Value Transfer record
     const { message, record } = await this.valueTransferGetterService.createRequest(params)
 
     // Send Payment Request to Witness
-    await this.valueTransferService.sendMessageToGiver(message)
+    await this.valueTransferService.sendMessageToGiver(message, params.transport)
     return { message, record }
   }
 
@@ -121,7 +124,7 @@ export class ValueTransferModule {
     )
 
     // Send Payment Request Acceptance to Witness
-    await this.valueTransferService.sendMessageToWitness(message, record)
+    await this.valueTransferService.sendMessageToWitness(message)
 
     return { record: updatedRecord, message }
   }
@@ -142,6 +145,7 @@ export class ValueTransferModule {
    *      timeout_elapsed - number (seconds) - how far after start the party wants the transaction to timeout
    *      timeout_time of amount - string - absolute time when the party wants the transaction to timeout
    *    }
+   *  skipSending (Optional) - skip sending of transaction (false by default)
    * }
    *
    * @returns Value Transfer record and Payment Request Message
@@ -153,12 +157,14 @@ export class ValueTransferModule {
     witness?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
+    transport?: Transports
+    attachment?: Record<string, unknown>
   }): Promise<{ record: ValueTransferRecord; message: OfferMessage }> {
     // Create Payment Request and Value Transfer record
     const { message, record } = await this.valueTransferGiverService.offerPayment(params)
 
-    // Send Payment Request to Witness
-    await this.valueTransferService.sendMessageToGetter(message)
+    // Send Payment Offer to Witness
+    await this.valueTransferService.sendMessageToGetter(message, params.transport)
     return { message, record }
   }
 
@@ -193,7 +199,7 @@ export class ValueTransferModule {
     )
 
     // Send Payment Request Acceptance to Witness
-    await this.valueTransferService.sendMessageToWitness(message, record)
+    await this.valueTransferService.sendMessageToWitness(message)
 
     return { record: updatedRecord, message }
   }
@@ -238,7 +244,7 @@ export class ValueTransferModule {
     // Abort transaction
     const { message } = await this.valueTransferService.abortTransaction(record, reason)
     // Send Payment Request Acceptance to Witness
-    if (message && send) await this.valueTransferService.sendMessageToWitness(message, record)
+    if (message && send) await this.valueTransferService.sendMessageToWitness(message)
 
     return { record, message }
   }

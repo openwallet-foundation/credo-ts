@@ -14,18 +14,17 @@ export class Getter extends BaseAgent {
     super({
       name,
       port,
-      transports: [Transports.Nearby, Transports.HTTP],
-      defaultTransport: Transports.Nearby,
+      transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
           seed: '6b8b882e2618fa5d45ee7229ca880082',
-          transports: [Transports.Nearby],
+          transports: [Transports.Nearby, Transports.NFC],
           marker: DidMarker.Offline,
         },
         {
           seed: '6b8b882e2618fa5d45ee7229ca880080',
-          transports: [Transports.Nearby, Transports.HTTP],
+          transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
           marker: DidMarker.Online,
         },
       ],
@@ -49,16 +48,20 @@ export class Getter extends BaseAgent {
   }
 
   public async requestPayment(witness: string) {
-    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1, witness })
+    const { record } = await this.agent.valueTransfer.requestPayment({
+      amount: 1,
+      witness,
+      transport: Transports.NFC,
+    })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()
   }
 
-  public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {
+  public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord, witness: string) {
     const { record } = await this.agent.valueTransfer.acceptPaymentOffer({
       recordId: valueTransferRecord.id,
-      witness: valueTransferRecord.witness?.did,
+      witness,
     })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nPayment offer accepted!\n'))

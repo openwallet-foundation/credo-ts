@@ -18,7 +18,7 @@ export class OutOfBandModule {
   public async createInvitation(params: {
     goalCode: string
     goal?: string
-    attachment?: Record<string, unknown>
+    attachments?: Record<string, unknown>[]
     usePublicDid?: boolean
   }): Promise<OutOfBandInvitationMessage> {
     return this.outOfBandService.createOutOfBandInvitation(params)
