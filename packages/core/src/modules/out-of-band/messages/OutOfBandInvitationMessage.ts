@@ -2,7 +2,7 @@ import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 import type { Attachment } from 'didcomm'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
@@ -13,6 +13,22 @@ export enum OutOfBandGoalCode {
   DidExchange = 'did-exchange',
   MediatorProvision = 'mediator-provision',
   AndroidNearbyHandshake = 'android-nearby-handshake',
+  PaymentOffer = 'payment-offer',
+}
+
+export class AndroidNearbyHandshakeAttachment {
+  @IsString()
+  public identifier!: string
+}
+
+export class PaymentOfferAttachment {
+  @IsNumber()
+  public amount!: number
+
+  @Type(() => AndroidNearbyHandshakeAttachment)
+  @ValidateNested()
+  @IsOptional()
+  public handshake?: AndroidNearbyHandshakeAttachment
 }
 
 export const ATTACHMENT_ID = 'oob-attachment'
@@ -69,7 +85,9 @@ export class OutOfBandInvitationMessage extends DIDCommV2Message {
     return JsonTransformer.fromJSON(json, OutOfBandInvitationMessage)
   }
 
-  public static createOutOfBandJSONAttachment(attachment: Record<string, unknown>): Attachment {
+  public static createOutOfBandJSONAttachment(
+    attachment: AndroidNearbyHandshakeAttachment | PaymentOfferAttachment
+  ): Attachment {
     return this.createJSONAttachment(ATTACHMENT_ID, JsonTransformer.toJSON(attachment))
   }
 

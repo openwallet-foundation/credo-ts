@@ -5,10 +5,16 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { DidService } from '../../dids'
 import { WellKnownService } from '../../well-known'
 import { OutOfBandEventTypes } from '../OutOfBandEvents'
-import { OutOfBandGoalCode, OutOfBandInvitationMessage } from '../messages'
+import {
+  AndroidNearbyHandshakeAttachment,
+  PaymentOfferAttachment,
+  OutOfBandGoalCode,
+  OutOfBandInvitationMessage,
+} from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandService {
@@ -41,13 +47,30 @@ export class OutOfBandService {
     usePublicDid?: boolean
   }) {
     const did = await this.didService.getPublicDidOrCreateNew(usePublicDid)
+    let attachmentObject: AndroidNearbyHandshakeAttachment | PaymentOfferAttachment | undefined = undefined
+
+    if (goalCode === OutOfBandGoalCode.AndroidNearbyHandshake) {
+      if (!attachment) {
+        throw new AriesFrameworkError(`Attachment must be passed for 'AndroidNearbyHandshake' goal code`)
+      }
+      attachmentObject = JsonTransformer.fromJSON(attachment, AndroidNearbyHandshakeAttachment)
+    }
+    if (goalCode === OutOfBandGoalCode.PaymentOffer) {
+      if (!attachment) {
+        throw new AriesFrameworkError(`Attachment must be passed for 'OfferPayment' goal code`)
+      }
+      attachmentObject = JsonTransformer.fromJSON(attachment, PaymentOfferAttachment)
+    }
+
     return new OutOfBandInvitationMessage({
       from: did.did,
       body: {
         goal,
         goal_code: goalCode,
       },
-      attachments: attachment ? [OutOfBandInvitationMessage.createOutOfBandJSONAttachment(attachment)] : undefined,
+      attachments: attachmentObject
+        ? [OutOfBandInvitationMessage.createOutOfBandJSONAttachment(attachmentObject)]
+        : undefined,
     })
   }
 
