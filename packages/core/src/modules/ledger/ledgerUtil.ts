@@ -24,7 +24,7 @@ export function generateCredDefFromTemplate(
   return {
     id: credentialDefinitionId,
     schemaId: credentialDefinitionTemplate.schema.id,
-    type: 'CL', // Irrelevant for qualifiedIdentifier construction
+    type: 'BaseRecord', // Irrelevant for qualifiedIdentifier construction
     tag: credentialDefinitionTemplate.tag,
     version: credentialDefinitionTemplate.schema.version,
     ver: credentialDefinitionTemplate.schema.ver,

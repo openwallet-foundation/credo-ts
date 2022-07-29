@@ -8,6 +8,7 @@ import { IndySdkError } from '../../error/IndySdkError'
 import { injectable } from '../../plugins'
 import { isIndyError } from '../../utils/indyError'
 import { getQualifiedIdentifier, unqualifyIndyDid } from '../../utils/indyIdentifiers'
+import { schema } from '../credentials/__tests__/fixtures'
 import { AnonCredsCredentialDefinitionRecord } from '../indy/repository/AnonCredsCredentialDefinitionRecord'
 import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRecord } from '../indy/repository/AnonCredsSchemaRecord'
@@ -92,14 +93,15 @@ export class LedgerApi {
 
     // Try find the schema in the wallet
     const schemaRecord = await this.anonCredsSchemaRepository.findById(this.agentContext, qualifiedIdentifier)
-    //  Schema in wallet
+    // Schema in wallet
     if (schemaRecord) {
       // Transform qualified to unqualified
-      schemaRecord.schema.id = unqualifyIndyDid(schemaRecord.schema.id)
+      // schemaRecord.schema.id = unqualifyIndyDid(schemaRecord.schema.id)
       return schemaRecord.schema
     }
 
     const schemaFromLedger = await this.findBySchemaIdOnLedger(schemaId)
+
     if (schemaFromLedger) return schemaFromLedger
     const createdSchema = await this.ledgerService.registerSchema(this.agentContext, did, schema)
 
@@ -149,10 +151,10 @@ export class LedgerApi {
 
     // Construct qualified identifier
     // FIXME: How to handle indyLedgers[0]? This should not require selecting the first on eby default
-    const qualifiedIdentifier = getQualifiedIdentifier(
-      this.config.indyLedgers[0].didIndyNamespace,
-      generateCredDefFromTemplate(credentialDefinitionId, credentialDefinitionTemplate)
-    )
+    const qualifiedIdentifier = getQualifiedIdentifier(this.config.indyLedgers[0].didIndyNamespace, {
+      ...generateCredDefFromTemplate(credentialDefinitionId, credentialDefinitionTemplate),
+      schemaSeqNo: credentialDefinitionTemplate.schema.seqNo,
+    })
 
     // Check if the credential exists in wallet. If so, return it
     const credentialDefinitionRecord = await this.anonCredsCredentialDefinitionRepository.findById(
@@ -182,10 +184,11 @@ export class LedgerApi {
       signatureType: 'CL',
     })
     // Replace the unqualified with qualified Identifier
-    credentialDefinitionTemplate.schema.id = qualifiedIdentifier
+    // credentialDefinitionTemplate.schema.id = qualifiedIdentifier
     const anonCredCredential = new AnonCredsCredentialDefinitionRecord({
       credentialDefinition: registeredCredential,
       didIndyNamespace: this.config.indyLedgers[0].didIndyNamespace,
+      schemaSeqNo: schema.seqNo,
     })
     await this.anonCredsCredentialDefinitionRepository.save(this.agentContext, anonCredCredential)
 

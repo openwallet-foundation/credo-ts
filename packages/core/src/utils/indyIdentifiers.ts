@@ -4,7 +4,11 @@ import { AriesFrameworkError } from '../error/AriesFrameworkError'
 
 import { didFromCredentialDefinitionId, didFromSchemaId } from './did'
 
-// For the definitions below see also: https://hyperledger.github.io/indy-did-method/#indy-did-method-identifiers
+/**
+ *
+ * @see For the definitions below see also: https://hyperledger.github.io/indy-did-method/#indy-did-method-identifiers
+ *
+ */
 export type Did = 'did'
 export type DidIndyMethod = 'indy'
 // Maybe this can be typed more strictly than string. Choosing string for now as this can be eg just `sovrin` or eg `sovrin:staging`
@@ -30,24 +34,28 @@ export function unqualifyIndyDid(qualifiedIdentifier: string): string {
   return identifierParts[0]
 }
 
+/**
+ *
+ * @see https://hyperledger.github.io/indy-did-method/#schema
+ *
+ */
 export function getDidUrlTrunkFromSchema(schema: Schema): string {
-  // see also: https://hyperledger.github.io/indy-did-method/#schema
   const namespaceIdentifier = didFromSchemaId(schema.id)
   const didUrl = `${namespaceIdentifier}/anoncreds/v0/SCHEMA/${schema.name}/${schema.version}`
   return didUrl
 }
 
-export function getDidUrlTrunkFromCredDef(credDef: CredDef): string {
-  // see also: https://hyperledger.github.io/indy-did-method/#cred-def
+/**
+ *
+ * @see https://hyperledger.github.io/indy-did-method/#cred-def
+ *
+ */
+export function getDidUrlTrunkFromCredDef(credDef: CredDef & { schemaSeqNo: number }): string {
   const namespaceIdentifier = didFromCredentialDefinitionId(credDef.id)
-  if (isQualifiedIdentifier(credDef.schemaId)) {
-    credDef.schemaId = unqualifyIndyDid(credDef.schemaId)
-  }
-  const didUrl = `${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${credDef.schemaId}/${credDef.tag}`
-  return didUrl
+  return `${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${credDef.schemaSeqNo}/${credDef.tag}`
 }
 
-export function getDidUrlTrunk(data: Schema | CredDef): string {
+export function getDidUrlTrunk(data: Schema | (CredDef & { schemaSeqNo: number })): string {
   // type (actually interface inferring type) is Schema
   if ('attrNames' in data) {
     return getDidUrlTrunkFromSchema(data)
@@ -60,7 +68,10 @@ export function getDidUrlTrunk(data: Schema | CredDef): string {
   throw new AriesFrameworkError(`Failed to construct DidUrl from ${data}. Input not conforming with Schema or CredDef`)
 }
 
-export function getQualifiedIdentifier(indyNamespace: string, data: Schema | CredDef): IndyNamespace {
+export function getQualifiedIdentifier(
+  indyNamespace: string,
+  data: Schema | (CredDef & { schemaSeqNo: number })
+): IndyNamespace {
   if (isQualifiedIdentifier(data.id)) return data.id as IndyNamespace
   const didUrl = getDidUrlTrunk(data)
   return `did:indy:${indyNamespace}:${didUrl}`

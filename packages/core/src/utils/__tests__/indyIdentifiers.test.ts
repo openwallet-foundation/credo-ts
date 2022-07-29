@@ -44,7 +44,7 @@ const credDef: CredDef = {
 }
 
 const schemaUrlTrunk = 'q7ATwTYbQDgiigVijUAej/anoncreds/v0/SCHEMA/awesomeSchema/1'
-const credDefUrlTrunk = 'abcde/anoncreds/v0/CLAIM_DEF/q7ATwTYbQDgiigVijUAej:2:SomeName:4.2.0/someTag'
+const credDefUrlTrunk = 'abcde/anoncreds/v0/CLAIM_DEF/99/someTag'
 describe('Mangle indy identifiers', () => {
   test('is a qualified identifier', async () => {
     expect(isQualifiedIdentifier(qualifiedIdentifierSchema)).toBe(true)
@@ -68,7 +68,7 @@ describe('Mangle indy identifiers', () => {
   })
 
   test('get DID url trunk from credential', () => {
-    expect(getDidUrlTrunkFromCredDef(credDef)).toBe(credDefUrlTrunk)
+    expect(getDidUrlTrunkFromCredDef({ ...credDef, schemaSeqNo: schema.seqNo })).toBe(credDefUrlTrunk)
   })
 
   describe('getDidUrlTrunk', () => {
@@ -76,17 +76,21 @@ describe('Mangle indy identifiers', () => {
       expect(getDidUrlTrunk(schema)).toBe(schemaUrlTrunk)
     })
     it('should correctly create the Url trunk for a credential definition', () => {
-      expect(getDidUrlTrunk(credDef)).toBe(credDefUrlTrunk)
+      expect(getDidUrlTrunk({ ...credDef, schemaSeqNo: schema.seqNo })).toBe(credDefUrlTrunk)
     })
   })
   describe('get the qualified identifier', () => {
     it('should return the qualified identifier if the identifier is already qualified', () => {
       const credDefWithQualifiedIdentifier = credDef
       credDefWithQualifiedIdentifier.id = qualifiedIdentifierCredDef
-      expect(getQualifiedIdentifier(indyNamespace, credDefWithQualifiedIdentifier)).toBe(qualifiedIdentifierCredDef)
+      expect(
+        getQualifiedIdentifier(indyNamespace, { ...credDefWithQualifiedIdentifier, schemaSeqNo: schema.seqNo })
+      ).toBe(qualifiedIdentifierCredDef)
     })
     it('should return the qualified identifier for a credential definition', () => {
-      expect(getQualifiedIdentifier(indyNamespace, credDef)).toBe(qualifiedIdentifierCredDef)
+      expect(getQualifiedIdentifier(indyNamespace, { ...credDef, schemaSeqNo: schema.seqNo })).toBe(
+        qualifiedIdentifierCredDef
+      )
     })
     it('should return the qualified identifier for a schema', () => {
       expect(getQualifiedIdentifier(indyNamespace, schema)).toBe(qualifiedIdentifierSchema)

@@ -232,6 +232,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
         credentialDefinition,
       }
     )
+
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, credentialRequestMetadata)
     credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
       credentialDefinitionId: credentialOffer.cred_def_id,

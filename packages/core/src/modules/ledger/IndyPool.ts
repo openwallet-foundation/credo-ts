@@ -1,14 +1,12 @@
 import type { AgentDependencies } from '../../agent/AgentDependencies'
 import type { Logger } from '../../logger'
 import type { FileSystem } from '../../storage/FileSystem'
-import type { IndyNamespace } from '../../utils'
 import type { DidIndyNamespace } from '../../utils/indyIdentifiers'
 import type * as Indy from 'indy-sdk'
 import type { Subject } from 'rxjs'
 
 import { AriesFrameworkError, IndySdkError } from '../../error'
 import { isIndyError } from '../../utils/indyError'
-import { getQualifiedIdentifier } from '../../utils/indyIdentifiers'
 
 import { LedgerError } from './error/LedgerError'
 import { isLedgerRejectResponse, isLedgerReqnackResponse } from './ledgerUtil'

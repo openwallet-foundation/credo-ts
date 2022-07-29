@@ -97,7 +97,7 @@ const pools: IndyPoolConfig[] = [
   },
 ]
 
-const qualifiedDidCred = 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx/anoncreds/v0/CLAIM_DEF/abcd/someTag'
+const qualifiedDidCred = 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx/anoncreds/v0/CLAIM_DEF/99/someTag'
 
 describe('LedgerApi', () => {
   let wallet: IndyWallet
@@ -272,6 +272,7 @@ describe('LedgerApi', () => {
           new AnonCredsCredentialDefinitionRecord({
             credentialDefinition: credDef,
             didIndyNamespace: 'sovrin',
+            schemaSeqNo: schema.seqNo,
           })
         mockFunction(anonCredsCredentialDefinitionRepository.findById).mockResolvedValueOnce(
           anonCredsCredentialDefinitionRecord

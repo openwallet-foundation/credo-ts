@@ -3,6 +3,7 @@ import type { Schema } from 'indy-sdk'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { isQualifiedIdentifier, getQualifiedIdentifier } from '../../../utils/indyIdentifiers'
+import { uuid } from '../../../utils/uuid'
 
 export interface AnonCredsSchemaRecordProps {
   schema: Schema
@@ -17,6 +18,7 @@ export class AnonCredsSchemaRecord extends BaseRecord {
   public constructor(props: AnonCredsSchemaRecordProps) {
     super()
 
+    this.id = uuid()
     if (props) {
       this.schema = props.schema
       this._tags.id = isQualifiedIdentifier(this._tags.id as string)
@@ -26,7 +28,6 @@ export class AnonCredsSchemaRecord extends BaseRecord {
   }
 
   public getTags() {
-    // this._tags.id = isQualifiedIdentifier(this._tags.id as string) ? this._tags.id : this.identifier
     return {
       ...this._tags,
     }

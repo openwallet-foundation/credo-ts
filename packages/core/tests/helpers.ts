@@ -87,7 +87,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
         id: `pool-${name}`,
         isProduction: false,
         genesisPath,
-        didIndyNamespace: `pool-${name}`,
+        didIndyNamespace: `pool:localtest`,
         transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
       },
     ],
@@ -126,7 +126,7 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
     indyLedgers: [
       {
         id: `pool-${name}`,
-        didIndyNamespace: `pool-${name}`,
+        didIndyNamespace: `pool:localtest`,
         isProduction: false,
         genesisPath,
       },
