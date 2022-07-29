@@ -1,15 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type {
-  AutoAcceptProof,
+import {
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
   InitConfig,
-  ProofAttributeInfo,
-  ProofPredicateInfo,
+  ProofEventTypes,
   ProofStateChangedEvent,
   SchemaTemplate,
 } from '../src'
@@ -38,10 +36,7 @@ import {
   DidExchangeState,
   HandshakeProtocol,
   LogLevel,
-  PredicateType,
-  ProofEventTypes,
-  ProofProtocolVersion,
-  ProofState,
+
 } from '../src'
 import { KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
@@ -61,6 +56,10 @@ import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
+import { PredicateType, ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
+import { ProofState } from '../src/modules/proofs/models/ProofState'
+import { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)

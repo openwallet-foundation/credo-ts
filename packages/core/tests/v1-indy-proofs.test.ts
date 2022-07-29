@@ -8,21 +8,15 @@ import type {
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
-import {
-  V1PresentationMessage,
-  V1RequestPresentationMessage,
-  V1ProposePresentationMessage,
-  AttributeFilter,
-  PredicateType,
-  ProofAttributeInfo,
-  ProofPredicateInfo,
-  ProofState,
-} from '../src'
+
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
+import { ProofAttributeInfo, AttributeFilter, ProofPredicateInfo, PredicateType } from '../src/modules/proofs/formats/indy/models'
+import { ProofState } from '../src/modules/proofs/models/ProofState'
+import { V1ProposePresentationMessage, V1RequestPresentationMessage, V1PresentationMessage } from '../src/modules/proofs/protocol/v1/messages'
 
 describe('Present Proof', () => {
   let faberAgent: Agent
