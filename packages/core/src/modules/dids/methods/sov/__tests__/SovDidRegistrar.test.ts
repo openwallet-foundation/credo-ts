@@ -6,8 +6,7 @@ import { getAgentConfig, getAgentContext, mockFunction, mockProperty } from '../
 import { SigningProviderRegistry } from '../../../../../crypto/signing-provider'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../../../wallet/IndyWallet'
-import { IndyLedgerService } from '../../../../ledger/services/IndyLedgerService'
-import { IndyPoolService } from '../../../../ledger/services/IndyPoolService'
+import { IndyLedgerService, IndyPoolService } from '../../../../ledger/services/indy'
 import { DidDocumentRole } from '../../../domain/DidDocumentRole'
 import { DidRepository } from '../../../repository/DidRepository'
 import { SovDidRegistrar } from '../SovDidRegistrar'
@@ -15,7 +14,7 @@ import { SovDidRegistrar } from '../SovDidRegistrar'
 jest.mock('../../../repository/DidRepository')
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
-jest.mock('../../../../ledger/services/IndyLedgerService')
+jest.mock('../../../../ledger/services/indy/IndyLedgerService')
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 
 jest.mock('../../../../ledger/services/IndyPoolService')

@@ -98,7 +98,7 @@ export class Agent extends BaseAgent {
     // set the pools on the ledger.
     this.ledger.setPools(this.ledger.config.indyLedgers)
     // As long as value isn't false we will async connect to all genesis pools on startup
-    if (this.ledger.config.connectToIndyLedgersOnStartup) {
+    if (this.ledger.config.connectToLedgersOnStartup) {
       this.ledger.connectToPools().catch((error) => {
         this.logger.warn('Error connecting to ledger, will try to reconnect when needed.', { error })
       })
@@ -205,7 +205,7 @@ export class Agent extends BaseAgent {
       new QuestionAnswerModule(),
       new GenericRecordsModule(),
       new LedgerModule({
-        connectToIndyLedgersOnStartup: this.agentConfig.connectToIndyLedgersOnStartup,
+        connectToLedgersOnStartup: this.agentConfig.connectToLedgersOnStartup,
         indyLedgers: this.agentConfig.indyLedgers,
       }),
       new DiscoverFeaturesModule(),

@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../agent/context/AgentContext'
-import type { IndyPoolConfig } from '../IndyPool'
-import type { CredentialDefinitionTemplate } from '../services/IndyLedgerService'
+import type { CredentialDefinitionTemplate } from '../services/LedgerService'
+import type { IndyPoolConfig } from '../services/indy'
 import type * as Indy from 'indy-sdk'
 
 import { getAgentConfig, getAgentContext, mockFunction, mockProperty } from '../../../../tests/helpers'
@@ -14,9 +14,9 @@ import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchema
 import { LedgerApi } from '../LedgerApi'
 import { LedgerModuleConfig } from '../LedgerModuleConfig'
 import { generateCredentialDefinitionId, generateSchemaId } from '../ledgerUtil'
-import { IndyLedgerService } from '../services/IndyLedgerService'
+import { IndyLedgerService } from '../services/indy'
 
-jest.mock('../services/IndyLedgerService')
+jest.mock('../services/indy/IndyLedgerService')
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 
 jest.mock('../../indy/repository/AnonCredsCredentialDefinitionRepository')

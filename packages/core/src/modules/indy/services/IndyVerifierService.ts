@@ -6,15 +6,15 @@ import { InjectionSymbols } from '../../../constants'
 import { IndySdkError } from '../../../error'
 import { injectable, inject } from '../../../plugins'
 import { isIndyError } from '../../../utils/indyError'
-import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
+import { LedgerService } from '../../ledger/services/LedgerService'
 
 @injectable()
 export class IndyVerifierService {
   private indy: typeof Indy
-  private ledgerService: IndyLedgerService
+  private ledgerService: LedgerService
 
   public constructor(
-    ledgerService: IndyLedgerService,
+    @inject(InjectionSymbols.LedgerService) ledgerService: LedgerService,
     @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies
   ) {
     this.indy = agentDependencies.indy

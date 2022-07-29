@@ -1,30 +1,30 @@
-import type { IndyPoolConfig } from './IndyPool'
-import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
+import type { PoolConfig, SchemaTemplate, CredentialDefinitionTemplate } from './services/LedgerService'
 import type { CredDef, NymRole, Schema } from 'indy-sdk'
 
 import { AgentContext } from '../../agent'
+import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { IndySdkError } from '../../error/IndySdkError'
-import { injectable } from '../../plugins'
+import { inject, injectable } from '../../plugins'
 import { isIndyError } from '../../utils/indyError'
 import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRepository } from '../indy/repository/AnonCredsSchemaRepository'
 
 import { LedgerModuleConfig } from './LedgerModuleConfig'
 import { generateCredentialDefinitionId, generateSchemaId } from './ledgerUtil'
-import { IndyLedgerService } from './services'
+import { LedgerService } from './services/LedgerService'
 
 @injectable()
 export class LedgerApi {
   public config: LedgerModuleConfig
 
-  private ledgerService: IndyLedgerService
+  private ledgerService: LedgerService
   private agentContext: AgentContext
   private anonCredsCredentialDefinitionRepository: AnonCredsCredentialDefinitionRepository
   private anonCredsSchemaRepository: AnonCredsSchemaRepository
 
   public constructor(
-    ledgerService: IndyLedgerService,
+    @inject(InjectionSymbols.LedgerService) ledgerService: LedgerService,
     agentContext: AgentContext,
     anonCredsCredentialDefinitionRepository: AnonCredsCredentialDefinitionRepository,
     anonCredsSchemaRepository: AnonCredsSchemaRepository,
@@ -37,7 +37,7 @@ export class LedgerApi {
     this.config = config
   }
 
-  public setPools(poolConfigs: IndyPoolConfig[]) {
+  public setPools(poolConfigs: PoolConfig[]) {
     return this.ledgerService.setPools(poolConfigs)
   }
 

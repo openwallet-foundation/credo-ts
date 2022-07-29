@@ -1,5 +1,14 @@
-import type { AgentContext } from '../../../agent'
-import type { AcceptanceMechanisms, AuthorAgreement, IndyPool, IndyPoolConfig } from '../IndyPool'
+import type { AgentContext } from '../../../../agent'
+import type {
+  LedgerService,
+  SchemaTemplate,
+  CredentialDefinitionTemplate,
+  ParseRevocationRegistryDefinitionTemplate,
+  ParseRevocationRegistryDeltaTemplate,
+  ParseRevocationRegistryTemplate,
+  IndyEndpointAttrib,
+} from '../LedgerService'
+import type { AcceptanceMechanisms, AuthorAgreement, IndyPool, IndyPoolConfig } from './IndyPool'
 import type {
   CredDef,
   default as Indy,
@@ -10,25 +19,25 @@ import type {
   Schema,
 } from 'indy-sdk'
 
-import { AgentDependencies } from '../../../agent/AgentDependencies'
-import { InjectionSymbols } from '../../../constants'
-import { IndySdkError } from '../../../error/IndySdkError'
-import { Logger } from '../../../logger'
-import { injectable, inject } from '../../../plugins'
+import { AgentDependencies } from '../../../../agent/AgentDependencies'
+import { InjectionSymbols } from '../../../../constants'
+import { IndySdkError } from '../../../../error/IndySdkError'
+import { Logger } from '../../../../logger'
+import { injectable, inject } from '../../../../plugins'
 import {
   didFromCredentialDefinitionId,
   didFromRevocationRegistryDefinitionId,
   didFromSchemaId,
-} from '../../../utils/did'
-import { isIndyError } from '../../../utils/indyError'
-import { assertIndyWallet } from '../../../wallet/util/assertIndyWallet'
-import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
-import { LedgerError } from '../error/LedgerError'
+} from '../../../../utils/did'
+import { isIndyError } from '../../../../utils/indyError'
+import { assertIndyWallet } from '../../../../wallet/util/assertIndyWallet'
+import { IndyIssuerService } from '../../../indy/services/IndyIssuerService'
+import { LedgerError } from '../../error/LedgerError'
 
 import { IndyPoolService } from './IndyPoolService'
 
 @injectable()
-export class IndyLedgerService {
+export class IndyLedgerService implements LedgerService {
   private indy: typeof Indy
   private logger: Logger
 
@@ -574,39 +583,4 @@ export class IndyLedgerService {
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
-}
-
-export interface SchemaTemplate {
-  name: string
-  version: string
-  attributes: string[]
-}
-
-export interface CredentialDefinitionTemplate {
-  schema: Schema
-  tag: string
-  signatureType: 'CL'
-  supportRevocation: boolean
-}
-
-export interface ParseRevocationRegistryDefinitionTemplate {
-  revocationRegistryDefinition: Indy.RevocRegDef
-  revocationRegistryDefinitionTxnTime: number
-}
-
-export interface ParseRevocationRegistryDeltaTemplate {
-  revocationRegistryDelta: Indy.RevocRegDelta
-  deltaTimestamp: number
-}
-
-export interface ParseRevocationRegistryTemplate {
-  revocationRegistry: Indy.RevocReg
-  ledgerTimestamp: number
-}
-
-export interface IndyEndpointAttrib {
-  endpoint?: string
-  types?: Array<'endpoint' | 'did-communication' | 'DIDComm'>
-  routingKeys?: string[]
-  [key: string]: unknown
 }

@@ -3,7 +3,7 @@ import { AnonCredsCredentialDefinitionRepository } from '../../indy/repository/A
 import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { LedgerApi } from '../LedgerApi'
 import { LedgerModule } from '../LedgerModule'
-import { IndyLedgerService, IndyPoolService } from '../services'
+import { IndyLedgerService, IndyPoolService } from '../services/indy'
 
 jest.mock('../../../plugins/DependencyManager')
 const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>

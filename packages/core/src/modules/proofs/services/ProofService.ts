@@ -25,7 +25,7 @@ import { ConnectionService } from '../../connections'
 import { CredentialRepository, IndyCredential, IndyCredentialInfo } from '../../credentials'
 import { IndyCredentialUtils } from '../../credentials/formats/indy/IndyCredentialUtils'
 import { IndyHolderService, IndyRevocationService, IndyVerifierService } from '../../indy'
-import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
+import { LedgerService } from '../../ledger/services/LedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
 import { PresentationProblemReportError, PresentationProblemReportReason } from '../errors'
@@ -60,7 +60,7 @@ import { ProofRecord } from '../repository/ProofRecord'
 export class ProofService {
   private proofRepository: ProofRepository
   private credentialRepository: CredentialRepository
-  private ledgerService: IndyLedgerService
+  private ledgerService: LedgerService
   private logger: Logger
   private indyHolderService: IndyHolderService
   private indyVerifierService: IndyVerifierService
@@ -70,7 +70,7 @@ export class ProofService {
 
   public constructor(
     proofRepository: ProofRepository,
-    ledgerService: IndyLedgerService,
+    @inject(InjectionSymbols.LedgerService) ledgerService: LedgerService,
     indyHolderService: IndyHolderService,
     indyVerifierService: IndyVerifierService,
     indyRevocationService: IndyRevocationService,

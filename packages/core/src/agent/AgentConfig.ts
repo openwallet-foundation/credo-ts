@@ -34,8 +34,8 @@ export class AgentConfig {
   /**
    * @deprecated use connectToIndyLedgersOnStartup from the `LedgerModuleConfig` class
    */
-  public get connectToIndyLedgersOnStartup() {
-    return this.initConfig.connectToIndyLedgersOnStartup ?? true
+  public get connectToLedgersOnStartup() {
+    return this.initConfig.connectToLedgersOnStartup ?? true
   }
 
   /**

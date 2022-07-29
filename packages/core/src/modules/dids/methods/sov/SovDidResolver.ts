@@ -3,7 +3,7 @@ import type { DidResolver } from '../../domain/DidResolver'
 import type { DidResolutionResult, ParsedDid } from '../../types'
 
 import { injectable } from '../../../../plugins'
-import { IndyLedgerService } from '../../../ledger'
+import { IndyLedgerService } from '../../../ledger/services/indy'
 
 import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './util'
 

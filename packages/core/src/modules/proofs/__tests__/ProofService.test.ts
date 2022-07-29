@@ -12,7 +12,7 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { ConnectionService, DidExchangeState } from '../../connections'
 import { IndyHolderService } from '../../indy/services/IndyHolderService'
 import { IndyRevocationService } from '../../indy/services/IndyRevocationService'
-import { IndyLedgerService } from '../../ledger/services'
+import { IndyLedgerService } from '../../ledger/services/indy'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../ProofState'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
@@ -28,7 +28,7 @@ import { credDef } from './fixtures'
 
 // Mock classes
 jest.mock('../repository/ProofRepository')
-jest.mock('../../../modules/ledger/services/IndyLedgerService')
+jest.mock('../../../modules/ledger/services/indy/IndyLedgerService')
 jest.mock('../../indy/services/IndyHolderService')
 jest.mock('../../indy/services/IndyIssuerService')
 jest.mock('../../indy/services/IndyVerifierService')

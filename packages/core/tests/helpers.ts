@@ -78,7 +78,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     },
     publicDidSeed,
     autoAcceptConnections: true,
-    connectToIndyLedgersOnStartup: false,
+    connectToLedgersOnStartup: false,
     indyLedgers: [
       {
         id: `pool-${name}`,

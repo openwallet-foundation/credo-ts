@@ -8,7 +8,7 @@ import { AgentDependencies } from '../../../../agent/AgentDependencies'
 import { InjectionSymbols } from '../../../../constants'
 import { inject, injectable } from '../../../../plugins'
 import { assertIndyWallet } from '../../../../wallet/util/assertIndyWallet'
-import { IndyLedgerService, IndyPoolService } from '../../../ledger'
+import { IndyLedgerService, IndyPoolService } from '../../../ledger/services/indy'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../repository'
 

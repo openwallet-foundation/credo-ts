@@ -1,6 +1,5 @@
 import type { AgentContext } from '../../../agent'
-import type { IndyPoolConfig } from '../IndyPool'
-import type { CachedDidResponse } from '../services/IndyPoolService'
+import type { IndyPoolConfig, CachedDidResponse } from '../services/indy'
 
 import { Subject } from 'rxjs'
 
@@ -14,7 +13,7 @@ import { IndyWallet } from '../../../wallet/IndyWallet'
 import { LedgerError } from '../error/LedgerError'
 import { LedgerNotConfiguredError } from '../error/LedgerNotConfiguredError'
 import { LedgerNotFoundError } from '../error/LedgerNotFoundError'
-import { DID_POOL_CACHE_ID, IndyPoolService } from '../services/IndyPoolService'
+import { DID_POOL_CACHE_ID, IndyPoolService } from '../services/indy/IndyPoolService'
 
 import { getDidResponsesForDid } from './didResponses'
 

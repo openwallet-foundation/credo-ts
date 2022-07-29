@@ -13,7 +13,7 @@ import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils'
 import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
-import { IndyLedgerService } from '../../../../ledger/services'
+import { IndyLedgerService } from '../../../../ledger/services/indy'
 import { RoutingService } from '../../../../routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialsModuleConfig } from '../../../CredentialsModuleConfig'
@@ -29,7 +29,7 @@ import { V1CredentialPreview } from '../messages/V1CredentialPreview'
 
 // Mock classes
 jest.mock('../../../repository/CredentialRepository')
-jest.mock('../../../../ledger/services/IndyLedgerService')
+jest.mock('../../../../ledger/services/indy/IndyLedgerService')
 jest.mock('../../../formats/indy/IndyCredentialFormatService')
 jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
 jest.mock('../../../../routing/services/RoutingService')
