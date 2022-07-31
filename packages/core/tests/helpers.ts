@@ -57,6 +57,8 @@ import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
+import { ActionMenuState } from '../src/modules/action-menu/ActionMenuState'
+import { ActionMenuEventTypes, ActionMenuStateChangedEvent } from '../src/modules/action-menu/ActionMenuEvents'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -244,6 +246,55 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
 
     agent.events.on<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
   })
+}
+
+export async function waitForActionMenuRecord(
+  agent: Agent,
+  options: {
+    threadId?: string
+    state?: ActionMenuState
+    previousState?: ActionMenuState | null
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged)
+
+  return waitForActionMenuRecordSubject(observable, options)
+}
+
+export function waitForActionMenuRecordSubject(
+  subject: ReplaySubject<ActionMenuStateChangedEvent> | Observable<ActionMenuStateChangedEvent>,
+  {
+    threadId,
+    state,
+    previousState,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    state?: ActionMenuState
+    previousState?: ActionMenuState | null
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => previousState === undefined || e.payload.previousState === previousState),
+      filter((e) => threadId === undefined || e.payload.actionMenuRecord.threadId === threadId),
+      filter((e) => state === undefined || e.payload.actionMenuRecord.state === state),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `ProofStateChangedEvent event not emitted within specified timeout: {
+  previousState: ${previousState},
+  threadId: ${threadId},
+  state: ${state}
+}`
+        )
+      }),
+      map((e) => e.payload.actionMenuRecord)
+    )
+  )
 }
 
 export function getMockConnection({
