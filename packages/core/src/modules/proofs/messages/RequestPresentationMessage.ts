@@ -31,7 +31,6 @@ export class RequestPresentationMessage extends AgentMessage {
       this.requestPresentationAttachments = options.requestPresentationAttachments
       if (options.parentThreadId) {
         this.setThread({
-          threadId: this.id,
           parentThreadId: options.parentThreadId,
         })
       }

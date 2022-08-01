@@ -27,7 +27,6 @@ export class ProposePresentationMessage extends AgentMessage {
       this.comment = options.comment
       if (options.parentThreadId) {
         this.setThread({
-          threadId: this.id,
           parentThreadId: options.parentThreadId,
         })
       }

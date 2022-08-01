@@ -127,7 +127,7 @@ export class ProofService {
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord.id,
       threadId: proposalMessage.threadId,
-      parentThreadId: proposalMessage.parentThreadId,
+      parentThreadId: proposalMessage.thread?.parentThreadId,
       state: ProofState.ProposalSent,
       proposalMessage,
       autoAcceptProof: config?.autoAcceptProof,
@@ -163,7 +163,7 @@ export class ProofService {
       comment: config?.comment,
       presentationProposal,
     })
-    proposalMessage.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
+    proposalMessage.setThread({ threadId: proofRecord.threadId })
 
     // Update record
     proofRecord.proposalMessage = proposalMessage
@@ -221,7 +221,7 @@ export class ProofService {
       proofRecord = new ProofRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
-        parentThreadId: proposalMessage.parentThreadId,
+        parentThreadId: proposalMessage.thread?.parentThreadId,
         proposalMessage,
         state: ProofState.ProposalReceived,
       })
@@ -274,7 +274,6 @@ export class ProofService {
     })
     requestPresentationMessage.setThread({
       threadId: proofRecord.threadId,
-      parentThreadId: proofRecord.parentThreadId,
     })
 
     // Update record
@@ -328,7 +327,7 @@ export class ProofService {
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord?.id,
       threadId: requestPresentationMessage.threadId,
-      parentThreadId: requestPresentationMessage.parentThreadId,
+      parentThreadId: requestPresentationMessage.thread?.parentThreadId,
       requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
       autoAcceptProof: config?.autoAcceptProof,
@@ -391,7 +390,7 @@ export class ProofService {
       proofRecord = new ProofRecord({
         connectionId: connection?.id,
         threadId: proofRequestMessage.threadId,
-        parentThreadId: proofRequestMessage.parentThreadId,
+        parentThreadId: proofRequestMessage.thread?.parentThreadId,
         requestMessage: proofRequestMessage,
         state: ProofState.RequestReceived,
       })
@@ -459,7 +458,7 @@ export class ProofService {
       presentationAttachments: [attachment],
       attachments,
     })
-    presentationMessage.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
+    presentationMessage.setThread({ threadId: proofRecord.threadId })
 
     // Update record
     proofRecord.presentationMessage = presentationMessage
@@ -537,7 +536,6 @@ export class ProofService {
     const ackMessage = new PresentationAckMessage({
       status: AckStatus.OK,
       threadId: proofRecord.threadId,
-      parentThreadId: proofRecord.parentThreadId,
     })
 
     // Update record

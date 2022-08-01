@@ -15,7 +15,6 @@ export enum AckStatus {
 export interface AckMessageOptions {
   id?: string
   threadId: string
-  parentThreadId?: string
   status: AckStatus
 }
 
@@ -36,7 +35,6 @@ export class AckMessage extends AgentMessage {
 
       this.setThread({
         threadId: options.threadId,
-        parentThreadId: options.parentThreadId,
       })
     }
   }
