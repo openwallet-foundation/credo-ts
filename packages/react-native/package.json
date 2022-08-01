@@ -2,7 +2,7 @@
   "name": "@sicpa-dlab/aries-framework-react-native",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "files": [
     "build"
   ],
@@ -29,7 +29,7 @@
     "events": "^3.3.0"
   },
   "devDependencies": {
-    "@sicpa-dlab/didcomm-react-native": "0.0.13",
+    "@sicpa-dlab/didcomm-react-native": "0.0.14",
     "@types/indy-sdk-react-native": "npm:@types/indy-sdk@^1.16.16",
     "@types/react-native": "^0.64.10",
     "indy-sdk-react-native": "^0.1.16",
@@ -41,7 +41,7 @@
     "typescript": "~4.3.0"
   },
   "peerDependencies": {
-    "@sicpa-dlab/didcomm-react-native": "0.0.13",
+    "@sicpa-dlab/didcomm-react-native": "0.0.14",
     "indy-sdk-react-native": "^0.1.16",
     "react-native-fs": "^2.18.0",
     "react-native-get-random-values": "^1.7.0"

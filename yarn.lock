@@ -2143,25 +2143,10 @@
   resolved "https://registry.yarnpkg.com/@react-native/polyfills/-/polyfills-1.0.0.tgz#05bb0031533598f9458cf65a502b8df0eecae780"
   integrity sha512-0jbp4RxjYopTsIdLl+/Fy2TiwVYHy4mgeu07DG4b/LyM0OS/+lPP5c9sbnt/AMlnF6qz2JRZpPpGw1eMNS6A4w==
 
-"@sicpa-dlab/didcomm-react-native@0.0.13":
-  version "0.0.13"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/didcomm-react-native/0.0.13/286c1ee8023a6a340edbd1a7cd4b213d9b3936ba6bb7104561b8cb2fbfafba53#1169ab71779c4088a06248fff20431b395bec5a6"
-  integrity sha512-BJN0TpRtp1H/tSr+34D+w6mnWer8j+sV/kc4bhgdQkpC/aVUZhcdRpKfxvq2hV24YG29WUjLn/lXIbrEKg2L5A==
-
-"@sicpa-dlab/value-transfer-protocol-ts@0.0.20":
-  version "0.0.20"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.20/426d759ffb36dc625cb50017fad8ddc759485ad8b0bb90285eb55b1f991f66fd#8f3328ba830a8e98d344078180fe51fdf6b3a1c0"
-  integrity sha512-T1wFWi593Dp5hiFPELSkwPK741VChArRywRksPZike/+ghgvaRuA5W1Krj951h9f8UZ1TkOZsF/0vESUYamShA==
-  dependencies:
-    "@stablelib/ed25519" "^1.0.2"
-    "@stablelib/sha256" "^1.0.1"
-    "@stablelib/uuid" "^1.0.1"
-    bloom-filters "^3.0.0"
-    buffer "^6.0.3"
-    class-transformer "^0.5.1"
-    class-validator "^0.13.2"
-    fast-json-patch "^3.1.1"
-    reflect-metadata "^0.1.13"
+"@sicpa-dlab/didcomm-react-native@0.0.14":
+  version "0.0.14"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/didcomm-react-native/0.0.14/b3c77c3d7cbd82e6f15759c37877f068ded3d92b482e9ad47e019cea1b2d7676#557b9e75bf40b652648f786ca7a812c558fff1d7"
+  integrity sha512-vPM+sQXwFwMVFDorKLZYCmx6C49D26DQM/vtJ/DCjGDPb053cddUdsM76RqGiyqREogNXcdCBAWtf5irVqj4rg==
 
 "@sicpa-dlab/value-transfer-protocol-ts@0.0.23":
   version "0.0.23"
@@ -2178,10 +2163,10 @@
     fast-json-patch "^3.1.1"
     reflect-metadata "^0.1.13"
 
-"@sicpa-dlab/value-transfer-protocol-ts@0.0.25":
-  version "0.0.25"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.25/16e2f44e24a2da4ac90bde70e2336c4f1fc91c272cc41c532c1d55cac3c35406#89b630d9747592cf446f79b99e8b9fd2a44fe8f8"
-  integrity sha512-PGtpzk+dBV0+tadcmqmZrisFKYBIT0WarB8ot5Kqi3dR2QhxfF5S+aaToKisQXThog0A3HaPbbKK3/8D7t48tw==
+"@sicpa-dlab/value-transfer-protocol-ts@0.0.26":
+  version "0.0.26"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.26/78f366a780443f8b4d9f36cf1aec8ce906691e01c04a38912ec44db701d466c5#d85aff57172117b50a8dfaecfb86cbfbb66ec3ab"
+  integrity sha512-zLh0cJEkkmm71rNkJtHifadyncg0KIaDM2M1VaRSb1EvCQF+79/Pplbuq9MuT8UPzg9JYBWT2OrZOLWF4vkajA==
   dependencies:
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
