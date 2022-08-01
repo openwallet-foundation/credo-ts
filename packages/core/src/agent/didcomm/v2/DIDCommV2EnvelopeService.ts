@@ -72,7 +72,7 @@ export class DIDCommV2EnvelopeService {
     payload: DIDCommV2Message,
     params: PackMessageSignedParams
   ): Promise<EncryptedMessage> {
-    const message = new this.didcomm.Message(payload)
+    const message = new this.didcomm.Message(payload.toJSON() as IMessage)
 
     const [encryptedMsg] = await message.pack_signed(
       params.signByDID,
