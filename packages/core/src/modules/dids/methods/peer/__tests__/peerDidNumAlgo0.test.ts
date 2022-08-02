@@ -1,9 +1,9 @@
+import { Key } from '../../../../../crypto'
 import didKeyBls12381g1 from '../../../__tests__/__fixtures__/didKeyBls12381g1.json'
 import didKeyBls12381g1g2 from '../../../__tests__/__fixtures__/didKeyBls12381g1g2.json'
 import didKeyBls12381g2 from '../../../__tests__/__fixtures__/didKeyBls12381g2.json'
 import didKeyEd25519 from '../../../__tests__/__fixtures__/didKeyEd25519.json'
 import didKeyX25519 from '../../../__tests__/__fixtures__/didKeyX25519.json'
-import { Key } from '../../../domain'
 import { didToNumAlgo0DidDocument, keyToNumAlgo0DidDocument } from '../peerDidNumAlgo0'
 
 describe('peerDidNumAlgo0', () => {

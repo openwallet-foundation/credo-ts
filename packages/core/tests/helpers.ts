@@ -1,21 +1,22 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
-  AutoAcceptProof,
+  AcceptOfferOptions,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
   InitConfig,
-  ProofAttributeInfo,
-  ProofPredicateInfo,
   ProofStateChangedEvent,
   SchemaTemplate,
+  Wallet,
 } from '../src'
-import type { AcceptOfferOptions } from '../src/modules/credentials/CredentialsModuleOptions'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { AcceptPresentationOptions, RequestProofOptions } from '../src/modules/proofs/models/ModuleOptions'
+import type { RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
+import type { AcceptPresentationOptions } from '../src/modules/proofs/models/ModuleOptions'
+import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
 import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -29,29 +30,32 @@ import { agentDependencies, WalletScheme } from '../../node/src'
 import {
   Agent,
   AgentConfig,
+  AgentContext,
   AriesFrameworkError,
   BasicMessageEventTypes,
   ConnectionRecord,
   CredentialEventTypes,
   CredentialState,
+  DependencyManager,
   DidExchangeRole,
   DidExchangeState,
   HandshakeProtocol,
+  InjectionSymbols,
   LogLevel,
-  PredicateType,
   ProofEventTypes,
-  ProofProtocolVersion,
-  ProofState,
 } from '../src'
-import { KeyType } from '../src/crypto'
+import { Key, KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/models/CredentialAutoAcceptType'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/messages/V1CredentialPreview'
-import { DidCommV1Service, DidKey, Key } from '../src/modules/dids'
+import { DidCommV1Service, DidKey } from '../src/modules/dids'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
+import { PredicateType } from '../src/modules/proofs/formats/indy/models'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
+import { ProofState } from '../src/modules/proofs/models/ProofState'
 import {
   PresentationPreview,
   PresentationPreviewAttribute,
@@ -136,6 +140,22 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
 export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const { config, agentDependencies } = getBaseConfig(name, extraConfig)
   return new AgentConfig(config, agentDependencies)
+}
+
+export function getAgentContext({
+  dependencyManager = new DependencyManager(),
+  wallet,
+  agentConfig,
+  contextCorrelationId = 'mock',
+}: {
+  dependencyManager?: DependencyManager
+  wallet?: Wallet
+  agentConfig?: AgentConfig
+  contextCorrelationId?: string
+} = {}) {
+  if (wallet) dependencyManager.registerInstance(InjectionSymbols.Wallet, wallet)
+  if (agentConfig) dependencyManager.registerInstance(AgentConfig, agentConfig)
+  return new AgentContext({ dependencyManager, contextCorrelationId })
 }
 
 export async function waitForProofRecord(
@@ -281,6 +301,7 @@ export function getMockOutOfBand({
   state,
   reusable,
   reuseConnectionId,
+  imageUrl,
 }: {
   label?: string
   serviceEndpoint?: string
@@ -290,9 +311,11 @@ export function getMockOutOfBand({
   state?: OutOfBandState
   reusable?: boolean
   reuseConnectionId?: string
+  imageUrl?: string
 } = {}) {
   const options = {
     label: label ?? 'label',
+    imageUrl: imageUrl ?? undefined,
     accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
     handshakeProtocols: [HandshakeProtocol.DidExchange],
     services: [

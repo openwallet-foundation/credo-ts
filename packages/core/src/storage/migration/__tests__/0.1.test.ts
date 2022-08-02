@@ -1,13 +1,14 @@
+import type { FileSystem } from '../../../../src'
 import type { V0_1ToV0_2UpdateConfig } from '../updates/0.1-0.2'
 
 import { unlinkSync, readFileSync } from 'fs'
 import path from 'path'
-import { container as baseContainer } from 'tsyringe'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { Agent } from '../../../../src'
 import { agentDependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
+import { DependencyManager } from '../../../plugins'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
@@ -35,9 +36,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     )
 
     for (const mediationRoleUpdateStrategy of mediationRoleUpdateStrategies) {
-      const container = baseContainer.createChildContainer()
+      const dependencyManager = new DependencyManager()
       const storageService = new InMemoryStorageService()
-      container.registerInstance(InjectionSymbols.StorageService, storageService)
+      dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
       const agent = new Agent(
         {
@@ -45,8 +46,10 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
           walletConfig,
         },
         agentDependencies,
-        container
+        dependencyManager
       )
+
+      const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
       const updateAssistant = new UpdateAssistant(agent, {
         v0_1ToV0_2: {
@@ -75,7 +78,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       expect(storageService.records).toMatchSnapshot(mediationRoleUpdateStrategy)
 
       // Need to remove backupFiles after each run so we don't get IOErrors
-      const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+      const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
       unlinkSync(backupPath)
 
       await agent.shutdown()
@@ -93,10 +96,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const container = baseContainer.createChildContainer()
+    const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
-
-    container.registerInstance(InjectionSymbols.StorageService, storageService)
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     const agent = new Agent(
       {
@@ -104,8 +106,10 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         walletConfig,
       },
       agentDependencies,
-      container
+      dependencyManager
     )
+
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -135,7 +139,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()
@@ -154,10 +158,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const container = baseContainer.createChildContainer()
+    const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
-
-    container.registerInstance(InjectionSymbols.StorageService, storageService)
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     const agent = new Agent(
       {
@@ -166,8 +169,10 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         autoUpdateStorageOnStartup: true,
       },
       agentDependencies,
-      container
+      dependencyManager
     )
+
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     // We need to manually initialize the wallet as we're using the in memory wallet service
     // When we call agent.initialize() it will create the wallet and store the current framework
@@ -184,7 +189,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()
@@ -203,10 +208,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const container = baseContainer.createChildContainer()
+    const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
-
-    container.registerInstance(InjectionSymbols.StorageService, storageService)
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     const agent = new Agent(
       {
@@ -215,8 +219,10 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         autoUpdateStorageOnStartup: true,
       },
       agentDependencies,
-      container
+      dependencyManager
     )
+
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     // We need to manually initialize the wallet as we're using the in memory wallet service
     // When we call agent.initialize() it will create the wallet and store the current framework
@@ -233,7 +239,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()

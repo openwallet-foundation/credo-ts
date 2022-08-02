@@ -1,5 +1,5 @@
+import type { Key } from '../crypto'
 import type { ConnectionRecord } from '../modules/connections'
-import type { Key } from '../modules/dids/domain/Key'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'

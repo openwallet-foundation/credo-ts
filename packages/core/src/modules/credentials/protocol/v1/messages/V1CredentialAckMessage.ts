@@ -3,7 +3,7 @@ import type { AckMessageOptions } from '../../../../common'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { AckMessage } from '../../../../common'
 
-export type CredentialAckMessageOptions = AckMessageOptions
+export type V1CredentialAckMessageOptions = AckMessageOptions
 
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
@@ -13,7 +13,7 @@ export class V1CredentialAckMessage extends AckMessage {
    * Create new CredentialAckMessage instance.
    * @param options
    */
-  public constructor(options: CredentialAckMessageOptions) {
+  public constructor(options: V1CredentialAckMessageOptions) {
     super(options)
   }
 

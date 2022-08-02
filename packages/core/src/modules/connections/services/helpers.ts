@@ -1,9 +1,9 @@
 import type { DidDocument } from '../../dids'
 import type { DidDoc, PublicKey } from '../models'
 
-import { KeyType } from '../../../crypto'
+import { Key, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
-import { IndyAgentService, DidCommV1Service, Key, DidDocumentBuilder } from '../../dids'
+import { IndyAgentService, DidCommV1Service, DidDocumentBuilder } from '../../dids'
 import { getEd25519VerificationMethod } from '../../dids/domain/key-type/ed25519'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { EmbeddedAuthentication } from '../models'
@@ -82,9 +82,16 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
 }
 
 function normalizeId(fullId: string): `#${string}` {
-  const [, id] = fullId.split('#')
+  // Some old dids use `;` as the delimiter for the id. If we can't find a `#`
+  // and a `;` exists, we will parse everything after `;` as the id.
+  if (!fullId.includes('#') && fullId.includes(';')) {
+    const [, ...ids] = fullId.split(';')
 
-  return `#${id ?? fullId}`
+    return `#${ids.join(';')}`
+  }
+
+  const [, ...ids] = fullId.split('#')
+  return `#${ids.length ? ids.join('#') : fullId}`
 }
 
 function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {

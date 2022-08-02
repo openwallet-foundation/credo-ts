@@ -1,34 +1,42 @@
-import type { Key } from './domain/Key'
-import type { DidResolutionOptions } from './types'
+import type { DependencyManager, Module } from '../../plugins'
+import type { DidsModuleConfigOptions } from './DidsModuleConfig'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
+import { DidsApi } from './DidsApi'
+import { DidsModuleConfig } from './DidsModuleConfig'
+import { DidResolverToken, DidRegistrarToken } from './domain'
 import { DidRepository } from './repository'
-import { DidResolverService } from './services/DidResolverService'
+import { DidResolverService, DidRegistrarService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
-export class DidsModule {
-  private resolverService: DidResolverService
-  private didRepository: DidRepository
+export class DidsModule implements Module {
+  public readonly config: DidsModuleConfig
 
-  public constructor(resolverService: DidResolverService, didRepository: DidRepository) {
-    this.resolverService = resolverService
-    this.didRepository = didRepository
+  public constructor(config?: DidsModuleConfigOptions) {
+    this.config = new DidsModuleConfig(config)
   }
 
-  public resolve(didUrl: string, options?: DidResolutionOptions) {
-    return this.resolverService.resolve(didUrl, options)
-  }
+  /**
+   * Registers the dependencies of the dids module module on the dependency manager.
+   */
+  public register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(DidsApi)
 
-  public resolveDidDocument(didUrl: string) {
-    return this.resolverService.resolveDidDocument(didUrl)
-  }
+    // Config
+    dependencyManager.registerInstance(DidsModuleConfig, this.config)
 
-  public findByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findByRecipientKey(recipientKey)
-  }
+    // Services
+    dependencyManager.registerSingleton(DidResolverService)
+    dependencyManager.registerSingleton(DidRegistrarService)
+    dependencyManager.registerSingleton(DidRepository)
 
-  public findAllByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findAllByRecipientKey(recipientKey)
+    // Register all did resolvers
+    for (const Resolver of this.config.resolvers) {
+      dependencyManager.registerSingleton(DidResolverToken, Resolver)
+    }
+
+    // Register all did registrars
+    for (const Registrar of this.config.registrars) {
+      dependencyManager.registerSingleton(DidRegistrarToken, Registrar)
+    }
   }
 }

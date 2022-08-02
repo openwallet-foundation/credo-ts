@@ -1,9 +1,11 @@
-import type { Wallet } from '../../../wallet/Wallet'
+import type { AgentContext } from '../../../agent'
 import type { CredentialRepository } from '../../credentials/repository'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { CustomProofTags } from './../repository/ProofRecord'
 
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
@@ -95,14 +97,22 @@ describe('V1ProofService', () => {
   let proofRepository: ProofRepository
   let proofService: V1ProofService
   let ledgerService: IndyLedgerService
+<<<<<<< HEAD:packages/core/src/modules/proofs/__tests__/V1ProofService.test.ts
   let wallet: Wallet
+=======
+  let indyVerifierService: IndyVerifierService
+>>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb:packages/core/src/modules/proofs/__tests__/ProofService.test.ts
   let indyHolderService: IndyHolderService
   let indyRevocationService: IndyRevocationService
   let eventEmitter: EventEmitter
   let credentialRepository: CredentialRepository
   let connectionService: ConnectionService
+<<<<<<< HEAD:packages/core/src/modules/proofs/__tests__/V1ProofService.test.ts
   let didCommMessageRepository: DidCommMessageRepository
   let indyProofFormatService: IndyProofFormatService
+=======
+  let agentContext: AgentContext
+>>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb:packages/core/src/modules/proofs/__tests__/ProofService.test.ts
 
   beforeEach(() => {
     const agentConfig = getAgentConfig('V1ProofServiceTest')
@@ -110,15 +120,20 @@ describe('V1ProofService', () => {
     indyHolderService = new IndyHolderServiceMock()
     indyRevocationService = new IndyRevocationServiceMock()
     ledgerService = new IndyLedgerServiceMock()
-    eventEmitter = new EventEmitter(agentConfig)
+    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     connectionService = new connectionServiceMock()
+<<<<<<< HEAD:packages/core/src/modules/proofs/__tests__/V1ProofService.test.ts
     didCommMessageRepository = new didCommMessageRepositoryMock()
     indyProofFormatService = new indyProofFormatServiceMock()
+=======
+    agentContext = getAgentContext()
+>>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb:packages/core/src/modules/proofs/__tests__/ProofService.test.ts
 
     proofService = new V1ProofService(
       proofRepository,
       didCommMessageRepository,
       ledgerService,
+<<<<<<< HEAD:packages/core/src/modules/proofs/__tests__/V1ProofService.test.ts
       wallet,
       agentConfig,
       connectionService,
@@ -127,6 +142,15 @@ describe('V1ProofService', () => {
       indyProofFormatService,
       indyHolderService,
       indyRevocationService
+=======
+      indyHolderService,
+      indyVerifierService,
+      indyRevocationService,
+      connectionService,
+      eventEmitter,
+      credentialRepository,
+      agentConfig.logger
+>>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb:packages/core/src/modules/proofs/__tests__/ProofService.test.ts
     )
 
     mockFunction(ledgerService.getCredentialDefinition).mockReturnValue(Promise.resolve(credDef))
@@ -143,6 +167,7 @@ describe('V1ProofService', () => {
       })
       messageContext = new InboundMessageContext(presentationRequest, {
         connection,
+        agentContext,
       })
     })
 
@@ -162,7 +187,7 @@ describe('V1ProofService', () => {
         connectionId: connection.id,
       }
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1)
-      const [[createdProofRecord]] = repositorySaveSpy.mock.calls
+      const [[, createdProofRecord]] = repositorySaveSpy.mock.calls
       expect(createdProofRecord).toMatchObject(expectedProofRecord)
       expect(returnedProofRecord).toMatchObject(expectedProofRecord)
     })
@@ -177,6 +202,9 @@ describe('V1ProofService', () => {
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'ProofStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: null,
           proofRecord: expect.objectContaining({
@@ -241,6 +269,7 @@ describe('V1ProofService', () => {
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })
       messageContext = new InboundMessageContext(presentationProblemReportMessage, {
         connection,
+        agentContext,
       })
     })
 
@@ -257,12 +286,12 @@ describe('V1ProofService', () => {
       const expectedCredentialRecord = {
         errorMessage: 'abandoned: Indy error',
       }
-      expect(proofRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
+      expect(proofRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
         connectionId: connection.id,
       })
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
-      const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
+      const [[, updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)
     })

@@ -1,13 +1,15 @@
+import type { Key, KeyType } from '../crypto'
+import type { Disposable } from '../plugins'
 import type {
   EncryptedMessage,
-  WalletConfig,
-  WalletExportImportConfig,
-  WalletConfigRekey,
   PlaintextMessage,
+  WalletConfig,
+  WalletConfigRekey,
+  WalletExportImportConfig,
 } from '../types'
 import type { Buffer } from '../utils/buffer'
 
-export interface Wallet {
+export interface Wallet extends Disposable {
   publicDid: DidInfo | undefined
   isInitialized: boolean
   isProvisioned: boolean
@@ -21,18 +23,37 @@ export interface Wallet {
   export(exportConfig: WalletExportImportConfig): Promise<void>
   import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
 
+  createKey(options: CreateKeyOptions): Promise<Key>
+  sign(options: SignOptions): Promise<Buffer>
+  verify(options: VerifyOptions): Promise<boolean>
+
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>
   pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
   unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
-  sign(data: Buffer, verkey: string): Promise<Buffer>
-  verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean>
   generateNonce(): Promise<string>
+  generateWalletKey(): Promise<string>
 }
 
 export interface DidInfo {
   did: string
   verkey: string
+}
+
+export interface CreateKeyOptions {
+  keyType: KeyType
+  seed?: string
+}
+
+export interface SignOptions {
+  data: Buffer | Buffer[]
+  key: Key
+}
+
+export interface VerifyOptions {
+  data: Buffer | Buffer[]
+  key: Key
+  signature: Buffer
 }
 
 export interface DidConfig {

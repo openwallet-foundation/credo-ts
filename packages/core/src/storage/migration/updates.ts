@@ -1,4 +1,4 @@
-import type { Agent } from '../../agent/Agent'
+import type { BaseAgent } from '../../agent/BaseAgent'
 import type { VersionString } from '../../utils/version'
 import type { V0_1ToV0_2UpdateConfig } from './updates/0.1-0.2'
 
@@ -9,7 +9,7 @@ export const INITIAL_STORAGE_VERSION = '0.1'
 export interface Update {
   fromVersion: VersionString
   toVersion: VersionString
-  doUpdate: (agent: Agent, updateConfig: UpdateConfig) => Promise<void>
+  doUpdate: <Agent extends BaseAgent>(agent: Agent, updateConfig: UpdateConfig) => Promise<void>
 }
 
 export interface UpdateConfig {

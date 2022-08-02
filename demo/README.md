@@ -17,7 +17,7 @@ Alice, a former student of Faber College, connects with the College, is issued a
 
 In order to use Aries Framework JavaScript some platform specific dependencies and setup is required. See our guides below to quickly set up you project with Aries Framework JavaScript for NodeJS, React Native and Electron.
 
-- [NodeJS](/docs/setup-nodejs.md)
+- [NodeJS](https:/aries.js.org/guides/getting-started/prerequisites/nodejs)
 
 ### Run the demo
 

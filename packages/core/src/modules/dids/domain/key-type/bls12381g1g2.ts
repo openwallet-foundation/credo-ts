@@ -1,7 +1,7 @@
 import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto'
-import { Key } from '../Key'
+import { Key } from '../../../../crypto/Key'
 
 import { getBls12381g1VerificationMethod } from './bls12381g1'
 import { getBls12381g2VerificationMethod } from './bls12381g2'

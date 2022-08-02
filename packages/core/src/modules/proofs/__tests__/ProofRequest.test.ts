@@ -1,3 +1,4 @@
+import { ClassValidationError } from '../../../error/ClassValidationError'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../utils/MessageValidator'
 import { ProofRequest } from '../formats/indy/models/ProofRequest'
@@ -35,10 +36,11 @@ describe('ProofRequest', () => {
       ProofRequest
     )
 
-    expect(MessageValidator.validate(proofRequest)).resolves.not.toThrow()
+    expect(() => MessageValidator.validateSync(proofRequest)).not.toThrow()
   })
 
   it('should throw an error if the proof request json contains an invalid structure', async () => {
+<<<<<<< HEAD
     const proofRequest = JsonTransformer.fromJSON(
       {
         name: 'ProofRequest',
@@ -53,24 +55,42 @@ describe('ProofRequest', () => {
               },
             ],
           },
+=======
+    const proofRequest = {
+      name: 'ProofRequest',
+      version: '1.0',
+      nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
+      requested_attributes: {
+        First: {
+          names: [],
+          restrictions: [
+            {
+              schema_id: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
+            },
+          ],
+>>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
         },
-        requested_predicates: [
-          {
-            name: 'Timo',
-            p_type: '<=',
-            p_value: 10,
-            restrictions: [
-              {
-                schema_id: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
-              },
-            ],
-          },
-        ],
       },
-      ProofRequest
-    )
+      requested_predicates: [
+        {
+          name: 'Timo',
+          p_type: '<=',
+          p_value: 10,
+          restrictions: [
+            {
+              schema_id: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
+            },
+          ],
+        },
+      ],
+    }
 
-    // Expect 2 top level validation errors
-    expect(MessageValidator.validate(proofRequest)).rejects.toHaveLength(2)
+    expect(() => JsonTransformer.fromJSON(proofRequest, ProofRequest)).toThrowError(ClassValidationError)
+    try {
+      JsonTransformer.fromJSON(proofRequest, ProofRequest)
+    } catch (e) {
+      const caughtError = e as ClassValidationError
+      expect(caughtError.validationErrors).toHaveLength(2)
+    }
   })
 })
