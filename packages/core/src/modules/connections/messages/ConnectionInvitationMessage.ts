@@ -1,3 +1,5 @@
+import type { Attachment } from '../../../decorators/attachment/Attachment'
+
 import { Transform } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
 import { parseUrl } from 'query-string'
@@ -6,13 +8,13 @@ import { AgentMessage } from '../../../agent/AgentMessage'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../utils/MessageValidator'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
 export interface BaseInvitationOptions {
   id?: string
   label: string
   imageUrl?: string
+  appendedAttachments?: Attachment[]
 }
 
 export interface InlineInvitationOptions {
@@ -42,6 +44,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
       this.id = options.id || this.generateId()
       this.label = options.label
       this.imageUrl = options.imageUrl
+      this.appendedAttachments = options.appendedAttachments
 
       if (isDidInvitation(options)) {
         this.did = options.did
@@ -121,15 +124,13 @@ export class ConnectionInvitationMessage extends AgentMessage {
    * @throws Error when url can not be decoded to JSON, or decoded message is not a valid `ConnectionInvitationMessage`
    * @throws Error when the url does not contain c_i or d_m as parameter
    */
-  public static async fromUrl(invitationUrl: string) {
+  public static fromUrl(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl['c_i'] ?? parsedUrl['d_m']
 
     if (typeof encodedInvitation === 'string') {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
       const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
-
-      await MessageValidator.validate(invitation)
 
       return invitation
     } else {

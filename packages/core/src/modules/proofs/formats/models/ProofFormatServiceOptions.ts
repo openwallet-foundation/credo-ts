@@ -1,6 +1,7 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { CreatePresentationFormats, ProposeProofFormats } from '../../models/SharedOptions'
+import type { ProposeProofFormats } from '../../models/SharedOptions'
 import type { ProofRecord } from '../../repository'
+import type { ProofFormat, ProofFormatPayload } from '../ProofFormat'
 import type { ProofRequestOptions } from '../indy/models/ProofRequest'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
 
@@ -34,10 +35,10 @@ export interface ProcessRequestOptions {
   record?: ProofRecord
 }
 
-export interface CreatePresentationOptions {
+export interface FormatCreatePresentationOptions<PF extends ProofFormat> {
   id?: string
   attachment: Attachment
-  formats: CreatePresentationFormats
+  proofFormats: ProofFormatPayload<[PF], 'createPresentation'>
 }
 
 export interface ProcessPresentationOptions {

@@ -1,10 +1,20 @@
+import type { AgentContext } from '../../../agent'
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Repository } from '../../../storage/Repository'
 import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import type { ValidResponse } from '../models'
 
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import {
+  agentDependencies,
+  getAgentConfig,
+  getAgentContext,
+  getMockConnection,
+  mockFunction,
+} from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
@@ -27,6 +37,7 @@ describe('QuestionAnswerService', () => {
   let questionAnswerRepository: Repository<QuestionAnswerRecord>
   let questionAnswerService: QuestionAnswerService
   let eventEmitter: EventEmitter
+  let agentContext: AgentContext
 
   const mockQuestionAnswerRecord = (options: {
     questionText: string
@@ -52,15 +63,16 @@ describe('QuestionAnswerService', () => {
 
   beforeAll(async () => {
     agentConfig = getAgentConfig('QuestionAnswerServiceTest')
-    wallet = new IndyWallet(agentConfig)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
+    agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
   })
 
   beforeEach(async () => {
     questionAnswerRepository = new QuestionAnswerRepositoryMock()
-    eventEmitter = new EventEmitter(agentConfig)
-    questionAnswerService = new QuestionAnswerService(questionAnswerRepository, eventEmitter, agentConfig)
+    eventEmitter = new EventEmitter(agentDependencies, new Subject())
+    questionAnswerService = new QuestionAnswerService(questionAnswerRepository, eventEmitter, agentConfig.logger)
   })
 
   afterAll(async () => {
@@ -81,13 +93,16 @@ describe('QuestionAnswerService', () => {
         validResponses: [{ text: 'Yes' }, { text: 'No' }],
       })
 
-      await questionAnswerService.createQuestion(mockConnectionRecord.id, {
+      await questionAnswerService.createQuestion(agentContext, mockConnectionRecord.id, {
         question: questionMessage.questionText,
         validResponses: questionMessage.validResponses,
       })
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'QuestionAnswerStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: null,
           questionAnswerRecord: expect.objectContaining({
@@ -117,7 +132,7 @@ describe('QuestionAnswerService', () => {
     })
 
     it(`throws an error when invalid response is provided`, async () => {
-      expect(questionAnswerService.createAnswer(mockRecord, 'Maybe')).rejects.toThrowError(
+      expect(questionAnswerService.createAnswer(agentContext, mockRecord, 'Maybe')).rejects.toThrowError(
         `Response does not match valid responses`
       )
     })
@@ -131,10 +146,13 @@ describe('QuestionAnswerService', () => {
 
       mockFunction(questionAnswerRepository.getSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
-      await questionAnswerService.createAnswer(mockRecord, 'Yes')
+      await questionAnswerService.createAnswer(agentContext, mockRecord, 'Yes')
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'QuestionAnswerStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: QuestionAnswerState.QuestionReceived,
           questionAnswerRecord: expect.objectContaining({

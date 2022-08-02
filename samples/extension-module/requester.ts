@@ -4,7 +4,7 @@ import { Agent, AriesFrameworkError, ConsoleLogger, LogLevel, WsOutboundTranspor
 import { agentDependencies } from '@aries-framework/node'
 import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
-import { DummyEventTypes, DummyModule, DummyState } from './dummy'
+import { DummyEventTypes, DummyApi, DummyState, DummyModule } from './dummy'
 
 const run = async () => {
   // Create transports
@@ -25,11 +25,14 @@ const run = async () => {
     agentDependencies
   )
 
+  // Register the DummyModule
+  agent.dependencyManager.registerModules(new DummyModule())
+
   // Register transports
   agent.registerOutboundTransport(wsOutboundTransport)
 
-  // Inject DummyModule
-  const dummyModule = agent.injectionContainer.resolve(DummyModule)
+  // Inject DummyApi
+  const dummyApi = agent.dependencyManager.resolve(DummyApi)
 
   // Now agent will handle messages and events from Dummy protocol
 
@@ -58,7 +61,7 @@ const run = async () => {
     .subscribe(subject)
 
   // Send a dummy request and wait for response
-  const record = await dummyModule.request(connectionRecord.id)
+  const record = await dummyApi.request(connectionRecord.id)
   agent.config.logger.info(`Request received for Dummy Record: ${record.id}`)
 
   const dummyRecord = await firstValueFrom(subject)

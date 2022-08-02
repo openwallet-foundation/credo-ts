@@ -2,6 +2,7 @@ import type { AgentConfig } from '../../agent/AgentConfig'
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Dispatcher } from '../../agent/Dispatcher'
 import type { EventEmitter } from '../../agent/EventEmitter'
+import type { AgentContext } from '../../agent/context/AgentContext'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Logger } from '../../logger'
 import type { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
@@ -10,8 +11,9 @@ import type { ConnectionService } from '../connections/services'
 import type { MediationRecipientService } from '../routing'
 import type { ProofStateChangedEvent } from './ProofEvents'
 import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
+import type { ProofFormat } from './formats/ProofFormat'
+import type { ProofFormatService } from './formats/ProofFormatService'
 import type { CreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
-import type { ProofProtocolVersion } from './models/ProofProtocolVersion'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -34,7 +36,7 @@ import { JsonTransformer } from '../../utils/JsonTransformer'
 
 import { ProofEventTypes } from './ProofEvents'
 
-export abstract class ProofService {
+export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   protected proofRepository: ProofRepository
   protected didCommMessageRepository: DidCommMessageRepository
   protected eventEmitter: EventEmitter
@@ -57,15 +59,20 @@ export abstract class ProofService {
     this.wallet = wallet
     this.logger = agentConfig.logger
   }
+  abstract readonly version: string
+
+  abstract getFormatServiceForRecordType(
+    proofRecordType: PFs[number]['proofRecordType']
+  ): ProofFormatService<PFs[number]>
 
   public async generateProofRequestNonce() {
     return await this.wallet.generateNonce()
   }
 
-  public emitStateChangedEvent(proofRecord: ProofRecord, previousState: ProofState | null) {
+  public emitStateChangedEvent(agentContext: AgentContext, proofRecord: ProofRecord, previousState: ProofState | null) {
     const clonedProof = JsonTransformer.clone(proofRecord)
 
-    this.eventEmitter.emit<ProofStateChangedEvent>({
+    this.eventEmitter.emit<ProofStateChangedEvent>(agentContext, {
       type: ProofEventTypes.ProofStateChanged,
       payload: {
         proofRecord: clonedProof,
@@ -82,15 +89,17 @@ export abstract class ProofService {
    * @param newState The state to update to
    *
    */
-  public async updateState(proofRecord: ProofRecord, newState: ProofState) {
+  public async updateState(agentContext: AgentContext, proofRecord: ProofRecord, newState: ProofState) {
     const previousState = proofRecord.state
     proofRecord.state = newState
-    await this.proofRepository.update(proofRecord)
+    await this.proofRepository.update(agentContext, proofRecord)
 
-    this.emitStateChangedEvent(proofRecord, previousState)
+    this.emitStateChangedEvent(agentContext, proofRecord, previousState)
   }
 
-  abstract getVersion(): ProofProtocolVersion
+  public update(agentContext: AgentContext, proofRecord: ProofRecord) {
+    return this.proofRepository.update(agentContext, proofRecord)
+  }
 
   /**
    * 1. Assert (connection ready, record state)
@@ -100,7 +109,10 @@ export abstract class ProofService {
    * 5. Store proposal message
    * 6. Return proposal message + proof record
    */
-  abstract createProposal(options: CreateProposalOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+  abstract createProposal(
+    agentContext: AgentContext,
+    options: CreateProposalOptions<PFs>
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
   /**
    * Create a proposal message in response to a received proof request message
@@ -113,7 +125,8 @@ export abstract class ProofService {
    * 6. Return proposal message + proof record
    */
   abstract createProposalAsResponse(
-    options: CreateProposalAsResponseOptions
+    agentContext: AgentContext,
+    options: CreateProposalAsResponseOptions<PFs>
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
   /**
@@ -134,36 +147,61 @@ export abstract class ProofService {
    *    4. Loop through all format services to process proposal message
    *    5. Save & return record
    */
-  abstract processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
+  abstract processProposal(
+    agentContext: AgentContext,
+    messageContext: InboundMessageContext<AgentMessage>
+  ): Promise<ProofRecord>
 
-  abstract createRequest(options: CreateRequestOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
-
-  abstract createRequestAsResponse(
-    options: CreateRequestAsResponseOptions
+  abstract createRequest(
+    agentContext: AgentContext,
+    options: CreateRequestOptions<PFs>
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
-  abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
+  abstract createRequestAsResponse(
+    agentContext: AgentContext,
+    options: CreateRequestAsResponseOptions<PFs>
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+
+  abstract processRequest(
+    agentContext: AgentContext,
+    messageContext: InboundMessageContext<AgentMessage>
+  ): Promise<ProofRecord>
 
   abstract createPresentation(
-    options: CreatePresentationOptions
+    agentContext: AgentContext,
+    options: CreatePresentationOptions<PFs>
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
   abstract processPresentation(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
-  abstract createAck(options: CreateAckOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+  abstract createAck(
+    agentContext: AgentContext,
+    options: CreateAckOptions
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
-  abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
+  abstract processAck(
+    agentContext: AgentContext,
+    messageContext: InboundMessageContext<AgentMessage>
+  ): Promise<ProofRecord>
 
   abstract createProblemReport(
+    agentContext: AgentContext,
     options: CreateProblemReportOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
-  abstract processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
-  public abstract shouldAutoRespondToProposal(proofRecord: ProofRecord): Promise<boolean>
+  abstract processProblemReport(
+    agentContext: AgentContext,
+    messageContext: InboundMessageContext<AgentMessage>
+  ): Promise<ProofRecord>
 
-  public abstract shouldAutoRespondToRequest(proofRecord: ProofRecord): Promise<boolean>
+  public abstract shouldAutoRespondToProposal(agentContext: AgentContext, proofRecord: ProofRecord): Promise<boolean>
 
-  public abstract shouldAutoRespondToPresentation(proofRecord: ProofRecord): Promise<boolean>
+  public abstract shouldAutoRespondToRequest(agentContext: AgentContext, proofRecord: ProofRecord): Promise<boolean>
+
+  public abstract shouldAutoRespondToPresentation(
+    agentContext: AgentContext,
+    proofRecord: ProofRecord
+  ): Promise<boolean>
 
   public abstract registerHandlers(
     dispatcher: Dispatcher,
@@ -172,18 +210,24 @@ export abstract class ProofService {
     mediationRecipientService: MediationRecipientService
   ): void
 
-  public abstract findRequestMessage(proofRecordId: string): Promise<AgentMessage | null>
+  public abstract findRequestMessage(agentContext: AgentContext, proofRecordId: string): Promise<AgentMessage | null>
 
-  public abstract findPresentationMessage(proofRecordId: string): Promise<AgentMessage | null>
+  public abstract findPresentationMessage(
+    agentContext: AgentContext,
+    proofRecordId: string
+  ): Promise<AgentMessage | null>
 
-  public abstract findProposalMessage(proofRecordId: string): Promise<AgentMessage | null>
+  public abstract findProposalMessage(agentContext: AgentContext, proofRecordId: string): Promise<AgentMessage | null>
 
-  public async saveOrUpdatePresentationMessage(options: {
-    proofRecord: ProofRecord
-    message: AgentMessage
-    role: DidCommMessageRole
-  }): Promise<void> {
-    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+  public async saveOrUpdatePresentationMessage(
+    agentContext: AgentContext,
+    options: {
+      proofRecord: ProofRecord
+      message: AgentMessage
+      role: DidCommMessageRole
+    }
+  ): Promise<void> {
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
       agentMessage: options.message,
       role: options.role,
@@ -191,63 +235,17 @@ export abstract class ProofService {
   }
 
   public abstract getRequestedCredentialsForProofRequest(
+    agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
   ): Promise<RetrievedCredentialOptions>
 
   public abstract autoSelectCredentialsForProofRequest(
+    agentContext: AgentContext,
     options: RetrievedCredentialOptions
   ): Promise<RequestedCredentialsFormats>
 
-  public abstract createProofRequestFromProposal(options: ProofRequestFromProposalOptions): Promise<ProofRequestFormats>
-
-  /**
-   * Retrieve all proof records
-   *
-   * @returns List containing all proof records
-   */
-  public async getAll(): Promise<ProofRecord[]> {
-    return this.proofRepository.getAll()
-  }
-
-  /**
-   * Retrieve a proof record by id
-   *
-   * @param proofRecordId The proof record id
-   * @throws {RecordNotFoundError} If no record is found
-   * @return The proof record
-   *
-   */
-  public async getById(proofRecordId: string): Promise<ProofRecord> {
-    return this.proofRepository.getById(proofRecordId)
-  }
-
-  /**
-   * Retrieve a proof record by id
-   *
-   * @param proofRecordId The proof record id
-   * @return The proof record or null if not found
-   *
-   */
-  public async findById(proofRecordId: string): Promise<ProofRecord | null> {
-    return this.proofRepository.findById(proofRecordId)
-  }
-
-  /**
-   * Delete a proof record by id
-   *
-   * @param proofId the proof record id
-   */
-  public async deleteById(proofId: string) {
-    const proofRecord = await this.getById(proofId)
-    return this.proofRepository.delete(proofRecord)
-  }
-
-  /**
-   * Update a proof record by
-   *
-   * @param proofRecord the proof record
-   */
-  public update(proofRecord: ProofRecord) {
-    return this.proofRepository.update(proofRecord)
-  }
+  public abstract createProofRequestFromProposal(
+    agentContext: AgentContext,
+    options: ProofRequestFromProposalOptions
+  ): Promise<ProofRequestFormats>
 }

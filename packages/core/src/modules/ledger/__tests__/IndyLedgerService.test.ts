@@ -1,8 +1,13 @@
+import type { AgentContext } from '../../../agent'
 import type { IndyPoolConfig } from '../IndyPool'
 import type { LedgerReadReplyResponse, LedgerWriteReplyResponse } from 'indy-sdk'
 
-import { getAgentConfig, mockFunction } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { NodeFileSystem } from '../../../../../node/src/NodeFileSystem'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { CacheRepository } from '../../../cache/CacheRepository'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
 import { IndyPool } from '../IndyPool'
@@ -30,13 +35,15 @@ describe('IndyLedgerService', () => {
     indyLedgers: pools,
   })
   let wallet: IndyWallet
+  let agentContext: AgentContext
   let poolService: IndyPoolService
   let cacheRepository: CacheRepository
   let indyIssuerService: IndyIssuerService
   let ledgerService: IndyLedgerService
 
   beforeAll(async () => {
-    wallet = new IndyWallet(config)
+    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
+    agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
   })
@@ -50,7 +57,7 @@ describe('IndyLedgerService', () => {
     mockFunction(cacheRepository.findById).mockResolvedValue(null)
     indyIssuerService = new IndyIssuerServiceMock()
     poolService = new IndyPoolServiceMock()
-    const pool = new IndyPool(config, pools[0])
+    const pool = new IndyPool(pools[0], config.agentDependencies, config.logger, new Subject(), new NodeFileSystem())
     jest.spyOn(pool, 'submitWriteRequest').mockResolvedValue({} as LedgerWriteReplyResponse)
     jest.spyOn(pool, 'submitReadRequest').mockResolvedValue({} as LedgerReadReplyResponse)
     jest.spyOn(pool, 'connect').mockResolvedValue(0)
@@ -58,7 +65,7 @@ describe('IndyLedgerService', () => {
     // @ts-ignore
     poolService.ledgerWritePool = pool
 
-    ledgerService = new IndyLedgerService(wallet, config, indyIssuerService, poolService)
+    ledgerService = new IndyLedgerService(config.agentDependencies, config.logger, indyIssuerService, poolService)
   })
 
   describe('LedgerServiceWrite', () => {
@@ -78,6 +85,7 @@ describe('IndyLedgerService', () => {
       } as never)
       await expect(
         ledgerService.registerPublicDid(
+          agentContext,
           'BBPoJqRKatdcfLEAFL7exC',
           'N8NQHLtCKfPmWMgCSdfa7h',
           'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf',
@@ -104,6 +112,7 @@ describe('IndyLedgerService', () => {
       } as never)
       await expect(
         ledgerService.registerPublicDid(
+          agentContext,
           'BBPoJqRKatdcfLEAFL7exC',
           'N8NQHLtCKfPmWMgCSdfa7h',
           'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf',
@@ -118,7 +127,7 @@ describe('IndyLedgerService', () => {
       poolService.ledgerWritePool.authorAgreement = undefined
       poolService.ledgerWritePool.config.transactionAuthorAgreement = undefined
 
-      ledgerService = new IndyLedgerService(wallet, config, indyIssuerService, poolService)
+      ledgerService = new IndyLedgerService(config.agentDependencies, config.logger, indyIssuerService, poolService)
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       jest.spyOn(ledgerService, 'getTransactionAuthorAgreement').mockResolvedValue({
@@ -134,6 +143,7 @@ describe('IndyLedgerService', () => {
       } as never)
       await expect(
         ledgerService.registerPublicDid(
+          agentContext,
           'BBPoJqRKatdcfLEAFL7exC',
           'N8NQHLtCKfPmWMgCSdfa7h',
           'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf',

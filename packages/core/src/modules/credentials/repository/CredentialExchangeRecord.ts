@@ -1,6 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../models/CredentialAutoAcceptType'
-import type { CredentialProtocolVersion } from '../models/CredentialProtocolVersion'
 import type { CredentialState } from '../models/CredentialState'
 import type { RevocationNotification } from '../models/RevocationNotification'
 import type { CredentialMetadata } from './CredentialMetadataTypes'
@@ -22,7 +21,7 @@ export interface CredentialExchangeRecordProps {
   state: CredentialState
   connectionId?: string
   threadId: string
-  protocolVersion: CredentialProtocolVersion
+  protocolVersion: string
 
   tags?: CustomCredentialTags
   credentialAttributes?: CredentialPreviewAttribute[]
@@ -59,7 +58,7 @@ export class CredentialExchangeRecord extends BaseRecord<
   public autoAcceptCredential?: AutoAcceptCredential
   public revocationNotification?: RevocationNotification
   public errorMessage?: string
-  public protocolVersion!: CredentialProtocolVersion
+  public protocolVersion!: string
   public credentials: CredentialRecordBinding[] = []
 
   @Type(() => CredentialPreviewAttribute)
@@ -125,7 +124,7 @@ export class CredentialExchangeRecord extends BaseRecord<
     })
   }
 
-  public assertProtocolVersion(version: CredentialProtocolVersion) {
+  public assertProtocolVersion(version: string) {
     if (this.protocolVersion != version) {
       throw new AriesFrameworkError(
         `Credential record has invalid protocol version ${this.protocolVersion}. Expected version ${version}`

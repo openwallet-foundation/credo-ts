@@ -1,4 +1,4 @@
-export const enum OutOfBandState {
+export enum OutOfBandState {
   Initial = 'initial',
   AwaitResponse = 'await-response',
   PrepareResponse = 'prepare-response',

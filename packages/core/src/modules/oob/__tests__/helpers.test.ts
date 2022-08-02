@@ -1,3 +1,4 @@
+import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils'
 import { ConnectionInvitationMessage } from '../../connections'
 import { DidCommV1Service } from '../../dids'
@@ -13,10 +14,23 @@ describe('convertToNewInvitation', () => {
       recipientKeys: ['8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'],
       serviceEndpoint: 'https://my-agent.com',
       routingKeys: ['6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'],
+      appendedAttachments: [
+        new Attachment({
+          id: 'attachment-1',
+          mimeType: 'text/plain',
+          description: 'attachment description',
+          filename: 'test.jpg',
+          data: {
+            json: {
+              text: 'sample',
+              value: 1,
+            },
+          },
+        }),
+      ],
     })
 
     const oobInvitation = convertToNewInvitation(connectionInvitation)
-
     expect(oobInvitation).toMatchObject({
       id: 'd88ff8fd-6c43-4683-969e-11a87a572cf2',
       imageUrl: 'https://my-image.com',
@@ -29,6 +43,15 @@ describe('convertToNewInvitation', () => {
           serviceEndpoint: 'https://my-agent.com',
         },
       ],
+      appendedAttachments: [
+        {
+          id: 'attachment-1',
+          description: 'attachment description',
+          filename: 'test.jpg',
+          mimeType: 'text/plain',
+          data: { json: { text: 'sample', value: 1 } },
+        },
+      ],
     })
   })
 
@@ -38,6 +61,20 @@ describe('convertToNewInvitation', () => {
       imageUrl: 'https://my-image.com',
       label: 'a-label',
       did: 'did:sov:a-did',
+      appendedAttachments: [
+        new Attachment({
+          id: 'attachment-1',
+          mimeType: 'text/plain',
+          description: 'attachment description',
+          filename: 'test.jpg',
+          data: {
+            json: {
+              text: 'sample',
+              value: 1,
+            },
+          },
+        }),
+      ],
     })
 
     const oobInvitation = convertToNewInvitation(connectionInvitation)
@@ -47,6 +84,15 @@ describe('convertToNewInvitation', () => {
       imageUrl: 'https://my-image.com',
       label: 'a-label',
       services: ['did:sov:a-did'],
+      appendedAttachments: [
+        {
+          id: 'attachment-1',
+          description: 'attachment description',
+          filename: 'test.jpg',
+          mimeType: 'text/plain',
+          data: { json: { text: 'sample', value: 1 } },
+        },
+      ],
     })
   })
 
@@ -58,12 +104,12 @@ describe('convertToNewInvitation', () => {
         label: 'a-label',
         imageUrl: 'https://my-image.com',
       },
-      ConnectionInvitationMessage
+      ConnectionInvitationMessage,
+      // Don't validate because we want this to be mal-formatted
+      { validate: false }
     )
 
-    expect(() => convertToNewInvitation(connectionInvitation)).toThrowError(
-      'Missing required serviceEndpoint, routingKeys and/or did fields in connection invitation'
-    )
+    expect(() => convertToNewInvitation(connectionInvitation)).toThrowError()
   })
 })
 

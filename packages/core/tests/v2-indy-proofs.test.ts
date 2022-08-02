@@ -10,10 +10,10 @@ import type { CredDefId } from 'indy-sdk'
 
 import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
 import {
-  V2_INDY_PRESENTATION,
   V2_INDY_PRESENTATION_PROPOSAL,
   V2_INDY_PRESENTATION_REQUEST,
-} from '../src/modules/proofs/formats/ProofFormats'
+  V2_INDY_PRESENTATION,
+} from '../src/modules/proofs/formats/ProofFormatConstants'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import {
   V2PresentationMessage,

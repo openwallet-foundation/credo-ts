@@ -1,7 +1,7 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService } from '../services'
 
@@ -12,25 +12,25 @@ import { DidExchangeResponseMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
 
 export class DidExchangeResponseHandler implements Handler {
-  private agentConfig: AgentConfig
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   private connectionService: ConnectionService
   private didResolverService: DidResolverService
+  private connectionsModuleConfig: ConnectionsModuleConfig
   public supportedMessages = [DidExchangeResponseMessage]
 
   public constructor(
-    agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
     outOfBandService: OutOfBandService,
     connectionService: ConnectionService,
-    didResolverService: DidResolverService
+    didResolverService: DidResolverService,
+    connectionsModuleConfig: ConnectionsModuleConfig
   ) {
-    this.agentConfig = agentConfig
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
     this.connectionService = connectionService
     this.didResolverService = didResolverService
+    this.connectionsModuleConfig = connectionsModuleConfig
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeResponseHandler>) {
@@ -40,7 +40,7 @@ export class DidExchangeResponseHandler implements Handler {
       throw new AriesFrameworkError('Unable to process connection response without sender key or recipient key')
     }
 
-    const connectionRecord = await this.connectionService.getByThreadId(message.threadId)
+    const connectionRecord = await this.connectionService.getByThreadId(messageContext.agentContext, message.threadId)
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }
@@ -49,7 +49,10 @@ export class DidExchangeResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} has no 'did'`)
     }
 
-    const ourDidDocument = await this.didResolverService.resolveDidDocument(connectionRecord.did)
+    const ourDidDocument = await this.didResolverService.resolveDidDocument(
+      messageContext.agentContext,
+      connectionRecord.did
+    )
     if (!ourDidDocument) {
       throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved`)
     }
@@ -73,7 +76,10 @@ export class DidExchangeResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
     }
 
-    const outOfBandRecord = await this.outOfBandService.findById(connectionRecord.outOfBandId)
+    const outOfBandRecord = await this.outOfBandService.findById(
+      messageContext.agentContext,
+      connectionRecord.outOfBandId
+    )
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(
@@ -94,11 +100,15 @@ export class DidExchangeResponseHandler implements Handler {
 
     // TODO: should we only send complete message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the complete. So for now we'll only do it
-    // if auto accept is enable
-    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const message = await this.didExchangeProtocol.createComplete(connection, outOfBandRecord)
+    // if auto accept is enabled
+    if (connection.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
+      const message = await this.didExchangeProtocol.createComplete(
+        messageContext.agentContext,
+        connection,
+        outOfBandRecord
+      )
       if (!outOfBandRecord.reusable) {
-        await this.outOfBandService.updateState(outOfBandRecord, OutOfBandState.Done)
+        await this.outOfBandService.updateState(messageContext.agentContext, outOfBandRecord, OutOfBandState.Done)
       }
       return createOutboundMessage(connection, message)
     }

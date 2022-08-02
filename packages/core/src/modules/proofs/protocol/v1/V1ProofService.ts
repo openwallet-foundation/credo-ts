@@ -1,12 +1,17 @@
+import type { AgentContext } from '../../../../agent'
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { Dispatcher } from '../../../../agent/Dispatcher'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { IndyProposeProofFormat } from '../../formats/IndyProofFormatsServiceOptions'
+import type { ProofFormatService } from '../../formats/ProofFormatService'
+import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
 import type { ProofAttributeInfo } from '../../formats/indy/models'
-import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
+import type {
+  CreateProblemReportOptions,
+  FormatCreatePresentationOptions,
+} from '../../formats/models/ProofFormatServiceOptions'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -81,9 +86,9 @@ import { PresentationPreview } from './models/V1PresentationPreview'
 export class V1ProofService extends ProofService {
   private credentialRepository: CredentialRepository
   private ledgerService: IndyLedgerService
-  private indyProofFormatService: IndyProofFormatService
   private indyHolderService: IndyHolderService
   private indyRevocationService: IndyRevocationService
+  private indyProofFormatService: ProofFormatService
 
   public constructor(
     proofRepository: ProofRepository,
@@ -94,7 +99,7 @@ export class V1ProofService extends ProofService {
     connectionService: ConnectionService,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
-    indyProofFormatService: IndyProofFormatService,
+    formatService: IndyProofFormatService,
     indyHolderService: IndyHolderService,
     indyRevocationService: IndyRevocationService
   ) {
@@ -102,17 +107,26 @@ export class V1ProofService extends ProofService {
     this.credentialRepository = credentialRepository
     this.ledgerService = ledgerService
     this.wallet = wallet
-    this.indyProofFormatService = indyProofFormatService
+    this.indyProofFormatService = formatService
     this.indyHolderService = indyHolderService
     this.indyRevocationService = indyRevocationService
   }
 
-  public getVersion(): ProofProtocolVersion {
-    return ProofProtocolVersion.V1
+  public readonly version = 'v1' as const
+
+  public getFormatServiceForRecordType(proofRecordType: string) {
+    if (proofRecordType !== this.indyProofFormatService.proofRecordType) {
+      throw new AriesFrameworkError(
+        `Unsupported proof record type ${proofRecordType} for v1 issue proof protocol (need ${this.indyProofFormatService.proofRecordType})`
+      )
+    }
+
+    return this.indyProofFormatService
   }
 
   public async createProposal(
-    options: CreateProposalOptions
+    agentContext: AgentContext,
+    options: CreateProposalOptions<[IndyProofFormat]>
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const { connectionRecord, proofFormats } = options
 
@@ -143,20 +157,21 @@ export class V1ProofService extends ProofService {
       protocolVersion: ProofProtocolVersion.V1,
     })
 
-    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: proposalMessage,
       associatedRecordId: proofRecord.id,
       role: DidCommMessageRole.Sender,
     })
 
-    await this.proofRepository.save(proofRecord)
-    this.emitStateChangedEvent(proofRecord, null)
+    await this.proofRepository.save(agentContext, proofRecord)
+    this.emitStateChangedEvent(agentContext, proofRecord, null)
 
     return { proofRecord, message: proposalMessage }
   }
 
   public async createProposalAsResponse(
-    options: CreateProposalAsResponseOptions
+    agentContext: AgentContext,
+    options: CreateProposalAsResponseOptions<[IndyProofFormat]>
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const { proofRecord, proofFormats, comment } = options
 
@@ -180,19 +195,20 @@ export class V1ProofService extends ProofService {
 
     proposalMessage.setThread({ threadId: proofRecord.threadId })
 
-    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: proposalMessage,
       associatedRecordId: proofRecord.id,
       role: DidCommMessageRole.Sender,
     })
 
     // Update record
-    await this.updateState(proofRecord, ProofState.ProposalSent)
+    await this.updateState(agentContext, proofRecord, ProofState.ProposalSent)
 
     return { proofRecord, message: proposalMessage }
   }
 
   public async processProposal(
+    agentContext: AgentContext,
     messageContext: InboundMessageContext<V1ProposePresentationMessage>
   ): Promise<ProofRecord> {
     let proofRecord: ProofRecord
@@ -202,9 +218,9 @@ export class V1ProofService extends ProofService {
 
     try {
       // Proof record already exists
-      proofRecord = await this.getByThreadAndConnectionId(proposalMessage.threadId, connection?.id)
+      proofRecord = await this.getByThreadAndConnectionId(agentContext, proposalMessage.threadId, connection?.id)
 
-      const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      const requestMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
         associatedRecordId: proofRecord.id,
         messageClass: V1RequestPresentationMessage,
       })
@@ -216,14 +232,14 @@ export class V1ProofService extends ProofService {
         previousSentMessage: requestMessage ?? undefined,
       })
 
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
         agentMessage: proposalMessage,
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Receiver,
       })
 
       // Update record
-      await this.updateState(proofRecord, ProofState.ProposalReceived)
+      await this.updateState(agentContext, proofRecord, ProofState.ProposalReceived)
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
@@ -237,21 +253,22 @@ export class V1ProofService extends ProofService {
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save record
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
         agentMessage: proposalMessage,
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Sender,
       })
 
-      await this.proofRepository.save(proofRecord)
-      this.emitStateChangedEvent(proofRecord, null)
+      await this.proofRepository.save(agentContext, proofRecord)
+      this.emitStateChangedEvent(agentContext, proofRecord, null)
     }
 
     return proofRecord
   }
 
   public async createRequestAsResponse(
-    options: CreateRequestAsResponseOptions
+    agentContext: AgentContext,
+    options: CreateRequestAsResponseOptions<[IndyProofFormat]>
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const { proofRecord, comment } = options
 
@@ -276,20 +293,21 @@ export class V1ProofService extends ProofService {
       threadId: proofRecord.threadId,
     })
 
-    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: requestPresentationMessage,
       associatedRecordId: proofRecord.id,
       role: DidCommMessageRole.Sender,
     })
 
     // Update record
-    await this.updateState(proofRecord, ProofState.RequestSent)
+    await this.updateState(agentContext, proofRecord, ProofState.RequestSent)
 
     return { message: requestPresentationMessage, proofRecord }
   }
 
   public async createRequest(
-    options: CreateRequestOptions
+    agentContext: AgentContext,
+    options: CreateRequestOptions<[IndyProofFormat]>
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     this.logger.debug(`Creating proof request`)
 
@@ -322,19 +340,20 @@ export class V1ProofService extends ProofService {
       protocolVersion: ProofProtocolVersion.V1,
     })
 
-    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: requestPresentationMessage,
       associatedRecordId: proofRecord.id,
       role: DidCommMessageRole.Sender,
     })
 
-    await this.proofRepository.save(proofRecord)
-    this.emitStateChangedEvent(proofRecord, null)
+    await this.proofRepository.save(agentContext, proofRecord)
+    this.emitStateChangedEvent(agentContext, proofRecord, null)
 
     return { message: requestPresentationMessage, proofRecord }
   }
 
   public async processRequest(
+    agentContext: AgentContext,
     messageContext: InboundMessageContext<V1RequestPresentationMessage>
   ): Promise<ProofRecord> {
     let proofRecord: ProofRecord
@@ -368,14 +387,14 @@ export class V1ProofService extends ProofService {
 
     try {
       // Proof record already exists
-      proofRecord = await this.getByThreadAndConnectionId(proofRequestMessage.threadId, connection?.id)
+      proofRecord = await this.getByThreadAndConnectionId(agentContext, proofRequestMessage.threadId, connection?.id)
 
-      const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+      const requestMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
         associatedRecordId: proofRecord.id,
         messageClass: V1RequestPresentationMessage,
       })
 
-      const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+      const proposalMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
         associatedRecordId: proofRecord.id,
         messageClass: V1ProposePresentationMessage,
       })
@@ -387,14 +406,14 @@ export class V1ProofService extends ProofService {
         previousSentMessage: proposalMessage ?? undefined,
       })
 
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
         agentMessage: proofRequestMessage,
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Receiver,
       })
 
       // Update record
-      await this.updateState(proofRecord, ProofState.RequestReceived)
+      await this.updateState(agentContext, proofRecord, ProofState.RequestReceived)
     } catch {
       // No proof record exists with thread id
       proofRecord = new ProofRecord({
@@ -404,7 +423,7 @@ export class V1ProofService extends ProofService {
         protocolVersion: ProofProtocolVersion.V1,
       })
 
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
         agentMessage: proofRequestMessage,
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Receiver,
@@ -414,15 +433,16 @@ export class V1ProofService extends ProofService {
       this.connectionService.assertConnectionOrServiceDecorator(messageContext)
 
       // Save in repository
-      await this.proofRepository.save(proofRecord)
-      this.emitStateChangedEvent(proofRecord, null)
+      await this.proofRepository.save(agentContext, proofRecord)
+      this.emitStateChangedEvent(agentContext, proofRecord, null)
     }
 
     return proofRecord
   }
 
   public async createPresentation(
-    options: CreatePresentationOptions
+    agentContext: AgentContext,
+    options: CreatePresentationOptions<[IndyProofFormat]>
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const { proofRecord, proofFormats } = options
 
@@ -435,7 +455,7 @@ export class V1ProofService extends ProofService {
     // Assert
     proofRecord.assertState(ProofState.RequestReceived)
 
-    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1RequestPresentationMessage,
     })
@@ -449,11 +469,13 @@ export class V1ProofService extends ProofService {
       )
     }
 
-    const proof = await this.indyProofFormatService.createPresentation({
+    const presentationOptions: FormatCreatePresentationOptions<IndyProofFormat> = {
       id: INDY_PROOF_ATTACHMENT_ID,
       attachment: requestAttachment,
-      formats: proofFormats,
-    })
+      proofFormats: proofFormats,
+    }
+
+    const proof = await this.indyProofFormatService.createPresentation(agentContext, presentationOptions)
 
     // Extract proof request from attachment
     const proofRequestJson = requestAttachment.getDataAsJson<ProofRequest>() ?? null
@@ -467,6 +489,7 @@ export class V1ProofService extends ProofService {
 
     // Get the matching attachments to the requested credentials
     const linkedAttachments = await this.getRequestedAttachmentsForRequestedCredentials(
+      agentContext,
       proofRequest,
       requestedCredentials
     )
@@ -478,14 +501,14 @@ export class V1ProofService extends ProofService {
     })
     presentationMessage.setThread({ threadId: proofRecord.threadId })
 
-    await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+    await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: presentationMessage,
       associatedRecordId: proofRecord.id,
       role: DidCommMessageRole.Sender,
     })
 
     // Update record
-    await this.updateState(proofRecord, ProofState.PresentationSent)
+    await this.updateState(agentContext, proofRecord, ProofState.PresentationSent)
 
     return { message: presentationMessage, proofRecord }
   }
@@ -495,14 +518,18 @@ export class V1ProofService extends ProofService {
 
     this.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
 
-    const proofRecord = await this.getByThreadAndConnectionId(presentationMessage.threadId, connection?.id)
+    const proofRecord = await this.getByThreadAndConnectionId(
+      messageContext.agentContext,
+      presentationMessage.threadId,
+      connection?.id
+    )
 
-    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1ProposePresentationMessage,
     })
 
-    const requestMessage = await this.didCommMessageRepository.getAgentMessage({
+    const requestMessage = await this.didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1RequestPresentationMessage,
     })
@@ -515,14 +542,14 @@ export class V1ProofService extends ProofService {
     })
 
     try {
-      const isValid = await this.indyProofFormatService.processPresentation({
+      const isValid = await this.indyProofFormatService.processPresentation(messageContext.agentContext, {
         record: proofRecord,
         formatAttachments: {
           presentation: presentationMessage.getAttachmentFormats(),
           request: requestMessage.getAttachmentFormats(),
         },
       })
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: presentationMessage,
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Receiver,
@@ -530,7 +557,7 @@ export class V1ProofService extends ProofService {
 
       // Update record
       proofRecord.isVerified = isValid
-      await this.updateState(proofRecord, ProofState.PresentationReceived)
+      await this.updateState(messageContext.agentContext, proofRecord, ProofState.PresentationReceived)
     } catch (e) {
       if (e instanceof AriesFrameworkError) {
         throw new V1PresentationProblemReportError(e.message, {
@@ -543,19 +570,26 @@ export class V1ProofService extends ProofService {
     return proofRecord
   }
 
-  public async processAck(messageContext: InboundMessageContext<V1PresentationAckMessage>): Promise<ProofRecord> {
+  public async processAck(
+    agentContext: AgentContext,
+    messageContext: InboundMessageContext<V1PresentationAckMessage>
+  ): Promise<ProofRecord> {
     const { message: presentationAckMessage, connection } = messageContext
 
     this.logger.debug(`Processing presentation ack with id ${presentationAckMessage.id}`)
 
-    const proofRecord = await this.getByThreadAndConnectionId(presentationAckMessage.threadId, connection?.id)
+    const proofRecord = await this.getByThreadAndConnectionId(
+      agentContext,
+      presentationAckMessage.threadId,
+      connection?.id
+    )
 
-    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1RequestPresentationMessage,
     })
 
-    const presentationMessage = await this.didCommMessageRepository.findAgentMessage({
+    const presentationMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1PresentationMessage,
     })
@@ -568,12 +602,13 @@ export class V1ProofService extends ProofService {
     })
 
     // Update record
-    await this.updateState(proofRecord, ProofState.Done)
+    await this.updateState(agentContext, proofRecord, ProofState.Done)
 
     return proofRecord
   }
 
   public async createProblemReport(
+    agentContext: AgentContext,
     options: CreateProblemReportOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const msg = new V1PresentationProblemReportMessage({
@@ -594,6 +629,7 @@ export class V1ProofService extends ProofService {
   }
 
   public async processProblemReport(
+    agentContext: AgentContext,
     messageContext: InboundMessageContext<V1PresentationProblemReportMessage>
   ): Promise<ProofRecord> {
     const { message: presentationProblemReportMessage } = messageContext
@@ -602,10 +638,14 @@ export class V1ProofService extends ProofService {
 
     this.logger.debug(`Processing problem report with id ${presentationProblemReportMessage.id}`)
 
-    const proofRecord = await this.getByThreadAndConnectionId(presentationProblemReportMessage.threadId, connection?.id)
+    const proofRecord = await this.getByThreadAndConnectionId(
+      agentContext,
+      presentationProblemReportMessage.threadId,
+      connection?.id
+    )
 
     proofRecord.errorMessage = `${presentationProblemReportMessage.description.code}: ${presentationProblemReportMessage.description.en}`
-    await this.updateState(proofRecord, ProofState.Abandoned)
+    await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
     return proofRecord
   }
 
@@ -613,9 +653,12 @@ export class V1ProofService extends ProofService {
     return this.wallet.generateNonce()
   }
 
-  public async createProofRequestFromProposal(options: ProofRequestFromProposalOptions): Promise<ProofRequestFormats> {
+  public async createProofRequestFromProposal(
+    agentContext: AgentContext,
+    options: ProofRequestFromProposalOptions
+  ): Promise<ProofRequestFormats> {
     const proofRecordId = options.proofRecord.id
-    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecordId,
       messageClass: V1ProposePresentationMessage,
     })
@@ -647,6 +690,7 @@ export class V1ProofService extends ProofService {
    * @returns a list of attachments that are linked to the requested credentials
    */
   public async getRequestedAttachmentsForRequestedCredentials(
+    agentContext: AgentContext,
     indyProofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
   ): Promise<Attachment[] | undefined> {
@@ -664,7 +708,10 @@ export class V1ProofService extends ProofService {
 
       //Get credentialInfo
       if (!requestedAttribute.credentialInfo) {
-        const indyCredentialInfo = await this.indyHolderService.getCredential(requestedAttribute.credentialId)
+        const indyCredentialInfo = await this.indyHolderService.getCredential(
+          agentContext,
+          requestedAttribute.credentialId
+        )
         requestedAttribute.credentialInfo = JsonTransformer.fromJSON(indyCredentialInfo, IndyCredentialInfo)
       }
 
@@ -680,7 +727,9 @@ export class V1ProofService extends ProofService {
     for (const credentialId of credentialIds) {
       // Get the credentialRecord that matches the ID
 
-      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialIds: [credentialId] })
+      const credentialRecord = await this.credentialRepository.getSingleByQuery(agentContext, {
+        credentialIds: [credentialId],
+      })
 
       if (credentialRecord.linkedAttachments) {
         // Get the credentials that have a hashlink as value and are requested
@@ -703,8 +752,8 @@ export class V1ProofService extends ProofService {
     return attachments.length ? attachments : undefined
   }
 
-  public async shouldAutoRespondToProposal(proofRecord: ProofRecord): Promise<boolean> {
-    const proposal = await this.didCommMessageRepository.findAgentMessage({
+  public async shouldAutoRespondToProposal(agentContext: AgentContext, proofRecord: ProofRecord): Promise<boolean> {
+    const proposal = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1ProposePresentationMessage,
     })
@@ -712,10 +761,10 @@ export class V1ProofService extends ProofService {
     if (!proposal) {
       return false
     }
-    await MessageValidator.validate(proposal)
+    await MessageValidator.validateSync(proposal)
 
     // check the proposal against a possible previous request
-    const request = await this.didCommMessageRepository.findAgentMessage({
+    const request = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1RequestPresentationMessage,
     })
@@ -775,8 +824,8 @@ export class V1ProofService extends ProofService {
     return true
   }
 
-  public async shouldAutoRespondToRequest(proofRecord: ProofRecord): Promise<boolean> {
-    const proposal = await this.didCommMessageRepository.findAgentMessage({
+  public async shouldAutoRespondToRequest(agentContext: AgentContext, proofRecord: ProofRecord): Promise<boolean> {
+    const proposal = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1ProposePresentationMessage,
     })
@@ -785,7 +834,7 @@ export class V1ProofService extends ProofService {
       return false
     }
 
-    const request = await this.didCommMessageRepository.findAgentMessage({
+    const request = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1RequestPresentationMessage,
     })
@@ -847,20 +896,21 @@ export class V1ProofService extends ProofService {
     return true
   }
 
-  public async shouldAutoRespondToPresentation(proofRecord: ProofRecord): Promise<boolean> {
+  public async shouldAutoRespondToPresentation(agentContext: AgentContext, proofRecord: ProofRecord): Promise<boolean> {
     this.logger.debug(`Should auto respond to presentation for proof record id: ${proofRecord.id}`)
     return true
   }
 
   public async getRequestedCredentialsForProofRequest(
+    agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
   ): Promise<RetrievedCredentialOptions> {
-    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
       messageClass: V1RequestPresentationMessage,
     })
 
-    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
       messageClass: V1ProposePresentationMessage,
     })
@@ -871,7 +921,7 @@ export class V1ProofService extends ProofService {
       throw new AriesFrameworkError('Could not find proof request')
     }
 
-    return await this.indyProofFormatService.getRequestedCredentialsForProofRequest({
+    return await this.indyProofFormatService.getRequestedCredentialsForProofRequest(agentContext, {
       attachment: indyProofRequest[0],
       presentationProposal: proposalMessage?.presentationProposal,
       config: options.config ?? undefined,
@@ -879,6 +929,7 @@ export class V1ProofService extends ProofService {
   }
 
   public async autoSelectCredentialsForProofRequest(
+    agentContext: AgentContext,
     options: RetrievedCredentialOptions
   ): Promise<RequestedCredentialsFormats> {
     return await this.indyProofFormatService.autoSelectCredentialsForProofRequest(options)
@@ -911,21 +962,30 @@ export class V1ProofService extends ProofService {
     dispatcher.registerHandler(new V1PresentationProblemReportHandler(this))
   }
 
-  public async findRequestMessage(proofRecordId: string): Promise<V1RequestPresentationMessage | null> {
-    return await this.didCommMessageRepository.findAgentMessage({
+  public async findRequestMessage(
+    agentContext: AgentContext,
+    proofRecordId: string
+  ): Promise<V1RequestPresentationMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecordId,
       messageClass: V1RequestPresentationMessage,
     })
   }
-  public async findPresentationMessage(proofRecordId: string): Promise<V1PresentationMessage | null> {
-    return await this.didCommMessageRepository.findAgentMessage({
+  public async findPresentationMessage(
+    agentContext: AgentContext,
+    proofRecordId: string
+  ): Promise<V1PresentationMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecordId,
       messageClass: V1PresentationMessage,
     })
   }
 
-  public async findProposalMessage(proofRecordId: string): Promise<V1ProposePresentationMessage | null> {
-    return await this.didCommMessageRepository.findAgentMessage({
+  public async findProposalMessage(
+    agentContext: AgentContext,
+    proofRecordId: string
+  ): Promise<V1ProposePresentationMessage | null> {
+    return await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecordId,
       messageClass: V1ProposePresentationMessage,
     })
@@ -936,41 +996,8 @@ export class V1ProofService extends ProofService {
    *
    * @returns List containing all proof records
    */
-  public async getAll(): Promise<ProofRecord[]> {
-    return this.proofRepository.getAll()
-  }
-
-  /**
-   * Retrieve a proof record by id
-   *
-   * @param proofRecordId The proof record id
-   * @throws {RecordNotFoundError} If no record is found
-   * @return The proof record
-   *
-   */
-  public async getById(proofRecordId: string): Promise<ProofRecord> {
-    return this.proofRepository.getById(proofRecordId)
-  }
-
-  /**
-   * Retrieve a proof record by id
-   *
-   * @param proofRecordId The proof record id
-   * @return The proof record or null if not found
-   *
-   */
-  public async findById(proofRecordId: string): Promise<ProofRecord | null> {
-    return this.proofRepository.findById(proofRecordId)
-  }
-
-  /**
-   * Delete a proof record by id
-   *
-   * @param proofId the proof record id
-   */
-  public async deleteById(proofId: string) {
-    const proofRecord = await this.getById(proofId)
-    return this.proofRepository.delete(proofRecord)
+  public async getAll(agentContext: AgentContext): Promise<ProofRecord[]> {
+    return this.proofRepository.getAll(agentContext)
   }
 
   /**
@@ -982,15 +1009,18 @@ export class V1ProofService extends ProofService {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
-  public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<ProofRecord> {
-    return this.proofRepository.getSingleByQuery({ threadId, connectionId })
+  public async getByThreadAndConnectionId(
+    agentContext: AgentContext,
+    threadId: string,
+    connectionId?: string
+  ): Promise<ProofRecord> {
+    return this.proofRepository.getSingleByQuery(agentContext, { threadId, connectionId })
   }
 
-  public update(proofRecord: ProofRecord) {
-    return this.proofRepository.update(proofRecord)
-  }
-
-  public async createAck(options: CreateAckOptions): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+  public async createAck(
+    gentContext: AgentContext,
+    options: CreateAckOptions
+  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const { proofRecord } = options
     this.logger.debug(`Creating presentation ack for proof record with id ${proofRecord.id}`)
 
@@ -1004,7 +1034,7 @@ export class V1ProofService extends ProofService {
     })
 
     // Update record
-    await this.updateState(proofRecord, ProofState.Done)
+    await this.updateState(gentContext, proofRecord, ProofState.Done)
 
     return { message: ackMessage, proofRecord }
   }

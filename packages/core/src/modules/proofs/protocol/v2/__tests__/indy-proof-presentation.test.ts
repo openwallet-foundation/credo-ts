@@ -12,10 +12,10 @@ import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/hel
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import {
-  V2_INDY_PRESENTATION,
   V2_INDY_PRESENTATION_PROPOSAL,
   V2_INDY_PRESENTATION_REQUEST,
-} from '../../../formats/ProofFormats'
+  V2_INDY_PRESENTATION,
+} from '../../../formats/ProofFormatConstants'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'

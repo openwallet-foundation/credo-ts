@@ -1,3 +1,6 @@
+import { ProofFormat, ProofFormatPayload } from '../formats/ProofFormat'
+import { ProtocolVersionType } from '../ProofsApiOptions'
+import { ProofService } from '../ProofService'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ProofProtocolVersion } from './ProofProtocolVersion'
@@ -8,15 +11,6 @@ export interface ProofConfig {
   version: string
 }
 
-export interface ProposeProofOptions {
-  connectionId: string
-  protocolVersion: ProofProtocolVersion
-  proofFormats: ProposeProofFormats
-  comment?: string
-  goalCode?: string
-  autoAcceptProof?: AutoAcceptProof
-}
-
 export interface NegotiateRequestOptions {
   proofRecordId: string
   proofFormats: ProposeProofFormats
@@ -24,28 +18,6 @@ export interface NegotiateRequestOptions {
   autoAcceptProof?: AutoAcceptProof
 }
 
-export interface AcceptProposalOptions {
-  proofRecordId: string
-  config?: ProofConfig
-  goalCode?: string
-  willConfirm?: boolean
-  comment?: string
-}
-
-export interface RequestProofOptions {
-  protocolVersion: ProofProtocolVersion
-  connectionId: string
-  proofFormats: RequestProofFormats
-  comment?: string
-  autoAcceptProof?: AutoAcceptProof
-}
-
-export interface OutOfBandRequestOptions {
-  protocolVersion: ProofProtocolVersion
-  proofFormats: RequestProofFormats
-  comment?: string
-  autoAcceptProof?: AutoAcceptProof
-}
 
 export interface AcceptPresentationOptions {
   proofRecordId: string
