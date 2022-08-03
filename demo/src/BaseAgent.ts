@@ -13,8 +13,9 @@ import {
   HttpOutboundTransport,
   MediatorPickupStrategy,
   Transports,
+  WsOutboundTransport,
 } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { agentDependencies, WsInboundTransport } from '@aries-framework/node'
 
 import { greenText } from './OutputClass'
 import { FileInboundTransport } from './transports/FileInboundTransport'
@@ -27,8 +28,7 @@ const bcovrin = `{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blsk
 
 export class BaseAgent {
   public static defaultMediatorConnectionInvite =
-    'http://localhost:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6IjMyNGJiODQzLWFlOTYtNDBlOC04OTIzLWZiZDkwOGE3YTIwNCIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTcUpmbjdmeW15TE5SM0Fxc1VXbzEzZTMxc3JRcGFMOUYxb2NVbk5hc1VwOVYuVno2TWtwQnRSUGt1M0dVbUtqeU5DV2YyQnR4U0JoTmlGTWtTeGtBSlpzNnlXY24yeS5TZXlKeklqb2lhSFIwY0RvdkwyeHZZMkZzYUc5emREb3pNREF3TDJGd2FTOTJNU0lzSW5RaU9pSmtiU0lzSW5JaU9sdGRMQ0poSWpwYkltUnBaR052YlcwdmRqSWlYWDAiLCJib2R5Ijp7ImdvYWxfY29kZSI6Im1lZGlhdG9yLXByb3Zpc2lvbiJ9LCJ0eXBlIjoiaHR0cHM6Ly9kaWRjb21tLm9yZy9vdXQtb2YtYmFuZC8yLjAvaW52aXRhdGlvbiJ9'
-
+    'http://localhost:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6Ijg0NmI0OGYxLTZkZDItNDM3NS04MTI3LTY0OTEyZTM0MDNjMyIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTbkhTOWYzaHJNdUxyTjl6NlpobzdUY0JSdlN5SzdIUGpRdHdLbXUzb3NXd0YuVno2TWtyYWhBb1ZMUVM5UzVHRjVzVUt0dWRYTWVkVVNaZGRlSmhqSHRBRmFWNGhvVi5TVzNzaWN5STZJbWgwZEhBNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYU3dpWVNJNld5SmthV1JqYjIxdEwzWXlJbDE5TEhzaWN5STZJbmR6T2k4dmJHOWpZV3hvYjNOME9qTXdNREF2WVhCcEwzWXhJaXdpZENJNkltUnRJaXdpY2lJNlcxMHNJbUVpT2xzaVpHbGtZMjl0YlM5Mk1pSmRmVjAiLCJib2R5Ijp7ImdvYWxfY29kZSI6Im1lZGlhdG9yLXByb3Zpc2lvbiJ9LCJ0eXBlIjoiaHR0cHM6Ly9kaWRjb21tLm9yZy9vdXQtb2YtYmFuZC8yLjAvaW52aXRhdGlvbiIsImFsZyI6IkhTMjU2In0='
   public port?: number
   public name: string
   public config: InitConfig
@@ -68,7 +68,7 @@ export class BaseAgent {
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      mediatorPickupStrategy: MediatorPickupStrategy.Explicit,
+      mediatorPickupStrategy: MediatorPickupStrategy.Implicit,
       mediatorPollingInterval: 1000,
       valueTransferConfig: props.valueTransferConfig,
       transports: props.transports,
@@ -83,6 +83,14 @@ export class BaseAgent {
 
     if (transports.includes(Transports.HTTP) || transports.includes(Transports.HTTPS)) {
       this.outBoundTransport = new HttpOutboundTransport()
+      this.agent.registerOutboundTransport(this.outBoundTransport)
+    }
+
+    if (transports.includes(Transports.WS) || transports.includes(Transports.WSS)) {
+      this.inBoundTransport = new WsInboundTransport({ port: 80 })
+      this.outBoundTransport = new WsOutboundTransport()
+
+      this.agent.registerInboundTransport(this.inBoundTransport)
       this.agent.registerOutboundTransport(this.outBoundTransport)
     }
 

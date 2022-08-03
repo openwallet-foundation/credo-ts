@@ -1,3 +1,4 @@
+import type { DIDCommMessage } from '../../../agent/didcomm'
 import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
@@ -737,7 +738,7 @@ export interface Routing {
   mediatorId?: string
 }
 
-export interface ConnectionProtocolMsgReturnType<MessageType extends DIDCommV1Message> {
+export interface ConnectionProtocolMsgReturnType<MessageType extends DIDCommMessage> {
   message: MessageType
   connectionRecord: ConnectionRecord
 }

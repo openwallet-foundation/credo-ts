@@ -9,7 +9,6 @@ import { AgentConfig } from '../agent/AgentConfig'
 import { EventEmitter } from '../agent/EventEmitter'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
-import { Buffer } from '../utils/buffer'
 
 import { TransportEventTypes } from './TransportEventTypes'
 
@@ -40,7 +39,7 @@ export class WsOutboundTransport implements OutboundTransport {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { payload, endpoint, connectionId } = outboundPackage
+    const { payload, responseRequested, recipientDid, endpoint, connectionId } = outboundPackage
     this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over WebSocket transport.`, {
       payload,
     })
@@ -50,13 +49,13 @@ export class WsOutboundTransport implements OutboundTransport {
     }
 
     const isNewSocket = this.hasOpenSocket(endpoint)
-    const socket = await this.resolveSocket({ socketId: endpoint, endpoint, connectionId })
+    const socket = await this.resolveSocket({ socketId: endpoint, recipientDid, endpoint, connectionId })
 
-    socket.send(Buffer.from(JSON.stringify(payload)))
+    socket.send(JSON.stringify({ event: 'message', data: payload }))
 
     // If the socket was created for this message and we don't have return routing enabled
     // We can close the socket as it shouldn't return messages anymore
-    if (isNewSocket && !outboundPackage.responseRequested) {
+    if (isNewSocket && !responseRequested) {
       socket.close()
     }
   }
@@ -68,10 +67,12 @@ export class WsOutboundTransport implements OutboundTransport {
   private async resolveSocket({
     socketId,
     endpoint,
+    recipientDid,
     connectionId,
   }: {
     socketId: string
     endpoint?: string
+    recipientDid?: string
     connectionId?: string
   }) {
     // If we already have a socket connection use it
@@ -84,6 +85,7 @@ export class WsOutboundTransport implements OutboundTransport {
       socket = await this.createSocketConnection({
         endpoint,
         socketId,
+        recipientDid,
         connectionId,
       })
       this.transportTable.set(socketId, socket)
@@ -119,15 +121,17 @@ export class WsOutboundTransport implements OutboundTransport {
   private createSocketConnection({
     socketId,
     endpoint,
+    recipientDid,
     connectionId,
   }: {
     socketId: string
     endpoint: string
+    recipientDid?: string
     connectionId?: string
   }): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
-      const socket = new this.WebSocketClass(endpoint)
+      const socket = new this.WebSocketClass(endpoint, { headers: { 'recipient-did': recipientDid } })
 
       socket.onopen = () => {
         this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)
@@ -150,6 +154,7 @@ export class WsOutboundTransport implements OutboundTransport {
           type: TransportEventTypes.OutboundWebSocketClosedEvent,
           payload: {
             socketId,
+            did: recipientDid,
             connectionId: connectionId,
           },
         })

@@ -210,7 +210,7 @@ export class MessageSender {
     // Retrieve DIDComm services
     const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
 
-    // Loop trough all available services and try to send the message
+    // Loop through all available services and try to send the message
     for await (const service of services) {
       try {
         // Enable return routing if the
@@ -274,7 +274,7 @@ export class MessageSender {
 
     for await (const service of services) {
       this.logger.debug(`Sending outbound message to service:`, { service })
-      const outboundPackage = { payload: outboundMessage, endpoint: service.serviceEndpoint }
+      const outboundPackage = { payload: outboundMessage, recipientDid: toDID, endpoint: service.serviceEndpoint }
       await this.sendMessage(outboundPackage, service.protocolScheme)
     }
   }
@@ -360,7 +360,7 @@ export class MessageSender {
       serviceId: service?.id,
     }
     const payload = await this.envelopeService.packMessageEncrypted(message, params)
-    const outboundPackage = { payload, endpoint: service.serviceEndpoint }
+    const outboundPackage = { payload, recipientDid: toDID, endpoint: service.serviceEndpoint }
     await this.sendMessage(outboundPackage, service.protocolScheme)
   }
 

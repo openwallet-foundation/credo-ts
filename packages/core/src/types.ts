@@ -137,6 +137,7 @@ export interface OutboundServiceMessage<T extends DIDCommMessage = DIDCommMessag
 
 export interface OutboundPackage {
   payload: EncryptedMessage | PlaintextMessage
+  recipientDid?: string
   responseRequested?: boolean
   endpoint?: string
   connectionId?: string

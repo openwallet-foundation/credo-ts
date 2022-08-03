@@ -23,6 +23,7 @@ import { DidService } from '../dids'
 import { DiscloseMessage, DiscloseMessageV2, DiscoverFeaturesModule } from '../discover-features'
 import { OutOfBandGoalCode, OutOfBandInvitationMessage } from '../out-of-band'
 
+import { TrustPingMessageV2 } from './../connections/messages'
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RoutingEventTypes } from './RoutingEvents'
 import { DidListUpdateResponseHandler } from './handlers/DidListUpdateResponseHandler'
@@ -32,6 +33,7 @@ import { BatchPickupMessageV2 } from './messages/BatchPickupMessage'
 import { MediationState } from './models/MediationState'
 import { MediationRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
+import { Transports } from './types'
 
 @scoped(Lifecycle.ContainerScoped)
 export class RecipientModule {
@@ -93,31 +95,23 @@ export class RecipientModule {
   }
 
   private async openMediationWebSocket(mediator: MediationRecord) {
-    const { message, connectionRecord } = await this.connectionService.createTrustPing(mediator.did, {
-      responseRequested: false,
+    const message = new TrustPingMessageV2({
+      from: mediator.did,
+      to: mediator.mediatorDid,
+      body: { responseRequested: false },
     })
 
-    const websocketSchemes = ['ws', 'wss']
-    const hasWebSocketTransport = connectionRecord.theirDidDoc?.didCommServices?.some((s) =>
-      websocketSchemes.includes(s.protocolScheme)
-    )
-
-    if (!hasWebSocketTransport) {
-      throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
-    }
+    // const websocketSchemes = ['ws', 'wss']
+    // const hasWebSocketTransport = connectionRecord.theirDidDoc?.didCommServices?.some((s) =>
+    //   websocketSchemes.includes(s.protocolScheme)
+    // )
+    //
+    // if (!hasWebSocketTransport) {
+    //   throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
+    // }
 
     try {
-      await this.messageSender.sendDIDCommV1Message(createOutboundMessage(connectionRecord, message), {
-        transportPriority: {
-          schemes: websocketSchemes,
-          restrictive: true,
-          // TODO: add keepAlive: true to enforce through the public api
-          // we need to keep the socket alive. It already works this way, but would
-          // be good to make more explicit from the public facing API.
-          // This would also make it easier to change the internal API later on.
-          // keepAlive: true,
-        },
-      })
+      await this.messageSender.sendDIDCommV2Message(createOutboundDIDCommV2Message(message), undefined, Transports.WS)
     } catch (error) {
       this.logger.warn('Unable to open websocket connection to mediator', { error })
     }
@@ -135,7 +129,7 @@ export class RecipientModule {
       .pipe(
         // Stop when the agent shuts down
         takeUntil(this.agentConfig.stop$),
-        filter((e) => e.payload.did === mediator.did),
+        filter((e) => e.payload.did === mediator.mediatorDid),
         // Make sure we're not reconnecting multiple times
         throttleTime(interval),
         // Increase the interval (recursive back-off)
