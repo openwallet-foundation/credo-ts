@@ -372,7 +372,11 @@ export class ValueTransferService {
     if (state) return state
 
     state = new ValueTransferStateRecord({
-      partyState: new PartyState(new Uint8Array(), new Wallet()),
+      partyState: new PartyState({
+        previousHash: new Uint8Array(),
+        wallet: new Wallet(),
+        ownershipKey: await this.valueTransferCryptoService.createKey(),
+      }),
     })
     await this.valueTransferStateRepository.save(state)
     return state
