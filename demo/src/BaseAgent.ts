@@ -15,7 +15,7 @@ import {
   Transports,
   WsOutboundTransport,
 } from '@aries-framework/core'
-import { agentDependencies, WsInboundTransport } from '@aries-framework/node'
+import { agentDependencies } from '@aries-framework/node'
 
 import { greenText } from './OutputClass'
 import { FileInboundTransport } from './transports/FileInboundTransport'
@@ -69,7 +69,7 @@ export class BaseAgent {
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
       mediatorPickupStrategy: MediatorPickupStrategy.Combined,
-      mediatorPollingInterval: 1000,
+      mediatorPollingInterval: 5000,
       valueTransferConfig: props.valueTransferConfig,
       transports: props.transports,
       mediatorConnectionsInvite: props.mediatorConnectionsInvite,

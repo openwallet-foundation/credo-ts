@@ -4,6 +4,7 @@ import type { OutboundWebSocketClosedEvent } from '../../transport'
 import type { OutboundDIDCommV2Message } from '../../types'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
+import type { Subscription } from 'rxjs'
 
 import { firstValueFrom, interval, of, ReplaySubject, timer } from 'rxjs'
 import { catchError, delayWhen, filter, first, map, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
@@ -145,35 +146,45 @@ export class RecipientModule {
     await this.openMediationWebSocket(mediator)
   }
 
-  public async initiateMessagePickup(mediator: MediationRecord) {
+  private async initiateExplicitPickup(mediator: MediationRecord): Promise<Subscription> {
     const { mediatorPollingInterval } = this.agentConfig
+    return interval(mediatorPollingInterval)
+      .pipe(takeUntil(this.agentConfig.stop$))
+      .subscribe(async () => {
+        await this.pickupMessages(mediator)
+      })
+  }
+
+  public async initiateMessagePickup(mediator: MediationRecord): Promise<Subscription | undefined> {
     // Discover if mediator can do push notification
     // const mediatorPickupStrategy = await this.getPickupStrategyForMediator(mediator)
     const mediatorPickupStrategy = this.agentConfig.mediatorPickupStrategy
+
+    if (!mediatorPickupStrategy) {
+      this.agentConfig.logger.info(
+        `Skipping pickup of messages from mediator '${mediator.id}' due to undefined pickup strategy`
+      )
+      return
+    }
+
     const useCombinedStrategy = mediatorPickupStrategy === MediatorPickupStrategy.Combined
+
+    let pickupSubscription: Subscription | undefined
 
     // Explicit means polling every X seconds with batch message
     if (useCombinedStrategy || mediatorPickupStrategy === MediatorPickupStrategy.Explicit) {
       this.agentConfig.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediator.id}'`)
-      const subscription = interval(mediatorPollingInterval)
-        .pipe(takeUntil(this.agentConfig.stop$))
-        .subscribe(async () => {
-          await this.pickupMessages(mediator)
-        })
-
-      return subscription
+      pickupSubscription = await this.initiateExplicitPickup(mediator)
     }
 
     // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
     // such as WebSockets to work
-    else if (useCombinedStrategy || mediatorPickupStrategy === MediatorPickupStrategy.Implicit) {
+    if (useCombinedStrategy || mediatorPickupStrategy === MediatorPickupStrategy.Implicit) {
       this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
       await this.initiateImplicitPickup(mediator)
-    } else {
-      this.agentConfig.logger.info(
-        `Skipping pickup of messages from mediator '${mediator.id}' due to pickup strategy none`
-      )
     }
+
+    return pickupSubscription
   }
 
   private async getPickupStrategyForMediator(mediator: MediationRecord) {
