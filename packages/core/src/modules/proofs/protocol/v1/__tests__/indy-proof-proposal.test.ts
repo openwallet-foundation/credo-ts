@@ -1,10 +1,11 @@
+import type { AgentContext } from '../../../../../agent'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { ProposeProofOptions } from '../../../models/ModuleOptions'
+import type { ProposeProofOptions } from '../../../ProofsApiOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { PresentationPreview } from '../models/V1PresentationPreview'
 
-import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
+import { getAgentContext, setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
@@ -18,6 +19,7 @@ describe('Present Proof', () => {
   let presentationPreview: PresentationPreview
   let faberProofRecord: ProofRecord
   let didCommMessageRepository: DidCommMessageRepository
+  let agentContext: AgentContext
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -25,6 +27,7 @@ describe('Present Proof', () => {
       'Faber agent',
       'Alice agent'
     ))
+    agentContext = getAgentContext()
   })
 
   afterAll(async () => {
@@ -64,7 +67,7 @@ describe('Present Proof', () => {
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
-    const proposal = await didCommMessageRepository.findAgentMessage({
+    const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberProofRecord.id,
       messageClass: V1ProposePresentationMessage,
     })

@@ -1,10 +1,6 @@
-import { ProofFormat, ProofFormatPayload } from '../formats/ProofFormat'
-import { ProtocolVersionType } from '../ProofsApiOptions'
-import { ProofService } from '../ProofService'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
-import type { ProofProtocolVersion } from './ProofProtocolVersion'
-import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
+import type { CreatePresentationFormats, ProposeProofFormats } from './SharedOptions'
 
 export interface ProofConfig {
   name: string
@@ -17,7 +13,6 @@ export interface NegotiateRequestOptions {
   comment?: string
   autoAcceptProof?: AutoAcceptProof
 }
-
 
 export interface AcceptPresentationOptions {
   proofRecordId: string

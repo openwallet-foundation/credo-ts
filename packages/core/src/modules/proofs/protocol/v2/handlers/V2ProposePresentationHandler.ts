@@ -2,7 +2,11 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofRequestFromProposalOptions } from '../../../models/ProofServiceOptions'
+import type { ProofFormat } from '../../../formats/ProofFormat'
+import type {
+  CreateProofRequestFromProposalOptions,
+  ProofRequestFromProposalOptions,
+} from '../../../models/ProofServiceOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V2ProofService } from '../V2ProofService'
 
@@ -10,7 +14,7 @@ import { createOutboundMessage } from '../../../../../agent/helpers'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
-export class V2ProposePresentationHandler implements Handler {
+export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofFormat[]> implements Handler {
   private proofService: V2ProofService
   private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
@@ -32,7 +36,7 @@ export class V2ProposePresentationHandler implements Handler {
   public async handle(messageContext: HandlerInboundMessage<V2ProposePresentationHandler>) {
     const proofRecord = await this.proofService.processProposal(messageContext)
 
-    if (this.proofResponseCoordinator.shouldAutoRespondToProposal(proofRecord)) {
+    if (this.proofResponseCoordinator.shouldAutoRespondToProposal(messageContext.agentContext, proofRecord)) {
       return this.createRequest(proofRecord, messageContext)
     }
   }
@@ -50,7 +54,7 @@ export class V2ProposePresentationHandler implements Handler {
       throw new AriesFrameworkError('No connection on the messageContext')
     }
 
-    const proposalMessage = await this.didCommMessageRepository.findAgentMessage({
+    const proposalMessage = await this.didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2ProposalPresentationMessage,
     })
@@ -60,18 +64,21 @@ export class V2ProposePresentationHandler implements Handler {
       throw new AriesFrameworkError(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
     }
 
-    const proofRequestFromProposalOptions: ProofRequestFromProposalOptions = {
+    const proofRequestFromProposalOptions: CreateProofRequestFromProposalOptions = {
       proofRecord,
     }
 
-    const proofRequest = await this.proofService.createProofRequestFromProposal(proofRequestFromProposalOptions)
+    const proofRequest: ProofRequestFromProposalOptions<PFs> = await this.proofService.createProofRequestFromProposal(
+      messageContext.agentContext,
+      proofRequestFromProposalOptions
+    )
 
     if (!proofRequest) {
       this.agentConfig.logger.error('Failed to create proof request')
       throw new AriesFrameworkError('Failed to create proof request.')
     }
 
-    const { message } = await this.proofService.createRequestAsResponse({
+    const { message } = await this.proofService.createRequestAsResponse(messageContext.agentContext, {
       proofRecord: proofRecord,
       autoAcceptProof: proofRecord.autoAcceptProof,
       proofFormats: proofRequest,

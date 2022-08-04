@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
-import type { MediationRecipientService } from '../../../../routing'
+import type { MediationRecipientService, RoutingService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V1ProofService } from '../V1ProofService'
@@ -10,7 +10,6 @@ import { createOutboundMessage, createOutboundServiceMessage } from '../../../..
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../../error'
 import { DidCommMessageRole } from '../../../../../storage'
-import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { V1RequestPresentationMessage } from '../messages'
 
 export class V1RequestPresentationHandler implements Handler {
@@ -19,6 +18,7 @@ export class V1RequestPresentationHandler implements Handler {
   private proofResponseCoordinator: ProofResponseCoordinator
   private mediationRecipientService: MediationRecipientService
   private didCommMessageRepository: DidCommMessageRepository
+  private routingService: RoutingService
   public supportedMessages = [V1RequestPresentationMessage]
 
   public constructor(
@@ -26,18 +26,20 @@ export class V1RequestPresentationHandler implements Handler {
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
-    didCommMessageRepository: DidCommMessageRepository
+    didCommMessageRepository: DidCommMessageRepository,
+    routingService: RoutingService
   ) {
     this.proofService = proofService
     this.agentConfig = agentConfig
     this.proofResponseCoordinator = proofResponseCoordinator
     this.mediationRecipientService = mediationRecipientService
     this.didCommMessageRepository = didCommMessageRepository
+    this.routingService = routingService
   }
 
   public async handle(messageContext: HandlerInboundMessage<V1RequestPresentationHandler>) {
     const proofRecord = await this.proofService.processRequest(messageContext)
-    if (this.proofResponseCoordinator.shouldAutoRespondToRequest(proofRecord)) {
+    if (this.proofResponseCoordinator.shouldAutoRespondToRequest(messageContext.agentContext, proofRecord)) {
       return await this.createPresentation(proofRecord, messageContext)
     }
   }
@@ -46,7 +48,7 @@ export class V1RequestPresentationHandler implements Handler {
     record: ProofRecord,
     messageContext: HandlerInboundMessage<V1RequestPresentationHandler>
   ) {
-    const requestMessage = await this.didCommMessageRepository.getAgentMessage({
+    const requestMessage = await this.didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: record.id,
       messageClass: V1RequestPresentationMessage,
     })
@@ -62,12 +64,15 @@ export class V1RequestPresentationHandler implements Handler {
       throw new AriesFrameworkError('No proof request found.')
     }
 
-    const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest({
-      proofRecord: record,
-      config: {
-        filterByPresentationPreview: true,
-      },
-    })
+    const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(
+      messageContext.agentContext,
+      {
+        proofRecord: record,
+        config: {
+          filterByPresentationPreview: true,
+        },
+      }
+    )
 
     if (!retrievedCredentials.indy) {
       this.agentConfig.logger.error('No matching Indy credentials could be retrieved.')
@@ -78,7 +83,7 @@ export class V1RequestPresentationHandler implements Handler {
       indy: retrievedCredentials.indy,
     })
 
-    const { message, proofRecord } = await this.proofService.createPresentation({
+    const { message, proofRecord } = await this.proofService.createPresentation(messageContext.agentContext, {
       proofRecord: record,
       proofFormats: {
         indy: requestedCredentials.indy,
@@ -90,8 +95,8 @@ export class V1RequestPresentationHandler implements Handler {
       return createOutboundMessage(messageContext.connection, message)
     } else if (requestMessage.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRouting()
-      const ourService = new ServiceDecorator({
+      const routing = await this.routingService.getRouting(messageContext.agentContext)
+      message.service = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
         routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
@@ -99,10 +104,7 @@ export class V1RequestPresentationHandler implements Handler {
 
       const recipientService = requestMessage.service
 
-      // Set and save ~service decorator to record (to remember our verkey)
-      message.service = ourService
-
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage({
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: message,
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Sender,
@@ -111,7 +113,7 @@ export class V1RequestPresentationHandler implements Handler {
       return createOutboundServiceMessage({
         payload: message,
         service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        senderKey: requestMessage.service.resolvedDidCommService.recipientKeys[0],
       })
     }
 

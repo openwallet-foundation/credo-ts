@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { IndyProofRequestFromProposalOptions } from '../../../formats/IndyProofFormatsServiceOptions'
+import type { IndyProofRequestFromProposalOptions } from '../../../formats/indy/IndyProofFormatsServiceOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V1ProofService } from '../V1ProofService'
 
@@ -31,7 +31,7 @@ export class V1ProposePresentationHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<V1ProposePresentationHandler>) {
     const proofRecord = await this.proofService.processProposal(messageContext)
-    if (this.proofResponseCoordinator.shouldAutoRespondToProposal(proofRecord)) {
+    if (this.proofResponseCoordinator.shouldAutoRespondToProposal(messageContext.agentContext, proofRecord)) {
       return await this.createRequest(proofRecord, messageContext)
     }
   }
@@ -49,7 +49,7 @@ export class V1ProposePresentationHandler implements Handler {
       throw new AriesFrameworkError('No connection on the messageContext')
     }
 
-    const proposalMessage = await this.didCommMessageRepository.getAgentMessage({
+    const proposalMessage = await this.didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1ProposePresentationMessage,
     })
@@ -66,26 +66,29 @@ export class V1ProposePresentationHandler implements Handler {
       proofRecord,
     }
 
-    const proofRequest = await this.proofService.createProofRequestFromProposal(proofRequestFromProposalOptions)
+    const proofRequest = await this.proofService.createProofRequestFromProposal(
+      messageContext.agentContext,
+      proofRequestFromProposalOptions
+    )
 
-    const indyProofRequest = proofRequest.indy
+    const indyProofRequest = proofRequest.proofFormats
 
-    if (!indyProofRequest) {
+    if (!indyProofRequest || !indyProofRequest.indy) {
       this.agentConfig.logger.error(`No Indy proof request was found`)
       throw new AriesFrameworkError('No Indy proof request was found')
     }
 
-    const { message } = await this.proofService.createRequestAsResponse({
+    const { message } = await this.proofService.createRequestAsResponse(messageContext.agentContext, {
       proofFormats: {
         indy: {
-          name: indyProofRequest.name,
-          version: indyProofRequest.version,
-          nonRevoked: indyProofRequest.nonRevoked,
-          requestedAttributes: indyProofRequest.requestedAttributes,
-          requestedPredicates: indyProofRequest.requestedPredicates,
-          ver: indyProofRequest.ver,
-          proofRequest: indyProofRequest,
-          nonce: indyProofRequest.nonce,
+          name: indyProofRequest.indy?.name,
+          version: indyProofRequest.indy?.version,
+          nonRevoked: indyProofRequest.indy?.nonRevoked,
+          requestedAttributes: indyProofRequest.indy?.requestedAttributes,
+          requestedPredicates: indyProofRequest.indy?.requestedPredicates,
+          ver: indyProofRequest.indy?.ver,
+          proofRequest: proofRequest,
+          nonce: indyProofRequest.indy?.nonce,
         },
       },
       proofRecord: proofRecord,

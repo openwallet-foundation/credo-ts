@@ -1,12 +1,12 @@
 import type { AgentContext } from '../../../agent'
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { DidCommMessageRepository } from '../../../storage'
-import type { CreateRequestAsResponseOptions } from '../models/ProofServiceOptions'
 import type {
-  RetrievedCredentialOptions,
-  ProofRequestFormats,
-  RequestedCredentialsFormats,
-} from '../models/SharedOptions'
+  CreateRequestAsResponseOptions,
+  FormatRequestedCredentialReturn,
+  FormatRetrievedCredentialOptions,
+} from '../models/ProofServiceOptions'
+import type { ProofRequestFormats } from '../models/SharedOptions'
 import type { ProofFormat } from './ProofFormat'
 import type { IndyProofFormat } from './indy/IndyProofFormat'
 import type { GetRequestedCredentialsFormat } from './indy/IndyProofFormatsServiceOptions'
@@ -61,11 +61,11 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
   public abstract getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsFormat
-  ): Promise<RetrievedCredentialOptions>
+  ): Promise<FormatRetrievedCredentialOptions<[PF]>>
 
   public abstract autoSelectCredentialsForProofRequest(
-    options: RetrievedCredentialOptions
-  ): Promise<RequestedCredentialsFormats>
+    options: FormatRetrievedCredentialOptions<[PF]>
+  ): Promise<FormatRequestedCredentialReturn<[PF]>>
 
   abstract proposalAndRequestAreEqual(
     proposalAttachments: ProofAttachmentFormat[],

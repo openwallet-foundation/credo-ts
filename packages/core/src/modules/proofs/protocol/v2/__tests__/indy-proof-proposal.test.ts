@@ -1,13 +1,14 @@
+import type { AgentContext } from '../../../../../agent'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { ProposeProofOptions } from '../../../models/ModuleOptions'
+import type { ProposeProofOptions } from '../../../ProofsApiOptions'
 import type { ProofRecord } from '../../../repository'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 
-import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
+import { getAgentContext, setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
-import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormats'
+import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormatConstants'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
@@ -19,6 +20,7 @@ describe('Present Proof', () => {
   let presentationPreview: PresentationPreview
   let faberPresentationRecord: ProofRecord
   let didCommMessageRepository: DidCommMessageRepository
+  let agentContext: AgentContext
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -26,6 +28,7 @@ describe('Present Proof', () => {
       'Faber agent',
       'Alice agent'
     ))
+    agentContext = getAgentContext()
   })
 
   afterAll(async () => {
@@ -65,7 +68,7 @@ describe('Present Proof', () => {
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
-    const proposal = await didCommMessageRepository.findAgentMessage({
+    const proposal = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: faberPresentationRecord.id,
       messageClass: V2ProposalPresentationMessage,
     })

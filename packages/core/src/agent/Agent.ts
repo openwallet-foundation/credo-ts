@@ -189,10 +189,9 @@ export class Agent extends BaseAgent {
       new CredentialsModule({
         autoAcceptCredentials: this.agentConfig.autoAcceptCredentials,
       }),
-      // QUACK temporary - put this back
-      // new ProofsModule({
-      //   autoAcceptProofs: this.agentConfig.autoAcceptProofs,
-      // }),
+      new ProofsModule({
+        autoAcceptProofs: this.agentConfig.autoAcceptProofs,
+      }),
       new MediatorModule({
         autoAcceptMediationRequests: this.agentConfig.autoAcceptMediationRequests,
       }),

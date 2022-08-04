@@ -1,11 +1,11 @@
 import type { AgentContext } from '../../../../agent'
 import type { Logger } from '../../../../logger'
-import type { CreateRequestAsResponseOptions } from '../../models/ProofServiceOptions'
 import type {
-  RetrievedCredentialOptions,
-  ProofRequestFormats,
-  RequestedCredentialsFormats,
-} from '../../models/SharedOptions'
+  CreateRequestAsResponseOptions,
+  FormatRequestedCredentialReturn,
+  FormatRetrievedCredentialOptions,
+} from '../../models/ProofServiceOptions'
+import type { ProofRequestFormats } from '../../models/SharedOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
@@ -375,7 +375,7 @@ export class IndyProofFormatService extends ProofFormatService {
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsFormat
-  ): Promise<RetrievedCredentialOptions> {
+  ): Promise<FormatRetrievedCredentialOptions<[IndyProofFormat]>> {
     const retrievedCredentials = new RetrievedCredentials({})
     const { attachment, presentationProposal } = options
     const filterByNonRevocationRequirements = options.config?.filterByNonRevocationRequirements
@@ -469,7 +469,9 @@ export class IndyProofFormatService extends ProofFormatService {
     }
 
     return {
-      indy: retrievedCredentials,
+      proofFormats: {
+        indy: retrievedCredentials,
+      },
     }
   }
 
@@ -487,9 +489,11 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: RetrievedCredentialOptions
-  ): Promise<RequestedCredentialsFormats> {
-    const indy = options.indy
+    options: FormatRetrievedCredentialOptions<[IndyProofFormat]>
+  ): Promise<FormatRequestedCredentialReturn<[IndyProofFormat]>> {
+
+    const { proofFormats } = options
+    const indy = proofFormats.indy
 
     if (!indy) {
       throw new AriesFrameworkError('No indy options provided')
@@ -516,7 +520,9 @@ export class IndyProofFormatService extends ProofFormatService {
     })
 
     return {
-      indy: requestedCredentials,
+      proofFormats: {
+        indy: requestedCredentials,
+      },
     }
   }
 

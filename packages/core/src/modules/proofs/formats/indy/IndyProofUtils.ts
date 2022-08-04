@@ -1,19 +1,21 @@
 import type { CreateProposalOptions } from '../../models/ProofServiceOptions'
 import type { ProofRequestFormats } from '../../models/SharedOptions'
 import type { PresentationPreviewAttribute } from '../../protocol/v1/models/V1PresentationPreview'
-import type { IndyProposeProofFormat } from '../IndyProofFormatsServiceOptions'
+import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
 
 import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { uuid } from '../../../../utils/uuid'
 import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 
+import { AttributeFilter } from './models/AttributeFilter'
 import { ProofAttributeInfo } from './models/ProofAttributeInfo'
 import { ProofPredicateInfo } from './models/ProofPredicateInfo'
 import { ProofRequest } from './models/ProofRequest'
-import { AttributeFilter } from './models/AttributeFilter'
 
 export class IndyProofUtils {
-  public static async createRequestFromPreview(options: CreateProposalOptions): Promise<ProofRequestFormats> {
+  public static async createRequestFromPreview(
+    options: CreateProposalOptions<[IndyProofFormat]>
+  ): Promise<ProofRequestFormats> {
     const indyFormat = options.proofFormats?.indy
 
     if (!indyFormat) {
@@ -36,7 +38,10 @@ export class IndyProofUtils {
     }
   }
 
-  public static createReferentForProofRequest(indyFormat: IndyProposeProofFormat, preview: PresentationPreview) {
+  public static createReferentForProofRequest(
+    indyFormat: IndyProposeProofFormat,
+    preview: PresentationPreview
+  ): ProofRequest {
     const proofRequest = new ProofRequest({
       name: indyFormat.name,
       version: indyFormat.version,

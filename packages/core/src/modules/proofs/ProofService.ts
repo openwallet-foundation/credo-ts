@@ -8,7 +8,7 @@ import type { Logger } from '../../logger'
 import type { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import type { Wallet } from '../../wallet/Wallet'
 import type { ConnectionService } from '../connections/services'
-import type { MediationRecipientService } from '../routing'
+import type { MediationRecipientService, RoutingService } from '../routing'
 import type { ProofStateChangedEvent } from './ProofEvents'
 import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import type { ProofFormat } from './formats/ProofFormat'
@@ -17,6 +17,7 @@ import type { CreateProblemReportOptions } from './formats/models/ProofFormatSer
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
+  CreateProofRequestFromProposalOptions,
   CreateProposalAsResponseOptions,
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
@@ -25,11 +26,7 @@ import type {
   ProofRequestFromProposalOptions,
 } from './models/ProofServiceOptions'
 import type { ProofState } from './models/ProofState'
-import type {
-  RetrievedCredentialOptions,
-  ProofRequestFormats,
-  RequestedCredentialsFormats,
-} from './models/SharedOptions'
+import type { RequestedCredentialsFormats } from './models/SharedOptions'
 import type { ProofRecord, ProofRepository } from './repository'
 
 import { JsonTransformer } from '../../utils/JsonTransformer'
@@ -147,10 +144,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
    *    4. Loop through all format services to process proposal message
    *    5. Save & return record
    */
-  abstract processProposal(
-    agentContext: AgentContext,
-    messageContext: InboundMessageContext<AgentMessage>
-  ): Promise<ProofRecord>
+  abstract processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
   abstract createRequest(
     agentContext: AgentContext,
@@ -162,10 +156,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
     options: CreateRequestAsResponseOptions<PFs>
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
-  abstract processRequest(
-    agentContext: AgentContext,
-    messageContext: InboundMessageContext<AgentMessage>
-  ): Promise<ProofRecord>
+  abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
   abstract createPresentation(
     agentContext: AgentContext,
@@ -179,20 +170,14 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
     options: CreateAckOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
-  abstract processAck(
-    agentContext: AgentContext,
-    messageContext: InboundMessageContext<AgentMessage>
-  ): Promise<ProofRecord>
+  abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
   abstract createProblemReport(
     agentContext: AgentContext,
     options: CreateProblemReportOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
-  abstract processProblemReport(
-    agentContext: AgentContext,
-    messageContext: InboundMessageContext<AgentMessage>
-  ): Promise<ProofRecord>
+  abstract processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
 
   public abstract shouldAutoRespondToProposal(agentContext: AgentContext, proofRecord: ProofRecord): Promise<boolean>
 
@@ -207,7 +192,8 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
-    mediationRecipientService: MediationRecipientService
+    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService
   ): void
 
   public abstract findRequestMessage(agentContext: AgentContext, proofRecordId: string): Promise<AgentMessage | null>
@@ -237,15 +223,14 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   public abstract getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<RetrievedCredentialOptions>
+  ): Promise<FormatRetrievedCredentialOptions<PFs>>
 
   public abstract autoSelectCredentialsForProofRequest(
-    agentContext: AgentContext,
-    options: RetrievedCredentialOptions
+    options: FormatRetrievedCredentialOptions<PFs>
   ): Promise<RequestedCredentialsFormats>
 
   public abstract createProofRequestFromProposal(
     agentContext: AgentContext,
-    options: ProofRequestFromProposalOptions
-  ): Promise<ProofRequestFormats>
+    options: CreateProofRequestFromProposalOptions
+  ): Promise<ProofRequestFromProposalOptions<PFs>>
 }

@@ -40,22 +40,6 @@ describe('ProofRequest', () => {
   })
 
   it('should throw an error if the proof request json contains an invalid structure', async () => {
-<<<<<<< HEAD
-    const proofRequest = JsonTransformer.fromJSON(
-      {
-        name: 'ProofRequest',
-        version: '1.0',
-        nonce: '947121108704767252195123',
-        requested_attributes: {
-          First: {
-            names: [],
-            restrictions: [
-              {
-                schema_id: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
-              },
-            ],
-          },
-=======
     const proofRequest = {
       name: 'ProofRequest',
       version: '1.0',
@@ -68,7 +52,6 @@ describe('ProofRequest', () => {
               schema_id: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
             },
           ],
->>>>>>> d2fe29e094b07fcfcf9d55fb65539ca2297fa3cb
         },
       },
       requested_predicates: [

@@ -12,7 +12,6 @@ import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerApi } from '../../modules/ledger/LedgerApi'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
-// import { ProofsModule } from '../../modules/proofs/ProofsModule' QUACK put this back asap
 import { V1ProofService } from '../../modules/proofs/protocol/v1'
 import { V2ProofService } from '../../modules/proofs/protocol/v2'
 import {
@@ -118,7 +117,6 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionRepository)).toBeInstanceOf(ConnectionRepository)
       expect(container.resolve(TrustPingService)).toBeInstanceOf(TrustPingService)
 
-      // expect(container.resolve(ProofsModule)).toBeInstanceOf(ProofsModule) QUACK put this back asap
       expect(container.resolve(V1ProofService)).toBeInstanceOf(V1ProofService)
       expect(container.resolve(V2ProofService)).toBeInstanceOf(V2ProofService)
       expect(container.resolve(ProofsApi)).toBeInstanceOf(ProofsApi)
@@ -162,7 +160,6 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionRepository)).toBe(container.resolve(ConnectionRepository))
       expect(container.resolve(TrustPingService)).toBe(container.resolve(TrustPingService))
 
-      // expect(container.resolve(ProofsModule)).toBe(container.resolve(ProofsModule)) QUACK
       expect(container.resolve(V1ProofService)).toBe(container.resolve(V1ProofService))
       expect(container.resolve(V2ProofService)).toBe(container.resolve(V2ProofService))
       expect(container.resolve(ProofsApi)).toBe(container.resolve(ProofsApi))

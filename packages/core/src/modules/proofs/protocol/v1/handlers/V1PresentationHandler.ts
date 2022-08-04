@@ -30,7 +30,7 @@ export class V1PresentationHandler implements Handler {
   public async handle(messageContext: HandlerInboundMessage<V1PresentationHandler>) {
     const proofRecord = await this.proofService.processPresentation(messageContext)
 
-    if (this.proofResponseCoordinator.shouldAutoRespondToPresentation(proofRecord)) {
+    if (this.proofResponseCoordinator.shouldAutoRespondToPresentation(messageContext.agentContext, proofRecord)) {
       return await this.createAck(proofRecord, messageContext)
     }
   }
@@ -40,16 +40,16 @@ export class V1PresentationHandler implements Handler {
       `Automatically sending acknowledgement with autoAccept on ${this.agentConfig.autoAcceptProofs}`
     )
 
-    const { message, proofRecord } = await this.proofService.createAck({
+    const { message, proofRecord } = await this.proofService.createAck(messageContext.agentContext, {
       proofRecord: record,
     })
 
-    const requestMessage = await this.didCommMessageRepository.findAgentMessage({
+    const requestMessage = await this.didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1RequestPresentationMessage,
     })
 
-    const presentationMessage = await this.didCommMessageRepository.findAgentMessage({
+    const presentationMessage = await this.didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1PresentationMessage,
     })

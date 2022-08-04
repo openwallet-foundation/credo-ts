@@ -1,12 +1,13 @@
 import type { ConnectionRecord } from '../../connections'
 import type { ProofFormat, ProofFormatPayload } from '../formats/ProofFormat'
-import type { ProofRequest } from '../formats/indy/models/ProofRequest'
-import type { PresentationPreview } from '../protocol/v1/models/V1PresentationPreview'
+import type { IndyProofFormat } from '../formats/indy/IndyProofFormat'
+import type { IndyRequestProofFormat } from '../formats/indy/IndyProofFormatsServiceOptions'
 import type { ProofRecord } from '../repository'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
-import type { ProofProtocolVersion } from './ProofProtocolVersion'
-import type { CreatePresentationFormats, ProposeProofFormats, RequestProofFormats } from './SharedOptions'
+
+import { ProofRequest } from '../formats/indy/models/ProofRequest'
+import { RequestedCredentials } from '../formats/indy/models/RequestedCredentials'
 
 interface BaseOptions {
   willConfirm?: boolean
@@ -25,6 +26,12 @@ export interface CreateProposalAsResponseOptions<PFs extends ProofFormat[]> exte
   proofFormats: ProofFormatPayload<PFs, 'createProposalAsResponse'>
 }
 
+export interface CreateRequestAsResponseOptions<PFs extends ProofFormat[]> extends BaseOptions {
+  id?: string
+  proofRecord: ProofRecord
+  proofFormats: ProofFormatPayload<PFs, 'createRequestAsResponse'>
+}
+
 // ----- Out Of Band Proof ----- //
 export interface CreateOutOfBandRequestOptions<PFs extends ProofFormat[]> extends BaseOptions {
   proofFormats: ProofFormatPayload<PFs, 'createOutOfBandRequest'>
@@ -35,15 +42,22 @@ export interface CreateRequestOptions<PFs extends ProofFormat[]> extends BaseOpt
   proofFormats: ProofFormatPayload<PFs, 'createRequest'>
 }
 
-export interface CreateRequestAsResponseOptions<PFs extends ProofFormat[]> extends BaseOptions {
+export interface CreateProofRequestFromProposalOptions extends BaseOptions {
   id?: string
   proofRecord: ProofRecord
-  proofFormats: ProofFormatPayload<PFs, 'createRequestAsResponse'>
+}
+
+export interface FormatRetrievedCredentialOptions<PFs extends ProofFormat[]> {
+  proofFormats: ProofFormatPayload<PFs, 'retrieveCredentials'>
+}
+
+export interface FormatRequestedCredentialReturn<PFs extends ProofFormat[]> {
+  proofFormats: ProofFormatPayload<PFs, 'requestCredentials'>
 }
 
 export interface CreatePresentationOptions<PFs extends ProofFormat[]> extends BaseOptions {
   proofRecord: ProofRecord
-  proofFormats: ProofFormatPayload<PFs, 'createPresentation'>
+  proofFormats: ProofFormatPayload<PFs, 'createPresentation'> //
   lastPresentation?: boolean
 }
 
@@ -60,6 +74,7 @@ export interface GetRequestedCredentialsForProofRequestOptions {
   config?: GetRequestedCredentialsConfig
 }
 
-export interface ProofRequestFromProposalOptions {
+export interface ProofRequestFromProposalOptions<PFs extends ProofFormat[]> {
   proofRecord: ProofRecord
+  proofFormats: ProofFormatPayload<PFs, 'createProofRequestFromProposal'>
 }

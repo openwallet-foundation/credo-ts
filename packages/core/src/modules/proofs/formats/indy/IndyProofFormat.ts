@@ -6,7 +6,9 @@ import type {
 } from '../../protocol/v1/models/V1PresentationPreview'
 import type { ProofFormat } from '../ProofFormat'
 import type { IndyRequestProofFormat } from '../indy/IndyProofFormatsServiceOptions'
-import type { IndyRequestedCredentialsOptions } from './models/RequestedCredentials'
+import type { ProofRequest } from './models/ProofRequest'
+import type { IndyRequestedCredentialsOptions, RequestedCredentials } from './models/RequestedCredentials'
+import type { RetrievedCredentials } from './models/RetrievedCredentials'
 
 export interface IndyProposeProofFormat {
   attributes?: PresentationPreviewAttribute[]
@@ -42,7 +44,9 @@ export interface IndyProofFormat extends ProofFormat {
     createProposalAsResponse: IndyProposeProofFormat
     createOutOfBandRequest: unknown
     createRequestAsResponse: IndyRequestProofFormat
-    createProofRequestFromProposal: unknown
+    createProofRequestFromProposal: IndyRequestProofFormat
+    requestCredentials: RequestedCredentials
+    retrieveCredentials: RetrievedCredentials
   }
   // Format data is based on RFC 0592
   // https://github.com/hyperledger/aries-rfcs/tree/main/features/0592-indy-attachments

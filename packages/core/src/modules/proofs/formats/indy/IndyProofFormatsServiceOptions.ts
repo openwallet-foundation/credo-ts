@@ -1,12 +1,11 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { IndyRevocationInterval } from '../../../credentials'
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
-import type { ProofRequestFromProposalOptions } from '../../models/ProofServiceOptions'
 import type { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
+import type { ProofRecord } from '../../repository/ProofRecord'
 import type { RequestedAttribute, RequestedPredicate } from '.././indy/models'
 import type { ProofAttributeInfo } from '.././indy/models/ProofAttributeInfo'
 import type { ProofPredicateInfo } from '.././indy/models/ProofPredicateInfo'
-import type { ProofRequest } from '.././indy/models/ProofRequest'
 
 export interface IndyRequestProofFormat {
   name: string
@@ -16,7 +15,6 @@ export interface IndyRequestProofFormat {
   ver?: '1.0' | '2.0'
   requestedAttributes?: Record<string, ProofAttributeInfo> | Map<string, ProofAttributeInfo>
   requestedPredicates?: Record<string, ProofPredicateInfo> | Map<string, ProofPredicateInfo>
-  proofRequest?: ProofRequest
 }
 
 export interface IndyVerifyProofFormat {
@@ -36,7 +34,8 @@ export interface GetRequestedCredentialsFormat {
   config?: GetRequestedCredentialsConfig
 }
 
-export interface IndyProofRequestFromProposalOptions extends ProofRequestFromProposalOptions {
+export interface IndyProofRequestFromProposalOptions {
+  proofRecord: ProofRecord
   name?: string
   version?: string
   nonce?: string

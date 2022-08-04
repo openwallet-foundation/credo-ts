@@ -37,20 +37,20 @@ export interface RequestedCredentialConfigOptions {
   presentationExchange?: never
 }
 
-export interface RetrievedCredentialOptions {
-  indy?: RetrievedCredentials
-  presentationExchange?: undefined
-}
+// export interface RetrievedCredentialOptions {
+//   indy?: RetrievedCredentials
+//   presentationExchange?: undefined
+// }
 
 export interface ProofRequestFormats {
   indy?: ProofRequest
   presentationExchange?: undefined
 }
 
-export interface RequestedCredentialsFormats {
-  indy?: RequestedCredentials
-  presentationExchange?: undefined
-}
+// export interface RequestedCredentialsFormats {
+//   indy?: RequestedCredentials
+//   presentationExchange?: undefined
+// }
 
 interface IndyAcceptProposalOptions {
   request: ProofRequest
