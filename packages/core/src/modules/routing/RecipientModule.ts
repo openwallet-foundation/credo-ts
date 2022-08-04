@@ -14,7 +14,7 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundDIDCommV2Message, createOutboundMessage } from '../../agent/helpers'
+import { createOutboundDIDCommV2Message } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
 import { parseMessageType } from '../../utils/messageType'
@@ -150,9 +150,10 @@ export class RecipientModule {
     // Discover if mediator can do push notification
     // const mediatorPickupStrategy = await this.getPickupStrategyForMediator(mediator)
     const mediatorPickupStrategy = this.agentConfig.mediatorPickupStrategy
+    const useCombinedStrategy = mediatorPickupStrategy === MediatorPickupStrategy.Combined
 
     // Explicit means polling every X seconds with batch message
-    if (mediatorPickupStrategy === MediatorPickupStrategy.Explicit) {
+    if (useCombinedStrategy || mediatorPickupStrategy === MediatorPickupStrategy.Explicit) {
       this.agentConfig.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediator.id}'`)
       const subscription = interval(mediatorPollingInterval)
         .pipe(takeUntil(this.agentConfig.stop$))
@@ -165,7 +166,7 @@ export class RecipientModule {
 
     // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
     // such as WebSockets to work
-    else if (mediatorPickupStrategy === MediatorPickupStrategy.Implicit) {
+    else if (useCombinedStrategy || mediatorPickupStrategy === MediatorPickupStrategy.Implicit) {
       this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
       await this.initiateImplicitPickup(mediator)
     } else {
