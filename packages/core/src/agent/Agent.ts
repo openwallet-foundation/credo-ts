@@ -28,6 +28,7 @@ import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { ValueTransferModule, ValueTransferService } from '../modules/value-transfer'
+import { ValueTransferWitnessService } from '../modules/value-transfer/services/ValueTransferWitnessService'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -54,6 +55,7 @@ export class Agent {
   private walletService: Wallet
   private didService: DidService
   private valueTransferService: ValueTransferService
+  private valueTransferWitnessService: ValueTransferWitnessService
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
@@ -108,6 +110,7 @@ export class Agent {
     this.transportService = this.container.resolve(TransportService)
     this.walletService = this.container.resolve(InjectionSymbols.Wallet)
     this.valueTransferService = this.container.resolve(ValueTransferService)
+    this.valueTransferWitnessService = this.container.resolve(ValueTransferWitnessService)
     this.didService = this.container.resolve(DidService)
 
     // We set the modules in the constructor because that allows to set them as read-only
@@ -242,7 +245,11 @@ export class Agent {
 
     // VTP state initialization
     if (valueTransferConfig) {
-      await this.valueTransferService.initState(valueTransferConfig)
+      if (valueTransferConfig.witness) {
+        return this.valueTransferWitnessService.init()
+      } else {
+        await this.valueTransferService.initPartyState()
+      }
     }
 
     this._isInitialized = true

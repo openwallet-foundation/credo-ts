@@ -1,18 +1,11 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { ValueTransferConfig } from '../../../types'
 import type { Transports } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import {
-  createVerifiableNotes,
-  PartyState,
-  ValueTransfer,
-  Wallet,
-  WitnessState,
-} from '@sicpa-dlab/value-transfer-protocol-ts'
+import { createVerifiableNotes, PartyState, ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -32,13 +25,10 @@ import { ProblemReportMessage } from '../messages'
 import { ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
-import { WitnessStateRecord } from '../repository/WitnessStateRecord'
 import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferStateService } from './ValueTransferStateService'
-
-const DEFAULT_SUPPORTED_PARTIES_COUNT = 50
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferService {
@@ -86,44 +76,25 @@ export class ValueTransferService {
     )
   }
 
-  public async initState(config: ValueTransferConfig) {
-    if (config.isWitness) {
-      const record = await this.getWitnessState()
-      const publicDid = await this.didService.findPublicDid()
+  /**
+   * Init party (Getter or Giver) state in the Wallet
+   */
+  public async initPartyState(): Promise<void> {
+    const partyState = await this.getPartyState()
+    if (partyState) return
 
-      if (!record) {
-        if (!publicDid) {
-          throw new AriesFrameworkError(
-            'Witness public DID not found. Please set `publicDidSeed` field in the agent config.'
-          )
-        }
+    const state = new ValueTransferStateRecord({
+      partyState: new PartyState(new Uint8Array(), new Wallet()),
+    })
+    await this.valueTransferStateRepository.save(state)
 
-        const partyStateHashes = ValueTransferService.generateInitialPartyStateHashes(config.supportedPartiesCount)
+    if (!state.partyState.wallet.amount()) {
+      const verifiableNotes = this.config.valueTransferInitialNotes
 
-        const record = new WitnessStateRecord({
-          witnessState: new WitnessState(partyStateHashes),
-        })
-
-        await this.witnessStateRepository.save(record)
-      } else {
-        if (!record.witnessState.partyStateHashes.size) {
-          const partyStateHashes = ValueTransferService.generateInitialPartyStateHashes(config.supportedPartiesCount)
-
-          for (const hash of partyStateHashes) {
-            record.witnessState.partyStateHashes.add(hash)
-          }
-
-          await this.witnessStateRepository.update(record)
-        }
-      }
-    } else {
-      const stateRecord = await this.initPartyState()
-      if (!stateRecord.partyState.wallet.amount()) {
-        const initialNotes = config.verifiableNotes?.length
-          ? config.verifiableNotes
-          : ValueTransferService.getRandomInitialStateNotes(config.supportedPartiesCount)
-        await this.receiveNotes(initialNotes, stateRecord)
-      }
+      const initialNotes = verifiableNotes?.length
+        ? verifiableNotes
+        : ValueTransferService.generateInitialStateNotes(this.config.valueTransferParties)
+      await this.receiveNotes(initialNotes)
     }
   }
 
@@ -132,16 +103,20 @@ export class ValueTransferService {
    * Init payment state if it's missing.
    *
    * @param notes Verifiable notes to add.
-   * @param stateRecord Party Valuer Transfer state record
    */
-  public async receiveNotes(notes: VerifiableNote[], stateRecord?: ValueTransferStateRecord | null) {
+  public async receiveNotes(notes: VerifiableNote[]) {
     try {
+      // no notes to add
       if (!notes.length) return
-      if (this.config.valueTransferConfig?.isWitness) {
+
+      if (this.config.valueTransferConfig?.witness) {
         throw new AriesFrameworkError(`Witness cannot add notes`)
       }
 
-      const state = stateRecord ? stateRecord : await this.initPartyState()
+      const state = await this.getPartyState()
+      if (!state) {
+        throw new AriesFrameworkError(`Unable to find party state`)
+      }
 
       const [, wallet] = state.partyState.wallet.receiveNotes(new Set(notes))
       await this.valueTransferStateService.storePartyState({
@@ -289,7 +264,7 @@ export class ValueTransferService {
     return firstValueFrom(subject)
   }
 
-  public async sendProblemReportToGetterAndGiver(message: ProblemReportMessage, record?: ValueTransferRecord) {
+  public async sendWitnessProblemReport(message: ProblemReportMessage, record?: ValueTransferRecord) {
     const getterProblemReport = new ProblemReportMessage({
       ...message,
       to: record?.getter?.did,
@@ -299,22 +274,10 @@ export class ValueTransferService {
       to: record?.giver?.did,
     })
 
-    await Promise.all([this.sendMessageToGetter(getterProblemReport), this.sendMessageToGiver(giverProblemReport)])
+    await Promise.all([this.sendMessage(getterProblemReport), this.sendMessage(giverProblemReport)])
   }
 
-  public async sendMessageToWitness(message: DIDCommV2Message, transport?: Transports) {
-    return this.sendMessage(message, transport)
-  }
-
-  public async sendMessageToGiver(message: DIDCommV2Message, transport?: Transports) {
-    return this.sendMessage(message, transport)
-  }
-
-  public async sendMessageToGetter(message: DIDCommV2Message, transport?: Transports) {
-    return this.sendMessage(message, transport)
-  }
-
-  private async sendMessage(message: DIDCommV2Message, transport?: Transports) {
+  public async sendMessage(message: DIDCommV2Message, transport?: Transports) {
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     const outboundMessage = createOutboundDIDCommV2Message(message)
     await this.messageSender.sendDIDCommV2Message(outboundMessage, sendingMessageType, transport)
@@ -360,21 +323,6 @@ export class ValueTransferService {
     return this.valueTransferStateRepository.findSingleByQuery({})
   }
 
-  public async getWitnessState(): Promise<WitnessStateRecord | null> {
-    return this.witnessStateRepository.findSingleByQuery({})
-  }
-
-  private async initPartyState(): Promise<ValueTransferStateRecord> {
-    let state = await this.getPartyState()
-    if (state) return state
-
-    state = new ValueTransferStateRecord({
-      partyState: new PartyState(new Uint8Array(), new Wallet()),
-    })
-    await this.valueTransferStateRepository.save(state)
-    return state
-  }
-
   public async getTransactionDid(params: { role: ValueTransferRole; usePublicDid?: boolean }) {
     // Witness MUST use public DID
     if (params.role === ValueTransferRole.Witness) {
@@ -388,19 +336,7 @@ export class ValueTransferService {
     }
   }
 
-  private static generateInitialPartyStateHashes(statesCount = DEFAULT_SUPPORTED_PARTIES_COUNT) {
-    const partyStateHashes = new Set<Uint8Array>()
-
-    for (let i = 0; i < statesCount; i++) {
-      const startFromSno = i * 10
-      const [, partyWallet] = new Wallet().receiveNotes(new Set(createVerifiableNotes(10, startFromSno)))
-      partyStateHashes.add(partyWallet.rootHash())
-    }
-
-    return partyStateHashes
-  }
-
-  private static getRandomInitialStateNotes(statesCount = DEFAULT_SUPPORTED_PARTIES_COUNT): VerifiableNote[] {
+  private static generateInitialStateNotes(statesCount: number): VerifiableNote[] {
     const stateIndex = Math.floor(Math.random() * statesCount)
     const startFromSno = stateIndex * 10
     return createVerifiableNotes(10, startFromSno)

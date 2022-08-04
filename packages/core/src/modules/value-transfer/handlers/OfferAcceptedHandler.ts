@@ -20,20 +20,6 @@ export class OfferAcceptedHandler implements Handler<typeof DIDCommV2Message> {
   }
 
   public async handle(messageContext: HandlerInboundMessage<OfferAcceptedHandler>) {
-    const { record, message, problemReport } = await this.valueTransferWitnessService.processOfferAcceptance(
-      messageContext
-    )
-
-    // if message is Problem Report -> also send it to Giver as well
-    if (problemReport) {
-      await this.valueTransferService.sendProblemReportToGetterAndGiver(problemReport, record)
-      return
-    }
-
-    if (message) {
-      // send success message to Giver
-      await this.valueTransferService.sendMessageToGiver(message)
-      return
-    }
+    await this.valueTransferWitnessService.processOfferAcceptance(messageContext)
   }
 }

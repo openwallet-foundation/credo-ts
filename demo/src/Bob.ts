@@ -6,25 +6,24 @@ import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
-export class Getter extends BaseAgent {
+export class Bob extends BaseAgent {
   public valueTransferRecordId?: string
-  public static seed = '6b8b882e2618fa5d45ee7229ca880082'
 
   public constructor(name: string, port?: number) {
     super({
       name,
       port,
-      transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
+      transports: [Transports.NFC, Transports.HTTP],
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
-          seed: '6b8b882e2618fa5d45ee7229ca880082',
-          transports: [Transports.Nearby, Transports.NFC],
+          seed: '6b8b882e2618fa5d45ee7229ca880081',
+          transports: [Transports.NFC],
           marker: DidMarker.Offline,
         },
         {
-          seed: '6b8b882e2618fa5d45ee7229ca880080',
-          transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
+          seed: '6b8b882e2618fa5d45ee7229ca880082',
+          transports: [Transports.NFC, Transports.HTTP],
           marker: DidMarker.Online,
         },
       ],
@@ -32,11 +31,11 @@ export class Getter extends BaseAgent {
     })
   }
 
-  public static async build(): Promise<Getter> {
-    const getter = new Getter('getter', undefined)
+  public static async build(): Promise<Bob> {
+    const getter = new Bob('bob', undefined)
     await getter.initializeAgent()
     const publicDid = await getter.agent.getOnlinePublicDid()
-    console.log(`Getter Public DID: ${publicDid?.did}`)
+    console.log(`Bob Public DID: ${publicDid?.did}`)
     return getter
   }
 
