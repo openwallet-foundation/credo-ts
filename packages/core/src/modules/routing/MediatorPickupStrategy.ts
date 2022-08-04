@@ -6,6 +6,6 @@ export enum MediatorPickupStrategy {
   // decorator. This is what ACA-Py currently uses
   Implicit = 'Implicit',
 
-  // Combined pickup strategy will use both pickup protocol and web socket connection to pickup messages
+  // Combined pickup strategy means picking up messages using both pickup protocol and web socket connection
   Combined = 'Combined',
 }

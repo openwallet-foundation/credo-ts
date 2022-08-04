@@ -126,7 +126,7 @@ export class WsOutboundTransport implements OutboundTransport {
   }): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
-      const socket = new this.WebSocketClass(endpoint, { headers: { 'agent-did': mediationDid } })
+      const socket = new this.WebSocketClass(endpoint, [], { headers: { 'agent-did': mediationDid } })
 
       socket.onopen = () => {
         this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)

@@ -243,7 +243,7 @@ export class ValueTransferModule {
 
     // Abort transaction
     const { message } = await this.valueTransferService.abortTransaction(record, reason)
-    // Send Transactions Abort message to Witness
+    // Send Transaction Abort message to Witness
     if (message && send) await this.valueTransferService.sendMessageToWitness(message)
 
     return { record, message }
