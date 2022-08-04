@@ -1,10 +1,10 @@
 import type { BaseEvent } from '../../agent/Events'
 import type { ValueTransferState } from './ValueTransferState'
-import type { ValueTransferRecord, WitnessData } from './repository'
+import type { ValueTransferRecord } from './repository'
 
 export enum ValueTransferEventTypes {
   ValueTransferStateChanged = 'ValueTransferStateChanged',
-  WitnessTableReceived = 'WitnessTableReceived',
+  ResumeTransaction = 'ResumeTransaction',
 }
 
 export interface ValueTransferStateChangedEvent extends BaseEvent {
@@ -15,9 +15,9 @@ export interface ValueTransferStateChangedEvent extends BaseEvent {
   }
 }
 
-export interface WitnessTableReceivedEvent extends BaseEvent {
-  type: typeof ValueTransferEventTypes.WitnessTableReceived
+export interface ResumeValueTransferTransactionEvent extends BaseEvent {
+  type: typeof ValueTransferEventTypes.ResumeTransaction
   payload: {
-    witnesses: WitnessData[]
+    thid: string
   }
 }

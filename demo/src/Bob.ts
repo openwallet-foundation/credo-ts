@@ -27,7 +27,12 @@ export class Bob extends BaseAgent {
           marker: DidMarker.Online,
         },
       ],
-      valueTransferConfig: {},
+      valueTransferConfig: {
+        party: {
+          witnessDid:
+            'did:peer:2.Ez6LSmBWXTiZQVVx37zwoZK3MvEebphDwd81AmBryFxyYg2dS.Vz6MkhuEV8mevESoVDVVtnznFfc6MHGwSwhwqM9FSooVntCEu.SeyJzIjoiaHR0cDovLzE5Mi4xNjguMS4xNDU6MzAwMC9hcGkvdjEiLCJ0IjoiZG0iLCJyIjpbImRpZDpwZWVyOjIuRXo2TFNuSFM5ZjNock11THJOOXo2WmhvN1RjQlJ2U3lLN0hQalF0d0ttdTNvc1d3Ri5WejZNa3JhaEFvVkxRUzlTNUdGNXNVS3R1ZFhNZWRVU1pkZGVKaGpIdEFGYVY0aG9WLlNXM3NpY3lJNkltaDBkSEE2THk4eE9USXVNVFk0TGpFdU1UUTFPak13TURBdllYQnBMM1l4SWl3aWRDSTZJbVJ0SWl3aWNpSTZXMTBzSW1FaU9sc2laR2xrWTI5dGJTOTJNaUpkZlN4N0luTWlPaUozY3pvdkx6RTVNaTR4TmpndU1TNHhORFU2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFN3aVlTSTZXeUprYVdSamIyMXRMM1l5SWwxOVhRIl0sImEiOlsiZGlkY29tbS92MiJdfQ',
+        },
+      },
     })
   }
 
@@ -46,10 +51,10 @@ export class Bob extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  public async requestPayment(witness: string) {
+  public async requestPayment(giver: string) {
     const { record } = await this.agent.valueTransfer.requestPayment({
       amount: 1,
-      witness,
+      giver,
       transport: Transports.NFC,
     })
     this.valueTransferRecordId = record.id

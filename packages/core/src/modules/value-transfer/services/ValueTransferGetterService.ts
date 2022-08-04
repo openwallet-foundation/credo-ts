@@ -89,7 +89,7 @@ export class ValueTransferGetterService {
   public async createRequest(params: {
     amount: number
     unitOfAmount?: string
-    witness: string
+    witness?: string
     giver?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
@@ -104,12 +104,16 @@ export class ValueTransferGetterService {
     // Get payment public DID from the storage or generate a new one if requested
     const usePublicDid = params.usePublicDid || true
     const getter = await this.valueTransferService.getTransactionDid({ role: ValueTransferRole.Getter, usePublicDid })
+    const witness = params.witness || this.config.valueTransferWitnessDid
+    if (!witness) {
+      throw new AriesFrameworkError(`Witness DID either must be set in the Agent config or provided as a parameter`)
+    }
 
     // Call VTP package to create payment request
     const givenTotal = new TaggedPrice({ amount: params.amount, uoa: params.unitOfAmount })
     const { error, receipt } = await this.getter.createRequest({
       getterId: getter.did,
-      witnessId: params.witness,
+      witnessId: witness,
       giverId: params.giver,
       givenTotal,
       timeouts: params.timeouts,

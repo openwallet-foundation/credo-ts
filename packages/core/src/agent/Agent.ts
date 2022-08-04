@@ -29,6 +29,7 @@ import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { ValueTransferModule, ValueTransferService } from '../modules/value-transfer'
 import { ValueTransferWitnessService } from '../modules/value-transfer/services/ValueTransferWitnessService'
+import { GossipModule } from '../modules/witness-gossip/GossipModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -69,6 +70,7 @@ export class Agent {
   public readonly dids: DidsModule
   public readonly wallet: WalletModule
   public readonly valueTransfer: ValueTransferModule
+  public readonly gossip: GossipModule
   public readonly outOfBand: OutOfBandModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
@@ -126,6 +128,7 @@ export class Agent {
     this.dids = this.container.resolve(DidsModule)
     this.wallet = this.container.resolve(WalletModule)
     this.valueTransfer = this.container.resolve(ValueTransferModule)
+    this.gossip = this.container.resolve(GossipModule)
     this.outOfBand = this.container.resolve(OutOfBandModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)

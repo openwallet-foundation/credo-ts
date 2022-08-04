@@ -28,9 +28,6 @@ import {
 } from './handlers'
 import { OfferAcceptedHandler } from './handlers/OfferAcceptedHandler'
 import { OfferAcceptedWitnessedHandler } from './handlers/OfferAcceptedWitnessedHandler'
-import { WitnessGossipHandler } from './handlers/WitnessGossipHandler'
-import { WitnessTableHandler } from './handlers/WitnessTableHandler'
-import { WitnessTableQueryHandler } from './handlers/WitnessTableQueryHandler'
 import { ValueTransferService } from './services'
 import { ValueTransferGetterService } from './services/ValueTransferGetterService'
 import { ValueTransferGiverService } from './services/ValueTransferGiverService'
@@ -83,7 +80,7 @@ export class ValueTransferModule {
   public async requestPayment(params: {
     amount: number
     unitOfAmount?: string
-    witness: string
+    witness?: string
     giver?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
@@ -330,8 +327,5 @@ export class ValueTransferModule {
     dispatcher.registerHandler(
       new OfferAcceptedWitnessedHandler(this.valueTransferService, this.valueTransferGiverService)
     )
-    dispatcher.registerHandler(new WitnessGossipHandler(this.valueTransferWitnessService))
-    dispatcher.registerHandler(new WitnessTableQueryHandler(this.valueTransferWitnessService))
-    dispatcher.registerHandler(new WitnessTableHandler(this.valueTransferWitnessService))
   }
 }

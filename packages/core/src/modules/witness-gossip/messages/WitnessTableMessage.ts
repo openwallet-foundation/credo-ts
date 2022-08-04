@@ -4,7 +4,7 @@ import { Type } from 'class-transformer'
 import { Equals, IsInstance, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
-import { WitnessData } from '../repository/WitnessStateRecord'
+import { WitnessData } from '../../value-transfer/repository/WitnessStateRecord'
 
 export type WitnessTableMessageBodyParams = {
   witnesses: Array<WitnessData>

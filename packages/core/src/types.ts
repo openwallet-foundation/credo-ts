@@ -10,9 +10,8 @@ import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy, MediatorDeliveryStrategy } from './modules/routing'
 import type { Transports } from './modules/routing/types'
-import type { WitnessData } from './modules/value-transfer'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
-import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { VerifiableNote, WitnessInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -58,7 +57,7 @@ export enum WitnessType {
 
 export interface ValueTransferWitnessConfig {
   wid: string
-  knownWitnesses: WitnessData[]
+  knownWitnesses: WitnessInfo[]
   tockTime?: number
   cleanupTime?: number
   historyThreshold?: number

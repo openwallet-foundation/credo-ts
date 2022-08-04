@@ -1,4 +1,5 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
+import type { WitnessInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { WitnessState } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
@@ -25,38 +26,40 @@ export class WitnessData {
 
 export interface WitnessStateProps {
   id?: string
-  did: string
   witnessState: WitnessState
-  knownWitnesses: Array<string>
   topWitness: WitnessData
 }
 
 export class WitnessStateRecord extends BaseRecord<DefaultWitnessStateTags, CustomWitnessStateTags> {
-  @Type(() => WitnessState)
-  public witnessState!: WitnessState
-
-  @IsString()
-  public did!: string
-
-  @Type(() => WitnessData)
-  public topWitness!: WitnessData
-
   public static readonly type = 'WitnessState'
   public readonly type = WitnessStateRecord.type
 
-  @IsString({ each: true })
-  public knownWitnesses!: Array<string>
+  @Type(() => WitnessState)
+  public witnessState!: WitnessState
+
+  @Type(() => WitnessData)
+  public topWitness!: WitnessData
 
   public constructor(props: WitnessStateProps) {
     super()
 
     if (props) {
       this.id = props.id ?? uuid()
-      this.did = props.did
       this.witnessState = props.witnessState
-      this.knownWitnesses = props.knownWitnesses
       this.topWitness = props.topWitness
     }
+  }
+
+  public get did(): string {
+    return this.witnessState.info.did
+  }
+
+  public get wid(): string {
+    return this.witnessState.info.wid
+  }
+
+  public get knownWitnesses(): Array<WitnessInfo> {
+    return this.witnessState.mappingTable.filter((witness) => witness.did !== this.did)
   }
 
   public getTags() {
