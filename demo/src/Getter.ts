@@ -14,7 +14,7 @@ export class Getter extends BaseAgent {
     super({
       name,
       port,
-      transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
+      transports: [Transports.Nearby, Transports.NFC, Transports.HTTP, Transports.WS],
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
@@ -24,7 +24,7 @@ export class Getter extends BaseAgent {
         },
         {
           seed: '6b8b882e2618fa5d45ee7229ca880080',
-          transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
+          transports: [Transports.Nearby, Transports.NFC, Transports.HTTP, Transports.WS],
           marker: DidMarker.Online,
         },
       ],

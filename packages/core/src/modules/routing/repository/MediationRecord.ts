@@ -29,6 +29,7 @@ export type CustomMediationTags = {
 export type DefaultMediationTags = {
   role: MediationRole
   did: string
+  mediatorDid: string
   state: MediationState
   threadId: string
 }
@@ -77,6 +78,7 @@ export class MediationRecord
       state: this.state,
       role: this.role,
       did: this.did,
+      mediatorDid: this.mediatorDid,
       threadId: this.threadId,
       recipientKeys: this.recipientKeys,
     }

@@ -5,12 +5,12 @@ import type {
   OutboundTransport,
   ValueTransferConfig,
 } from '@aries-framework/core'
-
 import {
   Agent,
   AutoAcceptCredential,
   AutoAcceptProof,
   HttpOutboundTransport,
+  MediatorDeliveryStrategy,
   MediatorPickupStrategy,
   Transports,
   WsOutboundTransport,
@@ -73,6 +73,7 @@ export class BaseAgent {
       valueTransferConfig: props.valueTransferConfig,
       transports: props.transports,
       mediatorConnectionsInvite: props.mediatorConnectionsInvite,
+      mediatorDeliveryStrategy: MediatorDeliveryStrategy.WebSocket,
     }
 
     this.config = config
@@ -87,10 +88,7 @@ export class BaseAgent {
     }
 
     if (transports.includes(Transports.WS) || transports.includes(Transports.WSS)) {
-      this.inBoundTransport = new WsInboundTransport({ port: 80 })
       this.outBoundTransport = new WsOutboundTransport()
-
-      this.agent.registerInboundTransport(this.inBoundTransport)
       this.agent.registerOutboundTransport(this.outBoundTransport)
     }
 

@@ -101,14 +101,12 @@ export class RecipientModule {
       body: { responseRequested: false },
     })
 
-    // const websocketSchemes = ['ws', 'wss']
-    // const hasWebSocketTransport = connectionRecord.theirDidDoc?.didCommServices?.some((s) =>
-    //   websocketSchemes.includes(s.protocolScheme)
-    // )
-    //
-    // if (!hasWebSocketTransport) {
-    //   throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
-    // }
+    const websocketSchemes = ['ws', 'wss']
+    const hasWebSocketTransport = this.agentConfig.transports.some((transport) => websocketSchemes.includes(transport))
+
+    if (!hasWebSocketTransport) {
+      throw new AriesFrameworkError('Cannot open websocket to connection without websocket transport')
+    }
 
     try {
       await this.messageSender.sendDIDCommV2Message(createOutboundDIDCommV2Message(message), undefined, Transports.WS)
@@ -123,13 +121,13 @@ export class RecipientModule {
     // Listens to Outbound websocket closed events and will reopen the websocket connection
     // in a recursive back off strategy if it matches the following criteria:
     // - Agent is not shutdown
-    // - Socket was for current mediator connection id
+    // - Socket was for current mediation DID
     this.eventEmitter
       .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
       .pipe(
         // Stop when the agent shuts down
         takeUntil(this.agentConfig.stop$),
-        filter((e) => e.payload.did === mediator.mediatorDid),
+        filter((e) => e.payload.did === mediator.did),
         // Make sure we're not reconnecting multiple times
         throttleTime(interval),
         // Increase the interval (recursive back-off)
@@ -139,7 +137,7 @@ export class RecipientModule {
       )
       .subscribe(async () => {
         this.logger.warn(
-          `Websocket connection to mediator with connectionId '${mediator.did}' is closed, attempting to reconnect...`
+          `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`
         )
         this.openMediationWebSocket(mediator)
       })
@@ -266,6 +264,10 @@ export class RecipientModule {
 
   public async findDefaultMediator(): Promise<MediationRecord | null> {
     return this.mediationRecipientService.findDefaultMediator()
+  }
+
+  public async findMediatorByDid(did: string): Promise<MediationRecord | null> {
+    return this.mediationRecipientService.findByMediatorDid(did)
   }
 
   public async requestAndAwaitGrant(did: string, mediatorDid: string, timeoutMs = 10000): Promise<MediationRecord> {

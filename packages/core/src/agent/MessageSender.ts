@@ -331,7 +331,8 @@ export class MessageSender {
   }
 
   private async sendPlaintextMessage(message: DIDCommV2Message, service: DidDocumentService) {
-    await this.sendMessage({ payload: { ...message } }, service.protocolScheme)
+    const recipientDid = message.to?.length ? message.to[0] : undefined
+    await this.sendMessage({ payload: { ...message }, recipientDid }, service.protocolScheme)
     return
   }
 
@@ -339,9 +340,12 @@ export class MessageSender {
     if (!message.from) {
       throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
     }
+
     const params = { signByDID: message.from, serviceId: service?.id }
+    const recipientDid = message.to?.length ? message.to[0] : undefined
+
     const payload = await this.envelopeService.packMessageSigned(message, params)
-    const outboundPackage = { payload, endpoint: service.serviceEndpoint }
+    const outboundPackage = { payload, recipientDid, endpoint: service.serviceEndpoint }
     await this.sendMessage(outboundPackage, service.protocolScheme)
     return
   }

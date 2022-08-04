@@ -3,6 +3,7 @@ import type { ValueTransferRecord } from '@aries-framework/core'
 
 import { Transports, ValueTransferState } from '@aries-framework/core'
 import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { unescape } from 'querystring'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
