@@ -1,11 +1,15 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
-import type { AcceptPresentationOptions, OutOfBandRequestOptions } from '../src/modules/proofs/models/ModuleOptions'
+import type { OutOfBandRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
+import type { AcceptPresentationOptions } from '../src/modules/proofs/models/ModuleOptions'
+import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
 
 import { Subject, ReplaySubject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { V1CredentialPreview } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { HandshakeProtocol } from '../src/modules/connections/models/HandshakeProtocol'
@@ -32,7 +36,6 @@ import {
   waitForProofRecordSubject,
 } from './helpers'
 import testLogger from './logger'
-import { V1CredentialPreview } from '../src'
 
 describe('Present Proof', () => {
   let agents: Agent[]
@@ -77,7 +80,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: OutOfBandRequestOptions = {
+    const outOfBandRequestOptions: OutOfBandRequestOptions<[IndyProofFormat], [V2ProofService]> = {
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
@@ -115,7 +118,7 @@ describe('Present Proof', () => {
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
       proofRecordId: aliceProofRecord.id,
-      proofFormats: { indy: requestedCredentials.indy },
+      proofFormats: { indy: requestedCredentials.proofFormats.indy },
     }
 
     const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
@@ -178,7 +181,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: OutOfBandRequestOptions = {
+    const outOfBandRequestOptions: OutOfBandRequestOptions<[IndyProofFormat], [V2ProofService]> = {
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
@@ -339,7 +342,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: OutOfBandRequestOptions = {
+    const outOfBandRequestOptions: OutOfBandRequestOptions<[IndyProofFormat], [V2ProofService]> = {
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
