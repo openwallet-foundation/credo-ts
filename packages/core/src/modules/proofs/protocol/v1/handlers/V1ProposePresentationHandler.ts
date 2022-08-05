@@ -2,7 +2,9 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
+import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
 import type { IndyProofRequestFromProposalOptions } from '../../../formats/indy/IndyProofFormatsServiceOptions'
+import type { ProofRequestFromProposalOptions } from '../../../models/ProofServiceOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V1ProofService } from '../V1ProofService'
 
@@ -66,10 +68,11 @@ export class V1ProposePresentationHandler implements Handler {
       proofRecord,
     }
 
-    const proofRequest = await this.proofService.createProofRequestFromProposal(
-      messageContext.agentContext,
-      proofRequestFromProposalOptions
-    )
+    const proofRequest: ProofRequestFromProposalOptions<[IndyProofFormat]> =
+      await this.proofService.createProofRequestFromProposal(
+        messageContext.agentContext,
+        proofRequestFromProposalOptions
+      )
 
     const indyProofRequest = proofRequest.proofFormats
 
@@ -87,7 +90,7 @@ export class V1ProposePresentationHandler implements Handler {
           requestedAttributes: indyProofRequest.indy?.requestedAttributes,
           requestedPredicates: indyProofRequest.indy?.requestedPredicates,
           ver: indyProofRequest.indy?.ver,
-          proofRequest: proofRequest,
+          proofRequest: indyProofRequest.indy?.proofRequest,
           nonce: indyProofRequest.indy?.nonce,
         },
       },
