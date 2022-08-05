@@ -7,6 +7,7 @@ import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import {
+  createRandomVerifiableNotes,
   createVerifiableNotes,
   PartyState,
   ValueTransfer,
@@ -29,6 +30,7 @@ import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
 import { ProblemReportMessage } from '../messages'
+import { MintMessage } from '../messages/MintMessage'
 import { ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
@@ -386,6 +388,33 @@ export class ValueTransferService {
     } else {
       return this.didService.getPublicDidOrCreateNew(params.usePublicDid)
     }
+  }
+
+  public async mintNotes(amount: number, witness: string): Promise<MintMessage> {
+    const stateRecord = await this.getPartyState()
+    if (!stateRecord) {
+      throw new AriesFrameworkError('Current state is not found')
+    }
+
+    const publicDid = await this.didService.getPublicDid()
+    if (!publicDid) {
+      throw new AriesFrameworkError('Public DID is not found')
+    }
+
+    const { partyState } = stateRecord
+
+    const startHash = partyState.wallet.rootHash()
+
+    const mintedNotes = createRandomVerifiableNotes(amount)
+    await this.receiveNotes(mintedNotes, stateRecord)
+
+    const endHash = partyState.wallet.rootHash()
+
+    return new MintMessage({
+      from: publicDid.did,
+      to: witness,
+      body: { startHash, endHash },
+    })
   }
 
   private static generateInitialPartyStateHashes(statesCount = DEFAULT_SUPPORTED_PARTIES_COUNT) {

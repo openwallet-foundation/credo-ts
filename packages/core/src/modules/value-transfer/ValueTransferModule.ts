@@ -249,6 +249,13 @@ export class ValueTransferModule {
     return { record, message }
   }
 
+  public async mintNotes(amount: number, witness: string) {
+    // Mint Verifiable Notes
+    const message = await this.valueTransferService.mintNotes(amount, witness)
+    // Send mint message to Witness to update state
+    await this.valueTransferService.sendMessageToWitness(message)
+  }
+
   /**
    * Get list of pending transactions:
    *  Getter: Request sent but hasn't accepted / rejected yet

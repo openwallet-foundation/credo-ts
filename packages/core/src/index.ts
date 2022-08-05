@@ -22,7 +22,7 @@ export { InjectionSymbols } from './constants'
 export type { Wallet } from './wallet/Wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
-export { DIDCommV1Message, DIDCommV2Message } from './agent/didcomm'
+export { DIDCommV1Message, DIDCommV2Message, DIDCommV2MessageParams } from './agent/didcomm'
 export { JsonEncoder } from './utils'
 export { sleep } from './utils/sleep'
 

@@ -1,6 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { CashAcceptedMessage, CashRemovedMessage, OfferAcceptedMessage, RequestAcceptedMessage } from '../messages'
+import type { MintMessage } from '../messages/MintMessage'
 import type { Witness } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -419,5 +420,9 @@ export class ValueTransferWitnessService {
       ValueTransferTransactionStatus.Finished
     )
     return { record, getterMessage: getterReceiptMessage, giverMessage: giverReceiptMessage }
+  }
+
+  public async processNotesMint(messageContext: InboundMessageContext<MintMessage>): Promise<void> {
+    const { message: mintMessage } = messageContext
   }
 }
