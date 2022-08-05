@@ -167,20 +167,27 @@ export class RecipientModule {
       return
     }
 
-    const useCombinedStrategy = mediatorPickupStrategy === MediatorPickupStrategy.Combined
-
     let pickupSubscription: Subscription | undefined
 
     // Explicit means polling every X seconds with batch message
-    if (useCombinedStrategy || mediatorPickupStrategy === MediatorPickupStrategy.Explicit) {
+    if (mediatorPickupStrategy === MediatorPickupStrategy.Explicit) {
       this.agentConfig.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediator.id}'`)
       pickupSubscription = await this.initiateExplicitPickup(mediator)
     }
 
     // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
     // such as WebSockets to work
-    if (useCombinedStrategy || mediatorPickupStrategy === MediatorPickupStrategy.Implicit) {
+    else if (mediatorPickupStrategy === MediatorPickupStrategy.Implicit) {
       this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
+      await this.initiateImplicitPickup(mediator)
+    }
+
+    // Combined means using both Explicit (batch polling) and Implicit (WebSocket) pickup strategies
+    else if (mediatorPickupStrategy === MediatorPickupStrategy.Combined) {
+      this.agentConfig.logger.info(
+        `Starting combined explicit/implicit pickup of messages from mediator '${mediator.id}'`
+      )
+      pickupSubscription = await this.initiateExplicitPickup(mediator)
       await this.initiateImplicitPickup(mediator)
     }
 
