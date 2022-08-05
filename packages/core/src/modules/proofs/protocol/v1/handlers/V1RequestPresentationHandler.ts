@@ -3,6 +3,11 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { MediationRecipientService, RoutingService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
+import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
+import type {
+  FormatRequestedCredentialReturn,
+  FormatRetrievedCredentialOptions,
+} from '../../../models/ProofServiceOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V1ProofService } from '../V1ProofService'
 
@@ -74,19 +79,21 @@ export class V1RequestPresentationHandler implements Handler {
       }
     )
 
-    if (!retrievedCredentials.indy) {
+    if (!retrievedCredentials.proofFormats.indy) {
       this.agentConfig.logger.error('No matching Indy credentials could be retrieved.')
       throw new AriesFrameworkError('No matching Indy credentials could be retrieved.')
     }
 
-    const requestedCredentials = await this.proofService.autoSelectCredentialsForProofRequest({
-      indy: retrievedCredentials.indy,
-    })
+    const options: FormatRetrievedCredentialOptions<[IndyProofFormat]> = {
+      proofFormats: retrievedCredentials.proofFormats,
+    }
+    const requestedCredentials: FormatRequestedCredentialReturn<[IndyProofFormat]> =
+      await this.proofService.autoSelectCredentialsForProofRequest(options)
 
     const { message, proofRecord } = await this.proofService.createPresentation(messageContext.agentContext, {
       proofRecord: record,
       proofFormats: {
-        indy: requestedCredentials.indy,
+        indy: requestedCredentials.proofFormats.indy,
       },
       willConfirm: true,
     })
