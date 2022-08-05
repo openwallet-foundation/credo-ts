@@ -1,8 +1,11 @@
+import type { AgentContext } from '../../../agent'
 import type { Wallet } from '../../../wallet/Wallet'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { CustomProofTags } from '../repository/ProofRecord'
 
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
@@ -11,7 +14,7 @@ import { ConnectionService, DidExchangeState } from '../../connections'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
-import { V2_INDY_PRESENTATION_REQUEST } from '../formats/ProofFormatConstants'
+import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_REQUEST } from '../formats/ProofFormatConstants'
 import { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
 import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import { ProofState } from '../models/ProofState'
@@ -102,12 +105,14 @@ describe('V2ProofService', () => {
   let connectionService: ConnectionService
   let didCommMessageRepository: DidCommMessageRepository
   let indyProofFormatService: IndyProofFormatService
+  let agentContext: AgentContext
 
   beforeEach(() => {
+    agentContext = getAgentContext()
     const agentConfig = getAgentConfig('V2ProofServiceTest')
     proofRepository = new ProofRepositoryMock()
     ledgerService = new IndyLedgerServiceMock()
-    eventEmitter = new EventEmitter(agentConfig)
+    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     connectionService = new connectionServiceMock()
     didCommMessageRepository = new didCommMessageRepositoryMock()
     indyProofFormatService = new indyProofFormatServiceMock()
@@ -142,9 +147,7 @@ describe('V2ProofService', () => {
         ],
         comment: 'Proof Request',
       })
-      messageContext = new InboundMessageContext(presentationRequest, {
-        connection,
-      })
+      messageContext = new InboundMessageContext(presentationRequest, { agentContext, connection })
     })
 
     test(`creates and return proof record in ${ProofState.PresentationReceived} state with offer, without thread ID`, async () => {
@@ -163,7 +166,7 @@ describe('V2ProofService', () => {
         connectionId: connection.id,
       }
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1)
-      const [[createdProofRecord]] = repositorySaveSpy.mock.calls
+      const [[, createdProofRecord]] = repositorySaveSpy.mock.calls
       expect(createdProofRecord).toMatchObject(expectedProofRecord)
       expect(returnedProofRecord).toMatchObject(expectedProofRecord)
     })
@@ -178,6 +181,9 @@ describe('V2ProofService', () => {
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'ProofStateChanged',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           previousState: null,
           proofRecord: expect.objectContaining({
@@ -227,7 +233,6 @@ describe('V2ProofService', () => {
   describe('processProblemReport', () => {
     let proof: ProofRecord
     let messageContext: InboundMessageContext<V2PresentationProblemReportMessage>
-
     beforeEach(() => {
       proof = mockProofRecord({
         state: ProofState.RequestReceived,
@@ -240,9 +245,7 @@ describe('V2ProofService', () => {
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })
-      messageContext = new InboundMessageContext(presentationProblemReportMessage, {
-        connection,
-      })
+      messageContext = new InboundMessageContext(presentationProblemReportMessage, { agentContext, connection })
     })
 
     test(`updates problem report error message and returns proof record`, async () => {
@@ -258,12 +261,12 @@ describe('V2ProofService', () => {
       const expectedCredentialRecord = {
         errorMessage: 'abandoned: Indy error',
       }
-      expect(proofRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, {
+      expect(proofRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
         connectionId: connection.id,
       })
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
-      const [[updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
+      const [[, updatedCredentialRecord]] = repositoryUpdateSpy.mock.calls
       expect(updatedCredentialRecord).toMatchObject(expectedCredentialRecord)
       expect(returnedCredentialRecord).toMatchObject(expectedCredentialRecord)
     })

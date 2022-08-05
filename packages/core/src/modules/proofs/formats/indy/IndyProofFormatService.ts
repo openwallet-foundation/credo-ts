@@ -491,7 +491,6 @@ export class IndyProofFormatService extends ProofFormatService {
   public async autoSelectCredentialsForProofRequest(
     options: FormatRetrievedCredentialOptions<[IndyProofFormat]>
   ): Promise<FormatRequestedCredentialReturn<[IndyProofFormat]>> {
-
     const { proofFormats } = options
     const indy = proofFormats.indy
 

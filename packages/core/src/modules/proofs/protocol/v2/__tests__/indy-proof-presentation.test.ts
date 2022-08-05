@@ -75,7 +75,7 @@ describe('Present Proof', () => {
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
-    const proposal = await didCommMessageRepository.findAgentMessage(agentContext, {
+    const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberProofRecord.id,
       messageClass: V2ProposalPresentationMessage,
     })
@@ -127,7 +127,7 @@ describe('Present Proof', () => {
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
-    const request = await didCommMessageRepository.findAgentMessage(agentContext, {
+    const request = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberProofRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
@@ -175,7 +175,7 @@ describe('Present Proof', () => {
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
       proofRecordId: aliceProofRecord.id,
-      proofFormats: { indy: requestedCredentials.indy },
+      proofFormats: { indy: requestedCredentials.proofFormats.indy },
     }
 
     const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
@@ -189,7 +189,7 @@ describe('Present Proof', () => {
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await faberPresentationRecordPromise
 
-    const presentation = await didCommMessageRepository.findAgentMessage(agentContext, {
+    const presentation = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberProofRecord.id,
       messageClass: V2PresentationMessage,
     })

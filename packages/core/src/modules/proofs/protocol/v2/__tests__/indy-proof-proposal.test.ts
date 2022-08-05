@@ -68,7 +68,7 @@ describe('Present Proof', () => {
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
-    const proposal = await didCommMessageRepository.findAgentMessage(agentContext, {
+    const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberPresentationRecord.id,
       messageClass: V2ProposalPresentationMessage,
     })

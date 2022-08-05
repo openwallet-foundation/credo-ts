@@ -22,11 +22,12 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
+  FormatRequestedCredentialReturn,
+  FormatRetrievedCredentialOptions,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from './models/ProofServiceOptions'
 import type { ProofState } from './models/ProofState'
-import type { RequestedCredentialsFormats } from './models/SharedOptions'
 import type { ProofRecord, ProofRepository } from './repository'
 
 import { JsonTransformer } from '../../utils/JsonTransformer'
@@ -223,11 +224,11 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   public abstract getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<FormatRetrievedCredentialOptions<PFs>>
+  ): Promise<FormatRequestedCredentialReturn<PFs>>
 
   public abstract autoSelectCredentialsForProofRequest(
     options: FormatRetrievedCredentialOptions<PFs>
-  ): Promise<RequestedCredentialsFormats>
+  ): Promise<FormatRequestedCredentialReturn<PFs>>
 
   public abstract createProofRequestFromProposal(
     agentContext: AgentContext,

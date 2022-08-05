@@ -7,7 +7,7 @@ import type {
   RequestProofOptions,
   ServiceMap,
 } from './ProofsApiOptions'
-import type { ProofFormat, ProofFormatPayload } from './formats/ProofFormat'
+import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
 import type { AcceptPresentationOptions, AutoSelectCredentialsForProofRequestOptions } from './models/ModuleOptions'
 import type {
@@ -15,11 +15,10 @@ import type {
   CreatePresentationOptions,
   CreateProposalOptions,
   CreateRequestOptions,
-  ProofRequestFromProposalOptions,
   CreateRequestAsResponseOptions,
   CreateProofRequestFromProposalOptions,
+  FormatRequestedCredentialReturn,
 } from './models/ProofServiceOptions'
-import type { ProofRequestFormats, RequestedCredentialsFormats } from './models/SharedOptions'
 import type { ProofRecord } from './repository/ProofRecord'
 
 import { inject, injectable } from 'tsyringe'
@@ -68,7 +67,7 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
   // Auto Select
   autoSelectCredentialsForProofRequest(
     options: AutoSelectCredentialsForProofRequestOptions
-  ): Promise<RequestedCredentialsFormats>
+  ): Promise<FormatRequestedCredentialReturn<PFs>>
 
   sendProblemReport(proofRecordId: string, message: string): Promise<ProofRecord>
 
@@ -439,7 +438,7 @@ export class ProofsApi<
    */
   public async autoSelectCredentialsForProofRequest(
     options: AutoSelectCredentialsForProofRequestOptions
-  ): Promise<RequestedCredentialsFormats> {
+  ): Promise<FormatRequestedCredentialReturn<PFs>> {
     const proofRecord = await this.getById(options.proofRecordId)
 
     const service = this.getService(proofRecord.protocolVersion)
@@ -448,7 +447,6 @@ export class ProofsApi<
       proofRecord: proofRecord,
       config: options.config,
     })
-
     return await service.autoSelectCredentialsForProofRequest(retrievedCredentials)
   }
 

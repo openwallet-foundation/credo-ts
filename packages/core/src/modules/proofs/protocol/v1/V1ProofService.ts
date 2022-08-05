@@ -21,11 +21,11 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
+  FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
-import type { ProofRequestFormats, RequestedCredentialsFormats } from '../../models/SharedOptions'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -926,20 +926,18 @@ export class V1ProofService extends ProofService {
       throw new AriesFrameworkError('Could not find proof request')
     }
 
-    const requestedCredentials = await this.indyProofFormatService.getRequestedCredentialsForProofRequest(
-      agentContext,
-      {
+    const requestedCredentials: FormatRetrievedCredentialOptions<[IndyProofFormat]> =
+      await this.indyProofFormatService.getRequestedCredentialsForProofRequest(agentContext, {
         attachment: indyProofRequest[0],
         presentationProposal: proposalMessage?.presentationProposal,
         config: options.config ?? undefined,
-      }
-    )
+      })
     return requestedCredentials
   }
 
   public async autoSelectCredentialsForProofRequest(
     options: FormatRetrievedCredentialOptions<[IndyProofFormat]>
-  ): Promise<RequestedCredentialsFormats> {
+  ): Promise<FormatRequestedCredentialReturn<[IndyProofFormat]>> {
     return await this.indyProofFormatService.autoSelectCredentialsForProofRequest(options)
   }
 

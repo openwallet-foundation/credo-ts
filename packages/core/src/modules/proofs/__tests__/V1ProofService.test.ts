@@ -110,6 +110,7 @@ describe('V1ProofService', () => {
 
   beforeEach(() => {
     const agentConfig = getAgentConfig('V1ProofServiceTest')
+    agentContext = getAgentContext()
     proofRepository = new ProofRepositoryMock()
     indyHolderService = new IndyHolderServiceMock()
     indyRevocationService = new IndyRevocationServiceMock()

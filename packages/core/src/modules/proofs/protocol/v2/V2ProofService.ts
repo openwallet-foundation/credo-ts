@@ -18,14 +18,11 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
+  FormatRequestedCredentialReturn,
+  FormatRetrievedCredentialOptions,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
-  FormatRetrievedCredentialReturn,
 } from '../../models/ProofServiceOptions'
-import type {
-  ProofRequestFormats,
-  RequestedCredentialsFormats,
-} from '../../models/SharedOptions'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -52,12 +49,12 @@ import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
 import { V2PresentationHandler } from './handlers/V2PresentationHandler'
 import { V2PresentationProblemReportHandler } from './handlers/V2PresentationProblemReportHandler'
 import { V2ProposePresentationHandler } from './handlers/V2ProposePresentationHandler'
+import { V2RequestPresentationHandler } from './handlers/V2RequestPresentationHandler'
 import { V2PresentationAckMessage } from './messages'
 import { V2PresentationMessage } from './messages/V2PresentationMessage'
 import { V2PresentationProblemReportMessage } from './messages/V2PresentationProblemReportMessage'
 import { V2ProposalPresentationMessage } from './messages/V2ProposalPresentationMessage'
 import { V2RequestPresentationMessage } from './messages/V2RequestPresentationMessage'
-import { V2RequestPresentationHandler } from './handlers/V2RequestPresentationHandler'
 
 @scoped(Lifecycle.ContainerScoped)
 // export class V2ProofService extends ProofService {
@@ -780,7 +777,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<FormatRetrievedCredentialReturn> {
+  ): Promise<FormatRetrievedCredentialOptions<[IndyProofFormat]>> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
       messageClass: V2RequestPresentationMessage,
@@ -792,7 +789,9 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
 
     const requestAttachments = requestMessage.getAttachmentFormats()
 
-    let result = {}
+    let result = {
+      proofFormats: {},
+    }
     for (const attachmentFormat of requestAttachments) {
       const service = this.getFormatServiceForFormat(attachmentFormat.format)
 
@@ -814,12 +813,14 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialReturn<PFs>
-  ): Promise<CreatePresentationOptions<PFs>> {
+    options: FormatRetrievedCredentialOptions<[IndyProofFormat]>
+  ): Promise<FormatRequestedCredentialReturn<[IndyProofFormat]>> {
     // was RequestedCredentialsFormats contains RequestedCredentials
-    let returnValue = {}
+    let returnValue = {
+      proofFormats: {},
+    }
 
-    for (const [id] of Object.entries(options)) {
+    for (const [id] of Object.entries(options.proofFormats)) {
       const service = this.formatServiceMap[id]
       const credentials = await service.autoSelectCredentialsForProofRequest(options)
       returnValue = { ...returnValue, ...credentials }
