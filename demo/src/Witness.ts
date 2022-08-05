@@ -12,12 +12,12 @@ export class Witness extends BaseAgent {
     super({
       name,
       port,
-      transports: [Transports.HTTP],
+      transports: [Transports.HTTP, Transports.WS],
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
           seed: '6b8b882e2618fa5d45ee7229ca880084',
-          transports: [Transports.HTTP],
+          transports: [Transports.HTTP, Transports.WS],
           marker: DidMarker.Online,
         },
       ],

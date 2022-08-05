@@ -14,7 +14,7 @@ export class Giver extends BaseAgent {
     super({
       name,
       port,
-      transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
+      transports: [Transports.Nearby, Transports.NFC, Transports.HTTP, Transports.WS],
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {

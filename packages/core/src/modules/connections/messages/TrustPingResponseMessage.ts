@@ -1,8 +1,10 @@
+import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
 
 import { Equals, IsOptional, IsString } from 'class-validator'
 
 import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
+import { DIDCommV2Message } from '../../../agent/didcomm/v2/DIDCommV2Message'
 
 export interface TrustPingResponseMessageOptions {
   comment?: string
@@ -49,4 +51,14 @@ export class TrustPingResponseMessage extends DIDCommV1Message {
   @IsString()
   @IsOptional()
   public comment?: string
+}
+
+export class TrustPingResponseMessageV2 extends DIDCommV2Message {
+  @Equals(TrustPingResponseMessageV2.type)
+  public readonly type = TrustPingResponseMessageV2.type
+  public static readonly type = 'https://didcomm.org/trust-ping/2.0/ping-response'
+
+  public constructor(params: DIDCommV2MessageParams) {
+    super(params)
+  }
 }
