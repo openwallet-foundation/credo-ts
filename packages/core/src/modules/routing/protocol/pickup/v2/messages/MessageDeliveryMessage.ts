@@ -1,11 +1,11 @@
-import type { Attachment } from '../../../decorators/attachment/Attachment'
+import type { Attachment } from '../../../../../../decorators/attachment/Attachment'
 
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { AgentMessage } from '../../../../../../agent/AgentMessage'
+import { ReturnRouteTypes } from '../../../../../../decorators/transport/TransportDecorator'
+import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
 export interface MessageDeliveryMessageOptions {
   id?: string

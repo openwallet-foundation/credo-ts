@@ -1,10 +1,10 @@
 import { Expose, Transform } from 'class-transformer'
 import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
-import { DateParser } from '../../../utils/transformers'
+import { AgentMessage } from '../../../../../../agent/AgentMessage'
+import { ReturnRouteTypes } from '../../../../../../decorators/transport/TransportDecorator'
+import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
+import { DateParser } from '../../../../../../utils/transformers'
 
 export interface StatusMessageOptions {
   id?: string

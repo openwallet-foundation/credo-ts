@@ -13,6 +13,9 @@ export class InMemoryMessageRepository implements MessageRepository {
   public constructor(agentConfig: AgentConfig) {
     this.logger = agentConfig.logger
   }
+  public available(connectionId: string): number | Promise<number> {
+    return this.messages[connectionId] ? this.messages[connectionId].length : 0
+  }
 
   public takeFromQueue(connectionId: string, limit?: number) {
     if (!this.messages[connectionId]) {

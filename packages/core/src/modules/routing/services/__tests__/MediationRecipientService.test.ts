@@ -14,14 +14,9 @@ import { ConnectionRepository } from '../../../connections/repository/Connection
 import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { Key } from '../../../dids'
 import { DidRepository } from '../../../dids/repository/DidRepository'
-import {
-  DeliveryRequestMessage,
-  MediationGrantMessage,
-  MessageDeliveryMessage,
-  MessagesReceivedMessage,
-  StatusMessage,
-} from '../../messages'
+import { MediationGrantMessage } from '../../messages'
 import { MediationRole, MediationState } from '../../models'
+import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../../protocol'
 import { MediationRecord } from '../../repository/MediationRecord'
 import { MediationRepository } from '../../repository/MediationRepository'
 import { MediationRecipientService } from '../MediationRecipientService'

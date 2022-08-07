@@ -5,13 +5,8 @@ import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
-import type {
-  KeylistUpdateResponseMessage,
-  MediationDenyMessage,
-  MediationGrantMessage,
-  MessageDeliveryMessage,
-} from '../messages'
-import type { StatusMessage } from '../messages/StatusMessage'
+import type { KeylistUpdateResponseMessage, MediationDenyMessage, MediationGrantMessage } from '../messages'
+import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
 import type { GetRoutingOptions } from './RoutingService'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -32,15 +27,10 @@ import { didKeyToVerkey } from '../../dids/helpers'
 import { ProblemReportError } from '../../problem-reports'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { RoutingProblemReportReason } from '../error'
-import {
-  StatusRequestMessage,
-  DeliveryRequestMessage,
-  MessagesReceivedMessage,
-  KeylistUpdateAction,
-  MediationRequestMessage,
-} from '../messages'
+import { KeylistUpdateAction, MediationRequestMessage } from '../messages'
 import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMessage'
 import { MediationRole, MediationState } from '../models'
+import { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from '../protocol/pickup/v2/messages'
 import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
 
