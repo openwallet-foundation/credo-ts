@@ -13,6 +13,8 @@ import type {
   ProofStateChangedEvent,
   SchemaTemplate,
 } from '../src'
+import type { ActionMenuStateChangedEvent } from '../src/modules/action-menu/ActionMenuEvents'
+import type { ActionMenuState } from '../src/modules/action-menu/ActionMenuState'
 import type { AcceptOfferOptions } from '../src/modules/credentials'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { Schema, CredDef } from 'indy-sdk'
@@ -46,6 +48,7 @@ import {
 } from '../src'
 import { KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
+import { ActionMenuEventTypes } from '../src/modules/action-menu/ActionMenuEvents'
 import { AutoAcceptCredential } from '../src/modules/credentials/models/CredentialAutoAcceptType'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/messages/V1CredentialPreview'
 import { DidCommV1Service, DidKey, Key } from '../src/modules/dids'
@@ -57,8 +60,6 @@ import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
-import { ActionMenuState } from '../src/modules/action-menu/ActionMenuState'
-import { ActionMenuEventTypes, ActionMenuStateChangedEvent } from '../src/modules/action-menu/ActionMenuEvents'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)

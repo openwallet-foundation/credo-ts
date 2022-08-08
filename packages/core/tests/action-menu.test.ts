@@ -108,13 +108,10 @@ describe('Action Menu', () => {
       state: ActionMenuState.Done,
     })
 
-    // Related Alice's Action Menu Record state should be changed
-    aliceAgent.actionMenu.findActiveMenu({ connectionId: aliceConnection.id, role: ActionMenuRole.Responder })
-
     // As Alice has responded, menu should be closed (done state)
-    const aliceActiveMenu = await faberAgent.actionMenu.findActiveMenu({
-      connectionId: faberConnection.id,
-      role: ActionMenuRole.Responder,
+    const aliceActiveMenu = await aliceAgent.actionMenu.findActiveMenu({
+      connectionId: aliceConnection.id,
+      role: ActionMenuRole.Requester,
     })
     expect(aliceActiveMenu).toBeInstanceOf(ActionMenuRecord)
     expect(aliceActiveMenu?.state).toBe(ActionMenuState.Done)
