@@ -28,6 +28,8 @@ import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { ValueTransferModule, ValueTransferService } from '../modules/value-transfer'
+import { ValueTransferWitnessService } from '../modules/value-transfer/services/ValueTransferWitnessService'
+import { GossipModule } from '../modules/witness-gossip/GossipModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -54,6 +56,7 @@ export class Agent {
   private walletService: Wallet
   private didService: DidService
   private valueTransferService: ValueTransferService
+  private valueTransferWitnessService: ValueTransferWitnessService
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
@@ -67,6 +70,7 @@ export class Agent {
   public readonly dids: DidsModule
   public readonly wallet: WalletModule
   public readonly valueTransfer: ValueTransferModule
+  public readonly gossip: GossipModule
   public readonly outOfBand: OutOfBandModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
@@ -108,6 +112,7 @@ export class Agent {
     this.transportService = this.container.resolve(TransportService)
     this.walletService = this.container.resolve(InjectionSymbols.Wallet)
     this.valueTransferService = this.container.resolve(ValueTransferService)
+    this.valueTransferWitnessService = this.container.resolve(ValueTransferWitnessService)
     this.didService = this.container.resolve(DidService)
 
     // We set the modules in the constructor because that allows to set them as read-only
@@ -123,6 +128,7 @@ export class Agent {
     this.dids = this.container.resolve(DidsModule)
     this.wallet = this.container.resolve(WalletModule)
     this.valueTransfer = this.container.resolve(ValueTransferModule)
+    this.gossip = this.container.resolve(GossipModule)
     this.outOfBand = this.container.resolve(OutOfBandModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
@@ -242,7 +248,11 @@ export class Agent {
 
     // VTP state initialization
     if (valueTransferConfig) {
-      await this.valueTransferService.initState(valueTransferConfig)
+      if (valueTransferConfig.witness) {
+        return this.valueTransferWitnessService.init()
+      } else {
+        await this.valueTransferService.initPartyState()
+      }
     }
 
     this._isInitialized = true

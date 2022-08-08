@@ -26,12 +26,12 @@ export class OfferHandler implements Handler<typeof DIDCommV2Message> {
   public async handle(messageContext: HandlerInboundMessage<OfferHandler>) {
     const { record, message } = await this.valueTransferGetterService.processOffer(messageContext)
     if (!record || message.type === ProblemReportMessage.type) {
-      return this.valueTransferService.sendMessageToWitness(message)
+      return this.valueTransferService.sendMessage(message)
     }
 
     if (this.valueTransferResponseCoordinator.shouldAutoRespondToOffer()) {
       const { message } = await this.valueTransferGetterService.acceptOffer(record)
-      return this.valueTransferService.sendMessageToWitness(message)
+      return this.valueTransferService.sendMessage(message)
     }
   }
 }

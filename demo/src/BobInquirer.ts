@@ -5,14 +5,14 @@ import { textSync } from 'figlet'
 import inquirer from 'inquirer'
 
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
-import { Getter } from './Getter'
+import { Bob } from './Bob'
 import { Listener } from './Listener'
 import { greenText, Title } from './OutputClass'
 
 export const runGetter = async () => {
   clear()
-  console.log(textSync('Getter', { horizontalLayout: 'full' }))
-  const getter = await GetterInquirer.build()
+  console.log(textSync('Bob', { horizontalLayout: 'full' }))
+  const getter = await BobInquirer.build()
   await getter.processAnswer()
 }
 
@@ -22,12 +22,12 @@ enum PromptOptions {
   Restart = 'Restart',
 }
 
-export class GetterInquirer extends BaseInquirer {
-  public getter: Getter
+export class BobInquirer extends BaseInquirer {
+  public getter: Bob
   public promptOptionsString: string[]
   public listener: Listener
 
-  public constructor(getter: Getter) {
+  public constructor(getter: Bob) {
     super()
     this.getter = getter
     this.listener = new Listener()
@@ -36,9 +36,9 @@ export class GetterInquirer extends BaseInquirer {
     this.listener.paymentOfferListener(this.getter, this)
   }
 
-  public static async build(): Promise<GetterInquirer> {
-    const getter = await Getter.build()
-    return new GetterInquirer(getter)
+  public static async build(): Promise<BobInquirer> {
+    const getter = await Bob.build()
+    return new BobInquirer(getter)
   }
 
   private async getPromptChoice() {
@@ -64,8 +64,8 @@ export class GetterInquirer extends BaseInquirer {
   }
 
   public async requestPayment() {
-    const witness = await inquirer.prompt([this.inquireInput('Witness DID')])
-    await this.getter.requestPayment(witness.input)
+    const giver = await inquirer.prompt([this.inquireInput('Giver DID')])
+    await this.getter.requestPayment(giver.input)
   }
 
   public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {

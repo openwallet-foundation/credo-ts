@@ -1,11 +1,13 @@
 import type { Alice } from './Alice'
 import type { AliceInquirer } from './AliceInquirer'
+import type { Anna } from './Anna'
+import type { AnnaInquirer } from './AnnaInquirer'
+import type { Bob } from './Bob'
+import type { BobInquirer } from './BobInquirer'
+import type { Carol } from './Carol'
+import type { CarolInquirer } from './CarolInquirer'
 import type { Faber } from './Faber'
 import type { FaberInquirer } from './FaberInquirer'
-import type { Getter } from './Getter'
-import type { GetterInquirer } from './GetterInquirer'
-import type { Giver } from './Giver'
-import type { GiverInquirer } from './GiverInquirer'
 import type {
   Agent,
   BasicMessageStateChangedEvent,
@@ -84,7 +86,7 @@ export class Listener {
     console.log(purpleText(JsonEncoder.toString(valueTransferRecord.receipt)))
   }
 
-  private async newPaymentRequestPrompt(valueTransferRecord: ValueTransferRecord, giverInquirer: GiverInquirer) {
+  private async newPaymentRequestPrompt(valueTransferRecord: ValueTransferRecord, giverInquirer: AnnaInquirer) {
     this.printRequest(valueTransferRecord)
     this.turnListenerOn()
     await giverInquirer.acceptPaymentRequest(valueTransferRecord)
@@ -92,7 +94,10 @@ export class Listener {
     await giverInquirer.processAnswer()
   }
 
-  private async newPaymentOfferPrompt(valueTransferRecord: ValueTransferRecord, getterInquirer: GetterInquirer) {
+  private async newPaymentOfferPrompt(
+    valueTransferRecord: ValueTransferRecord,
+    getterInquirer: BobInquirer | CarolInquirer
+  ) {
     this.printRequest(valueTransferRecord)
     this.turnListenerOn()
     await getterInquirer.acceptPaymentOffer(valueTransferRecord)
@@ -100,7 +105,7 @@ export class Listener {
     await getterInquirer.processAnswer()
   }
 
-  public paymentRequestListener(giver: Giver, giverInquirer: GiverInquirer) {
+  public paymentRequestListener(giver: Anna, giverInquirer: AnnaInquirer) {
     giver.agent.events.on(
       ValueTransferEventTypes.ValueTransferStateChanged,
       async ({ payload }: ValueTransferStateChangedEvent) => {
@@ -111,7 +116,7 @@ export class Listener {
     )
   }
 
-  public paymentOfferListener(getter: Getter, getterInquirer: GetterInquirer) {
+  public paymentOfferListener(getter: Bob | Carol, getterInquirer: BobInquirer | CarolInquirer) {
     getter.agent.events.on(
       ValueTransferEventTypes.ValueTransferStateChanged,
       async ({ payload }: ValueTransferStateChangedEvent) => {

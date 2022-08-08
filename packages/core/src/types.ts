@@ -11,7 +11,7 @@ import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy, MediatorDeliveryStrategy } from './modules/routing'
 import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
-import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { VerifiableNote, WitnessInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -41,14 +41,32 @@ export interface WalletExportImportConfig {
   path: string
 }
 
-export interface ValueTransferConfig {
-  isWitness?: boolean
+export interface ValueTransferPartyConfig {
   witnessDid?: string
-  defaultTransport?: Transports
   verifiableNotes?: VerifiableNote[]
   autoAcceptPaymentOffer?: AutoAcceptValueTransfer
   autoAcceptPaymentRequest?: AutoAcceptValueTransfer
   supportedPartiesCount?: number
+}
+
+export enum WitnessType {
+  One = '1',
+  Two = '2',
+  Three = '2',
+}
+
+export interface ValueTransferWitnessConfig {
+  wid: string
+  knownWitnesses: WitnessInfo[]
+  tockTime?: number
+  cleanupTime?: number
+  historyThreshold?: number
+  supportedPartiesCount?: number
+}
+
+export interface ValueTransferConfig {
+  party?: ValueTransferPartyConfig
+  witness?: ValueTransferWitnessConfig
 }
 
 export enum DidCommMimeType {

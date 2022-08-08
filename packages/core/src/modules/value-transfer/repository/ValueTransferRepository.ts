@@ -15,4 +15,8 @@ export class ValueTransferRepository extends Repository<ValueTransferRecord> {
   public async getByThread(threadId: string): Promise<ValueTransferRecord> {
     return this.getSingleByQuery({ threadId })
   }
+
+  public async findByThread(threadId: string): Promise<ValueTransferRecord | null> {
+    return this.findSingleByQuery({ threadId })
+  }
 }

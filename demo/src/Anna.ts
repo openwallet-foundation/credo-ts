@@ -7,7 +7,7 @@ import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
-export class Giver extends BaseAgent {
+export class Anna extends BaseAgent {
   public valueTransferRecordId?: string
 
   public constructor(name: string, port?: number) {
@@ -18,21 +18,23 @@ export class Giver extends BaseAgent {
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
-          seed: '9ad6a1e205a549dc86ced47630ed7b78',
+          seed: '6b8b882e2618fa5d45ee7229ca880080',
         },
       ],
       valueTransferConfig: {
-        verifiableNotes: createVerifiableNotes(10),
+        party: {
+          verifiableNotes: createVerifiableNotes(10),
+        },
       },
     })
   }
 
-  public static async build(): Promise<Giver> {
-    const giver = new Giver('giver', undefined)
+  public static async build(): Promise<Anna> {
+    const giver = new Anna('anna', undefined)
     await giver.initializeAgent()
 
     const publicDid = await giver.agent.getPublicDid()
-    console.log(`Giver Public DID: ${publicDid?.did}`)
+    console.log(`Anna Public DID: ${publicDid?.did}`)
 
     return giver
   }

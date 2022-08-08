@@ -10,7 +10,9 @@ import type { Giver, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
+import { v4 } from 'uuid'
 
+import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { DidService } from '../../dids'
@@ -29,6 +31,7 @@ import { ValueTransferStateService } from './ValueTransferStateService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferGiverService {
+  private config: AgentConfig
   private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository
   private valueTransferService: ValueTransferService
@@ -40,6 +43,7 @@ export class ValueTransferGiverService {
   private giver: Giver
 
   public constructor(
+    config: AgentConfig,
     valueTransferRepository: ValueTransferRepository,
     valueTransferStateRepository: ValueTransferStateRepository,
     valueTransferService: ValueTransferService,
@@ -49,6 +53,7 @@ export class ValueTransferGiverService {
     wellKnownService: WellKnownService,
     eventEmitter: EventEmitter
   ) {
+    this.config = config
     this.valueTransferRepository = valueTransferRepository
     this.valueTransferStateRepository = valueTransferStateRepository
     this.valueTransferService = valueTransferService
@@ -97,6 +102,10 @@ export class ValueTransferGiverService {
     record: ValueTransferRecord
     message: OfferMessage
   }> {
+    const id = v4()
+
+    this.config.logger.info(`> Giver: offer payment VTP transaction with ${id}`)
+
     // Get payment public DID from the storage or generate a new one if requested
     const giver = await this.valueTransferService.getTransactionDid({
       role: ValueTransferRole.Giver,
@@ -129,6 +138,7 @@ export class ValueTransferGiverService {
     }
 
     const offerMessage = new OfferMessage({
+      id,
       from: giver.did,
       to: params.getter,
       attachments,
@@ -155,6 +165,9 @@ export class ValueTransferGiverService {
       type: ValueTransferEventTypes.ValueTransferStateChanged,
       payload: { record },
     })
+
+    this.config.logger.info(`< Giver: offer payment VTP transaction with ${id} completed!`)
+
     return { record, message: offerMessage }
   }
 
@@ -174,6 +187,8 @@ export class ValueTransferGiverService {
     message: RequestMessage | ProblemReportMessage
   }> {
     const { message: requestMessage } = messageContext
+
+    this.config.logger.info(`> Giver: process payment request message for VTP transaction ${requestMessage.thid}`)
 
     const receipt = requestMessage.valueTransferMessage
     if (!receipt) {
@@ -228,6 +243,11 @@ export class ValueTransferGiverService {
       type: ValueTransferEventTypes.ValueTransferStateChanged,
       payload: { record },
     })
+
+    this.config.logger.info(
+      `< Giver: process payment request message for VTP transaction ${requestMessage.thid} completed!`
+    )
+
     return { record, message: requestMessage }
   }
 
@@ -248,6 +268,8 @@ export class ValueTransferGiverService {
     record: ValueTransferRecord
     message: RequestAcceptedMessage | ProblemReportMessage
   }> {
+    this.config.logger.info(`> Giver: accept payment request message for VTP transaction ${record.threadId}`)
+
     // Verify that we are in appropriate state to perform action
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.RequestReceived)
@@ -315,6 +337,9 @@ export class ValueTransferGiverService {
       ValueTransferState.RequestAcceptanceSent,
       ValueTransferTransactionStatus.InProgress
     )
+
+    this.config.logger.info(`< Giver: accept payment request message for VTP transaction ${record.threadId} completed!`)
+
     return { record, message: requestAcceptedMessage }
   }
 
@@ -335,6 +360,10 @@ export class ValueTransferGiverService {
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: offerAcceptedWitnessedMessage } = messageContext
+
+    this.config.logger.info(
+      `> Giver: process offer acceptance message for VTP transaction ${offerAcceptedWitnessedMessage.thid}`
+    )
 
     const record = await this.valueTransferRepository.getByThread(offerAcceptedWitnessedMessage.thid)
 
@@ -397,6 +426,11 @@ export class ValueTransferGiverService {
       ValueTransferState.CashSignatureSent,
       ValueTransferTransactionStatus.InProgress
     )
+
+    this.config.logger.info(
+      `< Giver: process offer acceptance message for VTP transaction ${offerAcceptedWitnessedMessage.thid} completed!`
+    )
+
     return { record, message: cashRemovedMessage }
   }
 
@@ -417,6 +451,10 @@ export class ValueTransferGiverService {
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: cashAcceptedWitnessedMessage } = messageContext
+
+    this.config.logger.info(
+      `> Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid}`
+    )
 
     const record = await this.valueTransferRepository.getByThread(cashAcceptedWitnessedMessage.thid)
 
@@ -478,6 +516,11 @@ export class ValueTransferGiverService {
       ValueTransferState.CashSignatureSent,
       ValueTransferTransactionStatus.InProgress
     )
+
+    this.config.logger.info(
+      `< Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid} completed!`
+    )
+
     return { record, message: cashRemovedMessage }
   }
 
@@ -490,6 +533,8 @@ export class ValueTransferGiverService {
   public async removeCash(record: ValueTransferRecord): Promise<{
     record: ValueTransferRecord
   }> {
+    this.config.logger.info(`> Giver: remove cash for VTP transaction ${record.threadId}`)
+
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.CashSignatureSent)
 
@@ -522,6 +567,9 @@ export class ValueTransferGiverService {
       ValueTransferState.WaitingReceipt,
       ValueTransferTransactionStatus.Finished
     )
+
+    this.config.logger.info(`> Giver: remove cash for VTP transaction ${record.threadId} completed!`)
+
     return { record }
   }
 
@@ -541,6 +589,8 @@ export class ValueTransferGiverService {
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: receiptMessage } = messageContext
+
+    this.config.logger.info(`> Giver: process receipt message for VTP transaction ${receiptMessage.thid}`)
 
     const record = await this.valueTransferRepository.getByThread(receiptMessage.thid)
 
@@ -595,6 +645,9 @@ export class ValueTransferGiverService {
       ValueTransferState.Completed,
       ValueTransferTransactionStatus.Finished
     )
+
+    this.config.logger.info(`< Giver: process receipt message for VTP transaction ${receiptMessage.thid} completed!`)
+
     return { record, message: receiptMessage }
   }
 }
