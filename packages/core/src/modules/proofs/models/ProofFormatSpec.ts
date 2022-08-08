@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
 
-import { uuid } from '../../../../utils/uuid'
+import { uuid } from '../../../utils/uuid'
 
 export interface ProofFormatSpecOptions {
   attachmentId?: string

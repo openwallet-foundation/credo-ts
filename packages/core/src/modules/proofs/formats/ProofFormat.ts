@@ -11,7 +11,7 @@
  *  indy: {
  *   // ... params for indy create request ...
  *  },
- *  presentation-exchange: {
+ *  presentationExchange: {
  *  // ... params for pex create request ...
  *  }
  * }

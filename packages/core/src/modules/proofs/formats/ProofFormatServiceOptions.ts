@@ -1,7 +1,8 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
+import type { ProofFormatSpec } from '../models/ProofFormatSpec'
 import type { ProofFormat } from './ProofFormat'
 import type { ProofFormatService } from './ProofFormatService'
-import type { ProofFormatSpec } from './models/ProofFormatSpec'
+
 /**
  * Get the service map for usage in the proofs module. Will return a type mapping of protocol version to service.
  *

@@ -10,7 +10,7 @@ import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { V2_INDY_PRESENTATION_REQUEST } from '../../../formats/ProofFormatConstants'
 import { ProofRequest } from '../../../formats/indy/models/ProofRequest'
-import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
+import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 
 export interface RequestPresentationOptions {
   id?: string

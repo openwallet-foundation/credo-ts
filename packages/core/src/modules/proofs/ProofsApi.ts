@@ -538,7 +538,7 @@ export class ProofsApi<
       proofService.registerHandlers(
         dispatcher,
         this.agentConfig,
-        new ProofResponseCoordinator(this.agentConfig, proofService, this.config),
+        new ProofResponseCoordinator(proofService),
         mediationRecipientService,
         this.routingService
       )

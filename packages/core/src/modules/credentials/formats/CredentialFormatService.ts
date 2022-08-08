@@ -1,6 +1,4 @@
 import type { AgentContext } from '../../../agent'
-import type { EventEmitter } from '../../../agent/EventEmitter'
-import type { CredentialRepository } from '../repository'
 import type { CredentialFormat } from './CredentialFormat'
 import type {
   FormatCreateProposalOptions,
@@ -23,14 +21,6 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 
 export abstract class CredentialFormatService<CF extends CredentialFormat = CredentialFormat> {
-  protected credentialRepository: CredentialRepository
-  protected eventEmitter: EventEmitter
-
-  public constructor(credentialRepository: CredentialRepository, eventEmitter: EventEmitter) {
-    this.credentialRepository = credentialRepository
-    this.eventEmitter = eventEmitter
-  }
-
   abstract readonly formatKey: CF['formatKey']
   abstract readonly credentialRecordType: CF['credentialRecordType']
 
@@ -86,7 +76,6 @@ export abstract class CredentialFormatService<CF extends CredentialFormat = Cred
    *
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
-   * @returns attachment to the credential proposal
    */
   protected getFormatData(data: unknown, id: string): Attachment {
     const attachment = new Attachment({

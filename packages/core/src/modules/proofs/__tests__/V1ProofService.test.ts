@@ -1,6 +1,7 @@
 import type { AgentContext } from '../../../agent'
 import type { Wallet } from '../../../wallet/Wallet'
 import type { CredentialRepository } from '../../credentials/repository'
+import type { IndyVerifierService } from '../../indy'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { CustomProofTags } from './../repository/ProofRecord'
 
@@ -119,6 +120,7 @@ describe('V1ProofService', () => {
     connectionService = new connectionServiceMock()
     didCommMessageRepository = new didCommMessageRepositoryMock()
     indyProofFormatService = new indyProofFormatServiceMock()
+    agentContext = getAgentContext()
 
     proofService = new V1ProofService(
       proofRepository,
