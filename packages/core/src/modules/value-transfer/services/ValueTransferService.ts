@@ -4,7 +4,14 @@ import type { Transports } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { createVerifiableNotes, createRandomVerifiableNotes, PartyState, ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
+
+import {
+  createVerifiableNotes,
+  createRandomVerifiableNotes,
+  PartyState,
+  ValueTransfer,
+  Wallet,
+} from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -337,24 +344,19 @@ export class ValueTransferService {
   }
 
   public async mintNotes(amount: number, witness: string): Promise<MintMessage> {
-    const stateRecord = await this.getPartyState()
-    if (!stateRecord) {
-      throw new AriesFrameworkError('Current state is not found')
-    }
-
     const publicDid = await this.didService.getPublicDid()
     if (!publicDid) {
       throw new AriesFrameworkError('Public DID is not found')
     }
 
-    const { partyState } = stateRecord
-
-    const startHash = partyState.wallet.rootHash()
+    const currentState = await this.valueTransferStateService.getPartyState()
+    const startHash = currentState.wallet.rootHash()
 
     const mintedNotes = createRandomVerifiableNotes(amount)
-    await this.receiveNotes(mintedNotes, stateRecord)
+    await this.receiveNotes(mintedNotes)
 
-    const endHash = partyState.wallet.rootHash()
+    const updatedState = await this.valueTransferStateService.getPartyState()
+    const endHash = updatedState.wallet.rootHash()
 
     return new MintMessage({
       from: publicDid.did,
@@ -362,7 +364,7 @@ export class ValueTransferService {
       body: { startHash, endHash },
     })
   }
-  
+
   private static generateInitialStateNotes(statesCount: number): VerifiableNote[] {
     const stateIndex = Math.floor(Math.random() * statesCount)
     const startFromSno = stateIndex * 10

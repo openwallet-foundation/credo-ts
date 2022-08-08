@@ -25,6 +25,7 @@ import {
   RequestAcceptedHandler,
   RequestAcceptedWitnessedHandler,
   RequestHandler,
+  MintHandler,
 } from './handlers'
 import { OfferAcceptedHandler } from './handlers/OfferAcceptedHandler'
 import { OfferAcceptedWitnessedHandler } from './handlers/OfferAcceptedWitnessedHandler'
@@ -334,5 +335,6 @@ export class ValueTransferModule {
     dispatcher.registerHandler(
       new OfferAcceptedWitnessedHandler(this.valueTransferService, this.valueTransferGiverService)
     )
+    dispatcher.registerHandler(new MintHandler(this.valueTransferWitnessService))
   }
 }

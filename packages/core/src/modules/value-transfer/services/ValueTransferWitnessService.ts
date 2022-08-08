@@ -1,4 +1,5 @@
 import type { ValueTransferStateChangedEvent, ResumeValueTransferTransactionEvent } from '../ValueTransferEvents'
+import type { MintMessage } from '../messages/MintMessage'
 import type { Witness } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import {
@@ -7,9 +8,9 @@ import {
   ValueTransfer,
   Wallet,
   WitnessState,
+  ErrorCodes,
+  WitnessInfo,
 } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { ErrorCodes } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { WitnessInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -621,8 +622,18 @@ export class ValueTransferWitnessService {
     return { record, getterMessage: getterReceiptMessage, giverMessage: giverReceiptMessage }
   }
 
-  public async processNotesMint(messageContext: InboundMessageContext<MintMessage>): Promise<void> {
+  public async processCashMint(messageContext: InboundMessageContext<MintMessage>): Promise<void> {
     const { message: mintMessage } = messageContext
+    const { startHash, endHash } = mintMessage.body
+
+    const transactionRecord = new TransactionRecord({
+      start: startHash,
+      end: endHash,
+    })
+
+    const { witnessState } = await this.getWitnessState()
+    witnessState.applyPartyStateTransitions([transactionRecord])
+    await this.valueTransferStateService.storeWitnessState(witnessState)
   }
 
   /**

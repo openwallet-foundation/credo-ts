@@ -16,22 +16,13 @@ export type MintMessageBodyParams = {
 }
 
 export class MintMessageBody {
-  @IsString()
-  @IsNotEmpty()
   @Expose({ name: 'start_hash' })
   @Transform((params) => transformUint8Array(params))
-  public startHash: Uint8Array
+  public startHash!: Uint8Array
 
-  @IsString()
-  @IsNotEmpty()
   @Expose({ name: 'end_hash' })
   @Transform((params) => transformUint8Array(params))
-  public endHash: Uint8Array
-
-  public constructor(params: MintMessageBodyParams) {
-    this.startHash = params.startHash
-    this.endHash = params.endHash
-  }
+  public endHash!: Uint8Array
 }
 
 export class MintMessage extends DIDCommV2Message {
