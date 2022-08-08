@@ -6,7 +6,6 @@ import type {
 } from '../../protocol/v1/models/V1PresentationPreview'
 import type { ProofFormat } from '../ProofFormat'
 import type { IndyRequestProofFormat } from '../indy/IndyProofFormatsServiceOptions'
-import type { ProofRequest } from './models/ProofRequest'
 import type { IndyRequestedCredentialsOptions, RequestedCredentials } from './models/RequestedCredentials'
 import type { RetrievedCredentials } from './models/RetrievedCredentials'
 

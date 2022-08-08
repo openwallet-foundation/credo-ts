@@ -42,6 +42,7 @@ import { IndyCredential, IndyCredentialInfo } from '../../../credentials'
 import { IndyCredentialUtils } from '../../../credentials/formats/indy/IndyCredentialUtils'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger'
+import { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import { PartialProof } from '../../protocol/v1/models'
 import {
   V2_INDY_PRESENTATION_REQUEST,
@@ -49,10 +50,9 @@ import {
   V2_INDY_PRESENTATION,
 } from '../ProofFormatConstants'
 import { ProofFormatService } from '../ProofFormatService'
-import { InvalidEncodedValueError } from '../errors/InvalidEncodedValueError'
-import { MissingIndyProofMessageError } from '../errors/MissingIndyProofMessageError'
-import { ProofFormatSpec } from '../models/ProofFormatSpec'
 
+import { InvalidEncodedValueError } from './errors/InvalidEncodedValueError'
+import { MissingIndyProofMessageError } from './errors/MissingIndyProofMessageError'
 import { RequestedAttribute, RequestedPredicate } from './models'
 import { ProofRequest } from './models/ProofRequest'
 import { RequestedCredentials } from './models/RequestedCredentials'

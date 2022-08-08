@@ -28,7 +28,6 @@ describe('Present Proof', () => {
       'Faber agent',
       'Alice agent'
     ))
-    agentContext = getAgentContext()
   })
 
   afterAll(async () => {

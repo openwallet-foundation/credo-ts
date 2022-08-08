@@ -9,7 +9,7 @@ import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { V2_INDY_PRESENTATION } from '../../../formats/ProofFormatConstants'
-import { ProofFormatSpec } from '../../../formats/models/ProofFormatSpec'
+import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 
 export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 
