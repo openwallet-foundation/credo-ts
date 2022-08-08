@@ -906,6 +906,17 @@ export class V1ProofService extends ProofService {
     return true
   }
 
+//   src/modules/proofs/ProofsApi.ts:87:37 - error TS2344: Type '[V1ProofService, V2ProofService<PFs>]' does not satisfy the constraint 'ProofService<PFs>[]'.
+//   Type 'V1ProofService | V2ProofService<PFs>' is not assignable to type 'ProofService<PFs>'.
+//     Type 'V1ProofService' is not assignable to type 'ProofService<PFs>'.
+//       The types returned by 'getRequestedCredentialsForProofRequest(...)' are incompatible between these types.
+//         Type 'Promise<FormatRetrievedCredentialOptions<[IndyProofFormat]>>' is not assignable to type 'Promise<FormatRetrievedCredentialOptions<PFs>>'.
+//           Type 'FormatRetrievedCredentialOptions<[IndyProofFormat]>' is not assignable to type 'FormatRetrievedCredentialOptions<PFs>'.
+//             Types of property 'proofFormats' are incompatible.
+//               Type 'ProofFormatPayload<[IndyProofFormat], "retrieveCredentials">' is not assignable to type 'ProofFormatPayload<PFs, "retrieveCredentials">'.
+
+// 87   PSs extends ProofService<PFs>[] = [V1ProofService, V2ProofService<PFs>]
+
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions

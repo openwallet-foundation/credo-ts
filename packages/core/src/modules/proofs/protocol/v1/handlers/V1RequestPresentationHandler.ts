@@ -76,8 +76,6 @@ export class V1RequestPresentationHandler implements Handler {
           filterByPresentationPreview: true,
         },
       })
-
-      console.log("****** QUACK retrieved credentials = ", retrievedCredentials)
     if (!retrievedCredentials.proofFormats.indy) {
       this.agentConfig.logger.error('No matching Indy credentials could be retrieved.')
       throw new AriesFrameworkError('No matching Indy credentials could be retrieved.')
