@@ -1,7 +1,11 @@
 import type { EncryptedMessage } from '../types'
 
 export interface MessageRepository {
-  takeFromQueue(connectionId: string, limit?: number): EncryptedMessage[] | Promise<EncryptedMessage[]>
-  getAvailableMessages(connectionId: string): number | Promise<number>
+  getAvailableMessageCount(connectionId: string): number | Promise<number>
+  takeFromQueue(
+    connectionId: string,
+    limit?: number,
+    keepMessages?: boolean
+  ): EncryptedMessage[] | Promise<EncryptedMessage[]>
   add(connectionId: string, payload: EncryptedMessage): void | Promise<void>
 }

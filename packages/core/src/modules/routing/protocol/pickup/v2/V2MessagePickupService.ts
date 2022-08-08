@@ -57,10 +57,10 @@ export class V2MessagePickupService {
     const connection = messageContext.assertReadyConnection()
 
     const { message } = messageContext
-    const messages = await this.messageRepository.takeFromQueue(connection.id, message.limit)
+    const messages = await this.messageRepository.takeFromQueue(connection.id, message.limit, true)
 
     // TODO: each message should be stored with an id. to be able to conform to the id property
-    // of batch message
+    // of delivery message
     const attachments = messages.map(
       (msg) =>
         new Attachment({

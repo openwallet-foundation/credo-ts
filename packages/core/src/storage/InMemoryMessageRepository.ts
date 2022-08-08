@@ -13,11 +13,12 @@ export class InMemoryMessageRepository implements MessageRepository {
   public constructor(agentConfig: AgentConfig) {
     this.logger = agentConfig.logger
   }
-  public available(connectionId: string): number | Promise<number> {
+
+  public getAvailableMessageCount(connectionId: string): number | Promise<number> {
     return this.messages[connectionId] ? this.messages[connectionId].length : 0
   }
 
-  public takeFromQueue(connectionId: string, limit?: number) {
+  public takeFromQueue(connectionId: string, limit?: number, keepMessages?: boolean) {
     if (!this.messages[connectionId]) {
       return []
     }
@@ -25,7 +26,9 @@ export class InMemoryMessageRepository implements MessageRepository {
     const messagesToTake = limit ?? this.messages[connectionId].length
     this.logger.debug(`Taking ${messagesToTake} messages from queue for connection ${connectionId}`)
 
-    return this.messages[connectionId].splice(0, messagesToTake)
+    return keepMessages
+      ? this.messages[connectionId].slice(0, messagesToTake)
+      : this.messages[connectionId].splice(0, messagesToTake)
   }
 
   public add(connectionId: string, payload: EncryptedMessage) {
