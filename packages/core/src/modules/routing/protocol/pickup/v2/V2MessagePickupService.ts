@@ -42,7 +42,7 @@ export class V2MessagePickupService {
     const connection = messageContext.assertReadyConnection()
 
     const statusMessage = new StatusMessage({
-      messageCount: await this.messageRepository.available(connection.id),
+      messageCount: await this.messageRepository.getAvailableMessageCount(connection.id),
     })
 
     return createOutboundMessage(connection, statusMessage)
