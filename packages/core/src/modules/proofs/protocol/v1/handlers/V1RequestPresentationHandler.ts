@@ -69,16 +69,15 @@ export class V1RequestPresentationHandler implements Handler {
       throw new AriesFrameworkError('No proof request found.')
     }
 
-    const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(
-      messageContext.agentContext,
-      {
+    const retrievedCredentials: FormatRetrievedCredentialOptions<[IndyProofFormat]> =
+      await this.proofService.getRequestedCredentialsForProofRequest(messageContext.agentContext, {
         proofRecord: record,
         config: {
           filterByPresentationPreview: true,
         },
-      }
-    )
+      })
 
+      console.log("****** QUACK retrieved credentials = ", retrievedCredentials)
     if (!retrievedCredentials.proofFormats.indy) {
       this.agentConfig.logger.error('No matching Indy credentials could be retrieved.')
       throw new AriesFrameworkError('No matching Indy credentials could be retrieved.')

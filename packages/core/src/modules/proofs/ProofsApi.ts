@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { ProofService } from './ProofService'
 import type {
+  AcceptPresentationOptions,
   AcceptProposalOptions,
   OutOfBandRequestOptions,
   ProposeProofOptions,
@@ -9,7 +10,7 @@ import type {
 } from './ProofsApiOptions'
 import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
-import type { AcceptPresentationOptions, AutoSelectCredentialsForProofRequestOptions } from './models/ModuleOptions'
+import type { AutoSelectCredentialsForProofRequestOptions } from './models/ModuleOptions'
 import type {
   CreateOutOfBandRequestOptions,
   CreatePresentationOptions,
@@ -18,6 +19,7 @@ import type {
   CreateRequestAsResponseOptions,
   CreateProofRequestFromProposalOptions,
   FormatRequestedCredentialReturn,
+  FormatRetrievedCredentialOptions,
 } from './models/ProofServiceOptions'
 import type { ProofRecord } from './repository/ProofRecord'
 
@@ -52,7 +54,7 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
 
   // Request methods
   requestProof(options: RequestProofOptions<PFs, PSs>): Promise<ProofRecord>
-  acceptRequest(options: AcceptPresentationOptions): Promise<ProofRecord>
+  acceptRequest(options: AcceptPresentationOptions<PFs, PSs>): Promise<ProofRecord>
   declineRequest(proofRecordId: string): Promise<ProofRecord>
 
   // out of band
@@ -264,7 +266,7 @@ export class ProofsApi<
    * specifying which credentials to use for the proof
    * @returns Proof record associated with the sent presentation message
    */
-  public async acceptRequest(options: AcceptPresentationOptions): Promise<ProofRecord> {
+  public async acceptRequest(options: AcceptPresentationOptions<PFs, PSs>): Promise<ProofRecord> {
     const { proofRecordId, proofFormats, comment } = options
 
     const record = await this.getById(proofRecordId)
@@ -443,10 +445,11 @@ export class ProofsApi<
 
     const service = this.getService(proofRecord.protocolVersion)
 
-    const retrievedCredentials = await service.getRequestedCredentialsForProofRequest(this.agentContext, {
-      proofRecord: proofRecord,
-      config: options.config,
-    })
+    const retrievedCredentials: FormatRetrievedCredentialOptions<PFs> =
+      await service.getRequestedCredentialsForProofRequest(this.agentContext, {
+        proofRecord: proofRecord,
+        config: options.config,
+      })
     return await service.autoSelectCredentialsForProofRequest(retrievedCredentials)
   }
 

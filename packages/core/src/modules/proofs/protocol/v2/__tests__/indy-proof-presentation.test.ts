@@ -1,10 +1,11 @@
 import type { AgentContext } from '../../../../../agent'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { ProposeProofOptions, AcceptProposalOptions } from '../../../ProofsApiOptions'
-import type { AcceptPresentationOptions } from '../../../models/ModuleOptions'
+import type { ProposeProofOptions, AcceptProposalOptions, AcceptPresentationOptions } from '../../../ProofsApiOptions'
+import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
+import type { V2ProofService } from '../V2ProofService'
 
 import { getAgentContext, setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -173,9 +174,10 @@ describe('Present Proof', () => {
       },
     })
 
-    const acceptPresentationOptions: AcceptPresentationOptions = {
+    const acceptPresentationOptions: AcceptPresentationOptions<[IndyProofFormat], [V2ProofService]> = {
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
+      protocolVersion: 'v2',
     }
 
     const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {

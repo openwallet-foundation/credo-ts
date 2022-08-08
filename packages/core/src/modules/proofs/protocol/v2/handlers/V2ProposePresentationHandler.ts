@@ -5,6 +5,7 @@ import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator
 import type { ProofFormat } from '../../../formats/ProofFormat'
 import type {
   CreateProofRequestFromProposalOptions,
+  CreateRequestAsResponseOptions,
   ProofRequestFromProposalOptions,
 } from '../../../models/ProofServiceOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
@@ -73,17 +74,21 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
       proofRequestFromProposalOptions
     )
 
-    if (!proofRequest) {
+    const indyProofRequest = proofRequest.proofFormats
+
+    if (!indyProofRequest) {
       this.agentConfig.logger.error('Failed to create proof request')
       throw new AriesFrameworkError('Failed to create proof request.')
     }
 
-    const { message } = await this.proofService.createRequestAsResponse(messageContext.agentContext, {
+    const options: CreateRequestAsResponseOptions<PFs> = {
       proofRecord: proofRecord,
       autoAcceptProof: proofRecord.autoAcceptProof,
-      proofFormats: proofRequest,
+      proofFormats: indyProofRequest,
       willConfirm: true,
-    })
+    }
+
+    const { message } = await this.proofService.createRequestAsResponse(messageContext.agentContext, options)
 
     return createOutboundMessage(messageContext.connection, message)
   }

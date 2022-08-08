@@ -4,7 +4,11 @@ import type { DidCommMessageRepository } from '../../../../../storage/didcomm/Di
 import type { MediationRecipientService, RoutingService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { ProofFormat } from '../../../formats/ProofFormat'
-import type { CreatePresentationOptions } from '../../../models/ProofServiceOptions'
+import type {
+  CreatePresentationOptions,
+  FormatRequestedCredentialReturn,
+  FormatRetrievedCredentialOptions,
+} from '../../../models/ProofServiceOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { V2ProofService } from '../V2ProofService'
 
@@ -58,21 +62,15 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
       `Automatically sending presentation with autoAccept on ${this.agentConfig.autoAcceptProofs}`
     )
 
-    const retrievedCredentials = await this.proofService.getRequestedCredentialsForProofRequest(
-      messageContext.agentContext,
-      {
+    const retrievedCredentials: FormatRetrievedCredentialOptions<PFs> =
+      await this.proofService.getRequestedCredentialsForProofRequest(messageContext.agentContext, {
         proofRecord: record,
         config: {
           filterByPresentationPreview: false,
         },
-      }
-    )
+      })
 
-    // THESE
-    // requestedAttributes?: Record<string, RequestedAttribute>
-    // requestedPredicates?: Record<string, RequestedPredicate>
-    // selfAttestedAttributes?: Record<string, string>
-    const requestedCredentials: CreatePresentationOptions<PFs> =
+    const requestedCredentials: FormatRequestedCredentialReturn<PFs> =
       await this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
 
     const { message, proofRecord } = await this.proofService.createPresentation(messageContext.agentContext, {

@@ -14,11 +14,11 @@ export interface NegotiateRequestOptions {
   autoAcceptProof?: AutoAcceptProof
 }
 
-export interface AcceptPresentationOptions {
-  proofRecordId: string
-  comment?: string
-  proofFormats: CreatePresentationFormats
-}
+// export interface AcceptPresentationOptions {
+//   proofRecordId: string
+//   comment?: string
+//   proofFormats: CreatePresentationFormats
+// }
 
 export interface AutoSelectCredentialsForProofRequestOptions {
   proofRecordId: string

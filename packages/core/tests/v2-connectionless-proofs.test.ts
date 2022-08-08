@@ -1,8 +1,7 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
-import type { OutOfBandRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { AcceptPresentationOptions, OutOfBandRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
-import type { AcceptPresentationOptions } from '../src/modules/proofs/models/ModuleOptions'
 import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
 
 import { Subject, ReplaySubject } from 'rxjs'
@@ -115,10 +114,10 @@ describe('Present Proof', () => {
         filterByPresentationPreview: true,
       },
     })
-
-    const acceptPresentationOptions: AcceptPresentationOptions = {
+    const acceptPresentationOptions: AcceptPresentationOptions<[IndyProofFormat], [V2ProofService]> = {
       proofRecordId: aliceProofRecord.id,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
+      protocolVersion: 'v2',
     }
 
     const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {

@@ -1,5 +1,5 @@
 import type { Agent, ConnectionRecord } from '../src'
-import type { ProposeProofOptions, RequestProofOptions } from '../src/modules/proofs/models/ModuleOptions'
+import type { ProposeProofOptions, RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 
 import {

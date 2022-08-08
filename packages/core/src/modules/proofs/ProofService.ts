@@ -224,7 +224,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   public abstract getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<FormatRequestedCredentialReturn<PFs>>
+  ): Promise<FormatRetrievedCredentialOptions<PFs>>
 
   public abstract autoSelectCredentialsForProofRequest(
     options: FormatRetrievedCredentialOptions<PFs>

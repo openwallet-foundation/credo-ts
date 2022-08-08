@@ -7,7 +7,6 @@ import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormat } from '../../formats/ProofFormat'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
-import type { IndyProofFormat } from '../../formats/indy/IndyProofFormat'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { ProofFormatSpec } from '../../formats/models/ProofFormatSpec'
 import type {
@@ -311,7 +310,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
 
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
-      const requestOptions: CreateRequestAsResponseOptions<[IndyProofFormat]> = {
+      const requestOptions: CreateRequestAsResponseOptions<PFs> = {
         proofFormats: options.proofFormats,
         proofRecord: options.proofRecord,
       }
@@ -777,7 +776,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<FormatRetrievedCredentialOptions<[IndyProofFormat]>> {
+  ): Promise<FormatRetrievedCredentialOptions<PFs>> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
       messageClass: V2RequestPresentationMessage,
@@ -813,9 +812,8 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialOptions<[IndyProofFormat]>
-  ): Promise<FormatRequestedCredentialReturn<[IndyProofFormat]>> {
-    // was RequestedCredentialsFormats contains RequestedCredentials
+    options: FormatRetrievedCredentialOptions<PFs>
+  ): Promise<FormatRequestedCredentialReturn<PFs>> {
     let returnValue = {
       proofFormats: {},
     }

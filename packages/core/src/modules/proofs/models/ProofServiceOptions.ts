@@ -65,10 +65,6 @@ export interface CreateAckOptions {
   proofRecord: ProofRecord
 }
 
-// export interface RequestedCredentialForProofRequestOptions {
-//   proofRequest: ProofRequest
-//   presentationProposal?: PresentationPreview
-// }
 export interface GetRequestedCredentialsForProofRequestOptions {
   proofRecord: ProofRecord
   config?: GetRequestedCredentialsConfig
