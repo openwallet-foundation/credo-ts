@@ -33,6 +33,7 @@ import { ValueTransferService } from './services'
 import { ValueTransferGetterService } from './services/ValueTransferGetterService'
 import { ValueTransferGiverService } from './services/ValueTransferGiverService'
 import { ValueTransferWitnessService } from './services/ValueTransferWitnessService'
+import { ValueTransferCentralBankService } from './services/ValueTransferCentralBankService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferModule {
@@ -40,6 +41,7 @@ export class ValueTransferModule {
   private valueTransferGetterService: ValueTransferGetterService
   private valueTransferGiverService: ValueTransferGiverService
   private valueTransferWitnessService: ValueTransferWitnessService
+  private valueTransferCentralBankService: ValueTransferCentralBankService
   private valueTransferResponseCoordinator: ValueTransferResponseCoordinator
 
   public constructor(
@@ -48,12 +50,14 @@ export class ValueTransferModule {
     valueTransferGetterService: ValueTransferGetterService,
     valueTransferGiverService: ValueTransferGiverService,
     valueTransferWitnessService: ValueTransferWitnessService,
+    valueTransferCentralBankService: ValueTransferCentralBankService,
     valueTransferResponseCoordinator: ValueTransferResponseCoordinator
   ) {
     this.valueTransferService = valueTransferService
     this.valueTransferGetterService = valueTransferGetterService
     this.valueTransferGiverService = valueTransferGiverService
     this.valueTransferWitnessService = valueTransferWitnessService
+    this.valueTransferCentralBankService = valueTransferCentralBankService
     this.valueTransferResponseCoordinator = valueTransferResponseCoordinator
     this.registerHandlers(dispatcher)
   }
@@ -250,9 +254,14 @@ export class ValueTransferModule {
     return { record, message }
   }
 
-  public async mintNotes(amount: number, witness: string) {
+  /**
+   * Mint cash by generating Verifiable Notes and sending mint message (state update) to Witness
+   * @param amount Amount of cash to mint
+   * @param witness DID of Witness to send mint message
+   */
+  public async mintCash(amount: number, witness: string): Promise<void> {
     // Mint Verifiable Notes
-    const message = await this.valueTransferService.mintNotes(amount, witness)
+    const message = await this.valueTransferCentralBankService.mintCash(amount, witness)
     // Send mint message to Witness to update state
     await this.valueTransferService.sendMessage(message)
   }

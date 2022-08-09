@@ -3,10 +3,8 @@ import type { MintMessage } from '../messages/MintMessage'
 import type { Witness } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import {
-  createVerifiableNotes,
   TransactionRecord,
   ValueTransfer,
-  Wallet,
   WitnessState,
   ErrorCodes,
   WitnessInfo,
@@ -122,24 +120,16 @@ export class ValueTransferWitnessService {
     const config = this.config.valueWitnessConfig
 
     if (!config || !config?.knownWitnesses.length) {
-      throw new AriesFrameworkError('Witness table must be provide.')
+      throw new AriesFrameworkError('Witness table must be provided.')
     }
 
     const topWitness =
       config.knownWitnesses.find((witness) => witness.wid !== config.wid && witness.type === WitnessType.One) ??
       config.knownWitnesses[0]
 
-    const partyStateHashes = ValueTransferWitnessService.generateInitialPartyStateHashes(
-      this.config.valueTransferParties
-    )
-    const transactionRecords = Array.from(partyStateHashes.values()).map(
-      (partyStateHash) => new TransactionRecord({ start: null, end: partyStateHash })
-    )
     const witnessState = new WitnessState({
       info: new WitnessInfo({ wid: config.wid, did: publicDid.did }),
       mappingTable: config.knownWitnesses,
-      partyStateHashes,
-      transactionRecords,
     })
 
     const state = new WitnessStateRecord({
@@ -513,7 +503,9 @@ export class ValueTransferWitnessService {
    *    Verify correctness of message
    *    Update Value Transfer record with the information from the message.
    *
-   * @param messageContext The record context containing the message.@returns
+   * @param messageContext The record context containing the message.
+   *
+   * @returns
    *    * Value Transfer record
    *    * Witnessed Cash Removal message
    */
@@ -622,8 +614,29 @@ export class ValueTransferWitnessService {
     return { record, getterMessage: getterReceiptMessage, giverMessage: giverReceiptMessage }
   }
 
+  /**
+   * Process a received {@link MintMessage}.
+   *    Verify correctness of message
+   *    Update Value Transfer record with the information from the message.
+   *
+   * @param messageContext The record context containing the message.@returns
+   *    * Value Transfer record
+   *    * Witnessed Cash Removal message
+   */
   public async processCashMint(messageContext: InboundMessageContext<MintMessage>): Promise<void> {
+    const centralBankDid = this.config.witnessCentralBankDid
+    if (!centralBankDid) {
+      throw new AriesFrameworkError(
+        'Central Bank DID is not specified. To enable cash minting support, please set `centralBankDid` in witness section of VTP config.'
+      )
+    }
+
     const { message: mintMessage } = messageContext
+
+    if (mintMessage?.from !== centralBankDid) {
+      throw new AriesFrameworkError('Mint message sender DID do not match Central Bank DID specified in config')
+    }
+
     const { startHash, endHash } = mintMessage.body
 
     const transactionRecord = new TransactionRecord({
@@ -716,17 +729,5 @@ export class ValueTransferWitnessService {
 
   public async findWitnessState(): Promise<WitnessStateRecord | null> {
     return this.witnessStateRepository.findSingleByQuery({})
-  }
-
-  private static generateInitialPartyStateHashes(statesCount: number) {
-    const partyStateHashes = new Set<Uint8Array>()
-
-    for (let i = 0; i < statesCount; i++) {
-      const startFromSno = i * 10
-      const [, partyWallet] = new Wallet().receiveNotes(new Set(createVerifiableNotes(10, startFromSno)))
-      partyStateHashes.add(partyWallet.rootHash())
-    }
-
-    return partyStateHashes
   }
 }

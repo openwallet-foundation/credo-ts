@@ -97,6 +97,10 @@ export class AgentConfig {
     return this.initConfig.valueTransferConfig?.witness?.historyThreshold || 1000 * 60 * 60
   }
 
+  public get witnessCentralBankDid() {
+    return this.initConfig.valueTransferConfig?.witness?.centralBankDid
+  }
+
   public get valueTransferInitialNotes() {
     return this.initConfig.valueTransferConfig?.party?.verifiableNotes || []
   }
@@ -105,15 +109,8 @@ export class AgentConfig {
     return this.initConfig.valueTransferConfig?.party?.witnessDid
   }
 
-  public get valueTransferParties() {
-    if (this.initConfig.valueTransferConfig?.witness?.supportedPartiesCount === 0) return 0
-    if (this.initConfig.valueTransferConfig?.party?.supportedPartiesCount === 0) return 0
-
-    return (
-      this.initConfig.valueTransferConfig?.witness?.supportedPartiesCount ||
-      this.initConfig.valueTransferConfig?.party?.supportedPartiesCount ||
-      50
-    )
+  public get valueTransferCentralBankInvite() {
+    return this.initConfig.valueTransferConfig?.party?.centralBankConnectionsInvite
   }
 
   public get didCommMimeType() {

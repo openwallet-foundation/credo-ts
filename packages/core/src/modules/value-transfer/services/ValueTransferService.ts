@@ -5,13 +5,7 @@ import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import {
-  createVerifiableNotes,
-  createRandomVerifiableNotes,
-  PartyState,
-  ValueTransfer,
-  Wallet,
-} from '@sicpa-dlab/value-transfer-protocol-ts'
+import { PartyState, TransactionRecord, ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -24,11 +18,11 @@ import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 import { DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
+import { OutOfBandService, OutOfBandInvitationMessage } from '../../out-of-band'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
 import { ProblemReportMessage } from '../messages'
-import { MintMessage } from '../messages/MintMessage'
 import { ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
@@ -48,6 +42,7 @@ export class ValueTransferService {
   private witnessStateRepository: WitnessStateRepository
   private didService: DidService
   private didResolverService: DidResolverService
+  private outOfBandService: OutOfBandService
   private eventEmitter: EventEmitter
   private messageSender: MessageSender
 
@@ -60,6 +55,7 @@ export class ValueTransferService {
     witnessStateRepository: WitnessStateRepository,
     didService: DidService,
     didResolverService: DidResolverService,
+    outOfBandService: OutOfBandService,
     eventEmitter: EventEmitter,
     messageSender: MessageSender
   ) {
@@ -71,6 +67,7 @@ export class ValueTransferService {
     this.witnessStateRepository = witnessStateRepository
     this.didService = didService
     this.didResolverService = didResolverService
+    this.outOfBandService = outOfBandService
     this.eventEmitter = eventEmitter
     this.messageSender = messageSender
 
@@ -95,13 +92,19 @@ export class ValueTransferService {
     })
     await this.valueTransferStateRepository.save(state)
 
-    if (!state.partyState.wallet.amount()) {
-      const verifiableNotes = this.config.valueTransferInitialNotes
-
-      const initialNotes = verifiableNotes?.length
-        ? verifiableNotes
-        : ValueTransferService.generateInitialStateNotes(this.config.valueTransferParties)
+    const initialNotes = this.config.valueTransferInitialNotes
+    if (!state.partyState.wallet.amount() && initialNotes?.length) {
       await this.receiveNotes(initialNotes)
+    }
+
+    const centralBankInvite = this.config.valueTransferCentralBankInvite
+    if (centralBankInvite) {
+      const invitationMessage = OutOfBandInvitationMessage.fromUrl(centralBankInvite)
+
+      const centralBankRecord = await this.didService.findById(invitationMessage.from)
+      if (!centralBankRecord) {
+        await this.outOfBandService.acceptOutOfBandInvitation(invitationMessage)
+      }
     }
   }
 
@@ -110,8 +113,10 @@ export class ValueTransferService {
    * Init payment state if it's missing.
    *
    * @param notes Verifiable notes to add.
+   *
+   * @returns Transaction Record for wallet state transition after receiving notes
    */
-  public async receiveNotes(notes: VerifiableNote[]) {
+  public async receiveNotes(notes: VerifiableNote[]): Promise<TransactionRecord | undefined> {
     try {
       // no notes to add
       if (!notes.length) return
@@ -125,11 +130,13 @@ export class ValueTransferService {
         throw new AriesFrameworkError(`Unable to find party state`)
       }
 
-      const [, wallet] = state.partyState.wallet.receiveNotes(new Set(notes))
+      const [proof, wallet] = state.partyState.wallet.receiveNotes(new Set(notes))
       await this.valueTransferStateService.storePartyState({
         ...state.partyState,
         wallet,
       })
+
+      return new TransactionRecord({ start: proof.currentState || null, end: proof.nextState })
     } catch (e) {
       throw new AriesFrameworkError(`Unable to add verifiable notes. Err: ${e}`)
     }
@@ -341,33 +348,5 @@ export class ValueTransferService {
     } else {
       return this.didService.getPublicDidOrCreateNew(params.usePublicDid)
     }
-  }
-
-  public async mintNotes(amount: number, witness: string): Promise<MintMessage> {
-    const publicDid = await this.didService.getPublicDid()
-    if (!publicDid) {
-      throw new AriesFrameworkError('Public DID is not found')
-    }
-
-    const currentState = await this.valueTransferStateService.getPartyState()
-    const startHash = currentState.wallet.rootHash()
-
-    const mintedNotes = createRandomVerifiableNotes(amount)
-    await this.receiveNotes(mintedNotes)
-
-    const updatedState = await this.valueTransferStateService.getPartyState()
-    const endHash = updatedState.wallet.rootHash()
-
-    return new MintMessage({
-      from: publicDid.did,
-      to: witness,
-      body: { startHash, endHash },
-    })
-  }
-
-  private static generateInitialStateNotes(statesCount: number): VerifiableNote[] {
-    const stateIndex = Math.floor(Math.random() * statesCount)
-    const startFromSno = stateIndex * 10
-    return createVerifiableNotes(10, startFromSno)
   }
 }

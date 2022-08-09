@@ -2,7 +2,7 @@ import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { transformUint8Array } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Expose, Transform, Type } from 'class-transformer'
-import { Equals, IsNotEmpty, IsObject, IsString, ValidateNested } from 'class-validator'
+import { Equals, IsObject, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 
@@ -10,15 +10,10 @@ export type MintMessageParams = {
   body: MintMessageBody
 } & DIDCommV2MessageParams
 
-export type MintMessageBodyParams = {
-  startHash: Uint8Array
-  endHash: Uint8Array
-}
-
 export class MintMessageBody {
   @Expose({ name: 'start_hash' })
   @Transform((params) => transformUint8Array(params))
-  public startHash!: Uint8Array
+  public startHash!: Uint8Array | null
 
   @Expose({ name: 'end_hash' })
   @Transform((params) => transformUint8Array(params))

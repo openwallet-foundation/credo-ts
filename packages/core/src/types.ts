@@ -47,6 +47,7 @@ export interface ValueTransferPartyConfig {
   autoAcceptPaymentOffer?: AutoAcceptValueTransfer
   autoAcceptPaymentRequest?: AutoAcceptValueTransfer
   supportedPartiesCount?: number
+  centralBankConnectionsInvite?: string
 }
 
 export enum WitnessType {
@@ -62,6 +63,7 @@ export interface ValueTransferWitnessConfig {
   cleanupTime?: number
   historyThreshold?: number
   supportedPartiesCount?: number
+  centralBankDid?: string
 }
 
 export interface ValueTransferConfig {
