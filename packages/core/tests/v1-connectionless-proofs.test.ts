@@ -147,7 +147,7 @@ describe('Present Proof', () => {
     aliceProofRecord = await aliceProofRecordPromise
   })
 
-  xtest('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
+  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
     const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
@@ -214,7 +214,7 @@ describe('Present Proof', () => {
     await faberProofRecordPromise
   })
 
-  xtest('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
+  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
     const credentialPreview = V1CredentialPreview.fromRecord({

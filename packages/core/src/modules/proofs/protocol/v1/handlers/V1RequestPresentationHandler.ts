@@ -98,14 +98,12 @@ export class V1RequestPresentationHandler implements Handler {
     if (messageContext.connection) {
       return createOutboundMessage(messageContext.connection, message)
     } else if (requestMessage.service) {
-      // Create ~service decorator
       const routing = await this.routingService.getRouting(messageContext.agentContext)
       message.service = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
         routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
-
       const recipientService = requestMessage.service
 
       await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
@@ -113,11 +111,10 @@ export class V1RequestPresentationHandler implements Handler {
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Sender,
       })
-
       return createOutboundServiceMessage({
         payload: message,
         service: recipientService.resolvedDidCommService,
-        senderKey: requestMessage.service.resolvedDidCommService.recipientKeys[0],
+        senderKey: message.service.resolvedDidCommService.recipientKeys[0],
       })
     }
 
