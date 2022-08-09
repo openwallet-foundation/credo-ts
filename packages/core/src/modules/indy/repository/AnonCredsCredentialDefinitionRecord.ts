@@ -16,8 +16,6 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord {
   @CredentialDefinitionTransformer()
   public readonly credentialDefinition!: CredDef
 
-  public readonly schemaSeqNo!: number
-
   public constructor(props: AnonCredsCredentialDefinitionRecordProps) {
     super()
 

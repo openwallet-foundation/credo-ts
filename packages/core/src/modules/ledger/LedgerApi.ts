@@ -83,7 +83,7 @@ export class LedgerApi {
 
     const schemaId = generateSchemaId(did, schema.name, schema.version)
 
-    // Generate teh qualified ID
+    // Generate the qualified ID
     const qualifiedIdentifier = getQualifiedIdentifierSchema(this.ledgerService.getDidIndyNamespace(), schema, schemaId)
 
     // Try find the schema in the wallet

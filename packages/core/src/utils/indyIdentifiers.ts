@@ -67,8 +67,8 @@ export function getLegacyIndySchemaId(qualifiedIdentifier: string) {
  *
  */
 export function schemaToQualifiedIndySchemaId(schema: SchemaTemplate | Schema, schemaId: string): string {
-  const namespaceIdentifier = didFromSchemaId(schemaId)
-  const didUrl = `${namespaceIdentifier}/anoncreds/v0/SCHEMA/${schema.name}/${schema.version}`
+  const did = didFromSchemaId(schemaId)
+  const didUrl = `${did}/anoncreds/v0/SCHEMA/${schema.name}/${schema.version}`
   return didUrl
 }
 
@@ -81,14 +81,14 @@ export function credDefToQualifiedIndyCredDefId(
   credDefId: string,
   credDef: Omit<CredentialDefinitionTemplate, 'signatureType'> | (CredDef & { schemaSeqNo?: string })
 ): string {
-  const namespaceIdentifier = didFromCredentialDefinitionId(credDefId)
+  const did = didFromCredentialDefinitionId(credDefId)
   let seqNo
   if ('schema' in credDef) {
     seqNo = credDef.schema.seqNo
   } else if ('schemaSeqNo' in credDef) {
     seqNo = credDef.schemaSeqNo
   }
-  return `${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${seqNo}/${credDef.tag}`
+  return `${did}/anoncreds/v0/CLAIM_DEF/${seqNo}/${credDef.tag}`
 }
 
 export function getQualifiedIdentifierCredDef(
