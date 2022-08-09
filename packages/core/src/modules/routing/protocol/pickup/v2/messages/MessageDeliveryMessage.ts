@@ -10,6 +10,7 @@ import { IsValidMessageType, parseMessageType } from '../../../../../../utils/me
 export interface MessageDeliveryMessageOptions {
   id?: string
   recipientKey?: string
+  threadId: string
   attachments: Attachment[]
 }
 
@@ -21,6 +22,9 @@ export class MessageDeliveryMessage extends AgentMessage {
       this.id = options.id || this.generateId()
       this.recipientKey = options.recipientKey
       this.appendedAttachments = options.attachments
+      this.setThread({
+        threadId: options.threadId,
+      })
     }
     this.setReturnRouting(ReturnRouteTypes.all)
   }

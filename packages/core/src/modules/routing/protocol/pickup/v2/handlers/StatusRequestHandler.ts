@@ -14,6 +14,6 @@ export class StatusRequestHandler implements Handler {
 
   public async handle(messageContext: InboundMessageContext<StatusRequestMessage>) {
     messageContext.assertReadyConnection()
-    return this.messagePickupService.processStatus(messageContext)
+    return this.messagePickupService.processStatusRequest(messageContext)
   }
 }

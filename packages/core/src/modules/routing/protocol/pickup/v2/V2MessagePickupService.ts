@@ -6,6 +6,7 @@ import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { createOutboundMessage } from '../../../../../agent/helpers'
 import { InjectionSymbols } from '../../../../../constants'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { AriesFrameworkError } from '../../../../../error'
 import { inject, injectable } from '../../../../../plugins'
 import { MessageRepository } from '../../../../../storage/MessageRepository'
 import { MediationRecipientService } from '../../../services'
@@ -37,12 +38,17 @@ export class V2MessagePickupService {
     this.registerHandlers()
   }
 
-  public async processStatus(messageContext: InboundMessageContext<StatusRequestMessage>) {
+  public async processStatusRequest(messageContext: InboundMessageContext<StatusRequestMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
+    if (messageContext.message.recipientKey) {
+      throw new AriesFrameworkError('recipient_key parameter not supported')
+    }
+
     const statusMessage = new StatusMessage({
-      messageCount: await this.messageRepository.available(connection.id),
+      threadId: messageContext.message.threadId,
+      messageCount: await this.messageRepository.getAvailableMessageCount(connection.id),
     })
 
     return createOutboundMessage(connection, statusMessage)
@@ -56,7 +62,13 @@ export class V2MessagePickupService {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
+    if (messageContext.message.recipientKey) {
+      throw new AriesFrameworkError('recipient_key parameter not supported')
+    }
+
     const { message } = messageContext
+
+    // Get available messages from queue, but don't delete them
     const messages = await this.messageRepository.takeFromQueue(connection.id, message.limit, true)
 
     // TODO: each message should be stored with an id. to be able to conform to the id property
@@ -70,12 +82,18 @@ export class V2MessagePickupService {
         })
     )
 
-    const deliveryMessage = new MessageDeliveryMessage({
-      recipientKey: message.recipientKey,
-      attachments,
-    })
+    const outboundMessage =
+      messages.length > 0
+        ? new MessageDeliveryMessage({
+            threadId: messageContext.message.threadId,
+            attachments,
+          })
+        : new StatusMessage({
+            threadId: messageContext.message.threadId,
+            messageCount: 0,
+          })
 
-    return createOutboundMessage(connection, deliveryMessage)
+    return createOutboundMessage(connection, outboundMessage)
   }
 
   public async processMessagesReceived(messageContext: InboundMessageContext<MessagesReceivedMessage>) {
@@ -89,6 +107,13 @@ export class V2MessagePickupService {
       connection.id,
       message.messageIdList ? message.messageIdList.length : undefined
     )
+
+    const statusMessage = new StatusMessage({
+      threadId: messageContext.message.threadId,
+      messageCount: await this.messageRepository.getAvailableMessageCount(connection.id),
+    })
+
+    return createOutboundMessage(connection, statusMessage)
   }
 
   protected registerHandlers() {
