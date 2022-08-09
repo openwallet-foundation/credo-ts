@@ -25,13 +25,14 @@ export class Witness extends BaseAgent {
         isWitness: true,
         verifiableNotes: createVerifiableNotes(10),
       },
+      endpoints: [],
     })
   }
 
   public static async build(): Promise<Witness> {
     const witness = new Witness('witness', undefined)
     await witness.initializeAgent()
-    const publicDid = await witness.agent.getPublicDid()
+    const publicDid = await witness.agent.getStaticDid(DidMarker.Online)
     console.log(`Witness Public DID: ${publicDid?.did}`)
     return witness
   }

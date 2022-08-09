@@ -57,7 +57,7 @@ export class DidService {
       didType?: DidType
       keyType?: KeyType
       seed?: string
-      isPublic?: boolean
+      isStatic?: boolean
       requestMediation?: boolean
       transports?: Transports[]
       marker?: DidMarker
@@ -65,6 +65,7 @@ export class DidService {
   ): Promise<DidRecord> {
     const didType_ = params.didType || DidType.PeerDid
     const keyType_ = params.keyType || KeyType.Ed25519
+    const requestMediation = params.requestMediation || params.requestMediation === undefined
 
     this.logger.debug(`creating DID with type ${didType_}`)
 
@@ -90,14 +91,25 @@ export class DidService {
 
     let mediator: MediationRecord | null = null
 
-    if (hasOnlineTransport(transports)) {
+    if (hasOnlineTransport(transports) && requestMediation) {
       mediator = await this.mediationRecipientService.findDefaultMediator()
-      if (mediator && mediator.endpoint) {
+      if (mediator && mediator.endpoint && requestMediation) {
         didDocumentBuilder.addService(
           new DidCommV2Service({
             id: Transports.HTTP,
             serviceEndpoint: mediator.endpoint,
             routingKeys: mediator.routingKeys,
+          })
+        )
+      }
+    }
+    if (hasOnlineTransport(transports) && !requestMediation) {
+      if (this.agentConfig.endpoints && this.agentConfig.endpoints[0]) {
+        didDocumentBuilder.addService(
+          new DidCommV2Service({
+            id: Transports.HTTP,
+            serviceEndpoint: this.agentConfig.endpoints[0],
+            routingKeys: [],
           })
         )
       }
@@ -132,7 +144,6 @@ export class DidService {
       keyType: KeyType.X25519,
     })
 
-    const requestMediation = params.requestMediation || params.requestMediation === undefined
     if (hasOnlineTransport(transports) && requestMediation && mediator) {
       await this.mediationRecipientService.getRouting(didPeer.did, { useDefaultMediator: true })
     }
@@ -141,7 +152,7 @@ export class DidService {
       id: didPeer.did,
       didDocument: didPeer.didDocument,
       role: DidDocumentRole.Created,
-      isPublic: params.isPublic,
+      isStatic: params.isStatic,
       didType: didType_,
       marker: params.marker,
     })
@@ -155,18 +166,18 @@ export class DidService {
     const hasInternetAccess = await this.agentConfig.hasInternetAccess()
     if (!hasInternetAccess) {
       // find for a public DID which supports Offline transports only
-      const offlinePublicDid = await this.findOfflinePublicDid()
+      const offlinePublicDid = await this.findOfflineStaticDid()
       if (offlinePublicDid) return offlinePublicDid
     }
 
     if (hasInternetAccess) {
       // find for a public DID which supports Online transports
-      const onlinePublicDid = await this.findOnlinePublicDid()
+      const onlinePublicDid = await this.findOnlineStaticDid()
       if (onlinePublicDid) return onlinePublicDid
     }
 
     // find for a public DID which is not marked
-    const publicDid = await this.findPublicDid()
+    const publicDid = await this.findStaticDid()
     if (publicDid) return publicDid
   }
 
@@ -250,24 +261,25 @@ export class DidService {
     return this.didRepository.findById(recordId)
   }
 
-  public async findPublicDid() {
-    const publicDids = await this.didRepository.findByQuery({
-      isPublic: true,
+  public async findStaticDid(marker?: DidMarker) {
+    const did = await this.didRepository.findByQuery({
+      isStatic: true,
+      marker: marker,
     })
-    if (publicDids.length) return publicDids[0]
+    if (did.length) return did[0]
     return undefined
   }
 
-  public async findOnlinePublicDid() {
+  public async findOnlineStaticDid() {
     return this.didRepository.findSingleByQuery({
-      isPublic: true,
+      isStatic: true,
       marker: DidMarker.Online,
     })
   }
 
-  public async findOfflinePublicDid() {
+  public async findOfflineStaticDid() {
     return this.didRepository.findSingleByQuery({
-      isPublic: true,
+      isStatic: true,
       marker: DidMarker.Offline,
     })
   }

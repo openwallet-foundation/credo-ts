@@ -5,6 +5,7 @@ import type {
   OutboundTransport,
   ValueTransferConfig,
 } from '@aries-framework/core'
+
 import {
   Agent,
   AutoAcceptCredential,
@@ -28,7 +29,7 @@ const bcovrin = `{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blsk
 
 export class BaseAgent {
   public static defaultMediatorConnectionInvite =
-    'http://192.168.1.47:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6IjY4YTJjYzIzLTE3NTAtNGU5Mi05ODZkLTZkZmEzNTEzZGY5YSIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTbkhTOWYzaHJNdUxyTjl6NlpobzdUY0JSdlN5SzdIUGpRdHdLbXUzb3NXd0YuVno2TWtyYWhBb1ZMUVM5UzVHRjVzVUt0dWRYTWVkVVNaZGRlSmhqSHRBRmFWNGhvVi5TVzNzaWN5STZJbWgwZEhBNkx5OHhPVEl1TVRZNExqRXVORGM2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFN3aVlTSTZXeUprYVdSamIyMXRMM1l5SWwxOUxIc2ljeUk2SW5kek9pOHZNVGt5TGpFMk9DNHhMalEzT2pNd01EQXZZWEJwTDNZeElpd2lkQ0k2SW1SdElpd2ljaUk2VzEwc0ltRWlPbHNpWkdsa1kyOXRiUzkyTWlKZGZWMCIsImJvZHkiOnsiZ29hbF9jb2RlIjoibWVkaWF0b3ItcHJvdmlzaW9uIn0sInR5cGUiOiJodHRwczovL2RpZGNvbW0ub3JnL291dC1vZi1iYW5kLzIuMC9pbnZpdGF0aW9uIiwiYWxnIjoiSFMyNTYifQ=='
+    'http://localhost:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6IjdlNTFjYjQ0LTI5MDItNGViNC05NThkLTZiMGNhMGEzODBlMiIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTbkhTOWYzaHJNdUxyTjl6NlpobzdUY0JSdlN5SzdIUGpRdHdLbXUzb3NXd0YuVno2TWtyYWhBb1ZMUVM5UzVHRjVzVUt0dWRYTWVkVVNaZGRlSmhqSHRBRmFWNGhvVi5TVzNzaWN5STZJbWgwZEhBNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYU3dpWVNJNld5SmthV1JqYjIxdEwzWXlJbDE5TEhzaWN5STZJbmR6T2k4dmJHOWpZV3hvYjNOME9qTXdNREF2WVhCcEwzWXhJaXdpZENJNkltUnRJaXdpY2lJNlcxMHNJbUVpT2xzaVpHbGtZMjl0YlM5Mk1pSmRmVjAiLCJib2R5Ijp7ImdvYWxfY29kZSI6Im1lZGlhdG9yLXByb3Zpc2lvbiJ9LCJ0eXBlIjoiaHR0cHM6Ly9kaWRjb21tLm9yZy9vdXQtb2YtYmFuZC8yLjAvaW52aXRhdGlvbiIsImFsZyI6IkhTMjU2In0='
   public port?: number
   public name: string
   public config: InitConfig
@@ -44,6 +45,7 @@ export class BaseAgent {
     transports?: Transports[]
     valueTransferConfig?: ValueTransferConfig
     mediatorConnectionsInvite?: string
+    endpoints?: string[]
   }) {
     this.name = props.name
     this.port = props.port
@@ -64,7 +66,7 @@ export class BaseAgent {
         },
       ],
       connectToIndyLedgersOnStartup: false,
-      endpoints: props.port ? [`http://localhost:${this.port}`] : undefined,
+      endpoints: props.endpoints,
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,

@@ -89,7 +89,7 @@ export class ValueTransferWitnessService {
     const { message: offerAcceptanceMessage } = messageContext
 
     // Get Witness state
-    const did = await this.didService.findPublicDid()
+    const did = await this.didService.findOnlineStaticDid()
     if (!did) {
       throw new AriesFrameworkError(`Unable to find Witness public DID`)
     }
@@ -179,7 +179,7 @@ export class ValueTransferWitnessService {
     const { message: requestAcceptanceMessage } = messageContext
 
     // Get Witness state
-    const witnessDid = await this.didService.findPublicDid()
+    const witnessDid = await this.didService.findOnlineStaticDid()
     if (!witnessDid) {
       throw new AriesFrameworkError(`Unable to find Witness public DID`)
     }

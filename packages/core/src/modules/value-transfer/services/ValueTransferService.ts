@@ -89,7 +89,7 @@ export class ValueTransferService {
   public async initState(config: ValueTransferConfig) {
     if (config.isWitness) {
       const record = await this.getWitnessState()
-      const publicDid = await this.didService.findPublicDid()
+      const publicDid = await this.didService.findOnlineStaticDid()
 
       if (!record) {
         if (!publicDid) {

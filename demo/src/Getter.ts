@@ -35,7 +35,7 @@ export class Getter extends BaseAgent {
   public static async build(): Promise<Getter> {
     const getter = new Getter('getter', undefined)
     await getter.initializeAgent()
-    const publicDid = await getter.agent.getOnlinePublicDid()
+    const publicDid = await getter.agent.getStaticDid(DidMarker.Online)
     console.log(`Getter Public DID: ${publicDid?.did}`)
     return getter
   }

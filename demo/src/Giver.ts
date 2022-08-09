@@ -1,7 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { ValueTransferRecord } from '@aries-framework/core'
 
-import { Transports, ValueTransferState } from '@aries-framework/core'
+import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
 import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'
@@ -19,6 +19,7 @@ export class Giver extends BaseAgent {
       staticDids: [
         {
           seed: '9ad6a1e205a549dc86ced47630ed7b78',
+          marker: DidMarker.Online,
         },
       ],
       valueTransferConfig: {
@@ -31,7 +32,7 @@ export class Giver extends BaseAgent {
     const giver = new Giver('giver', undefined)
     await giver.initializeAgent()
 
-    const publicDid = await giver.agent.getPublicDid()
+    const publicDid = await giver.agent.getStaticDid(DidMarker.Online)
     console.log(`Giver Public DID: ${publicDid?.did}`)
 
     return giver
