@@ -92,8 +92,8 @@ export class RecipientModule {
     }
   }
 
-  private async sendMessage(outboundMessage: OutboundMessage) {
-    const { mediatorPickupStrategy } = this.agentConfig
+  private async sendMessage(outboundMessage: OutboundMessage, pickupStrategy?: MediatorPickupStrategy) {
+    const mediatorPickupStrategy = pickupStrategy ?? this.agentConfig.mediatorPickupStrategy
     const transportPriority =
       mediatorPickupStrategy === MediatorPickupStrategy.Implicit
         ? { schemes: ['wss', 'ws'], restrictive: true }
@@ -262,12 +262,15 @@ export class RecipientModule {
     return this.mediationRecipientService.discoverMediation()
   }
 
-  public async pickupMessages(mediatorConnection: ConnectionRecord) {
+  public async pickupMessages(mediatorConnection: ConnectionRecord, pickupStrategy?: MediatorPickupStrategy) {
     mediatorConnection.assertReady()
 
-    const batchPickupMessage = new BatchPickupMessage({ batchSize: 10 })
-    const outboundMessage = createOutboundMessage(mediatorConnection, batchPickupMessage)
-    await this.sendMessage(outboundMessage)
+    const pickupMessage =
+      pickupStrategy === MediatorPickupStrategy.PickUpV2
+        ? new StatusRequestMessage({})
+        : new BatchPickupMessage({ batchSize: 10 })
+    const outboundMessage = createOutboundMessage(mediatorConnection, pickupMessage)
+    await this.sendMessage(outboundMessage, pickupStrategy)
   }
 
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
