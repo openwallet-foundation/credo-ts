@@ -239,11 +239,6 @@ export class MediationRecipientService {
     const { message: statusMessage } = messageContext
     const { messageCount, recipientKey } = statusMessage
 
-    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
-
-    mediationRecord.assertReady()
-    mediationRecord.assertRole(MediationRole.Recipient)
-
     //No messages to be sent
     if (messageCount === 0) {
       const { message, connectionRecord } = await this.connectionService.createTrustPing(connection, {
@@ -277,14 +272,9 @@ export class MediationRecipientService {
   }
 
   public async processDelivery(messageContext: InboundMessageContext<MessageDeliveryMessage>) {
-    const connection = messageContext.assertReadyConnection()
+    messageContext.assertReadyConnection()
 
     const { appendedAttachments } = messageContext.message
-
-    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
-
-    mediationRecord.assertReady()
-    mediationRecord.assertRole(MediationRole.Recipient)
 
     if (!appendedAttachments)
       throw new ProblemReportError('Error processing attachments', {

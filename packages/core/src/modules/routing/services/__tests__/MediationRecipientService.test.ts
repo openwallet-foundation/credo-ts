@@ -177,26 +177,6 @@ describe('MediationRecipientService', () => {
       expect(deliveryRequestMessage)
       expect(deliveryRequestMessage).toEqual(new DeliveryRequestMessage({ id: deliveryRequestMessage?.id, limit: 1 }))
     })
-
-    it('it throws an error when the mediation record has incorrect role or state', async () => {
-      const status = new StatusMessage({
-        threadId: uuid(),
-        messageCount: 1,
-      })
-      const messageContext = new InboundMessageContext(status, { connection: mockConnection })
-
-      mediationRecord.role = MediationRole.Mediator
-      await expect(mediationRecipientService.processStatus(messageContext)).rejects.toThrowError(
-        'Mediation record has invalid role MEDIATOR. Expected role RECIPIENT.'
-      )
-
-      mediationRecord.role = MediationRole.Recipient
-      mediationRecord.state = MediationState.Requested
-
-      await expect(mediationRecipientService.processStatus(messageContext)).rejects.toThrowError(
-        'Mediation record is not ready to be used. Expected granted, found invalid state requested'
-      )
-    })
   })
 
   describe('processDelivery', () => {
@@ -273,35 +253,6 @@ describe('MediationRecipientService', () => {
           message: { second: 'value' },
         },
       })
-    })
-
-    it('it throws an error when the mediation record has incorrect role or state', async () => {
-      const messageDeliveryMessage = new MessageDeliveryMessage({
-        threadId: uuid(),
-        attachments: [
-          new Attachment({
-            id: '1',
-            data: {
-              json: {
-                a: 'value',
-              },
-            },
-          }),
-        ],
-      })
-      const messageContext = new InboundMessageContext(messageDeliveryMessage, { connection: mockConnection })
-
-      mediationRecord.role = MediationRole.Mediator
-      await expect(mediationRecipientService.processDelivery(messageContext)).rejects.toThrowError(
-        'Mediation record has invalid role MEDIATOR. Expected role RECIPIENT.'
-      )
-
-      mediationRecord.role = MediationRole.Recipient
-      mediationRecord.state = MediationState.Requested
-
-      await expect(mediationRecipientService.processDelivery(messageContext)).rejects.toThrowError(
-        'Mediation record is not ready to be used. Expected granted, found invalid state requested'
-      )
     })
   })
 
