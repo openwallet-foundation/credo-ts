@@ -1,4 +1,4 @@
-import type { CredentialDefinitionTemplate, SchemaTemplate } from './services/IndyLedgerService'
+import type { SchemaTemplate } from './services/IndyLedgerService'
 import type * as Indy from 'indy-sdk'
 
 export function isLedgerRejectResponse(response: Indy.LedgerResponse): response is Indy.LedgerRejectResponse {
@@ -15,24 +15,6 @@ export function generateSchemaId(did: string, name: string, version: string) {
 
 export function generateCredentialDefinitionId(did: string, seqNo: number, tag: string) {
   return `${did}:3:CL:${seqNo}:${tag}`
-}
-
-export function generateCredDefFromTemplate(
-  credentialDefinitionId: string,
-  credentialDefinitionTemplate: CredentialDefinitionTemplate | Omit<CredentialDefinitionTemplate, 'signatureType'>
-): Indy.CredDef {
-  return {
-    id: credentialDefinitionId,
-    schemaId: credentialDefinitionTemplate.schema.id,
-    type: 'BaseRecord', // Irrelevant for qualifiedIdentifier construction
-    tag: credentialDefinitionTemplate.tag,
-    version: credentialDefinitionTemplate.schema.version,
-    ver: credentialDefinitionTemplate.schema.ver,
-    value: {
-      primary: { ...credentialDefinitionTemplate.schema },
-      revocation: credentialDefinitionTemplate.supportRevocation,
-    },
-  } as Indy.CredDef
 }
 
 export function generateSchemaFromTemplate(schemaId: string, schema: SchemaTemplate): Indy.Schema {

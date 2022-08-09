@@ -1,6 +1,6 @@
+import type { CredentialDefinitionTemplate, SchemaTemplate } from '../modules/ledger/services/IndyLedgerService'
 import type { CredDef, Schema } from 'indy-sdk'
 
-import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { generateCredentialDefinitionId, generateSchemaId } from '../modules/ledger/ledgerUtil'
 
 import { didFromCredentialDefinitionId, didFromSchemaId } from './did'
@@ -20,13 +20,31 @@ export type NamespaceIdentifier = string
 // TODO: This template literal type can possibly be improved. This version leaves the substrings as potentially undefined
 export type IndyNamespace = `${Did}:${DidIndyMethod}:${DidIndyNamespace}:${NamespaceIdentifier}`
 
-export function isQualifiedIdentifier(identifier: string | undefined): boolean {
+export function isQualifiedIndyIdentifier(identifier: string | undefined): boolean {
   if (!identifier || identifier === '') return false
   return identifier.startsWith('did:indy:')
 }
 
-export function unqualifyIndyDid(qualifiedIdentifier: string): string {
-  if (!isQualifiedIdentifier(qualifiedIdentifier)) return qualifiedIdentifier
+export function getLegacyIndyCredentialDefinitionId(qualifiedIdentifier: string) {
+  if (!isQualifiedIndyIdentifier(qualifiedIdentifier)) return qualifiedIdentifier
+
+  const lastColonIndex = qualifiedIdentifier.lastIndexOf(':')
+  const identifierTrunk = qualifiedIdentifier.substring(lastColonIndex + 1)
+  const txType = identifierTrunk.split('/')[3]
+
+  if (txType === 'CLAIM_DEF') {
+    // did:indy:sovrin:5nDyJVP1NrcPAttP3xwMB9/anoncreds/v0/CLAIM_DEF/56495/npdb -> 5nDyJVP1NrcPAttP3xwMB9:3:CL:56495:npbd
+    const [id, , , , seqNo, name] = identifierTrunk.split('/')
+    return generateCredentialDefinitionId(id, +seqNo, name)
+  } else {
+    // indy Union Indy Ledger w/o url syntax
+    // did:indy:idunion:test:2MZYuPv2Km7Q1eD4GCsSb6 -> 2MZYuPv2Km7Q1eD4GCsSb6
+    return identifierTrunk
+  }
+}
+
+export function getLegacyIndySchemaId(qualifiedIdentifier: string) {
+  if (!isQualifiedIndyIdentifier(qualifiedIdentifier)) return qualifiedIdentifier
 
   const lastColonIndex = qualifiedIdentifier.lastIndexOf(':')
   const identifierTrunk = qualifiedIdentifier.substring(lastColonIndex + 1)
@@ -36,10 +54,6 @@ export function unqualifyIndyDid(qualifiedIdentifier: string): string {
     // did:indy:sovrin:F72i3Y3Q4i466efjYJYCHM/anoncreds/v0/SCHEMA/npdb/4.3.4 -> F72i3Y3Q4i466efjYJYCHM:2:npdb:4.3.4
     const [id, , , , name, version] = identifierTrunk.split('/')
     return generateSchemaId(id, name, version)
-  } else if (txType === 'CLAIM_DEF') {
-    // did:indy:sovrin:5nDyJVP1NrcPAttP3xwMB9/anoncreds/v0/CLAIM_DEF/56495/npdb -> 5nDyJVP1NrcPAttP3xwMB9:3:CL:56495:npbd
-    const [id, , , , seqNo, name] = identifierTrunk.split('/')
-    return generateCredentialDefinitionId(id, +seqNo, name)
   } else {
     // indy Union Indy Ledger w/o url syntax
     // did:indy:idunion:test:2MZYuPv2Km7Q1eD4GCsSb6 -> 2MZYuPv2Km7Q1eD4GCsSb6
@@ -52,8 +66,8 @@ export function unqualifyIndyDid(qualifiedIdentifier: string): string {
  * @see https://hyperledger.github.io/indy-did-method/#schema
  *
  */
-export function getDidUrlTrunkFromSchema(schema: Schema): string {
-  const namespaceIdentifier = didFromSchemaId(schema.id)
+export function schemaToQualifiedIndySchemaId(schema: SchemaTemplate | Schema, schemaId: string): string {
+  const namespaceIdentifier = didFromSchemaId(schemaId)
   const didUrl = `${namespaceIdentifier}/anoncreds/v0/SCHEMA/${schema.name}/${schema.version}`
   return didUrl
 }
@@ -63,29 +77,38 @@ export function getDidUrlTrunkFromSchema(schema: Schema): string {
  * @see https://hyperledger.github.io/indy-did-method/#cred-def
  *
  */
-export function getDidUrlTrunkFromCredDef(credDef: CredDef & { schemaSeqNo: number }): string {
-  const namespaceIdentifier = didFromCredentialDefinitionId(credDef.id)
-  return `${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${credDef.schemaSeqNo}/${credDef.tag}`
+export function credDefToQualifiedIndyCredDefId(
+  credDefId: string,
+  credDef: Omit<CredentialDefinitionTemplate, 'signatureType'> | (CredDef & { schemaSeqNo?: string })
+): string {
+  const namespaceIdentifier = didFromCredentialDefinitionId(credDefId)
+  let seqNo
+  if ('schema' in credDef) {
+    seqNo = credDef.schema.seqNo
+  } else if ('schemaSeqNo' in credDef) {
+    seqNo = credDef.schemaSeqNo
+  }
+  return `${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${seqNo}/${credDef.tag}`
 }
 
-export function getDidUrlTrunk(data: Schema | (CredDef & { schemaSeqNo: number })): string {
-  // type (actually interface inferring type) is Schema
-  if ('attrNames' in data) {
-    return getDidUrlTrunkFromSchema(data)
-  }
-  // type (actually interface inferring type) is CredDef
-  else if ('schemaId' in data) {
-    return getDidUrlTrunkFromCredDef(data)
-  }
-  // This should never happen but let's catch it justin case
-  throw new AriesFrameworkError(`Failed to construct DidUrl from ${data}. Input not conforming with Schema or CredDef`)
-}
-
-export function getQualifiedIdentifier(
+export function getQualifiedIdentifierCredDef(
   indyNamespace: string,
-  data: Schema | (CredDef & { schemaSeqNo: number })
+  credDefId: string,
+  credDef: Omit<CredentialDefinitionTemplate, 'signatureType'> | CredDef
 ): IndyNamespace {
-  if (isQualifiedIdentifier(data.id)) return data.id as IndyNamespace
-  const didUrl = getDidUrlTrunk(data)
+  if (isQualifiedIndyIdentifier(credDefId)) return credDefId as IndyNamespace
+
+  const didUrl = credDefToQualifiedIndyCredDefId(credDefId, credDef)
+  return `did:indy:${indyNamespace}:${didUrl}`
+}
+
+export function getQualifiedIdentifierSchema(
+  indyNamespace: string,
+  schemaTemplate: SchemaTemplate | Schema,
+  schemaId: string
+): IndyNamespace {
+  if (isQualifiedIndyIdentifier(schemaId)) return schemaId as IndyNamespace
+
+  const didUrl = schemaToQualifiedIndySchemaId(schemaTemplate, schemaId)
   return `did:indy:${indyNamespace}:${didUrl}`
 }

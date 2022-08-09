@@ -102,7 +102,6 @@ export class SovDidRegistrar implements DidRegistrar {
       // Build did document.
       const didDocument = didDocumentBuilder.build()
 
-      // FIXME: create qualified identifier
       const didIndyNamespace = this.indyPoolService.ledgerWritePool.config.didIndyNamespace
       const qualifiedIndyDid = `did:indy:${didIndyNamespace}:${unqualifiedIndyDid}`
 

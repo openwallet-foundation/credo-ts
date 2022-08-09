@@ -7,20 +7,19 @@ import { AriesFrameworkError } from '../../error'
 import { IndySdkError } from '../../error/IndySdkError'
 import { injectable } from '../../plugins'
 import { isIndyError } from '../../utils/indyError'
-import { getQualifiedIdentifier, unqualifyIndyDid } from '../../utils/indyIdentifiers'
-import { schema } from '../credentials/__tests__/fixtures'
+import {
+  getQualifiedIdentifierCredDef,
+  getQualifiedIdentifierSchema,
+  getLegacyIndyCredentialDefinitionId,
+  getLegacyIndySchemaId,
+} from '../../utils/indyIdentifiers'
 import { AnonCredsCredentialDefinitionRecord } from '../indy/repository/AnonCredsCredentialDefinitionRecord'
 import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRecord } from '../indy/repository/AnonCredsSchemaRecord'
 import { AnonCredsSchemaRepository } from '../indy/repository/AnonCredsSchemaRepository'
 
 import { LedgerModuleConfig } from './LedgerModuleConfig'
-import {
-  generateCredDefFromTemplate,
-  generateCredentialDefinitionId,
-  generateSchemaId,
-  generateSchemaFromTemplate,
-} from './ledgerUtil'
+import { generateCredentialDefinitionId, generateSchemaId } from './ledgerUtil'
 import { IndyLedgerService } from './services'
 
 @injectable()
@@ -85,18 +84,14 @@ export class LedgerApi {
     const schemaId = generateSchemaId(did, schema.name, schema.version)
 
     // Generate teh qualified ID
-    // FIXME: How to handle indyLedgers[0]? This should not require selecting the first on eby default
-    const qualifiedIdentifier = getQualifiedIdentifier(
-      this.config.indyLedgers[0].didIndyNamespace,
-      generateSchemaFromTemplate(schemaId, schema)
-    )
+    const qualifiedIdentifier = getQualifiedIdentifierSchema(this.ledgerService.getDidIndyNamespace(), schema, schemaId)
 
     // Try find the schema in the wallet
     const schemaRecord = await this.anonCredsSchemaRepository.findById(this.agentContext, qualifiedIdentifier)
     // Schema in wallet
     if (schemaRecord) {
       // Transform qualified to unqualified
-      // schemaRecord.schema.id = unqualifyIndyDid(schemaRecord.schema.id)
+      schemaRecord.schema.id = getLegacyIndySchemaId(schemaRecord.schema.id)
       return schemaRecord.schema
     }
 
@@ -106,8 +101,7 @@ export class LedgerApi {
     const createdSchema = await this.ledgerService.registerSchema(this.agentContext, did, schema)
 
     const anonCredsSchema = new AnonCredsSchemaRecord({
-      schema: createdSchema,
-      didIndyNamespace: this.config.indyLedgers[0].didIndyNamespace,
+      schema: { ...createdSchema, id: qualifiedIdentifier },
     })
     await this.anonCredsSchemaRepository.save(this.agentContext, anonCredsSchema)
     return createdSchema
@@ -150,21 +144,21 @@ export class LedgerApi {
     )
 
     // Construct qualified identifier
-    // FIXME: How to handle indyLedgers[0]? This should not require selecting the first on eby default
-    const qualifiedIdentifier = getQualifiedIdentifier(this.config.indyLedgers[0].didIndyNamespace, {
-      ...generateCredDefFromTemplate(credentialDefinitionId, credentialDefinitionTemplate),
-      schemaSeqNo: credentialDefinitionTemplate.schema.seqNo,
-    })
+    const qualifiedIdentifier = getQualifiedIdentifierCredDef(
+      this.ledgerService.getDidIndyNamespace(),
+      credentialDefinitionId,
+      credentialDefinitionTemplate
+    )
 
     // Check if the credential exists in wallet. If so, return it
     const credentialDefinitionRecord = await this.anonCredsCredentialDefinitionRepository.findById(
       this.agentContext,
       qualifiedIdentifier
     )
-    // CRedential Definition in wallet
+    // Credential Definition in wallet
     if (credentialDefinitionRecord) {
       // Transform qualified to unqualified
-      credentialDefinitionRecord.credentialDefinition.id = unqualifyIndyDid(
+      credentialDefinitionRecord.credentialDefinition.id = getLegacyIndyCredentialDefinitionId(
         credentialDefinitionRecord.credentialDefinition.id
       )
       return credentialDefinitionRecord.credentialDefinition
@@ -183,12 +177,9 @@ export class LedgerApi {
       ...credentialDefinitionTemplate,
       signatureType: 'CL',
     })
-    // Replace the unqualified with qualified Identifier
-    // credentialDefinitionTemplate.schema.id = qualifiedIdentifier
+    // Replace the unqualified with qualified Identifier in anonCred
     const anonCredCredential = new AnonCredsCredentialDefinitionRecord({
-      credentialDefinition: registeredCredential,
-      didIndyNamespace: this.config.indyLedgers[0].didIndyNamespace,
-      schemaSeqNo: schema.seqNo,
+      credentialDefinition: { ...registeredCredential, id: qualifiedIdentifier },
     })
     await this.anonCredsCredentialDefinitionRepository.save(this.agentContext, anonCredCredential)
 

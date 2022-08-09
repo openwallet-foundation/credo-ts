@@ -215,15 +215,11 @@ describe('LedgerApi', () => {
       it('should return the schema from anonCreds when it already exists', async () => {
         mockProperty(wallet, 'publicDid', { did: did, verkey: 'abcde' })
         mockFunction(anonCredsSchemaRepository.findById).mockResolvedValueOnce(
-          new AnonCredsSchemaRecord({ schema: schema, didIndyNamespace: 'sovrin' })
+          new AnonCredsSchemaRecord({ schema: schema })
         )
-        mockProperty(ledgerApi, 'config', {
-          connectToIndyLedgersOnStartup: true,
-          indyLedgers: pools,
-        } as LedgerModuleConfig)
+        mockFunction(ledgerService.getDidIndyNamespace).mockReturnValueOnce(pools[0].didIndyNamespace)
         await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toEqual({
           ...schema,
-          didIndyNamespace: 'sovrin',
         })
         expect(anonCredsSchemaRepository.findById).toHaveBeenCalledWith(agentContext, schemaIdQualified)
       })
@@ -233,14 +229,14 @@ describe('LedgerApi', () => {
         jest
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .spyOn(LedgerApi.prototype as any, 'findBySchemaIdOnLedger')
-          .mockResolvedValueOnce(new AnonCredsSchemaRecord({ schema: schema, didIndyNamespace: 'sovrin' }))
+          .mockResolvedValueOnce(new AnonCredsSchemaRecord({ schema: schema }))
         mockProperty(ledgerApi, 'config', {
           connectToIndyLedgersOnStartup: true,
           indyLedgers: pools,
         } as LedgerModuleConfig)
         await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toHaveProperty(
           'schema',
-          { ...schema, didIndyNamespace: 'sovrin' }
+          { ...schema }
         )
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect(jest.spyOn(LedgerApi.prototype as any, 'findBySchemaIdOnLedger')).toHaveBeenCalledWith(schemaIdGenerated)
@@ -274,8 +270,6 @@ describe('LedgerApi', () => {
         const anonCredsCredentialDefinitionRecord: AnonCredsCredentialDefinitionRecord =
           new AnonCredsCredentialDefinitionRecord({
             credentialDefinition: credDef,
-            didIndyNamespace: 'sovrin',
-            schemaSeqNo: schema.seqNo,
           })
         mockFunction(anonCredsCredentialDefinitionRepository.findById).mockResolvedValueOnce(
           anonCredsCredentialDefinitionRecord
@@ -284,6 +278,7 @@ describe('LedgerApi', () => {
           connectToIndyLedgersOnStartup: true,
           indyLedgers: pools,
         } as LedgerModuleConfig)
+        mockFunction(ledgerService.getDidIndyNamespace).mockReturnValueOnce(pools[0].didIndyNamespace)
         await expect(ledgerApi.registerCredentialDefinition(credentialDefinitionTemplate)).resolves.toHaveProperty(
           'value.primary',
           credentialDefinition

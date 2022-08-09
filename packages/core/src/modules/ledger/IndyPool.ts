@@ -34,7 +34,6 @@ export class IndyPool {
   private poolConnected?: Promise<number>
   public authorAgreement?: AuthorAgreement | null
   // aka the qualified identifier
-  public didIndyNamespace: string
 
   public constructor(
     poolConfig: IndyPoolConfig,
@@ -47,7 +46,6 @@ export class IndyPool {
     this.fileSystem = fileSystem
     this.poolConfig = poolConfig
     this.logger = logger
-    this.didIndyNamespace = this.config.didIndyNamespace
 
     // Listen to stop$ (shutdown) and close pool
     stop$.subscribe(async () => {
@@ -55,6 +53,10 @@ export class IndyPool {
         await this.close()
       }
     })
+  }
+
+  public get didIndyNamespace(): string {
+    return this.didIndyNamespace
   }
 
   public get id() {

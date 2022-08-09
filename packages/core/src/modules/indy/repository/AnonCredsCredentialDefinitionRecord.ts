@@ -1,15 +1,12 @@
-import type { DidIndyNamespace } from '../../../utils/indyIdentifiers'
-import type { CredDef } from 'indy-sdk'
+import { CredDef } from 'indy-sdk'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
-import { getQualifiedIdentifier } from '../../../utils/indyIdentifiers'
-import { CredentialDefinitionTransformer } from '../../../utils/transformers'
 import { uuid } from '../../../utils/uuid'
+
+import { CredentialDefinitionTransformer } from './anonCredsTransformers'
 
 export interface AnonCredsCredentialDefinitionRecordProps {
   credentialDefinition: CredDef
-  didIndyNamespace: DidIndyNamespace
-  schemaSeqNo: number
 }
 
 export class AnonCredsCredentialDefinitionRecord extends BaseRecord {
@@ -17,7 +14,7 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord {
   public readonly type = AnonCredsCredentialDefinitionRecord.type
 
   @CredentialDefinitionTransformer()
-  public readonly credentialDefinition!: CredDef & { didIndyNamespace?: DidIndyNamespace; schemaSeqNo?: number }
+  public readonly credentialDefinition!: CredDef
 
   public readonly schemaSeqNo!: number
 
@@ -26,22 +23,14 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord {
 
     this.id = uuid()
     if (props) {
-      this.credentialDefinition = {
-        ...props.credentialDefinition,
-        didIndyNamespace: props.didIndyNamespace,
-        schemaSeqNo: props.schemaSeqNo,
-      }
-      this.schemaSeqNo = props.schemaSeqNo
-      this._tags.id = getQualifiedIdentifier(props.didIndyNamespace, {
-        ...this.credentialDefinition,
-        schemaSeqNo: props.schemaSeqNo,
-      })
+      this.credentialDefinition = props.credentialDefinition
     }
   }
 
   public getTags() {
     return {
       ...this._tags,
+      credentialDefinitionId: this.credentialDefinition.id,
     }
   }
 }
