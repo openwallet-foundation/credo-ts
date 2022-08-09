@@ -20,4 +20,5 @@ export interface DidProps {
   transports?: Transports[]
   marker?: DidMarker
   needMediation?: boolean
+  endpoint?: string
 }

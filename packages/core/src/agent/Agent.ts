@@ -232,11 +232,12 @@ export class Agent {
           // create DID in DIDComm V2 DID storage
           await this.didService.createDID({
             seed: staticDid.seed,
-            didType: staticDid.type,
+            type: staticDid.type,
             marker: staticDid.marker,
             transports: staticDid.transports,
             isStatic: true,
-            requestMediation: staticDid.needMediation,
+            needMediation: staticDid.needMediation,
+            endpoint: staticDid.endpoint,
           })
         }
       }

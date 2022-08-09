@@ -4,11 +4,10 @@ export enum Transports {
   WS = 'ws',
   WSS = 'wss',
   NFC = 'nfc',
-  IPC = 'ipc',
   Nearby = 'androidnearby',
 }
 
-export const offlineTransports = [Transports.NFC, Transports.IPC, Transports.Nearby]
+export const offlineTransports = [Transports.NFC, Transports.Nearby]
 export const onlineTransports = [Transports.HTTP, Transports.HTTPS, Transports.WS, Transports.WSS]
 
 export type AcceptProtocol = 'didcomm/aip1' | 'didcomm/v2'
@@ -26,6 +25,15 @@ export interface GetRoutingOptions {
   useDefaultMediator?: boolean
 }
 
+export const isOnlineTransport = (transport: Transports) =>
+  transport === Transports.HTTPS ||
+  transport === Transports.HTTP ||
+  transport === Transports.WSS ||
+  transport === Transports.WS
+
+export const isOfflineTransport = (transport: Transports) =>
+  transport === Transports.NFC || transport === Transports.Nearby
+
 export const hasOnlineTransport = (transports: Transports[]) =>
   transports.includes(Transports.HTTPS) ||
   transports.includes(Transports.HTTP) ||
@@ -33,4 +41,4 @@ export const hasOnlineTransport = (transports: Transports[]) =>
   transports.includes(Transports.WS)
 
 export const hasOfflineTransport = (transports: Transports[]) =>
-  transports.includes(Transports.NFC) || transports.includes(Transports.Nearby) || transports.includes(Transports.IPC)
+  transports.includes(Transports.NFC) || transports.includes(Transports.Nearby)
