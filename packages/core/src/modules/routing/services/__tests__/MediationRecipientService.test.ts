@@ -8,6 +8,7 @@ import { MessageSender } from '../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
+import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { DidExchangeState } from '../../../connections'
 import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
@@ -156,6 +157,7 @@ describe('MediationRecipientService', () => {
   describe('processStatus', () => {
     it('if status request has a message count of zero returns nothing', async () => {
       const status = new StatusMessage({
+        threadId: uuid(),
         messageCount: 0,
       })
 
@@ -166,6 +168,7 @@ describe('MediationRecipientService', () => {
 
     it('if it has a message count greater than zero return a valid delivery request', async () => {
       const status = new StatusMessage({
+        threadId: uuid(),
         messageCount: 1,
       })
       const messageContext = new InboundMessageContext(status, { connection: mockConnection })
@@ -177,6 +180,7 @@ describe('MediationRecipientService', () => {
 
     it('it throws an error when the mediation record has incorrect role or state', async () => {
       const status = new StatusMessage({
+        threadId: uuid(),
         messageCount: 1,
       })
       const messageContext = new InboundMessageContext(status, { connection: mockConnection })
@@ -206,6 +210,7 @@ describe('MediationRecipientService', () => {
 
     it('should return a message received with an message id list in it', async () => {
       const messageDeliveryMessage = new MessageDeliveryMessage({
+        threadId: uuid(),
         attachments: [
           new Attachment({
             id: '1',
@@ -231,6 +236,7 @@ describe('MediationRecipientService', () => {
 
     it('calls the event emitter for each message', async () => {
       const messageDeliveryMessage = new MessageDeliveryMessage({
+        threadId: uuid(),
         attachments: [
           new Attachment({
             id: '1',
@@ -271,6 +277,7 @@ describe('MediationRecipientService', () => {
 
     it('it throws an error when the mediation record has incorrect role or state', async () => {
       const messageDeliveryMessage = new MessageDeliveryMessage({
+        threadId: uuid(),
         attachments: [
           new Attachment({
             id: '1',
