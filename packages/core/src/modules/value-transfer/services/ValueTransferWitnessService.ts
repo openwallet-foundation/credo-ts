@@ -2,14 +2,13 @@ import type { ValueTransferStateChangedEvent, ResumeValueTransferTransactionEven
 import type { Witness } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import {
-  createVerifiableNotes,
   TransactionRecord,
   ValueTransfer,
   Wallet,
   WitnessState,
+  ErrorCodes,
+  WitnessInfo,
 } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { ErrorCodes } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { WitnessInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -111,7 +110,7 @@ export class ValueTransferWitnessService {
     // witness has already been initialized
     if (existingState) return
 
-    const publicDid = await this.didService.findPublicDid()
+    const publicDid = await this.didService.findOnlineStaticDid()
     if (!publicDid) {
       throw new AriesFrameworkError(
         'Witness public DID not found. Please set `publicDidSeed` field in the agent config.'
@@ -128,12 +127,15 @@ export class ValueTransferWitnessService {
       config.knownWitnesses.find((witness) => witness.wid !== config.wid && witness.type === WitnessType.One) ??
       config.knownWitnesses[0]
 
-    const partyStateHashes = ValueTransferWitnessService.generateInitialPartyStateHashes(
-      this.config.valueTransferParties
-    )
-    const transactionRecords = Array.from(partyStateHashes.values()).map(
-      (partyStateHash) => new TransactionRecord({ start: null, end: partyStateHash })
-    )
+    const partyStateHashes = this.generateInitialPartyStateHashes()
+    const transactionRecords: TransactionRecord[] = []
+
+    if (partyStateHashes.size) {
+      partyStateHashes.forEach((partyStateHash) => {
+        transactionRecords.push(new TransactionRecord({ start: null, end: partyStateHash }))
+      })
+    }
+
     const witnessState = new WitnessState({
       info: new WitnessInfo({ wid: config.wid, did: publicDid.did }),
       mappingTable: config.knownWitnesses,
@@ -703,15 +705,12 @@ export class ValueTransferWitnessService {
     return this.witnessStateRepository.findSingleByQuery({})
   }
 
-  private static generateInitialPartyStateHashes(statesCount: number) {
+  private generateInitialPartyStateHashes() {
     const partyStateHashes = new Set<Uint8Array>()
+    const verifiableNotes = this.config.valueTransferInitialNotes
 
-    for (let i = 0; i < statesCount; i++) {
-      const startFromSno = i * 10
-      const [, partyWallet] = new Wallet().receiveNotes(new Set(createVerifiableNotes(10, startFromSno)))
-      partyStateHashes.add(partyWallet.rootHash())
-    }
-
+    const [, partyWallet] = new Wallet().receiveNotes(new Set(verifiableNotes))
+    partyStateHashes.add(partyWallet.rootHash())
     return partyStateHashes
   }
 }

@@ -98,22 +98,15 @@ export class AgentConfig {
   }
 
   public get valueTransferInitialNotes() {
-    return this.initConfig.valueTransferConfig?.party?.verifiableNotes || []
+    return (
+      this.initConfig.valueTransferConfig?.party?.verifiableNotes ||
+      this.initConfig.valueTransferConfig?.witness?.verifiableNotes ||
+      []
+    )
   }
 
   public get valueTransferWitnessDid() {
     return this.initConfig.valueTransferConfig?.party?.witnessDid
-  }
-
-  public get valueTransferParties() {
-    if (this.initConfig.valueTransferConfig?.witness?.supportedPartiesCount === 0) return 0
-    if (this.initConfig.valueTransferConfig?.party?.supportedPartiesCount === 0) return 0
-
-    return (
-      this.initConfig.valueTransferConfig?.witness?.supportedPartiesCount ||
-      this.initConfig.valueTransferConfig?.party?.supportedPartiesCount ||
-      50
-    )
   }
 
   public get didCommMimeType() {

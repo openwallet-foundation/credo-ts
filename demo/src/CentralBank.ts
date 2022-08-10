@@ -1,7 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import { DidMarker, Transports } from '@aries-framework/core'
 
-import { BaseAgent } from './BaseAgent'
+import { BaseAgent, notes } from './BaseAgent'
 import { Output } from './OutputClass'
 
 export class CentralBank extends BaseAgent {
@@ -19,13 +19,19 @@ export class CentralBank extends BaseAgent {
           transports: [Transports.HTTP, Transports.WS],
           marker: DidMarker.Online,
         },
+        {
+          seed: '6b8b882e2618fa5d45ee7229ca880086',
+          transports: [Transports.HTTP],
+          marker: DidMarker.Restricted,
+        },
       ],
       valueTransferConfig: {
         witness: {
           wid: CentralBank.wid,
           knownWitnesses: BaseAgent.witnessTable,
+          verifiableNotes: notes,
         },
-      }
+      },
     })
   }
 

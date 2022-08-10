@@ -2,15 +2,15 @@
 import type { ValueTransferRecord } from '@aries-framework/core'
 
 import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
-import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { BaseAgent } from './BaseAgent'
+import { BaseAgent, notes } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class Anna extends BaseAgent {
   public valueTransferRecordId?: string
 
   public constructor(name: string, port?: number) {
+    console.log(notes)
     super({
       name,
       port,
@@ -18,13 +18,14 @@ export class Anna extends BaseAgent {
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
-          seed: '9ad6a1e205a549dc86ced47630ed7b78',
+          seed: '6b8b882e2618fa5d45ee7229ca880080',
           marker: DidMarker.Online,
+          transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
         },
       ],
       valueTransferConfig: {
         party: {
-          verifiableNotes: createVerifiableNotes(10),
+          verifiableNotes: notes,
         },
       },
     })

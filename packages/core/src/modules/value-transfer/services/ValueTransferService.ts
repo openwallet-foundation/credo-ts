@@ -5,7 +5,7 @@ import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { createVerifiableNotes, PartyState, ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { PartyState, ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -88,13 +88,9 @@ export class ValueTransferService {
     })
     await this.valueTransferStateRepository.save(state)
 
-    if (!state.partyState.wallet.amount()) {
-      const verifiableNotes = this.config.valueTransferInitialNotes
-
-      const initialNotes = verifiableNotes?.length
-        ? verifiableNotes
-          : ValueTransferService.getRandomInitialStateNotes(this.config.supportedPartiesCount)
-      await this.receiveNotes(initialNotes)
+    const verifiableNotes = this.config.valueTransferInitialNotes
+    if (verifiableNotes && verifiableNotes.length) {
+      await this.receiveNotes(verifiableNotes)
     }
   }
 
@@ -334,11 +330,5 @@ export class ValueTransferService {
     } else {
       return this.didService.getPublicDidOrCreateNew(params.usePublicDid)
     }
-  }
-
-  private static generateInitialStateNotes(statesCount: number): VerifiableNote[] {
-    const stateIndex = Math.floor(Math.random() * statesCount)
-    const startFromSno = stateIndex * 10
-    return createVerifiableNotes(10, startFromSno)
   }
 }

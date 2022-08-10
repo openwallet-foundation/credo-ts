@@ -11,20 +11,24 @@ export class GlobalBank extends BaseAgent {
     super({
       name,
       port,
-      transports: [Transports.HTTP],
+      transports: [Transports.HTTP, Transports.WS],
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
-          seed: '6b8b882e2618fa5d45ee7229ca880086',
-          transports: [Transports.HTTP],
+          seed: '6b8b882e2618fa5d45ee7229ca880087',
+          transports: [Transports.HTTP, Transports.WS],
           marker: DidMarker.Online,
+        },
+        {
+          seed: '6b8b882e2618fa5d45ee7229ca880088',
+          transports: [Transports.HTTP],
+          marker: DidMarker.Restricted,
         },
       ],
       valueTransferConfig: {
         witness: {
           wid: GlobalBank.wid,
           knownWitnesses: BaseAgent.witnessTable,
-          supportedPartiesCount: 0,
         },
       },
     })
@@ -33,7 +37,7 @@ export class GlobalBank extends BaseAgent {
   public static async build(): Promise<GlobalBank> {
     const witness = new GlobalBank('globalBank', undefined)
     await witness.initializeAgent()
-    const publicDid = await witness.agent.getPublicDid()
+    const publicDid = await witness.agent.getStaticDid(DidMarker.Online)
     console.log(`GlobalBank Public DID: ${publicDid?.did}`)
     return witness
   }

@@ -46,7 +46,6 @@ export interface ValueTransferPartyConfig {
   verifiableNotes?: VerifiableNote[]
   autoAcceptPaymentOffer?: AutoAcceptValueTransfer
   autoAcceptPaymentRequest?: AutoAcceptValueTransfer
-  supportedPartiesCount?: number
 }
 
 export enum WitnessType {
@@ -61,7 +60,7 @@ export interface ValueTransferWitnessConfig {
   tockTime?: number
   cleanupTime?: number
   historyThreshold?: number
-  supportedPartiesCount?: number
+  verifiableNotes?: VerifiableNote[]
 }
 
 export interface ValueTransferConfig {
