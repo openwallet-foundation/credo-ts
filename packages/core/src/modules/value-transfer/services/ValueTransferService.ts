@@ -100,7 +100,6 @@ export class ValueTransferService {
     const centralBankInvite = this.config.valueTransferCentralBankInvite
     if (centralBankInvite) {
       const invitationMessage = OutOfBandInvitationMessage.fromUrl(centralBankInvite)
-
       const centralBankRecord = await this.didService.findById(invitationMessage.from)
       if (!centralBankRecord) {
         await this.outOfBandService.acceptOutOfBandInvitation(invitationMessage)

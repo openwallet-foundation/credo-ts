@@ -24,6 +24,13 @@ export class ValueTransferCentralBankService {
     this.didService = didService
   }
 
+  /**
+   * Mint (generate and receive) specified amount of Verifiable Notes.
+   * @param amount Amount of cash to mint
+   * @param witness DID of Witness to send mint message
+   *
+   * @returns Mint message for specified Witness DID
+   */
   public async mintCash(amount: number, witness: string): Promise<MintMessage> {
     const publicDid = await this.didService.getPublicDid()
     if (!publicDid) {
@@ -31,6 +38,9 @@ export class ValueTransferCentralBankService {
     }
 
     const mintedNotes = createVerifiableNotes(amount)
+
+    // FIXME It will be better to use PartyState current/previous hash instead of returning transaction record on receiving notes
+    // Will be possible after PartyState.previousHash fix in VTP lib
     const transactionRecord = await this.valueTransferService.receiveNotes(mintedNotes)
 
     if (!transactionRecord) {
