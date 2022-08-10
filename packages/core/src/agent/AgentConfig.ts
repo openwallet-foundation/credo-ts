@@ -114,7 +114,7 @@ export class AgentConfig {
   }
 
   public get valueTransferCentralBankInvite() {
-    return this.initConfig.valueTransferConfig?.party?.centralBankConnectionsInvite
+    return this.initConfig.valueTransferConfig?.party?.centralBankContactInvite
   }
 
   public get didCommMimeType() {

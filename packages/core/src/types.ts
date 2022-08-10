@@ -46,7 +46,7 @@ export interface ValueTransferPartyConfig {
   verifiableNotes?: VerifiableNote[]
   autoAcceptPaymentOffer?: AutoAcceptValueTransfer
   autoAcceptPaymentRequest?: AutoAcceptValueTransfer
-  centralBankConnectionsInvite?: string
+  centralBankContactInvite?: string
 }
 
 export enum WitnessType {
