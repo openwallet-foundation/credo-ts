@@ -11,6 +11,7 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { ProblemReportMessage } from '../messages'
+import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
 
 export type CustomValueTransferTags = TagsBase
 export type DefaultValueTransferTags = {
@@ -22,6 +23,7 @@ export type ValueTransferTags = RecordTags<ValueTransferRecord>
 
 export enum ValueTransferTransactionStatus {
   Pending = 'pending',
+  Paused = 'paused',
   InProgress = 'in-progress',
   Finished = 'finished',
 }
@@ -39,7 +41,9 @@ export interface ValueTransferStorageProps {
   problemReportMessage?: ProblemReportMessage
   receipt: Receipt
 
-  status?: ValueTransferTransactionStatus
+  lastMessage?: ValueTransferBaseMessage
+
+  status: ValueTransferTransactionStatus
   tags?: CustomValueTransferTags
 
   attachment?: Record<string, unknown>
@@ -55,7 +59,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   public role!: ValueTransferRole
 
   public state!: ValueTransferState
-  public status?: ValueTransferTransactionStatus
+  public status!: ValueTransferTransactionStatus
 
   @Type(() => Receipt)
   public receipt!: Receipt
@@ -68,6 +72,10 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
 
   @IsOptional()
   public attachment?: Record<string, unknown>
+
+  @Type(() => ValueTransferBaseMessage)
+  @IsOptional()
+  public lastMessage?: ValueTransferBaseMessage
 
   public constructor(props: ValueTransferStorageProps) {
     super()
@@ -115,6 +123,20 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
     if (!expectedRoles.includes(this.role)) {
       throw new AriesFrameworkError(
         `Value Transfer record has an unexpected role ${this.role}. Valid roles are: ${expectedRoles.join(', ')}.`
+      )
+    }
+  }
+
+  public assertStatus(expectedStatuses: ValueTransferTransactionStatus | ValueTransferTransactionStatus[]) {
+    if (!Array.isArray(expectedStatuses)) {
+      expectedStatuses = [expectedStatuses]
+    }
+
+    if (!expectedStatuses.includes(this.status)) {
+      throw new AriesFrameworkError(
+        `Value Transfer record has an unexpected status ${this.status}. Valid roles are: ${expectedStatuses.join(
+          ', '
+        )}.`
       )
     }
   }

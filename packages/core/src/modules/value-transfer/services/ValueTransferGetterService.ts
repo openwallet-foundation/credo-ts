@@ -5,6 +5,7 @@ import type { Getter, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
+import { v4 } from 'uuid'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -88,7 +89,7 @@ export class ValueTransferGetterService {
   public async createRequest(params: {
     amount: number
     unitOfAmount?: string
-    witness: string
+    witness?: string
     giver?: string
     usePublicDid?: boolean
     timeouts?: Timeouts
@@ -97,15 +98,22 @@ export class ValueTransferGetterService {
     record: ValueTransferRecord
     message: RequestMessage
   }> {
+    const id = v4()
+    this.config.logger.info(`> Getter: request payment VTP transaction with ${id}`)
+
     // Get payment public DID from the storage or generate a new one if requested
     const usePublicDid = params.usePublicDid || true
     const getter = await this.valueTransferService.getTransactionDid({ role: ValueTransferRole.Getter, usePublicDid })
+    const witness = params.witness || this.config.valueTransferWitnessDid
+    if (!witness) {
+      throw new AriesFrameworkError(`Witness DID either must be set in the Agent config or provided as a parameter`)
+    }
 
     // Call VTP package to create payment request
     const givenTotal = new TaggedPrice({ amount: params.amount, uoa: params.unitOfAmount })
     const { error, receipt } = await this.getter.createRequest({
       getterId: getter.did,
-      witnessId: params.witness,
+      witnessId: witness,
       giverId: params.giver,
       givenTotal,
       timeouts: params.timeouts,
@@ -120,6 +128,7 @@ export class ValueTransferGetterService {
     }
 
     const requestMessage = new RequestMessage({
+      id,
       from: getter.did,
       to: params.giver,
       attachments,
@@ -146,6 +155,9 @@ export class ValueTransferGetterService {
       type: ValueTransferEventTypes.ValueTransferStateChanged,
       payload: { record },
     })
+
+    this.config.logger.info(`< Getter: request payment VTP transaction with ${id} completed`)
+
     return { record, message: requestMessage }
   }
 
@@ -164,6 +176,8 @@ export class ValueTransferGetterService {
     message: OfferMessage | ProblemReportMessage
   }> {
     const { message: offerMessage } = messageContext
+
+    this.config.logger.info(`> Getter: process offer message for VTP transaction ${offerMessage.thid}`)
 
     const receipt = offerMessage.valueTransferMessage
     if (!receipt) {
@@ -216,6 +230,9 @@ export class ValueTransferGetterService {
       type: ValueTransferEventTypes.ValueTransferStateChanged,
       payload: { record },
     })
+
+    this.config.logger.info(`< Getter: process offer message for VTP transaction ${offerMessage.thid} completed!`)
+
     return { record, message: offerMessage }
   }
 
@@ -238,11 +255,13 @@ export class ValueTransferGetterService {
     record: ValueTransferRecord
     message: OfferAcceptedMessage | ProblemReportMessage
   }> {
+    this.config.logger.info(`> Getter: accept offer message for VTP transaction ${record.threadId}`)
+
     // Verify that we are in appropriate state to perform action
     record.assertRole(ValueTransferRole.Getter)
     record.assertState(ValueTransferState.OfferReceived)
 
-    const witness = witnessDid || this.config.valueTransferConfig?.witnessDid || record.witness?.did
+    const witness = witnessDid || this.config.valueTransferWitnessDid || record.witness?.did
     if (!witness) {
       throw new AriesFrameworkError(`Unable to accept payment offer without specifying of Witness DID.`)
     }
@@ -307,6 +326,9 @@ export class ValueTransferGetterService {
       ValueTransferState.CashAcceptanceSent,
       ValueTransferTransactionStatus.InProgress
     )
+
+    this.config.logger.info(`> Getter: accept offer message for VTP transaction ${record.threadId} completed!`)
+
     return { record, message: offerAcceptedMessage }
   }
 
@@ -327,6 +349,10 @@ export class ValueTransferGetterService {
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: requestAcceptedWitnessedMessage } = messageContext
+
+    this.config.logger.info(
+      `> Getter: process request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.thid}`
+    )
 
     const record = await this.valueTransferRepository.getByThread(requestAcceptedWitnessedMessage.thid)
 
@@ -397,6 +423,11 @@ export class ValueTransferGetterService {
       ValueTransferState.CashAcceptanceSent,
       ValueTransferTransactionStatus.InProgress
     )
+
+    this.config.logger.info(
+      `< Getter: process request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.thid}`
+    )
+
     return { record, message: cashAcceptedMessage }
   }
 
@@ -415,6 +446,8 @@ export class ValueTransferGetterService {
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: getterReceiptMessage } = messageContext
+
+    this.config.logger.info(`> Getter: process receipt message for VTP transaction ${getterReceiptMessage.thid}`)
 
     const record = await this.valueTransferRepository.getByThread(getterReceiptMessage.thid)
 
@@ -469,6 +502,10 @@ export class ValueTransferGetterService {
       record,
       ValueTransferState.Completed,
       ValueTransferTransactionStatus.Finished
+    )
+
+    this.config.logger.info(
+      `< Getter: process receipt message for VTP transaction ${getterReceiptMessage.thid} completed!`
     )
     return { record, message: getterReceiptMessage }
   }

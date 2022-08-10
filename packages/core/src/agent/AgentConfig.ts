@@ -78,11 +78,35 @@ export class AgentConfig {
   }
 
   public get autoAcceptPaymentOffer() {
-    return this.initConfig.valueTransferConfig?.autoAcceptPaymentOffer ?? AutoAcceptValueTransfer.Never
+    return this.initConfig.valueTransferConfig?.party?.autoAcceptPaymentOffer ?? AutoAcceptValueTransfer.Never
   }
 
   public get autoAcceptPaymentRequest() {
-    return this.initConfig.valueTransferConfig?.autoAcceptPaymentRequest ?? AutoAcceptValueTransfer.Never
+    return this.initConfig.valueTransferConfig?.party?.autoAcceptPaymentRequest ?? AutoAcceptValueTransfer.Never
+  }
+
+  public get witnessTockTime() {
+    return this.initConfig.valueTransferConfig?.witness?.tockTime || 5000
+  }
+
+  public get witnessCleanupTime() {
+    return this.initConfig.valueTransferConfig?.witness?.cleanupTime || 1000 * 60 * 60
+  }
+
+  public get witnessHistoryThreshold() {
+    return this.initConfig.valueTransferConfig?.witness?.historyThreshold || 1000 * 60 * 60
+  }
+
+  public get valueTransferInitialNotes() {
+    return (
+      this.initConfig.valueTransferConfig?.party?.verifiableNotes ||
+      this.initConfig.valueTransferConfig?.witness?.verifiableNotes ||
+      []
+    )
+  }
+
+  public get valueTransferWitnessDid() {
+    return this.initConfig.valueTransferConfig?.party?.witnessDid
   }
 
   public get didCommMimeType() {
@@ -149,6 +173,10 @@ export class AgentConfig {
 
   public get valueTransferConfig() {
     return this.initConfig.valueTransferConfig
+  }
+
+  public get valueWitnessConfig() {
+    return this.initConfig.valueTransferConfig?.witness
   }
 
   public get transports() {

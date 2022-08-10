@@ -27,12 +27,12 @@ export class RequestHandler implements Handler<typeof DIDCommV2Message> {
   public async handle(messageContext: HandlerInboundMessage<RequestHandler>) {
     const { record, message } = await this.valueTransferGiverService.processPaymentRequest(messageContext)
     if (!record || message.type === ProblemReportMessage.type) {
-      return this.valueTransferService.sendMessageToWitness(message)
+      return this.valueTransferService.sendMessage(message)
     }
 
     if (this.valueTransferResponseCoordinator.shouldAutoRespondToRequest()) {
       const { message } = await this.valueTransferGiverService.acceptRequest(record)
-      return this.valueTransferService.sendMessageToWitness(message)
+      return this.valueTransferService.sendMessage(message)
     }
   }
 }

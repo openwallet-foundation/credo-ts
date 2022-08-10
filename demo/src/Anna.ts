@@ -3,14 +3,14 @@ import type { ValueTransferRecord } from '@aries-framework/core'
 
 import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
 
-import { BaseAgent } from './BaseAgent'
+import { BaseAgent, notes } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
-export class Getter extends BaseAgent {
+export class Anna extends BaseAgent {
   public valueTransferRecordId?: string
-  public static seed = '6b8b882e2618fa5d45ee7229ca880082'
 
   public constructor(name: string, port?: number) {
+    console.log(notes)
     super({
       name,
       port,
@@ -18,26 +18,27 @@ export class Getter extends BaseAgent {
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
-          seed: '6b8b882e2618fa5d45ee7229ca880082',
-          transports: [Transports.Nearby, Transports.NFC],
-          marker: DidMarker.Offline,
-        },
-        {
           seed: '6b8b882e2618fa5d45ee7229ca880080',
-          transports: [Transports.Nearby, Transports.NFC, Transports.HTTP, Transports.WS],
           marker: DidMarker.Online,
+          transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
         },
       ],
-      valueTransferConfig: {},
+      valueTransferConfig: {
+        party: {
+          verifiableNotes: notes,
+        },
+      },
     })
   }
 
-  public static async build(): Promise<Getter> {
-    const getter = new Getter('getter', undefined)
-    await getter.initializeAgent()
-    const publicDid = await getter.agent.getStaticDid(DidMarker.Online)
-    console.log(`Getter Public DID: ${publicDid?.did}`)
-    return getter
+  public static async build(): Promise<Anna> {
+    const giver = new Anna('anna', undefined)
+    await giver.initializeAgent()
+
+    const publicDid = await giver.agent.getStaticDid(DidMarker.Online)
+    console.log(`Anna Public DID: ${publicDid?.did}`)
+
+    return giver
   }
 
   private async getValueTransferRecord() {
@@ -47,38 +48,10 @@ export class Getter extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  public async requestPayment(witness: string) {
-    const { record } = await this.agent.valueTransfer.requestPayment({
-      amount: 1,
-      witness,
-      transport: Transports.NFC,
-    })
-    this.valueTransferRecordId = record.id
-    console.log(greenText('\nRequest Sent!\n'))
-    await this.waitForPayment()
-  }
-
-  public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord, witness: string) {
-    const { record } = await this.agent.valueTransfer.acceptPaymentOffer({
-      recordId: valueTransferRecord.id,
-      witness,
-    })
-    this.valueTransferRecordId = record.id
-    console.log(greenText('\nPayment offer accepted!\n'))
-    await this.waitForPayment()
-  }
-
-  public async abortPaymentOffer(valueTransferRecord: ValueTransferRecord) {
-    const { record } = await this.agent.valueTransfer.abortTransaction(valueTransferRecord.id)
-    this.valueTransferRecordId = record.id
-    console.log(redText('\nPayment request rejected!\n'))
-    console.log(record.problemReportMessage)
-  }
-
   private async waitForPayment() {
     const valueTransferRecord = await this.getValueTransferRecord()
 
-    console.log('Waiting for Giver to pay...')
+    console.log('Waiting for finishing payment...')
     try {
       const record = await this.agent.valueTransfer.returnWhenIsCompleted(valueTransferRecord.id)
       if (record.state === ValueTransferState.Completed) {
@@ -96,6 +69,31 @@ export class Getter extends BaseAgent {
       console.log(redText(`\nTimeout of 120 seconds reached.. Returning to home screen.\n`))
       return
     }
+  }
+
+  public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
+    const { record } = await this.agent.valueTransfer.acceptPaymentRequest({ recordId: valueTransferRecord.id })
+    this.valueTransferRecordId = record.id
+    console.log(greenText('\nPayment request accepted!\n'))
+    await this.waitForPayment()
+  }
+
+  public async abortPaymentRequest(valueTransferRecord: ValueTransferRecord) {
+    const { record } = await this.agent.valueTransfer.abortTransaction(valueTransferRecord.id)
+    this.valueTransferRecordId = record.id
+    console.log(redText('\nPayment request rejected!\n'))
+    console.log(record.problemReportMessage)
+  }
+
+  public async offerPayment(getter: string) {
+    const { record } = await this.agent.valueTransfer.offerPayment({
+      amount: 1,
+      getter,
+      transport: Transports.NFC,
+    })
+    this.valueTransferRecordId = record.id
+    console.log(greenText('\nOffer Sent!\n'))
+    await this.waitForPayment()
   }
 
   public async exit() {

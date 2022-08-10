@@ -1,12 +1,11 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import { DidMarker, Transports } from '@aries-framework/core'
-import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { BaseAgent } from './BaseAgent'
+import { BaseAgent, notes } from './BaseAgent'
 import { Output } from './OutputClass'
 
-export class Witness extends BaseAgent {
-  public static seed = '6b8b882e2618fa5d45ee7229ca880083'
+export class CentralBank extends BaseAgent {
+  public static wid = '1'
 
   public constructor(name: string, port?: number) {
     super({
@@ -16,24 +15,31 @@ export class Witness extends BaseAgent {
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
-          seed: '6b8b882e2618fa5d45ee7229ca880084',
+          seed: '6b8b882e2618fa5d45ee7229ca880085',
           transports: [Transports.HTTP, Transports.WS],
           marker: DidMarker.Online,
         },
+        {
+          seed: '6b8b882e2618fa5d45ee7229ca880086',
+          transports: [Transports.HTTP],
+          marker: DidMarker.Restricted,
+        },
       ],
       valueTransferConfig: {
-        isWitness: true,
-        verifiableNotes: createVerifiableNotes(10),
+        witness: {
+          wid: CentralBank.wid,
+          knownWitnesses: BaseAgent.witnessTable,
+          verifiableNotes: notes,
+        },
       },
-      endpoints: [],
     })
   }
 
-  public static async build(): Promise<Witness> {
-    const witness = new Witness('witness', undefined)
+  public static async build(): Promise<CentralBank> {
+    const witness = new CentralBank('centralBank', undefined)
     await witness.initializeAgent()
     const publicDid = await witness.agent.getStaticDid(DidMarker.Online)
-    console.log(`Witness Public DID: ${publicDid?.did}`)
+    console.log(`CentralBank Public DID: ${publicDid?.did}`)
     return witness
   }
 

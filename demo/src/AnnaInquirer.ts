@@ -4,44 +4,46 @@ import { clear } from 'console'
 import { textSync } from 'figlet'
 import inquirer from 'inquirer'
 
+import { Anna } from './Anna'
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
-import { Getter } from './Getter'
 import { Listener } from './Listener'
 import { greenText, Title } from './OutputClass'
 
-export const runGetter = async () => {
+export const runGiver = async () => {
   clear()
-  console.log(textSync('Getter', { horizontalLayout: 'full' }))
-  const getter = await GetterInquirer.build()
-  await getter.processAnswer()
+  console.log(textSync('Anna', { horizontalLayout: 'full' }))
+  const giver = await AnnaInquirer.build()
+  await giver.processAnswer()
 }
 
 enum PromptOptions {
-  RequestPayment = 'Request payment',
+  OfferPay = 'Offer Payment',
   Exit = 'Exit',
   Restart = 'Restart',
 }
 
-export class GetterInquirer extends BaseInquirer {
-  public getter: Getter
+export class AnnaInquirer extends BaseInquirer {
+  public giver: Anna
   public promptOptionsString: string[]
   public listener: Listener
 
-  public constructor(getter: Getter) {
+  public constructor(giver: Anna) {
     super()
-    this.getter = getter
+    this.giver = giver
     this.listener = new Listener()
     this.promptOptionsString = Object.values(PromptOptions)
-    this.listener.messageListener(this.getter.agent, this.getter.name)
-    this.listener.paymentOfferListener(this.getter, this)
+    this.listener.messageListener(this.giver.agent, this.giver.name)
+    this.listener.paymentRequestListener(this.giver, this)
   }
 
-  public static async build(): Promise<GetterInquirer> {
-    const getter = await Getter.build()
-    return new GetterInquirer(getter)
+  public static async build(): Promise<AnnaInquirer> {
+    const giver = await Anna.build()
+    return new AnnaInquirer(giver)
   }
 
   private async getPromptChoice() {
+    const balance = await this.giver.agent.valueTransfer.getBalance()
+    console.log(greenText('Balance: ' + balance))
     return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
   }
 
@@ -50,8 +52,8 @@ export class GetterInquirer extends BaseInquirer {
     if (this.listener.on) return
 
     switch (choice.options) {
-      case PromptOptions.RequestPayment:
-        await this.requestPayment()
+      case PromptOptions.OfferPay:
+        await this.offerPayment()
         return
       case PromptOptions.Exit:
         await this.exit()
@@ -63,20 +65,19 @@ export class GetterInquirer extends BaseInquirer {
     await this.processAnswer()
   }
 
-  public async requestPayment() {
-    const witness = await inquirer.prompt([this.inquireInput('Witness DID')])
-    await this.getter.requestPayment(witness.input)
+  public async offerPayment() {
+    const getter = await inquirer.prompt([this.inquireInput('Getter DID')])
+    await this.giver.offerPayment(getter.input)
   }
 
-  public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {
-    const balance = await this.getter.agent.valueTransfer.getBalance()
+  public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
+    const balance = await this.giver.agent.valueTransfer.getBalance()
     console.log(greenText(`\nCurrent balance: ${balance}`))
-    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.PaymentOfferTitle)])
+    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.PaymentRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      await this.getter.abortPaymentOffer(valueTransferRecord)
+      await this.giver.abortPaymentRequest(valueTransferRecord)
     } else if (confirm.options === ConfirmOptions.Yes) {
-      const witness = await inquirer.prompt([this.inquireInput('Witness DID')])
-      await this.getter.acceptPaymentOffer(valueTransferRecord, witness.input)
+      await this.giver.acceptPaymentRequest(valueTransferRecord)
     }
   }
 
@@ -85,7 +86,7 @@ export class GetterInquirer extends BaseInquirer {
     if (confirm.options === ConfirmOptions.No) {
       return
     } else if (confirm.options === ConfirmOptions.Yes) {
-      await this.getter.exit()
+      await this.giver.exit()
     }
   }
 
@@ -95,10 +96,10 @@ export class GetterInquirer extends BaseInquirer {
       await this.processAnswer()
       return
     } else if (confirm.options === ConfirmOptions.Yes) {
-      await this.getter.restart()
-      await runGetter()
+      await this.giver.restart()
+      await runGiver()
     }
   }
 }
 
-void runGetter()
+void runGiver()
