@@ -23,6 +23,10 @@ export class DidsModule {
     return this.didService.getById(recordId)
   }
 
+  public async findById(recordId: string): Promise<DidRecord | null> {
+    return this.didService.findById(recordId)
+  }
+
   public async getAllDIDs(): Promise<DidRecord[]> {
     return this.didService.getAll()
   }

@@ -32,8 +32,8 @@ import { OfferAcceptedWitnessedHandler } from './handlers/OfferAcceptedWitnessed
 import { ValueTransferService } from './services'
 import { ValueTransferGetterService } from './services/ValueTransferGetterService'
 import { ValueTransferGiverService } from './services/ValueTransferGiverService'
-import { ValueTransferWitnessService } from './services/ValueTransferWitnessService'
 import { ValueTransferIssuerService } from './services/ValueTransferIssuerService'
+import { ValueTransferWitnessService } from './services/ValueTransferWitnessService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferModule {
