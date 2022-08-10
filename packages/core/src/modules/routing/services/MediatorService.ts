@@ -49,34 +49,37 @@ export class MediatorService {
     this.eventEmitter = eventEmitter
   }
 
-  private async getRoutingKeys() {
-    this.agentConfig.logger.debug('Retrieving mediator routing keys')
-    // If the routing record is not loaded yet, retrieve it from storage
-    if (!this._mediatorRoutingRecord) {
-      this.agentConfig.logger.debug('Mediator routing record not loaded yet, retrieving from storage')
-      let routingRecord = await this.mediatorRoutingRepository.findById(
-        this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
-      )
+  public async initialize() {
+    this.agentConfig.logger.debug('Mediator routing record not loaded yet, retrieving from storage')
+    let routingRecord = await this.mediatorRoutingRepository.findById(
+      this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
+    )
 
-      // If we don't have a routing record yet, create it
-      if (!routingRecord) {
-        this.agentConfig.logger.debug('Mediator routing record does not exist yet, creating routing keys and record')
-        const { verkey } = await this.wallet.createDid()
+    // If we don't have a routing record yet, create it
+    if (!routingRecord) {
+      this.agentConfig.logger.debug('Mediator routing record does not exist yet, creating routing keys and record')
+      const { verkey } = await this.wallet.createDid()
 
-        routingRecord = new MediatorRoutingRecord({
-          id: this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID,
-          routingKeys: [verkey],
-        })
+      routingRecord = new MediatorRoutingRecord({
+        id: this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID,
+        routingKeys: [verkey],
+      })
 
-        await this.mediatorRoutingRepository.save(routingRecord)
-      }
-
-      this._mediatorRoutingRecord = routingRecord
+      await this.mediatorRoutingRepository.save(routingRecord)
     }
 
-    // Return the routing keys
-    this.agentConfig.logger.debug(`Returning mediator routing keys ${this._mediatorRoutingRecord.routingKeys}`)
-    return this._mediatorRoutingRecord.routingKeys
+    this._mediatorRoutingRecord = routingRecord
+  }
+
+  private getRoutingKeys() {
+    if (this._mediatorRoutingRecord) {
+      // Return the routing keys
+      this.agentConfig.logger.debug(`Returning mediator routing keys ${this._mediatorRoutingRecord.routingKeys}`)
+      return this._mediatorRoutingRecord.routingKeys
+    }
+    throw new AriesFrameworkError(
+      `Mediation service has not been initialized. Agent must include the config {mediationRole: MediationRole.Mediator}`
+    )
   }
 
   public async processForwardMessage(
@@ -150,7 +153,7 @@ export class MediatorService {
 
     const message = new MediationGrantMessage({
       endpoint: this.agentConfig.endpoints[0],
-      routingKeys: await this.getRoutingKeys(),
+      routingKeys: this.getRoutingKeys(),
       threadId: mediationRecord.threadId,
     })
 

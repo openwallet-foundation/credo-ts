@@ -37,7 +37,7 @@ const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 const app = express()
 const socketServer = new Server({ noServer: true })
 
-const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`http://localhost:${port}`, `ws://localhost:${port}`]
+const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`https://ebff-31-30-172-153.ngrok.io`]
 
 const logger = new TestLogger(LogLevel.info)
 

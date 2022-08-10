@@ -10,7 +10,7 @@ import { Agent } from '../../../agent/Agent'
 import { sleep } from '../../../utils/sleep'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
-import { MediationState } from '../models/MediationState'
+import { MediationRole, MediationState } from '../models'
 
 const recipientConfig = getBaseConfig('Mediation: Recipient', {
   indyLedgers: [],
@@ -19,6 +19,7 @@ const mediatorConfig = getBaseConfig('Mediation: Mediator', {
   autoAcceptMediationRequests: true,
   endpoints: ['rxjs:mediator'],
   indyLedgers: [],
+  mediationRole: MediationRole.Mediator,
 })
 
 const senderConfig = getBaseConfig('Mediation: Sender', {

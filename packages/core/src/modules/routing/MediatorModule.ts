@@ -45,6 +45,10 @@ export class MediatorModule {
     this.registerHandlers(dispatcher)
   }
 
+  public async initialize() {
+    await this.mediatorService.initialize()
+  }
+
   public async grantRequestedMediation(mediatorId: string): Promise<MediationRecord> {
     const record = await this.mediatorService.getById(mediatorId)
     const connectionRecord = await this.connectionService.getById(record.connectionId)
