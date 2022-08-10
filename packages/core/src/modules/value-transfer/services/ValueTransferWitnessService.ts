@@ -3,11 +3,11 @@ import type { MintMessage } from '../messages/MintMessage'
 import type { Witness } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import {
+  ErrorCodes,
   TransactionRecord,
   ValueTransfer,
-  WitnessState,
-  ErrorCodes,
   WitnessInfo,
+  WitnessState,
 } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -17,7 +17,7 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { AriesFrameworkError } from '../../../error'
 import { WitnessType } from '../../../types'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { DidService } from '../../dids'
+import { DidMarker, DidService } from '../../dids'
 import { WellKnownService } from '../../well-known'
 import { GossipService } from '../../witness-gossip/service'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
@@ -110,8 +110,9 @@ export class ValueTransferWitnessService {
     // witness has already been initialized
     if (existingState) return
 
-    const publicDid = await this.didService.findOnlineStaticDid()
-    if (!publicDid) {
+    const publicDid = await this.didService.findStaticDid(DidMarker.Online)
+    const gossipDid = await this.didService.findStaticDid(DidMarker.Restricted)
+    if (!publicDid || !gossipDid) {
       throw new AriesFrameworkError(
         'Witness public DID not found. Please set `publicDidSeed` field in the agent config.'
       )
@@ -128,11 +129,12 @@ export class ValueTransferWitnessService {
       config.knownWitnesses[0]
 
     const witnessState = new WitnessState({
-      info: new WitnessInfo({ wid: config.wid, did: publicDid.did }),
+      info: new WitnessInfo({ wid: config.wid, did: gossipDid.did }),
       mappingTable: config.knownWitnesses,
     })
 
     const state = new WitnessStateRecord({
+      publicDid: publicDid.did,
       witnessState,
       topWitness,
     })
@@ -171,7 +173,7 @@ export class ValueTransferWitnessService {
     const valueTransferMessage = offerAcceptanceMessage.valueTransferMessage
     if (!valueTransferMessage) {
       const problemReport = new ProblemReportMessage({
-        from: state.did,
+        from: state.publicDid,
         to: offerAcceptanceMessage.from,
         pthid: offerAcceptanceMessage.id,
         body: {
@@ -203,7 +205,7 @@ export class ValueTransferWitnessService {
       })
 
     //Call VTP package to process received Payment Request request
-    const { error, receipt, delta } = await this.witness.processOfferAcceptance(state.did, valueTransferMessage)
+    const { error, receipt, delta } = await this.witness.processOfferAcceptance(state.publicDid, valueTransferMessage)
     if (error || !receipt || !delta) {
       if (!existingRecord && error?.code === ErrorCodes.CurrentStateDoesNotExist) {
         // Pause transaction and request other witness for registered state
@@ -215,7 +217,7 @@ export class ValueTransferWitnessService {
 
       // send problem report back to Getter
       const problemReport = new ProblemReportMessage({
-        from: state.did,
+        from: state.publicDid,
         to: offerAcceptanceMessage.from,
         pthid: offerAcceptanceMessage.id,
         body: {
@@ -229,7 +231,7 @@ export class ValueTransferWitnessService {
 
     // next protocol message
     const offerAcceptedWitnessedMessage = new OfferAcceptedWitnessedMessage({
-      from: state.did,
+      from: state.publicDid,
       to: receipt.giver?.id,
       thid: offerAcceptanceMessage.thid,
       attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
@@ -237,7 +239,7 @@ export class ValueTransferWitnessService {
 
     const getterInfo = await this.wellKnownService.resolve(receipt.getterId)
     const giverInfo = await this.wellKnownService.resolve(receipt.giverId)
-    const witnessInfo = await this.wellKnownService.resolve(state.did)
+    const witnessInfo = await this.wellKnownService.resolve(state.publicDid)
 
     // Create Value Transfer record and raise event
     record.state = ValueTransferState.OfferAcceptanceSent

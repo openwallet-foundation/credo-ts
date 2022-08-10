@@ -98,7 +98,7 @@ export class GossipService {
     }
 
     const message = new WitnessGossipMessage({
-      from: state.did,
+      from: state.gossipDid,
       to: topWitness.did,
       body: {
         ask: { since: tim },
@@ -140,7 +140,7 @@ export class GossipService {
     for (const witness of state.knownWitnesses) {
       try {
         const message = new WitnessGossipMessage({
-          from: state.did,
+          from: state.gossipDid,
           to: witness.did,
           body,
           attachments,
@@ -270,7 +270,7 @@ export class GossipService {
     const attachments = [WitnessGossipMessage.createTransactionUpdateJSONAttachment(state.wid, transactionUpdates)]
 
     const message = new WitnessGossipMessage({
-      from: state.did,
+      from: state.gossipDid,
       to: witnessGossipMessage.from,
       body: {
         tell: { id: state.wid },
@@ -320,7 +320,7 @@ export class GossipService {
     const state = await this.getWitnessState()
 
     const message = new WitnessTableMessage({
-      from: state.did,
+      from: state.gossipDid,
       to: witnessTableQuery.from,
       body: {
         witnesses: state.witnessState.mappingTable,
