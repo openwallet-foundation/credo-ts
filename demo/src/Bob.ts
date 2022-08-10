@@ -13,7 +13,7 @@ export class Bob extends BaseAgent {
     super({
       name,
       port,
-      transports: [Transports.NFC, Transports.HTTP],
+      transports: [Transports.NFC, Transports.HTTP, Transports.WS],
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
@@ -39,7 +39,7 @@ export class Bob extends BaseAgent {
   public static async build(): Promise<Bob> {
     const getter = new Bob('bob', undefined)
     await getter.initializeAgent()
-    const publicDid = await getter.agent.getOnlinePublicDid()
+    const publicDid = await getter.agent.getStaticDid(DidMarker.Online)
     console.log(`Bob Public DID: ${publicDid?.did}`)
     return getter
   }

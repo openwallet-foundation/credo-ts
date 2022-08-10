@@ -93,7 +93,7 @@ export class ValueTransferService {
 
       const initialNotes = verifiableNotes?.length
         ? verifiableNotes
-        : ValueTransferService.generateInitialStateNotes(this.config.valueTransferParties)
+          : ValueTransferService.getRandomInitialStateNotes(this.config.supportedPartiesCount)
       await this.receiveNotes(initialNotes)
     }
   }

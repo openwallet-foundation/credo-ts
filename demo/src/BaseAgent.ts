@@ -11,8 +11,10 @@ import {
   AutoAcceptCredential,
   AutoAcceptProof,
   HttpOutboundTransport,
+  MediatorDeliveryStrategy,
   MediatorPickupStrategy,
   Transports,
+  WsOutboundTransport,
 } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
@@ -47,6 +49,7 @@ export class BaseAgent {
     },
   ]
 
+
   public port?: number
   public name: string
   public config: InitConfig
@@ -62,6 +65,7 @@ export class BaseAgent {
     transports?: Transports[]
     valueTransferConfig?: ValueTransferConfig
     mediatorConnectionsInvite?: string
+    endpoints?: string[]
   }) {
     this.name = props.name
     this.port = props.port
@@ -82,15 +86,16 @@ export class BaseAgent {
         },
       ],
       connectToIndyLedgersOnStartup: false,
-      endpoints: props.port ? [`http://localhost:${this.port}`] : undefined,
+      endpoints: props.endpoints,
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      mediatorPickupStrategy: MediatorPickupStrategy.Explicit,
-      mediatorPollingInterval: 1000,
+      mediatorPickupStrategy: MediatorPickupStrategy.Combined,
+      mediatorPollingInterval: 5000,
       valueTransferConfig: props.valueTransferConfig,
       transports: props.transports,
       mediatorConnectionsInvite: props.mediatorConnectionsInvite,
+      mediatorDeliveryStrategy: MediatorDeliveryStrategy.WebSocket,
     }
 
     this.config = config
@@ -104,22 +109,16 @@ export class BaseAgent {
       this.agent.registerOutboundTransport(this.outBoundTransport)
     }
 
+    if (transports.includes(Transports.WS) || transports.includes(Transports.WSS)) {
+      this.outBoundTransport = new WsOutboundTransport()
+      this.agent.registerOutboundTransport(this.outBoundTransport)
+    }
+
     if (transports.includes(Transports.NFC)) {
       this.inBoundTransport = new FileInboundTransport({ alias: props.name, schema: Transports.NFC })
       this.outBoundTransport = new FileOutboundTransport({
         alias: props.name,
         schema: Transports.NFC,
-      })
-
-      this.agent.registerInboundTransport(this.inBoundTransport)
-      this.agent.registerOutboundTransport(this.outBoundTransport)
-    }
-
-    if (transports.includes(Transports.IPC)) {
-      this.inBoundTransport = new FileInboundTransport({ alias: props.name, schema: Transports.IPC })
-      this.outBoundTransport = new FileOutboundTransport({
-        alias: props.name,
-        schema: Transports.IPC,
       })
 
       this.agent.registerInboundTransport(this.inBoundTransport)

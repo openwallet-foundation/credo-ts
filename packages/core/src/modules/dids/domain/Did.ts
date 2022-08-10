@@ -11,6 +11,7 @@ export enum DidType {
 export enum DidMarker {
   Offline = 'offline',
   Online = 'online',
+  Restricted = 'restricted',
 }
 
 export interface DidProps {
@@ -18,4 +19,6 @@ export interface DidProps {
   type?: DidType
   transports?: Transports[]
   marker?: DidMarker
+  needMediation?: boolean
+  endpoint?: string
 }

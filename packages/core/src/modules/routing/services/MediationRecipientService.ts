@@ -253,8 +253,8 @@ export class MediationRecipientService {
     return this.mediatorRepository.getById(id)
   }
 
-  public async findByDid(did: string): Promise<MediationRecord | null> {
-    return this.mediatorRepository.findSingleByQuery({ did })
+  public async findByMediatorDid(did: string): Promise<MediationRecord | null> {
+    return this.mediatorRepository.findSingleByQuery({ mediatorDid: did })
   }
 
   public async getMediators(): Promise<MediationRecord[]> {

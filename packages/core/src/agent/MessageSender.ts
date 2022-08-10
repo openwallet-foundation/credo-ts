@@ -210,7 +210,7 @@ export class MessageSender {
     // Retrieve DIDComm services
     const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
 
-    // Loop trough all available services and try to send the message
+    // Loop through all available services and try to send the message
     for await (const service of services) {
       try {
         // Enable return routing if the
@@ -274,7 +274,7 @@ export class MessageSender {
 
     for await (const service of services) {
       this.logger.debug(`Sending outbound message to service:`, { service })
-      const outboundPackage = { payload: outboundMessage, endpoint: service.serviceEndpoint }
+      const outboundPackage = { payload: outboundMessage, recipientDid: toDID, endpoint: service.serviceEndpoint }
       await this.sendMessage(outboundPackage, service.protocolScheme)
     }
   }
@@ -331,7 +331,8 @@ export class MessageSender {
   }
 
   private async sendPlaintextMessage(message: DIDCommV2Message, service: DidDocumentService) {
-    await this.sendMessage({ payload: { ...message } }, service.protocolScheme)
+    const recipientDid = message.to?.length ? message.to[0] : undefined
+    await this.sendMessage({ payload: { ...message }, recipientDid }, service.protocolScheme)
     return
   }
 
@@ -339,9 +340,12 @@ export class MessageSender {
     if (!message.from) {
       throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
     }
+
     const params = { signByDID: message.from, serviceId: service?.id }
+    const recipientDid = message.to?.length ? message.to[0] : undefined
+
     const payload = await this.envelopeService.packMessageSigned(message, params)
-    const outboundPackage = { payload, endpoint: service.serviceEndpoint }
+    const outboundPackage = { payload, recipientDid, endpoint: service.serviceEndpoint }
     await this.sendMessage(outboundPackage, service.protocolScheme)
     return
   }
@@ -360,7 +364,7 @@ export class MessageSender {
       serviceId: service?.id,
     }
     const payload = await this.envelopeService.packMessageEncrypted(message, params)
-    const outboundPackage = { payload, endpoint: service.serviceEndpoint }
+    const outboundPackage = { payload, recipientDid: toDID, endpoint: service.serviceEndpoint }
     await this.sendMessage(outboundPackage, service.protocolScheme)
   }
 

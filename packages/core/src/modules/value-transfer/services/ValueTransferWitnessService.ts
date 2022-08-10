@@ -301,7 +301,7 @@ export class ValueTransferWitnessService {
     )
 
     // Get Witness state
-    const witnessDid = await this.didService.findPublicDid()
+    const witnessDid = await this.didService.findOnlineStaticDid()
     if (!witnessDid) {
       throw new AriesFrameworkError(`Unable to find Witness public DID`)
     }

@@ -11,12 +11,12 @@ export class CentralBank extends BaseAgent {
     super({
       name,
       port,
-      transports: [Transports.HTTP],
+      transports: [Transports.HTTP, Transports.WS],
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
           seed: '6b8b882e2618fa5d45ee7229ca880085',
-          transports: [Transports.HTTP],
+          transports: [Transports.HTTP, Transports.WS],
           marker: DidMarker.Online,
         },
       ],
@@ -25,14 +25,14 @@ export class CentralBank extends BaseAgent {
           wid: CentralBank.wid,
           knownWitnesses: BaseAgent.witnessTable,
         },
-      },
+      }
     })
   }
 
   public static async build(): Promise<CentralBank> {
     const witness = new CentralBank('centralBank', undefined)
     await witness.initializeAgent()
-    const publicDid = await witness.agent.getPublicDid()
+    const publicDid = await witness.agent.getStaticDid(DidMarker.Online)
     console.log(`CentralBank Public DID: ${publicDid?.did}`)
     return witness
   }
