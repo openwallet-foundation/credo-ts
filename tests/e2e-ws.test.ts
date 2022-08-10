@@ -2,7 +2,13 @@ import { getBaseConfig } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 
-import { Agent, WsOutboundTransport, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
+import {
+  Agent,
+  WsOutboundTransport,
+  AutoAcceptCredential,
+  MediatorPickupStrategy,
+  MediationRole,
+} from '@aries-framework/core'
 import { WsInboundTransport } from '@aries-framework/node'
 
 const recipientConfig = getBaseConfig('E2E WS Recipient ', {
@@ -14,6 +20,7 @@ const mediatorPort = 4000
 const mediatorConfig = getBaseConfig('E2E WS Mediator', {
   endpoints: [`ws://localhost:${mediatorPort}`],
   autoAcceptMediationRequests: true,
+  mediationRole: MediationRole.Mediator,
 })
 
 const senderPort = 4001
