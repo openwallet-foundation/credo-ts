@@ -12,7 +12,7 @@ export interface DidRecordProps {
   id: string
   role: DidDocumentRole
   didDocument?: DidDocument
-  isPublic?: boolean
+  isStatic?: boolean
   label?: string
   logoUrl?: string
   didType: DidType
@@ -27,7 +27,7 @@ interface CustomDidTags extends TagsBase {
 
 type DefaultDidTags = {
   role: DidDocumentRole
-  isPublic: boolean
+  isStatic: boolean
   method: string
   didType: DidType
   marker?: DidMarker
@@ -53,7 +53,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
   public logoUrl?: string
 
   @IsBoolean()
-  public isPublic!: boolean
+  public isStatic!: boolean
 
   @IsEnum(DidMarker)
   public marker?: DidMarker
@@ -71,7 +71,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
       this.label = props.label
       this.logoUrl = props.logoUrl
       this.didType = props.didType
-      this.isPublic = props.isPublic || false
+      this.isStatic = props.isStatic || false
       this.marker = props.marker
       this.createdAt = props.createdAt ?? new Date()
       this._tags = props.tags ?? {}
@@ -88,7 +88,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
     return {
       ...this._tags,
       role: this.role,
-      isPublic: this.isPublic,
+      isStatic: this.isStatic,
       method: did.method,
       didType: this.didType,
       marker: this.marker,

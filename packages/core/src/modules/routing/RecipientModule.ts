@@ -342,7 +342,7 @@ export class RecipientModule {
 
     const didForMediator = await this.didService.createDID({
       transports: [],
-      requestMediation: false,
+      needMediation: false,
     })
     const mediationRecord = await this.requestAndAwaitGrant(didForMediator.did, invitation.from, 60000) // TODO: put timeout as a config parameter
     await this.setDefaultMediator(mediationRecord)

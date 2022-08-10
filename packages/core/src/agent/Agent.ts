@@ -223,12 +223,13 @@ export class Agent {
         type: publicDidType,
         transports: this.agentConfig.transports,
         marker: this.agentConfig.onlineTransports.length ? DidMarker.Online : DidMarker.Offline,
+        needMediation: true,
       })
     }
 
     if (staticDids.length) {
       // If an agent has publicDid it will be used as routing key.
-      const existingPublicDid = await this.didService.findPublicDid()
+      const existingPublicDid = await this.didService.findStaticDid()
       if (!existingPublicDid) {
         for (const staticDid of staticDids) {
           // create DID in DIDComm V1 DID storage
@@ -237,10 +238,12 @@ export class Agent {
           // create DID in DIDComm V2 DID storage
           await this.didService.createDID({
             seed: staticDid.seed,
-            didType: staticDid.type,
+            type: staticDid.type,
             marker: staticDid.marker,
             transports: staticDid.transports,
-            isPublic: true,
+            isStatic: true,
+            needMediation: staticDid.needMediation,
+            endpoint: staticDid.endpoint,
           })
         }
       }
@@ -282,16 +285,8 @@ export class Agent {
     return this.walletService.publicDid
   }
 
-  public async getPublicDid() {
-    return await this.didService.findPublicDid()
-  }
-
-  public async getOfflinePublicDid() {
-    return await this.didService.findOfflinePublicDid()
-  }
-
-  public async getOnlinePublicDid() {
-    return await this.didService.findOnlinePublicDid()
+  public async getStaticDid(marker?: DidMarker) {
+    return await this.didService.findStaticDid(marker)
   }
 
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {

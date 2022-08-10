@@ -102,7 +102,11 @@ export class AgentConfig {
   }
 
   public get valueTransferInitialNotes() {
-    return this.initConfig.valueTransferConfig?.party?.verifiableNotes || []
+    return (
+      this.initConfig.valueTransferConfig?.party?.verifiableNotes ||
+      this.initConfig.valueTransferConfig?.witness?.verifiableNotes ||
+      []
+    )
   }
 
   public get valueTransferWitnessDid() {
@@ -171,6 +175,10 @@ export class AgentConfig {
     return this.initConfig.connectionImageUrl
   }
 
+  public get supportOffline() {
+    return this.initConfig.supportOffline
+  }
+
   public get valueTransferConfig() {
     return this.initConfig.valueTransferConfig
   }
@@ -192,6 +200,8 @@ export class AgentConfig {
   }
 
   public async hasInternetAccess() {
+    if (!this.initConfig.supportOffline) return true
+
     return this.agentDependencies
       .fetch('https://google.com') // FIXME: find better way to detect internet connectivity status
       .then(() => true)

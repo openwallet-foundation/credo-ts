@@ -23,14 +23,14 @@ export class Bob extends BaseAgent {
         },
         {
           seed: '6b8b882e2618fa5d45ee7229ca880082',
-          transports: [Transports.NFC, Transports.HTTP, Transports.WS],
+          transports: [Transports.NFC, Transports.HTTP],
           marker: DidMarker.Online,
         },
       ],
       valueTransferConfig: {
         party: {
           witnessDid:
-            'did:peer:2.Ez6LSmBWXTiZQVVx37zwoZK3MvEebphDwd81AmBryFxyYg2dS.Vz6MkhuEV8mevESoVDVVtnznFfc6MHGwSwhwqM9FSooVntCEu.SeyJzIjoiaHR0cDovLzE5Mi4xNjguMS4xNDU6MzAwMC9hcGkvdjEiLCJ0IjoiZG0iLCJyIjpbImRpZDpwZWVyOjIuRXo2TFNuSFM5ZjNock11THJOOXo2WmhvN1RjQlJ2U3lLN0hQalF0d0ttdTNvc1d3Ri5WejZNa3JhaEFvVkxRUzlTNUdGNXNVS3R1ZFhNZWRVU1pkZGVKaGpIdEFGYVY0aG9WLlNXM3NpY3lJNkltaDBkSEE2THk4eE9USXVNVFk0TGpFdU1UUTFPak13TURBdllYQnBMM1l4SWl3aWRDSTZJbVJ0SWl3aWNpSTZXMTBzSW1FaU9sc2laR2xrWTI5dGJTOTJNaUpkZlN4N0luTWlPaUozY3pvdkx6RTVNaTR4TmpndU1TNHhORFU2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFN3aVlTSTZXeUprYVdSamIyMXRMM1l5SWwxOVhRIl0sImEiOlsiZGlkY29tbS92MiJdfQ',
+            'did:peer:2.Ez6LSfsT5gHMCVEya8VDwW9QbAdVUhJCKbVscrrb82SwCPKKT.Vz6MkgNdE8ad1k8cPCHnXZ6vSxrTuFauRKDzzUHLPvdsLycz5.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFN3aVlTSTZXeUprYVdSamIyMXRMM1l5SWwxOUxIc2ljeUk2SW5kek9pOHZiRzlqWVd4b2IzTjBPak13TURBdllYQnBMM1l4SWl3aWRDSTZJbVJ0SWl3aWNpSTZXMTBzSW1FaU9sc2laR2xrWTI5dGJTOTJNaUpkZlYwIl0sImEiOlsiZGlkY29tbS92MiJdfQ',
         },
       },
     })
@@ -39,7 +39,7 @@ export class Bob extends BaseAgent {
   public static async build(): Promise<Bob> {
     const getter = new Bob('bob', undefined)
     await getter.initializeAgent()
-    const publicDid = await getter.agent.getOnlinePublicDid()
+    const publicDid = await getter.agent.getStaticDid(DidMarker.Online)
     console.log(`Bob Public DID: ${publicDid?.did}`)
     return getter
   }
@@ -51,10 +51,11 @@ export class Bob extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  public async requestPayment(giver: string) {
+  public async requestPayment(witness: string, giver: string) {
     const { record } = await this.agent.valueTransfer.requestPayment({
       amount: 1,
       giver,
+      witness,
       transport: Transports.NFC,
     })
     this.valueTransferRecordId = record.id

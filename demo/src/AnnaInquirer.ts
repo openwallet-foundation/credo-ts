@@ -11,7 +11,7 @@ import { greenText, Title } from './OutputClass'
 
 export const runGiver = async () => {
   clear()
-  console.log(textSync('Giver', { horizontalLayout: 'full' }))
+  console.log(textSync('Anna', { horizontalLayout: 'full' }))
   const giver = await AnnaInquirer.build()
   await giver.processAnswer()
 }

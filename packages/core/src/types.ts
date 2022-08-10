@@ -46,7 +46,6 @@ export interface ValueTransferPartyConfig {
   verifiableNotes?: VerifiableNote[]
   autoAcceptPaymentOffer?: AutoAcceptValueTransfer
   autoAcceptPaymentRequest?: AutoAcceptValueTransfer
-  supportedPartiesCount?: number
   centralBankConnectionsInvite?: string
 }
 
@@ -62,7 +61,7 @@ export interface ValueTransferWitnessConfig {
   tockTime?: number
   cleanupTime?: number
   historyThreshold?: number
-  supportedPartiesCount?: number
+  verifiableNotes?: VerifiableNote[]
   centralBankDid?: string
 }
 
@@ -88,6 +87,7 @@ export interface InitConfig {
   autoAcceptCredentials?: AutoAcceptCredential
   logger?: Logger
   didCommMimeType?: DidCommMimeType
+  supportOffline?: boolean
 
   indyLedgers?: IndyPoolConfig[]
   connectToIndyLedgersOnStartup?: boolean

@@ -211,6 +211,7 @@ export class GossipService {
     this.config.logger.info('   < Witness: processing of gossip message completed')
     this.config.logger.info(`       Last state tracker: ${stateAfter.witnessState.lastUpdateTracker}`)
     this.config.logger.info(`       Register state hashes : ${stateAfter.witnessState.partyStateHashes.size}`)
+    this.config.logger.info(`       Register state hashes : ${stateAfter.witnessState.partyStateHashes}`)
     this.config.logger.info(
       `       Register gap state hashes : ${stateAfter.witnessState.partyStateGapsTracker.length}`
     )

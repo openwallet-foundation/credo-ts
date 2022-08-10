@@ -110,7 +110,7 @@ export class ValueTransferWitnessService {
     // witness has already been initialized
     if (existingState) return
 
-    const publicDid = await this.didService.findPublicDid()
+    const publicDid = await this.didService.findOnlineStaticDid()
     if (!publicDid) {
       throw new AriesFrameworkError(
         'Witness public DID not found. Please set `publicDidSeed` field in the agent config.'
@@ -292,7 +292,7 @@ export class ValueTransferWitnessService {
     )
 
     // Get Witness state
-    const witnessDid = await this.didService.findPublicDid()
+    const witnessDid = await this.didService.findOnlineStaticDid()
     if (!witnessDid) {
       throw new AriesFrameworkError(`Unable to find Witness public DID`)
     }

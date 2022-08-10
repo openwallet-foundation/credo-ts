@@ -2,7 +2,7 @@ import type { Logger } from '../../../logger'
 import type { MediationRecord } from '../../routing/repository'
 import type { DidInfo } from '../../well-known'
 import type { DidMetadataChangedEvent, DidReceivedEvent } from '../DidEvents'
-import type { DidDocument } from '../domain'
+import type { DidDocument, DidProps } from '../domain'
 import type { DidTags } from '../repository'
 import type { DIDMetadata } from '../types'
 
@@ -53,18 +53,13 @@ export class DidService {
   }
 
   public async createDID(
-    params: {
-      didType?: DidType
-      keyType?: KeyType
-      seed?: string
-      isPublic?: boolean
-      requestMediation?: boolean
+    params: DidProps & {
+      isStatic?: boolean
       transports?: Transports[]
-      marker?: DidMarker
     } = {}
   ): Promise<DidRecord> {
-    const didType_ = params.didType || DidType.PeerDid
-    const keyType_ = params.keyType || KeyType.Ed25519
+    const didType_ = params.type || DidType.PeerDid
+    const needMediation = params.needMediation || params.needMediation === undefined
 
     this.logger.debug(`creating DID with type ${didType_}`)
 
@@ -76,53 +71,27 @@ export class DidService {
       ? this.agentConfig.transports
       : this.agentConfig.offlineTransports
 
-    const ed25519KeyPair = await this.keysService.createKey({ keyType: keyType_, seed: params.seed })
-    const ed25519Key = Key.fromPublicKey(ed25519KeyPair.publicKey, keyType_)
+    // Generate keys
+    const ed25519KeyPair = await this.keysService.createKey({ seed: params.seed })
+    const ed25519Key = Key.fromPublicKey(ed25519KeyPair.publicKey, KeyType.Ed25519)
 
     const x25519KeyPair = await this.keysService.convertEd25519ToX25519Key({ keyPair: ed25519KeyPair })
     const x25519Key = Key.fromPublicKey(x25519KeyPair.publicKey, KeyType.X25519)
 
-    const didDocumentBuilder = new DidDocumentBuilder('')
-      .addEd25519Context()
-      .addX25519Context()
-      .addAuthentication(getEd25519VerificationMethod({ controller: '', id: '', key: ed25519Key }))
-      .addKeyAgreement(getX25519VerificationMethod({ controller: '', id: '', key: x25519Key }))
-
-    let mediator: MediationRecord | null = null
-
-    if (hasOnlineTransport(transports)) {
-      mediator = await this.mediationRecipientService.findDefaultMediator()
-      if (mediator && mediator.endpoint) {
-        didDocumentBuilder.addService(
-          new DidCommV2Service({
-            id: Transports.HTTP,
-            serviceEndpoint: mediator.endpoint,
-            routingKeys: mediator.routingKeys,
-          })
-        )
-      }
-    }
-    if (transports.includes(Transports.NFC)) {
-      didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.NFC, serviceEndpoint: Transports.NFC }))
-    }
-    if (transports.includes(Transports.IPC)) {
-      didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.IPC, serviceEndpoint: Transports.IPC }))
-    }
-    if (transports.includes(Transports.Nearby)) {
-      didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.Nearby, serviceEndpoint: Transports.Nearby }))
-    }
-
-    const didDocument = didDocumentBuilder.build()
-    const didPeer =
-      didDocument.service.length > 0
-        ? DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
-        : DidPeer.fromKey(ed25519Key)
+    // Create DIDDoc
+    const { didPeer, mediator } = await this.prepareDIDDoc({
+      needMediation,
+      endpoint: params.endpoint,
+      transports,
+      ed25519Key,
+      x25519Key,
+    })
 
     await this.keysService.storeKey({
       keyPair: ed25519KeyPair,
       controller: didPeer.did,
       kid: ed25519Key.buildKeyId(didPeer.did),
-      keyType: keyType_,
+      keyType: KeyType.Ed25519,
     })
 
     await this.keysService.storeKey({
@@ -132,8 +101,7 @@ export class DidService {
       keyType: KeyType.X25519,
     })
 
-    const requestMediation = params.requestMediation || params.requestMediation === undefined
-    if (hasOnlineTransport(transports) && requestMediation && mediator) {
+    if (hasOnlineTransport(transports) && needMediation && mediator) {
       await this.mediationRecipientService.getRouting(didPeer.did, { useDefaultMediator: true })
     }
 
@@ -141,7 +109,7 @@ export class DidService {
       id: didPeer.did,
       didDocument: didPeer.didDocument,
       role: DidDocumentRole.Created,
-      isPublic: params.isPublic,
+      isStatic: params.isStatic,
       didType: didType_,
       marker: params.marker,
     })
@@ -151,22 +119,80 @@ export class DidService {
     return didRecord
   }
 
+  private async prepareDIDDoc(params: {
+    needMediation?: boolean
+    endpoint?: string
+    transports: Transports[]
+    ed25519Key: Key
+    x25519Key: Key
+  }): Promise<{ didPeer: DidPeer; mediator?: MediationRecord | null }> {
+    let mediator: MediationRecord | null = null
+
+    const didDocumentBuilder = new DidDocumentBuilder('')
+      .addEd25519Context()
+      .addX25519Context()
+      .addAuthentication(getEd25519VerificationMethod({ controller: '', id: '', key: params.ed25519Key }))
+      .addKeyAgreement(getX25519VerificationMethod({ controller: '', id: '', key: params.x25519Key }))
+
+    for (const transport of params.transports) {
+      if (transport === Transports.HTTP || transport === Transports.HTTPS) {
+        if (params.needMediation) {
+          mediator = await this.mediationRecipientService.findDefaultMediator()
+          if (mediator && mediator.endpoint && params.needMediation) {
+            didDocumentBuilder.addService(
+              new DidCommV2Service({
+                id: transport,
+                serviceEndpoint: mediator.endpoint,
+                routingKeys: mediator.routingKeys,
+              })
+            )
+          }
+        } else if (params.endpoint) {
+          didDocumentBuilder.addService(
+            new DidCommV2Service({
+              id: transport,
+              serviceEndpoint: params.endpoint,
+              routingKeys: [],
+            })
+          )
+        }
+      }
+
+      if (transport === Transports.NFC) {
+        didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.NFC, serviceEndpoint: Transports.NFC }))
+      }
+      if (transport === Transports.Nearby) {
+        didDocumentBuilder.addService(
+          new DidCommV2Service({ id: Transports.Nearby, serviceEndpoint: Transports.Nearby })
+        )
+      }
+    }
+
+    const didDocument = didDocumentBuilder.build()
+    const didPeer =
+      didDocument.service.length > 0
+        ? DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
+        : DidPeer.fromKey(params.ed25519Key)
+
+    return { didPeer, mediator }
+  }
+
   public async getPublicDid() {
     const hasInternetAccess = await this.agentConfig.hasInternetAccess()
     if (!hasInternetAccess) {
       // find for a public DID which supports Offline transports only
-      const offlinePublicDid = await this.findOfflinePublicDid()
+      const offlinePublicDid = await this.findOfflineStaticDid()
       if (offlinePublicDid) return offlinePublicDid
     }
 
     if (hasInternetAccess) {
       // find for a public DID which supports Online transports
-      const onlinePublicDid = await this.findOnlinePublicDid()
+      const onlinePublicDid = await this.findOnlineStaticDid()
       if (onlinePublicDid) return onlinePublicDid
     }
 
     // find for a public DID which is not marked
-    const publicDid = await this.findPublicDid()
+    const publicDid = await this.findStaticDid()
     if (publicDid) return publicDid
   }
 
@@ -250,24 +276,25 @@ export class DidService {
     return this.didRepository.findById(recordId)
   }
 
-  public async findPublicDid() {
-    const publicDids = await this.didRepository.findByQuery({
-      isPublic: true,
+  public async findStaticDid(marker?: DidMarker) {
+    const did = await this.didRepository.findByQuery({
+      isStatic: true,
+      marker: marker,
     })
-    if (publicDids.length) return publicDids[0]
+    if (did.length) return did[0]
     return undefined
   }
 
-  public async findOnlinePublicDid() {
+  public async findOnlineStaticDid() {
     return this.didRepository.findSingleByQuery({
-      isPublic: true,
+      isStatic: true,
       marker: DidMarker.Online,
     })
   }
 
-  public async findOfflinePublicDid() {
+  public async findOfflineStaticDid() {
     return this.didRepository.findSingleByQuery({
-      isPublic: true,
+      isStatic: true,
       marker: DidMarker.Offline,
     })
   }

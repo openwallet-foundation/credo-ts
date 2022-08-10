@@ -1,16 +1,16 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { ValueTransferRecord } from '@aries-framework/core'
 
-import { Transports, ValueTransferState } from '@aries-framework/core'
-import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
 
-import { BaseAgent } from './BaseAgent'
+import { BaseAgent, notes } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class Anna extends BaseAgent {
   public valueTransferRecordId?: string
 
   public constructor(name: string, port?: number) {
+    console.log(notes)
     super({
       name,
       port,
@@ -19,11 +19,13 @@ export class Anna extends BaseAgent {
       staticDids: [
         {
           seed: '6b8b882e2618fa5d45ee7229ca880080',
+          marker: DidMarker.Online,
+          transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
         },
       ],
       valueTransferConfig: {
         party: {
-          verifiableNotes: createVerifiableNotes(10),
+          verifiableNotes: notes,
         },
       },
     })
@@ -33,7 +35,7 @@ export class Anna extends BaseAgent {
     const giver = new Anna('anna', undefined)
     await giver.initializeAgent()
 
-    const publicDid = await giver.agent.getPublicDid()
+    const publicDid = await giver.agent.getStaticDid(DidMarker.Online)
     console.log(`Anna Public DID: ${publicDid?.did}`)
 
     return giver
