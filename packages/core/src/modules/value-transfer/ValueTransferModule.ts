@@ -25,12 +25,14 @@ import {
   RequestAcceptedHandler,
   RequestAcceptedWitnessedHandler,
   RequestHandler,
+  MintHandler,
 } from './handlers'
 import { OfferAcceptedHandler } from './handlers/OfferAcceptedHandler'
 import { OfferAcceptedWitnessedHandler } from './handlers/OfferAcceptedWitnessedHandler'
 import { ValueTransferService } from './services'
 import { ValueTransferGetterService } from './services/ValueTransferGetterService'
 import { ValueTransferGiverService } from './services/ValueTransferGiverService'
+import { ValueTransferIssuerService } from './services/ValueTransferIssuerService'
 import { ValueTransferWitnessService } from './services/ValueTransferWitnessService'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -39,6 +41,7 @@ export class ValueTransferModule {
   private valueTransferGetterService: ValueTransferGetterService
   private valueTransferGiverService: ValueTransferGiverService
   private valueTransferWitnessService: ValueTransferWitnessService
+  private valueTransferIssuerService: ValueTransferIssuerService
   private valueTransferResponseCoordinator: ValueTransferResponseCoordinator
 
   public constructor(
@@ -47,12 +50,14 @@ export class ValueTransferModule {
     valueTransferGetterService: ValueTransferGetterService,
     valueTransferGiverService: ValueTransferGiverService,
     valueTransferWitnessService: ValueTransferWitnessService,
+    valueTransferIssuerService: ValueTransferIssuerService,
     valueTransferResponseCoordinator: ValueTransferResponseCoordinator
   ) {
     this.valueTransferService = valueTransferService
     this.valueTransferGetterService = valueTransferGetterService
     this.valueTransferGiverService = valueTransferGiverService
     this.valueTransferWitnessService = valueTransferWitnessService
+    this.valueTransferIssuerService = valueTransferIssuerService
     this.valueTransferResponseCoordinator = valueTransferResponseCoordinator
     this.registerHandlers(dispatcher)
   }
@@ -250,6 +255,18 @@ export class ValueTransferModule {
   }
 
   /**
+   * Mint cash by generating Verifiable Notes and sending mint message (state update) to Witness
+   * @param amount Amount of cash to mint
+   * @param witness DID of Witness to send mint message
+   */
+  public async mintCash(amount: number, witness: string): Promise<void> {
+    // Mint Verifiable Notes
+    const message = await this.valueTransferIssuerService.mintCash(amount, witness)
+    // Send mint message to Witness to update state
+    await this.valueTransferService.sendMessage(message)
+  }
+
+  /**
    * Get list of pending transactions:
    *  Getter: Request sent but hasn't accepted / rejected yet
    *  Giver: Request received but hasn't accepted / rejected yet
@@ -327,5 +344,6 @@ export class ValueTransferModule {
     dispatcher.registerHandler(
       new OfferAcceptedWitnessedHandler(this.valueTransferService, this.valueTransferGiverService)
     )
+    dispatcher.registerHandler(new MintHandler(this.valueTransferWitnessService))
   }
 }

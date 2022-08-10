@@ -1,11 +1,11 @@
-import type { ResumeValueTransferTransactionEvent, ValueTransferStateChangedEvent } from '../ValueTransferEvents'
+import type { ValueTransferStateChangedEvent, ResumeValueTransferTransactionEvent } from '../ValueTransferEvents'
+import type { MintMessage } from '../messages/MintMessage'
 import type { Witness } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import {
   ErrorCodes,
   TransactionRecord,
   ValueTransfer,
-  Wallet,
   WitnessInfo,
   WitnessState,
 } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -121,27 +121,16 @@ export class ValueTransferWitnessService {
     const config = this.config.valueWitnessConfig
 
     if (!config || !config?.knownWitnesses.length) {
-      throw new AriesFrameworkError('Witness table must be provide.')
+      throw new AriesFrameworkError('Witness table must be provided.')
     }
 
     const topWitness =
       config.knownWitnesses.find((witness) => witness.wid !== config.wid && witness.type === WitnessType.One) ??
       config.knownWitnesses[0]
 
-    const partyStateHashes = this.generateInitialPartyStateHashes()
-    const transactionRecords: TransactionRecord[] = []
-
-    if (partyStateHashes.size) {
-      partyStateHashes.forEach((partyStateHash) => {
-        transactionRecords.push(new TransactionRecord({ start: null, end: partyStateHash }))
-      })
-    }
-
     const witnessState = new WitnessState({
       info: new WitnessInfo({ wid: config.wid, did: gossipDid.did }),
       mappingTable: config.knownWitnesses,
-      partyStateHashes,
-      transactionRecords,
     })
 
     const state = new WitnessStateRecord({
@@ -516,7 +505,9 @@ export class ValueTransferWitnessService {
    *    Verify correctness of message
    *    Update Value Transfer record with the information from the message.
    *
-   * @param messageContext The record context containing the message.@returns
+   * @param messageContext The record context containing the message.
+   *
+   * @returns
    *    * Value Transfer record
    *    * Witnessed Cash Removal message
    */
@@ -626,6 +617,41 @@ export class ValueTransferWitnessService {
   }
 
   /**
+   * Process a received {@link MintMessage}.
+   *    Verify correctness of message
+   *    Update Value Transfer record with the information from the message.
+   *
+   * @param messageContext The record context containing the message.@returns
+   *    * Value Transfer record
+   *    * Witnessed Cash Removal message
+   */
+  public async processCashMint(messageContext: InboundMessageContext<MintMessage>): Promise<void> {
+    const issuerDids = this.config.witnessIssuerDids
+    if (!issuerDids) {
+      throw new AriesFrameworkError(
+        'Issuer DIDs are not specified. To enable cash minting support, please set `issuerDids` value in witness section of VTP config.'
+      )
+    }
+
+    const { message: mintMessage } = messageContext
+
+    if (!mintMessage.from || !issuerDids.includes(mintMessage.from)) {
+      throw new AriesFrameworkError('Mint message sender DID do not match with any issuer DID')
+    }
+
+    const { startHash, endHash } = mintMessage.body
+
+    const transactionRecord = new TransactionRecord({
+      start: startHash,
+      end: endHash,
+    })
+
+    const { witnessState } = await this.getWitnessState()
+    witnessState.applyPartyStateTransitions([transactionRecord])
+    await this.valueTransferStateService.storeWitnessState(witnessState)
+  }
+
+  /**
    * Pause VTP transaction processing and request for transactions from other witness
    * */
   private async pauseTransaction(record: ValueTransferRecord, message: ValueTransferBaseMessage): Promise<void> {
@@ -705,14 +731,5 @@ export class ValueTransferWitnessService {
 
   public async findWitnessState(): Promise<WitnessStateRecord | null> {
     return this.witnessStateRepository.findSingleByQuery({})
-  }
-
-  private generateInitialPartyStateHashes() {
-    const partyStateHashes = new Set<Uint8Array>()
-    const verifiableNotes = this.config.valueTransferInitialNotes
-
-    const [, partyWallet] = new Wallet().receiveNotes(new Set(verifiableNotes))
-    partyStateHashes.add(partyWallet.rootHash())
-    return partyStateHashes
   }
 }

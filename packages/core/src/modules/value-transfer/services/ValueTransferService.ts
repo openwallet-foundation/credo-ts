@@ -5,7 +5,7 @@ import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { PartyState, ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { PartyState, TransactionRecord, ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -87,11 +87,6 @@ export class ValueTransferService {
       partyState: new PartyState(new Uint8Array(), new Wallet()),
     })
     await this.valueTransferStateRepository.save(state)
-
-    const verifiableNotes = this.config.valueTransferInitialNotes
-    if (verifiableNotes && verifiableNotes.length) {
-      await this.receiveNotes(verifiableNotes)
-    }
   }
 
   /**
@@ -99,8 +94,10 @@ export class ValueTransferService {
    * Init payment state if it's missing.
    *
    * @param notes Verifiable notes to add.
+   *
+   * @returns Transaction Record for wallet state transition after receiving notes
    */
-  public async receiveNotes(notes: VerifiableNote[]) {
+  public async receiveNotes(notes: VerifiableNote[]): Promise<TransactionRecord | undefined> {
     try {
       // no notes to add
       if (!notes.length) return
@@ -114,11 +111,13 @@ export class ValueTransferService {
         throw new AriesFrameworkError(`Unable to find party state`)
       }
 
-      const [, wallet] = state.partyState.wallet.receiveNotes(new Set(notes))
+      const [proof, wallet] = state.partyState.wallet.receiveNotes(new Set(notes))
       await this.valueTransferStateService.storePartyState({
         ...state.partyState,
         wallet,
       })
+
+      return new TransactionRecord({ start: proof.currentState || null, end: proof.nextState })
     } catch (e) {
       throw new AriesFrameworkError(`Unable to add verifiable notes. Err: ${e}`)
     }

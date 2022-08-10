@@ -61,6 +61,7 @@ export interface ValueTransferWitnessConfig {
   cleanupTime?: number
   historyThreshold?: number
   verifiableNotes?: VerifiableNote[]
+  issuerDids?: string[]
 }
 
 export interface ValueTransferConfig {

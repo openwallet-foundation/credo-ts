@@ -97,12 +97,8 @@ export class AgentConfig {
     return this.initConfig.valueTransferConfig?.witness?.historyThreshold || 1000 * 60 * 60
   }
 
-  public get valueTransferInitialNotes() {
-    return (
-      this.initConfig.valueTransferConfig?.party?.verifiableNotes ||
-      this.initConfig.valueTransferConfig?.witness?.verifiableNotes ||
-      []
-    )
+  public get witnessIssuerDids() {
+    return this.initConfig.valueTransferConfig?.witness?.issuerDids
   }
 
   public get valueTransferWitnessDid() {
