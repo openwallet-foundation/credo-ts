@@ -9,7 +9,7 @@ import { ValueTransferService } from './ValueTransferService'
 import { ValueTransferStateService } from './ValueTransferStateService'
 
 @scoped(Lifecycle.ContainerScoped)
-export class ValueTransferCentralBankService {
+export class ValueTransferIssuerService {
   private valueTransferService: ValueTransferService
   private valueTransferStateService: ValueTransferStateService
   private didService: DidService

@@ -46,7 +46,6 @@ export interface ValueTransferPartyConfig {
   verifiableNotes?: VerifiableNote[]
   autoAcceptPaymentOffer?: AutoAcceptValueTransfer
   autoAcceptPaymentRequest?: AutoAcceptValueTransfer
-  centralBankContactInvite?: string
 }
 
 export enum WitnessType {
@@ -62,7 +61,7 @@ export interface ValueTransferWitnessConfig {
   cleanupTime?: number
   historyThreshold?: number
   verifiableNotes?: VerifiableNote[]
-  centralBankDid?: string
+  issuerDids?: string[]
 }
 
 export interface ValueTransferConfig {

@@ -624,17 +624,17 @@ export class ValueTransferWitnessService {
    *    * Witnessed Cash Removal message
    */
   public async processCashMint(messageContext: InboundMessageContext<MintMessage>): Promise<void> {
-    const centralBankDid = this.config.witnessCentralBankDid
-    if (!centralBankDid) {
+    const issuerDids = this.config.witnessIssuerDids
+    if (!issuerDids) {
       throw new AriesFrameworkError(
-        'Central Bank DID is not specified. To enable cash minting support, please set `centralBankDid` in witness section of VTP config.'
+        'Issuer DIDs are not specified. To enable cash minting support, please set `issuerDids` value in witness section of VTP config.'
       )
     }
 
     const { message: mintMessage } = messageContext
 
-    if (mintMessage?.from !== centralBankDid) {
-      throw new AriesFrameworkError('Mint message sender DID do not match Central Bank DID specified in config')
+    if (!mintMessage.from || !issuerDids.includes(mintMessage.from)) {
+      throw new AriesFrameworkError('Mint message sender DID do not match with any issuer DID')
     }
 
     const { startHash, endHash } = mintMessage.body

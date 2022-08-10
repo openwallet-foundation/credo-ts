@@ -33,7 +33,7 @@ import { ValueTransferService } from './services'
 import { ValueTransferGetterService } from './services/ValueTransferGetterService'
 import { ValueTransferGiverService } from './services/ValueTransferGiverService'
 import { ValueTransferWitnessService } from './services/ValueTransferWitnessService'
-import { ValueTransferCentralBankService } from './services/ValueTransferCentralBankService'
+import { ValueTransferIssuerService } from './services/ValueTransferIssuerService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferModule {
@@ -41,7 +41,7 @@ export class ValueTransferModule {
   private valueTransferGetterService: ValueTransferGetterService
   private valueTransferGiverService: ValueTransferGiverService
   private valueTransferWitnessService: ValueTransferWitnessService
-  private valueTransferCentralBankService: ValueTransferCentralBankService
+  private valueTransferIssuerService: ValueTransferIssuerService
   private valueTransferResponseCoordinator: ValueTransferResponseCoordinator
 
   public constructor(
@@ -50,14 +50,14 @@ export class ValueTransferModule {
     valueTransferGetterService: ValueTransferGetterService,
     valueTransferGiverService: ValueTransferGiverService,
     valueTransferWitnessService: ValueTransferWitnessService,
-    valueTransferCentralBankService: ValueTransferCentralBankService,
+    valueTransferIssuerService: ValueTransferIssuerService,
     valueTransferResponseCoordinator: ValueTransferResponseCoordinator
   ) {
     this.valueTransferService = valueTransferService
     this.valueTransferGetterService = valueTransferGetterService
     this.valueTransferGiverService = valueTransferGiverService
     this.valueTransferWitnessService = valueTransferWitnessService
-    this.valueTransferCentralBankService = valueTransferCentralBankService
+    this.valueTransferIssuerService = valueTransferIssuerService
     this.valueTransferResponseCoordinator = valueTransferResponseCoordinator
     this.registerHandlers(dispatcher)
   }
@@ -261,7 +261,7 @@ export class ValueTransferModule {
    */
   public async mintCash(amount: number, witness: string): Promise<void> {
     // Mint Verifiable Notes
-    const message = await this.valueTransferCentralBankService.mintCash(amount, witness)
+    const message = await this.valueTransferIssuerService.mintCash(amount, witness)
     // Send mint message to Witness to update state
     await this.valueTransferService.sendMessage(message)
   }

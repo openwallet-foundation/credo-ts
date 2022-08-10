@@ -18,7 +18,6 @@ import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 import { DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
-import { OutOfBandService, OutOfBandInvitationMessage } from '../../out-of-band'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
@@ -42,7 +41,6 @@ export class ValueTransferService {
   private witnessStateRepository: WitnessStateRepository
   private didService: DidService
   private didResolverService: DidResolverService
-  private outOfBandService: OutOfBandService
   private eventEmitter: EventEmitter
   private messageSender: MessageSender
 
@@ -55,7 +53,6 @@ export class ValueTransferService {
     witnessStateRepository: WitnessStateRepository,
     didService: DidService,
     didResolverService: DidResolverService,
-    outOfBandService: OutOfBandService,
     eventEmitter: EventEmitter,
     messageSender: MessageSender
   ) {
@@ -67,7 +64,6 @@ export class ValueTransferService {
     this.witnessStateRepository = witnessStateRepository
     this.didService = didService
     this.didResolverService = didResolverService
-    this.outOfBandService = outOfBandService
     this.eventEmitter = eventEmitter
     this.messageSender = messageSender
 
@@ -91,20 +87,6 @@ export class ValueTransferService {
       partyState: new PartyState(new Uint8Array(), new Wallet()),
     })
     await this.valueTransferStateRepository.save(state)
-
-    const initialNotes = this.config.valueTransferInitialNotes
-    if (!state.partyState.wallet.amount() && initialNotes?.length) {
-      await this.receiveNotes(initialNotes)
-    }
-
-    const centralBankInvite = this.config.valueTransferCentralBankInvite
-    if (centralBankInvite) {
-      const invitationMessage = OutOfBandInvitationMessage.fromUrl(centralBankInvite)
-      const centralBankRecord = await this.didService.findById(invitationMessage.from)
-      if (!centralBankRecord) {
-        await this.outOfBandService.acceptOutOfBandInvitation(invitationMessage)
-      }
-    }
   }
 
   /**

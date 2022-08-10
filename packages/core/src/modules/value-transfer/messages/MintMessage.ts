@@ -28,7 +28,7 @@ export class MintMessage extends DIDCommV2Message {
 
   @Equals(MintMessage.type)
   public readonly type = MintMessage.type
-  public static readonly type = 'https://didcomm.org/mint-cash/1.0/mint'
+  public static readonly type = 'https://didcomm.org/vtp/1.0/mint'
 
   public constructor(params?: MintMessageParams) {
     super(params)
