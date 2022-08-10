@@ -10,7 +10,6 @@ export class Anna extends BaseAgent {
   public valueTransferRecordId?: string
 
   public constructor(name: string, port?: number) {
-    console.log(notes)
     super({
       name,
       port,
@@ -18,7 +17,7 @@ export class Anna extends BaseAgent {
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
-          seed: '6b8b882e2618fa5d45ee7229ca880080',
+          seed: '6b8b882e2618fa5d45ee7229ca880070',
           marker: DidMarker.Online,
           transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
         },

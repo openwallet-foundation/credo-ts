@@ -26,6 +26,7 @@ export class WitnessData {
 
 export interface WitnessStateProps {
   id?: string
+  publicDid: string
   witnessState: WitnessState
   topWitness: WitnessData
 }
@@ -33,6 +34,9 @@ export interface WitnessStateProps {
 export class WitnessStateRecord extends BaseRecord<DefaultWitnessStateTags, CustomWitnessStateTags> {
   public static readonly type = 'WitnessState'
   public readonly type = WitnessStateRecord.type
+
+  @IsString()
+  public publicDid!: string
 
   @Type(() => WitnessState)
   public witnessState!: WitnessState
@@ -45,12 +49,13 @@ export class WitnessStateRecord extends BaseRecord<DefaultWitnessStateTags, Cust
 
     if (props) {
       this.id = props.id ?? uuid()
+      this.publicDid = props.publicDid
       this.witnessState = props.witnessState
       this.topWitness = props.topWitness
     }
   }
 
-  public get did(): string {
+  public get gossipDid(): string {
     return this.witnessState.info.did
   }
 
@@ -59,7 +64,7 @@ export class WitnessStateRecord extends BaseRecord<DefaultWitnessStateTags, Cust
   }
 
   public get knownWitnesses(): Array<WitnessInfo> {
-    return this.witnessState.mappingTable.filter((witness) => witness.did !== this.did)
+    return this.witnessState.mappingTable.filter((witness) => witness.did !== this.gossipDid)
   }
 
   public getTags() {
