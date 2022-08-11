@@ -110,6 +110,7 @@ export class ProofService {
     config?: {
       comment?: string
       autoAcceptProof?: AutoAcceptProof
+      parentThreadId?: string
     }
   ): Promise<ProofProtocolMsgReturnType<ProposePresentationMessage>> {
     // Assert
@@ -119,12 +120,14 @@ export class ProofService {
     const proposalMessage = new ProposePresentationMessage({
       comment: config?.comment,
       presentationProposal,
+      parentThreadId: config?.parentThreadId,
     })
 
     // Create record
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord.id,
       threadId: proposalMessage.threadId,
+      parentThreadId: proposalMessage.thread?.parentThreadId,
       state: ProofState.ProposalSent,
       proposalMessage,
       autoAcceptProof: config?.autoAcceptProof,
@@ -218,6 +221,7 @@ export class ProofService {
       proofRecord = new ProofRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
+        parentThreadId: proposalMessage.thread?.parentThreadId,
         proposalMessage,
         state: ProofState.ProposalReceived,
       })
@@ -294,6 +298,7 @@ export class ProofService {
     config?: {
       comment?: string
       autoAcceptProof?: AutoAcceptProof
+      parentThreadId?: string
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
     this.logger.debug(`Creating proof request`)
@@ -315,12 +320,14 @@ export class ProofService {
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
       requestPresentationAttachments: [attachment],
+      parentThreadId: config?.parentThreadId,
     })
 
     // Create record
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord?.id,
       threadId: requestPresentationMessage.threadId,
+      parentThreadId: requestPresentationMessage.thread?.parentThreadId,
       requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
       autoAcceptProof: config?.autoAcceptProof,
@@ -383,6 +390,7 @@ export class ProofService {
       proofRecord = new ProofRecord({
         connectionId: connection?.id,
         threadId: proofRequestMessage.threadId,
+        parentThreadId: proofRequestMessage.thread?.parentThreadId,
         requestMessage: proofRequestMessage,
         state: ProofState.RequestReceived,
       })
@@ -974,6 +982,17 @@ export class ProofService {
    */
   public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<ProofRecord> {
     return this.proofRepository.getSingleByQuery({ threadId, connectionId })
+  }
+
+  /**
+   * Retrieve proof records by connection id and parent thread id
+   *
+   * @param connectionId The connection id
+   * @param parentThreadId The parent thread id
+   * @returns List containing all proof records matching the given query
+   */
+  public async getByParentThreadAndConnectionId(parentThreadId: string, connectionId?: string): Promise<ProofRecord[]> {
+    return this.proofRepository.findByQuery({ parentThreadId, connectionId })
   }
 
   public update(proofRecord: ProofRecord) {
