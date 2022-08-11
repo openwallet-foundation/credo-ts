@@ -11,8 +11,8 @@ export const SignatureSuiteToken = Symbol('SignatureSuiteToken')
 export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature
   proofType: string
-  requiredKeyType: string
-  keyType: string
+  verificationMethodTypes: string[]
+  keyTypes: KeyType[]
 }
 
 @injectable()
@@ -27,8 +27,12 @@ export class SignatureSuiteRegistry {
     return this.suiteMapping.map((x) => x.proofType)
   }
 
+  public getByVerificationMethodType(verificationMethodType: string) {
+    return this.suiteMapping.find((x) => x.verificationMethodTypes.includes(verificationMethodType))
+  }
+
   public getByKeyType(keyType: KeyType) {
-    return this.suiteMapping.find((x) => x.keyType === keyType)
+    return this.suiteMapping.find((x) => x.keyTypes.includes(keyType))
   }
 
   public getByProofType(proofType: string) {
@@ -39,5 +43,15 @@ export class SignatureSuiteRegistry {
     }
 
     return suiteInfo
+  }
+
+  public getVerificationMethodTypesByProofType(proofType: string): string[] {
+    const suiteInfo = this.suiteMapping.find((suiteInfo) => suiteInfo.proofType === proofType)
+
+    if (!suiteInfo) {
+      throw new AriesFrameworkError(`No verification method type found for proof type: ${proofType}`)
+    }
+
+    return suiteInfo.verificationMethodTypes
   }
 }
