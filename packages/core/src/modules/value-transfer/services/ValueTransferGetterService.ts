@@ -177,7 +177,13 @@ export class ValueTransferGetterService {
   }> {
     const { message: offerMessage } = messageContext
 
-    this.config.logger.info(`> Getter: process offer message for VTP transaction ${offerMessage.thid}`)
+    this.config.logger.info(`> Getter: process offer message for VTP transaction ${offerMessage.id}`)
+
+    const existingRecord = await this.valueTransferRepository.findByThread(offerMessage.id)
+    if (existingRecord) {
+      this.config.logger.info(`> Getter: offer ${offerMessage.id} has already been processed`)
+      throw new AriesFrameworkError(`Payment Offer ${offerMessage.id} has already been processed`)
+    }
 
     const receipt = offerMessage.valueTransferMessage
     if (!receipt) {
