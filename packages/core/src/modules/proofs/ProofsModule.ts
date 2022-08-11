@@ -73,6 +73,7 @@ export class ProofsModule {
     config?: {
       comment?: string
       autoAcceptProof?: AutoAcceptProof
+      parentThreadId?: string
     }
   ): Promise<ProofRecord> {
     const connection = await this.connectionService.getById(connectionId)
@@ -396,6 +397,7 @@ export class ProofsModule {
     })
     presentationProblemReportMessage.setThread({
       threadId: record.threadId,
+      parentThreadId: record.parentThreadId,
     })
     const outboundMessage = createOutboundMessage(connection, presentationProblemReportMessage)
     await this.messageSender.sendMessage(outboundMessage)
@@ -445,6 +447,30 @@ export class ProofsModule {
     return this.proofService.deleteById(proofId)
   }
 
+  /**
+   * Retrieve a proof record by connection id and thread id
+   *
+   * @param connectionId The connection id
+   * @param threadId The thread id
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
+   * @returns The proof record
+   */
+  public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<ProofRecord> {
+    return this.proofService.getByThreadAndConnectionId(threadId, connectionId)
+  }
+
+  /**
+   * Retrieve proof records by connection id and parent thread id
+   *
+   * @param connectionId The connection id
+   * @param parentThreadId The parent thread id
+   * @returns List containing all proof records matching the given query
+   */
+  public async getByParentThreadAndConnectionId(parentThreadId: string, connectionId?: string): Promise<ProofRecord[]> {
+    return this.proofService.getByParentThreadAndConnectionId(parentThreadId, connectionId)
+  }
+
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
       new ProposePresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
@@ -486,6 +512,7 @@ export type CreateProofRequestOptions = Partial<
 export interface ProofRequestConfig {
   comment?: string
   autoAcceptProof?: AutoAcceptProof
+  parentThreadId?: string
 }
 
 export interface GetRequestedCredentialsConfig {
