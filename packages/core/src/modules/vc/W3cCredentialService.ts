@@ -1,6 +1,5 @@
 import type { AgentContext } from '../../agent/context'
 import type { Key } from '../../crypto/Key'
-import type { KeyType } from '../../crypto/KeyType'
 import type { Query } from '../../storage/StorageService'
 import type { DocumentLoader } from './jsonldUtil'
 import type { W3cVerifyCredentialResult } from './models'
@@ -64,7 +63,7 @@ export class W3cCredentialService {
     const signingKey = await this.getPublicKeyFromVerificationMethod(agentContext, options.verificationMethod)
     const suiteInfo = this.suiteRegistry.getByProofType(options.proofType)
 
-    if (signingKey.keyType !== suiteInfo.keyType) {
+    if (!suiteInfo.keyTypes.includes(signingKey.keyType)) {
       throw new AriesFrameworkError('The key type of the verification method does not match the suite')
     }
 
@@ -170,7 +169,7 @@ export class W3cCredentialService {
 
     const signingKey = await this.getPublicKeyFromVerificationMethod(agentContext, options.verificationMethod)
 
-    if (signingKey.keyType !== suiteInfo.keyType) {
+    if (!suiteInfo.keyTypes.includes(signingKey.keyType)) {
       throw new AriesFrameworkError('The key type of the verification method does not match the suite')
     }
 
@@ -380,8 +379,12 @@ export class W3cCredentialService {
     return result.map((record) => record.credential)
   }
 
+  public getVerificationMethodTypesByProofType(proofType: string): string[] {
+    return this.suiteRegistry.getByProofType(proofType).verificationMethodTypes
+  }
+
   public getKeyTypesByProofType(proofType: string): string[] {
-    return this.suiteRegistry.getKeyTypesByProofType(proofType)
+    return this.suiteRegistry.getByProofType(proofType).keyTypes
   }
 
   public async findCredentialRecordByQuery(

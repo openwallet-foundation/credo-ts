@@ -19,19 +19,22 @@ export function getEd25519VerificationMethod({ key, id, controller }: { id: stri
 }
 
 export const keyDidEd25519: KeyDidMapping = {
-  supportedVerificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
+  supportedVerificationMethodTypes: [
+    VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+    VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+  ],
   getVerificationMethods: (did, key) => [
     getEd25519VerificationMethod({ id: `${did}#${key.fingerprint}`, key, controller: did }),
   ],
   getKeyFromVerificationMethod: (verificationMethod: VerificationMethod) => {
     if (
-      verificationMethod.type !== VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 &&
+      verificationMethod.type === VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 &&
       verificationMethod.publicKeyBase58
     ) {
       return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.Ed25519)
     }
     if (
-      verificationMethod.type !== VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020 &&
+      verificationMethod.type === VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020 &&
       verificationMethod.publicKeyMultibase
     ) {
       return Key.fromFingerprint(verificationMethod.publicKeyMultibase)

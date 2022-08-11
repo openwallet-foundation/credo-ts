@@ -1,3 +1,5 @@
+import type { KeyType } from '../../crypto'
+
 import { AriesFrameworkError } from '../../error'
 import { injectable, injectAll } from '../../plugins'
 
@@ -9,7 +11,8 @@ export const SignatureSuiteToken = Symbol('SignatureSuiteToken')
 export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature
   proofType: string
-  keyTypes: string[]
+  verificationMethodTypes: string[]
+  keyTypes: KeyType[]
 }
 
 @injectable()
@@ -25,7 +28,11 @@ export class SignatureSuiteRegistry {
   }
 
   public getByVerificationMethodType(verificationMethodType: string) {
-    return this.suiteMapping.find((x) => x.keyTypes.includes(verificationMethodType))
+    return this.suiteMapping.find((x) => x.verificationMethodTypes.includes(verificationMethodType))
+  }
+
+  public getByKeyType(keyType: KeyType) {
+    return this.suiteMapping.find((x) => x.keyTypes.includes(keyType))
   }
 
   public getByProofType(proofType: string) {
@@ -38,13 +45,13 @@ export class SignatureSuiteRegistry {
     return suiteInfo
   }
 
-  public getKeyTypesByProofType(proofType: string): string[] {
+  public getVerificationMethodTypesByProofType(proofType: string): string[] {
     const suiteInfo = this.suiteMapping.find((suiteInfo) => suiteInfo.proofType === proofType)
 
     if (!suiteInfo) {
-      throw new AriesFrameworkError(`No KeyType found for proof type: ${proofType}`)
+      throw new AriesFrameworkError(`No verification method type found for proof type: ${proofType}`)
     }
 
-    return suiteInfo.keyTypes
+    return suiteInfo.verificationMethodTypes
   }
 }
