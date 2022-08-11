@@ -1,11 +1,11 @@
 import { Type, Expose } from 'class-transformer'
 import { Matches, IsArray, ValidateNested, IsObject, IsInstance } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { MessageIdRegExp } from '../../../agent/BaseMessage'
-import { EncryptedMessage } from '../../../types'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
-import { uuid } from '../../../utils/uuid'
+import { AgentMessage } from '../../../../../../agent/AgentMessage'
+import { MessageIdRegExp } from '../../../../../../agent/BaseMessage'
+import { EncryptedMessage } from '../../../../../../types'
+import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
+import { uuid } from '../../../../../../utils/uuid'
 
 export class BatchMessageMessage {
   public constructor(options: { id?: string; message: EncryptedMessage }) {
