@@ -23,9 +23,7 @@ export class Anna extends BaseAgent {
         },
       ],
       valueTransferConfig: {
-        party: {
-          verifiableNotes: notes,
-        },
+        party: {},
       },
     })
   }

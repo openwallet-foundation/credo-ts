@@ -29,7 +29,6 @@ export class CentralBank extends BaseAgent {
         witness: {
           wid: CentralBank.wid,
           knownWitnesses: BaseAgent.witnessTable,
-          verifiableNotes: notes,
         },
       },
     })

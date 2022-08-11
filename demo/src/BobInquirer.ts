@@ -2,7 +2,7 @@ import type { ValueTransferRecord } from '@aries-framework/core'
 
 import { clear } from 'console'
 import { textSync } from 'figlet'
-import inquirer from 'inquirer'
+import { prompt } from 'inquirer'
 
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Bob } from './Bob'
@@ -42,7 +42,7 @@ export class BobInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    return prompt([this.inquireOptions(this.promptOptionsString)])
   }
 
   public async processAnswer() {
@@ -64,25 +64,25 @@ export class BobInquirer extends BaseInquirer {
   }
 
   public async requestPayment() {
-    const witness = await inquirer.prompt([this.inquireInput('Witness DID')])
-    const giver = await inquirer.prompt([this.inquireInput('Giver DID')])
+    const witness = await prompt([this.inquireInput('Witness DID')])
+    const giver = await prompt([this.inquireInput('Giver DID')])
     await this.getter.requestPayment(witness.input, giver.input)
   }
 
   public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {
     const balance = await this.getter.agent.valueTransfer.getBalance()
     console.log(greenText(`\nCurrent balance: ${balance}`))
-    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.PaymentOfferTitle)])
+    const confirm = await prompt([this.inquireConfirmation(Title.PaymentOfferTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.getter.abortPaymentOffer(valueTransferRecord)
     } else if (confirm.options === ConfirmOptions.Yes) {
-      const witness = await inquirer.prompt([this.inquireInput('Witness DID')])
+      const witness = await prompt([this.inquireInput('Witness DID')])
       await this.getter.acceptPaymentOffer(valueTransferRecord, witness.input)
     }
   }
 
   public async exit() {
-    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
+    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       return
     } else if (confirm.options === ConfirmOptions.Yes) {
@@ -91,7 +91,7 @@ export class BobInquirer extends BaseInquirer {
   }
 
   public async restart() {
-    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
+    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.processAnswer()
       return

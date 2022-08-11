@@ -131,11 +131,15 @@ export class ValueTransferService {
    * @returns Value Transfer record and Message to Forward
    */
   public async processProblemReport(messageContext: InboundMessageContext<ProblemReportMessage>): Promise<{
-    record: ValueTransferRecord
+    record?: ValueTransferRecord
     message?: ProblemReportMessage
   }> {
     const { message: problemReportMessage } = messageContext
-    const record = await this.getByThread(problemReportMessage.pthid)
+    const record = await this.findByThread(problemReportMessage.pthid)
+    if (!record) {
+      this.config.logger.error(`Value Transaction not for the received thread ${problemReportMessage.pthid}`)
+      return {}
+    }
 
     if (record.role === ValueTransferRole.Witness) {
       // When Witness receives Problem Report he needs to forward this to the 3rd party
@@ -189,18 +193,21 @@ export class ValueTransferService {
     }
 
     let from = undefined
+    let to = undefined
 
     if (record.role === ValueTransferRole.Giver) {
       await this.valueTransfer.giver().abortTransaction()
       from = record.giver?.did
+      to = record.state === ValueTransferState.ReceiptReceived ? record.witness?.did : record.getter?.did
     } else if (record.role === ValueTransferRole.Getter) {
       await this.valueTransfer.getter().abortTransaction()
       from = record.getter?.did
+      to = record.state === ValueTransferState.OfferReceived ? record.witness?.did : record.giver?.did
     }
 
     const problemReport = new ProblemReportMessage({
       from,
-      to: record.witness?.did,
+      to,
       pthid: record.threadId,
       body: {
         code: 'e.p.transaction-aborted',
@@ -273,6 +280,7 @@ export class ValueTransferService {
   }
 
   public async sendMessage(message: DIDCommV2Message, transport?: Transports) {
+    this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     const outboundMessage = createOutboundDIDCommV2Message(message)
     await this.messageSender.sendDIDCommV2Message(outboundMessage, sendingMessageType, transport)
@@ -285,6 +293,10 @@ export class ValueTransferService {
 
   public async getByThread(threadId: string): Promise<ValueTransferRecord> {
     return this.valueTransferRepository.getSingleByQuery({ threadId })
+  }
+
+  public async findByThread(threadId: string): Promise<ValueTransferRecord | null> {
+    return this.valueTransferRepository.findSingleByQuery({ threadId })
   }
 
   public async getAll(): Promise<ValueTransferRecord[]> {

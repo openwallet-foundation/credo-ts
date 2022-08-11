@@ -11,7 +11,7 @@ import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy, MediatorDeliveryStrategy } from './modules/routing'
 import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
-import type { VerifiableNote, WitnessInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { WitnessInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -43,7 +43,6 @@ export interface WalletExportImportConfig {
 
 export interface ValueTransferPartyConfig {
   witnessDid?: string
-  verifiableNotes?: VerifiableNote[]
   autoAcceptPaymentOffer?: AutoAcceptValueTransfer
   autoAcceptPaymentRequest?: AutoAcceptValueTransfer
 }
@@ -60,7 +59,6 @@ export interface ValueTransferWitnessConfig {
   tockTime?: number
   cleanupTime?: number
   historyThreshold?: number
-  verifiableNotes?: VerifiableNote[]
   issuerDids?: string[]
 }
 
@@ -87,6 +85,7 @@ export interface InitConfig {
   logger?: Logger
   didCommMimeType?: DidCommMimeType
   supportOffline?: boolean
+  catchErrors?: boolean
 
   indyLedgers?: IndyPoolConfig[]
   connectToIndyLedgersOnStartup?: boolean

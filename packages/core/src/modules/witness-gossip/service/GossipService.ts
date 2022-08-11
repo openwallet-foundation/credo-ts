@@ -20,7 +20,7 @@ import { ValueTransferCryptoService } from '../../value-transfer/services/ValueT
 import { ValueTransferService } from '../../value-transfer/services/ValueTransferService'
 import { ValueTransferStateService } from '../../value-transfer/services/ValueTransferStateService'
 import { GossipEventTypes } from '../GossipEvents'
-import { WitnessGossipMessage, WitnessTableMessage } from '../messages'
+import { WitnessData, WitnessGossipMessage, WitnessTableMessage } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class GossipService {
@@ -99,7 +99,7 @@ export class GossipService {
 
     const message = new WitnessGossipMessage({
       from: state.gossipDid,
-      to: topWitness.did,
+      to: topWitness.gossipDid,
       body: {
         ask: { since: tim },
       },
@@ -131,9 +131,11 @@ export class GossipService {
       return
     }
 
-    const body = { tell: { id: state.witnessState.info.did } }
+    const body = { tell: { id: state.witnessState.info.gossipDid } }
     const attachments = [
-      WitnessGossipMessage.createTransactionUpdateJSONAttachment(state.witnessState.info.did, [transactionUpdate]),
+      WitnessGossipMessage.createTransactionUpdateJSONAttachment(state.witnessState.info.gossipDid, [
+        transactionUpdate,
+      ]),
     ]
 
     // prepare message and send to all known knownWitnesses
@@ -141,7 +143,7 @@ export class GossipService {
       try {
         const message = new WitnessGossipMessage({
           from: state.gossipDid,
-          to: witness.did,
+          to: witness.gossipDid,
           body,
           attachments,
         })
@@ -178,7 +180,7 @@ export class GossipService {
     this.config.logger.info(`   Registered state hashes : ${state.witnessState.partyStateHashes.size}`)
 
     // validate that message sender is one of known knownWitnesses
-    const knownWitness = state.knownWitnesses.find((witness) => witness.did === witnessGossipMessage.from)
+    const knownWitness = state.knownWitnesses.find((witness) => witness.gossipDid === witnessGossipMessage.from)
     if (!knownWitness) {
       this.config.logger.info(
         `   Transaction Updated received from an unknown Witness DID: ${witnessGossipMessage.from}`
@@ -319,12 +321,18 @@ export class GossipService {
 
     const state = await this.getWitnessState()
 
+    const witnesses = state.witnessState.mappingTable.map(
+      (witness) =>
+        new WitnessData({
+          did: witness.publicDid,
+          type: witness.type,
+        })
+    )
+
     const message = new WitnessTableMessage({
       from: state.gossipDid,
       to: witnessTableQuery.from,
-      body: {
-        witnesses: state.witnessState.mappingTable,
-      },
+      body: { witnesses },
       thid: witnessTableQuery.id,
     })
 

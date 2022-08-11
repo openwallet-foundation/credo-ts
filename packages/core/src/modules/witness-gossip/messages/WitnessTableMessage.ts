@@ -1,10 +1,30 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Type } from 'class-transformer'
-import { Equals, IsInstance, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
-import { WitnessData } from '../../value-transfer/repository/WitnessStateRecord'
+
+export type WitnessDataParams = {
+  did: string
+  type?: string
+}
+
+export class WitnessData {
+  @IsString()
+  public did!: string
+
+  @IsString()
+  @IsOptional()
+  public type?: string
+
+  public constructor(options?: WitnessDataParams) {
+    if (options) {
+      this.did = options.did
+      this.type = options.type
+    }
+  }
+}
 
 export type WitnessTableMessageBodyParams = {
   witnesses: Array<WitnessData>

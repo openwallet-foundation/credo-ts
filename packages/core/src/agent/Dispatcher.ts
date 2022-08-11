@@ -19,12 +19,14 @@ import { isOutboundServiceMessage } from './helpers'
 
 @scoped(Lifecycle.ContainerScoped)
 class Dispatcher {
+  private agentConfig: AgentConfig
   private handlers: Handler<DIDCommMessageClass>[] = []
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
 
   public constructor(messageSender: MessageSender, eventEmitter: EventEmitter, agentConfig: AgentConfig) {
+    this.agentConfig = agentConfig
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.logger = agentConfig.logger
@@ -70,7 +72,7 @@ class Dispatcher {
           connectionId: messageContext.connection?.id,
         })
 
-        throw error
+        if (!this.agentConfig.catchErrors) throw error
       }
     }
 

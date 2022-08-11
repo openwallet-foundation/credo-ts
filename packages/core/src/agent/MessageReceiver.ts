@@ -116,9 +116,7 @@ export class MessageReceiver {
       version === DIDCommVersion.V1 ? await this.findConnectionByMessageKeys(decryptedMessage) : undefined
 
     this.logger.info(
-      `Received message with type '${plaintextMessage['@type'] || plaintextMessage['type']}' from connection ${
-        connection?.id
-      } (${connection?.theirLabel})`,
+      `Received message with type '${plaintextMessage['type']}' from DID ${connection?.did}`,
       plaintextMessage
     )
 

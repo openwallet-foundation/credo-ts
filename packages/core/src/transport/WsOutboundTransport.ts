@@ -40,9 +40,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
   public async sendMessage(outboundPackage: OutboundPackage) {
     const { payload, recipientDid, endpoint, connectionId } = outboundPackage
-    this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over WebSocket transport.`, {
-      payload,
-    })
+    this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over WebSocket transport.`)
 
     if (!endpoint) {
       throw new AriesFrameworkError("Missing connection or endpoint. I don't know how and where to send the message.")

@@ -39,9 +39,7 @@ export class HttpOutboundTransport implements OutboundTransport {
       throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
-    this.logger.debug(`Sending outbound message to endpoint '${outboundPackage.endpoint}'`, {
-      payload: outboundPackage.payload,
-    })
+    this.logger.debug(`Sending outbound message to endpoint '${outboundPackage.endpoint}'`)
 
     try {
       const abortController = new AbortController()

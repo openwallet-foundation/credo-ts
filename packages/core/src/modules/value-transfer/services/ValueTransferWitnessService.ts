@@ -114,7 +114,7 @@ export class ValueTransferWitnessService {
     const gossipDid = await this.didService.findStaticDid(DidMarker.Restricted)
     if (!publicDid || !gossipDid) {
       throw new AriesFrameworkError(
-        'Witness public DID not found. Please set `publicDidSeed` field in the agent config.'
+        'Witness public DID not found. Please set `Online` and `Restricted` markers must be used in the agent config.'
       )
     }
 
@@ -128,13 +128,18 @@ export class ValueTransferWitnessService {
       config.knownWitnesses.find((witness) => witness.wid !== config.wid && witness.type === WitnessType.One) ??
       config.knownWitnesses[0]
 
+    const info = new WitnessInfo({
+      wid: config.wid,
+      gossipDid: gossipDid.did,
+      publicDid: publicDid.did,
+    })
+
     const witnessState = new WitnessState({
-      info: new WitnessInfo({ wid: config.wid, did: gossipDid.did }),
+      info,
       mappingTable: config.knownWitnesses,
     })
 
     const state = new WitnessStateRecord({
-      publicDid: publicDid.did,
       witnessState,
       topWitness,
     })
@@ -335,7 +340,7 @@ export class ValueTransferWitnessService {
       })
 
     //Call VTP package to process received Payment Request request
-    const { error, receipt, delta } = await this.witness.processRequestAcceptance(witnessDid.did, valueTransferMessage)
+    const { error, receipt, delta } = await this.witness.processRequestAcceptance(valueTransferMessage)
     if (error || !receipt || !delta) {
       if (!existingRecord && error?.code === ErrorCodes.CurrentStateDoesNotExist) {
         await this.valueTransferRepository.save(record)

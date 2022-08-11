@@ -179,6 +179,10 @@ export class AgentConfig {
     return this.initConfig.transports || []
   }
 
+  public get catchErrors() {
+    return this.initConfig.catchErrors || false
+  }
+
   public get onlineTransports() {
     return this.transports.filter((transport) => onlineTransports.includes(transport))
   }
