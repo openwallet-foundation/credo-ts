@@ -137,7 +137,7 @@ export class ValueTransferGetterService {
     })
 
     const getterInfo = await this.wellKnownService.resolve(getter.did)
-    const witnessInfo = await this.wellKnownService.resolve(params.witness)
+    const witnessInfo = await this.wellKnownService.resolve(witness)
     const giverInfo = await this.wellKnownService.resolve(params.giver)
 
     // Create Value Transfer record and raise event
