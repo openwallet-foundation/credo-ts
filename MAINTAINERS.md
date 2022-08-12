@@ -9,4 +9,4 @@
 | James Ebert        | [@JamesKEbert](https://github.com/JamesKEbert)             | JamesEbert#4350  |
 | Karim Stekelenburg | [@karimStekelenburg](https://github.com/karimStekelenburg) | ssi_karim#3505   |
 | Timo Glastra       | [@TimoGlastra](https://github.com/TimoGlastra)             | TimoGlastra#2988 |
-| Ariel Gentile      | [@genaris](https://github.com/genaris)                     | GenAris#4962 |
+| Ariel Gentile      | [@genaris](https://github.com/genaris)                     | GenAris#4962     |
