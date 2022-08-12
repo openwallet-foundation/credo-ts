@@ -90,7 +90,9 @@ export class ValueTransferModule {
     const { message, record } = await this.valueTransferGetterService.createRequest(params)
 
     // Send Payment Request to Witness
-    await this.valueTransferService.sendMessage(message, params.transport)
+    if (params.transport) {
+      await this.valueTransferService.sendMessage(message, params.transport)
+    }
     return { message, record }
   }
 
@@ -163,7 +165,9 @@ export class ValueTransferModule {
     const { message, record } = await this.valueTransferGiverService.offerPayment(params)
 
     // Send Payment Offer to Witness
-    await this.valueTransferService.sendMessage(message, params.transport)
+    if (params.transport) {
+      await this.valueTransferService.sendMessage(message, params.transport)
+    }
     return { message, record }
   }
 
