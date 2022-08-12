@@ -17,7 +17,6 @@ import {
   WsOutboundTransport,
 } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
-import { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { greenText } from './OutputClass'
 import { FileInboundTransport } from './transports/FileInboundTransport'
@@ -27,79 +26,6 @@ const bcovrin = `{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blsk
 {"reqSignature":{},"txn":{"data":{"data":{"alias":"Node2","blskey":"37rAPpXVoxzKhz7d9gkUe52XuXryuLXoM6P6LbWDB7LSbG62Lsb33sfG7zqS8TK1MXwuCHj1FKNzVpsnafmqLG1vXN88rt38mNFs9TENzm4QHdBzsvCuoBnPH7rpYYDo9DZNJePaDvRvqJKByCabubJz3XXKbEeshzpz4Ma5QYpJqjk","blskey_pop":"Qr658mWZ2YC8JXGXwMDQTzuZCWF7NK9EwxphGmcBvCh6ybUuLxbG65nsX4JvD4SPNtkJ2w9ug1yLTj6fgmuDg41TgECXjLCij3RMsV8CwewBVgVN67wsA45DFWvqvLtu4rjNnE9JbdFTc1Z4WCPA3Xan44K1HoHAq9EVeaRYs8zoF5","client_ip":"138.197.138.255","client_port":9704,"node_ip":"138.197.138.255","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"},"metadata":{"from":"EbP4aYNeTHL6q385GuVpRV"},"type":"0"},"txnMetadata":{"seqNo":2,"txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc"},"ver":"1"}
 {"reqSignature":{},"txn":{"data":{"data":{"alias":"Node3","blskey":"3WFpdbg7C5cnLYZwFZevJqhubkFALBfCBBok15GdrKMUhUjGsk3jV6QKj6MZgEubF7oqCafxNdkm7eswgA4sdKTRc82tLGzZBd6vNqU8dupzup6uYUf32KTHTPQbuUM8Yk4QFXjEf2Usu2TJcNkdgpyeUSX42u5LqdDDpNSWUK5deC5","blskey_pop":"QwDeb2CkNSx6r8QC8vGQK3GRv7Yndn84TGNijX8YXHPiagXajyfTjoR87rXUu4G4QLk2cF8NNyqWiYMus1623dELWwx57rLCFqGh7N4ZRbGDRP4fnVcaKg1BcUxQ866Ven4gw8y4N56S5HzxXNBZtLYmhGHvDtk6PFkFwCvxYrNYjh","client_ip":"138.197.138.255","client_port":9706,"node_ip":"138.197.138.255","node_port":9705,"services":["VALIDATOR"]},"dest":"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya"},"metadata":{"from":"4cU41vWW82ArfxJxHkzXPG"},"type":"0"},"txnMetadata":{"seqNo":3,"txnId":"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4"},"ver":"1"}
 {"reqSignature":{},"txn":{"data":{"data":{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","blskey_pop":"RPLagxaR5xdimFzwmzYnz4ZhWtYQEj8iR5ZU53T2gitPCyCHQneUn2Huc4oeLd2B2HzkGnjAff4hWTJT6C7qHYB1Mv2wU5iHHGFWkhnTX9WsEAbunJCV2qcaXScKj4tTfvdDKfLiVuU2av6hbsMztirRze7LvYBkRHV3tGwyCptsrP","client_ip":"138.197.138.255","client_port":9708,"node_ip":"138.197.138.255","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA"},"metadata":{"from":"TWwCRQRZ2ZHMJFn9TzLp7W"},"type":"0"},"txnMetadata":{"seqNo":4,"txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008"},"ver":"1"}`
-
-export const notes = [
-  new VerifiableNote({
-    sno: '29fe17e8-7513-4952-9aec-5027757f3e4a',
-    srs: 'some-cool-series?uoa=eur&den=120&key=asddasdgdfcdasdasdasddasdasasdadadadadasdasdasdasdasd9adadadasdasdvvxvxvxbcvb&aud-rus=123213',
-    sig: 'deadbeefcafebabedeadbeefcafebabe',
-    ixz: undefined,
-    hxz: undefined,
-  }),
-  new VerifiableNote({
-    sno: '79c60e29-b088-425a-8ec9-70cb912dbbcd',
-    srs: 'some-cool-series?uoa=eur&den=120&key=asddasdgdfcdasdasdasddasdasasdadadadadasdasdasdasdasd9adadadasdasdvvxvxvxbcvb&aud-rus=123213',
-    sig: 'deadbeefcafebabedeadbeefcafebabe',
-    ixz: undefined,
-    hxz: undefined,
-  }),
-  new VerifiableNote({
-    sno: 'f1116d33-4cf1-43dc-9464-c5b4607adf58',
-    srs: 'some-cool-series?uoa=eur&den=120&key=asddasdgdfcdasdasdasddasdasasdadadadadasdasdasdasdasd9adadadasdasdvvxvxvxbcvb&aud-rus=123213',
-    sig: 'deadbeefcafebabedeadbeefcafebabe',
-    ixz: undefined,
-    hxz: undefined,
-  }),
-  new VerifiableNote({
-    sno: 'a20adfb5-d0ec-465f-80e0-d26bbdaeed5e',
-    srs: 'some-cool-series?uoa=eur&den=120&key=asddasdgdfcdasdasdasddasdasasdadadadadasdasdasdasdasd9adadadasdasdvvxvxvxbcvb&aud-rus=123213',
-    sig: 'deadbeefcafebabedeadbeefcafebabe',
-    ixz: undefined,
-    hxz: undefined,
-  }),
-  new VerifiableNote({
-    sno: 'e5bc7b15-9edc-48dc-a13e-274655eba995',
-    srs: 'some-cool-series?uoa=eur&den=120&key=asddasdgdfcdasdasdasddasdasasdadadadadasdasdasdasdasd9adadadasdasdvvxvxvxbcvb&aud-rus=123213',
-    sig: 'deadbeefcafebabedeadbeefcafebabe',
-    ixz: undefined,
-    hxz: undefined,
-  }),
-  new VerifiableNote({
-    sno: '96f58bea-37b8-41a7-ae0f-61895781a656',
-    srs: 'some-cool-series?uoa=eur&den=120&key=asddasdgdfcdasdasdasddasdasasdadadadadasdasdasdasdasd9adadadasdasdvvxvxvxbcvb&aud-rus=123213',
-    sig: 'deadbeefcafebabedeadbeefcafebabe',
-    ixz: undefined,
-    hxz: undefined,
-  }),
-  new VerifiableNote({
-    sno: '92136368-3d3a-4571-b378-d3bd92e27bfa',
-    srs: 'some-cool-series?uoa=eur&den=120&key=asddasdgdfcdasdasdasddasdasasdadadadadasdasdasdasdasd9adadadasdasdvvxvxvxbcvb&aud-rus=123213',
-    sig: 'deadbeefcafebabedeadbeefcafebabe',
-    ixz: undefined,
-    hxz: undefined,
-  }),
-  new VerifiableNote({
-    sno: 'b8278f4f-d6a4-4711-9ed7-d60046e37097',
-    srs: 'some-cool-series?uoa=eur&den=120&key=asddasdgdfcdasdasdasddasdasasdadadadadasdasdasdasdasd9adadadasdasdvvxvxvxbcvb&aud-rus=123213',
-    sig: 'deadbeefcafebabedeadbeefcafebabe',
-    ixz: undefined,
-    hxz: undefined,
-  }),
-  new VerifiableNote({
-    sno: 'f57f3bba-7ca3-4a1b-ac5d-9d462a206cd5',
-    srs: 'some-cool-series?uoa=eur&den=120&key=asddasdgdfcdasdasdasddasdasasdadadadadasdasdasdasdasd9adadadasdasdvvxvxvxbcvb&aud-rus=123213',
-    sig: 'deadbeefcafebabedeadbeefcafebabe',
-    ixz: undefined,
-    hxz: undefined,
-  }),
-  new VerifiableNote({
-    sno: '4b98a19c-129e-47c8-b662-b0662793ee67',
-    srs: 'some-cool-series?uoa=eur&den=120&key=asddasdgdfcdasdasdasddasdasasdadadadadasdasdasdasdasd9adadadasdasdvvxvxvxbcvb&aud-rus=123213',
-    sig: 'deadbeefcafebabedeadbeefcafebabe',
-    ixz: undefined,
-    hxz: undefined,
-  }),
-]
 
 export class BaseAgent {
   public static defaultMediatorConnectionInvite =

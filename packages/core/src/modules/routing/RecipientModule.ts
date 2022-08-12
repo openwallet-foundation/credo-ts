@@ -1,7 +1,7 @@
 import type { AgentMessageProcessedEvent } from '../../agent/Events'
+import type { DIDCommV2Message } from '../../agent/didcomm'
 import type { Logger } from '../../logger'
 import type { OutboundWebSocketClosedEvent } from '../../transport'
-import type { OutboundDIDCommV2Message } from '../../types'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
 import type { Subscription } from 'rxjs'
@@ -15,7 +15,6 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundDIDCommV2Message } from '../../agent/helpers'
 import { AriesFrameworkError } from '../../error'
 import { TransportEventTypes } from '../../transport'
 import { parseMessageType } from '../../utils/messageType'
@@ -91,8 +90,8 @@ export class RecipientModule {
     }
   }
 
-  private async sendMessage(outboundMessage: OutboundDIDCommV2Message) {
-    await this.messageSender.sendDIDCommV2Message(outboundMessage)
+  private async sendMessage(message: DIDCommV2Message) {
+    await this.messageSender.sendDIDCommV2Message(message)
   }
 
   private async openMediationWebSocket(mediator: MediationRecord) {
@@ -110,7 +109,7 @@ export class RecipientModule {
     }
 
     try {
-      await this.messageSender.sendDIDCommV2Message(createOutboundDIDCommV2Message(message), undefined, Transports.WS)
+      await this.messageSender.sendDIDCommV2Message(message, undefined, Transports.WS)
     } catch (error) {
       this.logger.warn('Unable to open websocket connection to mediator', { error })
     }
@@ -263,8 +262,7 @@ export class RecipientModule {
       to: mediator.mediatorDid,
       body: { batchSize: 10 },
     })
-    const outboundMessage = createOutboundDIDCommV2Message(batchPickupMessage)
-    await this.sendMessage(outboundMessage)
+    await this.sendMessage(batchPickupMessage)
   }
 
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
@@ -273,8 +271,7 @@ export class RecipientModule {
 
   public async notifyKeylistUpdate(mediatorRecord: MediationRecord, verkey: string) {
     const message = this.mediationRecipientService.createKeylistUpdateMessage(mediatorRecord, verkey)
-    const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.sendMessage(outboundMessage)
+    await this.sendMessage(message)
   }
 
   public async getMediators() {
@@ -312,8 +309,7 @@ export class RecipientModule {
       .subscribe(subject)
 
     // Send mediation request message
-    const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.sendMessage(outboundMessage)
+    await this.sendMessage(message)
 
     const event = await firstValueFrom(subject)
     return event.payload.mediationRecord

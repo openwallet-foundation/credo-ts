@@ -15,7 +15,7 @@ import { WellKnownService } from '../../well-known'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
-import { CashAcceptedMessage, OfferAcceptedMessage, ProblemReportMessage, RequestMessage } from '../messages'
+import { CashAcceptedMessage, ProblemReportMessage, RequestMessage } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
 import { ValueTransferRecord, ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
@@ -94,6 +94,7 @@ export class ValueTransferGetterService {
     usePublicDid?: boolean
     timeouts?: Timeouts
     attachment?: Record<string, unknown>
+    thid?: string
   }): Promise<{
     record: ValueTransferRecord
     message: RequestMessage
@@ -132,6 +133,7 @@ export class ValueTransferGetterService {
       from: getter.did,
       to: params.giver,
       attachments,
+      thid: params.thid,
     })
 
     const getterInfo = await this.wellKnownService.resolve(getter.did)
@@ -199,22 +201,24 @@ export class ValueTransferGetterService {
     }
 
     // ensure that DID exist in the wallet
-    const did = await this.didService.findById(receipt.getterId)
-    if (!did) {
-      const problemReport = new ProblemReportMessage({
-        to: offerMessage.from,
-        pthid: offerMessage.id,
-        body: {
-          code: 'e.p.req.bad-getter',
-          comment: `Requested getter '${receipt.getterId}' does not exist in the wallet`,
-        },
-      })
-      return {
-        message: problemReport,
+    if (receipt.isGetterSet) {
+      const did = await this.didService.findById(receipt.getterId)
+      if (!did) {
+        const problemReport = new ProblemReportMessage({
+          to: offerMessage.from,
+          pthid: offerMessage.id,
+          body: {
+            code: 'e.p.req.bad-getter',
+            comment: `Requested getter '${receipt.getterId}' does not exist in the wallet`,
+          },
+        })
+        return {
+          message: problemReport,
+        }
       }
     }
 
-    const getterInfo = await this.wellKnownService.resolve(receipt.getterId)
+    const getterInfo = receipt.isGetterSet ? await this.wellKnownService.resolve(receipt.getterId) : undefined
     const witnessInfo = receipt.isWitnessSet ? await this.wellKnownService.resolve(receipt.witnessId) : undefined
     const giverInfo = await this.wellKnownService.resolve(receipt.giverId)
 
@@ -259,7 +263,7 @@ export class ValueTransferGetterService {
     timeouts?: Timeouts
   ): Promise<{
     record: ValueTransferRecord
-    message: OfferAcceptedMessage | ProblemReportMessage
+    message: RequestMessage | ProblemReportMessage
   }> {
     this.config.logger.info(`> Getter: accept offer message for VTP transaction ${record.threadId}`)
 
@@ -279,21 +283,22 @@ export class ValueTransferGetterService {
       )
     }
 
-    if (!record.getter?.did) {
-      throw new AriesFrameworkError(`Offer cannot be accepted as there is no getterDID in the record`)
-    }
+    const getterId =
+      record.receipt.getterId ||
+      (await this.valueTransferService.getTransactionDid({ role: ValueTransferRole.Getter })).id
 
-    const { error, receipt, delta } = await this.getter.acceptOffer({
-      getterId: record.getter?.did,
-      receipt: record.receipt,
+    const { error, receipt } = await this.getter.createRequest({
+      getterId: getterId,
       witnessId: witness,
-      timeouts,
+      giverId: record.giver?.did,
+      givenTotal: record.givenTotal,
+      timeouts: timeouts,
     })
-    if (error || !receipt || !delta) {
+    if (error || !receipt) {
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({
         from: record.getter?.did,
-        to: witness,
+        to: record.giver?.did,
         pthid: record.threadId,
         body: {
           code: error?.code || 'invalid-payment-offer',
@@ -314,28 +319,30 @@ export class ValueTransferGetterService {
       }
     }
 
-    // VTP message verification succeed
-    const offerAcceptedMessage = new OfferAcceptedMessage({
-      from: record.getter?.did,
-      to: witness,
-      thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)],
-    })
-
+    const getterInfo = await this.wellKnownService.resolve(getterId)
     const witnessInfo = await this.wellKnownService.resolve(witness)
 
     // Update Value Transfer record
     record.receipt = receipt
+    record.getter = getterInfo
     record.witness = witnessInfo
+
+    const requestMessage = new RequestMessage({
+      from: record.getter?.did,
+      to: record.giver?.did,
+      thid: record.threadId,
+      attachments: [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)],
+    })
+
     await this.valueTransferService.updateState(
       record,
-      ValueTransferState.CashAcceptanceSent,
+      ValueTransferState.RequestForOfferSent,
       ValueTransferTransactionStatus.InProgress
     )
 
     this.config.logger.info(`> Getter: accept offer message for VTP transaction ${record.threadId} completed!`)
 
-    return { record, message: offerAcceptedMessage }
+    return { record, message: requestMessage }
   }
 
   /**
@@ -363,7 +370,7 @@ export class ValueTransferGetterService {
     const record = await this.valueTransferRepository.getByThread(requestAcceptedWitnessedMessage.thid)
 
     record.assertRole(ValueTransferRole.Getter)
-    record.assertState(ValueTransferState.RequestSent)
+    record.assertState([ValueTransferState.RequestSent, ValueTransferState.RequestForOfferSent])
 
     const valueTransferDelta = requestAcceptedWitnessedMessage.valueTransferDelta
     if (!valueTransferDelta) {

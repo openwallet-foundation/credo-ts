@@ -1,3 +1,5 @@
+import type { Transports } from '../routing/types'
+
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -16,12 +18,18 @@ export class OutOfBandModule {
   }
 
   public async createInvitation(params: {
+    to?: string
     goalCode: string
     goal?: string
     attachments?: Record<string, unknown>[]
     usePublicDid?: boolean
+    transport?: Transports
   }): Promise<OutOfBandInvitationMessage> {
-    return this.outOfBandService.createOutOfBandInvitation(params)
+    const message = await this.outOfBandService.createOutOfBandInvitation(params)
+    if (params.transport) {
+      await this.outOfBandService.sendMessage(message, params.transport)
+    }
+    return message
   }
 
   public receiveInvitationFromUrl(invitationUrl: string): OutOfBandInvitationMessage {

@@ -4,7 +4,6 @@ import type { MessageSender } from '../../../agent/MessageSender'
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { MediatorService } from '../services/MediatorService'
 
-import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { MediationRequestMessageV2 } from '../messages/MediationRequestMessage'
 
 export class MediationRequestHandler implements Handler<typeof DIDCommV2Message> {
@@ -25,8 +24,7 @@ export class MediationRequestHandler implements Handler<typeof DIDCommV2Message>
 
     if (this.agentConfig.autoAcceptMediationRequests) {
       const { message } = await this.mediatorService.createGrantMediationMessage(mediationRecord)
-      const outboundMessage = createOutboundDIDCommV2Message(message)
-      await this.messageSender.sendDIDCommV2Message(outboundMessage)
+      await this.messageSender.sendDIDCommV2Message(message)
     }
   }
 }

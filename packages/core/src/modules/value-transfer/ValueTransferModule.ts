@@ -1,11 +1,5 @@
 import type { Transports } from '../routing/types'
-import type {
-  ProblemReportMessage,
-  RequestAcceptedMessage,
-  RequestMessage,
-  OfferMessage,
-  OfferAcceptedMessage,
-} from './messages'
+import type { ProblemReportMessage, RequestAcceptedMessage, RequestMessage, OfferMessage } from './messages'
 import type { ValueTransferRecord, ValueTransferTags } from './repository'
 import type { Timeouts, VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
@@ -157,7 +151,7 @@ export class ValueTransferModule {
    */
   public async offerPayment(params: {
     amount: number
-    getter: string
+    getter?: string
     unitOfAmount?: string
     witness?: string
     usePublicDid?: boolean
@@ -191,7 +185,7 @@ export class ValueTransferModule {
    */
   public async acceptPaymentOffer(params: { recordId: string; witness?: string; timeouts?: Timeouts }): Promise<{
     record: ValueTransferRecord
-    message: OfferAcceptedMessage | ProblemReportMessage
+    message: RequestMessage | ProblemReportMessage
   }> {
     // Get Value Transfer record
     const record = await this.valueTransferService.getById(params.recordId)
@@ -238,6 +232,7 @@ export class ValueTransferModule {
   public async abortTransaction(
     recordId: string,
     send = true,
+    code?: string,
     reason?: string
   ): Promise<{
     record: ValueTransferRecord

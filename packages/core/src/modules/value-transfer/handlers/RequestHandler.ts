@@ -5,6 +5,7 @@ import type { ValueTransferService } from '../services'
 import type { ValueTransferGiverService } from '../services/ValueTransferGiverService'
 
 import { ProblemReportMessage } from '../../problem-reports'
+import { ValueTransferState } from '../ValueTransferState'
 import { RequestMessage } from '../messages'
 
 export class RequestHandler implements Handler<typeof DIDCommV2Message> {
@@ -30,7 +31,12 @@ export class RequestHandler implements Handler<typeof DIDCommV2Message> {
       return this.valueTransferService.sendMessage(message)
     }
 
-    if (this.valueTransferResponseCoordinator.shouldAutoRespondToRequest()) {
+    if (
+      (record.state === ValueTransferState.ReceiptReceived &&
+        this.valueTransferResponseCoordinator.shouldAutoRespondToRequest()) ||
+      (record.state === ValueTransferState.RequestForOfferReceived &&
+        this.valueTransferResponseCoordinator.shouldAutoRespondToOfferedRequest())
+    ) {
       const { message } = await this.valueTransferGiverService.acceptRequest(record)
       return this.valueTransferService.sendMessage(message)
     }

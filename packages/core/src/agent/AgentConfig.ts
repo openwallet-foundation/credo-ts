@@ -85,6 +85,10 @@ export class AgentConfig {
     return this.initConfig.valueTransferConfig?.party?.autoAcceptPaymentRequest ?? AutoAcceptValueTransfer.Never
   }
 
+  public get autoAcceptOfferedPaymentRequest() {
+    return this.initConfig.valueTransferConfig?.party?.autoAcceptOfferedPaymentRequest ?? AutoAcceptValueTransfer.Never
+  }
+
   public get witnessTockTime() {
     return this.initConfig.valueTransferConfig?.witness?.tockTime || 5000
   }

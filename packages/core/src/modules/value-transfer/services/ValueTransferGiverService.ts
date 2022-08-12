@@ -8,7 +8,7 @@ import type {
 } from '../messages'
 import type { Giver, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { PartyDescriptor, Receipt, TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 import { v4 } from 'uuid'
 
@@ -80,8 +80,8 @@ export class ValueTransferGiverService {
    * {
    *  amount - Amount to pay
    *  unitOfAmount - (Optional) Currency code that represents the unit of account
-   *  witness - DID of witness
-   *  getter - DID of getter
+   *  witness - (Optional) DID of witness
+   *  getter - (Optional) DID of getter
    *  usePublicDid - (Optional) Whether to use public DID of Getter in the request or create a new random one (True by default)
    *  timeouts - (Optional) Giver timeouts to which value transfer must fit
    * }
@@ -92,7 +92,7 @@ export class ValueTransferGiverService {
    */
   public async offerPayment(params: {
     amount: number
-    getter: string
+    getter?: string
     unitOfAmount?: string
     witness?: string
     usePublicDid?: boolean
@@ -112,25 +112,17 @@ export class ValueTransferGiverService {
       usePublicDid: params.usePublicDid,
     })
 
-    // Call VTP to accept payment request
-    const { error: pickNotesError, notes: notesToSpend } = await this.giver.pickNotesToSpend(params.amount)
-    if (pickNotesError || !notesToSpend) {
-      throw new AriesFrameworkError(`Not enough notes to pay: ${params.amount}`)
-    }
-
-    // Call VTP package to create payment request
-    const givenTotal = new TaggedPrice({ amount: params.amount, uoa: params.unitOfAmount })
-    const { error, receipt } = await this.giver.offerPayment({
-      giverId: giver.did,
-      getterId: params.getter,
-      witnessId: params.witness,
-      givenTotal,
-      timeouts: params.timeouts,
-      notesToSpend,
+    // Create offer receipt
+    const receipt = new Receipt({
+      giver: new PartyDescriptor({
+        id: giver.did,
+        timeout_time: params.timeouts?.timeout_time,
+        timeout_elapsed: params.timeouts?.timeout_elapsed,
+      }),
+      getter: params.getter ? new PartyDescriptor({ id: params.getter }) : undefined,
+      witness: params.witness ? new PartyDescriptor({ id: params.witness }) : undefined,
+      given_total: new TaggedPrice({ amount: params.amount, uoa: params.unitOfAmount }),
     })
-    if (error || !receipt) {
-      throw new AriesFrameworkError(`VTP: Failed to create Payment Offer: ${error?.message}`)
-    }
 
     const attachments = [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)]
     if (params.attachment) {
@@ -190,10 +182,17 @@ export class ValueTransferGiverService {
 
     this.config.logger.info(`> Giver: process payment request message for VTP transaction ${requestMessage.id}`)
 
-    const existingRecord = await this.valueTransferRepository.findByThread(requestMessage.id)
-    if (existingRecord) {
+    const duplicateRecord = await this.valueTransferRepository.findByThread(requestMessage.id)
+    if (duplicateRecord) {
       this.config.logger.info(`> Giver: request ${requestMessage.id} has already been processed`)
       throw new AriesFrameworkError(`Payment request ${requestMessage.id} has already been processed`)
+    }
+
+    if (requestMessage.thid) {
+      const existingOffer = await this.valueTransferRepository.findByThread(requestMessage.thid)
+      if (existingOffer) {
+        return await this.processOutOfBandPaymentRequest(existingOffer, requestMessage)
+      }
     }
 
     const receipt = requestMessage.valueTransferMessage
@@ -251,10 +250,80 @@ export class ValueTransferGiverService {
     })
 
     this.config.logger.info(
-      `< Giver: process payment request message for VTP transaction ${requestMessage.thid} completed!`
+      `< Giver: process payment request message for VTP transaction ${requestMessage.id} completed!`
     )
 
     return { record, message: requestMessage }
+  }
+
+  public async processOutOfBandPaymentRequest(
+    record: ValueTransferRecord,
+    requestMessage: RequestMessage
+  ): Promise<{
+    record?: ValueTransferRecord
+    message: RequestMessage | ProblemReportMessage
+  }> {
+    this.config.logger.info(
+      `> Giver: process out-of-band payment request message for VTP transaction ${requestMessage.id}`
+    )
+
+    record.assertRole(ValueTransferRole.Giver)
+    record.assertState(ValueTransferState.OfferSent)
+
+    const receipt = requestMessage.valueTransferMessage
+    if (!receipt) {
+      const problemReport = new ProblemReportMessage({
+        from: record.giver?.did,
+        to: requestMessage.from,
+        pthid: requestMessage.id,
+        body: {
+          code: 'e.p.req.bad-request',
+          comment: `Missing required base64 or json encoded attachment data for payment request with thread id ${requestMessage.thid}`,
+        },
+      })
+      return { message: problemReport }
+    }
+
+    if (!receipt.isGiverSet || receipt.giverId !== record.giver?.did) {
+      const problemReport = new ProblemReportMessage({
+        from: record.giver?.did,
+        to: requestMessage.from,
+        pthid: requestMessage.id,
+        body: {
+          code: 'e.p.req.bad-request',
+          comment: `Payment Request contains DID ${receipt.giverId} different from offer ${record.giver?.did}`,
+        },
+      })
+      return { message: problemReport }
+    }
+
+    const getterInfo = await this.wellKnownService.resolve(receipt.getterId)
+    const witnessInfo = await this.wellKnownService.resolve(receipt.witnessId)
+
+    const state =
+      record.givenTotal.amount === receipt.given_total.amount
+        ? ValueTransferState.RequestForOfferReceived
+        : ValueTransferState.RequestReceived
+
+    // Update  Value Transfer record and raise event
+    record.state = state
+    record.status = ValueTransferTransactionStatus.Pending
+    record.receipt = receipt
+    record.getter = getterInfo
+    record.witness = witnessInfo
+
+    await this.valueTransferRepository.update(record)
+
+    this.eventEmitter.emit<ValueTransferStateChangedEvent>({
+      type: ValueTransferEventTypes.ValueTransferStateChanged,
+      payload: { record: record },
+    })
+
+    this.config.logger.info(
+      `< Giver: process out-of-band payment request message for VTP transaction ${requestMessage.thid} completed!`
+    )
+
+    return { message: requestMessage, record }
   }
 
   /**
@@ -278,7 +347,7 @@ export class ValueTransferGiverService {
 
     // Verify that we are in appropriate state to perform action
     record.assertRole(ValueTransferRole.Giver)
-    record.assertState(ValueTransferState.RequestReceived)
+    record.assertState([ValueTransferState.RequestReceived, ValueTransferState.RequestForOfferReceived])
 
     const giverDid =
       record.giver?.did ?? (await this.valueTransferService.getTransactionDid({ role: ValueTransferRole.Giver })).id

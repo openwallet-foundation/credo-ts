@@ -4,7 +4,6 @@ import type { BatchPickupMessageV2 } from '../messages'
 
 import { inject, scoped, Lifecycle } from 'tsyringe'
 
-import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { MessageRepository } from '../../../storage/MessageRepository'
 import { uuid } from '../../../utils/uuid'
@@ -41,7 +40,7 @@ export class MessagePickupService {
       },
     })
 
-    return createOutboundDIDCommV2Message(batchMessage)
+    return batchMessage
   }
 
   public queueMessage(connectionId: string, message: EncryptedMessage) {

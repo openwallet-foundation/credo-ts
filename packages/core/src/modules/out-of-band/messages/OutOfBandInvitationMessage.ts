@@ -22,6 +22,9 @@ export class AndroidNearbyHandshakeAttachment {
 }
 
 export class PaymentOfferAttachment {
+  @IsString()
+  public getter?: string
+
   @IsNumber()
   public amount!: number
 }
@@ -94,12 +97,16 @@ export class OutOfBandInvitationMessage extends DIDCommV2Message {
     return this.createJSONAttachment(ATTACHMENT_ID, JsonTransformer.toJSON(attachment))
   }
 
-  public get getAndroidNearbyHandshakeAttachment(): Record<string, unknown> | null {
-    return this.getOutOfBandAttachment(ANDROID_NEARBY_HANDSHAKE_ATTACHMENT_ID)
+  public get getAndroidNearbyHandshakeAttachment(): AndroidNearbyHandshakeAttachment | null {
+    const attachment = this.getOutOfBandAttachment(ANDROID_NEARBY_HANDSHAKE_ATTACHMENT_ID)
+    if (!attachment) return null
+    return JsonTransformer.fromJSON(attachment, AndroidNearbyHandshakeAttachment)
   }
 
-  public get getPaymentOfferAttachment(): Record<string, unknown> | null {
-    return this.getOutOfBandAttachment(PAYMENT_OFFER_ATTACHMENT_ID)
+  public get getPaymentOfferAttachment(): PaymentOfferAttachment | null {
+    const attachment = this.getOutOfBandAttachment(PAYMENT_OFFER_ATTACHMENT_ID)
+    if (!attachment) return null
+    return JsonTransformer.fromJSON(attachment, PaymentOfferAttachment)
   }
 
   public getOutOfBandAttachment(id?: string): Record<string, unknown> | null {

@@ -1,9 +1,9 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { ValueTransferRecord } from '@aries-framework/core'
 
-import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
+import { AutoAcceptValueTransfer, DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
 
-import { BaseAgent, notes } from './BaseAgent'
+import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class Anna extends BaseAgent {
@@ -23,7 +23,9 @@ export class Anna extends BaseAgent {
         },
       ],
       valueTransferConfig: {
-        party: {},
+        party: {
+          autoAcceptOfferedPaymentRequest: AutoAcceptValueTransfer.Always,
+        },
       },
     })
   }
@@ -90,6 +92,18 @@ export class Anna extends BaseAgent {
     })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nOffer Sent!\n'))
+    await this.waitForPayment()
+  }
+
+  public async requestPayment(witness: string, giver: string) {
+    const { record } = await this.agent.valueTransfer.requestPayment({
+      amount: 10,
+      giver,
+      witness,
+      transport: Transports.NFC,
+    })
+    this.valueTransferRecordId = record.id
+    console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()
   }
 

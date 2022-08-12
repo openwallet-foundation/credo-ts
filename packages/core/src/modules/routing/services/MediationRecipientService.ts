@@ -12,7 +12,6 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
-import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
 import { Wallet } from '../../../wallet'
@@ -148,8 +147,7 @@ export class MediationRecipientService {
       )
       .subscribe(subject)
 
-    const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.messageSender.sendDIDCommV2Message(outboundMessage)
+    await this.messageSender.sendDIDCommV2Message(message)
 
     const keylistUpdate = await firstValueFrom(subject)
     return keylistUpdate.payload.mediationRecord

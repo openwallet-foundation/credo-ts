@@ -17,6 +17,7 @@ export const runGiver = async () => {
 }
 
 enum PromptOptions {
+  RequestPayment = 'Request Payment',
   OfferPay = 'Offer Payment',
   Exit = 'Exit',
   Restart = 'Restart',
@@ -52,6 +53,9 @@ export class AnnaInquirer extends BaseInquirer {
     if (this.listener.on) return
 
     switch (choice.options) {
+      case PromptOptions.RequestPayment:
+        await this.requestPayment()
+        return
       case PromptOptions.OfferPay:
         await this.offerPayment()
         return
@@ -68,6 +72,12 @@ export class AnnaInquirer extends BaseInquirer {
   public async offerPayment() {
     const getter = await prompt([this.inquireInput('Getter DID')])
     await this.giver.offerPayment(getter.input)
+  }
+
+  public async requestPayment() {
+    const witness = await prompt([this.inquireInput('Witness DID')])
+    const giver = await prompt([this.inquireInput('Giver DID')])
+    await this.giver.requestPayment(witness.input, giver.input)
   }
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {

@@ -33,4 +33,13 @@ export class ValueTransferResponseCoordinator {
 
     return autoAccept === AutoAcceptValueTransfer.Always
   }
+
+  /**
+   * Checks whether it should automatically respond to a request send in respponse on offer
+   */
+  public shouldAutoRespondToOfferedRequest() {
+    const autoAccept = this.agentConfig.autoAcceptOfferedPaymentRequest ?? AutoAcceptValueTransfer.Never
+
+    return autoAccept === AutoAcceptValueTransfer.Always
+  }
 }

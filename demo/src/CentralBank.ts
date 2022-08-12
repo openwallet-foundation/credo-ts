@@ -1,7 +1,7 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import { DidMarker, Transports } from '@aries-framework/core'
 
-import { BaseAgent, notes } from './BaseAgent'
+import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
 
 export class CentralBank extends BaseAgent {

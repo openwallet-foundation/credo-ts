@@ -2,7 +2,7 @@ import type { ConnectionRecord } from '../modules/connections'
 import type { DidCommService, IndyAgentService, DidDocumentService } from '../modules/dids/domain/service'
 import type { AcceptProtocol, Transports } from '../modules/routing/types'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { OutboundDIDCommV2Message, OutboundMessage, OutboundPackage, SendMessageOptions } from '../types'
+import type { OutboundMessage, OutboundPackage, SendMessageOptions } from '../types'
 import type { TransportSession } from './TransportService'
 import type { DIDCommMessage, DIDCommV2Message, EncryptedMessage } from './didcomm'
 import type { PackMessageParams } from './didcomm/EnvelopeService'
@@ -280,14 +280,12 @@ export class MessageSender {
   }
 
   public async sendDIDCommV2Message(
-    outboundMessage: OutboundDIDCommV2Message,
+    message: DIDCommV2Message,
     sendingMessageType: SendingMessageType = SendingMessageType.Encrypted,
     transport?: Transports
   ) {
-    const { payload } = outboundMessage
-
     // recipient is not specified -> send to defaultTransport
-    if (!payload.to?.length && transport) {
+    if (!message.to?.length && transport) {
       const service = new DidCommV2Service({
         id: transport,
         serviceEndpoint: transport,
@@ -295,11 +293,11 @@ export class MessageSender {
 
       if (sendingMessageType === SendingMessageType.Plain) {
         // send message plaintext
-        return await this.sendPlaintextMessage(payload, service)
+        return await this.sendPlaintextMessage(message, service)
       }
 
       if (sendingMessageType === SendingMessageType.Signed) {
-        return await this.sendSignedMessage(payload, service)
+        return await this.sendSignedMessage(message, service)
       }
 
       if (sendingMessageType === SendingMessageType.Encrypted) {
@@ -309,24 +307,24 @@ export class MessageSender {
     }
 
     // recipient is not specified and transport is not passed explicitly
-    if (!payload.to?.length && !transport) return
+    if (!message.to?.length && !transport) return
 
     // else find service and send message there
-    const service = await this.findRecipientService(payload, transport)
+    const service = await this.findRecipientService(message, transport)
 
     if (sendingMessageType === SendingMessageType.Plain) {
       // send message plaintext
-      return await this.sendPlaintextMessage(payload, service)
+      return await this.sendPlaintextMessage(message, service)
     }
 
     if (sendingMessageType === SendingMessageType.Signed) {
       // send message signed
-      return await this.sendSignedMessage(payload, service)
+      return await this.sendSignedMessage(message, service)
     }
 
     if (sendingMessageType === SendingMessageType.Encrypted) {
       // send message encrypted
-      return await this.sendEncryptedMessage(payload, service)
+      return await this.sendEncryptedMessage(message, service)
     }
   }
 

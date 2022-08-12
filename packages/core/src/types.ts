@@ -44,6 +44,7 @@ export interface WalletExportImportConfig {
 export interface ValueTransferPartyConfig {
   witnessDid?: string
   autoAcceptPaymentOffer?: AutoAcceptValueTransfer
+  autoAcceptOfferedPaymentRequest?: AutoAcceptValueTransfer
   autoAcceptPaymentRequest?: AutoAcceptValueTransfer
 }
 

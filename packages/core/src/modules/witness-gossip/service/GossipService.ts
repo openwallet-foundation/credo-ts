@@ -4,7 +4,7 @@ import type { ResumeValueTransferTransactionEvent } from '../../value-transfer/V
 import type { WitnessStateRecord } from '../../value-transfer/repository/WitnessStateRecord'
 import type { WitnessTableReceivedEvent } from '../GossipEvents'
 import type { WitnessTableQueryMessage } from '../messages'
-import type { Witness } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { Witness, TransactionUpdate } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { interval } from 'rxjs'
@@ -131,27 +131,7 @@ export class GossipService {
       return
     }
 
-    const body = { tell: { id: state.witnessState.info.gossipDid } }
-    const attachments = [
-      WitnessGossipMessage.createTransactionUpdateJSONAttachment(state.witnessState.info.gossipDid, [
-        transactionUpdate,
-      ]),
-    ]
-
-    // prepare message and send to all known knownWitnesses
-    for (const witness of state.knownWitnesses) {
-      try {
-        const message = new WitnessGossipMessage({
-          from: state.gossipDid,
-          to: witness.gossipDid,
-          body,
-          attachments,
-        })
-        await this.sendMessageToWitness(message)
-      } catch (e) {
-        // Failed to deliver message to witness - put in a failure queue
-      }
-    }
+    await this.gossipTransactionUpdate(state, transactionUpdate)
 
     this.config.logger.info(`   < Witness: gossip transaction completed!`)
     return
@@ -256,6 +236,19 @@ export class GossipService {
     this.config.logger.info(`   Sender: ${witnessGossipMessage.from}`)
     this.config.logger.info(`   Ask since: ${ask.since}`)
 
+    if (!witnessGossipMessage.from) {
+      this.config.logger.info('   Unknown transaction update Reqeuster')
+      return
+    }
+
+    const knownWitness = state.knownWitnesses.find((witness) => witness.gossipDid === witnessGossipMessage.from)
+    if (!knownWitness) {
+      this.config.logger.info(
+        `   Transaction Updated received from an unknown Witness DID: ${witnessGossipMessage.from}`
+      )
+      return
+    }
+
     // filter all transaction by requested tock
     // ISSUE: tock is not time. each witness may have different tocks
     // How properly request transactions??
@@ -265,8 +258,19 @@ export class GossipService {
 
     this.config.logger.info(`   Number of transactions: ${transactionUpdates.length}`)
 
+    let transactionUpdateForOtherWitnesses: TransactionUpdate | undefined = undefined
+
     if (state.witnessState.pendingTransactionRecords.length) {
-      // FIXME: Should we share pending transaction as well??
+      // there is signed receipt which were not included into tock yet
+      // we need to generate new tock and gossip it
+      this.config.logger.info(`  Witness: There is pending transactions: prepare transaction update and gossip it`)
+
+      const { transactionUpdate, error } = await this.witness.prepareTransactionUpdate()
+      if (transactionUpdate && !error && transactionUpdate.num) {
+        // include transaction update into response for witness - requester
+        transactionUpdates.push(transactionUpdate)
+        transactionUpdateForOtherWitnesses = transactionUpdate
+      }
     }
 
     const attachments = [WitnessGossipMessage.createTransactionUpdateJSONAttachment(state.wid, transactionUpdates)]
@@ -282,6 +286,11 @@ export class GossipService {
     })
 
     await this.sendMessageToWitness(message)
+
+    // gossip transaction update to other witnesses as well
+    if (transactionUpdateForOtherWitnesses) {
+      await this.gossipTransactionUpdate(state, transactionUpdateForOtherWitnesses, [witnessGossipMessage.from])
+    }
 
     this.config.logger.info('< Witness: process ask for transactions completed')
   }
@@ -355,6 +364,35 @@ export class GossipService {
         witnesses: witnessTable.body.witnesses,
       },
     })
+  }
+
+  private async gossipTransactionUpdate(
+    state: WitnessStateRecord,
+    transactionUpdate: TransactionUpdate,
+    exclude: string[] = []
+  ): Promise<void> {
+    // prepare message and send to all known knownWitnesses
+    for (const witness of state.knownWitnesses) {
+      try {
+        if (!exclude.includes(witness.gossipDid)) {
+          const body = { tell: { id: state.witnessState.info.gossipDid } }
+          const attachments = [
+            WitnessGossipMessage.createTransactionUpdateJSONAttachment(state.witnessState.info.gossipDid, [
+              transactionUpdate,
+            ]),
+          ]
+          const message = new WitnessGossipMessage({
+            from: state.gossipDid,
+            to: witness.gossipDid,
+            body,
+            attachments,
+          })
+          await this.sendMessageToWitness(message)
+        }
+      } catch (e) {
+        // Failed to deliver message to witness - put in a failure queue
+      }
+    }
   }
 
   private async sendMessageToWitness(message: DIDCommV2Message): Promise<void> {

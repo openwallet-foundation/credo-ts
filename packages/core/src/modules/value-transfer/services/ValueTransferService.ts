@@ -14,7 +14,6 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
-import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
 import { DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
@@ -174,6 +173,7 @@ export class ValueTransferService {
 
   public async abortTransaction(
     record: ValueTransferRecord,
+    code?: string,
     reason?: string
   ): Promise<{
     record: ValueTransferRecord
@@ -210,7 +210,7 @@ export class ValueTransferService {
       to,
       pthid: record.threadId,
       body: {
-        code: 'e.p.transaction-aborted',
+        code: code || 'e.p.transaction-aborted',
         comment: `Transaction aborted by ${from}. ` + (reason ? `Reason: ${reason}.` : ''),
       },
     })
@@ -282,8 +282,7 @@ export class ValueTransferService {
   public async sendMessage(message: DIDCommV2Message, transport?: Transports) {
     this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
-    const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.messageSender.sendDIDCommV2Message(outboundMessage, sendingMessageType, transport)
+    await this.messageSender.sendDIDCommV2Message(message, sendingMessageType, transport)
   }
 
   public async getBalance(): Promise<number> {
