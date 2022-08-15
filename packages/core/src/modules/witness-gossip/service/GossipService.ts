@@ -13,11 +13,12 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { MessageSender } from '../../../agent/MessageSender'
+import { SendingMessageType } from '../../../agent/didcomm/types'
 import { AriesFrameworkError } from '../../../error'
 import { ValueTransferEventTypes } from '../../value-transfer/ValueTransferEvents'
 import { WitnessStateRepository } from '../../value-transfer/repository/WitnessStateRepository'
 import { ValueTransferCryptoService } from '../../value-transfer/services/ValueTransferCryptoService'
-import { ValueTransferService } from '../../value-transfer/services/ValueTransferService'
 import { ValueTransferStateService } from '../../value-transfer/services/ValueTransferStateService'
 import { GossipEventTypes } from '../GossipEvents'
 import { WitnessData, WitnessGossipMessage, WitnessTableMessage } from '../messages'
@@ -25,27 +26,29 @@ import { WitnessData, WitnessGossipMessage, WitnessTableMessage } from '../messa
 @scoped(Lifecycle.ContainerScoped)
 export class GossipService {
   private config: AgentConfig
-  private valueTransferService: ValueTransferService
   private valueTransferCryptoService: ValueTransferCryptoService
   private valueTransferStateService: ValueTransferStateService
   private witnessStateRepository: WitnessStateRepository
   private eventEmitter: EventEmitter
   private witness: Witness
+  private messageSender: MessageSender
+  private undeliveredMessages: { timestamp: number; message: DIDCommV2Message }[] = [] // FIXME: collection should be persisted
 
   public constructor(
     config: AgentConfig,
-    valueTransferService: ValueTransferService,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferStateService,
     witnessStateRepository: WitnessStateRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    messageSender: MessageSender
   ) {
     this.config = config
-    this.valueTransferService = valueTransferService
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
     this.witnessStateRepository = witnessStateRepository
     this.eventEmitter = eventEmitter
+    this.messageSender = messageSender
+    this.undeliveredMessages = []
 
     this.witness = new ValueTransfer(
       {
@@ -78,6 +81,19 @@ export class GossipService {
           this.config.logger.info(`Witness: Unexpected error happened while cleaning state. Error: ${error}`)
         }
       })
+
+    //init worker to resend undelivered messages
+    interval(this.config.witnessRedeliverTime)
+      .pipe(takeUntil(this.config.stop$))
+      .subscribe(async () => {
+        try {
+          await this.resendUndeliveredMessages()
+        } catch (error) {
+          this.config.logger.info(
+            `Witness: Unexpected error happened while re-sending undelivered messages. Error: ${error}`
+          )
+        }
+      })
   }
 
   /**
@@ -106,7 +122,7 @@ export class GossipService {
       pthid,
     })
 
-    await this.valueTransferService.sendMessage(message)
+    await this.sendMessage(message)
 
     this.config.logger.info(`> Witness: request transaction updates for paused transaction ${pthid} sent!`)
   }
@@ -181,6 +197,8 @@ export class GossipService {
           },
         })
       }
+
+      await this.resendTransactionUpdateIfNeed(state, witnessGossipMessage)
     }
 
     const ask = witnessGossipMessage.body.ask
@@ -308,7 +326,7 @@ export class GossipService {
     const now = Date.now()
 
     // FIXME: change the collection to be ordered by time - find index of first - slice rest
-    state.witnessState.transactionUpdatesHistory = history.filter((txn) => now - txn.timestamp > threshold)
+    state.witnessState.transactionUpdatesHistory = history.filter((txn) => now - txn.timestamp < threshold)
 
     await this.witnessStateRepository.update(state)
 
@@ -345,7 +363,7 @@ export class GossipService {
       thid: witnessTableQuery.id,
     })
 
-    await this.valueTransferService.sendMessage(message)
+    await this.sendMessage(message)
   }
 
   public async processWitnessTable(messageContext: InboundMessageContext<WitnessTableMessage>): Promise<void> {
@@ -373,35 +391,84 @@ export class GossipService {
   ): Promise<void> {
     // prepare message and send to all known knownWitnesses
     for (const witness of state.knownWitnesses) {
-      try {
-        if (!exclude.includes(witness.gossipDid)) {
-          const body = { tell: { id: state.witnessState.info.gossipDid } }
-          const attachments = [
-            WitnessGossipMessage.createTransactionUpdateJSONAttachment(state.witnessState.info.gossipDid, [
-              transactionUpdate,
-            ]),
-          ]
-          const message = new WitnessGossipMessage({
-            from: state.gossipDid,
-            to: witness.gossipDid,
-            body,
-            attachments,
-          })
-          await this.sendMessageToWitness(message)
-        }
-      } catch (e) {
-        // Failed to deliver message to witness - put in a failure queue
+      if (!exclude.includes(witness.gossipDid)) {
+        const body = { tell: { id: state.witnessState.info.gossipDid } }
+        const attachments = [
+          WitnessGossipMessage.createTransactionUpdateJSONAttachment(state.witnessState.info.gossipDid, [
+            transactionUpdate,
+          ]),
+        ]
+        const message = new WitnessGossipMessage({
+          from: state.gossipDid,
+          to: witness.gossipDid,
+          body,
+          attachments,
+        })
+        await this.sendMessageToWitness(message)
       }
     }
+  }
+
+  private async resendTransactionUpdateIfNeed(
+    state: WitnessStateRecord,
+    originalMessage: WitnessGossipMessage
+  ): Promise<void> {
+    // 1. message received from original initiator - not re-sent from other witness
+    if (originalMessage.from !== originalMessage.body.tell?.id) return
+
+    // 2. message is not received in response on ask
+    if (originalMessage.thid) return
+
+    // re-send received transaction updated to other witnesses
+    for (const witness of state.knownWitnesses) {
+      // 1. do not re-send to original sender
+      if (originalMessage.from !== witness.gossipDid) continue
+      const message = new WitnessGossipMessage({
+        from: state.gossipDid,
+        to: witness.gossipDid,
+        body: originalMessage.body,
+        attachments: originalMessage.attachments,
+      })
+      await this.sendMessageToWitness(message)
+    }
+  }
+
+  /**
+   * Try to re-send undelivered messages and clear expired
+   * */
+  private async resendUndeliveredMessages(): Promise<void> {
+    this.config.logger.info('> Witness: re-send undelivered message to other witnesses')
+
+    const undeliveredMessages = []
+
+    const threshold = this.config.witnessRedeliveryThreshold
+    const now = Date.now()
+
+    for (const message of this.undeliveredMessages) {
+      if (now - message.timestamp > threshold) continue
+      try {
+        await this.sendMessage(message.message)
+      } catch (error) {
+        this.config.logger.info(
+          `> Witness: failed to deliver message ${message.message.type} to witnesses ${message.message.to}`
+        )
+        undeliveredMessages.push(message)
+      }
+    }
+
+    this.undeliveredMessages = undeliveredMessages
+    this.config.logger.info('< Witness: re-sending undelivered message to other witnesses completed!')
+
+    return
   }
 
   private async sendMessageToWitness(message: DIDCommV2Message): Promise<void> {
     try {
       this.config.logger.info(`   >> Witness: send message to witness`)
-      await this.valueTransferService.sendMessage(message)
+      await this.sendMessage(message)
     } catch (e) {
-      this.config.logger.info('errrsend')
-      // TODO: put into failed queue
+      this.config.logger.info(`   >> Witness: failed to send message ${message.type} to witness ${message.to}`)
+      this.undeliveredMessages.push({ timestamp: Date.now(), message })
     }
   }
 
@@ -415,5 +482,11 @@ export class GossipService {
 
   public async findWitnessState(): Promise<WitnessStateRecord | null> {
     return this.witnessStateRepository.findSingleByQuery({})
+  }
+
+  public async sendMessage(message: DIDCommV2Message) {
+    this.config.logger.info(`Sending Gossip message with type '${message.type}' to DID ${message?.to}`)
+    const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
+    await this.messageSender.sendDIDCommV2Message(message, sendingMessageType)
   }
 }

@@ -59,7 +59,9 @@ export interface ValueTransferWitnessConfig {
   knownWitnesses: WitnessInfo[]
   tockTime?: number
   cleanupTime?: number
+  redeliverTime?: number
   historyThreshold?: number
+  redeliveryThreshold?: number
   issuerDids?: string[]
 }
 

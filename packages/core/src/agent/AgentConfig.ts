@@ -97,8 +97,16 @@ export class AgentConfig {
     return this.initConfig.valueTransferConfig?.witness?.cleanupTime || 1000 * 60 * 60
   }
 
+  public get witnessRedeliverTime() {
+    return this.initConfig.valueTransferConfig?.witness?.redeliverTime || 1000 * 60 * 10
+  }
+
   public get witnessHistoryThreshold() {
     return this.initConfig.valueTransferConfig?.witness?.historyThreshold || 1000 * 60 * 60
+  }
+
+  public get witnessRedeliveryThreshold() {
+    return this.initConfig.valueTransferConfig?.witness?.redeliveryThreshold || 1000 * 60 * 60
   }
 
   public get witnessIssuerDids() {
