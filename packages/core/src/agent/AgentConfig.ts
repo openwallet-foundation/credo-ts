@@ -90,7 +90,7 @@ export class AgentConfig {
   }
 
   public get witnessTockTime() {
-    return this.initConfig.valueTransferConfig?.witness?.tockTime || 5000
+    return this.initConfig.valueTransferConfig?.witness?.tockTime || 1000 * 5
   }
 
   public get witnessCleanupTime() {
@@ -98,7 +98,7 @@ export class AgentConfig {
   }
 
   public get witnessRedeliverTime() {
-    return this.initConfig.valueTransferConfig?.witness?.redeliverTime || 1000 * 60 * 10
+    return this.initConfig.valueTransferConfig?.witness?.redeliverTime || 1000 * 60 * 2
   }
 
   public get witnessHistoryThreshold() {
