@@ -1,13 +1,8 @@
 import type { ConnectionRecord } from '../../connections'
 import type { ProofFormat, ProofFormatPayload } from '../formats/ProofFormat'
-import type { IndyProofFormat } from '../formats/indy/IndyProofFormat'
-import type { IndyRequestProofFormat } from '../formats/indy/IndyProofFormatsServiceOptions'
 import type { ProofRecord } from '../repository'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
-
-import { ProofRequest } from '../formats/indy/models/ProofRequest'
-import { RequestedCredentials } from '../formats/indy/models/RequestedCredentials'
 
 interface BaseOptions {
   willConfirm?: boolean

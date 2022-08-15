@@ -22,7 +22,6 @@ describe('Present Proof', () => {
   let faberProofRecord: ProofRecord
   let aliceProofRecord: ProofRecord
   let didCommMessageRepository: DidCommMessageRepository
-  let agentContext: AgentContext
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -30,7 +29,6 @@ describe('Present Proof', () => {
       'Faber agent',
       'Alice agent'
     ))
-    agentContext = getAgentContext()
   })
 
   afterAll(async () => {

@@ -1,11 +1,10 @@
-import type { AgentContext } from '../../../../../agent'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { ProposeProofOptions, AcceptProposalOptions } from '../../../ProofsApiOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { PresentationPreview } from '../models/V1PresentationPreview'
 
-import { getAgentContext, setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
+import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage/didcomm'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
@@ -20,7 +19,6 @@ describe('Present Proof', () => {
   let faberProofRecord: ProofRecord
   let aliceProofRecord: ProofRecord
   let didCommMessageRepository: DidCommMessageRepository
-  let agentContext: AgentContext
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
