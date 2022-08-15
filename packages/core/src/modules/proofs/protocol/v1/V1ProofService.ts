@@ -114,13 +114,7 @@ export class V1ProofService extends ProofService {
 
   public readonly version = 'v1' as const
 
-  public getFormatServiceForRecordType(proofRecordType: string) {
-    if (proofRecordType !== this.indyProofFormatService.proofRecordType) {
-      throw new AriesFrameworkError(
-        `Unsupported proof record type ${proofRecordType} for v1 issue proof protocol (need ${this.indyProofFormatService.proofRecordType})`
-      )
-    }
-
+  public getFormatServiceForRecordType() {
     return this.indyProofFormatService
   }
 

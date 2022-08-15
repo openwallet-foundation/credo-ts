@@ -23,7 +23,6 @@ export type ProofFormatPayload<PFs extends ProofFormat[], M extends keyof ProofF
 
 export interface ProofFormat {
   formatKey: string // e.g. 'ProofManifest', cannot be shared between different formats
-  proofRecordType: string // e.g. 'w3c', can be shared between multiple formats
   proofFormats: {
     createProposal: unknown
     acceptProposal: unknown

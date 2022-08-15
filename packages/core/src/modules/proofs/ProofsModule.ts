@@ -10,7 +10,7 @@ import { ProofRepository } from './repository'
 
 export class ProofsModule implements Module {
   /**
-   * Registers the dependencies of the credentials module on the dependency manager.
+   * Registers the dependencies of the proofs module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
     // Api
@@ -24,7 +24,7 @@ export class ProofsModule implements Module {
     // Repositories
     dependencyManager.registerSingleton(ProofRepository)
 
-    // Credential Formats
+    // Proof Formats
     dependencyManager.registerSingleton(IndyProofFormatService)
   }
 }

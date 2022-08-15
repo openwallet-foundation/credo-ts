@@ -34,7 +34,6 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
   protected agentConfig: AgentConfig
 
   abstract readonly formatKey: PF['formatKey']
-  abstract readonly proofRecordType: PF['proofRecordType']
 
   public constructor(didCommMessageRepository: DidCommMessageRepository, agentConfig: AgentConfig) {
     this.didCommMessageRepository = didCommMessageRepository

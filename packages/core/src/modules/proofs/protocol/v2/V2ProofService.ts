@@ -73,6 +73,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     this.wallet = wallet
     this.formatServiceMap = {
       [PresentationRecordType.Indy]: indyProofFormatService,
+      // other format services to be added to the map
     }
   }
 
@@ -81,16 +82,9 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
    */
   public readonly version = 'v2' as const
 
-  public getFormatServiceForRecordType(proofRecordType: PFs[number]['proofRecordType']) {
-    const formatService = this.formatServiceMap[proofRecordType]
-
-    if (!formatService) {
-      throw new AriesFrameworkError(
-        `No format service found for proof record type ${proofRecordType} in v2 proof service`
-      )
-    }
-
-    return formatService
+  public getFormatServiceForRecordType() {
+    // other format services to be added to the map
+    return this.formatServiceMap[0]
   }
 
   public async createProposal(

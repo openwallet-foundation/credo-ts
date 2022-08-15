@@ -59,9 +59,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   }
   abstract readonly version: string
 
-  abstract getFormatServiceForRecordType(
-    proofRecordType: PFs[number]['proofRecordType']
-  ): ProofFormatService<PFs[number]>
+  abstract getFormatServiceForRecordType(): ProofFormatService<PFs[number]>
 
   public async generateProofRequestNonce() {
     return await this.wallet.generateNonce()

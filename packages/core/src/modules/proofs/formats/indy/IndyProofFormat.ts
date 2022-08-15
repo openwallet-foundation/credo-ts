@@ -8,6 +8,8 @@ import type { ProofFormat } from '../ProofFormat'
 import type { IndyRequestProofFormat } from '../indy/IndyProofFormatsServiceOptions'
 import type { IndyRequestedCredentialsOptions, RequestedCredentials } from './models/RequestedCredentials'
 import type { RetrievedCredentials } from './models/RetrievedCredentials'
+import { RequestedAttribute } from './models/RequestedAttribute'
+import { RequestedPredicate } from './models/RequestedPredicate'
 
 export interface IndyProposeProofFormat {
   attributes?: PresentationPreviewAttribute[]
@@ -30,6 +32,17 @@ export interface IndyAcceptOfferFormat {
   holderDid?: string
 }
 
+export interface IndyRequestedCredentialsFormat {
+  requestedAttributes?: Record<string, RequestedAttribute>
+  requestedPredicates?: Record<string, RequestedPredicate>
+  selfAttestedAttributes?: Record<string, string>
+}
+
+export interface IndyRetrievedCredentialsFormat {
+  requestedAttributes?: Record<string, RequestedAttribute[]>
+  requestedPredicates?: Record<string, RequestedPredicate[]>
+}
+
 export interface IndyProofFormat extends ProofFormat {
   formatKey: 'indy'
   proofRecordType: 'indy'
@@ -44,8 +57,8 @@ export interface IndyProofFormat extends ProofFormat {
     createOutOfBandRequest: unknown
     createRequestAsResponse: IndyRequestProofFormat
     createProofRequestFromProposal: IndyRequestProofFormat
-    requestCredentials: RequestedCredentials
-    retrieveCredentials: RetrievedCredentials
+    requestCredentials: IndyRequestedCredentialsFormat
+    retrieveCredentials: IndyRetrievedCredentialsFormat
   }
   // Format data is based on RFC 0592
   // https://github.com/hyperledger/aries-rfcs/tree/main/features/0592-indy-attachments
