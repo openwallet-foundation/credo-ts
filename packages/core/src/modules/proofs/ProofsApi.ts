@@ -36,12 +36,10 @@ import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { DidCommMessageRole } from '../../storage/didcomm/DidCommMessageRole'
 import { ConnectionService } from '../connections/services/ConnectionService'
-import { RevocationNotificationService } from '../credentials/protocol/revocation-notification/services/RevocationNotificationService'
 import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 import { RoutingService } from '../routing/services/RoutingService'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
-import { ProofsModuleConfig } from './ProofsModuleConfig'
 import { ProofState } from './models/ProofState'
 import { V1ProofService } from './protocol/v1/V1ProofService'
 import { V2ProofService } from './protocol/v2/V2ProofService'
@@ -87,8 +85,6 @@ export class ProofsApi<
   PSs extends ProofService<PFs>[] = [V1ProofService, V2ProofService<PFs>]
 > implements ProofsApi<PFs, PSs>
 {
-  public readonly config: ProofsModuleConfig
-
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private routingService: RoutingService
@@ -109,8 +105,7 @@ export class ProofsApi<
     @inject(InjectionSymbols.Logger) logger: Logger,
     proofRepository: ProofRepository,
     v1Service: V1ProofService,
-    v2Service: V2ProofService<PFs>,
-    config: ProofsModuleConfig
+    v2Service: V2ProofService<PFs>
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
@@ -119,8 +114,6 @@ export class ProofsApi<
     this.agentConfig = agentConfig
     this.routingService = routingService
     this.logger = logger
-    this.config = config
-
     // Dynamically build service map. This will be extracted once services are registered dynamically
     this.serviceMap = [v1Service, v2Service].reduce(
       (serviceMap, service) => ({
