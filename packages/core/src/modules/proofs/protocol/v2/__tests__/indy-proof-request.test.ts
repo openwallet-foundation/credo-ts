@@ -1,11 +1,10 @@
-import type { AgentContext } from '../../../../../agent'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { ProposeProofOptions, AcceptProposalOptions } from '../../../ProofsApiOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 
-import { getAgentContext, setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
+import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../../formats/ProofFormatConstants'
@@ -22,7 +21,6 @@ describe('Present Proof', () => {
   let faberProofRecord: ProofRecord
   let aliceProofRecord: ProofRecord
   let didCommMessageRepository: DidCommMessageRepository
-  let agentContext: AgentContext
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -30,7 +28,6 @@ describe('Present Proof', () => {
       'Faber agent',
       'Alice agent'
     ))
-    agentContext = getAgentContext()
   })
 
   afterAll(async () => {
