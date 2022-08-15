@@ -110,9 +110,6 @@ export class ProofsApi<
     proofRepository: ProofRepository,
     v1Service: V1ProofService,
     v2Service: V2ProofService<PFs>,
-    // only injected so the handlers will be registered
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _revocationNotificationService: RevocationNotificationService,
     config: ProofsModuleConfig
   ) {
     this.messageSender = messageSender
