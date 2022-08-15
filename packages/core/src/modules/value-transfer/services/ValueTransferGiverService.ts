@@ -107,10 +107,7 @@ export class ValueTransferGiverService {
     this.config.logger.info(`> Giver: offer payment VTP transaction with ${id}`)
 
     // Get payment public DID from the storage or generate a new one if requested
-    const giver = await this.valueTransferService.getTransactionDid({
-      role: ValueTransferRole.Giver,
-      usePublicDid: params.usePublicDid,
-    })
+    const giver = await this.valueTransferService.getTransactionDid(params.usePublicDid)
 
     // Create offer receipt
     const receipt = new Receipt({
@@ -349,8 +346,7 @@ export class ValueTransferGiverService {
     record.assertRole(ValueTransferRole.Giver)
     record.assertState([ValueTransferState.RequestReceived, ValueTransferState.RequestForOfferReceived])
 
-    const giverDid =
-      record.giver?.did ?? (await this.valueTransferService.getTransactionDid({ role: ValueTransferRole.Giver })).id
+    const giverDid = record.giver?.did ?? (await this.valueTransferService.getTransactionDid()).id
 
     const activeTransaction = await this.valueTransferService.getActiveTransaction()
     if (activeTransaction.record) {

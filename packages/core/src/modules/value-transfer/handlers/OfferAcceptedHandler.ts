@@ -19,7 +19,8 @@ export class OfferAcceptedHandler implements Handler<typeof DIDCommV2Message> {
     this.valueTransferWitnessService = valueTransferWitnessService
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async handle(messageContext: HandlerInboundMessage<OfferAcceptedHandler>) {
-    await this.valueTransferWitnessService.processOfferAcceptance(messageContext)
+    // await this.valueTransferWitnessService.processOfferAcceptance(messageContext)
   }
 }

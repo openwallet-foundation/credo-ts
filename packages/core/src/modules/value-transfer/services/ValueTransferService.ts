@@ -266,19 +266,6 @@ export class ValueTransferService {
     return firstValueFrom(subject)
   }
 
-  public async sendWitnessProblemReport(message: ProblemReportMessage, record?: ValueTransferRecord) {
-    const getterProblemReport = new ProblemReportMessage({
-      ...message,
-      to: record?.getter?.did,
-    })
-    const giverProblemReport = new ProblemReportMessage({
-      ...message,
-      to: record?.giver?.did,
-    })
-
-    await Promise.all([this.sendMessage(getterProblemReport), this.sendMessage(giverProblemReport)])
-  }
-
   public async sendMessage(message: DIDCommV2Message, transport?: Transports) {
     this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
@@ -329,16 +316,7 @@ export class ValueTransferService {
     return this.valueTransferStateRepository.findSingleByQuery({})
   }
 
-  public async getTransactionDid(params: { role: ValueTransferRole; usePublicDid?: boolean }) {
-    // Witness MUST use public DID
-    if (params.role === ValueTransferRole.Witness) {
-      const publicDid = await this.didService.getPublicDid()
-      if (!publicDid) {
-        throw new AriesFrameworkError('Witness public DID not found')
-      }
-      return publicDid
-    } else {
-      return this.didService.getPublicDidOrCreateNew(params.usePublicDid)
-    }
+  public async getTransactionDid(usePublicDid?: boolean) {
+    return this.didService.getPublicDidOrCreateNew(usePublicDid)
   }
 }

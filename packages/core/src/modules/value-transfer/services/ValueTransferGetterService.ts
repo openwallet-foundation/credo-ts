@@ -104,7 +104,7 @@ export class ValueTransferGetterService {
 
     // Get payment public DID from the storage or generate a new one if requested
     const usePublicDid = params.usePublicDid || true
-    const getter = await this.valueTransferService.getTransactionDid({ role: ValueTransferRole.Getter, usePublicDid })
+    const getter = await this.valueTransferService.getTransactionDid(usePublicDid)
     const witness = params.witness || this.config.valueTransferWitnessDid
     if (!witness) {
       throw new AriesFrameworkError(`Witness DID either must be set in the Agent config or provided as a parameter`)
@@ -283,9 +283,7 @@ export class ValueTransferGetterService {
       )
     }
 
-    const getterId =
-      record.receipt.getterId ||
-      (await this.valueTransferService.getTransactionDid({ role: ValueTransferRole.Getter })).id
+    const getterId = record.receipt.getterId ?? (await this.valueTransferService.getTransactionDid()).id
 
     const { error, receipt } = await this.getter.createRequest({
       getterId: getterId,
