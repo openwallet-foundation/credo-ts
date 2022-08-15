@@ -6,10 +6,9 @@ import type {
 } from '../../protocol/v1/models/V1PresentationPreview'
 import type { ProofFormat } from '../ProofFormat'
 import type { IndyRequestProofFormat } from '../indy/IndyProofFormatsServiceOptions'
-import type { IndyRequestedCredentialsOptions, RequestedCredentials } from './models/RequestedCredentials'
-import type { RetrievedCredentials } from './models/RetrievedCredentials'
-import { RequestedAttribute } from './models/RequestedAttribute'
-import { RequestedPredicate } from './models/RequestedPredicate'
+import type { RequestedAttribute } from './models/RequestedAttribute'
+import type { IndyRequestedCredentialsOptions } from './models/RequestedCredentials'
+import type { RequestedPredicate } from './models/RequestedPredicate'
 
 export interface IndyProposeProofFormat {
   attributes?: PresentationPreviewAttribute[]
