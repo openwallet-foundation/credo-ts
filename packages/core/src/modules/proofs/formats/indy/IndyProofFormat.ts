@@ -32,14 +32,14 @@ export interface IndyAcceptOfferFormat {
 }
 
 export interface IndyRequestedCredentialsFormat {
-  requestedAttributes?: Record<string, RequestedAttribute>
-  requestedPredicates?: Record<string, RequestedPredicate>
-  selfAttestedAttributes?: Record<string, string>
+  requestedAttributes: Record<string, RequestedAttribute>
+  requestedPredicates: Record<string, RequestedPredicate>
+  selfAttestedAttributes: Record<string, string>
 }
 
 export interface IndyRetrievedCredentialsFormat {
-  requestedAttributes?: Record<string, RequestedAttribute[]>
-  requestedPredicates?: Record<string, RequestedPredicate[]>
+  requestedAttributes: Record<string, RequestedAttribute[]>
+  requestedPredicates: Record<string, RequestedPredicate[]>
 }
 
 export interface IndyProofFormat extends ProofFormat {
