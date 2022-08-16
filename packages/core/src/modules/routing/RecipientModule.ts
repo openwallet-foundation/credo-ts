@@ -24,13 +24,11 @@ import { DiscoverFeaturesModule } from '../discover-features'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RoutingEventTypes } from './RoutingEvents'
-import { MessageDeliveryHandler, StatusHandler } from './handlers'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
-import { StatusRequestMessage } from './messages'
-import { BatchPickupMessage } from './messages/BatchPickupMessage'
 import { MediationState } from './models/MediationState'
+import { BatchPickupMessage, StatusRequestMessage } from './protocol'
 import { MediationRepository, MediatorRoutingRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
 import { RoutingService } from './services/RoutingService'
@@ -94,8 +92,8 @@ export class RecipientModule {
     }
   }
 
-  private async sendMessage(outboundMessage: OutboundMessage) {
-    const { mediatorPickupStrategy } = this.agentConfig
+  private async sendMessage(outboundMessage: OutboundMessage, pickupStrategy?: MediatorPickupStrategy) {
+    const mediatorPickupStrategy = pickupStrategy ?? this.agentConfig.mediatorPickupStrategy
     const transportPriority =
       mediatorPickupStrategy === MediatorPickupStrategy.Implicit
         ? { schemes: ['wss', 'ws'], restrictive: true }
@@ -264,12 +262,15 @@ export class RecipientModule {
     return this.mediationRecipientService.discoverMediation()
   }
 
-  public async pickupMessages(mediatorConnection: ConnectionRecord) {
+  public async pickupMessages(mediatorConnection: ConnectionRecord, pickupStrategy?: MediatorPickupStrategy) {
     mediatorConnection.assertReady()
 
-    const batchPickupMessage = new BatchPickupMessage({ batchSize: 10 })
-    const outboundMessage = createOutboundMessage(mediatorConnection, batchPickupMessage)
-    await this.sendMessage(outboundMessage)
+    const pickupMessage =
+      pickupStrategy === MediatorPickupStrategy.PickUpV2
+        ? new StatusRequestMessage({})
+        : new BatchPickupMessage({ batchSize: 10 })
+    const outboundMessage = createOutboundMessage(mediatorConnection, pickupMessage)
+    await this.sendMessage(outboundMessage, pickupStrategy)
   }
 
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
@@ -376,8 +377,6 @@ export class RecipientModule {
     dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new StatusHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MessageDeliveryHandler(this.mediationRecipientService))
     //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 

@@ -1,8 +1,8 @@
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { AgentMessage } from '../../../../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
 export interface StatusRequestMessageOptions {
   id?: string
