@@ -13,8 +13,6 @@ import type {
   ProofStateChangedEvent,
   SchemaTemplate,
 } from '../src'
-import type { ActionMenuStateChangedEvent } from '../src/modules/action-menu/ActionMenuEvents'
-import type { ActionMenuState } from '../src/modules/action-menu/ActionMenuState'
 import type { AcceptOfferOptions } from '../src/modules/credentials'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { Schema, CredDef } from 'indy-sdk'
@@ -48,7 +46,6 @@ import {
 } from '../src'
 import { KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
-import { ActionMenuEventTypes } from '../src/modules/action-menu/ActionMenuEvents'
 import { AutoAcceptCredential } from '../src/modules/credentials/models/CredentialAutoAcceptType'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/messages/V1CredentialPreview'
 import { DidCommV1Service, DidKey, Key } from '../src/modules/dids'
@@ -251,55 +248,6 @@ export async function waitForBasicMessage(agent: Agent, { content }: { content?:
 
     agent.events.on<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
   })
-}
-
-export async function waitForActionMenuRecord(
-  agent: Agent,
-  options: {
-    threadId?: string
-    state?: ActionMenuState
-    previousState?: ActionMenuState | null
-    timeoutMs?: number
-  }
-) {
-  const observable = agent.events.observable<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged)
-
-  return waitForActionMenuRecordSubject(observable, options)
-}
-
-export function waitForActionMenuRecordSubject(
-  subject: ReplaySubject<ActionMenuStateChangedEvent> | Observable<ActionMenuStateChangedEvent>,
-  {
-    threadId,
-    state,
-    previousState,
-    timeoutMs = 10000,
-  }: {
-    threadId?: string
-    state?: ActionMenuState
-    previousState?: ActionMenuState | null
-    timeoutMs?: number
-  }
-) {
-  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-  return firstValueFrom(
-    observable.pipe(
-      filter((e) => previousState === undefined || e.payload.previousState === previousState),
-      filter((e) => threadId === undefined || e.payload.actionMenuRecord.threadId === threadId),
-      filter((e) => state === undefined || e.payload.actionMenuRecord.state === state),
-      timeout(timeoutMs),
-      catchError(() => {
-        throw new Error(
-          `ProofStateChangedEvent event not emitted within specified timeout: {
-  previousState: ${previousState},
-  threadId: ${threadId},
-  state: ${state}
-}`
-        )
-      }),
-      map((e) => e.payload.actionMenuRecord)
-    )
-  )
 }
 
 export function getMockConnection({
