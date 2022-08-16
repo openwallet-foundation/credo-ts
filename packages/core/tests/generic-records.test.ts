@@ -83,6 +83,17 @@ describe('genericRecords', () => {
     expect(retrievedRecord).toBeNull()
   })
 
+  test('delete generic record by id', async () => {
+    const myId = 'test-id'
+    const savedRecord = await aliceAgent.genericRecords.save({ content: barString, id: myId })
+    expect(savedRecord).toBeDefined()
+
+    await aliceAgent.genericRecords.deleteById(savedRecord.id)
+
+    const retrievedRecord = await aliceAgent.genericRecords.findById(savedRecord.id)
+    expect(retrievedRecord).toBeNull()
+  })
+
   test('update generic record', async () => {
     const myId = '102'
     const savedRecord1: GenericRecord = await aliceAgent.genericRecords.save({ content: barString, id: myId })
