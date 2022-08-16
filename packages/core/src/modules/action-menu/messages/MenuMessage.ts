@@ -1,6 +1,6 @@
 import type { ActionMenuOptionOptions } from '../models'
 
-import { Type } from 'class-transformer'
+import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString } from 'class-validator'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
@@ -11,7 +11,7 @@ export interface MenuMessageOptions {
   id?: string
   title: string
   description: string
-  errormsg?: string
+  errorMessage?: string
   options: ActionMenuOptionOptions[]
   threadId?: string
 }
@@ -24,6 +24,7 @@ export class MenuMessage extends AgentMessage {
       this.id = options.id ?? this.generateId()
       this.title = options.title
       this.description = options.description
+      this.errorMessage = options.errorMessage
       this.options = options.options.map((p) => new ActionMenuOption(p))
       if (options.threadId) {
         this.setThread({
@@ -43,9 +44,10 @@ export class MenuMessage extends AgentMessage {
   @IsString()
   public description!: string
 
+  @Expose({ name: 'errormsg' })
   @IsString()
   @IsOptional()
-  public errormsg?: string
+  public errorMessage?: string
 
   @IsInstance(ActionMenuOption, { each: true })
   @Type(() => ActionMenuOption)
