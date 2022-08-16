@@ -54,16 +54,7 @@ export class GenericRecordsModule {
   }
 
   public async deleteById(id: string): Promise<void> {
-    try {
-      await this.genericRecordsService.deleteById(id)
-    } catch (error) {
-      this.logger.error('Error while deleting generic-record', {
-        error,
-        content: id,
-        errorMessage: error instanceof Error ? error.message : error,
-      })
-      throw error
-    }
+    await this.genericRecordsService.deleteById(id)
   }
 
   public async update(record: GenericRecord): Promise<void> {

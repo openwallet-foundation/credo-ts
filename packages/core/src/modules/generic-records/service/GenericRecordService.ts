@@ -39,11 +39,7 @@ export class GenericRecordService {
   }
 
   public async deleteById(id: string): Promise<void> {
-    try {
-      await this.genericRecordsRepository.deleteById(id)
-    } catch (error) {
-      throw new AriesFrameworkError(`Unable to delete the genericRecord record with id ${id}. Message: ${error}`)
-    }
+    await this.genericRecordsRepository.deleteById(id)
   }
 
   public async update(record: GenericRecord): Promise<void> {
