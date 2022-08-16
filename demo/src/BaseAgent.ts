@@ -1,7 +1,22 @@
-import type { InboundTransport, InitConfig, OutboundTransport, ValueTransferConfig } from '@aries-framework/core'
+import type {
+  DidProps,
+  InboundTransport,
+  InitConfig,
+  OutboundTransport,
+  ValueTransferConfig,
+} from '@aries-framework/core'
 
-import { Agent, AutoAcceptCredential, AutoAcceptProof, HttpOutboundTransport } from '@aries-framework/core'
-import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
+import {
+  Agent,
+  AutoAcceptCredential,
+  AutoAcceptProof,
+  HttpOutboundTransport,
+  MediatorDeliveryStrategy,
+  MediatorPickupStrategy,
+  Transports,
+  WsOutboundTransport,
+} from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/node'
 
 import { greenText } from './OutputClass'
 import { FileInboundTransport } from './transports/FileInboundTransport'
@@ -13,6 +28,37 @@ const bcovrin = `{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blsk
 {"reqSignature":{},"txn":{"data":{"data":{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","blskey_pop":"RPLagxaR5xdimFzwmzYnz4ZhWtYQEj8iR5ZU53T2gitPCyCHQneUn2Huc4oeLd2B2HzkGnjAff4hWTJT6C7qHYB1Mv2wU5iHHGFWkhnTX9WsEAbunJCV2qcaXScKj4tTfvdDKfLiVuU2av6hbsMztirRze7LvYBkRHV3tGwyCptsrP","client_ip":"138.197.138.255","client_port":9708,"node_ip":"138.197.138.255","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA"},"metadata":{"from":"TWwCRQRZ2ZHMJFn9TzLp7W"},"type":"0"},"txnMetadata":{"seqNo":4,"txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008"},"ver":"1"}`
 
 export class BaseAgent {
+  public static defaultMediatorConnectionInvite =
+    'http://192.168.1.145:3000/api/v1/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6IjkwNGUxZjdmLTUzYjYtNDEyNC05OGFjLTFiOWM4MzViYTcxMCIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTbkhTOWYzaHJNdUxyTjl6NlpobzdUY0JSdlN5SzdIUGpRdHdLbXUzb3NXd0YuVno2TWtyYWhBb1ZMUVM5UzVHRjVzVUt0dWRYTWVkVVNaZGRlSmhqSHRBRmFWNGhvVi5TVzNzaWN5STZJbWgwZEhBNkx5OHhPVEl1TVRZNExqRXVNVFExT2pNd01EQXZZWEJwTDNZeElpd2lkQ0k2SW1SdElpd2ljaUk2VzEwc0ltRWlPbHNpWkdsa1kyOXRiUzkyTWlKZGZTeDdJbk1pT2lKM2N6b3ZMekU1TWk0eE5qZ3VNUzR4TkRVNk16QXdNQzloY0drdmRqRWlMQ0owSWpvaVpHMGlMQ0p5SWpwYlhTd2lZU0k2V3lKa2FXUmpiMjF0TDNZeUlsMTlYUSIsImJvZHkiOnsiZ29hbF9jb2RlIjoibWVkaWF0b3ItcHJvdmlzaW9uIn0sInR5cGUiOiJodHRwczovL2RpZGNvbW0ub3JnL291dC1vZi1iYW5kLzIuMC9pbnZpdGF0aW9uIiwiYWxnIjoiSFMyNTYifQ=='
+
+  public static witnessTable = [
+    {
+      wid: '1',
+      publicDid:
+        'gossipDid:peer:2.Ez6LSfsT5gHMCVEya8VDwW9QbAdVUhJCKbVscrrb82SwCPKKT.Vz6MkgNdE8ad1k8cPCHnXZ6vSxrTuFauRKDzzUHLPvdsLycz5.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFN3aVlTSTZXeUprYVdSamIyMXRMM1l5SWwxOUxIc2ljeUk2SW5kek9pOHZiRzlqWVd4b2IzTjBPak13TURBdllYQnBMM1l4SWl3aWRDSTZJbVJ0SWl3aWNpSTZXMTBzSW1FaU9sc2laR2xrWTI5dGJTOTJNaUpkZlYwIl0sImEiOlsiZGlkY29tbS92MiJdfQ',
+      gossipDid:
+        'gossipDid:peer:2.Ez6LSfsT5gHMCVEya8VDwW9QbAdVUhJCKbVscrrb82SwCPKKT.Vz6MkgNdE8ad1k8cPCHnXZ6vSxrTuFauRKDzzUHLPvdsLycz5.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFN3aVlTSTZXeUprYVdSamIyMXRMM1l5SWwxOUxIc2ljeUk2SW5kek9pOHZiRzlqWVd4b2IzTjBPak13TURBdllYQnBMM1l4SWl3aWRDSTZJbVJ0SWl3aWNpSTZXMTBzSW1FaU9sc2laR2xrWTI5dGJTOTJNaUpkZlYwIl0sImEiOlsiZGlkY29tbS92MiJdfQ',
+      type: '1',
+    },
+    {
+      wid: '2',
+      publicDid:
+        'gossipDid:peer:2.Ez6LSrBqyFyuFyjhCsq8cHyB323nMQmK3P1bimYjDda4pKznt.Vz6MkkNzZMiDUaJpikZDe3qymeAJNcwuCz8gotsQjR65FxGjT.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFN3aVlTSTZXeUprYVdSamIyMXRMM1l5SWwxOUxIc2ljeUk2SW5kek9pOHZiRzlqWVd4b2IzTjBPak13TURBdllYQnBMM1l4SWl3aWRDSTZJbVJ0SWl3aWNpSTZXMTBzSW1FaU9sc2laR2xrWTI5dGJTOTJNaUpkZlYwIl0sImEiOlsiZGlkY29tbS92MiJdfQ',
+
+      gossipDid:
+        'gossipDid:peer:2.Ez6LSrBqyFyuFyjhCsq8cHyB323nMQmK3P1bimYjDda4pKznt.Vz6MkkNzZMiDUaJpikZDe3qymeAJNcwuCz8gotsQjR65FxGjT.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFN3aVlTSTZXeUprYVdSamIyMXRMM1l5SWwxOUxIc2ljeUk2SW5kek9pOHZiRzlqWVd4b2IzTjBPak13TURBdllYQnBMM1l4SWl3aWRDSTZJbVJ0SWl3aWNpSTZXMTBzSW1FaU9sc2laR2xrWTI5dGJTOTJNaUpkZlYwIl0sImEiOlsiZGlkY29tbS92MiJdfQ',
+      type: '2',
+    },
+    {
+      wid: '3',
+      publicDid:
+        'gossipDid:peer:2.Ez6LSbnBiAoatfuxLwzotC8UjUW4RGRezHQom34W3x65r1WbZ.Vz6MkodK1b4VEngLqN3cPPqhuFrvUgadNJfbcAjQAP6KHQwUz.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFN3aVlTSTZXeUprYVdSamIyMXRMM1l5SWwxOUxIc2ljeUk2SW5kek9pOHZiRzlqWVd4b2IzTjBPak13TURBdllYQnBMM1l4SWl3aWRDSTZJbVJ0SWl3aWNpSTZXMTBzSW1FaU9sc2laR2xrWTI5dGJTOTJNaUpkZlYwIl0sImEiOlsiZGlkY29tbS92MiJdfQ',
+      gossipDid:
+        'gossipDid:peer:2.Ez6LSbnBiAoatfuxLwzotC8UjUW4RGRezHQom34W3x65r1WbZ.Vz6MkodK1b4VEngLqN3cPPqhuFrvUgadNJfbcAjQAP6KHQwUz.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFN3aVlTSTZXeUprYVdSamIyMXRMM1l5SWwxOUxIc2ljeUk2SW5kek9pOHZiRzlqWVd4b2IzTjBPak13TURBdllYQnBMM1l4SWl3aWRDSTZJbVJ0SWl3aWNpSTZXMTBzSW1FaU9sc2laR2xrWTI5dGJTOTJNaUpkZlYwIl0sImEiOlsiZGlkY29tbS92MiJdfQ',
+      type: '2',
+    },
+  ]
+
   public port?: number
   public name: string
   public config: InitConfig
@@ -20,60 +66,83 @@ export class BaseAgent {
   public inBoundTransport!: InboundTransport
   public outBoundTransport!: OutboundTransport
 
-  public constructor(
-    name: string,
-    publicDidSeed?: string,
-    port?: number,
-    offlineTransports?: string[],
+  public constructor(props: {
+    name: string
+    publicDidSeed?: string
+    staticDids?: DidProps[]
+    port?: number
+    transports?: Transports[]
     valueTransferConfig?: ValueTransferConfig
-  ) {
-    this.name = name
-    this.port = port
+    mediatorConnectionsInvite?: string
+    endpoints?: string[]
+  }) {
+    this.name = props.name
+    this.port = props.port
 
     const config: InitConfig = {
-      label: name,
+      label: props.name,
       walletConfig: {
-        id: name,
-        key: name,
+        id: props.name,
+        key: props.name,
       },
-      publicDidSeed,
+      publicDidSeed: props.publicDidSeed,
+      staticDids: props.staticDids,
       indyLedgers: [
         {
           genesisTransactions: bcovrin,
-          id: 'greenlights' + name,
+          id: 'greenlights' + props.name,
           isProduction: false,
         },
       ],
       connectToIndyLedgersOnStartup: false,
-      endpoints: port ? [`http://localhost:${this.port}`] : undefined,
+      endpoints: props.endpoints,
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      valueTransferConfig,
+      mediatorPickupStrategy: MediatorPickupStrategy.Implicit,
+      mediatorPollingInterval: 5000,
+      valueTransferConfig: props.valueTransferConfig,
+      transports: props.transports,
+      mediatorConnectionsInvite: props.mediatorConnectionsInvite,
+      mediatorDeliveryStrategy: MediatorDeliveryStrategy.WebSocket,
     }
 
     this.config = config
 
     this.agent = new Agent(config, agentDependencies)
 
-    if (port) {
-      this.inBoundTransport = new HttpInboundTransport({ port })
+    const transports = props.transports || []
+
+    if (transports.includes(Transports.HTTP) || transports.includes(Transports.HTTPS)) {
       this.outBoundTransport = new HttpOutboundTransport()
+      this.agent.registerOutboundTransport(this.outBoundTransport)
+    }
+
+    if (transports.includes(Transports.WS) || transports.includes(Transports.WSS)) {
+      this.outBoundTransport = new WsOutboundTransport()
+      this.agent.registerOutboundTransport(this.outBoundTransport)
+    }
+
+    if (transports.includes(Transports.NFC)) {
+      this.inBoundTransport = new FileInboundTransport({ alias: props.name, schema: Transports.NFC })
+      this.outBoundTransport = new FileOutboundTransport({
+        alias: props.name,
+        schema: Transports.NFC,
+      })
+
       this.agent.registerInboundTransport(this.inBoundTransport)
       this.agent.registerOutboundTransport(this.outBoundTransport)
     }
 
-    if (offlineTransports) {
-      for (const transport of offlineTransports) {
-        this.inBoundTransport = new FileInboundTransport({ alias: name, schema: transport })
-        this.outBoundTransport = new FileOutboundTransport({
-          alias: name,
-          schema: transport,
-        })
+    if (transports.includes(Transports.Nearby)) {
+      this.inBoundTransport = new FileInboundTransport({ alias: props.name, schema: Transports.Nearby })
+      this.outBoundTransport = new FileOutboundTransport({
+        alias: props.name,
+        schema: Transports.Nearby,
+      })
 
-        this.agent.registerInboundTransport(this.inBoundTransport)
-        this.agent.registerOutboundTransport(this.outBoundTransport)
-      }
+      this.agent.registerInboundTransport(this.inBoundTransport)
+      this.agent.registerOutboundTransport(this.outBoundTransport)
     }
   }
 

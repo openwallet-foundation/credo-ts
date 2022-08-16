@@ -11,5 +11,5 @@ export class OfferMessage extends ValueTransferBaseMessage {
 
   @Equals(OfferMessage.type)
   public readonly type = OfferMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/step-5.1'
+  public static readonly type = 'https://didcomm.org/vtp/1.0/step-0.1'
 }

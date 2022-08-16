@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer'
 import { Equals, IsArray, ValidateNested } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 
 export interface KeylistMessageOptions {
   id?: string

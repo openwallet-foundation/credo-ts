@@ -8,7 +8,7 @@ import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getMockConnection, mockFunction } from '../../../tests/helpers'
 import testLogger from '../../../tests/logger'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { DidDocument, IndyAgentService } from '../../modules/dids'
+import { DidDocument, DidType, IndyAgentService } from '../../modules/dids'
 import { DidCommService } from '../../modules/dids/domain/service/DidCommService'
 import { DidResolverService } from '../../modules/dids/services/DidResolverService'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
@@ -103,6 +103,7 @@ describe('MessageSender', () => {
       outboundTransport = new DummyOutboundTransport()
       messageRepository = new InMemoryMessageRepository(getAgentConfig('MessageSender'))
       messageSender = new MessageSender(
+        getAgentConfig('MessageSenderTest'),
         enveloperService,
         transportService,
         messageRepository,
@@ -170,6 +171,7 @@ describe('MessageSender', () => {
         }),
         didResolutionMetadata: {},
         didDocumentMetadata: {},
+        didType: DidType.Unknown,
       })
 
       await messageSender.sendDIDCommV1Message(outboundMessage)
@@ -197,6 +199,7 @@ describe('MessageSender', () => {
           error: 'notFound',
         },
         didDocumentMetadata: {},
+        didType: DidType.Unknown,
       })
 
       await expect(messageSender.sendDIDCommV1Message(outboundMessage)).rejects.toThrowError(
@@ -273,6 +276,7 @@ describe('MessageSender', () => {
     beforeEach(() => {
       outboundTransport = new DummyOutboundTransport()
       messageSender = new MessageSender(
+        getAgentConfig('MessageSenderTest'),
         enveloperService,
         transportService,
         new InMemoryMessageRepository(getAgentConfig('MessageSenderTest')),
@@ -342,6 +346,7 @@ describe('MessageSender', () => {
       outboundTransport = new DummyOutboundTransport()
       messageRepository = new InMemoryMessageRepository(getAgentConfig('PackMessage'))
       messageSender = new MessageSender(
+        getAgentConfig('MessageSenderTest'),
         enveloperService,
         transportService,
         messageRepository,

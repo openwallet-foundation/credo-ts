@@ -1,18 +1,11 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { ValueTransferConfig } from '../../../types'
-import type { Transport } from '../../routing/types'
+import type { Transports } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import {
-  createVerifiableNotes,
-  PartyState,
-  ValueTransfer,
-  Wallet,
-  WitnessState,
-} from '@sicpa-dlab/value-transfer-protocol-ts'
+import { PartyState, TransactionRecord, ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -21,9 +14,8 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
-import { createOutboundDIDCommV2Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error'
-import { DidType } from '../../dids'
+import { DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
@@ -32,13 +24,10 @@ import { ProblemReportMessage } from '../messages'
 import { ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
-import { WitnessStateRecord } from '../repository/WitnessStateRecord'
 import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferStateService } from './ValueTransferStateService'
-
-const DEFAULT_SUPPORTED_PARTIES_COUNT = 50
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferService {
@@ -50,6 +39,7 @@ export class ValueTransferService {
   private valueTransferStateService: ValueTransferStateService
   private witnessStateRepository: WitnessStateRepository
   private didService: DidService
+  private didResolverService: DidResolverService
   private eventEmitter: EventEmitter
   private messageSender: MessageSender
 
@@ -61,6 +51,7 @@ export class ValueTransferService {
     valueTransferStateService: ValueTransferStateService,
     witnessStateRepository: WitnessStateRepository,
     didService: DidService,
+    didResolverService: DidResolverService,
     eventEmitter: EventEmitter,
     messageSender: MessageSender
   ) {
@@ -71,6 +62,7 @@ export class ValueTransferService {
     this.valueTransferStateService = valueTransferStateService
     this.witnessStateRepository = witnessStateRepository
     this.didService = didService
+    this.didResolverService = didResolverService
     this.eventEmitter = eventEmitter
     this.messageSender = messageSender
 
@@ -83,45 +75,21 @@ export class ValueTransferService {
     )
   }
 
-  public async initState(config: ValueTransferConfig) {
-    if (config.isWitness) {
-      const record = await this.getWitnessState()
-      const publicDid = await this.didService.findPublicDid()
+  /**
+   * Init party (Getter or Giver) state in the Wallet
+   */
+  public async initPartyState(): Promise<void> {
+    const partyState = await this.getPartyState()
+    if (partyState) return
 
-      if (!record) {
-        if (!publicDid) {
-          throw new AriesFrameworkError(
-            'Witness public DID not found. Please set `publicDidSeed` field in the agent config.'
-          )
-        }
-
-        const partyStateHashes = ValueTransferService.generateInitialPartyStateHashes(config.supportedPartiesCount)
-
-        const record = new WitnessStateRecord({
-          witnessState: new WitnessState(partyStateHashes),
-        })
-
-        await this.witnessStateRepository.save(record)
-      } else {
-        if (!record.witnessState.partyStateHashes.size) {
-          const partyStateHashes = ValueTransferService.generateInitialPartyStateHashes(config.supportedPartiesCount)
-
-          for (const hash of partyStateHashes) {
-            record.witnessState.partyStateHashes.add(hash)
-          }
-
-          await this.witnessStateRepository.update(record)
-        }
-      }
-    } else {
-      const stateRecord = await this.initPartyState()
-      if (!stateRecord.partyState.wallet.amount()) {
-        const initialNotes = config.verifiableNotes?.length
-          ? config.verifiableNotes
-          : ValueTransferService.getRandomInitialStateNotes(config.supportedPartiesCount)
-        await this.receiveNotes(initialNotes, stateRecord)
-      }
-    }
+    const state = new ValueTransferStateRecord({
+      partyState: new PartyState({
+        previousHash: new Uint8Array(),
+        wallet: new Wallet(),
+        ownershipKey: await this.valueTransferCryptoService.createKey(),
+      }),
+    })
+    await this.valueTransferStateRepository.save(state)
   }
 
   /**
@@ -129,22 +97,30 @@ export class ValueTransferService {
    * Init payment state if it's missing.
    *
    * @param notes Verifiable notes to add.
-   * @param stateRecord Party Valuer Transfer state record
+   *
+   * @returns Transaction Record for wallet state transition after receiving notes
    */
-  public async receiveNotes(notes: VerifiableNote[], stateRecord?: ValueTransferStateRecord | null) {
+  public async receiveNotes(notes: VerifiableNote[]): Promise<TransactionRecord | undefined> {
     try {
+      // no notes to add
       if (!notes.length) return
-      if (this.config.valueTransferConfig?.isWitness) {
+
+      if (this.config.valueTransferConfig?.witness) {
         throw new AriesFrameworkError(`Witness cannot add notes`)
       }
 
-      const state = stateRecord ? stateRecord : await this.initPartyState()
+      const state = await this.getPartyState()
+      if (!state) {
+        throw new AriesFrameworkError(`Unable to find party state`)
+      }
 
-      const [, wallet] = state.partyState.wallet.receiveNotes(new Set(notes))
+      const [proof, wallet] = state.partyState.wallet.receiveNotes(new Set(notes))
       await this.valueTransferStateService.storePartyState({
         ...state.partyState,
         wallet,
       })
+
+      return new TransactionRecord({ start: proof.currentState || null, end: proof.nextState })
     } catch (e) {
       throw new AriesFrameworkError(`Unable to add verifiable notes. Err: ${e}`)
     }
@@ -158,11 +134,15 @@ export class ValueTransferService {
    * @returns Value Transfer record and Message to Forward
    */
   public async processProblemReport(messageContext: InboundMessageContext<ProblemReportMessage>): Promise<{
-    record: ValueTransferRecord
+    record?: ValueTransferRecord
     message?: ProblemReportMessage
   }> {
     const { message: problemReportMessage } = messageContext
-    const record = await this.getByThread(problemReportMessage.pthid)
+    const record = await this.findByThread(problemReportMessage.pthid)
+    if (!record) {
+      this.config.logger.error(`Value Transaction not for the received thread ${problemReportMessage.pthid}`)
+      return {}
+    }
 
     if (record.role === ValueTransferRole.Witness) {
       // When Witness receives Problem Report he needs to forward this to the 3rd party
@@ -197,6 +177,7 @@ export class ValueTransferService {
 
   public async abortTransaction(
     record: ValueTransferRecord,
+    code?: string,
     reason?: string
   ): Promise<{
     record: ValueTransferRecord
@@ -216,21 +197,24 @@ export class ValueTransferService {
     }
 
     let from = undefined
+    let to = undefined
 
     if (record.role === ValueTransferRole.Giver) {
       await this.valueTransfer.giver().abortTransaction()
-      from = record.giver?.did || (await this.didService.createDID(DidType.PeerDid)).id
+      from = record.giver?.did
+      to = record.state === ValueTransferState.ReceiptReceived ? record.witness?.did : record.getter?.did
     } else if (record.role === ValueTransferRole.Getter) {
       await this.valueTransfer.getter().abortTransaction()
       from = record.getter?.did
+      to = record.state === ValueTransferState.OfferReceived ? record.witness?.did : record.giver?.did
     }
 
     const problemReport = new ProblemReportMessage({
       from,
-      to: record.witness?.did,
+      to,
       pthid: record.threadId,
       body: {
-        code: 'e.p.transaction-aborted',
+        code: code || 'e.p.transaction-aborted',
         comment: `Transaction aborted by ${from}. ` + (reason ? `Reason: ${reason}.` : ''),
       },
     })
@@ -286,41 +270,10 @@ export class ValueTransferService {
     return firstValueFrom(subject)
   }
 
-  public async sendProblemReportToGetterAndGiver(message: ProblemReportMessage, record?: ValueTransferRecord) {
-    const getterProblemReport = new ProblemReportMessage({
-      ...message,
-      to: record?.getter?.did,
-    })
-    const giverProblemReport = new ProblemReportMessage({
-      ...message,
-      to: record?.giver?.did,
-    })
-
-    await Promise.all([this.sendMessageToGetter(getterProblemReport), this.sendMessageToGiver(giverProblemReport)])
-  }
-
-  public async sendMessageToWitness(message: DIDCommV2Message, senderRole: ValueTransferRole) {
-    // Workaround for different witness transports as now User-wallet can have both Giver/Getter roles in different transactions
-    const { witnessTransportForGetterRole, witnessTransportForGiverRole } = this.config.valueTransferConfig ?? {}
-    const witnessTransport =
-      senderRole === ValueTransferRole.Giver ? witnessTransportForGiverRole : witnessTransportForGetterRole
-    return this.sendMessage(message, witnessTransport)
-  }
-
-  public async sendMessageToGiver(message: DIDCommV2Message) {
-    const giverTransport = this.config.valueTransferConfig?.giverTransport
-    return this.sendMessage(message, giverTransport)
-  }
-
-  public async sendMessageToGetter(message: DIDCommV2Message) {
-    const getterTransport = this.config.valueTransferConfig?.getterTransport
-    return this.sendMessage(message, getterTransport)
-  }
-
-  private async sendMessage(message: DIDCommV2Message, transport?: Transport) {
+  public async sendMessage(message: DIDCommV2Message, transport?: Transports) {
+    this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
-    const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.messageSender.sendDIDCommV2Message(outboundMessage, transport, sendingMessageType)
+    await this.messageSender.sendDIDCommV2Message(message, sendingMessageType, transport)
   }
 
   public async getBalance(): Promise<number> {
@@ -330,6 +283,10 @@ export class ValueTransferService {
 
   public async getByThread(threadId: string): Promise<ValueTransferRecord> {
     return this.valueTransferRepository.getSingleByQuery({ threadId })
+  }
+
+  public async findByThread(threadId: string): Promise<ValueTransferRecord | null> {
+    return this.valueTransferRepository.findSingleByQuery({ threadId })
   }
 
   public async getAll(): Promise<ValueTransferRecord[]> {
@@ -363,40 +320,7 @@ export class ValueTransferService {
     return this.valueTransferStateRepository.findSingleByQuery({})
   }
 
-  public async getWitnessState(): Promise<WitnessStateRecord | null> {
-    return this.witnessStateRepository.findSingleByQuery({})
-  }
-
-  private async initPartyState(): Promise<ValueTransferStateRecord> {
-    let state = await this.getPartyState()
-    if (state) return state
-
-    state = new ValueTransferStateRecord({
-      partyState: new PartyState({
-        previousHash: new Uint8Array(),
-        wallet: new Wallet(),
-        ownershipKey: await this.valueTransferCryptoService.createKey(),
-      }),
-    })
-    await this.valueTransferStateRepository.save(state)
-    return state
-  }
-
-  private static generateInitialPartyStateHashes(statesCount = DEFAULT_SUPPORTED_PARTIES_COUNT) {
-    const partyStateHashes = new Set<Uint8Array>()
-
-    for (let i = 0; i < statesCount; i++) {
-      const startFromSno = i * 10
-      const [, partyWallet] = new Wallet().receiveNotes(new Set(createVerifiableNotes(10, startFromSno)))
-      partyStateHashes.add(partyWallet.rootHash())
-    }
-
-    return partyStateHashes
-  }
-
-  private static getRandomInitialStateNotes(statesCount = DEFAULT_SUPPORTED_PARTIES_COUNT): VerifiableNote[] {
-    const stateIndex = Math.floor(Math.random() * statesCount)
-    const startFromSno = stateIndex * 10
-    return createVerifiableNotes(10, startFromSno)
+  public async getTransactionDid(usePublicDid?: boolean) {
+    return this.didService.getPublicDidOrCreateNew(usePublicDid)
   }
 }

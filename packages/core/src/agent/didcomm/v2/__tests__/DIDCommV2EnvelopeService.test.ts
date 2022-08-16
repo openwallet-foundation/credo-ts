@@ -7,6 +7,7 @@ import type { Secret } from 'didcomm'
 import { Equals } from 'class-validator'
 
 import { getAgentConfig, mockFunction } from '../../../../../tests/helpers'
+import { DidType } from '../../../../modules/dids/domain/Did'
 import { DidDocument } from '../../../../modules/dids/domain/DidDocument'
 import { DidCommV2Service } from '../../../../modules/dids/domain/service/DidCommV2Service'
 import { VerificationMethod } from '../../../../modules/dids/domain/verificationMethod/VerificationMethod'
@@ -78,6 +79,7 @@ async function didResolutionSuccessResult(didDocument: DidDocument): Promise<Did
     didResolutionMetadata: { contentType: 'application/did+ld+json' },
     didDocument,
     didDocumentMetadata: {},
+    didType: DidType.Unknown,
   })
 }
 
@@ -89,6 +91,7 @@ async function didResolutionFailureResult(): Promise<DidResolutionResult> {
     },
     didDocument: null,
     didDocumentMetadata: {},
+    didType: DidType.Unknown,
   })
 }
 

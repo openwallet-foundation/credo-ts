@@ -1,7 +1,7 @@
 import type { Logger } from '../../../logger'
 import type { EncryptedMessage, SignedMessage } from '../types'
 import type { DIDCommV2Message } from './DIDCommV2Message'
-import type { default as didcomm } from 'didcomm'
+import type { default as didcomm, IMessage } from 'didcomm'
 
 import { scoped, Lifecycle } from 'tsyringe'
 
@@ -15,6 +15,7 @@ export interface PackMessageParams {
   toDID: string
   fromDID?: string
   signByDID?: string
+  serviceId?: string
 }
 
 export interface PackMessageSignedParams {
@@ -52,7 +53,7 @@ export class DIDCommV2EnvelopeService {
   }
 
   public async packMessageEncrypted(payload: DIDCommV2Message, params: PackMessageParams): Promise<EncryptedMessage> {
-    const message = new this.didcomm.Message(payload)
+    const message = new this.didcomm.Message(payload.toJSON() as IMessage)
 
     const [encryptedMsg] = await message.pack_encrypted(
       params.toDID,
@@ -60,7 +61,9 @@ export class DIDCommV2EnvelopeService {
       params.signByDID || null,
       this.didResolverService,
       this.secretResolverService,
-      {}
+      {
+        messaging_service: params.serviceId,
+      }
     )
     return JsonEncoder.fromString(encryptedMsg)
   }
@@ -69,7 +72,7 @@ export class DIDCommV2EnvelopeService {
     payload: DIDCommV2Message,
     params: PackMessageSignedParams
   ): Promise<EncryptedMessage> {
-    const message = new this.didcomm.Message(payload)
+    const message = new this.didcomm.Message(payload.toJSON() as IMessage)
 
     const [encryptedMsg] = await message.pack_signed(
       params.signByDID,

@@ -6,6 +6,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndyLedgerService } from '../../ledger'
+import { DidType } from '../domain/Did'
 import { parseDid } from '../domain/parse'
 import { IndyDidResolver } from '../methods/indy/IndyDidResolver'
 import { KeyDidResolver } from '../methods/key/KeyDidResolver'
@@ -36,6 +37,7 @@ export class DidResolverService {
       didResolutionMetadata: {},
       didDocument: null,
       didDocumentMetadata: {},
+      didType: DidType.Unknown,
     }
 
     let parsed: ParsedDid

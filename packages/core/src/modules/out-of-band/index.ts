@@ -1,3 +1,5 @@
 export * from './OutOfBandModule'
 export * from './messages'
 export * from './services'
+export * from './handlers'
+export * from './OutOfBandEvents'

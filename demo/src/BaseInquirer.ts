@@ -1,4 +1,4 @@
-import inquirer from 'inquirer'
+import { prompt } from 'inquirer'
 
 import { Title } from './OutputClass'
 
@@ -48,7 +48,7 @@ export class BaseInquirer {
 
   public async inquireMessage() {
     this.inputInquirer.message = Title.MessageTitle
-    const message = await inquirer.prompt([this.inputInquirer])
+    const message = await prompt([this.inputInquirer])
 
     return message.input[0] === 'q' ? null : message.input
   }

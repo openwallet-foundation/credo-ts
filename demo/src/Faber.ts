@@ -15,7 +15,11 @@ export class Faber extends BaseAgent {
   public static seed = '6b8b882e2618fa5d45ee7229ca880083'
 
   public constructor(port: number, name: string) {
-    super(name, Faber.seed, port)
+    super({
+      port,
+      name,
+      publicDidSeed: Faber.seed,
+    })
     this.ui = new ui.BottomBar()
   }
 

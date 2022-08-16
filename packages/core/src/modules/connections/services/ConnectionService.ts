@@ -1,3 +1,4 @@
+import type { DIDCommMessage } from '../../../agent/didcomm'
 import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
@@ -653,7 +654,7 @@ export class ConnectionService {
     tags?: CustomConnectionTags
     imageUrl?: string
   }): Promise<ConnectionRecord> {
-    const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
+    const { endpoint, did, verkey, routingKeys, mediatorId } = options.routing
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
@@ -662,17 +663,14 @@ export class ConnectionService {
     })
 
     // IndyAgentService is old service type
-    const services = endpoints.map(
-      (endpoint, index) =>
-        new IndyAgentService({
-          id: `${did}#IndyAgentService`,
-          serviceEndpoint: endpoint,
-          recipientKeys: [verkey],
-          routingKeys: routingKeys,
-          // Order of endpoint determines priority
-          priority: index,
-        })
-    )
+    const services = new IndyAgentService({
+      id: `${did}#IndyAgentService`,
+      serviceEndpoint: endpoint,
+      recipientKeys: [verkey],
+      routingKeys: routingKeys,
+      // Order of endpoint determines priority
+      priority: 0,
+    })
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
@@ -681,7 +679,7 @@ export class ConnectionService {
     const didDoc = new DidDoc({
       id: did,
       authentication: [auth],
-      service: services,
+      service: [services],
       publicKey: [publicKey],
     })
 
@@ -733,14 +731,14 @@ export class ConnectionService {
 }
 
 export interface Routing {
-  endpoints: string[]
   verkey: string
   did: string
+  endpoint: string
   routingKeys: string[]
   mediatorId?: string
 }
 
-export interface ConnectionProtocolMsgReturnType<MessageType extends DIDCommV1Message> {
+export interface ConnectionProtocolMsgReturnType<MessageType extends DIDCommMessage> {
   message: MessageType
   connectionRecord: ConnectionRecord
 }

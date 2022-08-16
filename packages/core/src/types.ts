@@ -4,12 +4,14 @@ import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
 import type { DidType } from './modules/dids'
+import type { DidProps } from './modules/dids/domain/Did'
 import type { DidCommService } from './modules/dids/domain/service/DidCommService'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
-import type { MediatorPickupStrategy, Transport } from './modules/routing'
+import type { MediatorPickupStrategy, MediatorDeliveryStrategy } from './modules/routing'
+import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
-import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { WitnessInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -39,17 +41,33 @@ export interface WalletExportImportConfig {
   path: string
 }
 
-export interface ValueTransferConfig {
-  isWitness?: boolean
+export interface ValueTransferPartyConfig {
   witnessDid?: string
-  getterTransport?: Transport
-  giverTransport?: Transport
-  witnessTransportForGetterRole?: Transport
-  witnessTransportForGiverRole?: Transport
-  verifiableNotes?: VerifiableNote[]
   autoAcceptPaymentOffer?: AutoAcceptValueTransfer
+  autoAcceptOfferedPaymentRequest?: AutoAcceptValueTransfer
   autoAcceptPaymentRequest?: AutoAcceptValueTransfer
-  supportedPartiesCount?: number
+}
+
+export enum WitnessType {
+  One = '1',
+  Two = '2',
+  Three = '2',
+}
+
+export interface ValueTransferWitnessConfig {
+  wid: string
+  knownWitnesses: WitnessInfo[]
+  tockTime?: number
+  cleanupTime?: number
+  redeliverTime?: number
+  historyThreshold?: number
+  redeliveryThreshold?: number
+  issuerDids?: string[]
+}
+
+export interface ValueTransferConfig {
+  party?: ValueTransferPartyConfig
+  witness?: ValueTransferWitnessConfig
 }
 
 export enum DidCommMimeType {
@@ -69,9 +87,13 @@ export interface InitConfig {
   autoAcceptCredentials?: AutoAcceptCredential
   logger?: Logger
   didCommMimeType?: DidCommMimeType
+  supportOffline?: boolean
+  catchErrors?: boolean
 
   indyLedgers?: IndyPoolConfig[]
   connectToIndyLedgersOnStartup?: boolean
+
+  transports?: Transports[]
 
   autoAcceptMediationRequests?: boolean
   mediatorConnectionsInvite?: string
@@ -79,6 +101,11 @@ export interface InitConfig {
   clearDefaultMediator?: boolean
   mediatorPollingInterval?: number
   mediatorPickupStrategy?: MediatorPickupStrategy
+  mediatorDeliveryStrategy?: MediatorDeliveryStrategy
+  mediatorPushToken?: string
+  mediatorWebHookEndpoint?: string
+
+  staticDids?: DidProps[]
 
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string
@@ -131,6 +158,7 @@ export interface OutboundServiceMessage<T extends DIDCommMessage = DIDCommMessag
 
 export interface OutboundPackage {
   payload: EncryptedMessage | PlaintextMessage
+  recipientDid?: string
   responseRequested?: boolean
   endpoint?: string
   connectionId?: string

@@ -49,9 +49,9 @@ export class OfferCredentialHandler implements Handler<typeof DIDCommV1Message> 
 
       return createOutboundMessage(messageContext.connection, message)
     } else if (record.offerMessage?.service) {
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.mediationRecipientService.getRoutingDid()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
+        serviceEndpoint: routing.endpoint,
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })

@@ -1,16 +1,16 @@
 import { clear } from 'console'
 import { textSync } from 'figlet'
-import inquirer from 'inquirer'
+import { prompt } from 'inquirer'
 
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
+import { CentralBank } from './CentralBank'
 import { Listener } from './Listener'
 import { Title } from './OutputClass'
-import { Witness } from './Witness'
 
-export const runFaber = async () => {
+export const runWitness = async () => {
   clear()
-  console.log(textSync('Witness', { horizontalLayout: 'full' }))
-  const witness = await WitnessInquirer.build()
+  console.log(textSync('CentralBank', { horizontalLayout: 'full' }))
+  const witness = await CentralBankInquirer.build()
   await witness.processAnswer()
 }
 
@@ -19,12 +19,12 @@ enum PromptOptions {
   Restart = 'Restart',
 }
 
-export class WitnessInquirer extends BaseInquirer {
-  public witness: Witness
+export class CentralBankInquirer extends BaseInquirer {
+  public witness: CentralBank
   public promptOptionsString: string[]
   public listener: Listener
 
-  public constructor(witness: Witness) {
+  public constructor(witness: CentralBank) {
     super()
     this.witness = witness
     this.listener = new Listener()
@@ -32,13 +32,13 @@ export class WitnessInquirer extends BaseInquirer {
     this.listener.messageListener(this.witness.agent, this.witness.name)
   }
 
-  public static async build(): Promise<WitnessInquirer> {
-    const getter = await Witness.build()
-    return new WitnessInquirer(getter)
+  public static async build(): Promise<CentralBankInquirer> {
+    const getter = await CentralBank.build()
+    return new CentralBankInquirer(getter)
   }
 
   private async getPromptChoice() {
-    return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    return prompt([this.inquireOptions(this.promptOptionsString)])
   }
 
   public async processAnswer() {
@@ -57,7 +57,7 @@ export class WitnessInquirer extends BaseInquirer {
   }
 
   public async exit() {
-    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
+    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       return
     } else if (confirm.options === ConfirmOptions.Yes) {
@@ -66,15 +66,15 @@ export class WitnessInquirer extends BaseInquirer {
   }
 
   public async restart() {
-    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
+    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.processAnswer()
       return
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.witness.restart()
-      await runFaber()
+      await runWitness()
     }
   }
 }
 
-void runFaber()
+void runWitness()

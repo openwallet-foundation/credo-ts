@@ -4,6 +4,7 @@ import type { DidRepository } from '../../repository'
 import type { DidResolutionResult } from '../../types'
 
 import { AriesFrameworkError } from '../../../../error'
+import { DidType } from '../../domain'
 
 import { DidPeer, PeerDidNumAlgo } from './DidPeer'
 
@@ -41,6 +42,7 @@ export class PeerDidResolver implements DidResolver {
         didDocument,
         didDocumentMetadata,
         didResolutionMetadata: { contentType: 'application/did+ld+json' },
+        didType: DidType.PeerDid,
       }
     } catch (error) {
       return {
@@ -50,6 +52,7 @@ export class PeerDidResolver implements DidResolver {
           error: 'notFound',
           message: `resolver_error: Unable to resolve did '${did}': ${error}`,
         },
+        didType: DidType.PeerDid,
       }
     }
   }

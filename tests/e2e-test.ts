@@ -27,7 +27,10 @@ export async function e2eTest({
   expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
 
   // Request mediation from mediator
-  const mediationRecord = await recipientAgent.mediationRecipient.requestAndAwaitGrant(recipientMediatorConnection)
+  const mediationRecord = await recipientAgent.mediationRecipient.requestAndAwaitGrant(
+    mediatorAgent.publicDid?.did || '',
+    ''
+  )
   expect(mediationRecord.state).toBe(MediationState.Granted)
 
   // Set mediator as default for recipient, start picking up messages

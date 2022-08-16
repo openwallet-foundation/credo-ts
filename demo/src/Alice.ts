@@ -10,7 +10,11 @@ export class Alice extends BaseAgent {
   public static seed = '6b8b882e2618fa5d45ee7229ca880083'
 
   public constructor(port: number, name: string) {
-    super(name, Alice.seed, port, undefined, undefined)
+    super({
+      port,
+      name,
+      publicDidSeed: Alice.seed,
+    })
     this.connected = false
   }
 

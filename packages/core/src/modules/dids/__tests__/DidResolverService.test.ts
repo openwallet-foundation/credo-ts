@@ -3,7 +3,7 @@ import type { DidRepository } from '../repository'
 
 import { getAgentConfig, mockProperty } from '../../../../tests/helpers'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { DidDocument } from '../domain'
+import { DidDocument, DidType } from '../domain'
 import { parseDid } from '../domain/parse'
 import { KeyDidResolver } from '../methods/key/KeyDidResolver'
 import { DidResolverService } from '../services/DidResolverService'
@@ -29,6 +29,7 @@ describe('DidResolverService', () => {
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',
       },
+      didType: DidType.Unknown,
     }
     didKeyResolveSpy.mockResolvedValue(returnValue)
 

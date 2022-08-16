@@ -1,34 +1,42 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { Transport, ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
+import type { ValueTransferRecord } from '@aries-framework/core'
 
-import { ValueTransferState } from '@aries-framework/core'
-import { createVerifiableNotes } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { AutoAcceptValueTransfer, DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
-export class Giver extends BaseAgent {
+export class Anna extends BaseAgent {
   public valueTransferRecordId?: string
-  public static transport: Transport = 'nfc'
-  public static seed = '6b8b882e2618fa5d45ee7229ca880083'
 
-  public constructor(
-    name: string,
-    port?: number,
-    offlineTransports?: string[],
-    valueTransferConfig?: ValueTransferConfig
-  ) {
-    super(name, undefined, port, offlineTransports, valueTransferConfig)
+  public constructor(name: string, port?: number) {
+    super({
+      name,
+      port,
+      transports: [Transports.Nearby, Transports.NFC, Transports.HTTP, Transports.WS],
+      mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
+      staticDids: [
+        {
+          seed: '6b8b882e2618fa5d45ee7229ca880070',
+          marker: DidMarker.Online,
+          transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
+        },
+      ],
+      valueTransferConfig: {
+        party: {
+          autoAcceptOfferedPaymentRequest: AutoAcceptValueTransfer.Always,
+        },
+      },
+    })
   }
 
-  public static async build(): Promise<Giver> {
-    const valueTransferConfig: ValueTransferConfig = {
-      witnessTransportForGiverRole: Giver.transport,
-      getterTransport: 'androidnearby',
-      verifiableNotes: createVerifiableNotes(10),
-    }
-    const giver = new Giver('giver', undefined, [Giver.transport, 'androidnearby'], valueTransferConfig)
+  public static async build(): Promise<Anna> {
+    const giver = new Anna('anna', undefined)
     await giver.initializeAgent()
+
+    const publicDid = await giver.agent.getStaticDid(DidMarker.Online)
+    console.log(`Anna Public DID: ${publicDid?.did}`)
+
     return giver
   }
 
@@ -77,9 +85,25 @@ export class Giver extends BaseAgent {
   }
 
   public async offerPayment(getter: string) {
-    const { record } = await this.agent.valueTransfer.offerPayment({ amount: 1, getter })
+    const { record } = await this.agent.valueTransfer.offerPayment({
+      amount: 1,
+      getter,
+      transport: Transports.NFC,
+    })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nOffer Sent!\n'))
+    await this.waitForPayment()
+  }
+
+  public async requestPayment(witness: string, giver: string) {
+    const { record } = await this.agent.valueTransfer.requestPayment({
+      amount: 10,
+      giver,
+      witness,
+      transport: Transports.NFC,
+    })
+    this.valueTransferRecordId = record.id
+    console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()
   }
 

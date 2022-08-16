@@ -104,7 +104,7 @@ export class DidDocument {
   }
 
   /**
-   * Returns all of the service endpoints matching the given type.
+   * Returns all of the service endpoint matching the given type.
    *
    * @param type The type of service(s) to query.
    */
@@ -113,7 +113,7 @@ export class DidDocument {
   }
 
   /**
-   * Returns all of the service endpoints matching the given class
+   * Returns all of the service endpoint matching the given class
    *
    * @param classType The class to query services.
    */

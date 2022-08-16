@@ -18,7 +18,7 @@ import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
-import { DidService, DidType } from '../modules/dids'
+import { DidMarker, DidService } from '../modules/dids'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { KeysModule } from '../modules/keys'
@@ -28,6 +28,8 @@ import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { ValueTransferModule, ValueTransferService } from '../modules/value-transfer'
+import { ValueTransferWitnessService } from '../modules/value-transfer/services/ValueTransferWitnessService'
+import { GossipModule } from '../modules/witness-gossip/GossipModule'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -54,6 +56,7 @@ export class Agent {
   private walletService: Wallet
   private didService: DidService
   private valueTransferService: ValueTransferService
+  private valueTransferWitnessService: ValueTransferWitnessService
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
@@ -67,6 +70,7 @@ export class Agent {
   public readonly dids: DidsModule
   public readonly wallet: WalletModule
   public readonly valueTransfer: ValueTransferModule
+  public readonly gossip: GossipModule
   public readonly outOfBand: OutOfBandModule
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
@@ -108,6 +112,7 @@ export class Agent {
     this.transportService = this.container.resolve(TransportService)
     this.walletService = this.container.resolve(InjectionSymbols.Wallet)
     this.valueTransferService = this.container.resolve(ValueTransferService)
+    this.valueTransferWitnessService = this.container.resolve(ValueTransferWitnessService)
     this.didService = this.container.resolve(DidService)
 
     // We set the modules in the constructor because that allows to set them as read-only
@@ -123,6 +128,7 @@ export class Agent {
     this.dids = this.container.resolve(DidsModule)
     this.wallet = this.container.resolve(WalletModule)
     this.valueTransfer = this.container.resolve(ValueTransferModule)
+    this.gossip = this.container.resolve(GossipModule)
     this.outOfBand = this.container.resolve(OutOfBandModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
@@ -163,6 +169,7 @@ export class Agent {
     const {
       connectToIndyLedgersOnStartup,
       publicDidSeed,
+      staticDids,
       walletConfig,
       mediatorConnectionsInvite,
       valueTransferConfig,
@@ -185,19 +192,6 @@ export class Agent {
       )
     }
 
-    if (publicDidSeed) {
-      // If an agent has publicDid it will be used as routing key.
-      const publicDid = await this.didService.findPublicDid()
-      if (!publicDid) {
-        // create DID in DIDComm V1 DID storage
-        await this.walletService.initPublicDid({ seed: publicDidSeed })
-
-        // create DID in DIDComm V DID storage
-        const didType = publicDidType || DidType.PeerDid
-        await this.didService.createDID(didType, undefined, publicDidSeed, true)
-      }
-    }
-
     // As long as value isn't false we will async connect to all genesis pools on startup
     if (connectToIndyLedgersOnStartup) {
       this.ledger.connectToPools().catch((error) => {
@@ -213,17 +207,55 @@ export class Agent {
       transport.start(this)
     }
 
+    // Mediator provisioning
+
     // Connect to mediator through provided invitation if provided in config
-    // Also requests mediation ans sets as default mediator
+    // Also requests mediation and sets as default mediator
     // Because this requires the connections module, we do this in the agent constructor
     if (mediatorConnectionsInvite) {
       await this.mediationRecipient.provision(mediatorConnectionsInvite)
     }
-
     await this.mediationRecipient.initialize()
 
+    if (publicDidSeed) {
+      staticDids.push({
+        seed: publicDidSeed,
+        type: publicDidType,
+        transports: this.agentConfig.transports,
+        marker: this.agentConfig.onlineTransports.length ? DidMarker.Online : DidMarker.Offline,
+        needMediation: true,
+      })
+    }
+
+    if (staticDids.length) {
+      // If an agent has publicDid it will be used as routing key.
+      const existingPublicDid = await this.didService.findStaticDid()
+      if (!existingPublicDid) {
+        for (const staticDid of staticDids) {
+          // create DID in DIDComm V1 DID storage
+          await this.walletService.initPublicDid({ seed: staticDid.seed })
+
+          // create DID in DIDComm V2 DID storage
+          await this.didService.createDID({
+            seed: staticDid.seed,
+            type: staticDid.type,
+            marker: staticDid.marker,
+            transports: staticDid.transports,
+            isStatic: true,
+            needMediation: staticDid.needMediation,
+            endpoint: staticDid.endpoint,
+          })
+        }
+      }
+    }
+
+    // VTP state initialization
     if (valueTransferConfig) {
-      await this.valueTransferService.initState(valueTransferConfig)
+      if (valueTransferConfig.witness) {
+        return this.valueTransferWitnessService.init()
+      } else {
+        await this.valueTransferService.initPartyState()
+      }
     }
 
     this._isInitialized = true
@@ -253,8 +285,8 @@ export class Agent {
     return this.walletService.publicDid
   }
 
-  public async getPublicDid() {
-    return await this.didService.findPublicDid()
+  public async getStaticDid(marker?: DidMarker) {
+    return await this.didService.findStaticDid(marker)
   }
 
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {

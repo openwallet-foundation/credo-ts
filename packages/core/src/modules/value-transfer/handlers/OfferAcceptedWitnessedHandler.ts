@@ -18,7 +18,7 @@ export class OfferAcceptedWitnessedHandler implements Handler<typeof DIDCommV2Me
 
   public async handle(messageContext: HandlerInboundMessage<OfferAcceptedWitnessedHandler>) {
     const { message, record } = await this.valueTransferGiverService.processOfferAcceptanceWitnessed(messageContext)
-    await this.valueTransferService.sendMessageToWitness(message, record.role)
+    await this.valueTransferService.sendMessage(message)
 
     // if message is Problem Report -> remove cash from the wallet
     if (message.type !== ProblemReportMessage.type) {

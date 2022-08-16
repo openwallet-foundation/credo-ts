@@ -4,7 +4,7 @@ import { Type } from 'class-transformer'
 import { IsBoolean, IsEnum, IsOptional, ValidateNested } from 'class-validator'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
-import { DidDocument } from '../domain'
+import { DidDocument, DidMarker, DidType } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { parseDid } from '../domain/parse'
 
@@ -12,9 +12,11 @@ export interface DidRecordProps {
   id: string
   role: DidDocumentRole
   didDocument?: DidDocument
-  isPublic?: boolean
+  isStatic?: boolean
   label?: string
   logoUrl?: string
+  didType: DidType
+  marker?: DidMarker
   createdAt?: Date
   tags?: CustomDidTags
 }
@@ -25,7 +27,10 @@ interface CustomDidTags extends TagsBase {
 
 type DefaultDidTags = {
   role: DidDocumentRole
+  isStatic: boolean
   method: string
+  didType: DidType
+  marker?: DidMarker
 }
 
 export type DidTags = RecordTags<DidRecord>
@@ -38,6 +43,9 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
   @IsEnum(DidDocumentRole)
   public role!: DidDocumentRole
 
+  @IsEnum(DidType)
+  public didType!: DidType
+
   @IsOptional()
   public label?: string
 
@@ -45,7 +53,10 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
   public logoUrl?: string
 
   @IsBoolean()
-  public isPublic!: boolean
+  public isStatic!: boolean
+
+  @IsEnum(DidMarker)
+  public marker?: DidMarker
 
   public static readonly type = 'DidDocumentRecord'
   public readonly type = DidRecord.type
@@ -59,7 +70,9 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
       this.didDocument = props.didDocument
       this.label = props.label
       this.logoUrl = props.logoUrl
-      this.isPublic = props.isPublic || false
+      this.didType = props.didType
+      this.isStatic = props.isStatic || false
+      this.marker = props.marker
       this.createdAt = props.createdAt ?? new Date()
       this._tags = props.tags ?? {}
     }
@@ -75,8 +88,10 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
     return {
       ...this._tags,
       role: this.role,
-      isPublic: this.isPublic,
+      isStatic: this.isStatic,
       method: did.method,
+      didType: this.didType,
+      marker: this.marker,
     }
   }
 }

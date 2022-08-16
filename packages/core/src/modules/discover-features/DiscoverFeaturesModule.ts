@@ -2,7 +2,6 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
 import { ConnectionService } from '../connections/services'
 
 import { DiscloseMessageHandler, QueryMessageHandler } from './handlers'
@@ -26,13 +25,9 @@ export class DiscoverFeaturesModule {
     this.registerHandlers(dispatcher)
   }
 
-  public async queryFeatures(connectionId: string, options: { query: string; comment?: string }) {
-    const connection = await this.connectionService.getById(connectionId)
-
-    const queryMessage = await this.discoverFeaturesService.createQuery(options)
-
-    const outbound = createOutboundMessage(connection, queryMessage)
-    await this.messageSender.sendDIDCommV1Message(outbound)
+  public async queryFeatures(did: string, options: { query: string; comment?: string }) {
+    const queryMessage = await this.discoverFeaturesService.createQuery(did, options)
+    await this.messageSender.sendDIDCommV2Message(queryMessage)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

@@ -1,33 +1,43 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { Transport, ValueTransferConfig, ValueTransferRecord } from '@aries-framework/core'
+import type { ValueTransferRecord } from '@aries-framework/core'
 
-import { ValueTransferState } from '@aries-framework/core'
+import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
-export class Getter extends BaseAgent {
+export class Carol extends BaseAgent {
   public valueTransferRecordId?: string
-  public static transport: Transport = 'ipc'
-  public static seed = '6b8b882e2618fa5d45ee7229ca880082'
 
-  public constructor(
-    name: string,
-    port?: number,
-    offlineTransports?: string[],
-    valueTransferConfig?: ValueTransferConfig
-  ) {
-    super(name, Getter.seed, port, offlineTransports, valueTransferConfig)
+  public constructor(name: string, port?: number) {
+    super({
+      name,
+      port,
+      transports: [Transports.Nearby, Transports.HTTP, Transports.WS],
+      mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
+      staticDids: [
+        {
+          seed: '6b8b882e2618fa5d45ee7229ca880071',
+          transports: [Transports.Nearby],
+          marker: DidMarker.Offline,
+        },
+        {
+          seed: '6b8b882e2618fa5d45ee7229ca880072',
+          transports: [Transports.Nearby, Transports.HTTP],
+          marker: DidMarker.Online,
+        },
+      ],
+      valueTransferConfig: {
+        party: {},
+      },
+    })
   }
 
-  public static async build(): Promise<Getter> {
-    const valueTransferConfig: ValueTransferConfig = {
-      witnessTransportForGetterRole: Getter.transport,
-    }
-    const getter = new Getter('getter', undefined, [Getter.transport, 'androidnearby'], valueTransferConfig)
+  public static async build(): Promise<Carol> {
+    const getter = new Carol('carol', undefined)
     await getter.initializeAgent()
-    const publicDid = await getter.agent.getPublicDid()
-    console.log(`Getter Public DID: ${publicDid?.did}`)
+    const publicDid = await getter.agent.getStaticDid(DidMarker.Online)
+    console.log(`Carol Public DID: ${publicDid?.did}`)
     return getter
   }
 
@@ -38,15 +48,22 @@ export class Getter extends BaseAgent {
     return await this.agent.valueTransfer.getById(this.valueTransferRecordId)
   }
 
-  public async requestPayment() {
-    const { record } = await this.agent.valueTransfer.requestPayment({ amount: 1 })
+  public async requestPayment(witness: string) {
+    const { record } = await this.agent.valueTransfer.requestPayment({
+      amount: 1,
+      witness,
+      transport: Transports.Nearby,
+    })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()
   }
 
   public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord, witness: string) {
-    const { record } = await this.agent.valueTransfer.acceptPaymentOffer({ recordId: valueTransferRecord.id, witness })
+    const { record } = await this.agent.valueTransfer.acceptPaymentOffer({
+      recordId: valueTransferRecord.id,
+      witness,
+    })
     this.valueTransferRecordId = record.id
     console.log(greenText('\nPayment offer accepted!\n'))
     await this.waitForPayment()

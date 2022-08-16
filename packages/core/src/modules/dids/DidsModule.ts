@@ -1,5 +1,3 @@
-import type { KeyType } from '../../crypto'
-import type { DidType } from './domain'
 import type { DidRecord } from './repository'
 import type { DidResolutionOptions, DIDMetadata } from './types'
 
@@ -17,16 +15,16 @@ export class DidsModule {
     this.resolverService = resolverService
   }
 
-  public create(didType: DidType, keyType?: KeyType, seed?: string) {
-    return this.didService.createDID(didType, keyType, seed)
-  }
-
   public resolve(didUrl: string, options?: DidResolutionOptions) {
     return this.resolverService.resolve(didUrl, options)
   }
 
   public async getById(recordId: string): Promise<DidRecord> {
     return this.didService.getById(recordId)
+  }
+
+  public async findById(recordId: string): Promise<DidRecord | null> {
+    return this.didService.findById(recordId)
   }
 
   public async getAllDIDs(): Promise<DidRecord[]> {

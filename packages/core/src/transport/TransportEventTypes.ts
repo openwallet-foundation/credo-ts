@@ -8,6 +8,7 @@ export interface OutboundWebSocketClosedEvent extends BaseEvent {
   type: TransportEventTypes.OutboundWebSocketClosedEvent
   payload: {
     socketId: string
+    did?: string
     connectionId?: string
   }
 }

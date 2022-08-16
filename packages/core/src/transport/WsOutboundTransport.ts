@@ -9,7 +9,6 @@ import { AgentConfig } from '../agent/AgentConfig'
 import { EventEmitter } from '../agent/EventEmitter'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
-import { Buffer } from '../utils/buffer'
 
 import { TransportEventTypes } from './TransportEventTypes'
 
@@ -40,38 +39,33 @@ export class WsOutboundTransport implements OutboundTransport {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const { payload, endpoint, connectionId } = outboundPackage
-    this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over WebSocket transport.`, {
-      payload,
-    })
+    const { payload, recipientDid, endpoint, connectionId } = outboundPackage
+    this.logger.debug(`Sending outbound message to endpoint '${endpoint}' over WebSocket transport.`)
 
     if (!endpoint) {
       throw new AriesFrameworkError("Missing connection or endpoint. I don't know how and where to send the message.")
     }
 
-    const isNewSocket = this.hasOpenSocket(endpoint)
-    const socket = await this.resolveSocket({ socketId: endpoint, endpoint, connectionId })
+    const socketMediator = recipientDid ? await this.agent.mediationRecipient.findMediatorByDid(recipientDid) : null
 
-    socket.send(Buffer.from(JSON.stringify(payload)))
-
-    // If the socket was created for this message and we don't have return routing enabled
-    // We can close the socket as it shouldn't return messages anymore
-    if (isNewSocket && !outboundPackage.responseRequested) {
-      socket.close()
-    }
-  }
-
-  private hasOpenSocket(socketId: string) {
-    return this.transportTable.get(socketId) !== undefined
+    const socket = await this.resolveSocket({
+      socketId: endpoint,
+      mediationDid: socketMediator?.did,
+      endpoint,
+      connectionId,
+    })
+    socket.send(JSON.stringify({ event: 'message', data: payload }))
   }
 
   private async resolveSocket({
     socketId,
     endpoint,
+    mediationDid,
     connectionId,
   }: {
     socketId: string
     endpoint?: string
+    mediationDid?: string
     connectionId?: string
   }) {
     // If we already have a socket connection use it
@@ -84,6 +78,7 @@ export class WsOutboundTransport implements OutboundTransport {
       socket = await this.createSocketConnection({
         endpoint,
         socketId,
+        mediationDid,
         connectionId,
       })
       this.transportTable.set(socketId, socket)
@@ -119,15 +114,17 @@ export class WsOutboundTransport implements OutboundTransport {
   private createSocketConnection({
     socketId,
     endpoint,
+    mediationDid,
     connectionId,
   }: {
     socketId: string
     endpoint: string
+    mediationDid?: string
     connectionId?: string
   }): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
-      const socket = new this.WebSocketClass(endpoint)
+      const socket = new this.WebSocketClass(endpoint, [], { headers: { 'agent-did': mediationDid } })
 
       socket.onopen = () => {
         this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)
@@ -150,6 +147,7 @@ export class WsOutboundTransport implements OutboundTransport {
           type: TransportEventTypes.OutboundWebSocketClosedEvent,
           payload: {
             socketId,
+            did: mediationDid,
             connectionId: connectionId,
           },
         })
