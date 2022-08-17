@@ -1,10 +1,14 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ResumeValueTransferTransactionEvent } from '../../value-transfer/ValueTransferEvents'
-import type { WitnessStateRecord } from '../../value-transfer/repository/WitnessStateRecord'
 import type { WitnessTableReceivedEvent } from '../GossipEvents'
 import type { WitnessTableQueryMessage } from '../messages'
-import type { Witness, TransactionUpdate } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type {
+  Witness,
+  TransactionUpdate,
+  WitnessInfo,
+  TransactionUpdateHistoryItem,
+} from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { interval } from 'rxjs'
@@ -17,6 +21,7 @@ import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { AriesFrameworkError } from '../../../error'
 import { ValueTransferEventTypes } from '../../value-transfer/ValueTransferEvents'
+import { WitnessStateRecord } from '../../value-transfer/repository/WitnessStateRecord'
 import { WitnessStateRepository } from '../../value-transfer/repository/WitnessStateRepository'
 import { ValueTransferCryptoService } from '../../value-transfer/services/ValueTransferCryptoService'
 import { ValueTransferStateService } from '../../value-transfer/services/ValueTransferStateService'
@@ -76,7 +81,7 @@ export class GossipService {
       .pipe(takeUntil(this.config.stop$))
       .subscribe(async () => {
         try {
-          await this.cleanupState()
+          await this.doSafeOperationWithWitnessSate(this.cleanupState)
         } catch (error) {
           this.config.logger.info(`Witness: Unexpected error happened while cleaning state. Error: ${error}`)
         }
@@ -135,7 +140,10 @@ export class GossipService {
 
     const state = await this.getWitnessState()
 
-    const { transactionUpdate, error } = await this.witness.prepareTransactionUpdate()
+    const operation = async () => {
+      return this.witness.prepareTransactionUpdate()
+    }
+    const { transactionUpdate, error } = await this.doSafeOperationWithWitnessSate(operation)
     if (error) {
       this.config.logger.info(`  < Witness: Unable to prepare transaction update. Error: ${error}`)
       return
@@ -204,7 +212,7 @@ export class GossipService {
     const ask = witnessGossipMessage.body.ask
     if (ask) {
       // received ask for handled transactions
-      await this.processReceivedAskForTransactionUpdates(state, witnessGossipMessage)
+      await this.processReceivedAskForTransactionUpdates(witnessGossipMessage)
     }
 
     const stateAfter = await this.getWitnessState()
@@ -230,23 +238,19 @@ export class GossipService {
       return
     }
 
-    // handle sequentially
-    for (const transactionUpdate of transactionUpdates) {
-      const { error } = await this.witness.processTransactionUpdate(transactionUpdate)
-      if (error) {
-        this.config.logger.info(`   VTP: Failed to process Transaction Update. Error: ${error}`)
-        continue
-      }
+    // handle updates
+    const operation = async () => {
+      return this.witness.processTransactionUpdates(transactionUpdates)
     }
+    await this.doSafeOperationWithWitnessSate(operation)
 
     this.config.logger.info('< Witness: process transactions completed')
     return
   }
 
-  private async processReceivedAskForTransactionUpdates(
-    state: WitnessStateRecord,
-    witnessGossipMessage: WitnessGossipMessage
-  ): Promise<void> {
+  private async processReceivedAskForTransactionUpdates(witnessGossipMessage: WitnessGossipMessage): Promise<void> {
+    const state = await this.doSafeOperationWithWitnessSate(this.getWitnessState)
+
     const ask = witnessGossipMessage.body.ask
     if (!ask) return
 
@@ -259,7 +263,9 @@ export class GossipService {
       return
     }
 
-    const knownWitness = state.knownWitnesses.find((witness) => witness.gossipDid === witnessGossipMessage.from)
+    const knownWitness = state.knownWitnesses.find(
+      (witness: WitnessInfo) => witness.gossipDid === witnessGossipMessage.from
+    )
     if (!knownWitness) {
       this.config.logger.info(
         `   Transaction Updated received from an unknown Witness DID: ${witnessGossipMessage.from}`
@@ -271,8 +277,8 @@ export class GossipService {
     // ISSUE: tock is not time. each witness may have different tocks
     // How properly request transactions??
     const transactionUpdates = state.witnessState.transactionUpdatesHistory
-      .filter((item) => item.transactionUpdate.tim > ask.since)
-      .map((item) => item.transactionUpdate)
+      .filter((item: TransactionUpdateHistoryItem) => item.transactionUpdate.tim > ask.since)
+      .map((item: TransactionUpdateHistoryItem) => item.transactionUpdate)
 
     this.config.logger.info(`   Number of transactions: ${transactionUpdates.length}`)
 
@@ -488,5 +494,13 @@ export class GossipService {
     this.config.logger.info(`Sending Gossip message with type '${message.type}' to DID ${message?.to}`)
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     await this.messageSender.sendDIDCommV2Message(message, sendingMessageType)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public async doSafeOperationWithWitnessSate(operation: () => Promise<any>): Promise<any> {
+    // FIXME: `safeSateOperation` locks the whole WitnessState
+    // I used it only for functions mutating the state to prevent concurrent updates
+    // We need to discuss the list of read/write operations which should use this lock and how to do it properly
+    return this.witnessStateRepository.safeOperation(WitnessStateRecord.id, operation.bind(this))
   }
 }
