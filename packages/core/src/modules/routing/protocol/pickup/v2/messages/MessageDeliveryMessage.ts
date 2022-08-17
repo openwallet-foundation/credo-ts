@@ -1,15 +1,16 @@
-import type { Attachment } from '../../../decorators/attachment/Attachment'
+import type { Attachment } from '../../../../../../decorators/attachment/Attachment'
 
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { AgentMessage } from '../../../../../../agent/AgentMessage'
+import { ReturnRouteTypes } from '../../../../../../decorators/transport/TransportDecorator'
+import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
 export interface MessageDeliveryMessageOptions {
   id?: string
   recipientKey?: string
+  threadId: string
   attachments: Attachment[]
 }
 
@@ -21,6 +22,9 @@ export class MessageDeliveryMessage extends AgentMessage {
       this.id = options.id || this.generateId()
       this.recipientKey = options.recipientKey
       this.appendedAttachments = options.attachments
+      this.setThread({
+        threadId: options.threadId,
+      })
     }
     this.setReturnRouting(ReturnRouteTypes.all)
   }

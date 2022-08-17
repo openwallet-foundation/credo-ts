@@ -22,11 +22,12 @@ export class GenericRecordsModule {
     this.logger = agentConfig.logger
   }
 
-  public async save({ content, tags }: SaveGenericRecordOption) {
+  public async save({ content, tags, id }: SaveGenericRecordOption) {
     try {
       const record = await this.genericRecordsService.save({
-        content: content,
-        tags: tags,
+        id,
+        content,
+        tags,
       })
       return record
     } catch (error) {
@@ -50,6 +51,10 @@ export class GenericRecordsModule {
       })
       throw error
     }
+  }
+
+  public async deleteById(id: string): Promise<void> {
+    await this.genericRecordsService.deleteById(id)
   }
 
   public async update(record: GenericRecord): Promise<void> {

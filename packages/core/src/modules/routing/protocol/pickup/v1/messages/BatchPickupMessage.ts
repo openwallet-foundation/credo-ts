@@ -1,8 +1,8 @@
 import { Expose } from 'class-transformer'
 import { IsInt } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { AgentMessage } from '../../../../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
 export interface BatchPickupMessageOptions {
   id?: string
