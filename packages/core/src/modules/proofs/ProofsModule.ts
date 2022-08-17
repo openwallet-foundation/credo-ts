@@ -1,8 +1,6 @@
 import type { DependencyManager, Module } from '../../plugins'
 import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
 
-import { RevocationNotificationService } from '../credentials/protocol/revocation-notification/services'
-
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
 import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
@@ -29,7 +27,6 @@ export class ProofsModule implements Module {
 
     // Services
     dependencyManager.registerSingleton(V1ProofService)
-    dependencyManager.registerSingleton(RevocationNotificationService)
     dependencyManager.registerSingleton(V2ProofService)
 
     // Repositories
