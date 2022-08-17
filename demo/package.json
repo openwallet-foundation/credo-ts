@@ -15,6 +15,7 @@
     "centralBank": "ts-node src/CentralBankInquirer.ts",
     "globalBank": "ts-node src/GlobalBankInquirer.ts",
     "localBank": "ts-node src/LocalBankInquirer.ts",
+    "centralBankIssuer": "ts-node src/CentralBankIssuerInquirer.ts",
     "alice": "ts-node src/AliceInquirer.ts",
     "faber": "ts-node src/FaberInquirer.ts",
     "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"

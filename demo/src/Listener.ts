@@ -6,6 +6,7 @@ import type { Bob } from './Bob'
 import type { BobInquirer } from './BobInquirer'
 import type { Carol } from './Carol'
 import type { CarolInquirer } from './CarolInquirer'
+import type { CentralBankIssuer } from './CentralBankIssuer'
 import type { Faber } from './Faber'
 import type { FaberInquirer } from './FaberInquirer'
 import type {
@@ -111,6 +112,17 @@ export class Listener {
       async ({ payload }: ValueTransferStateChangedEvent) => {
         if (payload.record.state === ValueTransferState.RequestReceived) {
           await this.newPaymentRequestPrompt(payload.record, giverInquirer)
+        }
+      }
+    )
+  }
+
+  public mintRequestListener(centralBankIssuer: CentralBankIssuer) {
+    centralBankIssuer.agent.events.on(
+      ValueTransferEventTypes.ValueTransferStateChanged,
+      async ({ payload }: ValueTransferStateChangedEvent) => {
+        if (payload.record.state === ValueTransferState.RequestReceived) {
+          await centralBankIssuer.acceptPaymentRequest(payload.record)
         }
       }
     )
