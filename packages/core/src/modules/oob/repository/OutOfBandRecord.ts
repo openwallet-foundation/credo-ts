@@ -1,4 +1,4 @@
-import type { Tags, TagsBase } from '../../../storage/BaseRecord'
+import type { TagsBase } from '../../../storage/BaseRecord'
 import type { OutOfBandRole } from '../domain/OutOfBandRole'
 import type { OutOfBandState } from '../domain/OutOfBandState'
 
@@ -7,7 +7,6 @@ import { Type } from 'class-transformer'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { DidKey } from '../../dids'
 import { OutOfBandInvitation } from '../messages'
 
 type DefaultOutOfBandRecordTags = {
@@ -60,17 +59,11 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       this.reusable = props.reusable ?? false
       this.mediatorId = props.mediatorId
       this.reuseConnectionId = props.reuseConnectionId
-      this._tags = props.tags ?? {
-        recipientKeyFingerprints: props.outOfBandInvitation
-          .getInlineServices()
-          .map((s) => s.recipientKeys)
-          .reduce((acc, curr) => [...acc, ...curr], [])
-          .map((didKey) => DidKey.fromDid(didKey).key.fingerprint),
-      }
+      this._tags = props.tags ?? { recipientKeyFingerprints: [] }
     }
   }
 
-  public getTags(): Tags<DefaultOutOfBandRecordTags, CustomOutOfBandRecordTags> {
+  public getTags() {
     return {
       ...this._tags,
       role: this.role,

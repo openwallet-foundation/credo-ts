@@ -364,21 +364,7 @@ export class MessageSender {
           // Resolve dids to DIDDocs to retrieve services
           if (typeof service === 'string') {
             this.logger.debug(`Resolving services for did ${service}.`)
-            didCommServices = await this.didCommDocumentService.resolveServicesFromDid(service)
-
-            // store recipientKeyFingerprints in the oob record
-            const oldRecipientKeyFingerprints = outOfBand.getTags().recipientKeyFingerprints
-            if (!oldRecipientKeyFingerprints?.length) {
-              const allRecipientKeys = didCommServices.reduce<Key[]>(
-                (aggr, { recipientKeys }) => [...aggr, ...recipientKeys],
-                []
-              )
-              outOfBand.setTag(
-                'recipientKeyFingerprints',
-                allRecipientKeys.map((key) => key.fingerprint)
-              )
-              await this.outOfBandRepository.update(outOfBand)
-            }
+            didCommServices.push(...(await this.didCommDocumentService.resolveServicesFromDid(service)))
           } else {
             // Out of band inline service contains keys encoded as did:key references
             didCommServices.push({

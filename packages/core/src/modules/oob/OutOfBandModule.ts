@@ -210,6 +210,11 @@ export class OutOfBandModule {
       outOfBandInvitation: outOfBandInvitation,
       reusable: multiUseInvitation,
       autoAcceptConnection,
+      tags: {
+        recipientKeyFingerprints: services
+          .reduce<string[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
+          .map((didKey) => DidKey.fromDid(didKey).key.fingerprint),
+      },
     })
 
     await this.outOfBandService.save(outOfBandRecord)
@@ -353,12 +358,30 @@ export class OutOfBandModule {
       )
     }
 
+    const recipientKeyFingerprints: string[] = []
+    for (const service of outOfBandInvitation.getServices()) {
+      // Resolve dids to DIDDocs to retrieve services
+      if (typeof service === 'string') {
+        this.logger.debug(`Resolving services for did ${service}.`)
+        const resolvedDidCommServices = await this.didCommDocumentService.resolveServicesFromDid(service)
+        recipientKeyFingerprints.push(
+          ...resolvedDidCommServices
+            .reduce<Key[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
+            .map((key) => key.fingerprint)
+        )
+      } else {
+        recipientKeyFingerprints.push(...service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).key.fingerprint))
+      }
+    }
+
     outOfBandRecord = new OutOfBandRecord({
       role: OutOfBandRole.Receiver,
       state: OutOfBandState.Initial,
       outOfBandInvitation: outOfBandInvitation,
       autoAcceptConnection,
+      tags: { recipientKeyFingerprints },
     })
+
     await this.outOfBandService.save(outOfBandRecord)
     this.outOfBandService.emitStateChangedEvent(outOfBandRecord, null)
 
