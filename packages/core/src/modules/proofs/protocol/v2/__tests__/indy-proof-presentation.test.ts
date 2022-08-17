@@ -1,13 +1,10 @@
-import type { AgentContext } from '../../../../../agent'
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { ProposeProofOptions, AcceptProposalOptions, AcceptPresentationOptions } from '../../../ProofsApiOptions'
-import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
+import type { ProposeProofOptions, AcceptProposalOptions } from '../../../ProofsApiOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
-import type { V2ProofService } from '../V2ProofService'
 
-import { getAgentContext, setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
+import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import {
@@ -172,18 +169,15 @@ describe('Present Proof', () => {
       },
     })
 
-    const acceptPresentationOptions: AcceptPresentationOptions<[IndyProofFormat], [V2ProofService]> = {
-      proofRecordId: aliceProofRecord.id,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
-      protocolVersion: 'v2',
-    }
-
     const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
     })
 
-    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+    await aliceAgent.proofs.acceptRequest({
+      proofRecordId: aliceProofRecord.id,
+      proofFormats: { indy: requestedCredentials.proofFormats.indy },
+    })
 
     // Faber waits for the presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')

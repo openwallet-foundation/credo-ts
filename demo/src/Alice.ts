@@ -112,7 +112,7 @@ export class Alice extends BaseAgent {
 
     await this.agent.proofs.acceptRequest({
       proofRecordId: proofRecord.id,
-      proofFormats: { indy: requestedCredentials.indy },
+      proofFormats: requestedCredentials.proofFormats,
     })
     console.log(greenText('\nProof request accepted!\n'))
   }

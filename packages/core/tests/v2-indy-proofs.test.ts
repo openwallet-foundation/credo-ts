@@ -1,13 +1,10 @@
 import type { Agent, ConnectionRecord, ProofRecord } from '../src'
 import type {
-  AcceptPresentationOptions,
   AcceptProposalOptions,
   ProposeProofOptions,
   RequestProofOptions,
 } from '../src/modules/proofs/ProofsApiOptions'
-import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
-import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
 import type { CredDefId } from 'indy-sdk'
 
 import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
@@ -167,18 +164,15 @@ describe('Present Proof', () => {
       },
     })
 
-    const acceptPresentationOptions: AcceptPresentationOptions<[IndyProofFormat], [V2ProofService]> = {
-      proofRecordId: aliceProofRecord.id,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
-      protocolVersion: 'v2',
-    }
-
     faberProofRecordPromise = waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
     })
 
-    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+    await aliceAgent.proofs.acceptRequest({
+      proofRecordId: aliceProofRecord.id,
+      proofFormats: { indy: requestedCredentials.proofFormats.indy },
+    })
 
     // Faber waits for the presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')
@@ -353,18 +347,15 @@ describe('Present Proof', () => {
       },
     })
 
-    const acceptPresentationOptions: AcceptPresentationOptions<[IndyProofFormat], [V2ProofService]> = {
-      proofRecordId: aliceProofRecord.id,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
-      protocolVersion: 'v2',
-    }
-
     const faberProofRecordPromise = waitForProofRecord(faberAgent, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
     })
 
-    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+    await aliceAgent.proofs.acceptRequest({
+      proofRecordId: aliceProofRecord.id,
+      proofFormats: { indy: requestedCredentials.proofFormats.indy },
+    })
 
     // Faber waits until it receives a presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')

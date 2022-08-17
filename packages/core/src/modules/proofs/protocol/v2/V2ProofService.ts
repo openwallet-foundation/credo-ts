@@ -82,11 +82,6 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
    */
   public readonly version = 'v2' as const
 
-  public getFormatServiceForRecordType() {
-    // other format services to be added to the map
-    return this.formatServiceMap[0]
-  }
-
   public async createProposal(
     agentContext: AgentContext,
     options: CreateProposalOptions<PFs>

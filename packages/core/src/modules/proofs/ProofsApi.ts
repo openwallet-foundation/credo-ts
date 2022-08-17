@@ -52,7 +52,7 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
 
   // Request methods
   requestProof(options: RequestProofOptions<PFs, PSs>): Promise<ProofRecord>
-  acceptRequest(options: AcceptPresentationOptions<PFs, PSs>): Promise<ProofRecord>
+  acceptRequest(options: AcceptPresentationOptions<PFs>): Promise<ProofRecord>
   declineRequest(proofRecordId: string): Promise<ProofRecord>
 
   // out of band
@@ -256,7 +256,7 @@ export class ProofsApi<
    * specifying which credentials to use for the proof
    * @returns Proof record associated with the sent presentation message
    */
-  public async acceptRequest(options: AcceptPresentationOptions<PFs, PSs>): Promise<ProofRecord> {
+  public async acceptRequest(options: AcceptPresentationOptions<PFs>): Promise<ProofRecord> {
     const { proofRecordId, proofFormats, comment } = options
 
     const record = await this.getById(proofRecordId)

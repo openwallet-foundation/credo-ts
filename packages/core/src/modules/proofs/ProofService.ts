@@ -12,7 +12,6 @@ import type { MediationRecipientService, RoutingService } from '../routing'
 import type { ProofStateChangedEvent } from './ProofEvents'
 import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import type { ProofFormat } from './formats/ProofFormat'
-import type { ProofFormatService } from './formats/ProofFormatService'
 import type { CreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
 import type {
   CreateAckOptions,
@@ -58,8 +57,6 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
     this.logger = agentConfig.logger
   }
   abstract readonly version: string
-
-  abstract getFormatServiceForRecordType(): ProofFormatService<PFs[number]>
 
   public async generateProofRequestNonce() {
     return await this.wallet.generateNonce()

@@ -116,18 +116,15 @@ describe('Present Proof', () => {
       },
     })
 
-    const acceptPresentationOptions: AcceptPresentationOptions<[IndyProofFormat], [V1ProofService]> = {
-      proofRecordId: aliceProofRecord.id,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
-      protocolVersion: 'v1',
-    }
-
     const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
     })
 
-    await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
+    await aliceAgent.proofs.acceptRequest({
+      proofRecordId: aliceProofRecord.id,
+      proofFormats: { indy: requestedCredentials.proofFormats.indy },
+    })
 
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await faberProofRecordPromise

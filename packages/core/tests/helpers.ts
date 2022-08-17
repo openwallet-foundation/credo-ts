@@ -13,11 +13,9 @@ import type {
   Wallet,
 } from '../src'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { AcceptPresentationOptions, RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
-import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
+import type { RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
-import type { V1ProofService } from '../src/modules/proofs/protocol/v1'
 import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -596,18 +594,15 @@ export async function presentProof({
     },
   })
 
-  const acceptPresentationOptions: AcceptPresentationOptions<[IndyProofFormat], [V1ProofService]> = {
-    proofRecordId: holderRecord.id,
-    proofFormats: { indy: requestedCredentials.proofFormats.indy },
-    protocolVersion: 'v1',
-  }
-
   const verifierProofRecordPromise = waitForProofRecordSubject(verifierReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.PresentationReceived,
   })
 
-  await holderAgent.proofs.acceptRequest(acceptPresentationOptions)
+  await holderAgent.proofs.acceptRequest({
+    proofRecordId: holderRecord.id,
+    proofFormats: { indy: requestedCredentials.proofFormats.indy },
+  })
 
   verifierRecord = await verifierProofRecordPromise
 

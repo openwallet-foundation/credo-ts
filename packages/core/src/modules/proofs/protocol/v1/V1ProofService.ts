@@ -6,6 +6,7 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import type { ProofFormat } from '../../formats/ProofFormat'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
 import type { ProofAttributeInfo } from '../../formats/indy/models'
@@ -82,7 +83,7 @@ import { PresentationPreview } from './models/V1PresentationPreview'
  * @todo validate attachments / messages
  */
 @scoped(Lifecycle.ContainerScoped)
-export class V1ProofService extends ProofService {
+export class V1ProofService extends ProofService<[IndyProofFormat]> {
   private credentialRepository: CredentialRepository
   private ledgerService: IndyLedgerService
   private indyHolderService: IndyHolderService
@@ -112,10 +113,6 @@ export class V1ProofService extends ProofService {
   }
 
   public readonly version = 'v1' as const
-
-  public getFormatServiceForRecordType() {
-    return this.indyProofFormatService
-  }
 
   public async createProposal(
     agentContext: AgentContext,
@@ -651,7 +648,7 @@ export class V1ProofService extends ProofService {
   public async createProofRequestFromProposal(
     agentContext: AgentContext,
     options: CreateProofRequestFromProposalOptions
-  ): Promise<ProofRequestFromProposalOptions<[IndyProofFormat]>> {
+  ): Promise<ProofRequestFromProposalOptions<ProofFormat[]>> {
     const proofRecordId = options.proofRecord.id
     const proposalMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecordId,
@@ -902,7 +899,7 @@ export class V1ProofService extends ProofService {
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<FormatRetrievedCredentialOptions<[IndyProofFormat]>> {
+  ): Promise<FormatRetrievedCredentialOptions<ProofFormat[]>> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
       messageClass: V1RequestPresentationMessage,
@@ -929,8 +926,8 @@ export class V1ProofService extends ProofService {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialOptions<[IndyProofFormat]>
-  ): Promise<FormatRequestedCredentialReturn<[IndyProofFormat]>> {
+    options: FormatRetrievedCredentialOptions<ProofFormat[]>
+  ): Promise<FormatRequestedCredentialReturn<ProofFormat[]>> {
     return await this.indyProofFormatService.autoSelectCredentialsForProofRequest(options)
   }
 

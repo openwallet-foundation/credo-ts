@@ -36,11 +36,7 @@ export interface ProposeProofOptions<
   goalCode?: string
   autoAcceptProof?: AutoAcceptProof
 }
-export interface AcceptPresentationOptions<
-  PFs extends ProofFormat[] = ProofFormat[],
-  PSs extends ProofService[] = ProofService[]
-> {
-  protocolVersion: ProtocolVersionType<PSs>
+export interface AcceptPresentationOptions<PFs extends ProofFormat[] = ProofFormat[]> {
   proofRecordId: string
   comment?: string
   proofFormats: ProofFormatPayload<PFs, 'createPresentation'>
