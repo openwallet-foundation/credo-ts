@@ -586,10 +586,13 @@ export class ValueTransferWitnessService {
       return { record, problemReport }
     }
 
-    // Call VTP package to create receipt
-    const { error, receipt, getterDelta, giverDelta } = await this.witness.createReceipt(
-      record.receipt,
-      valueTransferDelta
+    const operation = async () => {
+      // Call VTP package to create receipt
+      return this.witness.createReceipt(record.receipt, valueTransferDelta)
+    }
+
+    const { error, receipt, getterDelta, giverDelta } = await this.gossipService.doSafeOperationWithWitnessSate(
+      operation
     )
     if (error || !receipt || !getterDelta || !giverDelta) {
       if (

@@ -29,6 +29,9 @@ export class CentralBank extends BaseAgent {
         witness: {
           wid: CentralBank.wid,
           knownWitnesses: BaseAgent.witnessTable,
+          issuerDids: [
+            'did:peer:2.Ez6LSgzMiffdvz75iwtDzU9U23YnUsVGWqsZRfpXZf43G1qMw.Vz6MkiRNEoPQFYs3Cm9x3Xbx3Q4MRJTXVbGwpcMDkrRK6JTYD.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFN3aVlTSTZXeUprYVdSamIyMXRMM1l5SWwxOUxIc2ljeUk2SW5kek9pOHZiRzlqWVd4b2IzTjBPak13TURBdllYQnBMM1l4SWl3aWRDSTZJbVJ0SWl3aWNpSTZXMTBzSW1FaU9sc2laR2xrWTI5dGJTOTJNaUpkZlYwIl0sImEiOlsiZGlkY29tbS92MiJdfQ',
+          ],
         },
       },
     })
@@ -39,6 +42,9 @@ export class CentralBank extends BaseAgent {
     await witness.initializeAgent()
     const publicDid = await witness.agent.getStaticDid(DidMarker.Online)
     console.log(`CentralBank Public DID: ${publicDid?.did}`)
+
+    const gossipDid = await witness.agent.getStaticDid(DidMarker.Restricted)
+    console.log(`CentralBank Gossip DID: ${gossipDid?.did}`)
     return witness
   }
 

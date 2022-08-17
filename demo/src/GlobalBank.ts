@@ -39,6 +39,9 @@ export class GlobalBank extends BaseAgent {
     await witness.initializeAgent()
     const publicDid = await witness.agent.getStaticDid(DidMarker.Online)
     console.log(`GlobalBank Public DID: ${publicDid?.did}`)
+
+    const gossipDid = await witness.agent.getStaticDid(DidMarker.Restricted)
+    console.log(`GlobalBank Gossip DID: ${gossipDid?.did}`)
     return witness
   }
 
