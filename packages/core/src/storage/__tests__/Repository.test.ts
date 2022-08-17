@@ -127,7 +127,7 @@ describe('Repository', () => {
     it('should delete the record by record id', async () => {
       await repository.deleteById('test-id')
 
-      expect(storageMock.deleteById).toBeCalledWith(TestRecord, 'test-id')
+      expect(storageMock.deleteById).toBeCalledWith(TestRecord.type, 'test-id')
     })
   })
 

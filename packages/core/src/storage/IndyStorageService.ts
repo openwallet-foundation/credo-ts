@@ -173,7 +173,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   /** @inheritDoc */
   public async delete(record: T) {
     try {
-      await this.indy.deleteWalletRecord(this.wallet.handle, record.type, record.id)
+      await this.deleteById(record.type, record.id)
     } catch (error) {
       // Record does not exist
       if (isIndyError(error, 'WalletItemNotFound')) {
@@ -188,13 +188,13 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
   }
 
   /** @inheritDoc */
-  public async deleteById(recordClass: BaseRecordConstructor<T>, id: string): Promise<void> {
+  public async deleteById(recordType: string, id: string): Promise<void> {
     try {
-      await this.indy.deleteWalletRecord(this.wallet.handle, recordClass.type, id)
+      await this.indy.deleteWalletRecord(this.wallet.handle, recordType, id)
     } catch (error) {
       if (isIndyError(error, 'WalletItemNotFound')) {
         throw new RecordNotFoundError(`record with id ${id} not found.`, {
-          recordType: recordClass.type,
+          recordType,
           cause: error,
         })
       }
