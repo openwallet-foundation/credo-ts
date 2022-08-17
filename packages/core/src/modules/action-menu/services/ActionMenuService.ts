@@ -1,8 +1,12 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
-import type { FindActiveMenuOptions } from '../ActionMenuModuleOptions'
-import type { CreateMenuOptions, CreatePerformOptions, CreateRequestOptions } from './ActionMenuServiceOptions'
+import type {
+  CreateMenuOptions,
+  CreatePerformOptions,
+  CreateRequestOptions,
+  FindMenuOptions,
+} from './ActionMenuServiceOptions'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -36,15 +40,18 @@ export class ActionMenuService {
     const menuRequestMessage = new MenuRequestMessage({})
 
     // Create record if not existant for connection/role
-    let actionMenuRecord = await this.findActive({
+    let actionMenuRecord = await this.find({
       connectionId: options.connection.id,
       role: ActionMenuRole.Requester,
     })
 
     if (actionMenuRecord) {
+      // Protocol will be restarted and menu cleared
       const previousState = actionMenuRecord.state
       actionMenuRecord.state = ActionMenuState.AwaitingRootMenu
       actionMenuRecord.threadId = menuRequestMessage.id
+      actionMenuRecord.menu = undefined
+      actionMenuRecord.performedAction = undefined
 
       await this.actionMenuRepository.update(actionMenuRecord)
       this.emitStateChangedEvent(actionMenuRecord, previousState)
@@ -71,15 +78,18 @@ export class ActionMenuService {
     // Assert
     const connection = messageContext.assertReadyConnection()
 
-    let actionMenuRecord = await this.findActive({
+    let actionMenuRecord = await this.find({
       connectionId: connection.id,
       role: ActionMenuRole.Responder,
     })
 
     if (actionMenuRecord) {
+      // Protocol will be restarted and menu cleared
       const previousState = actionMenuRecord.state
       actionMenuRecord.state = ActionMenuState.PreparingRootMenu
       actionMenuRecord.threadId = menuRequestMessage.id
+      actionMenuRecord.menu = undefined
+      actionMenuRecord.performedAction = undefined
 
       await this.actionMenuRepository.update(actionMenuRecord)
       this.emitStateChangedEvent(actionMenuRecord, previousState)
@@ -111,20 +121,24 @@ export class ActionMenuService {
     })
 
     // Check if there is an existing menu for this connection and role
-    let actionMenuRecord = await this.findActive({
+    let actionMenuRecord = await this.find({
       connectionId: options.connection.id,
       role: ActionMenuRole.Responder,
     })
 
     // If so, continue existing flow
     if (actionMenuRecord) {
-      actionMenuRecord.assertState([ActionMenuState.PreparingRootMenu, ActionMenuState.Done])
+      actionMenuRecord.assertState([ActionMenuState.Null, ActionMenuState.PreparingRootMenu, ActionMenuState.Done])
+      // The new menu will be bound to the existing thread
+      // unless it is in null state (protocol reset)
+      if (actionMenuRecord.state !== ActionMenuState.Null) {
+        menuMessage.setThread({ threadId: actionMenuRecord.threadId })
+      }
 
       const previousState = actionMenuRecord.state
+      actionMenuRecord.menu = options.menu
       actionMenuRecord.state = ActionMenuState.AwaitingSelection
-
-      // The new menu will be bound to the existing thread
-      menuMessage.setThread({ threadId: actionMenuRecord.threadId })
+      actionMenuRecord.threadId = menuMessage.threadId
 
       await this.actionMenuRepository.update(actionMenuRecord)
       this.emitStateChangedEvent(actionMenuRecord, previousState)
@@ -153,14 +167,14 @@ export class ActionMenuService {
     const connection = messageContext.assertReadyConnection()
 
     // Check if there is an existing menu for this connection and role
-    const record = await this.findActive({
+    const record = await this.find({
       connectionId: connection.id,
       role: ActionMenuRole.Requester,
     })
 
     if (record) {
       // Record found: check state and update with menu details
-      record.assertState([ActionMenuState.Null, ActionMenuState.AwaitingRootMenu])
+      record.assertState([ActionMenuState.Null, ActionMenuState.AwaitingRootMenu, ActionMenuState.Done])
 
       const previousState = record.state
 
@@ -230,7 +244,7 @@ export class ActionMenuService {
     const connection = messageContext.assertReadyConnection()
 
     // Check if there is an existing menu for this connection and role
-    const record = await this.findActive({
+    const record = await this.find({
       connectionId: connection.id,
       role: ActionMenuRole.Responder,
     })
@@ -253,18 +267,15 @@ export class ActionMenuService {
     }
   }
 
-  public async findByThreadId(threadId: string) {
-    return await this.actionMenuRepository.findSingleByQuery({ threadId })
-  }
-
   public async findById(actionMenuRecordId: string) {
     return await this.actionMenuRepository.findById(actionMenuRecordId)
   }
 
-  public async findActive(options: FindActiveMenuOptions) {
+  public async find(options: FindMenuOptions) {
     return await this.actionMenuRepository.findSingleByQuery({
       connectionId: options.connectionId,
       role: options.role,
+      threadId: options.threadId,
     })
   }
 

@@ -86,7 +86,7 @@ export class ActionMenuModule {
   public async performAction(options: PerformActionOptions) {
     const connection = await this.connectionService.getById(options.connectionId)
 
-    const actionMenuRecord = await this.actionMenuService.findActive({
+    const actionMenuRecord = await this.actionMenuService.find({
       connectionId: connection.id,
       role: ActionMenuRole.Requester,
     })
@@ -112,7 +112,7 @@ export class ActionMenuModule {
    * @returns Active Action Menu record, or null if no active menu found
    */
   public async findActiveMenu(options: FindActiveMenuOptions) {
-    return this.actionMenuService.findActive({
+    return this.actionMenuService.find({
       connectionId: options.connectionId,
       role: options.role,
     })

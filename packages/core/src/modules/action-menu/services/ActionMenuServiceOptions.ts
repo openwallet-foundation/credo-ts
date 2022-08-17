@@ -23,7 +23,8 @@ export interface CreatePerformOptions {
   performedAction: ActionMenuSelection
 }
 
-export interface FindActiveMenuOptions {
+export interface FindMenuOptions {
   connectionId: string
   role: ActionMenuRole
+  threadId?: string
 }
