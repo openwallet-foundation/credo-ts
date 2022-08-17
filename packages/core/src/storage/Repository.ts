@@ -66,6 +66,15 @@ export class Repository<T extends BaseRecord<any, any, any>> {
     })
   }
 
+  /**
+   * Delete record by id. Returns null if no record is found
+   * @param id the id of the record to delete
+   * @returns
+   */
+  public async deleteById(id: string): Promise<void> {
+    await this.storageService.deleteById(this.recordClass, id)
+  }
+
   /** @inheritDoc {StorageService#getById} */
   public async getById(id: string): Promise<T> {
     return this.storageService.getById(this.recordClass, id)
