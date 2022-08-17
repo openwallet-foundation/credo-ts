@@ -79,10 +79,10 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
   }
 
   /** @inheritDoc */
-  public async deleteById(recordType: string, id: string): Promise<void> {
+  public async deleteById(recordClass: BaseRecordConstructor<T>, id: string): Promise<void> {
     if (!this.records[id]) {
       throw new RecordNotFoundError(`record with id ${id} not found.`, {
-        recordType,
+        recordType: recordClass.type,
       })
     }
 

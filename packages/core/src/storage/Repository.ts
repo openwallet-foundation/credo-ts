@@ -72,7 +72,7 @@ export class Repository<T extends BaseRecord<any, any, any>> {
    * @returns
    */
   public async deleteById(id: string): Promise<void> {
-    await this.storageService.deleteById(this.recordClass.type, id)
+    await this.storageService.deleteById(this.recordClass, id)
   }
 
   /** @inheritDoc {StorageService#getById} */

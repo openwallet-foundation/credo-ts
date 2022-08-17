@@ -45,11 +45,11 @@ export interface StorageService<T extends BaseRecord<any, any, any>> {
   /**
    * Delete record by id.
    *
-   * @param recordType the record type to delete the record for
+   * @param recordClass the record class to delete the record for
    * @param id the id of the record to delete from storage
    * @throws {RecordNotFoundError} if a record with this id and type does not exist
    */
-  deleteById(recordType: string, id: string): Promise<void>
+  deleteById(recordClass: BaseRecordConstructor<T>, id: string): Promise<void>
 
   /**
    * Get record by id.
