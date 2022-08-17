@@ -83,7 +83,7 @@ export abstract class BaseAgent {
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.dependencyManager.resolve(ConnectionsApi)
     this.credentials = this.dependencyManager.resolve(CredentialsApi) as CredentialsApi
-    this.proofs = this.dependencyManager.resolve(ProofsApi)
+    this.proofs = this.dependencyManager.resolve(ProofsApi) as ProofsApi
     this.mediator = this.dependencyManager.resolve(MediatorApi)
     this.mediationRecipient = this.dependencyManager.resolve(RecipientApi)
     this.basicMessages = this.dependencyManager.resolve(BasicMessagesApi)

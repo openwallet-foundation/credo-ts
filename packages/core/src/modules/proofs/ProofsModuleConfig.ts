@@ -1,4 +1,4 @@
-import { AutoAcceptProof } from './ProofAutoAcceptType'
+import { AutoAcceptProof } from './models/ProofAutoAcceptType'
 
 /**
  * ProofsModuleConfigOptions defines the interface for the options of the ProofsModuleConfig class.
