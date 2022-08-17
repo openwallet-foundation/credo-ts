@@ -1,16 +1,20 @@
 import type { BaseRecord } from './BaseRecord'
 import type { BaseRecordConstructor, Query, StorageService } from './StorageService'
 
+import AsyncLock from 'async-lock'
+
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class Repository<T extends BaseRecord<any, any, any>> {
   private storageService: StorageService<T>
   private recordClass: BaseRecordConstructor<T>
+  private lock: AsyncLock
 
   public constructor(recordClass: BaseRecordConstructor<T>, storageService: StorageService<T>) {
     this.storageService = storageService
     this.recordClass = recordClass
+    this.lock = new AsyncLock()
   }
 
   /** @inheritDoc {StorageService#save} */
@@ -97,5 +101,17 @@ export class Repository<T extends BaseRecord<any, any, any>> {
     }
 
     return record
+  }
+
+  /** @inheritDoc {StorageService#safeMutation} */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public async safeOperation(recordId: string, operation: () => Promise<any>): Promise<any> {
+    return this.lock.acquire(
+      recordId,
+      async () => {
+        return operation()
+      },
+      { maxOccupationTime: 60 * 1000 }
+    )
   }
 }

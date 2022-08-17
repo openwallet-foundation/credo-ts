@@ -17,6 +17,8 @@ export interface WitnessStateProps {
 }
 
 export class WitnessStateRecord extends BaseRecord<DefaultWitnessStateTags, CustomWitnessStateTags> {
+  public static readonly id = 'WitnessStateId'
+
   public static readonly type = 'WitnessState'
   public readonly type = WitnessStateRecord.type
 
