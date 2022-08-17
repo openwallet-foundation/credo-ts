@@ -172,19 +172,7 @@ export class IndyStorageService<T extends BaseRecord> implements StorageService<
 
   /** @inheritDoc */
   public async delete(record: T) {
-    try {
-      await this.deleteById(record.type, record.id)
-    } catch (error) {
-      // Record does not exist
-      if (isIndyError(error, 'WalletItemNotFound')) {
-        throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
-          recordType: record.type,
-          cause: error,
-        })
-      }
-
-      throw isIndyError(error) ? new IndySdkError(error) : error
-    }
+    await this.deleteById(record.type, record.id)
   }
 
   /** @inheritDoc */
