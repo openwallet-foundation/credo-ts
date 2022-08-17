@@ -38,6 +38,10 @@ export class GenericRecordService {
     }
   }
 
+  public async deleteById(id: string): Promise<void> {
+    await this.genericRecordsRepository.deleteById(id)
+  }
+
   public async update(record: GenericRecord): Promise<void> {
     try {
       await this.genericRecordsRepository.update(record)

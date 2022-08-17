@@ -53,6 +53,10 @@ export class GenericRecordsModule {
     }
   }
 
+  public async deleteById(id: string): Promise<void> {
+    await this.genericRecordsService.deleteById(id)
+  }
+
   public async update(record: GenericRecord): Promise<void> {
     try {
       await this.genericRecordsService.update(record)
