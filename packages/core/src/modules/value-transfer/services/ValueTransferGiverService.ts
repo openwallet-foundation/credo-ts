@@ -327,7 +327,8 @@ export class ValueTransferGiverService {
    * Accept received {@link RequestMessage} as Giver by sending a payment request acceptance message.
    *
    * @param record Value Transfer record containing Payment Request to accept.
-   * @param timeouts (Optional) Giver timeouts to which value transfer must fit
+   * @param timeouts (Optional) Giver timeouts to which value transfer must fit.
+   * @param usePublicDid (Optional) Boolean value that indicates whether Public DID should be used if giver is not specified in Value Transfer record.
    *
    * @returns
    *    * Value Transfer record
@@ -335,7 +336,8 @@ export class ValueTransferGiverService {
    */
   public async acceptRequest(
     record: ValueTransferRecord,
-    timeouts?: Timeouts
+    timeouts?: Timeouts,
+    usePublicDid?: boolean
   ): Promise<{
     record: ValueTransferRecord
     message: RequestAcceptedMessage | ProblemReportMessage
@@ -346,7 +348,7 @@ export class ValueTransferGiverService {
     record.assertRole(ValueTransferRole.Giver)
     record.assertState([ValueTransferState.RequestReceived, ValueTransferState.RequestForOfferReceived])
 
-    const giverDid = record.giver?.did ?? (await this.valueTransferService.getTransactionDid()).id
+    const giverDid = record.giver?.did ?? (await this.valueTransferService.getTransactionDid(usePublicDid)).id
 
     const activeTransaction = await this.valueTransferService.getActiveTransaction()
     if (activeTransaction.record) {

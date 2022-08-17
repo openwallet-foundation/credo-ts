@@ -107,11 +107,16 @@ export class ValueTransferModule {
    *      timeout_elapsed - number (seconds) - how far after start the party wants the transaction to timeout
    *      timeout_time of amount - string - absolute time when the party wants the transaction to timeout
    *   }
+   *   usePublicDid Boolean value that indicates whether Public DID should be used if giver is not specified in Value Transfer record
    * }
    *
    * @returns Value Transfer record and Payment Request Acceptance Message
    */
-  public async acceptPaymentRequest(params: { recordId: string; timeouts?: Timeouts }): Promise<{
+  public async acceptPaymentRequest(params: {
+    recordId: string
+    timeouts?: Timeouts
+    usePublicDid?: boolean
+  }): Promise<{
     record: ValueTransferRecord
     message: RequestAcceptedMessage | ProblemReportMessage
   }> {
@@ -121,7 +126,8 @@ export class ValueTransferModule {
     // Accept Payment Request
     const { message, record: updatedRecord } = await this.valueTransferGiverService.acceptRequest(
       record,
-      params.timeouts
+      params.timeouts,
+      params.usePublicDid
     )
 
     // Send Payment Request Acceptance to Witness
