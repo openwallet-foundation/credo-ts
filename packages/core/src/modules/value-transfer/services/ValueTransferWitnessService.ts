@@ -1,4 +1,5 @@
 import type { ValueTransferStateChangedEvent, ResumeValueTransferTransactionEvent } from '../ValueTransferEvents'
+import type { WitnessTableQueryMessage } from '../messages'
 import type { MintMessage } from '../messages/MintMessage'
 import type { Witness, Receipt } from '@sicpa-dlab/value-transfer-protocol-ts'
 
@@ -32,6 +33,8 @@ import {
   ProblemReportMessage,
   RequestAcceptedMessage,
   RequestAcceptedWitnessedMessage,
+  WitnessData,
+  WitnessTableMessage,
 } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
 import { ValueTransferRecord, ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
@@ -765,6 +768,38 @@ export class ValueTransferWitnessService {
     await this.valueTransferRepository.update(record)
 
     this.config.logger.info(`< Witness: transaction resumed ${thid}`)
+  }
+
+  public async processWitnessTableQuery(
+    messageContext: InboundMessageContext<WitnessTableQueryMessage>
+  ): Promise<void> {
+    this.config.logger.info('> Witness process witness table query message')
+
+    const { message: witnessTableQuery } = messageContext
+
+    if (!witnessTableQuery.from) {
+      this.config.logger.info('   Unknown Witness Table Query sender')
+      return
+    }
+
+    const state = await this.getWitnessState()
+
+    const witnesses = state.witnessState.mappingTable.map(
+      (witness) =>
+        new WitnessData({
+          did: witness.publicDid,
+          type: witness.type,
+        })
+    )
+
+    const message = new WitnessTableMessage({
+      from: state.gossipDid,
+      to: witnessTableQuery.from,
+      body: { witnesses },
+      thid: witnessTableQuery.id,
+    })
+
+    await this.valueTransferService.sendMessage(message)
   }
 
   public async getWitnessState(): Promise<WitnessStateRecord> {

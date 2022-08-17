@@ -35,6 +35,7 @@ export class AnnaInquirer extends BaseInquirer {
     this.promptOptionsString = Object.values(PromptOptions)
     this.listener.messageListener(this.giver.agent, this.giver.name)
     this.listener.paymentRequestListener(this.giver, this)
+    this.listener.witnessTableListener(this.giver)
   }
 
   public static async build(): Promise<AnnaInquirer> {

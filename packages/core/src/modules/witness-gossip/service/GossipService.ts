@@ -1,8 +1,6 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ResumeValueTransferTransactionEvent } from '../../value-transfer/ValueTransferEvents'
-import type { WitnessTableReceivedEvent } from '../GossipEvents'
-import type { WitnessTableQueryMessage } from '../messages'
 import type {
   Witness,
   TransactionUpdate,
@@ -25,8 +23,7 @@ import { WitnessStateRecord } from '../../value-transfer/repository/WitnessState
 import { WitnessStateRepository } from '../../value-transfer/repository/WitnessStateRepository'
 import { ValueTransferCryptoService } from '../../value-transfer/services/ValueTransferCryptoService'
 import { ValueTransferStateService } from '../../value-transfer/services/ValueTransferStateService'
-import { GossipEventTypes } from '../GossipEvents'
-import { WitnessData, WitnessGossipMessage, WitnessTableMessage } from '../messages'
+import { WitnessGossipMessage } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class GossipService {
@@ -338,56 +335,6 @@ export class GossipService {
 
     this.config.logger.info('< Witness: clean up hanged transaction updates completed!')
     return
-  }
-
-  public async processWitnessTableQuery(
-    messageContext: InboundMessageContext<WitnessTableQueryMessage>
-  ): Promise<void> {
-    this.config.logger.info('> Witness process witness table query message')
-
-    const { message: witnessTableQuery } = messageContext
-
-    if (!witnessTableQuery.from) {
-      this.config.logger.info('   Unknown Witness Table Query sender')
-      return
-    }
-
-    const state = await this.getWitnessState()
-
-    const witnesses = state.witnessState.mappingTable.map(
-      (witness) =>
-        new WitnessData({
-          did: witness.publicDid,
-          type: witness.type,
-        })
-    )
-
-    const message = new WitnessTableMessage({
-      from: state.gossipDid,
-      to: witnessTableQuery.from,
-      body: { witnesses },
-      thid: witnessTableQuery.id,
-    })
-
-    await this.sendMessage(message)
-  }
-
-  public async processWitnessTable(messageContext: InboundMessageContext<WitnessTableMessage>): Promise<void> {
-    this.config.logger.info('> Witness process witness table message')
-
-    const { message: witnessTable } = messageContext
-
-    if (!witnessTable.from) {
-      this.config.logger.info('   Unknown Witness Table sender')
-      return
-    }
-
-    this.eventEmitter.emit<WitnessTableReceivedEvent>({
-      type: GossipEventTypes.WitnessTableReceived,
-      payload: {
-        witnesses: witnessTable.body.witnesses,
-      },
-    })
   }
 
   private async gossipTransactionUpdate(

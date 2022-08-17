@@ -1,7 +1,8 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Transports } from '../../routing/types'
-import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
+import type { ValueTransferStateChangedEvent, WitnessTableReceivedEvent } from '../ValueTransferEvents'
+import type { WitnessTableMessage } from '../messages'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
@@ -15,12 +16,12 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { AriesFrameworkError } from '../../../error'
-import { DidResolverService } from '../../dids'
+import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRole } from '../ValueTransferRole'
 import { ValueTransferState } from '../ValueTransferState'
-import { ProblemReportMessage } from '../messages'
+import { ProblemReportMessage, WitnessTableQueryMessage } from '../messages'
 import { ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
@@ -235,6 +236,43 @@ export class ValueTransferService {
       status: ValueTransferTransactionStatus.InProgress,
     })
     return { record }
+  }
+
+  public async requestWitnessTable(witnessId?: string): Promise<void> {
+    const witness = witnessId || this.config.valueTransferWitnessDid
+
+    this.config.logger.info(`Requesting list of witnesses from the witness ${witness}`)
+
+    if (!witness) {
+      throw new AriesFrameworkError(`Unable to request witness table. Witness DID must be specified.`)
+    }
+
+    const did = await this.didService.findStaticDid(DidMarker.Queries)
+
+    const message = new WitnessTableQueryMessage({
+      from: did?.did,
+      to: witness,
+      body: {},
+    })
+    await this.sendMessage(message)
+  }
+
+  public async processWitnessTable(messageContext: InboundMessageContext<WitnessTableMessage>): Promise<void> {
+    this.config.logger.info('> Witness process witness table message')
+
+    const { message: witnessTable } = messageContext
+
+    if (!witnessTable.from) {
+      this.config.logger.info('   Unknown Witness Table sender')
+      return
+    }
+
+    this.eventEmitter.emit<WitnessTableReceivedEvent>({
+      type: ValueTransferEventTypes.WitnessTableReceived,
+      payload: {
+        witnesses: witnessTable.body.witnesses,
+      },
+    })
   }
 
   public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {

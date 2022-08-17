@@ -12,6 +12,7 @@ export enum DidMarker {
   Offline = 'offline',
   Online = 'online',
   Restricted = 'restricted',
+  Queries = 'queries',
 }
 
 export interface DidProps {

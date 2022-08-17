@@ -18,6 +18,7 @@ import type {
   ProofStateChangedEvent,
   ValueTransferStateChangedEvent,
   ValueTransferRecord,
+  WitnessTableReceivedEvent,
 } from '@aries-framework/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
@@ -113,6 +114,16 @@ export class Listener {
         if (payload.record.state === ValueTransferState.RequestReceived) {
           await this.newPaymentRequestPrompt(payload.record, giverInquirer)
         }
+      }
+    )
+  }
+
+  public witnessTableListener(giver: Anna) {
+    giver.agent.events.on(
+      ValueTransferEventTypes.WitnessTableReceived,
+      async ({ payload }: WitnessTableReceivedEvent) => {
+        console.log('\n\nWitness Table received:')
+        console.log(purpleText(JsonEncoder.toString(payload.witnesses)))
       }
     )
   }

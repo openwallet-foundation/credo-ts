@@ -249,6 +249,11 @@ export class Agent {
       }
     }
 
+    const existingQueriesDid = await this.didService.findStaticDid(DidMarker.Queries)
+    if (!existingQueriesDid) {
+      await this.didService.createDID({ isStatic: true, marker: DidMarker.Queries })
+    }
+
     // VTP state initialization
     if (valueTransferConfig) {
       if (valueTransferConfig.witness) {
