@@ -25,4 +25,5 @@ export interface ClearMenuOptions {
 export interface FindMenuOptions {
   connectionId: string
   role: ActionMenuRole
+  threadId?: string
 }

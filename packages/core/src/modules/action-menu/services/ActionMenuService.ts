@@ -183,9 +183,7 @@ export class ActionMenuService {
     })
 
     if (record) {
-      // Record found: check state and update with menu details
-      record.assertState([ActionMenuState.Null, ActionMenuState.AwaitingRootMenu, ActionMenuState.Done])
-
+      // Record found: update with menu details
       const previousState = record.state
 
       record.state = ActionMenuState.PreparingSelection
@@ -195,6 +193,7 @@ export class ActionMenuService {
         options: menuMessage.options,
       })
       record.threadId = menuMessage.threadId
+      record.performedAction = undefined
 
       await this.actionMenuRepository.update(record)
 
@@ -262,6 +261,7 @@ export class ActionMenuService {
     const record = await this.find({
       connectionId: connection.id,
       role: ActionMenuRole.Responder,
+      threadId: performMessage.threadId,
     })
 
     if (record) {
@@ -275,6 +275,11 @@ export class ActionMenuService {
         })
       }
       record.assertState([ActionMenuState.AwaitingSelection])
+
+      const validSelection = record.menu?.options.some((item) => item.name === performMessage.name)
+      if (!validSelection) {
+        throw new AriesFrameworkError('Selection does not match valid actions')
+      }
 
       const previousState = record.state
 
@@ -338,6 +343,7 @@ export class ActionMenuService {
     return await this.actionMenuRepository.findSingleByQuery({
       connectionId: options.connectionId,
       role: options.role,
+      threadId: options.threadId,
     })
   }
 

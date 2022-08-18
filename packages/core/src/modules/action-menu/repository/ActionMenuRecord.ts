@@ -26,6 +26,7 @@ export type CustomActionMenuTags = TagsBase
 export type DefaultActionMenuTags = {
   role: ActionMenuRole
   connectionId: string
+  threadId: string
 }
 
 export class ActionMenuRecord
@@ -67,6 +68,7 @@ export class ActionMenuRecord
       ...this._tags,
       role: this.role,
       connectionId: this.connectionId,
+      threadId: this.threadId,
     }
   }
 
