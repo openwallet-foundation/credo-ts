@@ -7,7 +7,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { MediationRole, MediationState, MediatorPickupStrategy } from '../src/modules/routing'
+import { MediationState, MediatorPickupStrategy } from '../src/modules/routing'
 
 import { getBaseConfig, waitForBasicMessage } from './helpers'
 
@@ -23,7 +23,6 @@ const aliceConfig = getBaseConfig('OOB mediation - Alice Recipient Agent', {
 const mediatorConfig = getBaseConfig('OOB mediation - Mediator Agent', {
   endpoints: ['rxjs:mediator'],
   autoAcceptMediationRequests: true,
-  mediationRole: MediationRole.Mediator,
 })
 
 describe('out of band with mediation', () => {

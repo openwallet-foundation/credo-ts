@@ -18,7 +18,7 @@ import {
   AutoAcceptProof,
   ProofEventTypes,
 } from '../src/modules/proofs'
-import { MediationRole, MediatorPickupStrategy } from '../src/modules/routing'
+import { MediatorPickupStrategy } from '../src/modules/routing'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
@@ -190,7 +190,6 @@ describe('Present Proof', () => {
     const mediatorConfig = getBaseConfig(`Connectionless proofs with mediator Mediator-${unique}`, {
       autoAcceptMediationRequests: true,
       endpoints: ['rxjs:mediator'],
-      mediationRole: MediationRole.Mediator,
     })
 
     const faberMessages = new Subject<SubjectMessage>()

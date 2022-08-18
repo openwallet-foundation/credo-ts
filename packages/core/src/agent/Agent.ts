@@ -29,7 +29,6 @@ import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
-import { MediationRole } from '../modules/routing/models'
 import { RoutingService } from '../modules/routing/services/RoutingService'
 import { DependencyManager } from '../plugins'
 import { StorageUpdateService, DidCommMessageRepository, StorageVersionRepository } from '../storage'
@@ -165,8 +164,7 @@ export class Agent {
   }
 
   public async initialize() {
-    const { connectToIndyLedgersOnStartup, publicDidSeed, walletConfig, mediatorConnectionsInvite, mediationRole } =
-      this.agentConfig
+    const { connectToIndyLedgersOnStartup, publicDidSeed, walletConfig, mediatorConnectionsInvite } = this.agentConfig
 
     if (this._isInitialized) {
       throw new AriesFrameworkError(
@@ -235,8 +233,8 @@ export class Agent {
       const mediationConnection = await this.getMediationConnection(mediatorConnectionsInvite)
       await this.mediationRecipient.provision(mediationConnection)
     }
-    if (mediationRole === MediationRole.Mediator) await this.mediator.initialize()
-    if (mediationRole === MediationRole.Recipient) await this.mediationRecipient.initialize()
+    await this.mediator.initialize()
+    await this.mediationRecipient.initialize()
 
     this._isInitialized = true
   }
