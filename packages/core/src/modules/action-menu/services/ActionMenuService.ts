@@ -301,7 +301,6 @@ export class ActionMenuService {
 
     // Update record
     record.state = ActionMenuState.Null
-    record.threadId = ''
     record.menu = undefined
     record.performedAction = undefined
 

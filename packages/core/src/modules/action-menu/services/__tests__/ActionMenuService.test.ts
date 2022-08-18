@@ -12,7 +12,7 @@ import { ActionMenuRole } from '../../ActionMenuRole'
 import { ActionMenuState } from '../../ActionMenuState'
 import { ActionMenuProblemReportError } from '../../errors/ActionMenuProblemReportError'
 import { ActionMenuProblemReportReason } from '../../errors/ActionMenuProblemReportReason'
-import { MenuMessage, PerformMessage } from '../../messages'
+import { MenuMessage, MenuRequestMessage, PerformMessage } from '../../messages'
 import { ActionMenu } from '../../models'
 import { ActionMenuRecord, ActionMenuRepository } from '../../repository'
 import { ActionMenuService } from '../ActionMenuService'
@@ -396,7 +396,6 @@ describe('ActionMenuService', () => {
             connectionId: mockConnectionRecord.id,
             role: ActionMenuRole.Requester,
             state: ActionMenuState.Null,
-            threadId: '',
             menu: undefined,
             performedAction: undefined,
           }),
@@ -424,7 +423,6 @@ describe('ActionMenuService', () => {
             connectionId: mockConnectionRecord.id,
             role: ActionMenuRole.Responder,
             state: ActionMenuState.Null,
-            threadId: '',
             menu: undefined,
             performedAction: undefined,
           }),
@@ -715,6 +713,98 @@ describe('ActionMenuService', () => {
       expect(actionMenuRepository.update).not.toHaveBeenCalled()
       expect(actionMenuRepository.save).not.toHaveBeenCalled()
       expect(eventListenerMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('processRequest', () => {
+    let mockRecord: ActionMenuRecord
+    let mockMenuRequestMessage: MenuRequestMessage
+
+    beforeEach(() => {
+      mockRecord = mockActionMenuRecord({
+        connectionId: mockConnectionRecord.id,
+        role: ActionMenuRole.Responder,
+        state: ActionMenuState.PreparingRootMenu,
+        threadId: '123',
+        menu: new ActionMenu({
+          description: 'menu-description',
+          title: 'menu-title',
+          options: [
+            { name: 'opt1', title: 'opt1-title', description: 'opt1-desc' },
+            { name: 'opt2', title: 'opt2-title', description: 'opt2-desc' },
+          ],
+        }),
+        performedAction: { name: 'opt1' },
+      })
+
+      mockMenuRequestMessage = new MenuRequestMessage({})
+    })
+
+    it(`emits event and creates record when no previous record`, async () => {
+      const messageContext = new InboundMessageContext(mockMenuRequestMessage, { connection: mockConnectionRecord })
+
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
+
+      mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
+
+      await actionMenuService.processRequest(messageContext)
+
+      const expectedRecord = {
+        connectionId: mockConnectionRecord.id,
+        role: ActionMenuRole.Responder,
+        state: ActionMenuState.PreparingRootMenu,
+        threadId: messageContext.message.threadId,
+        menu: undefined,
+        performedAction: undefined,
+      }
+
+      expect(actionMenuRepository.save).toHaveBeenCalledWith(expect.objectContaining(expectedRecord))
+      expect(actionMenuRepository.update).not.toHaveBeenCalled()
+
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: ActionMenuEventTypes.ActionMenuStateChanged,
+        payload: {
+          previousState: null,
+          actionMenuRecord: expect.objectContaining(expectedRecord),
+        },
+      })
+    })
+
+    it(`emits event and updates record when existing record`, async () => {
+      const messageContext = new InboundMessageContext(mockMenuRequestMessage, { connection: mockConnectionRecord })
+
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
+
+      // It should accept any previous state
+      for (const state of Object.values(ActionMenuState)) {
+        mockRecord.state = state
+        const previousState = state
+        mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
+
+        await actionMenuService.processRequest(messageContext)
+
+        const expectedRecord = {
+          connectionId: mockConnectionRecord.id,
+          role: ActionMenuRole.Responder,
+          state: ActionMenuState.PreparingRootMenu,
+          threadId: messageContext.message.threadId,
+          menu: undefined,
+          performedAction: undefined,
+        }
+
+        expect(actionMenuRepository.update).toHaveBeenCalledWith(expect.objectContaining(expectedRecord))
+        expect(actionMenuRepository.save).not.toHaveBeenCalled()
+
+        expect(eventListenerMock).toHaveBeenCalledWith({
+          type: ActionMenuEventTypes.ActionMenuStateChanged,
+          payload: {
+            previousState,
+            actionMenuRecord: expect.objectContaining(expectedRecord),
+          },
+        })
+      }
     })
   })
 })

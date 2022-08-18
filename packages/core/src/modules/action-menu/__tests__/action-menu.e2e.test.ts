@@ -285,6 +285,8 @@ describe('Action Menu', () => {
       performedAction: { name: 'option-1' },
     })
 
+    // Exception
+
     testLogger.test('Faber rejects selection, as menu has been cleared')
     // Faber sends error report to Alice, meaning that her Menu flow will be cleared
     aliceActionMenuRecord = await waitForActionMenuRecord(aliceAgent, {
@@ -318,7 +320,7 @@ describe('Action Menu', () => {
     expect(faberActiveMenu).toBeInstanceOf(ActionMenuRecord)
     expect(faberActiveMenu?.state).toBe(ActionMenuState.AwaitingSelection)
 
-    testLogger.test('Alice selects menu item')
+    /*testLogger.test('Alice selects menu item')
     await aliceAgent.actionMenu.performAction({
       connectionId: aliceConnection.id,
       performedAction: { name: 'option-1' },
@@ -327,6 +329,6 @@ describe('Action Menu', () => {
     testLogger.test('Faber waits for menu selection from Alice')
     await waitForActionMenuRecord(faberAgent, {
       state: ActionMenuState.Done,
-    })
+    })*/
   })
 })
