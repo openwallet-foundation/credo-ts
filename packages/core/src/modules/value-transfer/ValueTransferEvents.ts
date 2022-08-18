@@ -1,7 +1,7 @@
 import type { BaseEvent } from '../../agent/Events'
 import type { ValueTransferState } from './ValueTransferState'
+import type { WitnessData } from './messages'
 import type { ValueTransferRecord } from './repository'
-import type { WitnessData } from '@aries-framework/core'
 
 export enum ValueTransferEventTypes {
   ValueTransferStateChanged = 'ValueTransferStateChanged',

@@ -305,7 +305,7 @@ export class ValueTransferModule {
    * @param notes Verifiable notes to add.
    */
   public async receiveNotes(notes: VerifiableNote[]) {
-    await this.valueTransferService.receiveNotes(notes)
+    await this.valueTransferIssuerService.receiveNotes(notes)
   }
 
   /**

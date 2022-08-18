@@ -4,9 +4,8 @@ import type { Transports } from '../../routing/types'
 import type { ValueTransferStateChangedEvent, WitnessTableReceivedEvent } from '../ValueTransferEvents'
 import type { WitnessTableMessage } from '../messages'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
-import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { PartyState, TransactionRecord, ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { PartyState, ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -80,51 +79,17 @@ export class ValueTransferService {
    * Init party (Getter or Giver) state in the Wallet
    */
   public async initPartyState(): Promise<void> {
-    const partyState = await this.getPartyState()
+    const partyState = await this.findPartyState()
     if (partyState) return
 
     const state = new ValueTransferStateRecord({
       partyState: new PartyState({
-        previousHash: new Uint8Array(),
+        previousHash: undefined,
         wallet: new Wallet(),
         ownershipKey: await this.valueTransferCryptoService.createKey(),
       }),
     })
     await this.valueTransferStateRepository.save(state)
-  }
-
-  /**
-   * Add notes into the wallet.
-   * Init payment state if it's missing.
-   *
-   * @param notes Verifiable notes to add.
-   *
-   * @returns Transaction Record for wallet state transition after receiving notes
-   */
-  public async receiveNotes(notes: VerifiableNote[]): Promise<TransactionRecord | undefined> {
-    try {
-      // no notes to add
-      if (!notes.length) return
-
-      if (this.config.valueTransferConfig?.witness) {
-        throw new AriesFrameworkError(`Witness cannot add notes`)
-      }
-
-      const state = await this.getPartyState()
-      if (!state) {
-        throw new AriesFrameworkError(`Unable to find party state`)
-      }
-
-      const [proof, wallet] = state.partyState.wallet.receiveNotes(new Set(notes))
-      await this.valueTransferStateService.storePartyState({
-        ...state.partyState,
-        wallet,
-      })
-
-      return new TransactionRecord({ start: proof.currentState || null, end: proof.nextState })
-    } catch (e) {
-      throw new AriesFrameworkError(`Unable to add verifiable notes. Err: ${e}`)
-    }
   }
 
   /**
@@ -354,8 +319,12 @@ export class ValueTransferService {
     })
   }
 
-  public async getPartyState(): Promise<ValueTransferStateRecord | null> {
+  public async findPartyState(): Promise<ValueTransferStateRecord | null> {
     return this.valueTransferStateRepository.findSingleByQuery({})
+  }
+
+  public async getPartyState(): Promise<ValueTransferStateRecord> {
+    return this.valueTransferStateRepository.getSingleByQuery({})
   }
 
   public async getTransactionDid(usePublicDid?: boolean) {
