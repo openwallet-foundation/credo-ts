@@ -94,7 +94,7 @@ export class MessageReceiver {
     } else if (this.isPlaintextMessage(inboundMessage)) {
       await this.receivePlaintextMessage({
         type: SendingMessageType.Plain,
-        message: inboundMessage as SignedMessage,
+        message: inboundMessage as PlaintextMessage,
       })
     } else {
       throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
