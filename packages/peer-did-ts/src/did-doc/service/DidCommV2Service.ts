@@ -8,7 +8,7 @@ export class DidCommV2Service extends DidDocumentService {
 
     if (options) {
       this.routingKeys = options.routingKeys
-      this.accept = options.accept || ['didcomm/v2']
+      this.accept = options.accept
     }
   }
 
