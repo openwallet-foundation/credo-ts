@@ -1,5 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { HandshakeProtocol } from '../models'
+import type { ConnectionType } from '../models/ConnectionType'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -36,6 +37,7 @@ export type DefaultConnectionTags = {
   theirDid?: string
   outOfBandId?: string
   invitationDid?: string
+  connectionType?: ConnectionType.Mediator
 }
 
 export class ConnectionRecord
