@@ -66,6 +66,16 @@ export class KeyService {
     return keyRecord
   }
 
+  public async deleteKey(kid: string): Promise<boolean> {
+    const keyRecord = await this.keyRepository.findByKid(kid)
+    if (keyRecord) {
+      await this.keyRepository.delete(keyRecord)
+      return true
+    } else {
+      return false
+    }
+  }
+
   public async sign(params: { payload: Buffer; kid: string }): Promise<Buffer> {
     const keyRecord: KeyRecord | null = await this.keyRepository.getByKid(params.kid)
     if (!keyRecord) {
