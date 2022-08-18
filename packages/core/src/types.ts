@@ -7,7 +7,7 @@ import type { Key } from './modules/dids/domain/Key'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
-import type { MediationRole, MediatorPickupStrategy } from './modules/routing'
+import type { MediatorPickupStrategy } from './modules/routing'
 
 export enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -68,7 +68,6 @@ export interface InitConfig {
   indyLedgers?: IndyPoolConfig[]
   connectToIndyLedgersOnStartup?: boolean
 
-  mediationRole?: MediationRole
   autoAcceptMediationRequests?: boolean
   mediatorConnectionsInvite?: string
   defaultMediatorId?: string

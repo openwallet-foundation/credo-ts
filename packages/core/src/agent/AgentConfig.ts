@@ -10,7 +10,6 @@ import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
 import { AutoAcceptCredential } from '../modules/credentials/models/CredentialAutoAcceptType'
 import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
-import { MediationRole } from '../modules/routing/models'
 import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
@@ -70,10 +69,6 @@ export class AgentConfig {
 
   public get didCommMimeType() {
     return this.initConfig.didCommMimeType ?? DidCommMimeType.V0
-  }
-
-  public get mediationRole() {
-    return this.initConfig.mediationRole ?? MediationRole.Recipient
   }
 
   public get mediatorPollingInterval() {
