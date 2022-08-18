@@ -13,18 +13,16 @@ export interface CreateMenuOptions {
   menu: ActionMenu
 }
 
-export interface CreateMenuAsResponseOptions {
-  actionMenuRecord: ActionMenuRecord
-  menu: ActionMenu
-}
-
 export interface CreatePerformOptions {
   actionMenuRecord: ActionMenuRecord
   performedAction: ActionMenuSelection
 }
 
+export interface ClearMenuOptions {
+  actionMenuRecord: ActionMenuRecord
+}
+
 export interface FindMenuOptions {
   connectionId: string
   role: ActionMenuRole
-  threadId?: string
 }

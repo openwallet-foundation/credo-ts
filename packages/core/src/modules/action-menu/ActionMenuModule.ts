@@ -1,5 +1,6 @@
 import type { DependencyManager } from '../../plugins'
 import type {
+  ClearActiveMenuOptions,
   FindActiveMenuOptions,
   PerformActionOptions,
   RequestMenuOptions,
@@ -14,7 +15,12 @@ import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
 import { ActionMenuRole } from './ActionMenuRole'
-import { MenuMessageHandler, MenuRequestMessageHandler, PerformMessageHandler } from './handlers'
+import {
+  ActionMenuProblemReportHandler,
+  MenuMessageHandler,
+  MenuRequestMessageHandler,
+  PerformMessageHandler,
+} from './handlers'
 import { ActionMenuService } from './services'
 
 @module()
@@ -37,7 +43,7 @@ export class ActionMenuModule {
   }
 
   /**
-   * Start Action Menu protocol as requester, asking for root menu. Any active menu will be closed.
+   * Start Action Menu protocol as requester, asking for root menu. Any active menu will be cleared.
    *
    * @param options options for requesting menu
    * @returns Action Menu record associated to this new request
@@ -118,7 +124,23 @@ export class ActionMenuModule {
     })
   }
 
+  /**
+   * Clears the current active menu for a given connection and the specified role.
+   *
+   * @param options options for clearing active menu
+   * @returns Active Action Menu record, or null if no active menu record found
+   */
+  public async clearActiveMenu(options: ClearActiveMenuOptions) {
+    const actionMenuRecord = await this.actionMenuService.find({
+      connectionId: options.connectionId,
+      role: options.role,
+    })
+
+    return actionMenuRecord ? await this.actionMenuService.clearMenu({ actionMenuRecord }) : null
+  }
+
   private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new ActionMenuProblemReportHandler(this.actionMenuService))
     dispatcher.registerHandler(new MenuMessageHandler(this.actionMenuService))
     dispatcher.registerHandler(new MenuRequestMessageHandler(this.actionMenuService))
     dispatcher.registerHandler(new PerformMessageHandler(this.actionMenuService))

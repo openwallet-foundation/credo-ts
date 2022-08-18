@@ -17,7 +17,7 @@ export interface ActionMenuRecordProps {
   connectionId: string
   threadId: string
   menu?: ActionMenu
-  performSelection?: ActionMenuSelection
+  performedAction?: ActionMenuSelection
   tags?: CustomActionMenuTags
 }
 
@@ -26,8 +26,6 @@ export type CustomActionMenuTags = TagsBase
 export type DefaultActionMenuTags = {
   role: ActionMenuRole
   connectionId: string
-  state: ActionMenuState
-  threadId: string
 }
 
 export class ActionMenuRecord
@@ -59,7 +57,7 @@ export class ActionMenuRecord
       this.state = props.state
       this.role = props.role
       this.menu = props.menu
-      this.performedAction = props.performSelection
+      this.performedAction = props.performedAction
       this._tags = props.tags ?? {}
     }
   }
@@ -67,10 +65,8 @@ export class ActionMenuRecord
   public getTags() {
     return {
       ...this._tags,
-      state: this.state,
       role: this.role,
       connectionId: this.connectionId,
-      threadId: this.threadId,
     }
   }
 

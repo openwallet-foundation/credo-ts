@@ -21,7 +21,6 @@ const faberConfig = getBaseConfig('Faber Action Menu', {
 
 const aliceConfig = getBaseConfig('Alice Action Menu', {
   endpoints: ['rxjs:alice'],
-  logger: testLogger,
 })
 
 describe('Action Menu', () => {
@@ -29,6 +28,40 @@ describe('Action Menu', () => {
   let aliceAgent: Agent
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
+
+  const rootMenu = new ActionMenu({
+    title: 'Welcome',
+    description: 'This is the root menu',
+    options: [
+      {
+        name: 'option-1',
+        description: 'Option 1 description',
+        title: 'Option 1',
+      },
+      {
+        name: 'option-2',
+        description: 'Option 2 description',
+        title: 'Option 2',
+      },
+    ],
+  })
+
+  const submenu1 = new ActionMenu({
+    title: 'Menu 1',
+    description: 'This is first submenu',
+    options: [
+      {
+        name: 'option-1-1',
+        description: '1-1 desc',
+        title: '1-1 title',
+      },
+      {
+        name: 'option-1-2',
+        description: '1-1 desc',
+        title: '1-1 title',
+      },
+    ],
+  })
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -66,31 +99,15 @@ describe('Action Menu', () => {
       state: ActionMenuState.PreparingRootMenu,
     })
 
-    const menu = new ActionMenu({
-      title: 'Welcome',
-      description: 'This is the root menu',
-      options: [
-        {
-          name: 'option-1',
-          description: 'Option 1 description',
-          title: 'Option 1',
-        },
-        {
-          name: 'option-2',
-          description: 'Option 2 description',
-          title: 'Option 2',
-        },
-      ],
-    })
     testLogger.test('Faber sends root menu to Alice')
-    await faberAgent.actionMenu.sendMenu({ connectionId: faberConnection.id, menu })
+    await faberAgent.actionMenu.sendMenu({ connectionId: faberConnection.id, menu: rootMenu })
 
     testLogger.test('Alice waits until she receives menu')
     aliceActionMenuRecord = await waitForActionMenuRecord(aliceAgent, {
       state: ActionMenuState.PreparingSelection,
     })
 
-    expect(aliceActionMenuRecord.menu).toEqual(menu)
+    expect(aliceActionMenuRecord.menu).toEqual(rootMenu)
     const faberActiveMenu = await faberAgent.actionMenu.findActiveMenu({
       connectionId: faberConnection.id,
       role: ActionMenuRole.Responder,
@@ -119,31 +136,15 @@ describe('Action Menu', () => {
   })
 
   test('Faber sends root menu and Alice selects an option', async () => {
-    const menu = new ActionMenu({
-      title: 'Welcome',
-      description: 'This is the root menu',
-      options: [
-        {
-          name: 'option-1',
-          description: 'Option 1 description',
-          title: 'Option 1',
-        },
-        {
-          name: 'option-2',
-          description: 'Option 2 description',
-          title: 'Option 2',
-        },
-      ],
-    })
     testLogger.test('Faber sends root menu to Alice')
-    await faberAgent.actionMenu.sendMenu({ connectionId: faberConnection.id, menu })
+    await faberAgent.actionMenu.sendMenu({ connectionId: faberConnection.id, menu: rootMenu })
 
     testLogger.test('Alice waits until she receives menu')
     const aliceActionMenuRecord = await waitForActionMenuRecord(aliceAgent, {
       state: ActionMenuState.PreparingSelection,
     })
 
-    expect(aliceActionMenuRecord.menu).toEqual(menu)
+    expect(aliceActionMenuRecord.menu).toEqual(rootMenu)
     const faberActiveMenu = await faberAgent.actionMenu.findActiveMenu({
       connectionId: faberConnection.id,
       role: ActionMenuRole.Responder,
@@ -172,57 +173,6 @@ describe('Action Menu', () => {
   })
 
   test('Menu navigation', async () => {
-    const rootMenu = new ActionMenu({
-      title: 'Welcome',
-      description: 'This is the root menu',
-      options: [
-        {
-          name: 'option-1',
-          description: 'Option 1 description',
-          title: 'Option 1',
-        },
-        {
-          name: 'option-2',
-          description: 'Option 2 description',
-          title: 'Option 2',
-        },
-      ],
-    })
-
-    const submenu1 = new ActionMenu({
-      title: 'Menu 1',
-      description: 'This is first submenu',
-      options: [
-        {
-          name: 'option-1-1',
-          description: '1-1 desc',
-          title: '1-1 title',
-        },
-        {
-          name: 'option-1-2',
-          description: '1-1 desc',
-          title: '1-1 title',
-        },
-      ],
-    })
-
-    const submenu2 = new ActionMenu({
-      title: 'Menu 2',
-      description: 'This is second submenu',
-      options: [
-        {
-          name: 'option-2-1',
-          description: '2-1 desc',
-          title: '2-1 title',
-        },
-        {
-          name: 'option-2-2',
-          description: '2-2 desc',
-          title: '2-2 title',
-        },
-      ],
-    })
-
     testLogger.test('Faber sends root menu ')
     let faberActionMenuRecord = await faberAgent.actionMenu.sendMenu({
       connectionId: faberConnection.id,
@@ -242,7 +192,7 @@ describe('Action Menu', () => {
     testLogger.test('Alice selects menu item 1')
     await aliceAgent.actionMenu.performAction({
       connectionId: aliceConnection.id,
-      performedAction: { name: 'option-1-1' },
+      performedAction: { name: 'option-1' },
     })
 
     testLogger.test('Faber waits for menu selection from Alice')
@@ -251,7 +201,7 @@ describe('Action Menu', () => {
     })
 
     // As Alice has responded, menu should be closed (done state)
-    const aliceActiveMenu = await aliceAgent.actionMenu.findActiveMenu({
+    let aliceActiveMenu = await aliceAgent.actionMenu.findActiveMenu({
       connectionId: aliceConnection.id,
       role: ActionMenuRole.Requester,
     })
@@ -265,13 +215,33 @@ describe('Action Menu', () => {
       menu: submenu1,
     })
 
-    testLogger.test('Alice waits until she receives menu')
+    testLogger.test('Alice waits until she receives submenu')
     aliceActionMenuRecord = await waitForActionMenuRecord(aliceAgent, {
       state: ActionMenuState.PreparingSelection,
     })
 
     expect(aliceActionMenuRecord.menu).toEqual(submenu1)
     expect(aliceActionMenuRecord.threadId).toEqual(rootThreadId)
+
+    testLogger.test('Alice selects menu item 1-1')
+    await aliceAgent.actionMenu.performAction({
+      connectionId: aliceConnection.id,
+      performedAction: { name: 'option-1-1' },
+    })
+
+    testLogger.test('Faber waits for menu selection from Alice')
+    faberActionMenuRecord = await waitForActionMenuRecord(faberAgent, {
+      state: ActionMenuState.Done,
+    })
+
+    // As Alice has responded, menu should be closed (done state)
+    aliceActiveMenu = await aliceAgent.actionMenu.findActiveMenu({
+      connectionId: aliceConnection.id,
+      role: ActionMenuRole.Requester,
+    })
+    expect(aliceActiveMenu).toBeInstanceOf(ActionMenuRecord)
+    expect(aliceActiveMenu?.state).toBe(ActionMenuState.Done)
+    expect(aliceActiveMenu?.threadId).toEqual(rootThreadId)
 
     testLogger.test('Alice sends menu request to Faber')
     aliceActionMenuRecord = await aliceAgent.actionMenu.requestMenu({ connectionId: aliceConnection.id })
@@ -285,5 +255,78 @@ describe('Action Menu', () => {
     expect(faberActionMenuRecord.menu).toBeUndefined()
     expect(aliceActionMenuRecord.threadId).not.toEqual(rootThreadId)
     expect(faberActionMenuRecord.threadId).toEqual(aliceActionMenuRecord.threadId)
+  })
+
+  test('Menu clearing', async () => {
+    testLogger.test('Faber sends root menu to Alice')
+    await faberAgent.actionMenu.sendMenu({ connectionId: faberConnection.id, menu: rootMenu })
+
+    testLogger.test('Alice waits until she receives menu')
+    let aliceActionMenuRecord = await waitForActionMenuRecord(aliceAgent, {
+      state: ActionMenuState.PreparingSelection,
+    })
+
+    expect(aliceActionMenuRecord.menu).toEqual(rootMenu)
+    let faberActiveMenu = await faberAgent.actionMenu.findActiveMenu({
+      connectionId: faberConnection.id,
+      role: ActionMenuRole.Responder,
+    })
+    expect(faberActiveMenu).toBeInstanceOf(ActionMenuRecord)
+    expect(faberActiveMenu?.state).toBe(ActionMenuState.AwaitingSelection)
+
+    await faberAgent.actionMenu.clearActiveMenu({
+      connectionId: faberConnection.id,
+      role: ActionMenuRole.Responder,
+    })
+
+    testLogger.test('Alice selects menu item')
+    await aliceAgent.actionMenu.performAction({
+      connectionId: aliceConnection.id,
+      performedAction: { name: 'option-1' },
+    })
+
+    testLogger.test('Faber rejects selection, as menu has been cleared')
+    // Faber sends error report to Alice, meaning that her Menu flow will be cleared
+    aliceActionMenuRecord = await waitForActionMenuRecord(aliceAgent, {
+      state: ActionMenuState.Null,
+      role: ActionMenuRole.Requester,
+    })
+
+    testLogger.test('Alice request a new menu')
+    await aliceAgent.actionMenu.requestMenu({
+      connectionId: aliceConnection.id,
+    })
+
+    testLogger.test('Faber waits for menu request from Alice')
+    await waitForActionMenuRecord(faberAgent, {
+      state: ActionMenuState.PreparingRootMenu,
+    })
+
+    testLogger.test('Faber sends root menu to Alice')
+    await faberAgent.actionMenu.sendMenu({ connectionId: faberConnection.id, menu: rootMenu })
+
+    testLogger.test('Alice waits until she receives menu')
+    aliceActionMenuRecord = await waitForActionMenuRecord(aliceAgent, {
+      state: ActionMenuState.PreparingSelection,
+    })
+
+    expect(aliceActionMenuRecord.menu).toEqual(rootMenu)
+    faberActiveMenu = await faberAgent.actionMenu.findActiveMenu({
+      connectionId: faberConnection.id,
+      role: ActionMenuRole.Responder,
+    })
+    expect(faberActiveMenu).toBeInstanceOf(ActionMenuRecord)
+    expect(faberActiveMenu?.state).toBe(ActionMenuState.AwaitingSelection)
+
+    testLogger.test('Alice selects menu item')
+    await aliceAgent.actionMenu.performAction({
+      connectionId: aliceConnection.id,
+      performedAction: { name: 'option-1' },
+    })
+
+    testLogger.test('Faber waits for menu selection from Alice')
+    await waitForActionMenuRecord(faberAgent, {
+      state: ActionMenuState.Done,
+    })
   })
 })

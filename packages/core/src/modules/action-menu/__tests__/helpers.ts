@@ -1,5 +1,6 @@
 import type { Agent } from '../../../agent/Agent'
 import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
+import type { ActionMenuRole } from '../ActionMenuRole'
 import type { ActionMenuState } from '../ActionMenuState'
 import type { Observable } from 'rxjs'
 
@@ -11,6 +12,7 @@ export async function waitForActionMenuRecord(
   agent: Agent,
   options: {
     threadId?: string
+    role?: ActionMenuRole
     state?: ActionMenuState
     previousState?: ActionMenuState | null
     timeoutMs?: number
@@ -25,11 +27,13 @@ export function waitForActionMenuRecordSubject(
   subject: ReplaySubject<ActionMenuStateChangedEvent> | Observable<ActionMenuStateChangedEvent>,
   {
     threadId,
+    role,
     state,
     previousState,
     timeoutMs = 10000,
   }: {
     threadId?: string
+    role?: ActionMenuRole
     state?: ActionMenuState
     previousState?: ActionMenuState | null
     timeoutMs?: number
@@ -40,11 +44,12 @@ export function waitForActionMenuRecordSubject(
     observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
       filter((e) => threadId === undefined || e.payload.actionMenuRecord.threadId === threadId),
+      filter((e) => role === undefined || e.payload.actionMenuRecord.role === role),
       filter((e) => state === undefined || e.payload.actionMenuRecord.state === state),
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `ProofStateChangedEvent event not emitted within specified timeout: {
+          `ActionMenuStateChangedEvent event not emitted within specified timeout: {
     previousState: ${previousState},
     threadId: ${threadId},
     state: ${state}

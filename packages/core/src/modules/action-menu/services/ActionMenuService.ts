@@ -1,7 +1,9 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
+import type { ActionMenuProblemReportMessage } from '../messages'
 import type {
+  ClearMenuOptions,
   CreateMenuOptions,
   CreatePerformOptions,
   CreateRequestOptions,
@@ -16,6 +18,8 @@ import { JsonTransformer } from '../../../utils'
 import { ActionMenuEventTypes } from '../ActionMenuEvents'
 import { ActionMenuRole } from '../ActionMenuRole'
 import { ActionMenuState } from '../ActionMenuState'
+import { ActionMenuProblemReportError } from '../errors/ActionMenuProblemReportError'
+import { ActionMenuProblemReportReason } from '../errors/ActionMenuProblemReportReason'
 import { PerformMessage, MenuMessage, MenuRequestMessage } from '../messages'
 import { ActionMenuSelection, ActionMenu } from '../models'
 import { ActionMenuRepository, ActionMenuRecord } from '../repository'
@@ -113,6 +117,11 @@ export class ActionMenuService {
     // Assert connection ready
     options.connection.assertReady()
 
+    const uniqueNames = new Set(options.menu.options.map((v) => v.name))
+    if (uniqueNames.size < options.menu.options.length) {
+      throw new AriesFrameworkError('Action Menu contains duplicated options')
+    }
+
     // Create message
     const menuMessage = new MenuMessage({
       title: options.menu.title,
@@ -148,6 +157,7 @@ export class ActionMenuService {
         connectionId: options.connection.id,
         role: ActionMenuRole.Responder,
         state: ActionMenuState.AwaitingSelection,
+        menu: options.menu,
         threadId: menuMessage.id,
       })
 
@@ -216,6 +226,11 @@ export class ActionMenuService {
     record.assertRole(ActionMenuRole.Requester)
     record.assertState([ActionMenuState.PreparingSelection])
 
+    const validSelection = record.menu?.options.some((item) => item.name === performedSelection.name)
+    if (!validSelection) {
+      throw new AriesFrameworkError('Selection does not match valid actions')
+    }
+
     const previousState = record.state
 
     // Create message
@@ -250,8 +265,15 @@ export class ActionMenuService {
     })
 
     if (record) {
-      // Record found: check role and update with menu details
-      record.assertRole(ActionMenuRole.Responder)
+      // Record found: check state and update with menu details
+
+      // A Null state means that menu has been cleared by the responder.
+      // Requester should be informed in order to request another menu
+      if (record.state === ActionMenuState.Null) {
+        throw new ActionMenuProblemReportError('Action Menu has been cleared by the responder', {
+          problemCode: ActionMenuProblemReportReason.Timeout,
+        })
+      }
       record.assertState([ActionMenuState.AwaitingSelection])
 
       const previousState = record.state
@@ -267,6 +289,47 @@ export class ActionMenuService {
     }
   }
 
+  public async clearMenu(options: ClearMenuOptions) {
+    const { actionMenuRecord: record } = options
+
+    const previousState = record.state
+
+    // Update record
+    record.state = ActionMenuState.Null
+    record.threadId = ''
+    record.menu = undefined
+    record.performedAction = undefined
+
+    await this.actionMenuRepository.update(record)
+
+    this.emitStateChangedEvent(record, previousState)
+
+    return record
+  }
+
+  public async processProblemReport(
+    messageContext: InboundMessageContext<ActionMenuProblemReportMessage>
+  ): Promise<ActionMenuRecord> {
+    const { message: actionMenuProblemReportMessage } = messageContext
+
+    const connection = messageContext.assertReadyConnection()
+
+    this.logger.debug(`Processing problem report with id ${actionMenuProblemReportMessage.id}`)
+
+    const actionMenuRecord = await this.find({
+      role: ActionMenuRole.Requester,
+      connectionId: connection.id,
+    })
+
+    if (!actionMenuRecord) {
+      throw new AriesFrameworkError(
+        `Unable to process action menu problem: record not found for connection id ${connection.id}`
+      )
+    }
+    // Clear menu to restart flow
+    return await this.clearMenu({ actionMenuRecord })
+  }
+
   public async findById(actionMenuRecordId: string) {
     return await this.actionMenuRepository.findById(actionMenuRecordId)
   }
@@ -275,7 +338,6 @@ export class ActionMenuService {
     return await this.actionMenuRepository.findSingleByQuery({
       connectionId: options.connectionId,
       role: options.role,
-      threadId: options.threadId,
     })
   }
 
