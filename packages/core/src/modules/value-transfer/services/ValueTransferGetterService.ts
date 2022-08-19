@@ -283,7 +283,7 @@ export class ValueTransferGetterService {
       )
     }
 
-    const getterId = record.receipt.getterId ?? (await this.valueTransferService.getTransactionDid()).id
+    const getterId = record.getter?.did ?? (await this.valueTransferService.getTransactionDid()).id
 
     const { error, receipt } = await this.getter.createRequest({
       getterId: getterId,
