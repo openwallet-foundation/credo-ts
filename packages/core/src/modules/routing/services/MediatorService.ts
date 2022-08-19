@@ -77,9 +77,7 @@ export class MediatorService {
       this.agentConfig.logger.debug(`Returning mediator routing keys ${this._mediatorRoutingRecord.routingKeys}`)
       return this._mediatorRoutingRecord.routingKeys
     }
-    throw new AriesFrameworkError(
-      `Mediation service has not been initialized. Agent must include the config {mediationRole: MediationRole.Mediator}`
-    )
+    throw new AriesFrameworkError(`Mediation service has not been initialized yet.`)
   }
 
   public async processForwardMessage(
