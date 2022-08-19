@@ -105,6 +105,7 @@ export class BaseAgent {
       transports: props.transports,
       mediatorConnectionsInvite: props.mediatorConnectionsInvite,
       mediatorDeliveryStrategy: MediatorDeliveryStrategy.WebSocket,
+      supportOffline: true,
     }
 
     this.config = config

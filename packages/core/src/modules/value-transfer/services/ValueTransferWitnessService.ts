@@ -695,7 +695,7 @@ export class ValueTransferWitnessService {
       end: endHash,
     })
 
-    const { witnessState } = await this.getWitnessState()
+    const witnessState = await this.valueTransferStateService.getWitnessState()
     witnessState.applyPartyStateTransitions([transactionRecord])
     await this.valueTransferStateService.storeWitnessState(witnessState)
   }
@@ -782,7 +782,7 @@ export class ValueTransferWitnessService {
       return
     }
 
-    const state = await this.getWitnessState()
+    const state = await this.valueTransferStateService.getWitnessStateRecord()
 
     const witnesses = state.witnessState.mappingTable.map(
       (witness) =>
@@ -800,14 +800,6 @@ export class ValueTransferWitnessService {
     })
 
     await this.valueTransferService.sendMessage(message)
-  }
-
-  public async getWitnessState(): Promise<WitnessStateRecord> {
-    const state = await this.findWitnessState()
-    if (!state) {
-      throw new AriesFrameworkError('Witness state is not found.')
-    }
-    return state
   }
 
   public async findWitnessState(): Promise<WitnessStateRecord | null> {
