@@ -696,6 +696,7 @@ export class ValueTransferWitnessService {
     })
 
     const witnessState = await this.valueTransferStateService.getWitnessState()
+
     witnessState.applyPartyStateTransitions([transactionRecord])
     await this.valueTransferStateService.storeWitnessState(witnessState)
   }

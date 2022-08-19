@@ -89,10 +89,14 @@ export class ValueTransferIssuerService {
         throw new AriesFrameworkError(`Witness cannot add notes`)
       }
 
+      const state = await this.valueTransferStateService.getPartyState()
+
       const { proof } = await this.valueTransfer.giver().startAddingNotes(notes)
       await this.valueTransfer.giver().commitTransaction()
 
-      return new TransactionRecord({ start: proof.currentState || null, end: proof.nextState })
+      const start = state.previousHash ? proof.currentState : null
+
+      return new TransactionRecord({ start: start || null, end: proof.nextState })
     } catch (e) {
       throw new AriesFrameworkError(`Unable to add verifiable notes. Err: ${e}`)
     }
