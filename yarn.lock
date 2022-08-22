@@ -39,19 +39,21 @@
     uuid "^8.3.2"
 
 "@aries-framework/core@npm:@sicpa-dlab/aries-framework-core":
-  version "0.1.44"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.1.44/09a12017b9f342446e3866982bda86e6355c7bc2#09a12017b9f342446e3866982bda86e6355c7bc2"
-  integrity sha512-jw6lwK/7bBUpZcoSqKn0XjdmxHXxuGdmq07qsSSWLC4YYocghQITaObxFgGCcvO/K1yd+nsUBiM9U+reo1kZmw==
+  version "0.1.50"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.1.50/6151b83c038b7076aec2602006e2c60168cfde0e#6151b83c038b7076aec2602006e2c60168cfde0e"
+  integrity sha512-2gQyBxUYZh7EtdGSSj8LAHFJxzVCk/s4VRNlNz4PG6whyKq2fYHXK1e8Bgd0iqnBwzXcUxG8v1I0NVXJU+R75g==
   dependencies:
     "@multiformats/base-x" "^4.0.1"
-    "@sicpa-dlab/value-transfer-protocol-ts" "0.0.29"
+    "@sicpa-dlab/value-transfer-protocol-ts" "0.0.33"
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
     "@stablelib/uuid" "^1.0.1"
+    "@types/async-lock" "^1.1.5"
     "@types/indy-sdk" "^1.16.16"
     "@types/node-fetch" "^2.5.10"
     "@types/ws" "^7.4.6"
     abort-controller "^3.0.0"
+    async-lock "^1.3.2"
     bloom-filters "^3.0.0"
     bn.js "^5.2.0"
     borc "^3.0.0"
@@ -59,7 +61,7 @@
     class-transformer "0.5.1"
     class-validator "0.13.1"
     did-resolver "3.1.3"
-    didcomm "0.3.3"
+    didcomm "0.3.4"
     fast-json-patch "^3.1.1"
     lru_map "^0.4.1"
     luxon "^1.27.0"
@@ -85,12 +87,12 @@
     ws "^7.5.3"
 
 "@aries-framework/node@npm:@sicpa-dlab/aries-framework-node":
-  version "0.1.3"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-node/0.1.3/cf887cd1ac15686ea12021727113462623038243#cf887cd1ac15686ea12021727113462623038243"
-  integrity sha512-MHeQ4pb9/Kt1xVddYJ6csmyFcMObS5MIj7Dag1dmWD+BAkoQS++gTgnIcUnfgo61YRH4nxm+0uo+do6m5oFfNA==
+  version "0.1.4"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-node/0.1.4/9f5905f60ed6802c1ce6d35be37b9022e9ebce39#9f5905f60ed6802c1ce6d35be37b9022e9ebce39"
+  integrity sha512-2NdPue/M79WOKT6fWzsbzC0rzUPA+Jn7l0iMtnejAdXRRuDnGclmYbX2xx2f67OPBFdXnlpsm8nlOggnpc8Hdg==
   dependencies:
     "@aries-framework/core" "npm:@sicpa-dlab/aries-framework-core"
-    didcomm-node "0.3.3"
+    didcomm-node "0.3.4"
     express "^4.17.1"
     indy-sdk "^1.16.0-dev-1636"
     node-fetch "^2.6.1"
@@ -2147,32 +2149,15 @@
   resolved "https://registry.yarnpkg.com/@react-native/polyfills/-/polyfills-1.0.0.tgz#05bb0031533598f9458cf65a502b8df0eecae780"
   integrity sha512-0jbp4RxjYopTsIdLl+/Fy2TiwVYHy4mgeu07DG4b/LyM0OS/+lPP5c9sbnt/AMlnF6qz2JRZpPpGw1eMNS6A4w==
 
-"@sicpa-dlab/didcomm-react-native@0.0.14":
-  version "0.0.14"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/didcomm-react-native/0.0.14/557b9e75bf40b652648f786ca7a812c558fff1d7#557b9e75bf40b652648f786ca7a812c558fff1d7"
-  integrity sha512-vPM+sQXwFwMVFDorKLZYCmx6C49D26DQM/vtJ/DCjGDPb053cddUdsM76RqGiyqREogNXcdCBAWtf5irVqj4rg==
+"@sicpa-dlab/didcomm-react-native@0.0.18":
+  version "0.0.18"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/didcomm-react-native/0.0.18/f3b5eced6e056bae3d9abde58326f3049a583a0f#f3b5eced6e056bae3d9abde58326f3049a583a0f"
+  integrity sha512-SeOxZTORNauG2jWtsG4Ve9KHzvB6rgkwRkM2/fNuaTpKtsql6qWi+L1gKDK7Yj+WKg+lvRt1exr/JFowUAQB5w==
 
-"@sicpa-dlab/value-transfer-protocol-ts@0.0.29":
-  version "0.0.29"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.29/6f7b688912ae9b76e18cfa5bd53adae678791e41#6f7b688912ae9b76e18cfa5bd53adae678791e41"
-  integrity sha512-k4TdL7zAPh+mD8MWgKhdflJj+ETso1sJf6TMx6ZDiCcTajhLUV6q32YsYFFvVrZaEdRhdFh9gxzLwWrop8Wobg==
-  dependencies:
-    "@stablelib/ed25519" "^1.0.2"
-    "@stablelib/sha256" "^1.0.1"
-    "@stablelib/uuid" "^1.0.1"
-    bloom-filters "^3.0.0"
-    buffer "^6.0.3"
-    class-transformer "^0.5.1"
-    class-validator "^0.13.2"
-    currency-codes "^2.1.0"
-    fast-json-patch "^3.1.1"
-    iso-639-language "^1.0.1"
-    reflect-metadata "^0.1.13"
-
-"@sicpa-dlab/value-transfer-protocol-ts@0.0.32":
-  version "0.0.32"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.32/83aa551b0f7537fe0c80b598e113646129b51f78#83aa551b0f7537fe0c80b598e113646129b51f78"
-  integrity sha512-p4Da37YEfOx58mYt3mMABspnkAgC8QbUxyNBTBLG3ib1SYaX9akpfxcNiwoU6zE0sv04fZBD3HFJRP7Ezi4ReQ==
+"@sicpa-dlab/value-transfer-protocol-ts@0.0.33":
+  version "0.0.33"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.33/a1e557b7c597bfb646198d1e32e33bdd3722b20b#a1e557b7c597bfb646198d1e32e33bdd3722b20b"
+  integrity sha512-BBJcxnkHCd8YO6z/okuxy00RcGjduEmxIZYYF+xnnNZOVfRMdcOMpje1yTGYwnFjpJwZ7k/pOt2qZFWkAqTeeQ==
   dependencies:
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
@@ -2186,6 +2171,9 @@
     iso-639-language "^1.0.1"
     reflect-metadata "^0.1.13"
     uuid "^8.3.2"
+
+"@sicpa-dlab/value-transfer-protocol-ts@file:../value-transfer-protocol-ts/build":
+  version "0.0.0"
 
 "@sideway/address@^4.1.3":
   version "4.1.4"
@@ -2231,11 +2219,11 @@
     "@stablelib/int" "^1.0.1"
 
 "@stablelib/ed25519@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@stablelib/ed25519/-/ed25519-1.0.2.tgz#937a88a2f73a71d9bdc3ea276efe8954776ae0f4"
-  integrity sha512-FtnvUwvKbp6l1dNcg4CswMAVFVu/nzLK3oC7/PRtjYyHbWsIkD8j+5cjXHmwcCpdCpRCaTGACkEhhMQ1RcdSOQ==
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@stablelib/ed25519/-/ed25519-1.0.3.tgz#f8fdeb6f77114897c887bb6a3138d659d3f35996"
+  integrity sha512-puIMWaX9QlRsbhxfDc5i+mNPMY+0TmQEskunY1rZEBPi1acBCVQAhnsk/1Hk50DGPtVsZtAWQg4NHGlVaO9Hqg==
   dependencies:
-    "@stablelib/random" "^1.0.1"
+    "@stablelib/random" "^1.0.2"
     "@stablelib/sha512" "^1.0.1"
     "@stablelib/wipe" "^1.0.1"
 
@@ -2254,10 +2242,10 @@
   resolved "https://registry.yarnpkg.com/@stablelib/int/-/int-1.0.1.tgz#75928cc25d59d73d75ae361f02128588c15fd008"
   integrity sha512-byr69X/sDtDiIjIV6m4roLVWnNNlRGzsvxw+agj8CIEazqWGOQp2dTYgQhtyVXV9wpO6WyXRQUzLV/JRNumT2w==
 
-"@stablelib/random@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@stablelib/random/-/random-1.0.1.tgz#4357a00cb1249d484a9a71e6054bc7b8324a7009"
-  integrity sha512-zOh+JHX3XG9MSfIB0LZl/YwPP9w3o6WBiJkZvjPoKKu5LKFW4OLV71vMxWp9qG5T43NaWyn0QQTWgqCdO+yOBQ==
+"@stablelib/random@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@stablelib/random/-/random-1.0.2.tgz#2dece393636489bf7e19c51229dd7900eddf742c"
+  integrity sha512-rIsE83Xpb7clHPVRlBj8qNe5L8ISQOzjghYQm/dZ7VaM2KHYwMW5adjQjrzTZCchFnNCNhkwtnOBa9HTMJCI8w==
   dependencies:
     "@stablelib/binary" "^1.0.1"
     "@stablelib/wipe" "^1.0.1"
@@ -2281,12 +2269,12 @@
     "@stablelib/wipe" "^1.0.1"
 
 "@stablelib/uuid@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@stablelib/uuid/-/uuid-1.0.1.tgz#5e25137009c19e03fdb02109c45e6c6513c11fbd"
-  integrity sha512-fjqDkB+EWS6xZqsY6yOV01gTUQUydkApf/COsJtTctPhauBEwqKuhfyNy4UDNKQ6I8Dv/mAWJT+luWl8O7eRIA==
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@stablelib/uuid/-/uuid-1.0.2.tgz#0b803d954ce598067712f9170c9000b99f072d55"
+  integrity sha512-hduG+zCobfqjVDps3twWxBPuVYkobKQ+Dc8mQek7KfUAgbW4sJpBbr+Zd8l0KnwiFyesjAO3mZ+f3W4uLJtvNA==
   dependencies:
     "@stablelib/hex" "^1.0.1"
-    "@stablelib/random" "^1.0.1"
+    "@stablelib/random" "^1.0.2"
     "@stablelib/wipe" "^1.0.1"
 
 "@stablelib/wipe@^1.0.1":
@@ -3574,9 +3562,9 @@ camelcase@^6.0.0, camelcase@^6.2.0:
   integrity sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==
 
 caniuse-lite@^1.0.30001370:
-  version "1.0.30001378"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001378.tgz#3d2159bf5a8f9ca093275b0d3ecc717b00f27b67"
-  integrity sha512-JVQnfoO7FK7WvU4ZkBRbPjaot4+YqxogSDosHv0Hv5mWpUESmN+UubMU6L/hGz8QlQ2aY5U0vR6MOs6j/CXpNA==
+  version "1.0.30001381"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001381.tgz#e62955310e6e69cdf4b40bc5bc0895aa24bc4b8b"
+  integrity sha512-fEnkDOKpvp6qc+olg7+NzE1SqyfiyKf4uci7fAU38M3zxs0YOyKOxW/nMZ2l9sJbt7KZHcDIxUnbI0Iime7V4w==
 
 capture-exit@^2.0.0:
   version "2.0.0"
@@ -4363,20 +4351,15 @@ did-resolver@^3.1.3, did-resolver@^3.2.2:
   resolved "https://registry.yarnpkg.com/did-resolver/-/did-resolver-3.2.2.tgz#6f4e252a810f785d1b28a10265fad6dffee25158"
   integrity sha512-Eeo2F524VM5N3W4GwglZrnul2y6TLTwMQP3In62JdG34NZoqihYyOZLk+5wUW8sSgvIYIcJM8Dlt3xsdKZZ3tg==
 
-didcomm-node@0.3.3:
-  version "0.3.3"
-  resolved "https://registry.yarnpkg.com/didcomm-node/-/didcomm-node-0.3.3.tgz#b0f27dc09173d69afadc231a2658c60d414f5628"
-  integrity sha512-8epnDZuxX4v75a3ynXyRBpdKtEAkRyp3q4oda5Vv87ZgRkjAMM23Mgz5OerD3W5eSmDeMuJCUGIASj47IKlRjw==
+didcomm-node@0.3.4:
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/didcomm-node/-/didcomm-node-0.3.4.tgz#2bab787256d03be39ee9fe9da49e6af44d265a06"
+  integrity sha512-XcQlpuxUU5TSwio7I6pA3w/K9m9NHCNOgENK4JPgP9DrYwtOci8yG1hmh0G9zZ6WY7Ylfmt2rBJEdDj+OPdweg==
 
-didcomm@0.3.2:
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/didcomm/-/didcomm-0.3.2.tgz#b6a1d8e444a5651dbe613a6528f7285ff668876d"
-  integrity sha512-5iWTZoQjAK+XqkTEg9bV/aSZL1GTny9ih6m5AigrfagIh8zQcvUhPAtbtC5BvmZfip6LFYulfdWWvJRTKHlwhA==
-
-didcomm@0.3.3:
-  version "0.3.3"
-  resolved "https://registry.yarnpkg.com/didcomm/-/didcomm-0.3.3.tgz#a9755d52a5243167cb1ef3fbf2906e68d202bca7"
-  integrity sha512-9C2c4pyHeoTXphcCZ6OU5vy6uJFHsRS0Vc9zYBDh93rqV+7QM+fUxefTum64Elfo9fan/cSt27YU+/nfI4MppQ==
+didcomm@0.3.4:
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/didcomm/-/didcomm-0.3.4.tgz#8c81ac39966cafd0483743db59affc95b2b20c00"
+  integrity sha512-jGZduR98a5tR5Mh5xuwHG8ZT1w9xHpBUzCOl2Beqylk46aJ6fBD385NbcMNcPxqgVEXZ5fuOC3TQFXvp385PzA==
 
 diff-sequences@^26.6.2:
   version "26.6.2"
@@ -4459,9 +4442,9 @@ ee-first@1.1.1:
   integrity sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==
 
 electron-to-chromium@^1.4.202:
-  version "1.4.222"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.222.tgz#2ba24bef613fc1985dbffea85df8f62f2dec6448"
-  integrity sha512-gEM2awN5HZknWdLbngk4uQCVfhucFAfFzuchP3wM3NN6eow1eDU0dFy2kts43FB20ZfhVFF0jmFSTb1h5OhyIg==
+  version "1.4.225"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.225.tgz#3e27bdd157cbaf19768141f2e0f0f45071e52338"
+  integrity sha512-ICHvGaCIQR3P88uK8aRtx8gmejbVJyC6bB4LEC3anzBrIzdzC7aiZHY4iFfXhN4st6I7lMO0x4sgBHf/7kBvRw==
 
 emittery@^0.8.1:
   version "0.8.1"
@@ -5144,14 +5127,14 @@ flat-cache@^3.0.4:
     rimraf "^3.0.2"
 
 flatted@^3.1.0:
-  version "3.2.6"
-  resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.2.6.tgz#022e9218c637f9f3fc9c35ab9c9193f05add60b2"
-  integrity sha512-0sQoMh9s0BYsm+12Huy/rkKxVu4R1+r96YX5cG44rHV0pQ6iC3Q+mkoMFaGWObMFYQxCVT+ssG1ksneA2MI9KQ==
+  version "3.2.7"
+  resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.2.7.tgz#609f39207cb614b89d0765b477cb2d437fbf9787"
+  integrity sha512-5nqDSxl8nn5BSNxyR3n4I6eDmbolI6WT+QqR547RwxQapgjQBmtktdP+HTBb/a/zLsbzERTONyUB5pefh5TtjQ==
 
 flow-parser@0.*:
-  version "0.184.0"
-  resolved "https://registry.yarnpkg.com/flow-parser/-/flow-parser-0.184.0.tgz#45faed0a40fa554d24550c35ec7889b86b360c9b"
-  integrity sha512-+RAHizWmCnfnAWX1yD3fSdWRYCMhGiiqZSbHNU38MQxYc8XdTBoFB3ZpL1MEPG6yy/Yb3hg9w9eIf0DNlU8epQ==
+  version "0.185.1"
+  resolved "https://registry.yarnpkg.com/flow-parser/-/flow-parser-0.185.1.tgz#32777ecbb7c6fa272713077599e6fb44fb2331c3"
+  integrity sha512-nbtJZFMGgJVCRBlE/66p7L6IWF+wy6Nbd65sVwyrH7WsnZgeef8m263uxN4xah+8BZwuGndU8HKlt8cHIpTwew==
 
 flow-parser@^0.121.0:
   version "0.121.0"
@@ -7027,9 +7010,9 @@ libnpmpublish@^4.0.0:
     ssri "^8.0.1"
 
 libphonenumber-js@^1.9.43, libphonenumber-js@^1.9.7:
-  version "1.10.12"
-  resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.10.12.tgz#75ebe2f1887d12bbf45af5655fdb63f55f4ee05b"
-  integrity sha512-xTFBs3ipFQNmjCUkDj6ZzRJvs97IyazFHBKWtrQrLiYs0Zk0GANob1hkMRlQUQXbJrpQGwnI+/yU4oyD4ohvpw==
+  version "1.10.13"
+  resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.10.13.tgz#0b5833c7fdbf671140530d83531c6753f7e0ea3c"
+  integrity sha512-b74iyWmwb4GprAUPjPkJ11GTC7KX4Pd3onpJfKxYyY8y9Rbb4ERY47LvCMEDM09WD3thiLDMXtkfDK/AX+zT7Q==
 
 lines-and-columns@^1.1.6:
   version "1.2.4"

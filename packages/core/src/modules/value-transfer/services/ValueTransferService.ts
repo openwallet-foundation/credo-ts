@@ -84,9 +84,10 @@ export class ValueTransferService {
 
     const state = new ValueTransferStateRecord({
       partyState: new PartyState({
-        previousHash: undefined,
-        wallet: new Wallet(),
-        ownershipKey: await this.valueTransferCryptoService.createKey(),
+        wallet: new Wallet({
+          previousHash: null,
+          ownershipKey: await this.valueTransferCryptoService.createKey(),
+        }),
       }),
     })
     await this.valueTransferStateRepository.save(state)
