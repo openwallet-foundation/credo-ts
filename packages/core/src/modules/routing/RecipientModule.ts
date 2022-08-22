@@ -109,7 +109,7 @@ export class RecipientModule {
     }
 
     try {
-      await this.messageSender.sendDIDCommV2Message(message, undefined, Transports.WS)
+      await this.messageSender.sendDIDCommV2Message(message, undefined, [Transports.WSS, Transports.WS])
     } catch (error) {
       this.logger.warn('Unable to open websocket connection to mediator', { error })
     }
