@@ -144,6 +144,7 @@ export class OutOfBandService {
   public async sendMessage(message: DIDCommV2Message, transport?: Transports) {
     this.agentConfig.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
-    await this.messageSender.sendDIDCommV2Message(message, sendingMessageType, transport)
+    const transports = transport ? [transport] : undefined
+    await this.messageSender.sendDIDCommV2Message(message, sendingMessageType, transports)
   }
 }
