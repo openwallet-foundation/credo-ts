@@ -94,7 +94,7 @@ export class ValueTransferIssuerService {
       const { proof } = await this.valueTransfer.giver().startAddingNotes(notes)
       await this.valueTransfer.giver().commitTransaction()
 
-      const start = state.previousHash ? proof.currentState : null
+      const start = state.wallet.previousHash ? proof.currentState : null
 
       return new TransactionRecord({ start: start || null, end: proof.nextState })
     } catch (e) {
