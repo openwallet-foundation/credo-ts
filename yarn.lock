@@ -39,9 +39,9 @@
     uuid "^8.3.2"
 
 "@aries-framework/core@npm:@sicpa-dlab/aries-framework-core":
-  version "0.1.52"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.1.52/4ef6889533516d4e7799a34e4028479ddff6cd7e#4ef6889533516d4e7799a34e4028479ddff6cd7e"
-  integrity sha512-PKa87fOHtkOcyqgJhUWh4AcHWkP5PzaWs6C1sx3WBS1WTFhHWn5zpzvIVLScBZCo4xVkRRAMgZXKCZ48t32M/w==
+  version "0.1.53"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.1.53/0de0daaf2d32a2a7f97844ac47301f66bcf2f2ee#0de0daaf2d32a2a7f97844ac47301f66bcf2f2ee"
+  integrity sha512-Doza5DDgHS6ipH7M3yl0TQCMu7uRBKf6fprtJpXAvQdq8+ISKoyjlBTihbCrgLDLplZcgPEta869xscQbYyW9A==
   dependencies:
     "@multiformats/base-x" "^4.0.1"
     "@sicpa-dlab/value-transfer-protocol-ts" "0.0.33"
