@@ -391,6 +391,11 @@ export class GossipService {
   private async resendUndeliveredMessages(): Promise<void> {
     this.config.logger.info('> Witness: re-send undelivered message to other witnesses')
 
+    if (!this.undeliveredMessages.length) {
+      this.config.logger.info(`   Witness: there is no messages to re-send`)
+      return
+    }
+
     const undeliveredMessages = []
 
     const threshold = this.config.witnessRedeliveryThreshold
@@ -399,9 +404,12 @@ export class GossipService {
     for (const message of this.undeliveredMessages) {
       if (now - message.timestamp > threshold) continue
       try {
+        this.config.logger.info(
+          `   Witness: trying to re-send ${message.message.type} to witnesses ${message.message.to}`
+        )
         await this.sendMessage(message.message)
       } catch (error) {
-        this.config.logger.info(
+        this.config.logger.warn(
           `> Witness: failed to deliver message ${message.message.type} to witnesses ${message.message.to}`
         )
         undeliveredMessages.push(message)

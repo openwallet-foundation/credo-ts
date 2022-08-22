@@ -134,38 +134,35 @@ export class DidService {
       .addAuthentication(getEd25519VerificationMethod({ controller: '', id: '', key: params.ed25519Key }))
       .addKeyAgreement(getX25519VerificationMethod({ controller: '', id: '', key: params.x25519Key }))
 
-    for (const transport of params.transports) {
-      if (transport === Transports.HTTP || transport === Transports.HTTPS) {
-        if (params.needMediation) {
-          mediator = await this.mediationRecipientService.findDefaultMediator()
-          if (mediator && mediator.endpoint && params.needMediation) {
-            didDocumentBuilder.addService(
-              new DidCommV2Service({
-                id: transport,
-                serviceEndpoint: mediator.endpoint,
-                routingKeys: mediator.routingKeys,
-              })
-            )
-          }
-        } else if (params.endpoint) {
+    if (params.transports.includes(Transports.HTTP) || params.transports.includes(Transports.HTTPS)) {
+      if (params.needMediation) {
+        mediator = await this.mediationRecipientService.findDefaultMediator()
+        if (mediator && mediator.endpoint && params.needMediation) {
           didDocumentBuilder.addService(
             new DidCommV2Service({
-              id: transport,
-              serviceEndpoint: params.endpoint,
-              routingKeys: [],
+              id: Transports.HTTP,
+              serviceEndpoint: mediator.endpoint,
+              routingKeys: mediator.routingKeys,
             })
           )
         }
-      }
-
-      if (transport === Transports.NFC) {
-        didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.NFC, serviceEndpoint: Transports.NFC }))
-      }
-      if (transport === Transports.Nearby) {
+      } else if (params.endpoint) {
         didDocumentBuilder.addService(
-          new DidCommV2Service({ id: Transports.Nearby, serviceEndpoint: Transports.Nearby })
+          new DidCommV2Service({
+            id: Transports.HTTP,
+            serviceEndpoint: params.endpoint,
+            routingKeys: [],
+          })
         )
       }
+    }
+
+    if (params.transports.includes(Transports.NFC)) {
+      didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.NFC, serviceEndpoint: Transports.NFC }))
+    }
+
+    if (params.transports.includes(Transports.Nearby)) {
+      didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.Nearby, serviceEndpoint: Transports.Nearby }))
     }
 
     const didDocument = didDocumentBuilder.build()

@@ -125,8 +125,13 @@ export class ValueTransferWitnessService {
       throw new AriesFrameworkError('Witness table must be provided.')
     }
 
+    // search for first type one witness
+    // else for type two
+    // else any other
     const topWitness =
       config.knownWitnesses.find((witness) => witness.wid !== config.wid && witness.type === WitnessType.One) ??
+      config.knownWitnesses.find((witness) => witness.wid !== config.wid && witness.type === WitnessType.Two) ??
+      config.knownWitnesses.find((witness) => witness.wid !== config.wid) ??
       config.knownWitnesses[0]
 
     const info = new WitnessInfo({
