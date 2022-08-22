@@ -39,9 +39,9 @@
     uuid "^8.3.2"
 
 "@aries-framework/core@npm:@sicpa-dlab/aries-framework-core":
-  version "0.1.50"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.1.50/6151b83c038b7076aec2602006e2c60168cfde0e#6151b83c038b7076aec2602006e2c60168cfde0e"
-  integrity sha512-2gQyBxUYZh7EtdGSSj8LAHFJxzVCk/s4VRNlNz4PG6whyKq2fYHXK1e8Bgd0iqnBwzXcUxG8v1I0NVXJU+R75g==
+  version "0.1.52"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.1.52/4ef6889533516d4e7799a34e4028479ddff6cd7e#4ef6889533516d4e7799a34e4028479ddff6cd7e"
+  integrity sha512-PKa87fOHtkOcyqgJhUWh4AcHWkP5PzaWs6C1sx3WBS1WTFhHWn5zpzvIVLScBZCo4xVkRRAMgZXKCZ48t32M/w==
   dependencies:
     "@multiformats/base-x" "^4.0.1"
     "@sicpa-dlab/value-transfer-protocol-ts" "0.0.33"
@@ -2172,8 +2172,23 @@
     reflect-metadata "^0.1.13"
     uuid "^8.3.2"
 
-"@sicpa-dlab/value-transfer-protocol-ts@file:../value-transfer-protocol-ts/build":
-  version "0.0.0"
+"@sicpa-dlab/value-transfer-protocol-ts@0.0.34":
+  version "0.0.34"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.34/98854c62cea2eeb7f0784fca5c72bb3c00e91862#98854c62cea2eeb7f0784fca5c72bb3c00e91862"
+  integrity sha512-vXJ8Pv9cGRPp0K5hreljxsHTc1zYMuSVT/SYZtu1P6hxgpRI43pwSs5YDT+rBjQesGNzIk6wR1GpTWlmaLOTCA==
+  dependencies:
+    "@stablelib/ed25519" "^1.0.2"
+    "@stablelib/sha256" "^1.0.1"
+    "@stablelib/uuid" "^1.0.1"
+    bloom-filters "^3.0.0"
+    buffer "^6.0.3"
+    class-transformer "^0.5.1"
+    class-validator "^0.13.2"
+    currency-codes "^2.1.0"
+    fast-json-patch "^3.1.1"
+    iso-639-language "^1.0.1"
+    reflect-metadata "^0.1.13"
+    uuid "^8.3.2"
 
 "@sideway/address@^4.1.3":
   version "4.1.4"
