@@ -93,7 +93,7 @@ export class DIDCommV2BaseMessage {
   public static createJSONAttachment<T>(id: string, message: T): Attachment {
     return {
       id: id,
-      media_type: ATTACHMENT_MEDIA_TYPE,
+      // media_type: ATTACHMENT_MEDIA_TYPE,
       data: {
         json: message,
       },
@@ -104,7 +104,7 @@ export class DIDCommV2BaseMessage {
   public static createBase64Attachment<T>(id: string, message: T): Attachment {
     return {
       id: id,
-      media_type: ATTACHMENT_MEDIA_TYPE,
+      // media_type: ATTACHMENT_MEDIA_TYPE,
       data: {
         base64: JsonEncoder.toBase64(message),
       },
