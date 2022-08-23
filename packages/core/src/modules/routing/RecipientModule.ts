@@ -190,48 +190,57 @@ export class RecipientModule {
   }
 
   /**
-   * Start a Message Pickup flow with a registered Mediator. If not specified, it will attempt to use Agent's
-   *  default mediation pickup strategy, and in case there is no default strategy configured, it will attempt
-   * to get best strategy from Mediator using Discovery Features protocol.
+   * Start a Message Pickup flow with a registered Mediator.
    *
-   * @param mediator {MediationRecord} corresponding to the mediator to pick messages from
-   * @param pickupStrategy optional {MediationPickupStrategy} to use in the loop
+   * @param mediator optional {MediationRecord} corresponding to the mediator to pick messages from. It will use
+   * default mediator otherwise
+   * @param pickupStrategy optional {MediatorPickupStrategy} to use in the loop. It will use Agent's default
+   * strategy or attempt to find it by Discover Features otherwise
    * @returns
    */
-  public async initiateMessagePickup(mediator: MediationRecord, pickupStrategy?: MediatorPickupStrategy) {
+  public async initiateMessagePickup(mediator?: MediationRecord, pickupStrategy?: MediatorPickupStrategy) {
     const { mediatorPollingInterval } = this.agentConfig
-    const mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediator))
-    const mediatorConnection = await this.connectionService.getById(mediator.connectionId)
+
+    const mediatorRecord = mediator ?? (await this.findDefaultMediator())
+    if (!mediatorRecord) {
+      throw new AriesFrameworkError('There is no mediator to pickup messages from')
+    }
+
+    const mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))
+    const mediatorConnection = await this.connectionService.getById(mediatorRecord.connectionId)
 
     switch (mediatorPickupStrategy) {
       case MediatorPickupStrategy.PickUpV2:
-        this.agentConfig.logger.info(`Starting pickup of messages from mediator '${mediator.id}'`)
-        await this.openWebSocketAndPickUp(mediator, mediatorPickupStrategy)
-        await this.sendStatusRequest({ mediatorId: mediator.id })
+        this.agentConfig.logger.info(`Starting pickup of messages from mediator '${mediatorRecord.id}'`)
+        await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
+        await this.sendStatusRequest({ mediatorId: mediatorRecord.id })
         break
       case MediatorPickupStrategy.PickUpV1: {
         const stopConditions$ = merge(this.agentConfig.stop$, this.stop$).pipe()
         // Explicit means polling every X seconds with batch message
-        this.agentConfig.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediator.id}'`)
+        this.agentConfig.logger.info(
+          `Starting explicit (batch) pickup of messages from mediator '${mediatorRecord.id}'`
+        )
         const subscription = interval(mediatorPollingInterval)
           .pipe(takeUntil(stopConditions$))
           .subscribe({
             next: async () => {
               await this.pickupMessages(mediatorConnection)
             },
-            complete: () => this.agentConfig.logger.info(`Stopping pickup of messages from mediator '${mediator.id}'`),
+            complete: () =>
+              this.agentConfig.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
           })
         return subscription
       }
       case MediatorPickupStrategy.Implicit:
         // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
         // such as WebSockets to work
-        this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
-        await this.openWebSocketAndPickUp(mediator, mediatorPickupStrategy)
+        this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediatorRecord.id}'`)
+        await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
         break
       default:
         this.agentConfig.logger.info(
-          `Skipping pickup of messages from mediator '${mediator.id}' due to pickup strategy none`
+          `Skipping pickup of messages from mediator '${mediatorRecord.id}' due to pickup strategy none`
         )
     }
   }
