@@ -2172,10 +2172,10 @@
     reflect-metadata "^0.1.13"
     uuid "^8.3.2"
 
-"@sicpa-dlab/value-transfer-protocol-ts@0.0.34":
-  version "0.0.34"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.34/98854c62cea2eeb7f0784fca5c72bb3c00e91862#98854c62cea2eeb7f0784fca5c72bb3c00e91862"
-  integrity sha512-vXJ8Pv9cGRPp0K5hreljxsHTc1zYMuSVT/SYZtu1P6hxgpRI43pwSs5YDT+rBjQesGNzIk6wR1GpTWlmaLOTCA==
+"@sicpa-dlab/value-transfer-protocol-ts@0.0.35":
+  version "0.0.35"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.35/d71df379276b49a81ed7c68695017632c9e568eb#d71df379276b49a81ed7c68695017632c9e568eb"
+  integrity sha512-dUKIUJ5oUX3Sh1aY/BlTmSJOxBdVCc0/iR8dXDQNyyf3Y6XU8rN1271XJ6lj08l8vc/XzS7eIqtujR9GF4c4cw==
   dependencies:
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"

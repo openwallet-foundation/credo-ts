@@ -151,7 +151,7 @@ export class ValueTransferService {
     message?: ProblemReportMessage
   }> {
     if (record.role === ValueTransferRole.Witness) {
-      // TODO: discuss weather Witness can abort transaction
+      // TODO: discuss whether Witness can abort transaction
       throw new AriesFrameworkError('Transaction cannot be canceled by Witness.')
     }
 
@@ -163,15 +163,19 @@ export class ValueTransferService {
       throw new AriesFrameworkError('Transaction cannot be canceled as it is failed.')
     }
 
+    if (record.status === ValueTransferTransactionStatus.InProgress) {
+      const valueTransferParty =
+        record.role === ValueTransferRole.Giver ? this.valueTransfer.giver() : this.valueTransfer.getter()
+      await valueTransferParty.abortTransaction()
+    }
+
     let from = undefined
     let to = undefined
 
     if (record.role === ValueTransferRole.Giver) {
-      await this.valueTransfer.giver().abortTransaction()
       from = record.giver?.did
       to = record.state === ValueTransferState.ReceiptReceived ? record.witness?.did : record.getter?.did
     } else if (record.role === ValueTransferRole.Getter) {
-      await this.valueTransfer.getter().abortTransaction()
       from = record.getter?.did
       to = record.state === ValueTransferState.OfferReceived ? record.witness?.did : record.giver?.did
     }
