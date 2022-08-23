@@ -8,6 +8,7 @@ import { DIDCommV2Message } from '../../../agent/didcomm'
 export type WitnessDataParams = {
   did: string
   type?: string
+  label?: string
 }
 
 export class WitnessData {
@@ -18,10 +19,15 @@ export class WitnessData {
   @IsOptional()
   public type?: string
 
+  @IsString()
+  @IsOptional()
+  public label?: string
+
   public constructor(options?: WitnessDataParams) {
     if (options) {
       this.did = options.did
       this.type = options.type
+      this.label = options.label
     }
   }
 }

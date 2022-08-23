@@ -795,6 +795,7 @@ export class ValueTransferWitnessService {
         new WitnessData({
           did: witness.publicDid,
           type: witness.type,
+          label: witness.label,
         })
     )
 
