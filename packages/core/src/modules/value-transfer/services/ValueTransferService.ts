@@ -182,7 +182,7 @@ export class ValueTransferService {
       pthid: record.threadId,
       body: {
         code: code || 'e.p.transaction-aborted',
-        comment: `Transaction aborted by ${from}. ` + (reason ? `Reason: ${reason}.` : ''),
+        comment: reason || `Transaction aborted by ${from}`,
       },
     })
 
