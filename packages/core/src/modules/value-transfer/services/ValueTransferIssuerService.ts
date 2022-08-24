@@ -49,27 +49,43 @@ export class ValueTransferIssuerService {
    *
    * @returns Mint message for specified Witness DID
    */
-  public async mintCash(amount: number, witness: string): Promise<MintMessage> {
+  public async mintCash(amount: number, witness: string): Promise<void> {
     const publicDid = await this.didService.getPublicDid()
     if (!publicDid) {
       throw new AriesFrameworkError('Public DID is not found')
     }
-
-    const mintedNotes = createVerifiableNotes(amount)
-
-    // FIXME It will be better to use PartyState current/previous hash instead of returning transaction record on receiving notes
-    // Will be possible after PartyState.previousHash fix in VTP lib
-    const transactionRecord = await this.receiveNotes(mintedNotes)
-
-    if (!transactionRecord) {
-      throw new AriesFrameworkError('Got empty transaction record on receiving notes')
+    if (this.config.valueTransferConfig?.witness) {
+      throw new AriesFrameworkError(`Witness cannot add notes`)
     }
 
-    return new MintMessage({
+    // no notes to add
+    if (!amount) return
+
+    const state = await this.valueTransferStateService.getPartyState()
+
+    const notes = createVerifiableNotes(amount)
+    const { proof } = await this.valueTransfer.giver().startAddingNotes(notes)
+
+    const start = state.wallet.previousHash ? proof.currentState : null
+    const transactionRecord = new TransactionRecord({ start: start || null, end: proof.nextState })
+
+    const message = new MintMessage({
       from: publicDid.did,
       to: witness,
       body: { startHash: transactionRecord.start, endHash: transactionRecord.end },
     })
+
+    try {
+      // Send mint message to Witness to update state
+      await this.valueTransferService.sendMessage(message)
+
+      // Commit transaction
+      await this.valueTransfer.giver().commitTransaction()
+    } catch (e) {
+      // could not send message to witness or commit transaction
+      await this.valueTransfer.giver().abortTransaction()
+      throw e
+    }
   }
 
   /**

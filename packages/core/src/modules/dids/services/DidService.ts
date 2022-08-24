@@ -219,6 +219,11 @@ export class DidService {
       throw new AriesFrameworkError(`Unable to resolve DidDoc for the DID: ${did}`)
     }
 
+    const existingRecord = await this.findById(did)
+    if (existingRecord) {
+      throw new AriesFrameworkError(`DID already exists: ${did}`)
+    }
+
     const didRecord = new DidRecord({
       id: didDocument.didDocument.id,
       label: label,

@@ -268,9 +268,7 @@ export class ValueTransferModule {
    */
   public async mintCash(amount: number, witness: string): Promise<void> {
     // Mint Verifiable Notes
-    const message = await this.valueTransferIssuerService.mintCash(amount, witness)
-    // Send mint message to Witness to update state
-    await this.valueTransferService.sendMessage(message)
+    await this.valueTransferIssuerService.mintCash(amount, witness)
   }
 
   /**
