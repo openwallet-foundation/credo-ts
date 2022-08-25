@@ -92,4 +92,8 @@ export class ValueTransferCryptoService implements CryptoInterface {
     }
     return this.keysService.decrypt({ payload, senderKey, recipientKid })
   }
+
+  public randomBytes(size: number): Uint8Array {
+    return this.keysService.randomBytes(size)
+  }
 }

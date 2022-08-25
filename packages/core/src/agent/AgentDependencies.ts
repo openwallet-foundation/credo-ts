@@ -14,4 +14,5 @@ export interface AgentDependencies {
   EventEmitterClass: typeof EventEmitter
   fetch: typeof fetch
   WebSocketClass: typeof WebSocket
+  randomBytes: (size: number) => Uint8Array
 }

@@ -1,9 +1,9 @@
-import type { CreateKeyParams, Crypto, SignParams, VerifyParams } from './Crypto'
 import type { KeyPair } from './types'
 
 import * as ed25519 from '@stablelib/ed25519'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../agent/AgentConfig'
 import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { Buffer } from '../utils'
@@ -13,11 +13,48 @@ import { Wallet } from '../wallet'
 
 import { defaultKeyType, KeyType } from './types'
 
+export interface CreateKeyParams {
+  keyType?: KeyType
+  seed?: string
+}
+
+export interface SignParams {
+  payload: Buffer
+  verKey: Buffer
+  signKey: Buffer
+  keyType?: KeyType
+}
+
+export interface VerifyParams {
+  payload: Buffer
+  signature: Buffer
+  key: Buffer
+  keyType?: KeyType
+}
+
+export interface EncryptParams {
+  payload: Buffer
+  senderPublicKey: Buffer
+  senderPrivateKey: Buffer
+  recipientPublicKey: Buffer
+  keyType?: KeyType
+}
+
+export interface DecryptParams {
+  payload: Buffer
+  senderPublicKey: Buffer
+  recipientPublicKey: Buffer
+  recipientPrivateKey: Buffer
+  keyType?: KeyType
+}
+
 @scoped(Lifecycle.ContainerScoped)
-export class MixedCrypto implements Crypto {
+export class CryptoService {
+  private agentConfig: AgentConfig
   private wallet: Wallet
 
-  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet) {
+  public constructor(agentConfig: AgentConfig, @inject(InjectionSymbols.Wallet) wallet: Wallet) {
+    this.agentConfig = agentConfig
     this.wallet = wallet
   }
 
@@ -65,12 +102,18 @@ export class MixedCrypto implements Crypto {
     }
   }
 
-  public async encrypt(): Promise<Buffer> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public async encrypt(params: EncryptParams): Promise<Buffer> {
     throw new Error('Unimplemented')
   }
 
-  public async decrypt(): Promise<Buffer> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public async decrypt(params: DecryptParams): Promise<Buffer> {
     throw new Error('Unimplemented')
+  }
+
+  public randomBytes(size: number): Uint8Array {
+    return this.agentConfig.agentDependencies.randomBytes(size)
   }
 
   public async convertEd25519ToX25519Key(keyPair: KeyPair): Promise<KeyPair> {
