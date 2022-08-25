@@ -1,9 +1,13 @@
 import type { DependencyManager, Module } from '../../plugins'
+import type { FeatureRegistry } from '../discover-features'
 import type { ConnectionsModuleConfigOptions } from './ConnectionsModuleConfig'
+
+import { Protocol } from '../discover-features'
 
 import { ConnectionsApi } from './ConnectionsApi'
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
+import { ConnectionRole, DidExchangeRole } from './models'
 import { ConnectionRepository } from './repository'
 import { ConnectionService, TrustPingService } from './services'
 
@@ -17,7 +21,7 @@ export class ConnectionsModule implements Module {
   /**
    * Registers the dependencies of the connections module on the dependency manager.
    */
-  public register(dependencyManager: DependencyManager) {
+  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
     // Api
     dependencyManager.registerContextScoped(ConnectionsApi)
 
@@ -31,5 +35,17 @@ export class ConnectionsModule implements Module {
 
     // Repositories
     dependencyManager.registerSingleton(ConnectionRepository)
+
+    // Features
+    featureRegistry.register(
+      new Protocol({
+        id: 'https://didcomm.org/connections/1.0',
+        roles: [ConnectionRole.Invitee, ConnectionRole.Inviter],
+      }),
+      new Protocol({
+        id: 'https://didcomm.org/didexchange/1.0',
+        roles: [DidExchangeRole.Requester, DidExchangeRole.Responder],
+      })
+    )
   }
 }

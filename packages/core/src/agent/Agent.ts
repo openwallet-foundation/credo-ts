@@ -16,7 +16,7 @@ import { BasicMessagesModule } from '../modules/basic-messages'
 import { ConnectionsModule } from '../modules/connections'
 import { CredentialsModule } from '../modules/credentials'
 import { DidsModule } from '../modules/dids'
-import { DiscoverFeaturesModule } from '../modules/discover-features'
+import { DiscoverFeaturesModule, FeatureRegistry } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
 import { IndyModule } from '../modules/indy'
 import { LedgerModule } from '../modules/ledger'
@@ -156,6 +156,7 @@ export class Agent extends BaseAgent {
     dependencyManager.registerSingleton(TransportService)
     dependencyManager.registerSingleton(Dispatcher)
     dependencyManager.registerSingleton(EnvelopeService)
+    dependencyManager.registerSingleton(FeatureRegistry)
     dependencyManager.registerSingleton(JwsService)
     dependencyManager.registerSingleton(CacheRepository)
     dependencyManager.registerSingleton(DidCommMessageRepository)

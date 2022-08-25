@@ -1,8 +1,9 @@
+import type { FeatureRegistry } from '../modules/discover-features'
 import type { Constructor } from '../utils/mixins'
 import type { DependencyManager } from './DependencyManager'
 
 export interface Module {
-  register(dependencyManager: DependencyManager): void
+  register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager): void
 }
 
 /**

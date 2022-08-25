@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 
 import { DiscloseMessage } from '../messages'
 

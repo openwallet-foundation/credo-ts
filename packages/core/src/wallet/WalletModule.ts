@@ -1,3 +1,4 @@
+import type { FeatureRegistry } from '../modules/discover-features'
 import type { DependencyManager, Module } from '../plugins'
 
 import { SigningProviderToken, Bls12381g2SigningProvider } from '../crypto/signing-provider'
@@ -9,7 +10,7 @@ export class WalletModule implements Module {
   /**
    * Registers the dependencies of the wallet module on the injection dependencyManager.
    */
-  public register(dependencyManager: DependencyManager) {
+  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
     // Api
     dependencyManager.registerContextScoped(WalletApi)
 

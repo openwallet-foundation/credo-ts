@@ -1,7 +1,7 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DiscoverFeaturesService } from '../services/DiscoverFeaturesService'
+import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { DiscoverFeaturesService } from '../DiscoverFeaturesService'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { createOutboundMessage } from '../../../../../agent/helpers'
 import { QueryMessage } from '../messages'
 
 export class QueryMessageHandler implements Handler {

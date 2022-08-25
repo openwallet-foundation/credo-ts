@@ -1,7 +1,7 @@
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { AgentMessage } from '../../../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 export interface DiscoverFeaturesQueryMessageOptions {
   id?: string

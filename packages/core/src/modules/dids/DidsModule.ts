@@ -1,4 +1,5 @@
 import type { DependencyManager, Module } from '../../plugins'
+import type { FeatureRegistry } from '../discover-features'
 import type { DidsModuleConfigOptions } from './DidsModuleConfig'
 
 import { DidsApi } from './DidsApi'
@@ -17,7 +18,7 @@ export class DidsModule implements Module {
   /**
    * Registers the dependencies of the dids module module on the dependency manager.
    */
-  public register(dependencyManager: DependencyManager) {
+  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
     // Api
     dependencyManager.registerContextScoped(DidsApi)
 

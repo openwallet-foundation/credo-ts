@@ -1,6 +1,8 @@
 import type { DependencyManager, Module } from '../../plugins'
+import type { FeatureRegistry } from '../discover-features'
 import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
 
+import { Protocol } from '../discover-features'
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
 import { IndyCredentialFormatService } from './formats/indy'
@@ -19,7 +21,7 @@ export class CredentialsModule implements Module {
   /**
    * Registers the dependencies of the credentials module on the dependency manager.
    */
-  public register(dependencyManager: DependencyManager) {
+  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
     // Api
     dependencyManager.registerContextScoped(CredentialsApi)
 
@@ -33,6 +35,26 @@ export class CredentialsModule implements Module {
 
     // Repositories
     dependencyManager.registerSingleton(CredentialRepository)
+
+    // Features
+    featureRegistry.register(
+      new Protocol({
+        id: 'https://didcomm.org/issue-credential/1.0',
+        roles: ['holder', 'issuer'],
+      }),
+      new Protocol({
+        id: 'https://didcomm.org/issue-credential/2.0',
+        roles: ['holder', 'issuer'],
+      }),
+      new Protocol({
+        id: 'https://didcomm.org/revocation_notification/1.0',
+        roles: ['holder'],
+      }),
+      new Protocol({
+        id: 'https://didcomm.org/revocation_notification/2.0',
+        roles: ['holder'],
+      })
+    )
 
     // Credential Formats
     dependencyManager.registerSingleton(IndyCredentialFormatService)

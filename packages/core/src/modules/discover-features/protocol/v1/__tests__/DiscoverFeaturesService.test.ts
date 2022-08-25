@@ -1,17 +1,19 @@
-import type { Dispatcher } from '../../../agent/Dispatcher'
-
+import { mockProperty } from '../../../../../../tests/helpers'
+import { Dispatcher } from '../../../../../agent/Dispatcher'
+import { DiscoverFeaturesService } from '../DiscoverFeaturesService'
 import { QueryMessage } from '../messages'
-import { DiscoverFeaturesService } from '../services/DiscoverFeaturesService'
 
 const supportedProtocols = [
   'https://didcomm.org/connections/1.0',
   'https://didcomm.org/notification/1.0',
   'https://didcomm.org/issue-credential/1.0',
 ]
-
+jest.mock('../../../../../agent/Dispatcher')
+const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 describe('DiscoverFeaturesService', () => {
-  const discoverFeaturesService = new DiscoverFeaturesService({ supportedProtocols } as Dispatcher)
+  mockProperty(DispatcherMock.prototype, 'supportedProtocols', supportedProtocols)
 
+  const discoverFeaturesService = new DiscoverFeaturesService(new DispatcherMock())
   describe('createDisclose', () => {
     it('should return all protocols when query is *', async () => {
       const queryMessage = new QueryMessage({

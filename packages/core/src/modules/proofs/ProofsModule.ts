@@ -1,5 +1,8 @@
 import type { DependencyManager, Module } from '../../plugins'
+import type { FeatureRegistry } from '../discover-features'
 import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
+
+import { Protocol } from '../discover-features'
 
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
@@ -18,7 +21,7 @@ export class ProofsModule implements Module {
   /**
    * Registers the dependencies of the proofs module on the dependency manager.
    */
-  public register(dependencyManager: DependencyManager) {
+  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
     // Api
     dependencyManager.registerContextScoped(ProofsApi)
 
@@ -34,5 +37,13 @@ export class ProofsModule implements Module {
 
     // Proof Formats
     dependencyManager.registerSingleton(IndyProofFormatService)
+
+    // Features
+    featureRegistry.register(
+      new Protocol({
+        id: 'https://didcomm.org/present-proof/1.0',
+        roles: ['verifier', 'prover'],
+      })
+    )
   }
 }

@@ -1,6 +1,8 @@
-import { Dispatcher } from '../../../agent/Dispatcher'
-import { injectable } from '../../../plugins'
-import { QueryMessage, DiscloseMessage } from '../messages'
+import { Dispatcher } from '../../../../agent/Dispatcher'
+import { injectable } from '../../../../plugins'
+
+import { DiscloseMessageHandler, QueryMessageHandler } from './handlers'
+import { QueryMessage, DiscloseMessage } from './messages'
 
 @injectable()
 export class DiscoverFeaturesService {
@@ -8,6 +10,13 @@ export class DiscoverFeaturesService {
 
   public constructor(dispatcher: Dispatcher) {
     this.dispatcher = dispatcher
+
+    this.registerHandlers(dispatcher)
+  }
+
+  private registerHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerHandler(new DiscloseMessageHandler())
+    dispatcher.registerHandler(new QueryMessageHandler(this))
   }
 
   public async createQuery(options: { query: string; comment?: string }) {

@@ -8,6 +8,7 @@ import { ConnectionService } from '../../modules/connections/services/Connection
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
+import { FeatureRegistry } from '../../modules/discover-features'
 import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerApi } from '../../modules/ledger/LedgerApi'
 import { ProofRepository } from '../../modules/proofs'
@@ -194,7 +195,36 @@ describe('Agent', () => {
       expect(container.resolve(MessageSender)).toBe(container.resolve(MessageSender))
       expect(container.resolve(MessageReceiver)).toBe(container.resolve(MessageReceiver))
       expect(container.resolve(Dispatcher)).toBe(container.resolve(Dispatcher))
+      expect(container.resolve(FeatureRegistry)).toBe(container.resolve(FeatureRegistry))
       expect(container.resolve(EnvelopeService)).toBe(container.resolve(EnvelopeService))
     })
+  })
+
+  it('all core features are properly registered', () => {
+    const agent = new Agent(config, dependencies)
+    const registry = agent.dependencyManager.resolve(FeatureRegistry)
+
+    const protocols = registry.query({ featureType: 'protocol', match: '*' }).map((p) => p.id)
+
+    expect(protocols).toEqual(
+      expect.arrayContaining([
+        'https://didcomm.org/basicmessage/1.0',
+        'https://didcomm.org/connections/1.0',
+        'https://didcomm.org/coordinate-mediation/1.0',
+        'https://didcomm.org/didexchange/1.0',
+        'https://didcomm.org/discover-features/1.0',
+        'https://didcomm.org/discover-features/2.0',
+        'https://didcomm.org/issue-credential/1.0',
+        'https://didcomm.org/issue-credential/2.0',
+        'https://didcomm.org/messagepickup/1.0',
+        'https://didcomm.org/messagepickup/2.0',
+        'https://didcomm.org/out-of-band/1.1',
+        'https://didcomm.org/present-proof/1.0',
+        'https://didcomm.org/revocation_notification/1.0',
+        'https://didcomm.org/revocation_notification/2.0',
+        'https://didcomm.org/questionanswer/1.0',
+      ])
+    )
+    expect(protocols.length).toEqual(15)
   })
 })
