@@ -7,6 +7,7 @@ export enum ValueTransferEventTypes {
   ValueTransferStateChanged = 'ValueTransferStateChanged',
   ResumeTransaction = 'ResumeTransaction',
   WitnessTableReceived = 'WitnessTableReceived',
+  CashMinted = 'CashMinted',
 }
 
 export interface ValueTransferStateChangedEvent extends BaseEvent {
@@ -29,4 +30,8 @@ export interface WitnessTableReceivedEvent extends BaseEvent {
   payload: {
     witnesses: WitnessData[]
   }
+}
+
+export interface CashMintedEvent extends BaseEvent {
+  type: typeof ValueTransferEventTypes.CashMinted
 }

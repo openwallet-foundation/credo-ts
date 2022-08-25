@@ -34,6 +34,10 @@ export class CentralBankIssuer extends BaseAgent {
     const publicDid = await centralBankIssuer.agent.getStaticDid(DidMarker.Online)
     console.log(`CentralBankIssuer Public DID: ${publicDid?.did}`)
 
+    const trustPing = await centralBankIssuer.agent.connections.sendTrustPing(CentralBankIssuer.witnessDid)
+    await centralBankIssuer.agent.connections.awaitTrustPingResponse(trustPing.id)
+    console.log(`Trust Ping response received from the Witness`)
+
     await centralBankIssuer.agent.valueTransfer.mintCash(10, CentralBankIssuer.witnessDid)
 
     const balance = await centralBankIssuer.agent.valueTransfer.getBalance()

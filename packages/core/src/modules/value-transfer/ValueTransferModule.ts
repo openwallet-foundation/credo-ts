@@ -22,6 +22,7 @@ import {
   MintHandler,
   WitnessTableQueryHandler,
   WitnessTableHandler,
+  MintResponseHandler,
 } from './handlers'
 import { OfferAcceptedHandler } from './handlers/OfferAcceptedHandler'
 import { OfferAcceptedWitnessedHandler } from './handlers/OfferAcceptedWitnessedHandler'
@@ -266,11 +267,9 @@ export class ValueTransferModule {
    * @param amount Amount of cash to mint
    * @param witness DID of Witness to send mint message
    */
-  public async mintCash(amount: number, witness: string): Promise<void> {
+  public async mintCash(amount: number, witness: string, timeoutMs?: number): Promise<void> {
     // Mint Verifiable Notes
-    const message = await this.valueTransferIssuerService.mintCash(amount, witness)
-    // Send mint message to Witness to update state
-    await this.valueTransferService.sendMessage(message)
+    await this.valueTransferIssuerService.mintCash(amount, witness, timeoutMs)
   }
 
   /**
@@ -358,7 +357,8 @@ export class ValueTransferModule {
     dispatcher.registerHandler(
       new OfferAcceptedWitnessedHandler(this.valueTransferService, this.valueTransferGiverService)
     )
-    dispatcher.registerHandler(new MintHandler(this.valueTransferWitnessService))
+    dispatcher.registerHandler(new MintHandler(this.valueTransferService, this.valueTransferWitnessService))
+    dispatcher.registerHandler(new MintResponseHandler(this.valueTransferIssuerService))
     dispatcher.registerHandler(new WitnessTableQueryHandler(this.valueTransferWitnessService))
     dispatcher.registerHandler(new WitnessTableHandler(this.valueTransferService))
   }

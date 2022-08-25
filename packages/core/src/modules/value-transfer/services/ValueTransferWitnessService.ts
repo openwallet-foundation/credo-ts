@@ -36,6 +36,7 @@ import {
   WitnessData,
   WitnessTableMessage,
 } from '../messages'
+import { MintResponseMessage } from '../messages/MintResponseMessage'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
 import { ValueTransferRecord, ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
 import { WitnessStateRecord } from '../repository/WitnessStateRecord'
@@ -679,7 +680,9 @@ export class ValueTransferWitnessService {
    *    * Value Transfer record
    *    * Witnessed Cash Removal message
    */
-  public async processCashMint(messageContext: InboundMessageContext<MintMessage>): Promise<void> {
+  public async processCashMint(messageContext: InboundMessageContext<MintMessage>): Promise<MintResponseMessage> {
+    this.config.logger.info(`> Witness: process cash mint request from '${messageContext.message.from}'`)
+
     const issuerDids = this.config.witnessIssuerDids
     if (!issuerDids) {
       throw new AriesFrameworkError(
@@ -703,7 +706,22 @@ export class ValueTransferWitnessService {
     const witnessState = await this.valueTransferStateService.getWitnessState()
 
     witnessState.applyPartyStateTransitions([transactionRecord])
-    await this.valueTransferStateService.storeWitnessState(witnessState)
+
+    const operation = async () => {
+      return this.valueTransferStateService.storeWitnessState(witnessState)
+    }
+
+    await this.gossipService.doSafeOperationWithWitnessSate(operation)
+
+    const message = new MintResponseMessage({
+      from: witnessState.info.publicDid,
+      to: messageContext.message.from,
+      thid: messageContext.message.id,
+    })
+
+    this.config.logger.info(`< Witness: process cash mint request from '${messageContext.message.from}' completed!`)
+
+    return message
   }
 
   /**

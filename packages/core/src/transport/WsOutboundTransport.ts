@@ -46,7 +46,9 @@ export class WsOutboundTransport implements OutboundTransport {
       throw new AriesFrameworkError("Missing connection or endpoint. I don't know how and where to send the message.")
     }
 
-    const socketMediator = recipientDid ? await this.agent.mediationRecipient.findMediatorByDid(recipientDid) : null
+    const socketMediator = recipientDid
+      ? await this.agent.mediationRecipient.findGrantedMediatorByDid(recipientDid)
+      : null
 
     const socket = await this.resolveSocket({
       socketId: endpoint,

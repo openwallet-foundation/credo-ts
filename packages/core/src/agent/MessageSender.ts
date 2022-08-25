@@ -466,24 +466,17 @@ export class MessageSender {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage, transport?: string) {
-    try {
-      this.logger.debug(`Sending outbound message to transport:`, { transport })
-      if (transport) {
-        for (const outboundTransport of this.outboundTransports) {
-          if (outboundTransport.supportedSchemes.includes(transport)) {
-            await outboundTransport.sendMessage(outboundPackage)
-            break
-          }
+    this.logger.debug(`Sending outbound message to transport:`, { transport })
+    if (transport) {
+      for (const outboundTransport of this.outboundTransports) {
+        if (outboundTransport.supportedSchemes.includes(transport)) {
+          await outboundTransport.sendMessage(outboundPackage)
+          break
         }
-      } else {
-        // try to send to the first registered
-        await this.outboundTransports[0]?.sendMessage(outboundPackage)
       }
-    } catch (error) {
-      this.logger.debug(`Sending outbound message failed with the following error:`, {
-        message: error.message,
-        error: error,
-      })
+    } else {
+      // try to send to the first registered
+      await this.outboundTransports[0]?.sendMessage(outboundPackage)
     }
   }
 

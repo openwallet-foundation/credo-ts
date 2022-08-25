@@ -77,6 +77,9 @@ export class HttpOutboundTransport implements OutboundTransport {
       // TODO: check response header type (and also update inbound transports to use the correct headers types)
       if (response && responseMessage) {
         this.logger.debug(`Response received`, { responseMessage, status: response.status })
+        if (response.status === 500) {
+          throw new AriesFrameworkError(`Request failed with ${responseMessage}`)
+        }
 
         try {
           const encryptedMessage = JsonEncoder.fromString(responseMessage)

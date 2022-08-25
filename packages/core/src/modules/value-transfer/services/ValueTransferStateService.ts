@@ -13,7 +13,7 @@ export class ValueTransferStateService implements StorageInterface {
   private valueTransferStateRepository: ValueTransferStateRepository
   private witnessStateRepository: WitnessStateRepository
   private valueTransferStateRecord?: ValueTransferStateRecord
-  private witnessStateRecord?: WitnessStateRecord
+  // private witnessStateRecord?: WitnessStateRecord
   private witnessStateLock: AsyncLock
 
   public constructor(
@@ -47,24 +47,26 @@ export class ValueTransferStateService implements StorageInterface {
   }
 
   public async getWitnessStateRecord(): Promise<WitnessStateRecord> {
-    if (!this.witnessStateRecord) {
-      this.witnessStateRecord = await this.witnessStateRepository.getSingleByQuery({})
-    }
-    return this.witnessStateRecord
+    // if (!this.witnessStateRecord) {
+    //   this.witnessStateRecord = await this.witnessStateRepository.getSingleByQuery({})
+    // }
+    // return this.witnessStateRecord
+    return await this.witnessStateRepository.getSingleByQuery({})
   }
 
   public async getWitnessState(): Promise<WitnessState> {
-    if (!this.witnessStateRecord) {
-      this.witnessStateRecord = await this.witnessStateRepository.getSingleByQuery({})
-    }
-    return this.witnessStateRecord.witnessState
+    // if (!this.witnessStateRecord) {
+    //   this.witnessStateRecord = await this.witnessStateRepository.getSingleByQuery({})
+    // }
+    const record = await this.witnessStateRepository.getSingleByQuery({})
+    return record.witnessState
   }
 
   public async storeWitnessState(witnessState: WitnessState): Promise<void> {
     const record = await this.witnessStateRepository.getSingleByQuery({})
     record.witnessState = witnessState
     await this.witnessStateRepository.update(record)
-    this.witnessStateRecord = record
+    // this.witnessStateRecord = record
   }
 
   /** @inheritDoc {StorageService#safeMutation} */
