@@ -15,7 +15,6 @@ import { MessageSender } from '../../../agent/MessageSender'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
 import { Wallet } from '../../../wallet'
-import { ConnectionService } from '../../connections/services'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { ListUpdateAction, DidListUpdateMessage, MediationRequestMessageV2, DidListUpdate } from '../messages'
 import { MediationRole, MediationState } from '../models'
@@ -26,13 +25,11 @@ export class MediationRecipientService {
   private wallet: Wallet
   private mediatorRepository: MediationRepository
   private eventEmitter: EventEmitter
-  private connectionService: ConnectionService
   private messageSender: MessageSender
   private config: AgentConfig
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
-    connectionService: ConnectionService,
     messageSender: MessageSender,
     config: AgentConfig,
     mediatorRepository: MediationRepository,
@@ -42,7 +39,6 @@ export class MediationRecipientService {
     this.wallet = wallet
     this.mediatorRepository = mediatorRepository
     this.eventEmitter = eventEmitter
-    this.connectionService = connectionService
     this.messageSender = messageSender
   }
 

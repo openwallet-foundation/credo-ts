@@ -1,3 +1,4 @@
+import type { TrustPingMessageV2 } from './messages'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -14,6 +15,8 @@ import {
   AckMessageHandler,
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
+  TrustPingResponseMessageV2Handler,
+  TrustPingMessageV2Handler,
 } from './handlers'
 import { ConnectionInvitationMessage } from './messages'
 import { ConnectionService } from './services/ConnectionService'
@@ -270,6 +273,28 @@ export class ConnectionsModule {
     return this.connectionService.getByThreadId(threadId)
   }
 
+  /**
+   * Send Trust Ping message to specified DID
+   *
+   * @param to DID of recipient
+   * @param responseRequested whether recipient should respond
+   *
+   * @returns The sent Trust Ping message
+   */
+  public sendTrustPing(to: string, responseRequested = true): Promise<TrustPingMessageV2> {
+    return this.trustPingService.sendTrustPing(to, responseRequested)
+  }
+
+  /**
+   * Await response on Trust Ping message
+   *
+   * @param id ID of sent Trust Ping message
+   * @param timeoutMs Milliseconds to wait for response
+   */
+  public async awaitTrustPingResponse(id: string, timeoutMs = 20000): Promise<void> {
+    await this.trustPingService.awaitTrustPingResponse(id, timeoutMs)
+  }
+
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
       new ConnectionRequestHandler(this.connectionService, this.agentConfig, this.mediationRecipientService)
@@ -278,5 +303,7 @@ export class ConnectionsModule {
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
+    dispatcher.registerHandler(new TrustPingMessageV2Handler(this.trustPingService))
+    dispatcher.registerHandler(new TrustPingResponseMessageV2Handler(this.trustPingService))
   }
 }
