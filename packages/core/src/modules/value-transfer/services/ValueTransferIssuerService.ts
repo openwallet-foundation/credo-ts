@@ -1,6 +1,6 @@
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { CashMintedEvent } from '../ValueTransferEvents'
 import type { MintResponseMessage } from '../messages/MintResponseMessage'
-import type { InboundMessageContext } from '@aries-framework/core'
 import type { VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { createVerifiableNotes, TransactionRecord, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
