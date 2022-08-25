@@ -282,8 +282,8 @@ export class RecipientModule {
     return this.mediationRecipientService.findDefaultMediator()
   }
 
-  public async findMediatorByDid(did: string): Promise<MediationRecord | null> {
-    return this.mediationRecipientService.findByMediatorDid(did)
+  public async findGrantedMediatorByDid(did: string): Promise<MediationRecord | null> {
+    return this.mediationRecipientService.findGrantedByMediatorDid(did)
   }
 
   public async requestAndAwaitGrant(did: string, mediatorDid: string, timeoutMs = 10000): Promise<MediationRecord> {
