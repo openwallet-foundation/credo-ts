@@ -4,7 +4,7 @@ import { Equals, IsString } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 
-export type MintResponseMessageParams = DIDCommV2MessageParams
+export type MintResponseMessageParams = { thid: string } & DIDCommV2MessageParams
 
 export class MintResponseMessage extends DIDCommV2Message {
   @Equals(MintResponseMessage.type)
