@@ -9,6 +9,7 @@ import { PresentationPreview } from './PresentationPreview'
 export interface ProposePresentationMessageOptions {
   id?: string
   comment?: string
+  parentThreadId?: string
   presentationProposal: PresentationPreview
 }
 
@@ -24,6 +25,11 @@ export class ProposePresentationMessage extends AgentMessage {
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
+      if (options.parentThreadId) {
+        this.setThread({
+          parentThreadId: options.parentThreadId,
+        })
+      }
       this.presentationProposal = options.presentationProposal
     }
   }

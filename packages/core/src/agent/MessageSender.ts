@@ -152,7 +152,7 @@ export class MessageSender {
     // If the other party shared a queue service endpoint in their did doc we queue the message
     if (queueService) {
       this.logger.debug(`Queue packed message for connection ${connection.id} (${connection.theirLabel})`)
-      this.messageRepository.add(connection.id, encryptedMessage)
+      await this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
 
@@ -267,7 +267,7 @@ export class MessageSender {
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(payload, keys)
-      this.messageRepository.add(connection.id, encryptedMessage)
+      await this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
 

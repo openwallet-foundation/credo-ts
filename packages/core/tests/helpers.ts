@@ -138,6 +138,7 @@ export async function waitForProofRecord(
   agent: Agent,
   options: {
     threadId?: string
+    parentThreadId?: string
     state?: ProofState
     previousState?: ProofState | null
     timeoutMs?: number
@@ -152,11 +153,13 @@ export function waitForProofRecordSubject(
   subject: ReplaySubject<ProofStateChangedEvent> | Observable<ProofStateChangedEvent>,
   {
     threadId,
+    parentThreadId,
     state,
     previousState,
     timeoutMs = 10000,
   }: {
     threadId?: string
+    parentThreadId?: string
     state?: ProofState
     previousState?: ProofState | null
     timeoutMs?: number
@@ -167,6 +170,7 @@ export function waitForProofRecordSubject(
     observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
       filter((e) => threadId === undefined || e.payload.proofRecord.threadId === threadId),
+      filter((e) => parentThreadId === undefined || e.payload.proofRecord.parentThreadId === parentThreadId),
       filter((e) => state === undefined || e.payload.proofRecord.state === state),
       timeout(timeoutMs),
       catchError(() => {

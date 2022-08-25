@@ -11,10 +11,10 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
-import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler } from './handlers'
+import { KeylistUpdateHandler, ForwardHandler } from './handlers'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
+import { MessagePickupService, V2MessagePickupService } from './protocol'
 import { MediatorService } from './services/MediatorService'
-import { MessagePickupService } from './services/MessagePickupService'
 
 @module()
 @injectable()
@@ -45,6 +45,10 @@ export class MediatorModule {
     this.registerHandlers(dispatcher)
   }
 
+  public async initialize() {
+    await this.mediatorService.initialize()
+  }
+
   public async grantRequestedMediation(mediatorId: string): Promise<MediationRecord> {
     const record = await this.mediatorService.getById(mediatorId)
     const connectionRecord = await this.connectionService.getById(record.connectionId)
@@ -64,8 +68,6 @@ export class MediatorModule {
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new KeylistUpdateHandler(this.mediatorService))
     dispatcher.registerHandler(new ForwardHandler(this.mediatorService, this.connectionService, this.messageSender))
-    dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
-    dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
     dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig))
   }
 
@@ -79,5 +81,9 @@ export class MediatorModule {
     // Services
     dependencyManager.registerSingleton(MediatorService)
     dependencyManager.registerSingleton(MessagePickupService)
+    dependencyManager.registerSingleton(V2MessagePickupService)
+
+    // FIXME: Inject in constructor
+    dependencyManager.resolve(V2MessagePickupService)
   }
 }

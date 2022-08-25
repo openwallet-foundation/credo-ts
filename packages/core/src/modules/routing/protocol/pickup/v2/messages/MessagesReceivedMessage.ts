@@ -1,9 +1,9 @@
 import { Expose } from 'class-transformer'
 import { IsArray, IsOptional } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { AgentMessage } from '../../../../../../agent/AgentMessage'
+import { ReturnRouteTypes } from '../../../../../../decorators/transport/TransportDecorator'
+import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
 export interface MessagesReceivedMessageOptions {
   id?: string

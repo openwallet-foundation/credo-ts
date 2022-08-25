@@ -1,9 +1,9 @@
-import type { Handler } from '../../../agent/Handler'
-import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { MediationRecipientService } from '../services'
+import type { Handler } from '../../../../../../agent/Handler'
+import type { InboundMessageContext } from '../../../../../../agent/models/InboundMessageContext'
+import type { MediationRecipientService } from '../../../../services'
 
-import { createOutboundMessage } from '../../../agent/helpers'
-import { StatusMessage } from '../messages/StatusMessage'
+import { createOutboundMessage } from '../../../../../../agent/helpers'
+import { StatusMessage } from '../messages'
 
 export class StatusHandler implements Handler {
   public supportedMessages = [StatusMessage]

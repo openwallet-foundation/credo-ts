@@ -1273,6 +1273,20 @@ Object {
       "threadId": "0b2f1133-ced9-49f1-83a1-eb6ba1c24cdf",
     },
   },
+  "MEDIATOR_ROUTING_RECORD": Object {
+    "id": "MEDIATOR_ROUTING_RECORD",
+    "tags": Object {},
+    "type": "MediatorRoutingRecord",
+    "value": Object {
+      "_tags": Object {},
+      "createdAt": "2022-01-21T22:50:20.522Z",
+      "id": "MEDIATOR_ROUTING_RECORD",
+      "metadata": Object {},
+      "routingKeys": Array [
+        "ocxwFbXouLkzuTCyyjFg1bPGK3nM6aPv1pZ6fn5RNgD",
+      ],
+    },
+  },
   "STORAGE_VERSION_RECORD_ID": Object {
     "id": "STORAGE_VERSION_RECORD_ID",
     "tags": Object {},
@@ -2959,6 +2973,20 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+    },
+  },
+  "MEDIATOR_ROUTING_RECORD": Object {
+    "id": "MEDIATOR_ROUTING_RECORD",
+    "tags": Object {},
+    "type": "MediatorRoutingRecord",
+    "value": Object {
+      "_tags": Object {},
+      "createdAt": "2022-01-21T22:50:20.522Z",
+      "id": "MEDIATOR_ROUTING_RECORD",
+      "metadata": Object {},
+      "routingKeys": Array [
+        "ocxwFbXouLkzuTCyyjFg1bPGK3nM6aPv1pZ6fn5RNgD",
+      ],
     },
   },
   "STORAGE_VERSION_RECORD_ID": Object {

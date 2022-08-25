@@ -1,14 +1,15 @@
 import { Expose, Transform } from 'class-transformer'
 import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
-import { DateParser } from '../../../utils/transformers'
+import { AgentMessage } from '../../../../../../agent/AgentMessage'
+import { ReturnRouteTypes } from '../../../../../../decorators/transport/TransportDecorator'
+import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
+import { DateParser } from '../../../../../../utils/transformers'
 
 export interface StatusMessageOptions {
   id?: string
   recipientKey?: string
+  threadId: string
   messageCount: number
   longestWaitedSeconds?: number
   newestReceivedTime?: Date
@@ -29,6 +30,9 @@ export class StatusMessage extends AgentMessage {
       this.oldestReceivedTime = options.oldestReceivedTime
       this.totalBytes = options.totalBytes
       this.liveDelivery = options.liveDelivery
+      this.setThread({
+        threadId: options.threadId,
+      })
     }
     this.setReturnRouting(ReturnRouteTypes.all)
   }
