@@ -706,7 +706,12 @@ export class ValueTransferWitnessService {
     const witnessState = await this.valueTransferStateService.getWitnessState()
 
     witnessState.applyPartyStateTransitions([transactionRecord])
-    await this.valueTransferStateService.storeWitnessState(witnessState)
+
+    const operation = async () => {
+      return this.valueTransferStateService.storeWitnessState(witnessState)
+    }
+
+    await this.gossipService.doSafeOperationWithWitnessSate(operation)
 
     const message = new MintResponseMessage({
       from: witnessState.info.publicDid,
