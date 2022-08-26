@@ -638,7 +638,17 @@ export async function setupCredentialTests(
 
   const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
 
-  return { faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection }
+  const faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
+  const aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()
+
+  faberAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(faberReplay)
+  aliceAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(aliceReplay)
+
+  return { faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection, faberReplay, aliceReplay }
 }
 
 export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
