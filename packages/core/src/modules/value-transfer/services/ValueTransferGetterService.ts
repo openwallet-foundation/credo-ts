@@ -294,6 +294,7 @@ export class ValueTransferGetterService {
     })
     if (error || !receipt) {
       // VTP message verification failed
+      this.config.logger.error(`Offer verification failed. Error: ${error}`)
       const problemReport = new ProblemReportMessage({
         from: record.getter?.did,
         to: record.giver?.did,
@@ -388,6 +389,7 @@ export class ValueTransferGetterService {
     const { error, receipt, delta } = await this.getter.acceptCash(record.receipt, valueTransferDelta)
     if (error || !receipt || !delta) {
       // VTP message verification failed
+      this.config.logger.error(`Request Acceptance verification failed. Error: ${error}`)
       const problemReportMessage = new ProblemReportMessage({
         from: record.getter?.did,
         to: record.witness?.did,
@@ -487,6 +489,7 @@ export class ValueTransferGetterService {
     const { error, receipt } = await this.getter.processReceipt(record.receipt, valueTransferDelta)
     if (error || !receipt) {
       // VTP message verification failed
+      this.config.logger.error(`Receipt verification failed. Error: ${error}`)
       const problemReportMessage = new ProblemReportMessage({
         pthid: getterReceiptMessage.thid,
         body: {

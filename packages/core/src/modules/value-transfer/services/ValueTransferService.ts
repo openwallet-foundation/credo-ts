@@ -280,6 +280,7 @@ export class ValueTransferService {
 
   public async sendMessage(message: DIDCommV2Message, transport?: Transports) {
     this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
+    this.config.logger.debug(` Message: ${message}`)
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     const transports = transport ? [transport] : undefined
     await this.messageSender.sendDIDCommV2Message(message, sendingMessageType, transports)

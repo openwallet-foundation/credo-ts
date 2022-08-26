@@ -354,6 +354,7 @@ export class ValueTransferWitnessService {
         return {}
       }
       // send problem report back to Getter
+      this.config.logger.error(`Payment Request Acceptance verification failed. Error: ${error}`)
       const problemReport = new ProblemReportMessage({
         from: witnessDid.did,
         pthid: requestAcceptanceMessage.thid,
@@ -411,6 +412,7 @@ export class ValueTransferWitnessService {
     const { error, receipt, delta } = await this.witness.processRequestAcceptance(valueTransferMessage)
     if (error || !receipt || !delta) {
       // send problem report back to Getter
+      this.config.logger.error(`Payment Request Acceptance verification failed. Error: ${error}`)
       const problemReport = new ProblemReportMessage({
         from: record.witness?.did,
         pthid: record.threadId,
@@ -506,6 +508,7 @@ export class ValueTransferWitnessService {
         return { record }
       }
 
+      this.config.logger.error(`Cash Acceptance verification failed. Error: ${error}`)
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({
         from: record.witness?.did,
@@ -612,6 +615,7 @@ export class ValueTransferWitnessService {
         return { record }
       }
       // VTP message verification failed
+      this.config.logger.error(`Receipt creation failed. Error: ${error}`)
       const problemReport = new ProblemReportMessage({
         from: record.witness?.did,
         pthid: record.threadId,

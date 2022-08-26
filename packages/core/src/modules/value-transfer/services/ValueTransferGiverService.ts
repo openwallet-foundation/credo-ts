@@ -194,6 +194,7 @@ export class ValueTransferGiverService {
 
     const receipt = requestMessage.valueTransferMessage
     if (!receipt) {
+      this.config.logger.error(`  Receipt not found in the payment request message`)
       const problemReport = new ProblemReportMessage({
         to: requestMessage.from,
         pthid: requestMessage.id,
@@ -209,6 +210,7 @@ export class ValueTransferGiverService {
       // ensure that DID exist in the wallet
       const did = await this.didService.findById(receipt.giverId)
       if (!did) {
+        this.config.logger.error(`  Requested giver '${receipt.giverId}' does not exist in the wallet`)
         const problemReport = new ProblemReportMessage({
           to: requestMessage.from,
           pthid: requestMessage.id,
@@ -269,6 +271,9 @@ export class ValueTransferGiverService {
 
     const receipt = requestMessage.valueTransferMessage
     if (!receipt) {
+      this.config.logger.error(
+        `Missing required base64 or json encoded attachment data for payment request with thread id ${requestMessage.thid}`
+      )
       const problemReport = new ProblemReportMessage({
         from: record.giver?.did,
         to: requestMessage.from,
@@ -282,6 +287,9 @@ export class ValueTransferGiverService {
     }
 
     if (!receipt.isGiverSet || receipt.giverId !== record.giver?.did) {
+      this.config.logger.error(
+        `Payment Request contains DID ${receipt.giverId} different from offer ${record.giver?.did}`
+      )
       const problemReport = new ProblemReportMessage({
         from: record.giver?.did,
         to: requestMessage.from,
@@ -370,6 +378,7 @@ export class ValueTransferGiverService {
       timeouts,
     })
     if (error || !receipt) {
+      this.config.logger.error(`Request verification failed. Error: ${error}`)
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({
         from: giverDid,
@@ -461,6 +470,7 @@ export class ValueTransferGiverService {
     const { error, receipt, delta } = await this.giver.signReceipt(record.receipt, valueTransferDelta)
     if (error || !receipt || !delta) {
       // VTP message verification failed
+      this.config.logger.error(`Request verification failed. Error: ${error}`)
       const problemReportMessage = new ProblemReportMessage({
         from: record.giver?.did,
         to: messageContext.sender,
@@ -552,6 +562,7 @@ export class ValueTransferGiverService {
     const { error, receipt, delta } = await this.giver.signReceipt(record.receipt, valueTransferDelta)
     if (error || !receipt || !delta) {
       // VTP message verification failed
+      this.config.logger.error(`Cash Acceptance verification failed. Error: ${error}`)
       const problemReportMessage = new ProblemReportMessage({
         from: record.giver?.did,
         to: record.witness?.did,
@@ -692,6 +703,7 @@ export class ValueTransferGiverService {
     const { error, receipt } = await this.giver.processReceipt(record.receipt, valueTransferDelta)
     if (error || !receipt) {
       // VTP message verification failed
+      this.config.logger.error(`Receipt verification failed. Error: ${error}`)
       const problemReportMessage = new ProblemReportMessage({
         pthid: receiptMessage.thid,
         body: {
