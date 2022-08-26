@@ -150,7 +150,11 @@ export class RecipientModule {
     return interval(mediatorPollingInterval)
       .pipe(takeUntil(this.agentConfig.stop$))
       .subscribe(async () => {
-        await this.pickupMessages(mediator)
+        try {
+          await this.pickupMessages(mediator)
+        } catch (e) {
+          this.agentConfig.logger.error(`Unable to send pickup message to mediator. Error: ${e}`)
+        }
       })
   }
 
