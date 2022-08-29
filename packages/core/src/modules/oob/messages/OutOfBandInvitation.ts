@@ -1,6 +1,5 @@
 import type { PlaintextMessage } from '../../../types'
 import type { HandshakeProtocol } from '../../connections'
-import type { Key } from '../../dids'
 
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
@@ -13,7 +12,6 @@ import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 import { IsStringOrInstance } from '../../../utils/validators'
-import { DidKey } from '../../dids'
 import { outOfBandServiceToNumAlgo2Did } from '../../dids/methods/peer/peerDidNumAlgo2'
 import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 
@@ -89,7 +87,7 @@ export class OutOfBandInvitation extends AgentMessage {
   }
 
   public get invitationDids() {
-    const dids = this.services.map((didOrService) => {
+    const dids = this.getServices().map((didOrService) => {
       if (typeof didOrService === 'string') {
         return didOrService
       }
@@ -98,13 +96,18 @@ export class OutOfBandInvitation extends AgentMessage {
     return dids
   }
 
-  // TODO: this only takes into account inline didcomm services, won't work for public dids
-  public getRecipientKeys(): Key[] {
-    return this.services
-      .filter((s): s is OutOfBandDidCommService => typeof s !== 'string' && !(s instanceof String))
-      .map((s) => s.recipientKeys)
-      .reduce((acc, curr) => [...acc, ...curr], [])
-      .map((didKey) => DidKey.fromDid(didKey).key)
+  // shorthand for services without the need to deal with the String DIDs
+  public getServices(): Array<OutOfBandDidCommService | string> {
+    return this.services.map((service) => {
+      if (service instanceof String) return service.toString()
+      return service
+    })
+  }
+  public getDidServices(): Array<string> {
+    return this.getServices().filter((service): service is string => typeof service === 'string')
+  }
+  public getInlineServices(): Array<OutOfBandDidCommService> {
+    return this.getServices().filter((service): service is OutOfBandDidCommService => typeof service !== 'string')
   }
 
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
@@ -141,7 +144,8 @@ export class OutOfBandInvitation extends AgentMessage {
   @OutOfBandServiceTransformer()
   @IsStringOrInstance(OutOfBandDidCommService, { each: true })
   @ValidateNested({ each: true })
-  public services!: Array<OutOfBandDidCommService | string>
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  private services!: Array<OutOfBandDidCommService | string | String>
 
   /**
    * Custom property. It is not part of the RFC.
@@ -152,13 +156,8 @@ export class OutOfBandInvitation extends AgentMessage {
 }
 
 /**
- * Decorator that transforms authentication json to corresponding class instances
- *
- * @example
- * class Example {
- *   VerificationMethodTransformer()
- *   private authentication: VerificationMethod
- * }
+ * Decorator that transforms services json to corresponding class instances
+ * @note Because of ValidateNested limitation, this produces instances of String for DID services except plain js string
  */
 function OutOfBandServiceTransformer() {
   return Transform(({ value, type }: { value: Array<string | { type: string }>; type: TransformationType }) => {

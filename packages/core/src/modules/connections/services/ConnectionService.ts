@@ -109,6 +109,19 @@ export class ConnectionService {
       didDoc,
     })
 
+    const { label, imageUrl } = config
+    const connectionRequest = new ConnectionRequestMessage({
+      label: label ?? this.config.label,
+      did: didDoc.id,
+      didDoc,
+      imageUrl: imageUrl ?? this.config.connectionImageUrl,
+    })
+
+    connectionRequest.setThread({
+      threadId: connectionRequest.id,
+      parentThreadId: outOfBandInvitation.id,
+    })
+
     const connectionRecord = await this.createConnection({
       protocol: HandshakeProtocol.Connections,
       role: DidExchangeRole.Requester,
@@ -121,22 +134,9 @@ export class ConnectionService {
       outOfBandId: outOfBandRecord.id,
       invitationDid,
       imageUrl: outOfBandInvitation.imageUrl,
+      threadId: connectionRequest.id,
     })
 
-    const { label, imageUrl, autoAcceptConnection } = config
-
-    const connectionRequest = new ConnectionRequestMessage({
-      label: label ?? this.config.label,
-      did: didDoc.id,
-      didDoc,
-      imageUrl: imageUrl ?? this.config.connectionImageUrl,
-    })
-
-    if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
-      connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
-    }
-
-    connectionRecord.threadId = connectionRequest.id
     await this.updateState(connectionRecord, DidExchangeState.RequestSent)
 
     return {
@@ -204,11 +204,7 @@ export class ConnectionService {
 
     const didDoc = routing
       ? this.createDidDoc(routing)
-      : this.createDidDocFromOutOfBandDidCommServices(
-          outOfBandRecord.outOfBandInvitation.services.filter(
-            (s): s is OutOfBandDidCommService => typeof s !== 'string'
-          )
-        )
+      : this.createDidDocFromOutOfBandDidCommServices(outOfBandRecord.outOfBandInvitation.getInlineServices())
 
     const { did: peerDid } = await this.createDid({
       role: DidDocumentRole.Created,
