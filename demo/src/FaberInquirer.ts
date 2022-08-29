@@ -15,7 +15,7 @@ export const runFaber = async () => {
 }
 
 enum PromptOptions {
-  ReceiveConnectionUrl = 'Receive connection invitation',
+  CreateConnection = 'Create connection invitation',
   OfferCredential = 'Offer credential',
   RequestProof = 'Request proof',
   SendMessage = 'Send message',
@@ -42,9 +42,9 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.faber.connectionRecordAliceId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    if (this.faber.outOfBandId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
 
-    const reducedOption = [PromptOptions.ReceiveConnectionUrl, PromptOptions.Exit, PromptOptions.Restart]
+    const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
     return inquirer.prompt([this.inquireOptions(reducedOption)])
   }
 
@@ -53,7 +53,7 @@ export class FaberInquirer extends BaseInquirer {
     if (this.listener.on) return
 
     switch (choice.options) {
-      case PromptOptions.ReceiveConnectionUrl:
+      case PromptOptions.CreateConnection:
         await this.connection()
         break
       case PromptOptions.OfferCredential:
@@ -76,9 +76,7 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async connection() {
-    const title = Title.InvitationTitle
-    const getUrl = await inquirer.prompt([this.inquireInput(title)])
-    await this.faber.acceptConnection(getUrl.input)
+    await this.faber.setupConnection()
   }
 
   public async exitUseCase(title: string) {
