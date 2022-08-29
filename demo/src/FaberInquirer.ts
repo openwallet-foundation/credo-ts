@@ -102,7 +102,7 @@ export class FaberInquirer extends BaseInquirer {
 
   public async message() {
     const message = await this.inquireMessage()
-    if (message) return
+    if (!message) return
 
     await this.faber.sendMessage(message)
   }
