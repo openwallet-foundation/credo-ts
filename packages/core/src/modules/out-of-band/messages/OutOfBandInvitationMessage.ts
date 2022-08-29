@@ -67,7 +67,11 @@ export class OutOfBandInvitationMessage extends DIDCommV2Message {
 
   public static fromLink({ url }: { url: string }) {
     const message = this.fromUrl({ url, param: LINK_PARAM })
-    return JsonTransformer.fromJSON(message, OutOfBandInvitationMessage)
+    return OutOfBandInvitationMessage.fromJson(message)
+  }
+
+  public static fromJson(json: Record<string, unknown>) {
+    return JsonTransformer.fromJSON(json, OutOfBandInvitationMessage)
   }
 
   public static createAndroidNearbyHandshakeJSONAttachment(attachment: AndroidNearbyHandshakeAttachment): Attachment {

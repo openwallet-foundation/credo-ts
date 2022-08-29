@@ -21,6 +21,10 @@ export class RequestMessage extends ValueTransferBaseMessage {
 
   public static fromLink({ url }: { url: string }) {
     const message = this.fromUrl({ url })
-    return JsonTransformer.fromJSON(message, RequestMessage)
+    return RequestMessage.fromJson(message)
+  }
+
+  public static fromJson(json: Record<string, unknown>) {
+    return JsonTransformer.fromJSON(json, RequestMessage)
   }
 }

@@ -21,6 +21,10 @@ export class OfferMessage extends ValueTransferBaseMessage {
 
   public static fromLink({ url }: { url: string }) {
     const message = this.fromUrl({ url })
-    return JsonTransformer.fromJSON(message, OfferMessage)
+    return OfferMessage.fromJson(message)
+  }
+
+  public static fromJson(json: Record<string, unknown>) {
+    return JsonTransformer.fromJSON(json, OfferMessage)
   }
 }
