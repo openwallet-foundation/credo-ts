@@ -671,6 +671,9 @@ export class ValueTransferWitnessService {
     this.config.logger.info(
       `< Witness: process cash removal message for VTP transaction ${cashRemovedMessage.thid} completed!`
     )
+    this.config.logger.info(
+      `< Witness: transaction completed in ${record.receipt.witness.getElapsedTimeInSeconds()} seconds`
+    )
 
     return { record, getterMessage: getterReceiptMessage, giverMessage: giverReceiptMessage }
   }

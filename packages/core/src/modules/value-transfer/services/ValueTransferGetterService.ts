@@ -521,6 +521,10 @@ export class ValueTransferGetterService {
     this.config.logger.info(
       `< Getter: process receipt message for VTP transaction ${getterReceiptMessage.thid} completed!`
     )
+    this.config.logger.info(
+      `< Getter: transaction completed in ${record.receipt.getter.getElapsedTimeInSeconds()} seconds`
+    )
+
     return { record, message: getterReceiptMessage }
   }
 }
