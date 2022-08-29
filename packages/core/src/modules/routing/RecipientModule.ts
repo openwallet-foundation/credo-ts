@@ -324,7 +324,7 @@ export class RecipientModule {
     // Connect to mediator through provided invitation
     // Also requests mediation and sets as default mediator
     // Assumption: processInvitation is a URL-encoded invitation
-    const invitation = await OutOfBandInvitationMessage.fromUrl(mediatorConnInvite)
+    const invitation = await OutOfBandInvitationMessage.fromLink({ url: mediatorConnInvite })
 
     if (invitation.body.goalCode !== OutOfBandGoalCode.MediatorProvision) {
       throw new AriesFrameworkError(

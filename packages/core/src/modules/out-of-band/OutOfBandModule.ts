@@ -33,7 +33,7 @@ export class OutOfBandModule {
   }
 
   public receiveInvitationFromUrl(invitationUrl: string): OutOfBandInvitationMessage {
-    return OutOfBandInvitationMessage.fromUrl(invitationUrl)
+    return OutOfBandInvitationMessage.fromLink({ url: invitationUrl })
   }
 
   public async acceptInvitation(message: OutOfBandInvitationMessage): Promise<void> {

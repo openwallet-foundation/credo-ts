@@ -4,11 +4,9 @@ import type { Attachment } from 'didcomm'
 import { Receipt, ValueTransferDelta } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
 import { IsInstance, ValidateNested } from 'class-validator'
-import { parseUrl } from 'query-string'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
-import { AriesFrameworkError } from '../../../error'
-import { JsonEncoder, JsonTransformer } from '../../../utils'
+import { JsonTransformer } from '../../../utils'
 
 export const VTP_RECEIPT_ATTACHMENT_ID = 'vtp-receipt'
 export const VTP_DELTA_ATTACHMENT_ID = 'vtp-delta'
@@ -60,28 +58,5 @@ export class ValueTransferBaseMessage extends DIDCommV2Message {
     return typeof attachment === 'string'
       ? JsonTransformer.deserialize(attachment, Class)
       : JsonTransformer.fromJSON(attachment, Class)
-  }
-
-  public toUrl({ domain }: { domain: string }) {
-    const encodedMessage = JsonEncoder.toBase64URL(this.toJSON())
-    return `${domain}?dm=${encodedMessage}`
-  }
-
-  public static fromUrl(invitationUrl: string) {
-    const parsedUrl = parseUrl(invitationUrl).query
-    const encodedInvitation = parsedUrl['dm']
-
-    if (typeof encodedInvitation === 'string') {
-      const messageJson = JsonEncoder.fromBase64(encodedInvitation)
-      return this.fromJson(messageJson)
-    } else {
-      throw new AriesFrameworkError(
-        'MessageUrl is invalid. It needs to contain one, and only one, of the following parameters; `dm`'
-      )
-    }
-  }
-
-  public static fromJson(json: Record<string, unknown>) {
-    return JsonTransformer.fromJSON(json, ValueTransferBaseMessage)
   }
 }
