@@ -35,13 +35,10 @@ export class WsOutboundTransport implements OutboundTransport {
 
   public async stop() {
     this.logger.debug('Stopping WS outbound transport')
-
-    await Promise.all(
-      Array.from(this.transportTable.values()).map((socket) => {
-        socket.removeEventListener('message', this.handleMessageEvent)
-        socket.close()
-      })
-    )
+    this.transportTable.forEach((socket) => {
+      socket.removeEventListener('message', this.handleMessageEvent)
+      socket.close()
+    })
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
