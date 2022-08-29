@@ -40,6 +40,10 @@ export interface FormatProcessOptions {
   credentialRecord: CredentialExchangeRecord
 }
 
+export interface FormatProcessCredentialOptions extends FormatProcessOptions {
+  requestAttachment: Attachment
+}
+
 export interface FormatCreateProposalOptions<CF extends CredentialFormat> {
   credentialRecord: CredentialExchangeRecord
   credentialFormats: CredentialFormatPayload<[CF], 'createProposal'>
@@ -89,6 +93,14 @@ export interface FormatAcceptRequestOptions<CF extends CredentialFormat> {
   offerAttachment?: Attachment
 }
 
+export interface FormatAcceptCredentialOptions<CF extends CredentialFormat> {
+  credentialRecord: CredentialExchangeRecord
+  credentialFormats?: CredentialFormatPayload<[CF], 'acceptRequest'>
+  attachId?: string
+
+  requestAttachment: Attachment
+  offerAttachment?: Attachment
+}
 // Auto accept method interfaces
 export interface FormatAutoRespondProposalOptions {
   credentialRecord: CredentialExchangeRecord

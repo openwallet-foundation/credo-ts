@@ -11,15 +11,17 @@ import type { AgentContext } from '../../../../agent'
 import type { SignCredentialOptionsRFC0593 } from '../../../vc/models/W3cCredentialServiceOptions'
 import type {
   FormatAcceptRequestOptions,
+  FormatAutoRespondCredentialOptions,
   FormatAutoRespondOfferOptions,
   FormatAutoRespondProposalOptions,
   FormatAutoRespondRequestOptions,
   FormatCreateProposalReturn,
   FormatCreateRequestOptions,
+  FormatProcessCredentialOptions,
 } from '../CredentialFormatServiceOptions'
 import type { JsonLdCredentialFormat } from './JsonLdCredentialFormat'
+import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
 
-import { ProofType } from '@sphereon/pex/dist/main/lib/types/SSI.types'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { EventEmitter } from '../../../../agent/EventEmitter'
@@ -31,6 +33,7 @@ import { proofTypeKeyTypeMapping } from '../../../dids/domain/key-type/keyDidMap
 import { DidResolverService } from '../../../dids/services/DidResolverService'
 import { W3cCredentialService } from '../../../vc/W3cCredentialService'
 import { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
+import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
@@ -84,10 +87,9 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     MessageValidator.validateSync(jsonLdCredential)
 
     // FIXME: this doesn't follow RFC0593
+    // jsonLdFormat is now of type SignCredentialOptionsRFC0593
 
-    const rfc0593 = credentialFormats.jsonld
-
-    const attachment = this.getFormatData(rfc0593, format.attachId)
+    const attachment = this.getFormatData(jsonLdFormat, format.attachId)
     return { format, attachment }
   }
 
@@ -316,7 +318,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialRecord, attachment }: FormatProcessOptions
+    { credentialRecord, attachment, requestAttachment }: FormatProcessCredentialOptions
   ): Promise<void> {
     const credentialAsJson = attachment.getDataAsJson<W3cVerifiableCredential>()
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
@@ -327,6 +329,24 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // FIXME: we should do a lot of checks to verify if the credential we received is actually the credential
     // we requested. We can take an example of the ACA-Py implementation:
     // https://github.com/hyperledger/aries-cloudagent-python/blob/main/aries_cloudagent/protocols/issue_credential/v2_0/formats/ld_proof/handler.py#L492
+    if (!this.areCredentialsEqual(attachment, requestAttachment)) {
+      throw new AriesFrameworkError(
+        `Received credential for credential record ${credentialRecord.id} does not match requested credential`
+      )
+    }
+
+    // compare stuff in the proof object of the credential and request...based on aca-py
+
+    const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+    const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
+    if (Array.isArray(credential.proof)) {
+      const proofArray = credential.proof.map((proof) => new LinkedDataProof(proof))
+    } else {
+      const credProof = new LinkedDataProof(credential.proof)
+
+      this.compareStuff(credProof, request.options)
+      credProof.domain === request.options.domain
+    }
 
     const verifiableCredential = await this.w3cCredentialService.storeCredential(agentContext, {
       credential: credential,
@@ -336,6 +356,12 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       credentialRecordType: this.credentialRecordType,
       credentialRecordId: verifiableCredential.id,
     })
+  }
+
+  private compareStuff(credentialProof: LinkedDataProof, requestProof: JsonLdOptionsRFC0593): void {
+    if (credentialProof.domain !== requestProof.domain) {
+      throw Error('Received credential proof.domain does not match domain from credential request')
+    }
   }
 
   public supportsFormat(format: string): boolean {
@@ -369,10 +395,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     return this.areCredentialsEqual(offerAttachment, requestAttachment)
   }
 
-  public shouldAutoRespondToCredential() {
+  public shouldAutoRespondToCredential(
+    agentContext: AgentContext,
+    { credentialAttachment, requestAttachment }: FormatAutoRespondCredentialOptions
+  ) {
     // FIXME: we should do a lot of checks to verify if the credential we received is actually the credential
     // we requested. We can take an example of the ACA-Py implementation:
     // https://github.com/hyperledger/aries-cloudagent-python/blob/main/aries_cloudagent/protocols/issue_credential/v2_0/formats/ld_proof/handler.py#L492
-    return true // temporary to get the tests to pass
+    return this.areCredentialsEqual(credentialAttachment, requestAttachment)
   }
 }
