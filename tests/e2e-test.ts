@@ -94,6 +94,5 @@ export async function e2eTest({
 
   // We want to stop the mediator polling before the agent is shutdown.
   await recipientAgent.mediationRecipient.stopMessagePickup()
-  recipientAgent.config.stop$.next(true)
   await sleep(2000)
 }

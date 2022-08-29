@@ -47,8 +47,8 @@ export class RecipientModule {
   private mediationRepository: MediationRepository
   private routingService: RoutingService
 
-  // $stop is used for stop message pickup signal
-  private readonly stop$ = new Subject<boolean>()
+  // stopMessagePickup$ is used for stop message pickup signal
+  private readonly stopMessagePickup$ = new Subject<boolean>()
 
   public constructor(
     dispatcher: Dispatcher,
@@ -148,7 +148,7 @@ export class RecipientModule {
     // - Agent is not shutdown
     // - Socket was for current mediator connection id
 
-    const stopConditions$ = merge(this.agentConfig.stop$, this.stop$).pipe()
+    const stopConditions$ = merge(this.agentConfig.stop$, this.stopMessagePickup$).pipe()
     this.eventEmitter
       .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
       .pipe(
@@ -216,7 +216,7 @@ export class RecipientModule {
         await this.sendStatusRequest({ mediatorId: mediatorRecord.id })
         break
       case MediatorPickupStrategy.PickUpV1: {
-        const stopConditions$ = merge(this.agentConfig.stop$, this.stop$).pipe()
+        const stopConditions$ = merge(this.agentConfig.stop$, this.stopMessagePickup$).pipe()
         // Explicit means polling every X seconds with batch message
         this.agentConfig.logger.info(
           `Starting explicit (batch) pickup of messages from mediator '${mediatorRecord.id}'`
@@ -249,7 +249,7 @@ export class RecipientModule {
    * Terminate all ongoing Message Pickup loops
    */
   public async stopMessagePickup() {
-    this.stop$.next(true)
+    this.stopMessagePickup$.next(true)
   }
 
   private async sendStatusRequest(config: { mediatorId: string; recipientKey?: string }) {
