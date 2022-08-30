@@ -1,8 +1,7 @@
-import type { ResolvedDidCommService } from '../../agent/MessageSender'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Logger } from '../../logger'
 import type { ParsedMessageType } from '../../utils/messageType'
-import type { OutOfBandDidCommService } from '../oob/domain/OutOfBandDidCommService'
+import type { ResolvedDidCommService } from '../didcomm'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
 import type { Routing } from './services/ConnectionService'
@@ -221,10 +220,7 @@ export class DidExchangeProtocol {
     if (routing) {
       services = this.routingToServices(routing)
     } else if (outOfBandRecord) {
-      const inlineServices = outOfBandRecord.outOfBandInvitation.services.filter(
-        (service) => typeof service !== 'string'
-      ) as OutOfBandDidCommService[]
-
+      const inlineServices = outOfBandRecord.outOfBandInvitation.getInlineServices()
       services = inlineServices.map((service) => ({
         id: service.id,
         serviceEndpoint: service.serviceEndpoint,
@@ -300,7 +296,9 @@ export class DidExchangeProtocol {
 
     const didDocument = await this.extractDidDocument(
       message,
-      outOfBandRecord.outOfBandInvitation.getRecipientKeys().map((key) => key.publicKeyBase58)
+      outOfBandRecord
+        .getTags()
+        .recipientKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint).publicKeyBase58)
     )
     const didRecord = new DidRecord({
       id: message.did,
