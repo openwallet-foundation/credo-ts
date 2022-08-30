@@ -35,6 +35,10 @@ import { MediationRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
 import { Transports } from './types'
 
+const DEFAULT_WS_RECONNECTION_INTERVAL = 1500
+const WS_RECONNECTION_INTERVAL_STEP = 500
+const MAX_WS_RECONNECTION_INTERVAL = 5000
+
 @scoped(Lifecycle.ContainerScoped)
 export class RecipientModule {
   private agentConfig: AgentConfig
@@ -116,7 +120,7 @@ export class RecipientModule {
   }
 
   private async initiateImplicitPickup(mediator: MediationRecord) {
-    let interval = 50
+    let interval = DEFAULT_WS_RECONNECTION_INTERVAL
 
     // Listens to Outbound websocket closed events and will reopen the websocket connection
     // in a recursive back off strategy if it matches the following criteria:
@@ -131,7 +135,11 @@ export class RecipientModule {
         // Make sure we're not reconnecting multiple times
         throttleTime(interval),
         // Increase the interval (recursive back-off)
-        tap(() => (interval *= 2)),
+        tap(() => {
+          if (interval < MAX_WS_RECONNECTION_INTERVAL) {
+            interval += WS_RECONNECTION_INTERVAL_STEP
+          }
+        }),
         // Wait for interval time before reconnecting
         delayWhen(() => timer(interval))
       )
@@ -139,7 +147,8 @@ export class RecipientModule {
         this.logger.warn(
           `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`
         )
-        this.openMediationWebSocket(mediator)
+        // Try to reconnect to WebSocket and reset retry interval if successful
+        this.openMediationWebSocket(mediator).then(() => (interval = DEFAULT_WS_RECONNECTION_INTERVAL))
       })
 
     await this.openMediationWebSocket(mediator)
@@ -150,7 +159,11 @@ export class RecipientModule {
     return interval(mediatorPollingInterval)
       .pipe(takeUntil(this.agentConfig.stop$))
       .subscribe(async () => {
-        await this.pickupMessages(mediator)
+        try {
+          await this.pickupMessages(mediator)
+        } catch (e) {
+          this.agentConfig.logger.error(`Unable to send pickup message to mediator. Error: ${e}`)
+        }
       })
   }
 
@@ -320,7 +333,7 @@ export class RecipientModule {
     // Connect to mediator through provided invitation
     // Also requests mediation and sets as default mediator
     // Assumption: processInvitation is a URL-encoded invitation
-    const invitation = await OutOfBandInvitationMessage.fromUrl(mediatorConnInvite)
+    const invitation = await OutOfBandInvitationMessage.fromLink({ url: mediatorConnInvite })
 
     if (invitation.body.goalCode !== OutOfBandGoalCode.MediatorProvision) {
       throw new AriesFrameworkError(

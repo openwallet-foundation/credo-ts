@@ -157,129 +157,6 @@ export class ValueTransferWitnessService {
   }
 
   /**
-   * Process a received {@link OfferAcceptedMessage}.
-   *    The original Offer message will be verified.
-   *    Value transfer record with the information from the offer message will be created.
-   *    The Offer message will be forwarded to Getter afterwards.
-   *
-   * @param messageContext The record context containing the offer message.
-   *
-   * @returns
-   *    * Value Transfer record
-   *    * Witnessed Offer message
-   */
-  // public async processOfferAcceptance(messageContext: InboundMessageContext<OfferAcceptedMessage>): Promise<{
-  //   record?: ValueTransferRecord
-  //   message?: OfferAcceptedWitnessedMessage
-  //   problemReport?: ProblemReportMessage
-  // }> {
-  //   const { message: offerAcceptanceMessage } = messageContext
-  //
-  //   this.config.logger.info(
-  //     `> Witness: process offer acceptance message for VTP transaction ${offerAcceptanceMessage.thid}`
-  //   )
-  //
-  //   // Get Witness state
-  //   const state = await this.getWitnessState()
-  //
-  //   const valueTransferMessage = offerAcceptanceMessage.valueTransferMessage
-  //   if (!valueTransferMessage) {
-  //     const problemReport = new ProblemReportMessage({
-  //       from: state.publicDid,
-  //       pthid: offerAcceptanceMessage.id,
-  //       body: {
-  //         code: 'e.p.req.bad-offer-acceptance',
-  //         comment: `Missing required base64 or json encoded attachment data for payment offer with thread id ${offerAcceptanceMessage.id}`,
-  //       },
-  //     })
-  //     await this.valueTransferService.sendWitnessProblemReport(problemReport)
-  //     return { problemReport }
-  //   }
-  //
-  //   // Check if there is paused transaction
-  //   const existingRecord = await this.valueTransferRepository.findByThread(offerAcceptanceMessage.thid)
-  //   if (existingRecord) {
-  //     if (existingRecord.status !== ValueTransferTransactionStatus.Paused) {
-  //       this.config.logger.info('Transaction has already been processed')
-  //       return {}
-  //     }
-  //   }
-  //
-  //   const record =
-  //     existingRecord ??
-  //     new ValueTransferRecord({
-  //       role: ValueTransferRole.Witness,
-  //       state: ValueTransferState.OfferAcceptanceReceived,
-  //       status: ValueTransferTransactionStatus.Pending,
-  //       threadId: offerAcceptanceMessage.thid,
-  //       receipt: valueTransferMessage,
-  //     })
-  //
-  //   //Call VTP package to process received Payment Request request
-  //   const { error, receipt, delta } = await this.witness.processOfferAcceptance(state.publicDid, valueTransferMessage)
-  //   if (error || !receipt || !delta) {
-  //     if (!existingRecord && error?.code === ErrorCodes.CurrentStateDoesNotExist) {
-  //       // Pause transaction and request other witness for registered state
-  //       // existingRecord means that we already try to handle message second time
-  //       await this.valueTransferRepository.save(record)
-  //       await this.pauseTransaction(record, offerAcceptanceMessage)
-  //       return {}
-  //     }
-  //
-  //     // send problem report back to Getter
-  //     const problemReport = new ProblemReportMessage({
-  //       from: state.publicDid,
-  //       pthid: offerAcceptanceMessage.id,
-  //       body: {
-  //         code: error?.code || 'invalid-payment-offer-acceptance',
-  //         comment: `Payment Offer verification failed. Error: ${error}`,
-  //       },
-  //     })
-  //     await this.valueTransferService.sendWitnessProblemReport(problemReport)
-  //     return { problemReport }
-  //   }
-  //
-  //   // next protocol message
-  //   const offerAcceptedWitnessedMessage = new OfferAcceptedWitnessedMessage({
-  //     from: state.publicDid,
-  //     to: receipt.giver?.id,
-  //     thid: offerAcceptanceMessage.thid,
-  //     attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
-  //   })
-  //
-  //   const getterInfo = await this.wellKnownService.resolve(receipt.getterId)
-  //   const giverInfo = await this.wellKnownService.resolve(receipt.giverId)
-  //   const witnessInfo = await this.wellKnownService.resolve(state.publicDid)
-  //
-  //   // Create Value Transfer record and raise event
-  //   record.state = ValueTransferState.OfferAcceptanceSent
-  //   record.status = ValueTransferTransactionStatus.InProgress
-  //   record.receipt = receipt
-  //   record.getter = getterInfo
-  //   record.giver = giverInfo
-  //   record.witness = witnessInfo
-  //
-  //   if (existingRecord) {
-  //     await this.valueTransferRepository.update(record)
-  //   } else {
-  //     await this.valueTransferRepository.save(record)
-  //   }
-  //
-  //   await this.valueTransferService.sendMessage(offerAcceptedWitnessedMessage)
-  //
-  //   this.eventEmitter.emit<ValueTransferStateChangedEvent>({
-  //     type: ValueTransferEventTypes.ValueTransferStateChanged,
-  //     payload: { record },
-  //   })
-  //
-  //   this.config.logger.info(
-  //     `> Witness: process offer acceptance message for VTP transaction ${offerAcceptanceMessage.thid} completed!`
-  //   )
-  //
-  //   return { record, message: offerAcceptedWitnessedMessage }
-  // }
-
-  /**
    * Process a received {@link RequestAcceptedMessage}.
    *
    *    Verify correctness of message
@@ -354,6 +231,7 @@ export class ValueTransferWitnessService {
         return {}
       }
       // send problem report back to Getter
+      this.config.logger.error(`Payment Request Acceptance verification failed. Error: ${error}`)
       const problemReport = new ProblemReportMessage({
         from: witnessDid.did,
         pthid: requestAcceptanceMessage.thid,
@@ -411,6 +289,7 @@ export class ValueTransferWitnessService {
     const { error, receipt, delta } = await this.witness.processRequestAcceptance(valueTransferMessage)
     if (error || !receipt || !delta) {
       // send problem report back to Getter
+      this.config.logger.error(`Payment Request Acceptance verification failed. Error: ${error}`)
       const problemReport = new ProblemReportMessage({
         from: record.witness?.did,
         pthid: record.threadId,
@@ -477,6 +356,13 @@ export class ValueTransferWitnessService {
 
     const record = await this.valueTransferRepository.getByThread(cashAcceptedMessage.thid)
 
+    if (record.finished) {
+      this.config.logger.warn(
+        `> Witness: skipping cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} in ${record.state} state`
+      )
+      return { record }
+    }
+
     record.assertRole(ValueTransferRole.Witness)
     record.assertState([ValueTransferState.RequestAcceptanceSent])
 
@@ -506,6 +392,7 @@ export class ValueTransferWitnessService {
         return { record }
       }
 
+      this.config.logger.error(`Cash Acceptance verification failed. Error: ${error}`)
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({
         from: record.witness?.did,
@@ -578,6 +465,13 @@ export class ValueTransferWitnessService {
 
     const record = await this.valueTransferRepository.getByThread(cashRemovedMessage.thid)
 
+    if (record.finished) {
+      this.config.logger.warn(
+        `> Witness: skipping cash removal message for VTP transaction ${cashRemovedMessage.thid} in ${record.state} state`
+      )
+      return { record }
+    }
+
     record.assertState([ValueTransferState.CashAcceptanceSent, ValueTransferState.OfferAcceptanceSent])
     record.assertRole(ValueTransferRole.Witness)
 
@@ -612,6 +506,7 @@ export class ValueTransferWitnessService {
         return { record }
       }
       // VTP message verification failed
+      this.config.logger.error(`Receipt creation failed. Error: ${error}`)
       const problemReport = new ProblemReportMessage({
         from: record.witness?.did,
         pthid: record.threadId,
@@ -666,6 +561,9 @@ export class ValueTransferWitnessService {
 
     this.config.logger.info(
       `< Witness: process cash removal message for VTP transaction ${cashRemovedMessage.thid} completed!`
+    )
+    this.config.logger.info(
+      `< Witness: transaction completed in ${record.receipt.witness.getElapsedTimeInSeconds()} seconds`
     )
 
     return { record, getterMessage: getterReceiptMessage, giverMessage: giverReceiptMessage }

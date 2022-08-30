@@ -38,6 +38,11 @@ export class CentralBankIssuer extends BaseAgent {
     await centralBankIssuer.agent.connections.awaitTrustPingResponse(trustPing.id)
     console.log(`Trust Ping response received from the Witness`)
 
+    const active = await centralBankIssuer.agent.valueTransfer.getActiveTransaction()
+    if (active.record?.id) {
+      await centralBankIssuer.agent.valueTransfer.abortTransaction(active.record?.id)
+    }
+
     await centralBankIssuer.agent.valueTransfer.mintCash(10, CentralBankIssuer.witnessDid)
 
     const balance = await centralBankIssuer.agent.valueTransfer.getBalance()

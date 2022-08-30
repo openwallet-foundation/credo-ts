@@ -3,11 +3,9 @@ import type { Attachment } from 'didcomm'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator'
-import { parseUrl } from 'query-string'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
-import { AriesFrameworkError } from '../../../error'
-import { JsonEncoder, JsonTransformer } from '../../../utils'
+import { JsonTransformer } from '../../../utils'
 
 export enum OutOfBandGoalCode {
   DidExchange = 'did-exchange',
@@ -32,6 +30,7 @@ export class PaymentOfferAttachment {
 export const ANDROID_NEARBY_HANDSHAKE_ATTACHMENT_ID = 'android-nearby-handshake-attachment'
 export const PAYMENT_OFFER_ATTACHMENT_ID = 'payment-offer-attachment'
 export const ATTACHMENT_ID = 'oob-attachment'
+const LINK_PARAM = 'oob'
 
 export type OutOfBandInvitationParams = DIDCommV2MessageParams
 
@@ -62,23 +61,13 @@ export class OutOfBandInvitationMessage extends DIDCommV2Message {
   public readonly type = OutOfBandInvitationMessage.type
   public static readonly type = 'https://didcomm.org/out-of-band/2.0/invitation'
 
-  public toUrl({ domain }: { domain: string }) {
-    const encodedInvitation = JsonEncoder.toBase64URL(this.toJSON())
-    return `${domain}?oob=${encodedInvitation}`
+  public toLink({ domain }: { domain: string }) {
+    return this.toUrl({ domain, param: LINK_PARAM })
   }
 
-  public static fromUrl(invitationUrl: string) {
-    const parsedUrl = parseUrl(invitationUrl).query
-    const encodedInvitation = parsedUrl['oob']
-
-    if (typeof encodedInvitation === 'string') {
-      const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
-      return this.fromJson(invitationJson)
-    } else {
-      throw new AriesFrameworkError(
-        'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `oob`'
-      )
-    }
+  public static fromLink({ url }: { url: string }) {
+    const message = this.fromUrl({ url, param: LINK_PARAM })
+    return OutOfBandInvitationMessage.fromJson(message)
   }
 
   public static fromJson(json: Record<string, unknown>) {

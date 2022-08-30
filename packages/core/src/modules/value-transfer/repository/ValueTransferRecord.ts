@@ -127,6 +127,10 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
     }
   }
 
+  public get finished() {
+    return this.status === ValueTransferTransactionStatus.Finished
+  }
+
   public assertStatus(expectedStatuses: ValueTransferTransactionStatus | ValueTransferTransactionStatus[]) {
     if (!Array.isArray(expectedStatuses)) {
       expectedStatuses = [expectedStatuses]

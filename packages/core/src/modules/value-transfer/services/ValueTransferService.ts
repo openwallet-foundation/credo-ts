@@ -15,6 +15,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { AriesFrameworkError } from '../../../error'
+import { JsonEncoder } from '../../../utils'
 import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
@@ -85,7 +86,7 @@ export class ValueTransferService {
     const state = new ValueTransferStateRecord({
       partyState: new PartyState({
         wallet: new Wallet({
-          previousHash: null,
+          previousHash: undefined,
           ownershipKey: await this.valueTransferCryptoService.createKey(),
         }),
       }),
@@ -280,6 +281,7 @@ export class ValueTransferService {
 
   public async sendMessage(message: DIDCommV2Message, transport?: Transports) {
     this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
+    this.config.logger.debug(` Message: ${JsonEncoder.toString(message)}`)
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     const transports = transport ? [transport] : undefined
     await this.messageSender.sendDIDCommV2Message(message, sendingMessageType, transports)

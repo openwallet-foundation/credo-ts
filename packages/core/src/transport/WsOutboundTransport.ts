@@ -2,7 +2,7 @@ import type { Agent } from '../agent/Agent'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
 import type { OutboundTransport } from './OutboundTransport'
-import type { OutboundWebSocketClosedEvent } from './TransportEventTypes'
+import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from './TransportEventTypes'
 import type WebSocket from 'ws'
 
 import { AgentConfig } from '../agent/AgentConfig'
@@ -130,18 +130,28 @@ export class WsOutboundTransport implements OutboundTransport {
 
       socket.onopen = () => {
         this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)
+
+        this.eventEmitter.emit<OutboundWebSocketOpenedEvent>({
+          type: TransportEventTypes.OutboundWebSocketOpenedEvent,
+          payload: {
+            socketId,
+            did: mediationDid,
+            connectionId: connectionId,
+          },
+        })
+
         resolve(socket)
       }
 
       socket.onerror = (error) => {
-        this.logger.debug(`Error while connecting to WebSocket ${endpoint}`, {
+        this.logger.error(`Error while connecting to WebSocket ${endpoint}`, {
           error,
         })
         reject(error)
       }
 
       socket.onclose = async (event: WebSocket.CloseEvent) => {
-        this.logger.debug(`WebSocket closing to ${endpoint}`, { event })
+        this.logger.warn(`WebSocket closing to ${endpoint}`, { event })
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)
 

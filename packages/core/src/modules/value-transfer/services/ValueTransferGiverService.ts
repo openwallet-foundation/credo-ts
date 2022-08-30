@@ -194,6 +194,7 @@ export class ValueTransferGiverService {
 
     const receipt = requestMessage.valueTransferMessage
     if (!receipt) {
+      this.config.logger.error(`  Receipt not found in the payment request message`)
       const problemReport = new ProblemReportMessage({
         to: requestMessage.from,
         pthid: requestMessage.id,
@@ -209,6 +210,7 @@ export class ValueTransferGiverService {
       // ensure that DID exist in the wallet
       const did = await this.didService.findById(receipt.giverId)
       if (!did) {
+        this.config.logger.error(`  Requested giver '${receipt.giverId}' does not exist in the wallet`)
         const problemReport = new ProblemReportMessage({
           to: requestMessage.from,
           pthid: requestMessage.id,
@@ -269,6 +271,9 @@ export class ValueTransferGiverService {
 
     const receipt = requestMessage.valueTransferMessage
     if (!receipt) {
+      this.config.logger.error(
+        `Missing required base64 or json encoded attachment data for payment request with thread id ${requestMessage.thid}`
+      )
       const problemReport = new ProblemReportMessage({
         from: record.giver?.did,
         to: requestMessage.from,
@@ -282,6 +287,9 @@ export class ValueTransferGiverService {
     }
 
     if (!receipt.isGiverSet || receipt.giverId !== record.giver?.did) {
+      this.config.logger.error(
+        `Payment Request contains DID ${receipt.giverId} different from offer ${record.giver?.did}`
+      )
       const problemReport = new ProblemReportMessage({
         from: record.giver?.did,
         to: requestMessage.from,
@@ -370,6 +378,7 @@ export class ValueTransferGiverService {
       timeouts,
     })
     if (error || !receipt) {
+      this.config.logger.error(`Request verification failed. Error: ${error}`)
       // VTP message verification failed
       const problemReport = new ProblemReportMessage({
         from: giverDid,
@@ -429,7 +438,7 @@ export class ValueTransferGiverService {
     messageContext: InboundMessageContext<OfferAcceptedWitnessedMessage>
   ): Promise<{
     record: ValueTransferRecord
-    message: CashRemovedMessage | ProblemReportMessage
+    message?: CashRemovedMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: offerAcceptedWitnessedMessage } = messageContext
@@ -439,6 +448,13 @@ export class ValueTransferGiverService {
     )
 
     const record = await this.valueTransferRepository.getByThread(offerAcceptedWitnessedMessage.thid)
+
+    if (record.finished) {
+      this.config.logger.warn(
+        `> Giver: skipping offer acceptance message for VTP transaction ${offerAcceptedWitnessedMessage.thid} in ${record.state} state`
+      )
+      return { record }
+    }
 
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.OfferSent)
@@ -461,6 +477,7 @@ export class ValueTransferGiverService {
     const { error, receipt, delta } = await this.giver.signReceipt(record.receipt, valueTransferDelta)
     if (error || !receipt || !delta) {
       // VTP message verification failed
+      this.config.logger.error(`Request verification failed. Error: ${error}`)
       const problemReportMessage = new ProblemReportMessage({
         from: record.giver?.did,
         to: messageContext.sender,
@@ -520,7 +537,7 @@ export class ValueTransferGiverService {
     messageContext: InboundMessageContext<CashAcceptedWitnessedMessage>
   ): Promise<{
     record: ValueTransferRecord
-    message: CashRemovedMessage | ProblemReportMessage
+    message?: CashRemovedMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: cashAcceptedWitnessedMessage } = messageContext
@@ -530,6 +547,13 @@ export class ValueTransferGiverService {
     )
 
     const record = await this.valueTransferRepository.getByThread(cashAcceptedWitnessedMessage.thid)
+
+    if (record.finished) {
+      this.config.logger.warn(
+        `> Giver: skipping cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid} in ${record.state} state`
+      )
+      return { record }
+    }
 
     record.assertRole(ValueTransferRole.Giver)
     record.assertState([ValueTransferState.RequestAcceptanceSent, ValueTransferState.OfferSent])
@@ -552,6 +576,7 @@ export class ValueTransferGiverService {
     const { error, receipt, delta } = await this.giver.signReceipt(record.receipt, valueTransferDelta)
     if (error || !receipt || !delta) {
       // VTP message verification failed
+      this.config.logger.error(`Cash Acceptance verification failed. Error: ${error}`)
       const problemReportMessage = new ProblemReportMessage({
         from: record.giver?.did,
         to: record.witness?.did,
@@ -658,7 +683,7 @@ export class ValueTransferGiverService {
    */
   public async processReceipt(messageContext: InboundMessageContext<GiverReceiptMessage>): Promise<{
     record: ValueTransferRecord
-    message: GiverReceiptMessage | ProblemReportMessage
+    message?: GiverReceiptMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: receiptMessage } = messageContext
@@ -666,6 +691,13 @@ export class ValueTransferGiverService {
     this.config.logger.info(`> Giver: process receipt message for VTP transaction ${receiptMessage.thid}`)
 
     const record = await this.valueTransferRepository.getByThread(receiptMessage.thid)
+
+    if (record.finished) {
+      this.config.logger.warn(
+        `> Giver: skipping receipt message for VTP transaction ${receiptMessage.thid} in ${record.state} state`
+      )
+      return { record }
+    }
 
     record.assertState(ValueTransferState.WaitingReceipt)
     record.assertRole(ValueTransferRole.Giver)
@@ -692,6 +724,7 @@ export class ValueTransferGiverService {
     const { error, receipt } = await this.giver.processReceipt(record.receipt, valueTransferDelta)
     if (error || !receipt) {
       // VTP message verification failed
+      this.config.logger.error(`Receipt verification failed. Error: ${error}`)
       const problemReportMessage = new ProblemReportMessage({
         pthid: receiptMessage.thid,
         body: {
@@ -720,6 +753,9 @@ export class ValueTransferGiverService {
     )
 
     this.config.logger.info(`< Giver: process receipt message for VTP transaction ${receiptMessage.thid} completed!`)
+    this.config.logger.info(
+      `< Giver: transaction completed in ${record.receipt.giver.getElapsedTimeInSeconds()} seconds`
+    )
 
     return { record, message: receiptMessage }
   }

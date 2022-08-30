@@ -39,6 +39,11 @@ export class Anna extends BaseAgent {
     const publicDid = await giver.agent.getStaticDid(DidMarker.Online)
     console.log(`Anna Public DID: ${publicDid?.did}`)
 
+    const active = await giver.agent.valueTransfer.getActiveTransaction()
+    if (active.record?.id) {
+      await giver.agent.valueTransfer.abortTransaction(active.record?.id)
+    }
+
     return giver
   }
 
