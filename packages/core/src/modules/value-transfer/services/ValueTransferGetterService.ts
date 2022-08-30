@@ -357,7 +357,7 @@ export class ValueTransferGetterService {
     messageContext: InboundMessageContext<RequestAcceptedWitnessedMessage>
   ): Promise<{
     record: ValueTransferRecord
-    message: CashAcceptedMessage | ProblemReportMessage
+    message?: CashAcceptedMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: requestAcceptedWitnessedMessage } = messageContext
@@ -367,6 +367,13 @@ export class ValueTransferGetterService {
     )
 
     const record = await this.valueTransferRepository.getByThread(requestAcceptedWitnessedMessage.thid)
+
+    if (record.finished) {
+      this.config.logger.warn(
+        `> Getter: skipping request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.thid} in ${record.state} state`
+      )
+      return { record }
+    }
 
     record.assertRole(ValueTransferRole.Getter)
     record.assertState([ValueTransferState.RequestSent, ValueTransferState.RequestForOfferSent])
@@ -455,7 +462,7 @@ export class ValueTransferGetterService {
    */
   public async processReceipt(messageContext: InboundMessageContext<GetterReceiptMessage>): Promise<{
     record: ValueTransferRecord
-    message: GetterReceiptMessage | ProblemReportMessage
+    message?: GetterReceiptMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: getterReceiptMessage } = messageContext
@@ -463,6 +470,13 @@ export class ValueTransferGetterService {
     this.config.logger.info(`> Getter: process receipt message for VTP transaction ${getterReceiptMessage.thid}`)
 
     const record = await this.valueTransferRepository.getByThread(getterReceiptMessage.thid)
+
+    if (record.finished) {
+      this.config.logger.warn(
+        `> Getter: skipping receipt message for VTP transaction ${getterReceiptMessage.thid} in ${record.state} state`
+      )
+      return { record }
+    }
 
     record.assertState(ValueTransferState.CashAcceptanceSent)
     record.assertRole(ValueTransferRole.Getter)

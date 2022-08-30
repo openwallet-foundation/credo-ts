@@ -438,7 +438,7 @@ export class ValueTransferGiverService {
     messageContext: InboundMessageContext<OfferAcceptedWitnessedMessage>
   ): Promise<{
     record: ValueTransferRecord
-    message: CashRemovedMessage | ProblemReportMessage
+    message?: CashRemovedMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: offerAcceptedWitnessedMessage } = messageContext
@@ -448,6 +448,13 @@ export class ValueTransferGiverService {
     )
 
     const record = await this.valueTransferRepository.getByThread(offerAcceptedWitnessedMessage.thid)
+
+    if (record.finished) {
+      this.config.logger.warn(
+        `> Giver: skipping offer acceptance message for VTP transaction ${offerAcceptedWitnessedMessage.thid} in ${record.state} state`
+      )
+      return { record }
+    }
 
     record.assertRole(ValueTransferRole.Giver)
     record.assertState(ValueTransferState.OfferSent)
@@ -530,7 +537,7 @@ export class ValueTransferGiverService {
     messageContext: InboundMessageContext<CashAcceptedWitnessedMessage>
   ): Promise<{
     record: ValueTransferRecord
-    message: CashRemovedMessage | ProblemReportMessage
+    message?: CashRemovedMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: cashAcceptedWitnessedMessage } = messageContext
@@ -540,6 +547,13 @@ export class ValueTransferGiverService {
     )
 
     const record = await this.valueTransferRepository.getByThread(cashAcceptedWitnessedMessage.thid)
+
+    if (record.finished) {
+      this.config.logger.warn(
+        `> Giver: skipping cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid} in ${record.state} state`
+      )
+      return { record }
+    }
 
     record.assertRole(ValueTransferRole.Giver)
     record.assertState([ValueTransferState.RequestAcceptanceSent, ValueTransferState.OfferSent])
@@ -669,7 +683,7 @@ export class ValueTransferGiverService {
    */
   public async processReceipt(messageContext: InboundMessageContext<GiverReceiptMessage>): Promise<{
     record: ValueTransferRecord
-    message: GiverReceiptMessage | ProblemReportMessage
+    message?: GiverReceiptMessage | ProblemReportMessage
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: receiptMessage } = messageContext
@@ -677,6 +691,13 @@ export class ValueTransferGiverService {
     this.config.logger.info(`> Giver: process receipt message for VTP transaction ${receiptMessage.thid}`)
 
     const record = await this.valueTransferRepository.getByThread(receiptMessage.thid)
+
+    if (record.finished) {
+      this.config.logger.warn(
+        `> Giver: skipping receipt message for VTP transaction ${receiptMessage.thid} in ${record.state} state`
+      )
+      return { record }
+    }
 
     record.assertState(ValueTransferState.WaitingReceipt)
     record.assertRole(ValueTransferRole.Giver)
