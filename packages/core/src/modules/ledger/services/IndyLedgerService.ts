@@ -52,7 +52,7 @@ export class IndyLedgerService {
   }
 
   public getDidIndyNamespace(): string {
-    return this.indyPoolService.ledgerWritePool.config.didIndyNamespace
+    return this.indyPoolService.ledgerWritePool.config.indyNamespace
   }
 
   public async connectToPools() {

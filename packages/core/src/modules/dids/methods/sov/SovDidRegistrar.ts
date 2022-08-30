@@ -102,7 +102,7 @@ export class SovDidRegistrar implements DidRegistrar {
       // Build did document.
       const didDocument = didDocumentBuilder.build()
 
-      const didIndyNamespace = this.indyPoolService.ledgerWritePool.config.didIndyNamespace
+      const didIndyNamespace = this.indyPoolService.ledgerWritePool.config.indyNamespace
       const qualifiedIndyDid = `did:indy:${didIndyNamespace}:${unqualifiedIndyDid}`
 
       // Save the did so we know we created it and can issue with it

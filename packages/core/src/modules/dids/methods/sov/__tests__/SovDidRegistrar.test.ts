@@ -21,7 +21,7 @@ const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 jest.mock('../../../../ledger/services/IndyPoolService')
 const IndyPoolServiceMock = IndyPoolService as jest.Mock<IndyPoolService>
 const indyPoolServiceMock = new IndyPoolServiceMock()
-mockProperty(indyPoolServiceMock, 'ledgerWritePool', { config: { id: 'pool1', didIndyNamespace: 'pool1' } } as IndyPool)
+mockProperty(indyPoolServiceMock, 'ledgerWritePool', { config: { id: 'pool1', indyNamespace: 'pool1' } } as IndyPool)
 
 const agentConfig = getAgentConfig('SovDidRegistrar')
 

@@ -91,7 +91,7 @@ const credentialDefinitionId = generateCredentialDefinitionId(
 const pools: IndyPoolConfig[] = [
   {
     id: '7Tqg6BwSSWapxgUDm9KKgg',
-    didIndyNamespace: 'sovrin',
+    indyNamespace: 'sovrin',
     isProduction: true,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
@@ -216,7 +216,7 @@ describe('LedgerApi', () => {
         mockFunction(anonCredsSchemaRepository.findById).mockResolvedValueOnce(
           new AnonCredsSchemaRecord({ schema: schema })
         )
-        mockFunction(ledgerService.getDidIndyNamespace).mockReturnValueOnce(pools[0].didIndyNamespace)
+        mockFunction(ledgerService.getDidIndyNamespace).mockReturnValueOnce(pools[0].indyNamespace)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { id, ...schemaWithoutId } = schema
         await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toMatchObject({
@@ -279,7 +279,7 @@ describe('LedgerApi', () => {
           connectToIndyLedgersOnStartup: true,
           indyLedgers: pools,
         } as LedgerModuleConfig)
-        mockFunction(ledgerService.getDidIndyNamespace).mockReturnValueOnce(pools[0].didIndyNamespace)
+        mockFunction(ledgerService.getDidIndyNamespace).mockReturnValueOnce(pools[0].indyNamespace)
         await expect(ledgerApi.registerCredentialDefinition(credentialDefinitionTemplate)).resolves.toHaveProperty(
           'value.primary',
           credentialDefinition

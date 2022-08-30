@@ -21,7 +21,7 @@ export interface IndyPoolConfig {
   genesisTransactions?: string
   id: string
   isProduction: boolean
-  didIndyNamespace: DidIndyNamespace
+  indyNamespace: DidIndyNamespace
   transactionAuthorAgreement?: TransactionAuthorAgreement
 }
 
