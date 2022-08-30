@@ -1,13 +1,14 @@
-import type {
-  ConnectionRecord,
-  ConnectionStateChangedEvent } from '@aries-framework/core'
-
-import { ConnectionEventTypes } from '@aries-framework/core'
-
+import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
 import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { V1CredentialPreview, AttributeFilter, ProofAttributeInfo, utils } from '@aries-framework/core'
+import {
+  V1CredentialPreview,
+  AttributeFilter,
+  ProofAttributeInfo,
+  utils,
+  ConnectionEventTypes,
+} from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'

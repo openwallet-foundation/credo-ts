@@ -1,8 +1,4 @@
-import type {
-  ConnectionRecord,
-  CredentialExchangeRecord,
-  ProofRecord,
-} from '@aries-framework/core'
+import type { ConnectionRecord, CredentialExchangeRecord, ProofRecord } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
