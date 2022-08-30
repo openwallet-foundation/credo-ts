@@ -12,6 +12,7 @@ import {
   DidExchangeRole,
 } from '../../../../modules/connections'
 import { convertToNewDidDocument } from '../../../../modules/connections/services/helpers'
+import { DidKey } from '../../../../modules/dids'
 import { DidDocumentRole } from '../../../../modules/dids/domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../../../modules/dids/repository'
 import { DidRecordMetadataKeys } from '../../../../modules/dids/repository/didRecordMetadataTypes'
@@ -310,9 +311,15 @@ export async function migrateToOobRecord(
     const outOfBandInvitation = convertToNewInvitation(oldInvitation)
 
     // If both the recipientKeys and the @id match we assume the connection was created using the same invitation.
+    const recipientKeyFingerprints = outOfBandInvitation
+      .getInlineServices()
+      .map((s) => s.recipientKeys)
+      .reduce((acc, curr) => [...acc, ...curr], [])
+      .map((didKey) => DidKey.fromDid(didKey).key.fingerprint)
+
     const oobRecords = await oobRepository.findByQuery({
       invitationId: oldInvitation.id,
-      recipientKeyFingerprints: outOfBandInvitation.getRecipientKeys().map((key) => key.fingerprint),
+      recipientKeyFingerprints,
     })
 
     let oobRecord: OutOfBandRecord | undefined = oobRecords[0]
@@ -335,6 +342,7 @@ export async function migrateToOobRecord(
         reusable: oldMultiUseInvitation,
         mediatorId: connectionRecord.mediatorId,
         createdAt: connectionRecord.createdAt,
+        tags: { recipientKeyFingerprints },
       })
 
       await oobRepository.save(oobRecord)
