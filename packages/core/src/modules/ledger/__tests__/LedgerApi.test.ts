@@ -45,9 +45,13 @@ const credentialDefinition = {
   supportRevocation: true,
 }
 
+const schemaIdQualified = 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx/anoncreds/v0/SCHEMA/awesomeSchema/1'
+const schemaIdGenerated = generateSchemaId(did, schema.name, schema.version)
+const qualifiedDidCred = 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx/anoncreds/v0/CLAIM_DEF/99/someTag'
+
 const credDef: Indy.CredDef = {
-  id: 'abcde',
-  schemaId: schema.id,
+  id: qualifiedDidCred,
+  schemaId: schemaIdQualified,
   type: 'CL',
   tag: 'someTag',
   value: {
@@ -58,7 +62,7 @@ const credDef: Indy.CredDef = {
 }
 
 const credentialDefinitionTemplate: Omit<CredentialDefinitionTemplate, 'signatureType'> = {
-  schema: schema,
+  schema: { ...schema, id: schemaIdQualified },
   tag: 'someTag',
   supportRevocation: true,
 }
@@ -78,9 +82,6 @@ const revocRegDef: Indy.RevocRegDef = {
   ver: 'abcde',
 }
 
-const schemaIdQualified = 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx/anoncreds/v0/SCHEMA/awesomeSchema/1'
-const schemaIdGenerated = generateSchemaId(did, schema.name, schema.version)
-
 const credentialDefinitionId = generateCredentialDefinitionId(
   did,
   credentialDefinitionTemplate.schema.seqNo,
@@ -96,8 +97,6 @@ const pools: IndyPoolConfig[] = [
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
 ]
-
-const qualifiedDidCred = 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx/anoncreds/v0/CLAIM_DEF/99/someTag'
 
 describe('LedgerApi', () => {
   let wallet: IndyWallet
@@ -218,8 +217,10 @@ describe('LedgerApi', () => {
           new AnonCredsSchemaRecord({ schema: schema })
         )
         mockFunction(ledgerService.getDidIndyNamespace).mockReturnValueOnce(pools[0].didIndyNamespace)
-        await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toEqual({
-          ...schema,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...schemaWithoutId } = schema
+        await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toMatchObject({
+          ...schemaWithoutId,
         })
         expect(anonCredsSchemaRepository.findById).toHaveBeenCalledWith(agentContext, schemaIdQualified)
       })

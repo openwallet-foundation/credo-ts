@@ -3,7 +3,7 @@ import type { SchemaTemplate } from '../../modules/ledger/services/IndyLedgerSer
 import type { CredDef, Schema } from 'indy-sdk'
 
 import {
-  schemaToQualifiedIndySchemaId,
+  schemaToQualifiedIndySchemaTrunk,
   isQualifiedIndyIdentifier,
   getLegacyIndySchemaId,
   getLegacyIndyCredentialDefinitionId,
@@ -60,6 +60,8 @@ const schemaTemplate: SchemaTemplate = {
 
 const schemaUrlTrunk = `${did}/anoncreds/v0/SCHEMA/awesomeSchema/4.2.0`
 const credDefUrlTrunk = `${did}/anoncreds/v0/CLAIM_DEF/99/someTag`
+const invalidCredDefUrlTrunk = `did:indy:${indyNamespace}:${did}/anoncreds/v0/I_AM_INVALID/99/sth`
+
 describe('Mangle indy identifiers', () => {
   test('is a qualified identifier', async () => {
     expect(isQualifiedIndyIdentifier(qualifiedIdentifierSchema)).toBe(true)
@@ -79,13 +81,20 @@ describe('Mangle indy identifiers', () => {
     it('should successfully unqualify a qualified identifier for a credDef', () => {
       expect(getLegacyIndyCredentialDefinitionId(qualifiedIdentifierCredDef)).toBe(credDef.id)
     })
-    it('should return the unqualified identifier if it is passed to unqualify for a credDef', () => {
-      expect(getLegacyIndyCredentialDefinitionId(credDef.id)).toBe(credDef.id)
+    it('should throw an error if the provided identifier is not a valid indy identifier', () => {
+      expect(() => getLegacyIndyCredentialDefinitionId(credDef.id)).toThrowError(
+        `Identifier ${credDef.id} not a qualified indy identifier. Hint: Needs to start with 'did:ind:'`
+      )
+    })
+    it('should throw an error if the provided identifier has an invalid tail format', () => {
+      expect(() => getLegacyIndyCredentialDefinitionId(invalidCredDefUrlTrunk)).toThrowError(
+        `Provided identifier ${invalidCredDefUrlTrunk} has invalid format.`
+      )
     })
   })
 
   test('get DID url trunk from schema', () => {
-    expect(schemaToQualifiedIndySchemaId(schemaTemplate, schemaId)).toBe(schemaUrlTrunk)
+    expect(schemaToQualifiedIndySchemaTrunk(schemaTemplate, schemaId)).toBe(schemaUrlTrunk)
   })
 
   test('get DID url trunk from credential', () => {
@@ -94,7 +103,7 @@ describe('Mangle indy identifiers', () => {
 
   describe('getQualifiedIndyId', () => {
     it('should correctly create the Url trunk for a schema', () => {
-      expect(schemaToQualifiedIndySchemaId(schemaTemplate, schemaId)).toBe(schemaUrlTrunk)
+      expect(schemaToQualifiedIndySchemaTrunk(schemaTemplate, schemaId)).toBe(schemaUrlTrunk)
     })
     it('should correctly create the Url trunk for a credential definition', () => {
       expect(credDefToQualifiedIndyCredDefId(credDef.id, credDefTemplate)).toBe(credDefUrlTrunk)

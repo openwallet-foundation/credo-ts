@@ -92,7 +92,10 @@ export class LedgerApi {
     if (schemaRecord) {
       // Transform qualified to unqualified
       schemaRecord.schema.id = getLegacyIndySchemaId(schemaRecord.schema.id)
-      return schemaRecord.schema
+      return {
+        ...schemaRecord?.schema,
+        id: getLegacyIndySchemaId(schemaRecord.id),
+      }
     }
 
     const schemaFromLedger = await this.findBySchemaIdOnLedger(schemaId)
@@ -155,6 +158,7 @@ export class LedgerApi {
       this.agentContext,
       qualifiedIdentifier
     )
+
     // Credential Definition in wallet
     if (credentialDefinitionRecord) {
       // Transform qualified to unqualified
@@ -173,17 +177,17 @@ export class LedgerApi {
     }
 
     // Register the credential
-    const registeredCredential = await this.ledgerService.registerCredentialDefinition(this.agentContext, did, {
+    const registeredDefinition = await this.ledgerService.registerCredentialDefinition(this.agentContext, did, {
       ...credentialDefinitionTemplate,
       signatureType: 'CL',
     })
     // Replace the unqualified with qualified Identifier in anonCred
     const anonCredCredential = new AnonCredsCredentialDefinitionRecord({
-      credentialDefinition: { ...registeredCredential, id: qualifiedIdentifier },
+      credentialDefinition: { ...registeredDefinition, id: qualifiedIdentifier },
     })
     await this.anonCredsCredentialDefinitionRepository.save(this.agentContext, anonCredCredential)
 
-    return registeredCredential
+    return registeredDefinition
   }
 
   public async getCredentialDefinition(id: string) {

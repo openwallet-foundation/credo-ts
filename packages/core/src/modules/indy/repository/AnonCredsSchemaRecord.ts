@@ -1,10 +1,8 @@
-import { Schema } from 'indy-sdk'
+import type { Schema } from 'indy-sdk'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { didFromSchemaId } from '../../../utils/did'
 import { uuid } from '../../../utils/uuid'
-
-import { SchemaTransformer } from './anonCredsTransformers'
 
 export interface AnonCredsSchemaRecordProps {
   schema: Schema
@@ -21,14 +19,13 @@ export class AnonCredsSchemaRecord extends BaseRecord<DefaultAnonCredsSchemaTags
   public static readonly type = 'AnonCredsSchemaRecord'
   public readonly type = AnonCredsSchemaRecord.type
 
-  @SchemaTransformer()
   public readonly schema!: Schema
 
   public constructor(props: AnonCredsSchemaRecordProps) {
     super()
 
-    this.id = uuid()
     if (props) {
+      this.id = uuid()
       this.schema = props.schema
     }
   }

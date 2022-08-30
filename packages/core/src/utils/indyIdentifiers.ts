@@ -1,6 +1,7 @@
 import type { CredentialDefinitionTemplate, SchemaTemplate } from '../modules/ledger/services/IndyLedgerService'
 import type { CredDef, Schema } from 'indy-sdk'
 
+import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { generateCredentialDefinitionId, generateSchemaId } from '../modules/ledger/ledgerUtil'
 
 import { didFromCredentialDefinitionId, didFromSchemaId } from './did'
@@ -26,7 +27,10 @@ export function isQualifiedIndyIdentifier(identifier: string | undefined): boole
 }
 
 export function getLegacyIndyCredentialDefinitionId(qualifiedIdentifier: string) {
-  if (!isQualifiedIndyIdentifier(qualifiedIdentifier)) return qualifiedIdentifier
+  if (!isQualifiedIndyIdentifier(qualifiedIdentifier))
+    throw new AriesFrameworkError(
+      `Identifier ${qualifiedIdentifier} not a qualified indy identifier. Hint: Needs to start with 'did:ind:'`
+    )
 
   const lastColonIndex = qualifiedIdentifier.lastIndexOf(':')
   const identifierTrunk = qualifiedIdentifier.substring(lastColonIndex + 1)
@@ -38,8 +42,7 @@ export function getLegacyIndyCredentialDefinitionId(qualifiedIdentifier: string)
     return generateCredentialDefinitionId(id, +seqNo, name)
   } else {
     // indy Union Indy Ledger w/o url syntax
-    // did:indy:idunion:test:2MZYuPv2Km7Q1eD4GCsSb6 -> 2MZYuPv2Km7Q1eD4GCsSb6
-    return identifierTrunk
+    throw new AriesFrameworkError(`Provided identifier ${qualifiedIdentifier} has invalid format.`)
   }
 }
 
@@ -66,7 +69,7 @@ export function getLegacyIndySchemaId(qualifiedIdentifier: string) {
  * @see https://hyperledger.github.io/indy-did-method/#schema
  *
  */
-export function schemaToQualifiedIndySchemaId(schema: SchemaTemplate | Schema, schemaId: string): string {
+export function schemaToQualifiedIndySchemaTrunk(schema: SchemaTemplate | Schema, schemaId: string): string {
   const did = didFromSchemaId(schemaId)
   const didUrl = `${did}/anoncreds/v0/SCHEMA/${schema.name}/${schema.version}`
   return didUrl
@@ -109,6 +112,6 @@ export function getQualifiedIdentifierSchema(
 ): IndyNamespace {
   if (isQualifiedIndyIdentifier(schemaId)) return schemaId as IndyNamespace
 
-  const didUrl = schemaToQualifiedIndySchemaId(schemaTemplate, schemaId)
+  const didUrl = schemaToQualifiedIndySchemaTrunk(schemaTemplate, schemaId)
   return `did:indy:${indyNamespace}:${didUrl}`
 }
