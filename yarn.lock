@@ -39,12 +39,12 @@
     uuid "^8.3.2"
 
 "@aries-framework/core@npm:@sicpa-dlab/aries-framework-core":
-  version "0.1.60"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.1.60/3124676da33681730912adf4e62705a3fc3ed159#3124676da33681730912adf4e62705a3fc3ed159"
-  integrity sha512-w19o+beKQAMol237p2PGozBBxHovcmHW3JIA9aXL+ySUQwfJNIgEIrswEsfLzy2uQ9btqntSkMPlL52tnBWN0A==
+  version "0.1.68"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.1.68/8a39ac7e3dfa74c9ce8dfda1352a8d1456585061#8a39ac7e3dfa74c9ce8dfda1352a8d1456585061"
+  integrity sha512-nOSIMFFwC7GlsxxPLprKFaXl/JRubbN16DGNxxAmYAOiyIhkzC5L0lASL6I2G0I8idvTSHsViIkL9fnjXcHZJg==
   dependencies:
     "@multiformats/base-x" "^4.0.1"
-    "@sicpa-dlab/value-transfer-protocol-ts" "0.0.35"
+    "@sicpa-dlab/value-transfer-protocol-ts" "0.0.42"
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
     "@stablelib/uuid" "^1.0.1"
@@ -2154,10 +2154,10 @@
   resolved "https://npm.pkg.github.com/download/@sicpa-dlab/didcomm-react-native/0.0.18/f3b5eced6e056bae3d9abde58326f3049a583a0f#f3b5eced6e056bae3d9abde58326f3049a583a0f"
   integrity sha512-SeOxZTORNauG2jWtsG4Ve9KHzvB6rgkwRkM2/fNuaTpKtsql6qWi+L1gKDK7Yj+WKg+lvRt1exr/JFowUAQB5w==
 
-"@sicpa-dlab/value-transfer-protocol-ts@0.0.35":
-  version "0.0.35"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.35/d71df379276b49a81ed7c68695017632c9e568eb#d71df379276b49a81ed7c68695017632c9e568eb"
-  integrity sha512-dUKIUJ5oUX3Sh1aY/BlTmSJOxBdVCc0/iR8dXDQNyyf3Y6XU8rN1271XJ6lj08l8vc/XzS7eIqtujR9GF4c4cw==
+"@sicpa-dlab/value-transfer-protocol-ts@0.0.40":
+  version "0.0.40"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.40/f285dad27e6ffe22d1b3306b3cdc769637b32acf#f285dad27e6ffe22d1b3306b3cdc769637b32acf"
+  integrity sha512-Uy+JkaY5mRqq/R33B63LHmNQQ2Riiw00+X0zEn40ZrKGfVEhelQ+ekVdiAerFYSpeE98g8G0Co9R4GrGNUvs0A==
   dependencies:
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
@@ -2170,10 +2170,23 @@
     fast-json-patch "^3.1.1"
     iso-639-language "^1.0.1"
     reflect-metadata "^0.1.13"
-    uuid "^8.3.2"
 
-"@sicpa-dlab/value-transfer-protocol-ts@file:../value-transfer-protocol-ts/build":
-  version "0.0.0"
+"@sicpa-dlab/value-transfer-protocol-ts@0.0.42":
+  version "0.0.42"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.0.42/bf9b7337757597e8b202432970ca0042d54f369d#bf9b7337757597e8b202432970ca0042d54f369d"
+  integrity sha512-MzzyFJHIdNE+GhyZHK3HjoeSxCWjDKJDzmJKXD5hNB6KDga7sxKHGZqI1LLTDUU6eZIvdnBRJwy7ApOqRmEgLA==
+  dependencies:
+    "@stablelib/ed25519" "^1.0.2"
+    "@stablelib/sha256" "^1.0.1"
+    "@stablelib/uuid" "^1.0.1"
+    bloom-filters "^3.0.0"
+    buffer "^6.0.3"
+    class-transformer "^0.5.1"
+    class-validator "^0.13.2"
+    currency-codes "^2.1.0"
+    fast-json-patch "^3.1.1"
+    iso-639-language "^1.0.1"
+    reflect-metadata "^0.1.13"
 
 "@sideway/address@^4.1.3":
   version "4.1.4"
@@ -2587,9 +2600,9 @@
   integrity sha512-c/I8ZRb51j+pYGAu5CrFMRxqZ2ke4y2grEBO5AUjgSkSk+qT2Ea+OdWElz/OiMf5MNpn2b17kuVBwZLQJXzihw==
 
 "@types/validator@^13.1.3":
-  version "13.7.5"
-  resolved "https://registry.yarnpkg.com/@types/validator/-/validator-13.7.5.tgz#96ad8c50d441c8c86a639efccc4d8d9d5d9cd5ea"
-  integrity sha512-9rQHeAqz6Jw3gDhttkmWetoriW5FPbxylv/6h6mXtaj2NKRcOvOmvfcswVdLVpbuy10NrO486K3lCoLgoIhiIA==
+  version "13.7.6"
+  resolved "https://registry.yarnpkg.com/@types/validator/-/validator-13.7.6.tgz#631f1acd15cbac9cb0a114da7e87575f1c95b46a"
+  integrity sha512-uBsnWETsUagQ0n6G2wcXNIufpTNJir0zqzG4p62fhnwzs48d/iuOWEEo0d3iUxN7D+9R/8CSvWGKS+KmaD0mWA==
 
 "@types/varint@^6.0.0":
   version "6.0.0"
@@ -3562,9 +3575,9 @@ camelcase@^6.0.0, camelcase@^6.2.0:
   integrity sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==
 
 caniuse-lite@^1.0.30001370:
-  version "1.0.30001383"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001383.tgz#aecf317ccd940690725ae3ae4f28293c5fb8050e"
-  integrity sha512-swMpEoTp5vDoGBZsYZX7L7nXHe6dsHxi9o6/LKf/f0LukVtnrxly5GVb/fWdCDTqi/yw6Km6tiJ0pmBacm0gbg==
+  version "1.0.30001384"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001384.tgz#029527c2d781a3cfef13fa63b3a78a6088e35973"
+  integrity sha512-BBWt57kqWbc0GYZXb47wTXpmAgqr5LSibPzNjk/AWMdmJMQhLqOl3c/Kd4OAU/tu4NLfYkMx8Tlq3RVBkOBolQ==
 
 capture-exit@^2.0.0:
   version "2.0.0"
@@ -4442,9 +4455,9 @@ ee-first@1.1.1:
   integrity sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==
 
 electron-to-chromium@^1.4.202:
-  version "1.4.230"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.230.tgz#666909fdf5765acb1348b69752ee9955dc1664b7"
-  integrity sha512-3pwjAK0qHSDN9+YAF4fJknsSruP7mpjdWzUSruIJD/JCH77pEh0SorEyb3xVaKkfwk2tzjOt2D8scJ0KAdfXLA==
+  version "1.4.233"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.233.tgz#aa142e45468bda111b88abc9cc59d573b75d6a60"
+  integrity sha512-ejwIKXTg1wqbmkcRJh9Ur3hFGHFDZDw1POzdsVrB2WZjgRuRMHIQQKNpe64N/qh3ZtH2otEoRoS+s6arAAuAAw==
 
 emittery@^0.8.1:
   version "0.8.1"
@@ -10163,9 +10176,9 @@ toidentifier@1.0.1:
   integrity sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==
 
 tough-cookie@^4.0.0:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/tough-cookie/-/tough-cookie-4.1.1.tgz#3600960f1e1c83545f130ac80043b9de8e5d488b"
-  integrity sha512-Ns3k8QxkEzIfLZbRwLOrMPDqRa1BEAl4BzNNAOYY4BhBmEkf+HvP467F4NrD9loK3NcYflWOpUH3LJg0ehq/rQ==
+  version "4.1.2"
+  resolved "https://registry.yarnpkg.com/tough-cookie/-/tough-cookie-4.1.2.tgz#e53e84b85f24e0b65dd526f46628db6c85f6b874"
+  integrity sha512-G9fqXWoYFZgTc2z8Q5zaHy/vJMjm+WV0AkAeHxVCQiEB1b+dGvWzFW6QV07cY5jQ5gRkeid2qIkzkxUnmoQZUQ==
   dependencies:
     psl "^1.1.33"
     punycode "^2.1.1"
