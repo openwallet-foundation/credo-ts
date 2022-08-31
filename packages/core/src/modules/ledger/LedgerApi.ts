@@ -8,7 +8,7 @@ import { IndySdkError } from '../../error/IndySdkError'
 import { injectable } from '../../plugins'
 import { isIndyError } from '../../utils/indyError'
 import {
-  getQualifiedIdentifierCredDef,
+  getQualifiedIdentifierCredentialDefinition,
   getQualifiedIdentifierSchema,
   getLegacyIndyCredentialDefinitionId,
   getLegacyIndySchemaId,
@@ -147,7 +147,7 @@ export class LedgerApi {
     )
 
     // Construct qualified identifier
-    const qualifiedIdentifier = getQualifiedIdentifierCredDef(
+    const qualifiedIdentifier = getQualifiedIdentifierCredentialDefinition(
       this.ledgerService.getDidIndyNamespace(),
       credentialDefinitionId,
       credentialDefinitionTemplate

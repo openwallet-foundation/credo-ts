@@ -59,8 +59,7 @@ export function getLegacyIndySchemaId(qualifiedIdentifier: string) {
     return generateSchemaId(id, name, version)
   } else {
     // indy Union Indy Ledger w/o url syntax
-    // did:indy:idunion:test:2MZYuPv2Km7Q1eD4GCsSb6 -> 2MZYuPv2Km7Q1eD4GCsSb6
-    return identifierTrunk
+    throw new AriesFrameworkError(`Provided identifier ${qualifiedIdentifier} has invalid format.`)
   }
 }
 
@@ -80,7 +79,7 @@ export function schemaToQualifiedIndySchemaTrunk(schema: SchemaTemplate | Schema
  * @see https://hyperledger.github.io/indy-did-method/#cred-def
  *
  */
-export function credDefToQualifiedIndyCredDefId(
+export function credentialDefinitionToQualifiedIndyCredentialDefinitionIdTrunk(
   credDefId: string,
   credDef: Omit<CredentialDefinitionTemplate, 'signatureType'> | (CredDef & { schemaSeqNo?: string })
 ): string {
@@ -94,14 +93,14 @@ export function credDefToQualifiedIndyCredDefId(
   return `${did}/anoncreds/v0/CLAIM_DEF/${seqNo}/${credDef.tag}`
 }
 
-export function getQualifiedIdentifierCredDef(
+export function getQualifiedIdentifierCredentialDefinition(
   indyNamespace: string,
   credDefId: string,
   credDef: Omit<CredentialDefinitionTemplate, 'signatureType'> | CredDef
 ): IndyNamespace {
   if (isQualifiedIndyIdentifier(credDefId)) return credDefId as IndyNamespace
 
-  const didUrl = credDefToQualifiedIndyCredDefId(credDefId, credDef)
+  const didUrl = credentialDefinitionToQualifiedIndyCredentialDefinitionIdTrunk(credDefId, credDef)
   return `did:indy:${indyNamespace}:${didUrl}`
 }
 

@@ -6,6 +6,7 @@ import { uuid } from '../../../utils/uuid'
 
 export interface AnonCredsSchemaRecordProps {
   schema: Schema
+  id?: string
 }
 
 export type DefaultAnonCredsSchemaTags = {
@@ -25,7 +26,7 @@ export class AnonCredsSchemaRecord extends BaseRecord<DefaultAnonCredsSchemaTags
     super()
 
     if (props) {
-      this.id = uuid()
+      this.id = props.id ?? uuid()
       this.schema = props.schema
     }
   }

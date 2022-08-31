@@ -7,9 +7,9 @@ import {
   isQualifiedIndyIdentifier,
   getLegacyIndySchemaId,
   getLegacyIndyCredentialDefinitionId,
-  getQualifiedIdentifierCredDef,
+  getQualifiedIdentifierCredentialDefinition,
   getQualifiedIdentifierSchema,
-  credDefToQualifiedIndyCredDefId,
+  credentialDefinitionToQualifiedIndyCredentialDefinitionIdTrunk,
 } from '../indyIdentifiers'
 
 const indyNamespace = 'some:staging'
@@ -61,6 +61,7 @@ const schemaTemplate: SchemaTemplate = {
 const schemaUrlTrunk = `${did}/anoncreds/v0/SCHEMA/awesomeSchema/4.2.0`
 const credDefUrlTrunk = `${did}/anoncreds/v0/CLAIM_DEF/99/someTag`
 const invalidCredDefUrlTrunk = `did:indy:${indyNamespace}:${did}/anoncreds/v0/I_AM_INVALID/99/sth`
+const invalidSchemaUrlTrunk = `did:indy:${indyNamespace}:${did}/anoncreds/v0/I_AM_INVALID/awesomeSchema/4.2.0`
 
 describe('Mangle indy identifiers', () => {
   test('is a qualified identifier', async () => {
@@ -78,6 +79,11 @@ describe('Mangle indy identifiers', () => {
     it('should return the unqualified identifier if it is passed to unqualify for a schema', () => {
       expect(getLegacyIndySchemaId(schemaId)).toBe(schemaId)
     })
+    it('should throw an error if the provided identifier for a schema has an invalid tail format', () => {
+      expect(() => getLegacyIndySchemaId(invalidSchemaUrlTrunk)).toThrowError(
+        `Provided identifier ${invalidSchemaUrlTrunk} has invalid format.`
+      )
+    })
     it('should successfully unqualify a qualified identifier for a credDef', () => {
       expect(getLegacyIndyCredentialDefinitionId(qualifiedIdentifierCredDef)).toBe(credDef.id)
     })
@@ -86,7 +92,7 @@ describe('Mangle indy identifiers', () => {
         `Identifier ${credDef.id} not a qualified indy identifier. Hint: Needs to start with 'did:ind:'`
       )
     })
-    it('should throw an error if the provided identifier has an invalid tail format', () => {
+    it('should throw an error if the provided identifier fro a credential definition has an invalid tail format', () => {
       expect(() => getLegacyIndyCredentialDefinitionId(invalidCredDefUrlTrunk)).toThrowError(
         `Provided identifier ${invalidCredDefUrlTrunk} has invalid format.`
       )
@@ -98,7 +104,9 @@ describe('Mangle indy identifiers', () => {
   })
 
   test('get DID url trunk from credential', () => {
-    expect(credDefToQualifiedIndyCredDefId(credDef.id, credDefTemplate)).toBe(credDefUrlTrunk)
+    expect(credentialDefinitionToQualifiedIndyCredentialDefinitionIdTrunk(credDef.id, credDefTemplate)).toBe(
+      credDefUrlTrunk
+    )
   })
 
   describe('getQualifiedIndyId', () => {
@@ -106,21 +114,23 @@ describe('Mangle indy identifiers', () => {
       expect(schemaToQualifiedIndySchemaTrunk(schemaTemplate, schemaId)).toBe(schemaUrlTrunk)
     })
     it('should correctly create the Url trunk for a credential definition', () => {
-      expect(credDefToQualifiedIndyCredDefId(credDef.id, credDefTemplate)).toBe(credDefUrlTrunk)
+      expect(credentialDefinitionToQualifiedIndyCredentialDefinitionIdTrunk(credDef.id, credDefTemplate)).toBe(
+        credDefUrlTrunk
+      )
     })
   })
   describe('get the qualified identifier', () => {
     it('should return the qualified identifier if the identifier is already qualified', () => {
       const credDefWithQualifiedIdentifier = credDef
       credDefWithQualifiedIdentifier.id = qualifiedIdentifierCredDef
-      expect(getQualifiedIdentifierCredDef(indyNamespace, qualifiedIdentifierCredDef, credDefTemplate)).toBe(
-        qualifiedIdentifierCredDef
-      )
+      expect(
+        getQualifiedIdentifierCredentialDefinition(indyNamespace, qualifiedIdentifierCredDef, credDefTemplate)
+      ).toBe(qualifiedIdentifierCredDef)
     })
     it('should return the qualified identifier for a credential definition', () => {
-      expect(getQualifiedIdentifierCredDef(indyNamespace, qualifiedIdentifierCredDef, credDefTemplate)).toBe(
-        qualifiedIdentifierCredDef
-      )
+      expect(
+        getQualifiedIdentifierCredentialDefinition(indyNamespace, qualifiedIdentifierCredDef, credDefTemplate)
+      ).toBe(qualifiedIdentifierCredDef)
     })
     it('should return the qualified identifier for a schema', () => {
       expect(getQualifiedIdentifierSchema(indyNamespace, schemaTemplate, schemaId)).toBe(qualifiedIdentifierSchema)
