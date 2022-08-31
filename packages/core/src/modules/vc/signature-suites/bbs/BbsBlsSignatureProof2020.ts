@@ -34,6 +34,7 @@ export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
     super({
       type: 'BbsBlsSignatureProof2020',
     })
+
     this.proof = {
       '@context': [
         {

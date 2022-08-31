@@ -677,7 +677,6 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
         `Unable to accept request. No supported formats provided as input or in request message`
       )
     }
-
     const message = await this.credentialFormatCoordinator.acceptRequest(agentContext, {
       credentialRecord,
       formatServices,
@@ -740,6 +739,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     await this.credentialFormatCoordinator.processCredential(messageContext.agentContext, {
       credentialRecord,
       formatServices,
+      requestMessage: requestMessage,
       message: credentialMessage,
     })
 

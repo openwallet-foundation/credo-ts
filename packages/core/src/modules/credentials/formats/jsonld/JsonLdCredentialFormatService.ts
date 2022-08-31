@@ -8,6 +8,7 @@ import type {
   FormatProcessOptions,
 } from '..'
 import type { AgentContext } from '../../../../agent'
+import type { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import type { SignCredentialOptionsRFC0593 } from '../../../vc/models/W3cCredentialServiceOptions'
 import type {
   FormatAcceptRequestOptions,
@@ -22,20 +23,17 @@ import type {
 import type { JsonLdCredentialFormat } from './JsonLdCredentialFormat'
 import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
 
-import { Lifecycle, scoped } from 'tsyringe'
+import { injectable } from 'tsyringe'
 
-import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
 import { proofTypeKeyTypeMapping } from '../../../dids/domain/key-type/keyDidMapping'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
-import { W3cCredentialService } from '../../../vc/W3cCredentialService'
+import { W3cCredentialService } from '../../../vc'
 import { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
-import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
-import { CredentialRepository } from '../../repository/CredentialRepository'
 import { CredentialFormatService } from '../CredentialFormatService'
 
 import { JsonLdCredential } from './JsonLdCredentialOptions'
@@ -43,18 +41,13 @@ import { JsonLdCredential } from './JsonLdCredentialOptions'
 const JSONLD_VC_DETAIL = 'aries/ld-proof-vc-detail@v1.0'
 const JSONLD_VC = 'aries/ld-proof-vc@1.0'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class JsonLdCredentialFormatService extends CredentialFormatService<JsonLdCredentialFormat> {
   private w3cCredentialService: W3cCredentialService
   private didResolver: DidResolverService
 
-  public constructor(
-    credentialRepository: CredentialRepository,
-    eventEmitter: EventEmitter,
-    w3cCredentialService: W3cCredentialService,
-    didResolver: DidResolverService
-  ) {
-    super(credentialRepository, eventEmitter)
+  public constructor(w3cCredentialService: W3cCredentialService, didResolver: DidResolverService) {
+    super()
     this.w3cCredentialService = w3cCredentialService
     this.didResolver = didResolver
   }
@@ -329,24 +322,23 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // FIXME: we should do a lot of checks to verify if the credential we received is actually the credential
     // we requested. We can take an example of the ACA-Py implementation:
     // https://github.com/hyperledger/aries-cloudagent-python/blob/main/aries_cloudagent/protocols/issue_credential/v2_0/formats/ld_proof/handler.py#L492
-    if (!this.areCredentialsEqual(attachment, requestAttachment)) {
-      throw new AriesFrameworkError(
-        `Received credential for credential record ${credentialRecord.id} does not match requested credential`
-      )
-    }
+    // if (!this.areCredentialsEqual(attachment, requestAttachment)) {
+    //   throw new AriesFrameworkError(
+    //     `Received credential for credential record ${credentialRecord.id} does not match requested credential`
+    //   )
+    // }
 
     // compare stuff in the proof object of the credential and request...based on aca-py
 
-    const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-    const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
-    if (Array.isArray(credential.proof)) {
-      const proofArray = credential.proof.map((proof) => new LinkedDataProof(proof))
-    } else {
-      const credProof = new LinkedDataProof(credential.proof)
+    // const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+    // const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
+    // if (Array.isArray(credential.proof)) {
+    //   const proofArray = credential.proof.map((proof) => new LinkedDataProof(proof))
+    // } else {
+    //   const credProof = new LinkedDataProof(credential.proof)
 
-      this.compareStuff(credProof, request.options)
-      credProof.domain === request.options.domain
-    }
+    //   this.compareStuff(credProof, request.options)
+    // }
 
     const verifiableCredential = await this.w3cCredentialService.storeCredential(agentContext, {
       credential: credential,
@@ -402,6 +394,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // FIXME: we should do a lot of checks to verify if the credential we received is actually the credential
     // we requested. We can take an example of the ACA-Py implementation:
     // https://github.com/hyperledger/aries-cloudagent-python/blob/main/aries_cloudagent/protocols/issue_credential/v2_0/formats/ld_proof/handler.py#L492
-    return this.areCredentialsEqual(credentialAttachment, requestAttachment)
+    // TODO don't call areCredentialsEqual, call compareStuff() as per aca-py
+    return true
   }
 }

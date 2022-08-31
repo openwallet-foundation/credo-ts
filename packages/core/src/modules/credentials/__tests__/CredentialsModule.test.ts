@@ -25,6 +25,7 @@ describe('CredentialsModule', () => {
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(CredentialsModuleConfig, credentialsModule.config)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(6)
+
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V1CredentialService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V2CredentialService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(RevocationNotificationService)

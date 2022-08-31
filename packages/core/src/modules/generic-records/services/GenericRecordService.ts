@@ -14,10 +14,11 @@ export class GenericRecordService {
     this.genericRecordsRepository = genericRecordsRepository
   }
 
-  public async save(agentContext: AgentContext, { content, tags }: SaveGenericRecordOption) {
+  public async save(agentContext: AgentContext, { content, tags, id }: SaveGenericRecordOption) {
     const genericRecord = new GenericRecord({
-      content: content,
-      tags: tags,
+      id,
+      content,
+      tags,
     })
 
     try {
@@ -36,6 +37,10 @@ export class GenericRecordService {
     } catch (error) {
       throw new AriesFrameworkError(`Unable to delete the genericRecord record with id ${record.id}. Message: ${error}`)
     }
+  }
+
+  public async deleteById(agentContext: AgentContext, id: string): Promise<void> {
+    await this.genericRecordsRepository.deleteById(agentContext, id)
   }
 
   public async update(agentContext: AgentContext, record: GenericRecord): Promise<void> {

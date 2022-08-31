@@ -54,6 +54,7 @@ export class V2RequestCredentialHandler implements Handler {
     const { message } = await this.credentialService.acceptRequest(messageContext.agentContext, {
       credentialRecord,
     })
+
     if (messageContext.connection) {
       return createOutboundMessage(messageContext.connection, message)
     } else if (messageContext.message.service && offerMessage?.service) {
@@ -75,6 +76,6 @@ export class V2RequestCredentialHandler implements Handler {
       })
     }
 
-    this.logger.error(`Could not automatically create credential request`)
+    this.logger.error(`Could not automatically issue credential`)
   }
 }

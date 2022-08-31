@@ -6,13 +6,9 @@ import type { IndyCredentialFormat } from '../formats/indy/IndyCredentialFormat'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
-import type { CredentialRepository } from '../repository/CredentialRepository'
 import type { RevocRegDef } from 'indy-sdk'
 
-import { Subject } from 'rxjs'
-
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
-import { EventEmitter } from '../../../agent/EventEmitter'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { ConnectionService } from '../../connections/services/ConnectionService'
@@ -164,14 +160,12 @@ const mockCredentialRecord = ({
 
   return credentialRecord
 }
-let credentialRepository: CredentialRepository
 let indyFormatService: CredentialFormatService<IndyCredentialFormat>
 let indyLedgerService: IndyLedgerService
 let indyIssuerService: IndyIssuerService
 let indyHolderService: IndyHolderService
 let didResolverService: DidResolverService
 let connectionService: ConnectionService
-let eventEmitter: EventEmitter
 let agentConfig: AgentConfig
 let credentialRecord: CredentialExchangeRecord
 
@@ -180,7 +174,6 @@ describe('Indy CredentialFormatService', () => {
   beforeEach(async () => {
     agentContext = getAgentContext()
     agentConfig = getAgentConfig('CredentialServiceTest')
-    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
 
     indyIssuerService = new IndyIssuerServiceMock()
     indyHolderService = new IndyHolderServiceMock()
@@ -189,8 +182,6 @@ describe('Indy CredentialFormatService', () => {
     connectionService = new ConnectionServiceMock()
 
     indyFormatService = new IndyCredentialFormatService(
-      credentialRepository,
-      eventEmitter,
       indyIssuerService,
       indyLedgerService,
       indyHolderService,
@@ -431,7 +422,11 @@ describe('Indy CredentialFormatService', () => {
       mockFunction(indyHolderService.storeCredential).mockReturnValue(Promise.resolve('100'))
 
       // when
-      await indyFormatService.processCredential(agentContext, { attachment: credentialAttachment, credentialRecord })
+      await indyFormatService.processCredential(agentContext, {
+        attachment: credentialAttachment,
+        requestAttachment: requestAttachment,
+        credentialRecord,
+      })
 
       // then
       expect(indyHolderService.storeCredential).toHaveBeenCalledTimes(1)

@@ -121,22 +121,18 @@ export class ConnectionInvitationMessage extends AgentMessage {
    *
    * @param invitationUrl invitation url containing c_i or d_m parameter
    *
-   * @throws Error when url can not be decoded to JSON, or decoded message is not a valid `ConnectionInvitationMessage`
-   * @throws Error when the url does not contain c_i or d_m as parameter
+   * @throws Error when the url can not be decoded to JSON, or decoded message is not a valid 'ConnectionInvitationMessage'
    */
   public static fromUrl(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl['c_i'] ?? parsedUrl['d_m']
-
     if (typeof encodedInvitation === 'string') {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
       const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
       return invitation
     } else {
-      throw new AriesFrameworkError(
-        'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `c_i` or `d_m`'
-      )
+      throw new AriesFrameworkError('InvitationUrl is invalid. Needs to be encoded with either c_i, d_m, or oob')
     }
   }
 }

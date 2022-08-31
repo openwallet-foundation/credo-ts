@@ -1,6 +1,4 @@
 import type { AgentContext } from '../../../agent'
-import type { EventEmitter } from '../../../agent/EventEmitter'
-import type { CredentialRepository } from '../repository'
 import type { CredentialFormat } from './CredentialFormat'
 import type {
   FormatCreateProposalOptions,
@@ -17,6 +15,7 @@ import type {
   FormatAutoRespondOfferOptions,
   FormatAutoRespondProposalOptions,
   FormatAutoRespondRequestOptions,
+  FormatProcessCredentialOptions,
 } from './CredentialFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
@@ -24,14 +23,6 @@ import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { deepEqual } from '../../../utils/objEqual'
 
 export abstract class CredentialFormatService<CF extends CredentialFormat = CredentialFormat> {
-  protected credentialRepository: CredentialRepository
-  protected eventEmitter: EventEmitter
-
-  public constructor(credentialRepository: CredentialRepository, eventEmitter: EventEmitter) {
-    this.credentialRepository = credentialRepository
-    this.eventEmitter = eventEmitter
-  }
-
   abstract readonly formatKey: CF['formatKey']
   abstract readonly credentialRecordType: CF['credentialRecordType']
 
@@ -66,7 +57,7 @@ export abstract class CredentialFormatService<CF extends CredentialFormat = Cred
   ): Promise<FormatCreateReturn>
 
   // credential methods
-  abstract processCredential(agentContext: AgentContext, options: FormatProcessOptions): Promise<void>
+  abstract processCredential(agentContext: AgentContext, options: FormatProcessCredentialOptions): Promise<void>
 
   // auto accept methods
   abstract shouldAutoRespondToProposal(agentContext: AgentContext, options: FormatAutoRespondProposalOptions): boolean
@@ -87,7 +78,6 @@ export abstract class CredentialFormatService<CF extends CredentialFormat = Cred
    *
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
-   * @returns attachment to the credential proposal
    */
   protected getFormatData(data: unknown, id: string): Attachment {
     const attachment = new Attachment({

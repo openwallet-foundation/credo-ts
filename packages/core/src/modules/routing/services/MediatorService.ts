@@ -10,6 +10,7 @@ import { AriesFrameworkError } from '../../../error'
 import { Logger } from '../../../logger'
 import { injectable, inject } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { didKeyToVerkey } from '../../dids/helpers'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
   KeylistUpdateAction,
@@ -31,7 +32,6 @@ export class MediatorService {
   private mediationRepository: MediationRepository
   private mediatorRoutingRepository: MediatorRoutingRepository
   private eventEmitter: EventEmitter
-  private _mediatorRoutingRecord?: MediatorRoutingRecord
 
   public constructor(
     mediationRepository: MediationRepository,
@@ -46,34 +46,14 @@ export class MediatorService {
   }
 
   private async getRoutingKeys(agentContext: AgentContext) {
-    this.logger.debug('Retrieving mediator routing keys')
-    // If the routing record is not loaded yet, retrieve it from storage
-    if (!this._mediatorRoutingRecord) {
-      this.logger.debug('Mediator routing record not loaded yet, retrieving from storage')
-      let routingRecord = await this.mediatorRoutingRepository.findById(
-        agentContext,
-        this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
-      )
+    const mediatorRoutingRecord = await this.findMediatorRoutingRecord(agentContext)
 
-      // If we don't have a routing record yet, create it
-      if (!routingRecord) {
-        this.logger.debug('Mediator routing record does not exist yet, creating routing keys and record')
-        const { verkey } = await agentContext.wallet.createDid()
-
-        routingRecord = new MediatorRoutingRecord({
-          id: this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID,
-          routingKeys: [verkey],
-        })
-
-        await this.mediatorRoutingRepository.save(agentContext, routingRecord)
-      }
-
-      this._mediatorRoutingRecord = routingRecord
+    if (mediatorRoutingRecord) {
+      // Return the routing keys
+      this.logger.debug(`Returning mediator routing keys ${mediatorRoutingRecord.routingKeys}`)
+      return mediatorRoutingRecord.routingKeys
     }
-
-    // Return the routing keys
-    this.logger.debug(`Returning mediator routing keys ${this._mediatorRoutingRecord.routingKeys}`)
-    return this._mediatorRoutingRecord.routingKeys
+    throw new AriesFrameworkError(`Mediator has not been initialized yet.`)
   }
 
   public async processForwardMessage(
@@ -119,13 +99,18 @@ export class MediatorService {
         recipientKey: update.recipientKey,
         result: KeylistUpdateResult.NoChange,
       })
+
+      // According to RFC 0211 key should be a did key, but base58 encoded verkey was used before
+      // RFC was accepted. This converts the key to a public key base58 if it is a did key.
+      const publicKeyBase58 = didKeyToVerkey(update.recipientKey)
+
       if (update.action === KeylistUpdateAction.add) {
-        mediationRecord.addRecipientKey(update.recipientKey)
+        mediationRecord.addRecipientKey(publicKeyBase58)
         updated.result = KeylistUpdateResult.Success
 
         keylist.push(updated)
       } else if (update.action === KeylistUpdateAction.remove) {
-        const success = mediationRecord.removeRecipientKey(update.recipientKey)
+        const success = mediationRecord.removeRecipientKey(publicKeyBase58)
         updated.result = success ? KeylistUpdateResult.Success : KeylistUpdateResult.NoChange
         keylist.push(updated)
       }
@@ -179,6 +164,28 @@ export class MediatorService {
 
   public async getAll(agentContext: AgentContext): Promise<MediationRecord[]> {
     return await this.mediationRepository.getAll(agentContext)
+  }
+
+  public async findMediatorRoutingRecord(agentContext: AgentContext): Promise<MediatorRoutingRecord | null> {
+    const routingRecord = await this.mediatorRoutingRepository.findById(
+      agentContext,
+      this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
+    )
+
+    return routingRecord
+  }
+
+  public async createMediatorRoutingRecord(agentContext: AgentContext): Promise<MediatorRoutingRecord | null> {
+    const { verkey } = await agentContext.wallet.createDid()
+
+    const routingRecord = new MediatorRoutingRecord({
+      id: this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID,
+      routingKeys: [verkey],
+    })
+
+    await this.mediatorRoutingRepository.save(agentContext, routingRecord)
+
+    return routingRecord
   }
 
   private async updateState(agentContext: AgentContext, mediationRecord: MediationRecord, newState: MediationState) {

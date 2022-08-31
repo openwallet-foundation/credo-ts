@@ -62,7 +62,7 @@ export class WsInboundTransport implements InboundTransport {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socket.addEventListener('message', async (event: any) => {
-      this.logger.debug('WebSocket message event received.', { url: event.target.url, data: event.data })
+      this.logger.debug('WebSocket message event received.', { url: event.target.url })
       try {
         await messageReceiver.receiveMessage(JSON.parse(event.data), { session })
       } catch (error) {

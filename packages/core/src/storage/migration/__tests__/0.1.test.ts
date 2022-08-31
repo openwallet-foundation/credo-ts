@@ -1,4 +1,5 @@
 import type { FileSystem } from '../../../../src'
+import type { DidInfo, DidConfig } from '../../../wallet'
 import type { V0_1ToV0_2UpdateConfig } from '../updates/0.1-0.2'
 
 import { unlinkSync, readFileSync } from 'fs'
@@ -10,6 +11,7 @@ import { agentDependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { DependencyManager } from '../../../plugins'
 import * as uuid from '../../../utils/uuid'
+import { IndyWallet } from '../../../wallet/IndyWallet'
 import { UpdateAssistant } from '../UpdateAssistant'
 
 const backupDate = new Date('2022-01-21T22:50:20.522Z')
@@ -29,6 +31,19 @@ const mediationRoleUpdateStrategies: V0_1ToV0_2UpdateConfig['mediationRoleUpdate
 ]
 
 describe('UpdateAssistant | v0.1 - v0.2', () => {
+  let createDidSpy: jest.SpyInstance<Promise<DidInfo>, [didConfig?: DidConfig | undefined]>
+
+  beforeAll(async () => {
+    // We need to mock did generation to create a consistent mediator routing record across sessions
+    createDidSpy = jest
+      .spyOn(IndyWallet.prototype, 'createDid')
+      .mockImplementation(async () => ({ did: 'mock-did', verkey: 'ocxwFbXouLkzuTCyyjFg1bPGK3nM6aPv1pZ6fn5RNgD' }))
+  })
+
+  afterAll(async () => {
+    createDidSpy.mockReset()
+  })
+
   it(`should correctly update the role in the mediation record`, async () => {
     const aliceMediationRecordsString = readFileSync(
       path.join(__dirname, '__fixtures__/alice-4-mediators-0.1.json'),

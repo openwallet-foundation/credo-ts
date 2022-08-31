@@ -3,8 +3,10 @@ import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
 
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
+import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
+import { V1ProofService } from './protocol/v1'
+import { V2ProofService } from './protocol/v2'
 import { ProofRepository } from './repository'
-import { ProofService } from './services'
 
 export class ProofsModule implements Module {
   public readonly config: ProofsModuleConfig
@@ -24,9 +26,13 @@ export class ProofsModule implements Module {
     dependencyManager.registerInstance(ProofsModuleConfig, this.config)
 
     // Services
-    dependencyManager.registerSingleton(ProofService)
+    dependencyManager.registerSingleton(V1ProofService)
+    dependencyManager.registerSingleton(V2ProofService)
 
     // Repositories
     dependencyManager.registerSingleton(ProofRepository)
+
+    // Proof Formats
+    dependencyManager.registerSingleton(IndyProofFormatService)
   }
 }

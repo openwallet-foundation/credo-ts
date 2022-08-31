@@ -5,6 +5,7 @@ import type { RecordSavedEvent, RecordUpdatedEvent, RecordDeletedEvent } from '.
 import type { BaseRecordConstructor, Query, StorageService } from './StorageService'
 
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
+import { JsonTransformer } from '../utils/JsonTransformer'
 
 import { RepositoryEventTypes } from './RepositoryEvents'
 
@@ -27,10 +28,13 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   /** @inheritDoc {StorageService#save} */
   public async save(agentContext: AgentContext, record: T): Promise<void> {
     await this.storageService.save(agentContext, record)
+
+    // Record in event should be static
+    const clonedRecord = JsonTransformer.clone(record)
     this.eventEmitter.emit<RecordSavedEvent<T>>(agentContext, {
       type: RepositoryEventTypes.RecordSaved,
       payload: {
-        record,
+        record: clonedRecord,
       },
     })
   }
@@ -38,10 +42,13 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   /** @inheritDoc {StorageService#update} */
   public async update(agentContext: AgentContext, record: T): Promise<void> {
     await this.storageService.update(agentContext, record)
+
+    // Record in event should be static
+    const clonedRecord = JsonTransformer.clone(record)
     this.eventEmitter.emit<RecordUpdatedEvent<T>>(agentContext, {
       type: RepositoryEventTypes.RecordUpdated,
       payload: {
-        record,
+        record: clonedRecord,
       },
     })
   }
@@ -49,12 +56,24 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   /** @inheritDoc {StorageService#delete} */
   public async delete(agentContext: AgentContext, record: T): Promise<void> {
     await this.storageService.delete(agentContext, record)
+
+    // Record in event should be static
+    const clonedRecord = JsonTransformer.clone(record)
     this.eventEmitter.emit<RecordDeletedEvent<T>>(agentContext, {
       type: RepositoryEventTypes.RecordDeleted,
       payload: {
-        record,
+        record: clonedRecord,
       },
     })
+  }
+
+  /**
+   * Delete record by id. Returns null if no record is found
+   * @param id the id of the record to delete
+   * @returns
+   */
+  public async deleteById(agentContext: AgentContext, id: string): Promise<void> {
+    await this.storageService.deleteById(agentContext, this.recordClass, id)
   }
 
   /** @inheritDoc {StorageService#getById} */

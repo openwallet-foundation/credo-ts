@@ -2,7 +2,7 @@ import type { OutboundWebSocketClosedEvent } from '../../transport'
 import type { OutboundMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
-import type { MediationRecord } from './index'
+import type { MediationRecord } from './repository'
 import type { GetRoutingOptions } from './services/RoutingService'
 
 import { firstValueFrom, interval, ReplaySubject, Subject, timer } from 'rxjs'
@@ -26,13 +26,12 @@ import { DiscoverFeaturesApi } from '../discover-features'
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RecipientModuleConfig } from './RecipientModuleConfig'
 import { RoutingEventTypes } from './RoutingEvents'
-import { MessageDeliveryHandler, StatusHandler } from './handlers'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
-import { StatusRequestMessage } from './messages'
-import { BatchPickupMessage } from './messages/BatchPickupMessage'
 import { MediationState } from './models/MediationState'
+import { StatusRequestMessage, BatchPickupMessage } from './protocol'
+import { StatusHandler, MessageDeliveryHandler } from './protocol/pickup/v2/handlers'
 import { MediationRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
 import { RoutingService } from './services/RoutingService'
@@ -103,8 +102,8 @@ export class RecipientApi {
     }
   }
 
-  private async sendMessage(outboundMessage: OutboundMessage) {
-    const { mediatorPickupStrategy } = this.config
+  private async sendMessage(outboundMessage: OutboundMessage, pickupStrategy?: MediatorPickupStrategy) {
+    const mediatorPickupStrategy = pickupStrategy ?? this.config.mediatorPickupStrategy
     const transportPriority =
       mediatorPickupStrategy === MediatorPickupStrategy.Implicit
         ? { schemes: ['wss', 'ws'], restrictive: true }
@@ -174,7 +173,7 @@ export class RecipientApi {
         delayWhen(() => timer(interval))
       )
       .subscribe(async () => {
-        this.logger.warn(
+        this.logger.debug(
           `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
         )
         try {
@@ -279,12 +278,15 @@ export class RecipientApi {
     return this.mediationRecipientService.discoverMediation(this.agentContext)
   }
 
-  public async pickupMessages(mediatorConnection: ConnectionRecord) {
+  public async pickupMessages(mediatorConnection: ConnectionRecord, pickupStrategy?: MediatorPickupStrategy) {
     mediatorConnection.assertReady()
 
-    const batchPickupMessage = new BatchPickupMessage({ batchSize: 10 })
-    const outboundMessage = createOutboundMessage(mediatorConnection, batchPickupMessage)
-    await this.sendMessage(outboundMessage)
+    const pickupMessage =
+      pickupStrategy === MediatorPickupStrategy.PickUpV2
+        ? new StatusRequestMessage({})
+        : new BatchPickupMessage({ batchSize: 10 })
+    const outboundMessage = createOutboundMessage(mediatorConnection, pickupMessage)
+    await this.sendMessage(outboundMessage, pickupStrategy)
   }
 
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
@@ -381,7 +383,7 @@ export class RecipientApi {
       await this.setDefaultMediator(mediation)
       this.logger.debug('Default mediator set')
     } else {
-      this.logger.warn(`Mediator invitation has already been ${mediation.isReady ? 'granted' : 'requested'}`)
+      this.logger.debug(`Mediator invitation has already been ${mediation.isReady ? 'granted' : 'requested'}`)
     }
 
     return mediation

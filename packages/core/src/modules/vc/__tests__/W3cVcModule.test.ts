@@ -24,23 +24,23 @@ describe('W3cVcModule', () => {
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(3)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(SignatureSuiteToken, {
       suiteClass: Ed25519Signature2018,
+      verificationMethodTypes: ['Ed25519VerificationKey2018', 'Ed25519VerificationKey2020'],
       proofType: 'Ed25519Signature2018',
-      requiredKeyType: 'Ed25519VerificationKey2018',
-      keyType: KeyType.Ed25519,
+      keyTypes: [KeyType.Ed25519],
     })
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(SignatureSuiteToken, {
       suiteClass: BbsBlsSignature2020,
+      verificationMethodTypes: ['Bls12381G2Key2020'],
       proofType: 'BbsBlsSignature2020',
-      requiredKeyType: 'BbsBlsSignatureProof2020',
-      keyType: KeyType.Bls12381g2,
+      keyTypes: [KeyType.Bls12381g2],
     })
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(SignatureSuiteToken, {
       suiteClass: BbsBlsSignatureProof2020,
       proofType: 'BbsBlsSignatureProof2020',
-      requiredKeyType: 'BbsBlsSignatureProof2020',
-      keyType: KeyType.Bls12381g2,
+      verificationMethodTypes: ['Bls12381G2Key2020'],
+      keyTypes: [KeyType.Bls12381g2],
     })
   })
 })

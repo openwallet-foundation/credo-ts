@@ -99,7 +99,7 @@ export class WsOutboundTransport implements OutboundTransport {
   // so 'this' is scoped to the 'WsOutboundTransport' class instance
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleMessageEvent = (event: any) => {
-    this.logger.trace('WebSocket message event received.', { url: event.target.url, data: event.data })
+    this.logger.trace('WebSocket message event received.', { url: event.target.url })
     const payload = JsonEncoder.fromBuffer(event.data)
     if (!isValidJweStructure(payload)) {
       throw new Error(

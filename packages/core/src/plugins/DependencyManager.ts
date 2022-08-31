@@ -2,6 +2,8 @@ import type { Constructor } from '../utils/mixins'
 import type { Module } from './Module'
 import type { DependencyContainer } from 'tsyringe'
 
+import 'reflect-metadata'
+
 import { container as rootContainer, InjectionToken, Lifecycle } from 'tsyringe'
 
 export { InjectionToken }
