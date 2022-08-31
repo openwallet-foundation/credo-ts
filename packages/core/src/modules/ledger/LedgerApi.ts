@@ -90,8 +90,6 @@ export class LedgerApi {
     const schemaRecord = await this.anonCredsSchemaRepository.findById(this.agentContext, qualifiedIdentifier)
     // Schema in wallet
     if (schemaRecord) {
-      // Transform qualified to unqualified
-      schemaRecord.schema.id = getLegacyIndySchemaId(schemaRecord.schema.id)
       return {
         ...schemaRecord?.schema,
         id: getLegacyIndySchemaId(schemaRecord.id),
