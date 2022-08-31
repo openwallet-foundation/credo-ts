@@ -91,7 +91,7 @@ export class LedgerApi {
     // Schema in wallet
     if (schemaRecord) {
       return {
-        ...schemaRecord?.schema,
+        ...schemaRecord.schema,
         id: getLegacyIndySchemaId(schemaRecord.id),
       }
     }
