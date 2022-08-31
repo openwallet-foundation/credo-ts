@@ -88,9 +88,10 @@ export class QuestionAnswerService {
     this.logger.debug(`Receiving question message with id ${questionMessage.id}`)
 
     const connection = messageContext.assertReadyConnection()
-    const questionRecord = await this.getById(questionMessage.id)
-    questionRecord.assertState(QuestionAnswerState.QuestionSent)
-
+    const questionRecord = await this.findByThreadAndConnectionId(connection.id, questionMessage.id)
+    if (questionRecord) {
+      throw new AriesFrameworkError(`Question answer record with thread Id ${questionMessage.id} already exists.`)
+    }
     const questionAnswerRecord = await this.createRecord({
       questionText: questionMessage.questionText,
       questionDetail: questionMessage.questionDetail,
@@ -146,13 +147,12 @@ export class QuestionAnswerService {
     this.logger.debug(`Receiving answer message with id ${answerMessage.id}`)
 
     const connection = messageContext.assertReadyConnection()
-    const answerRecord = await this.getById(answerMessage.id)
-    answerRecord.assertState(QuestionAnswerState.AnswerSent)
-
-    const questionAnswerRecord: QuestionAnswerRecord = await this.getByThreadAndConnectionId(
-      answerMessage.threadId,
-      connection?.id
-    )
+    const questionAnswerRecord = await this.findByThreadAndConnectionId(connection.id, answerMessage.threadId)
+    if (!questionAnswerRecord) {
+      throw new AriesFrameworkError(`Question Answer record with thread Id ${answerMessage.threadId} not found.`)
+    }
+    questionAnswerRecord.assertState(QuestionAnswerState.QuestionSent)
+    questionAnswerRecord.assertRole(QuestionAnswerRole.Questioner)
 
     questionAnswerRecord.response = answerMessage.response
 
@@ -214,7 +214,7 @@ export class QuestionAnswerService {
    * @param threadId The thread id
    * @throws {RecordNotFoundError} If no record is found
    * @throws {RecordDuplicateError} If multiple records are found
-   * @returns The credential record
+   * @returns The question answer record
    */
   public getByThreadAndConnectionId(connectionId: string, threadId: string): Promise<QuestionAnswerRecord> {
     return this.questionAnswerRepository.getSingleByQuery({
@@ -224,11 +224,25 @@ export class QuestionAnswerService {
   }
 
   /**
-   * Retrieve a connection record by id
+   * Retrieve a question answer record by thread id
+   *
+   * @param connectionId The connection id
+   * @param threadId The thread id
+   * @returns The question answer record or null if not found
+   */
+  public findByThreadAndConnectionId(connectionId: string, threadId: string): Promise<QuestionAnswerRecord | null> {
+    return this.questionAnswerRepository.findSingleByQuery({
+      connectionId,
+      threadId,
+    })
+  }
+
+  /**
+   * Retrieve a question answer record by id
    *
    * @param questionAnswerId The questionAnswer record id
    * @throws {RecordNotFoundError} If no record is found
-   * @return The connection record
+   * @return The question answer record
    *
    */
   public getById(questionAnswerId: string): Promise<QuestionAnswerRecord> {
@@ -236,9 +250,20 @@ export class QuestionAnswerService {
   }
 
   /**
-   * Retrieve all QuestionAnswer records
+   * Retrieve a question answer record by id
    *
-   * @returns List containing all QuestionAnswer records
+   * @param questionAnswerId The questionAnswer record id
+   * @return The question answer record or null if not found
+   *
+   */
+  public findById(questionAnswerId: string): Promise<QuestionAnswerRecord | null> {
+    return this.questionAnswerRepository.findById(questionAnswerId)
+  }
+
+  /**
+   * Retrieve all question answer records
+   *
+   * @returns List containing all question answer records
    */
   public getAll() {
     return this.questionAnswerRepository.getAll()
