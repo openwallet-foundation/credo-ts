@@ -52,7 +52,10 @@ describe('ed25519', () => {
   })
 
   it('supports Ed25519VerificationKey2018 verification method type', () => {
-    expect(keyDidEd25519.supportedVerificationMethodTypes).toMatchObject(['Ed25519VerificationKey2018'])
+    expect(keyDidEd25519.supportedVerificationMethodTypes).toMatchObject([
+      'Ed25519VerificationKey2018',
+      'Ed25519VerificationKey2020',
+    ])
   })
 
   it('returns key for Ed25519VerificationKey2018 verification method', () => {
@@ -61,6 +64,22 @@ describe('ed25519', () => {
     const key = keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)
 
     expect(key.fingerprint).toBe(TEST_ED25519_FINGERPRINT)
+  })
+
+  it('returns key for Ed25519VerificationKey2020 verification method', () => {
+    const verificationMethod = JsonTransformer.fromJSON(
+      {
+        id: 'did:example:123',
+        type: 'Ed25519VerificationKey2020',
+        controller: 'did:example:123',
+        publicKeyMultibase: 'z6MkkBWg1AnNxxWiq77gJDeHsLhGN6JV9Y3d6WiTifUs1sZi',
+      },
+      VerificationMethod
+    )
+
+    const key = keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)
+
+    expect(key.publicKeyBase58).toBe('6jFdQvXwdR2FicGycegT2F9GYX2djeoGQVoXtPWr6enL')
   })
 
   it('throws an error if an invalid verification method is passed', () => {

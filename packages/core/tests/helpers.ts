@@ -1,21 +1,21 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
-  AutoAcceptProof,
+  AcceptOfferOptions,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
   InitConfig,
-  ProofAttributeInfo,
-  ProofPredicateInfo,
   ProofStateChangedEvent,
   SchemaTemplate,
   Wallet,
 } from '../src'
-import type { AcceptOfferOptions } from '../src/modules/credentials'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
+import type { RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
+import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
 import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -41,12 +41,7 @@ import {
   HandshakeProtocol,
   InjectionSymbols,
   LogLevel,
-  PredicateType,
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
   ProofEventTypes,
-  ProofState,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
@@ -57,6 +52,14 @@ import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
+import { PredicateType } from '../src/modules/proofs/formats/indy/models'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
+import { ProofState } from '../src/modules/proofs/models/ProofState'
+import {
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
+} from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -158,6 +161,7 @@ export async function waitForProofRecord(
   agent: Agent,
   options: {
     threadId?: string
+    parentThreadId?: string
     state?: ProofState
     previousState?: ProofState | null
     timeoutMs?: number
@@ -172,11 +176,13 @@ export function waitForProofRecordSubject(
   subject: ReplaySubject<ProofStateChangedEvent> | Observable<ProofStateChangedEvent>,
   {
     threadId,
+    parentThreadId,
     state,
     previousState,
     timeoutMs = 10000,
   }: {
     threadId?: string
+    parentThreadId?: string
     state?: ProofState
     previousState?: ProofState | null
     timeoutMs?: number
@@ -187,6 +193,7 @@ export function waitForProofRecordSubject(
     observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
       filter((e) => threadId === undefined || e.payload.proofRecord.threadId === threadId),
+      filter((e) => parentThreadId === undefined || e.payload.proofRecord.parentThreadId === parentThreadId),
       filter((e) => state === undefined || e.payload.proofRecord.state === state),
       timeout(timeoutMs),
       catchError(() => {
@@ -194,6 +201,7 @@ export function waitForProofRecordSubject(
           `ProofStateChangedEvent event not emitted within specified timeout: {
   previousState: ${previousState},
   threadId: ${threadId},
+  parentThreadId: ${parentThreadId},
   state: ${state}
 }`
         )
@@ -562,34 +570,57 @@ export async function presentProof({
   verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
   holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
 
-  let verifierRecord = await verifierAgent.proofs.requestProof(verifierConnectionId, {
-    name: 'test-proof-request',
-    requestedAttributes: attributes,
-    requestedPredicates: predicates,
-  })
+  const requestProofsOptions: RequestProofOptions = {
+    protocolVersion: ProofProtocolVersion.V1,
+    connectionId: verifierConnectionId,
+    proofFormats: {
+      indy: {
+        name: 'test-proof-request',
+        requestedAttributes: attributes,
+        requestedPredicates: predicates,
+        version: '1.0',
+        nonce: '947121108704767252195123',
+      },
+    },
+  }
 
-  let holderRecord = await waitForProofRecordSubject(holderReplay, {
-    threadId: verifierRecord.threadId,
+  let holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
     state: ProofState.RequestReceived,
   })
 
-  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(holderRecord.id)
-  const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
-  await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
+  let verifierRecord = await verifierAgent.proofs.requestProof(requestProofsOptions)
 
-  verifierRecord = await waitForProofRecordSubject(verifierReplay, {
+  let holderRecord = await holderProofRecordPromise
+
+  const requestedCredentials = await holderAgent.proofs.autoSelectCredentialsForProofRequest({
+    proofRecordId: holderRecord.id,
+    config: {
+      filterByPresentationPreview: true,
+    },
+  })
+
+  const verifierProofRecordPromise = waitForProofRecordSubject(verifierReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.PresentationReceived,
   })
 
+  await holderAgent.proofs.acceptRequest({
+    proofRecordId: holderRecord.id,
+    proofFormats: { indy: requestedCredentials.proofFormats.indy },
+  })
+
+  verifierRecord = await verifierProofRecordPromise
+
   // assert presentation is valid
   expect(verifierRecord.isVerified).toBe(true)
 
-  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
-  holderRecord = await waitForProofRecordSubject(holderReplay, {
+  holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.Done,
   })
+
+  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
+  holderRecord = await holderProofRecordPromise
 
   return {
     verifierProof: verifierRecord,
@@ -654,7 +685,17 @@ export async function setupCredentialTests(
 
   const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
 
-  return { faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection }
+  const faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
+  const aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()
+
+  faberAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(faberReplay)
+  aliceAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(aliceReplay)
+
+  return { faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection, faberReplay, aliceReplay }
 }
 
 export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {

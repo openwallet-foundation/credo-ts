@@ -365,6 +365,30 @@ describe('out of band', () => {
       expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
     })
 
+    test('process credential offer requests with legacy did:sov prefix on message type based on OOB message', async () => {
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
+
+      // we need to override the message type to use the legacy did:sov prefix
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      message.type = message.type.replace('https://didcomm.org', 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec')
+      const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
+        ...issueCredentialConfig,
+        messages: [message],
+      })
+
+      const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
+
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+        threadId: message.threadId,
+      })
+      await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, receiveInvitationConfig)
+
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
+    })
+
     test('do not process requests when a connection is not ready', async () => {
       const eventListener = jest.fn()
       aliceAgent.events.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, eventListener)

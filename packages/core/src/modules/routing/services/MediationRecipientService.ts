@@ -6,13 +6,8 @@ import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
-import type {
-  KeylistUpdateResponseMessage,
-  MediationDenyMessage,
-  MediationGrantMessage,
-  MessageDeliveryMessage,
-} from '../messages'
-import type { StatusMessage } from '../messages/StatusMessage'
+import type { KeylistUpdateResponseMessage, MediationDenyMessage, MediationGrantMessage } from '../messages'
+import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
 import type { GetRoutingOptions } from './RoutingService'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -27,19 +22,15 @@ import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils'
 import { ConnectionService } from '../../connections/services/ConnectionService'
+import { didKeyToVerkey } from '../../dids/helpers'
 import { ProblemReportError } from '../../problem-reports'
 import { RecipientModuleConfig } from '../RecipientModuleConfig'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { RoutingProblemReportReason } from '../error'
-import {
-  StatusRequestMessage,
-  DeliveryRequestMessage,
-  MessagesReceivedMessage,
-  KeylistUpdateAction,
-  MediationRequestMessage,
-} from '../messages'
+import { KeylistUpdateAction, MediationRequestMessage } from '../messages'
 import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMessage'
 import { MediationRole, MediationState } from '../models'
+import { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from '../protocol/pickup/v2/messages'
 import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
 
@@ -113,7 +104,10 @@ export class MediationRecipientService {
 
     // Update record
     mediationRecord.endpoint = messageContext.message.endpoint
-    mediationRecord.routingKeys = messageContext.message.routingKeys
+
+    // According to RFC 0211 keys should be a did key, but base58 encoded verkey was used before
+    // RFC was accepted. This converts the key to a public key base58 if it is a did key.
+    mediationRecord.routingKeys = messageContext.message.routingKeys.map(didKeyToVerkey)
     return await this.updateState(messageContext.agentContext, mediationRecord, MediationState.Granted)
   }
 
@@ -253,11 +247,6 @@ export class MediationRecipientService {
     const { message: statusMessage } = messageContext
     const { messageCount, recipientKey } = statusMessage
 
-    const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
-
-    mediationRecord.assertReady()
-    mediationRecord.assertRole(MediationRole.Recipient)
-
     //No messages to be sent
     if (messageCount === 0) {
       const { message, connectionRecord } = await this.connectionService.createTrustPing(
@@ -299,14 +288,9 @@ export class MediationRecipientService {
   }
 
   public async processDelivery(messageContext: InboundMessageContext<MessageDeliveryMessage>) {
-    const connection = messageContext.assertReadyConnection()
+    messageContext.assertReadyConnection()
 
     const { appendedAttachments } = messageContext.message
-
-    const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
-
-    mediationRecord.assertReady()
-    mediationRecord.assertRole(MediationRole.Recipient)
 
     if (!appendedAttachments)
       throw new ProblemReportError('Error processing attachments', {

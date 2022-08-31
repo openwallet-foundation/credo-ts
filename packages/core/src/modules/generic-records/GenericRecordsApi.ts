@@ -27,9 +27,10 @@ export class GenericRecordsApi {
     this.agentContext = agentContext
   }
 
-  public async save({ content, tags }: SaveGenericRecordOption) {
+  public async save({ content, tags, id }: SaveGenericRecordOption) {
     try {
       const record = await this.genericRecordsService.save(this.agentContext, {
+        id,
         content: content,
         tags: tags,
       })
@@ -55,6 +56,10 @@ export class GenericRecordsApi {
       })
       throw error
     }
+  }
+
+  public async deleteById(id: string): Promise<void> {
+    await this.genericRecordsService.deleteById(this.agentContext, id)
   }
 
   public async update(record: GenericRecord): Promise<void> {

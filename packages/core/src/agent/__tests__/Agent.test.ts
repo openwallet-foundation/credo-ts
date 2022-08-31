@@ -10,8 +10,10 @@ import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
 import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerApi } from '../../modules/ledger/LedgerApi'
-import { ProofRepository, ProofService } from '../../modules/proofs'
+import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
+import { V1ProofService } from '../../modules/proofs/protocol/v1'
+import { V2ProofService } from '../../modules/proofs/protocol/v2'
 import {
   MediatorApi,
   RecipientApi,
@@ -115,8 +117,9 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionRepository)).toBeInstanceOf(ConnectionRepository)
       expect(container.resolve(TrustPingService)).toBeInstanceOf(TrustPingService)
 
+      expect(container.resolve(V1ProofService)).toBeInstanceOf(V1ProofService)
+      expect(container.resolve(V2ProofService)).toBeInstanceOf(V2ProofService)
       expect(container.resolve(ProofsApi)).toBeInstanceOf(ProofsApi)
-      expect(container.resolve(ProofService)).toBeInstanceOf(ProofService)
       expect(container.resolve(ProofRepository)).toBeInstanceOf(ProofRepository)
 
       expect(container.resolve(CredentialsApi)).toBeInstanceOf(CredentialsApi)
@@ -157,8 +160,9 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionRepository)).toBe(container.resolve(ConnectionRepository))
       expect(container.resolve(TrustPingService)).toBe(container.resolve(TrustPingService))
 
+      expect(container.resolve(V1ProofService)).toBe(container.resolve(V1ProofService))
+      expect(container.resolve(V2ProofService)).toBe(container.resolve(V2ProofService))
       expect(container.resolve(ProofsApi)).toBe(container.resolve(ProofsApi))
-      expect(container.resolve(ProofService)).toBe(container.resolve(ProofService))
       expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
 
       expect(container.resolve(CredentialsApi)).toBe(container.resolve(CredentialsApi))

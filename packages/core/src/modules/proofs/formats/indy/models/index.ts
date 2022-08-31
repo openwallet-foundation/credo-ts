@@ -1,0 +1,7 @@
+export * from './ProofAttributeInfo'
+export * from './ProofPredicateInfo'
+export * from './RequestedAttribute'
+export * from './RequestedPredicate'
+export * from './ProofRequest'
+export * from './AttributeFilter'
+export * from './PredicateType'

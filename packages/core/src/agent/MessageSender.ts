@@ -164,7 +164,7 @@ export class MessageSender {
     // If the other party shared a queue service endpoint in their did doc we queue the message
     if (queueService) {
       this.logger.debug(`Queue packed message for connection ${connection.id} (${connection.theirLabel})`)
-      this.messageRepository.add(connection.id, encryptedMessage)
+      await this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
 
@@ -241,7 +241,9 @@ export class MessageSender {
     // as the `from` field in a received message will identity the did used so we don't have to store all keys in tags to be able to find the connections associated with
     // an incoming message.
     const [firstOurAuthenticationKey] = ourAuthenticationKeys
-    const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(ourDidDocument)
+    // If the returnRoute is already set we won't override it. This allows to set the returnRoute manually if this is desired.
+    const shouldAddReturnRoute =
+      payload.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(ourDidDocument)
 
     // Loop trough all available services and try to send the message
     for await (const service of services) {
@@ -251,7 +253,7 @@ export class MessageSender {
           message: payload,
           service,
           senderKey: firstOurAuthenticationKey,
-          returnRoute: shouldUseReturnRoute,
+          returnRoute: shouldAddReturnRoute,
           connectionId: connection.id,
         })
         return
@@ -279,7 +281,7 @@ export class MessageSender {
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(agentContext, payload, keys)
-      this.messageRepository.add(connection.id, encryptedMessage)
+      await this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
 

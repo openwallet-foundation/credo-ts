@@ -124,7 +124,7 @@ export class Agent extends BaseAgent {
       )
       await this.mediationRecipient.provision(mediationConnection)
     }
-
+    await this.mediator.initialize()
     await this.mediationRecipient.initialize()
 
     this._isInitialized = true

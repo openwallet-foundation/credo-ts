@@ -128,28 +128,46 @@ describe('messageType', () => {
       const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.0/request')
       const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
 
-      expect(supportsIncomingMessageType(expectedMessageType, incomingMessageType)).toBe(true)
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(true)
     })
 
     test('returns true when the document uri, protocol name, major version all match and the minor version is higher than the expected minor version', () => {
       const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.8/request')
       const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
 
-      expect(supportsIncomingMessageType(expectedMessageType, incomingMessageType)).toBe(true)
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(true)
     })
 
     test('returns true when the document uri, protocol name, major version and minor version all match', () => {
       const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
       const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
 
-      expect(supportsIncomingMessageType(expectedMessageType, incomingMessageType)).toBe(true)
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(true)
+    })
+
+    test('returns true when the protocol name, major version and minor version all match and the incoming message type is using the legacy did sov prefix', () => {
+      const incomingMessageType = parseMessageType('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.4/request')
+      const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
+
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(true)
+    })
+
+    test('returns false when the protocol name, major version and minor version all match and the incoming message type is using the legacy did sov prefix but allowLegacyDidSovPrefixMismatch is set to false', () => {
+      const incomingMessageType = parseMessageType('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.4/request')
+      const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
+
+      expect(
+        supportsIncomingMessageType(expectedMessageType, incomingMessageType, {
+          allowLegacyDidSovPrefixMismatch: false,
+        })
+      ).toBe(false)
     })
 
     test('returns false when the major version does not match', () => {
       const incomingMessageType = parseMessageType('https://didcomm.org/connections/2.4/request')
       const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
 
-      expect(supportsIncomingMessageType(expectedMessageType, incomingMessageType)).toBe(false)
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(false)
 
       const incomingMessageType2 = parseMessageType('https://didcomm.org/connections/2.0/request')
       const expectedMessageType2 = parseMessageType('https://didcomm.org/connections/1.4/request')
@@ -161,21 +179,21 @@ describe('messageType', () => {
       const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.4/proposal')
       const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
 
-      expect(supportsIncomingMessageType(expectedMessageType, incomingMessageType)).toBe(false)
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(false)
     })
 
     test('returns false when the protocol name does not match', () => {
       const incomingMessageType = parseMessageType('https://didcomm.org/issue-credential/1.4/request')
       const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
 
-      expect(supportsIncomingMessageType(expectedMessageType, incomingMessageType)).toBe(false)
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(false)
     })
 
     test('returns false when the document uri does not match', () => {
       const incomingMessageType = parseMessageType('https://my-protocol.org/connections/1.4/request')
       const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
 
-      expect(supportsIncomingMessageType(expectedMessageType, incomingMessageType)).toBe(false)
+      expect(supportsIncomingMessageType(incomingMessageType, expectedMessageType)).toBe(false)
     })
   })
 

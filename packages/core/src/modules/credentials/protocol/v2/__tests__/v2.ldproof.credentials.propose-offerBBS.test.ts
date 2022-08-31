@@ -1,11 +1,10 @@
-import type { AgentContext } from '../../../../../agent'
 import type { Agent } from '../../../../../agent/Agent'
 import type { SignCredentialOptionsRFC0593 } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
 import type { AcceptProposalOptions } from '../../../CredentialsApiOptions'
 
-import { getAgentContext, setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
+import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { InjectionSymbols } from '../../../../../constants'
 import { KeyType } from '../../../../../crypto/KeyType'
@@ -26,12 +25,10 @@ let aliceCredentialRecord: CredentialExchangeRecord
 let faberCredentialRecord: CredentialExchangeRecord
 
 describe('credentials, BBS+ signature', () => {
-  let agentContext: AgentContext
   let wallet
   let issuerDidKey: DidKey
   let didCommMessageRepository: DidCommMessageRepository
   let signCredentialOptions: SignCredentialOptionsRFC0593
-  let verificationMethod: string
   const seed = 'testseed000000000000000000000001'
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(

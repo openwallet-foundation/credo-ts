@@ -11,6 +11,7 @@ import { Key } from '../../../../crypto'
 import { SigningProviderRegistry } from '../../../../crypto/signing-provider'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
+import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { DidExchangeState } from '../../../connections'
 import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
@@ -18,8 +19,9 @@ import { ConnectionService } from '../../../connections/services/ConnectionServi
 import { DidRepository } from '../../../dids/repository/DidRepository'
 import { DidRegistrarService } from '../../../dids/services/DidRegistrarService'
 import { RecipientModuleConfig } from '../../RecipientModuleConfig'
-import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../../messages'
+import { MediationGrantMessage } from '../../messages'
 import { MediationRole, MediationState } from '../../models'
+import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../../protocol'
 import { MediationRecord } from '../../repository/MediationRecord'
 import { MediationRepository } from '../../repository/MediationRepository'
 import { MediationRecipientService } from '../MediationRecipientService'
@@ -112,6 +114,38 @@ describe('MediationRecipientService', () => {
     )
   })
 
+  describe('processMediationGrant', () => {
+    test('should process base58 encoded routing keys', async () => {
+      mediationRecord.state = MediationState.Requested
+      const mediationGrant = new MediationGrantMessage({
+        endpoint: 'http://agent.com:8080',
+        routingKeys: ['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'],
+        threadId: 'threadId',
+      })
+
+      const messageContext = new InboundMessageContext(mediationGrant, { connection: mockConnection, agentContext })
+
+      await mediationRecipientService.processMediationGrant(messageContext)
+
+      expect(mediationRecord.routingKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
+    })
+
+    test('should process did:key encoded routing keys', async () => {
+      mediationRecord.state = MediationState.Requested
+      const mediationGrant = new MediationGrantMessage({
+        endpoint: 'http://agent.com:8080',
+        routingKeys: ['did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
+        threadId: 'threadId',
+      })
+
+      const messageContext = new InboundMessageContext(mediationGrant, { connection: mockConnection, agentContext })
+
+      await mediationRecipientService.processMediationGrant(messageContext)
+
+      expect(mediationRecord.routingKeys).toEqual(['8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'])
+    })
+  })
+
   describe('createStatusRequest', () => {
     it('creates a status request message', async () => {
       const statusRequestMessage = await mediationRecipientService.createStatusRequest(mediationRecord, {
@@ -123,25 +157,12 @@ describe('MediationRecipientService', () => {
         recipientKey: 'a-key',
       })
     })
-
-    it('it throws an error when the mediation record has incorrect role or state', async () => {
-      mediationRecord.role = MediationRole.Mediator
-      await expect(mediationRecipientService.createStatusRequest(mediationRecord)).rejects.toThrowError(
-        'Mediation record has invalid role MEDIATOR. Expected role RECIPIENT.'
-      )
-
-      mediationRecord.role = MediationRole.Recipient
-      mediationRecord.state = MediationState.Requested
-
-      await expect(mediationRecipientService.createStatusRequest(mediationRecord)).rejects.toThrowError(
-        'Mediation record is not ready to be used. Expected granted, found invalid state requested'
-      )
-    })
   })
 
   describe('processStatus', () => {
     it('if status request has a message count of zero returns nothing', async () => {
       const status = new StatusMessage({
+        threadId: uuid(),
         messageCount: 0,
       })
 
@@ -152,6 +173,7 @@ describe('MediationRecipientService', () => {
 
     it('if it has a message count greater than zero return a valid delivery request', async () => {
       const status = new StatusMessage({
+        threadId: uuid(),
         messageCount: 1,
       })
       const messageContext = new InboundMessageContext(status, { connection: mockConnection, agentContext })
@@ -159,25 +181,6 @@ describe('MediationRecipientService', () => {
       const deliveryRequestMessage = await mediationRecipientService.processStatus(messageContext)
       expect(deliveryRequestMessage)
       expect(deliveryRequestMessage).toEqual(new DeliveryRequestMessage({ id: deliveryRequestMessage?.id, limit: 1 }))
-    })
-
-    it('it throws an error when the mediation record has incorrect role or state', async () => {
-      const status = new StatusMessage({
-        messageCount: 1,
-      })
-      const messageContext = new InboundMessageContext(status, { connection: mockConnection, agentContext })
-
-      mediationRecord.role = MediationRole.Mediator
-      await expect(mediationRecipientService.processStatus(messageContext)).rejects.toThrowError(
-        'Mediation record has invalid role MEDIATOR. Expected role RECIPIENT.'
-      )
-
-      mediationRecord.role = MediationRole.Recipient
-      mediationRecord.state = MediationState.Requested
-
-      await expect(mediationRecipientService.processStatus(messageContext)).rejects.toThrowError(
-        'Mediation record is not ready to be used. Expected granted, found invalid state requested'
-      )
     })
   })
 
@@ -195,6 +198,7 @@ describe('MediationRecipientService', () => {
 
     it('should return a message received with an message id list in it', async () => {
       const messageDeliveryMessage = new MessageDeliveryMessage({
+        threadId: uuid(),
         attachments: [
           new Attachment({
             id: '1',
@@ -223,6 +227,7 @@ describe('MediationRecipientService', () => {
 
     it('calls the event emitter for each message', async () => {
       const messageDeliveryMessage = new MessageDeliveryMessage({
+        threadId: uuid(),
         attachments: [
           new Attachment({
             id: '1',
@@ -264,37 +269,6 @@ describe('MediationRecipientService', () => {
           contextCorrelationId: agentContext.contextCorrelationId,
         },
       })
-    })
-
-    it('it throws an error when the mediation record has incorrect role or state', async () => {
-      const messageDeliveryMessage = new MessageDeliveryMessage({
-        attachments: [
-          new Attachment({
-            id: '1',
-            data: {
-              json: {
-                a: 'value',
-              },
-            },
-          }),
-        ],
-      })
-      const messageContext = new InboundMessageContext(messageDeliveryMessage, {
-        connection: mockConnection,
-        agentContext,
-      })
-
-      mediationRecord.role = MediationRole.Mediator
-      await expect(mediationRecipientService.processDelivery(messageContext)).rejects.toThrowError(
-        'Mediation record has invalid role MEDIATOR. Expected role RECIPIENT.'
-      )
-
-      mediationRecord.role = MediationRole.Recipient
-      mediationRecord.state = MediationState.Requested
-
-      await expect(mediationRecipientService.processDelivery(messageContext)).rejects.toThrowError(
-        'Mediation record is not ready to be used. Expected granted, found invalid state requested'
-      )
     })
   })
 

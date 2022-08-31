@@ -73,6 +73,7 @@ indyCredentialFormatService.formatKey = 'indy'
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 jsonLdCredentialFormatService.formatKey = 'jsonld'
+
 const agentConfig = getAgentConfig('V2CredentialServiceCredTest')
 const agentContext = getAgentContext()
 

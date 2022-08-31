@@ -6,6 +6,7 @@ import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
 import { DidResolverService } from '../dids'
@@ -184,11 +185,17 @@ export class ConnectionsApi {
         connectionRecord,
         outOfBandRecord
       )
+      // Disable return routing as we don't want to receive a response for this message over the same channel
+      // This has led to long timeouts as not all clients actually close an http socket if there is no response message
+      message.setReturnRouting(ReturnRouteTypes.none)
       outboundMessage = createOutboundMessage(connectionRecord, message)
     } else {
       const { message } = await this.connectionService.createTrustPing(this.agentContext, connectionRecord, {
         responseRequested: false,
       })
+      // Disable return routing as we don't want to receive a response for this message over the same channel
+      // This has led to long timeouts as not all clients actually close an http socket if there is no response message
+      message.setReturnRouting(ReturnRouteTypes.none)
       outboundMessage = createOutboundMessage(connectionRecord, message)
     }
 

@@ -8,6 +8,11 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { WalletError } from '../../../wallet/error'
 import { DidKey, DidResolverService } from '../../dids'
+import { VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020 } from '../../dids/domain/key-type/bls12381g2'
+import {
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+} from '../../dids/domain/key-type/ed25519'
 import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
 import { W3cCredentialService } from '../W3cCredentialService'
 import { orArrayToArray } from '../jsonldUtil'
@@ -29,20 +34,24 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
   {
     suiteClass: Ed25519Signature2018,
     proofType: 'Ed25519Signature2018',
-    requiredKeyType: 'Ed25519VerificationKey2018',
-    keyType: KeyType.Ed25519,
+
+    verificationMethodTypes: [
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+    ],
+    keyTypes: [KeyType.Ed25519],
   },
   {
     suiteClass: BbsBlsSignature2020,
     proofType: 'BbsBlsSignature2020',
-    requiredKeyType: 'BbsBlsSignatureProof2020',
-    keyType: KeyType.Bls12381g2,
+    verificationMethodTypes: [VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020],
+    keyTypes: [KeyType.Bls12381g2],
   },
   {
     suiteClass: BbsBlsSignatureProof2020,
     proofType: 'BbsBlsSignatureProof2020',
-    requiredKeyType: 'BbsBlsSignatureProof2020',
-    keyType: KeyType.Bls12381g2,
+    verificationMethodTypes: [VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020],
+    keyTypes: [KeyType.Bls12381g2],
   },
 ])
 
@@ -92,6 +101,44 @@ describe('W3cCredentialService', () => {
 
   afterAll(async () => {
     await wallet.delete()
+  })
+
+  describe('Utility methods', () => {
+    describe('getKeyTypesByProofType', () => {
+      it('should return the correct key types for Ed25519Signature2018 proof type', async () => {
+        const keyTypes = w3cCredentialService.getKeyTypesByProofType('Ed25519Signature2018')
+        expect(keyTypes).toEqual([KeyType.Ed25519])
+      })
+      it('should return the correct key types for BbsBlsSignature2020 proof type', async () => {
+        const keyTypes = w3cCredentialService.getKeyTypesByProofType('BbsBlsSignature2020')
+        expect(keyTypes).toEqual([KeyType.Bls12381g2])
+      })
+      it('should return the correct key types for BbsBlsSignatureProof2020 proof type', async () => {
+        const keyTypes = w3cCredentialService.getKeyTypesByProofType('BbsBlsSignatureProof2020')
+        expect(keyTypes).toEqual([KeyType.Bls12381g2])
+      })
+    })
+
+    describe('getVerificationMethodTypesByProofType', () => {
+      it('should return the correct key types for Ed25519Signature2018 proof type', async () => {
+        const verificationMethodTypes =
+          w3cCredentialService.getVerificationMethodTypesByProofType('Ed25519Signature2018')
+        expect(verificationMethodTypes).toEqual([
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+        ])
+      })
+      it('should return the correct key types for BbsBlsSignature2020 proof type', async () => {
+        const verificationMethodTypes =
+          w3cCredentialService.getVerificationMethodTypesByProofType('BbsBlsSignature2020')
+        expect(verificationMethodTypes).toEqual([VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020])
+      })
+      it('should return the correct key types for BbsBlsSignatureProof2020 proof type', async () => {
+        const verificationMethodTypes =
+          w3cCredentialService.getVerificationMethodTypesByProofType('BbsBlsSignatureProof2020')
+        expect(verificationMethodTypes).toEqual([VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020])
+      })
+    })
   })
 
   describe('Ed25519Signature2018', () => {
