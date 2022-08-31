@@ -1,7 +1,6 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 import type { DidInfo } from '../../well-known'
 import type { ValueTransferRole } from '../ValueTransferRole'
-import type { ValueTransferState } from '../ValueTransferState'
 
 import { Receipt } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
@@ -10,6 +9,7 @@ import { IsOptional } from 'class-validator'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
+import { ValueTransferState } from '../ValueTransferState'
 import { ProblemReportMessage } from '../messages'
 import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
 
@@ -128,7 +128,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
   }
 
   public get finished() {
-    return this.status === ValueTransferTransactionStatus.Finished
+    return this.state === ValueTransferState.Completed || this.state === ValueTransferState.Failed
   }
 
   public assertStatus(expectedStatuses: ValueTransferTransactionStatus | ValueTransferTransactionStatus[]) {
