@@ -76,6 +76,12 @@ export class QuestionAnswerRecord extends BaseRecord<DefaultQuestionAnswerTags, 
     }
   }
 
+  public assertRole(expectedRole: QuestionAnswerRole) {
+    if (this.role !== expectedRole) {
+      throw new AriesFrameworkError(`Invalid question answer record role ${this.role}, expected is ${expectedRole}.`)
+    }
+  }
+
   public assertState(expectedStates: QuestionAnswerState | QuestionAnswerState[]) {
     if (!Array.isArray(expectedStates)) {
       expectedStates = [expectedStates]
