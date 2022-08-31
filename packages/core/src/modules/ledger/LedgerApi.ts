@@ -159,11 +159,9 @@ export class LedgerApi {
 
     // Credential Definition in wallet
     if (credentialDefinitionRecord) {
-      // Transform qualified to unqualified
-      credentialDefinitionRecord.credentialDefinition.id = getLegacyIndyCredentialDefinitionId(
-        credentialDefinitionRecord.credentialDefinition.id
-      )
-      return credentialDefinitionRecord.credentialDefinition
+      return {
+        ...credentialDefinitionRecord.credentialDefinition,
+        id: getLegacyIndyCredentialDefinitionId(credentialDefinitionRecord.credentialDefinition.id)
     }
 
     // Check for the credential on the ledger.
