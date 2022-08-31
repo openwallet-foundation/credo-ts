@@ -29,7 +29,7 @@ export function isQualifiedIndyIdentifier(identifier: string | undefined): boole
 export function getLegacyIndyCredentialDefinitionId(qualifiedIdentifier: string) {
   if (!isQualifiedIndyIdentifier(qualifiedIdentifier))
     throw new AriesFrameworkError(
-      `Identifier ${qualifiedIdentifier} not a qualified indy identifier. Hint: Needs to start with 'did:ind:'`
+      `Identifier ${qualifiedIdentifier} not a qualified indy identifier. Hint: Needs to start with 'did:indy:'`
     )
 
   const lastColonIndex = qualifiedIdentifier.lastIndexOf(':')
