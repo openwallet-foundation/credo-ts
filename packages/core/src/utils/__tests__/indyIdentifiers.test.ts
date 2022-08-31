@@ -89,7 +89,7 @@ describe('Mangle indy identifiers', () => {
     })
     it('should throw an error if the provided identifier is not a valid indy identifier', () => {
       expect(() => getLegacyIndyCredentialDefinitionId(credDef.id)).toThrowError(
-        `Identifier ${credDef.id} not a qualified indy identifier. Hint: Needs to start with 'did:ind:'`
+        `Identifier ${credDef.id} not a qualified indy identifier. Hint: Needs to start with 'did:indy:'`
       )
     })
     it('should throw an error if the provided identifier fro a credential definition has an invalid tail format', () => {

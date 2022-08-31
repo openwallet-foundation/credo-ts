@@ -33,7 +33,6 @@ export class IndyPool {
   private _poolHandle?: number
   private poolConnected?: Promise<number>
   public authorAgreement?: AuthorAgreement | null
-  // aka the qualified identifier
 
   public constructor(
     poolConfig: IndyPoolConfig,
