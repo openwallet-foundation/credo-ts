@@ -5,5 +5,5 @@ export function isNodeJS() {
 export function isReactNative() {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  return typeof navigator != 'undefined' && navigator.product == 'ReactNative'
+  return typeof navigator !== 'undefined' && navigator.product === 'ReactNative'
 }
