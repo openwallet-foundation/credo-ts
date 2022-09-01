@@ -304,10 +304,10 @@ export class W3cCredentialService {
 
       let loader
 
-      if (isNodeJS()) {
-        loader = documentLoaderNode.apply(jsonld, [])
-      } else if (isReactNative()) {
-        loader = documentLoaderXhr.apply(jsonld, [])
+      if (isReactNative()) {
+        loader = documentLoaderXhr().apply(jsonld, [])
+      } else if (isNodeJS()) {
+        loader = documentLoaderNode().apply(jsonld, [])
       } else {
         throw new AriesFrameworkError('Unsupported environment')
       }
