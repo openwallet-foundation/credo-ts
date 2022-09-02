@@ -1,12 +1,12 @@
 import type { DependencyManager, Module } from '../../plugins'
 import type { FeatureRegistry } from '../discover-features'
 
+import { Protocol } from '../discover-features'
+
 import { BasicMessageRole } from './BasicMessageRole'
 import { BasicMessagesApi } from './BasicMessagesApi'
 import { BasicMessageRepository } from './repository'
 import { BasicMessageService } from './services'
-
-import { Protocol } from '../discover-features'
 
 export class BasicMessagesModule implements Module {
   /**

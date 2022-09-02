@@ -1,4 +1,5 @@
 import { DependencyManager } from '../../../plugins/DependencyManager'
+import { FeatureRegistry } from '../../discover-features'
 import { ProofsApi } from '../ProofsApi'
 import { ProofsModule } from '../ProofsModule'
 import { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
@@ -11,9 +12,14 @@ const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
+jest.mock('../../discover-features/FeatureRegistry')
+const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
+
+const featureRegistry = new FeatureRegistryMock()
+
 describe('ProofsModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    new ProofsModule().register(dependencyManager)
+    new ProofsModule().register(featureRegistry, dependencyManager)
 
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(ProofsApi)

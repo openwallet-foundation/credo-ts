@@ -1,4 +1,5 @@
 import { DependencyManager } from '../../../plugins/DependencyManager'
+import { FeatureRegistry } from '../../discover-features'
 import { IndyModule } from '../IndyModule'
 import {
   IndyHolderService,
@@ -13,9 +14,14 @@ const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
+jest.mock('../../discover-features/FeatureRegistry')
+const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
+
+const featureRegistry = new FeatureRegistryMock()
+
 describe('IndyModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    new IndyModule().register(dependencyManager)
+    new IndyModule().register(featureRegistry, dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(5)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(IndyHolderService)

@@ -3,6 +3,7 @@ import type { FeatureRegistry } from '../discover-features'
 import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
 
 import { Protocol } from '../discover-features'
+
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
 import { IndyCredentialFormatService } from './formats/indy'

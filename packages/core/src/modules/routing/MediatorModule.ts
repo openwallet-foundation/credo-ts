@@ -8,6 +8,7 @@ import { MediatorApi } from './MediatorApi'
 import { MediatorModuleConfig } from './MediatorModuleConfig'
 import { MediationRole } from './models'
 import { MessagePickupService, V2MessagePickupService } from './protocol'
+import { MediationRepository, MediatorRoutingRepository } from './repository'
 import { MediatorService } from './services'
 
 export class MediatorModule implements Module {
@@ -31,6 +32,10 @@ export class MediatorModule implements Module {
     dependencyManager.registerSingleton(MediatorService)
     dependencyManager.registerSingleton(MessagePickupService)
     dependencyManager.registerSingleton(V2MessagePickupService)
+
+    // Repositories
+    dependencyManager.registerSingleton(MediationRepository)
+    dependencyManager.registerSingleton(MediatorRoutingRepository)
 
     // Features
     featureRegistry.register(

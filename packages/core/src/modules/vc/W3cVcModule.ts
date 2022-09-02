@@ -1,4 +1,5 @@
 import type { DependencyManager, Module } from '../../plugins'
+import type { FeatureRegistry } from '../discover-features'
 
 import { KeyType } from '../../crypto'
 import { VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020 } from '../dids/domain/key-type/bls12381g2'
@@ -14,7 +15,7 @@ import { Ed25519Signature2018 } from './signature-suites'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020 } from './signature-suites/bbs'
 
 export class W3cVcModule implements Module {
-  public register(dependencyManager: DependencyManager) {
+  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
     dependencyManager.registerSingleton(W3cCredentialService)
     dependencyManager.registerSingleton(W3cCredentialRepository)
 
