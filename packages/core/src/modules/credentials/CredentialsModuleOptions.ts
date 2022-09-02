@@ -1,3 +1,4 @@
+import type { CredentialProblemReportReason } from './errors/CredentialProblemReportReason';
 import type { GetFormatDataReturn } from './CredentialServiceOptions'
 import type { CredentialFormat, CredentialFormatPayload } from './formats'
 import type { AutoAcceptCredential } from './models/CredentialAutoAcceptType'
@@ -135,4 +136,5 @@ export interface AcceptCredentialOptions {
 export interface SendProblemReportOptions {
   credentialRecordId: string
   message: string
+  code?: CredentialProblemReportReason
 }

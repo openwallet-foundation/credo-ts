@@ -923,7 +923,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     return new V1CredentialProblemReportMessage({
       description: {
         en: options.message,
-        code: CredentialProblemReportReason.IssuanceAbandoned,
+        code: options.code || CredentialProblemReportReason.IssuanceAbandoned,
       },
     })
   }

@@ -5,4 +5,5 @@
  */
 export enum CredentialProblemReportReason {
   IssuanceAbandoned = 'issuance-abandoned',
+  RequestDeclined = 'request-declined'
 }

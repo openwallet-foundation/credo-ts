@@ -1,5 +1,6 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
+import type { CredentialProblemReportReason } from './errors'
 import type { CredentialFormat, CredentialFormatPayload } from './formats'
 import type { CredentialPreviewAttributeOptions } from './models'
 import type { AutoAcceptCredential } from './models/CredentialAutoAcceptType'
@@ -120,6 +121,7 @@ export interface AcceptCredentialOptions {
 
 export interface CreateProblemReportOptions {
   message: string
+  code?: CredentialProblemReportReason
 }
 
 export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {

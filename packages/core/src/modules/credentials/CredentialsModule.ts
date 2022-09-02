@@ -42,6 +42,7 @@ import { V1CredentialService } from './protocol/v1/V1CredentialService'
 import { V2CredentialService } from './protocol/v2/V2CredentialService'
 import { CredentialRepository } from './repository/CredentialRepository'
 import { RevocationNotificationService } from './services'
+import { CredentialProblemReportReason } from './errors'
 
 export interface CredentialsModule<CFs extends CredentialFormat[], CSs extends CredentialService<CFs>[]> {
   // Proposal methods
@@ -354,6 +355,33 @@ export class CredentialsModule<
     const service = this.getService(credentialRecord.protocolVersion)
     await service.updateState(credentialRecord, CredentialState.Declined)
 
+    //  if credential was offered by established connection, attempt to send problem report upon credential decline
+    if (credentialRecord.connectionId) {
+      // const connection = await this.connectionService.getById(credentialRecord.connectionId)
+
+      // const problemReportMessage = new ProblemReportMessage({
+      //   description: {
+      //     en: `Credential Offer ${credentialRecordId} has been declined`,
+      //     code: ProblemReportReason.RequestDeclined,
+      //   },
+      //   whoRetries: 
+      // })
+
+      // problemReportMessage.setThread({
+      //   threadId: credentialRecord.threadId,
+      // })
+
+      // const outboundMessage = createOutboundMessage(connection, problemReportMessage)
+      // if (outboundMessage) {
+      //   await this.messageSender.sendMessage(outboundMessage)
+      // }
+      this.sendProblemReport({
+        message: `Credential Offer ${credentialRecordId} has been declined`,
+        code: CredentialProblemReportReason.RequestDeclined,
+        credentialRecordId: credentialRecord.connectionId,
+      })
+    }
+    
     return credentialRecord
   }
 
@@ -535,7 +563,7 @@ export class CredentialsModule<
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
 
     const service = this.getService(credentialRecord.protocolVersion)
-    const problemReportMessage = service.createProblemReport({ message: options.message })
+    const problemReportMessage = options.code ? service.createProblemReport({ message: options.message, code: options.code }) : service.createProblemReport({ message: options.message })
     problemReportMessage.setThread({
       threadId: credentialRecord.threadId,
     })

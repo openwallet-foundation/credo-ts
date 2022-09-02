@@ -15,6 +15,7 @@ import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections/services/ConnectionService'
 import { RoutingService } from '../routing/services/RoutingService'
 
+import { ProblemReportMessage, ProblemReportReason } from '../../modules/problem-reports'
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import { PresentationProblemReportReason } from './errors'
 import {
@@ -284,6 +285,28 @@ export class ProofsModule {
   public async declineRequest(proofRecordId: string) {
     const proofRecord = await this.proofService.getById(proofRecordId)
     await this.proofService.declineRequest(proofRecord)
+
+    // if presentation was made by established connection, attempt to send problem report upon presentation decline
+    if (proofRecord.connectionId) {
+      const connection = await this.connectionService.getById(proofRecord.connectionId)
+
+      const problemReportMessage = new ProblemReportMessage({
+        description: {
+          en: `Proof Request ${proofRecordId} has been declined`,
+          code: ProblemReportReason.RequestDeclined,
+        }
+      })
+
+      problemReportMessage.setThread({
+        threadId: proofRecord.threadId,
+      })
+
+      const outboundMessage = createOutboundMessage(connection, problemReportMessage)
+      if (outboundMessage) {
+        await this.messageSender.sendMessage(outboundMessage)
+      }
+    }
+
     return proofRecord
   }
 
