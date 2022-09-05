@@ -1,2 +1,2 @@
-export * from './DiscloseMessageHandler'
-export * from './QueryMessageHandler'
+export * from './V1DiscloseMessageHandler'
+export * from './V1QueryMessageHandler'

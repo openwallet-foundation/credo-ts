@@ -1,6 +1,7 @@
 import type { AgentMessageProcessedEvent } from '../../agent/Events'
 import type { ParsedMessageType } from '../../utils/messageType'
-import type { FeatureQueryOptions } from './models'
+import type { DiscloseFeaturesOptions, QueryFeaturesOptions, ServiceMap } from './DiscoverFeaturesModuleOptions'
+import type { DiscoverFeaturesService } from './services'
 
 import { firstValueFrom, of, ReplaySubject, Subject } from 'rxjs'
 import { catchError, filter, map, takeUntil, timeout } from 'rxjs/operators'
@@ -12,39 +13,62 @@ import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { InjectionSymbols } from '../../constants'
+import { AriesFrameworkError } from '../../error'
 import { inject, injectable } from '../../plugins'
 import { canHandleMessageType, parseMessageType } from '../../utils/messageType'
 import { ConnectionService } from '../connections/services'
 
-import { DiscloseMessage, DiscoverFeaturesService, V2DiscoverFeaturesService } from './protocol'
+import { V1DiscloseMessage, V1DiscoverFeaturesService, V2DiscoverFeaturesService } from './protocol'
 
+export interface DiscoverFeaturesApi<DFSs extends DiscoverFeaturesService[]> {
+  isProtocolSupported(connectionId: string, message: { type: ParsedMessageType }): Promise<boolean>
+  queryFeatures(options: QueryFeaturesOptions<DFSs>): Promise<void>
+  discloseFeatures(options: DiscloseFeaturesOptions<DFSs>): Promise<void>
+}
 @injectable()
-export class DiscoverFeaturesApi {
+export class DiscoverFeaturesApi<
+  DFSs extends DiscoverFeaturesService[] = [V1DiscoverFeaturesService, V2DiscoverFeaturesService]
+> implements DiscoverFeaturesApi<DFSs>
+{
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private discoverFeaturesService: DiscoverFeaturesService
-  private discoverFeaturesV2Service: V2DiscoverFeaturesService
   private eventEmitter: EventEmitter
   private stop$: Subject<boolean>
   private agentContext: AgentContext
+  private serviceMap: ServiceMap<DFSs>
 
   public constructor(
     dispatcher: Dispatcher,
     connectionService: ConnectionService,
     messageSender: MessageSender,
-    discoverFeaturesService: DiscoverFeaturesService,
-    discoverFeaturesV2Service: V2DiscoverFeaturesService,
+    v1Service: V1DiscoverFeaturesService,
+    v2Service: V2DiscoverFeaturesService,
     eventEmitter: EventEmitter,
     @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
     agentContext: AgentContext
   ) {
     this.connectionService = connectionService
     this.messageSender = messageSender
-    this.discoverFeaturesService = discoverFeaturesService
-    this.discoverFeaturesV2Service = discoverFeaturesV2Service
     this.eventEmitter = eventEmitter
     this.stop$ = stop$
     this.agentContext = agentContext
+
+    // Dynamically build service map. This will be extracted once services are registered dynamically
+    this.serviceMap = [v1Service, v2Service].reduce(
+      (serviceMap, service) => ({
+        ...serviceMap,
+        [service.version]: service,
+      }),
+      {}
+    ) as ServiceMap<DFSs>
+  }
+
+  public getService<PVT extends DiscoverFeaturesService['version']>(protocolVersion: PVT): DiscoverFeaturesService {
+    if (!this.serviceMap[protocolVersion]) {
+      throw new AriesFrameworkError(`No discover features service registered for protocol version ${protocolVersion}`)
+    }
+
+    return this.serviceMap[protocolVersion]
   }
 
   /**
@@ -69,11 +93,11 @@ export class DiscoverFeaturesApi {
         filter(
           (e) =>
             e.payload.connection?.id === connectionId &&
-            canHandleMessageType(DiscloseMessage, parseMessageType(e.payload.message.type))
+            canHandleMessageType(V1DiscloseMessage, parseMessageType(e.payload.message.type))
         ),
         // Return whether the protocol is supported
         map((e) => {
-          const message = e.payload.message as DiscloseMessage
+          const message = e.payload.message as V1DiscloseMessage
           return message.protocols.map((p) => p.protocolId).includes(protocolUri)
         }),
         // TODO: make configurable
@@ -84,8 +108,10 @@ export class DiscoverFeaturesApi {
       )
       .subscribe(replaySubject)
 
-    await this.queryFeatures(connectionId, {
-      query: protocolUri,
+    await this.queryFeatures({
+      connectionId,
+      protocolVersion: 'v1',
+      queries: [{ featureType: 'protocol', match: protocolUri }],
       comment: 'Detect if protocol is supported',
     })
 
@@ -102,19 +128,15 @@ export class DiscoverFeaturesApi {
    * @param options query string for simple protocol support (using Discover Features V1) or set of queries to ask
    * multiple features (using Discover Features V2 protocol). Optional comment string only used for simple queries.
    */
-  public async queryFeatures(
-    connectionId: string,
-    options: { query: string | FeatureQueryOptions[]; comment?: string }
-  ) {
-    const connection = await this.connectionService.getById(this.agentContext, connectionId)
+  public async queryFeatures(options: QueryFeaturesOptions<DFSs>) {
+    const service = this.getService(options.protocolVersion)
 
-    const queryMessage =
-      typeof options.query === 'string'
-        ? await this.discoverFeaturesService.createQuery({
-            query: options.query,
-            comment: options.comment,
-          })
-        : await this.discoverFeaturesV2Service.createQueries({ queries: options.query })
+    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+
+    const { message: queryMessage } = await service.createQuery(this.agentContext, {
+      queries: options.queries,
+      comment: options.comment,
+    })
 
     const outbound = createOutboundMessage(connection, queryMessage)
     await this.messageSender.sendMessage(this.agentContext, outbound)
@@ -127,9 +149,11 @@ export class DiscoverFeaturesApi {
    * @param connectionId: connection to disclose features to
    * @param options: queries array for features to match from registry, and optional thread id
    */
-  public async discloseFeatures(connectionId: string, options: { queries: FeatureQueryOptions[]; threadId?: string }) {
-    const connection = await this.connectionService.getById(this.agentContext, connectionId)
-    const disclosuresMessage = await this.discoverFeaturesV2Service.createDisclosures({
+  public async discloseFeatures(options: DiscloseFeaturesOptions) {
+    const service = this.getService(options.protocolVersion)
+
+    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+    const { message: disclosuresMessage } = await service.createDisclosure(this.agentContext, {
       queries: options.queries,
       threadId: options.threadId,
     })

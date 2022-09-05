@@ -1,64 +1,75 @@
 import type { AgentContext } from '../../../../agent'
+import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type {
   DiscoverFeaturesDisclosureReceivedEvent,
   DiscoverFeaturesQueryReceivedEvent,
 } from '../../DiscoverFeaturesEvents'
 import type {
+  CreateDisclosureOptions,
   CreateQueryOptions,
   DiscoverFeaturesProtocolMsgReturnType,
-  CreateDisclosureOptions,
 } from '../../DiscoverFeaturesServiceOptions'
 
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
+import { AriesFrameworkError } from '../../../../error'
 import { Logger } from '../../../../logger'
 import { inject, injectable } from '../../../../plugins'
 import { DiscoverFeaturesEventTypes } from '../../DiscoverFeaturesEvents'
 import { DiscoverFeaturesModuleConfig } from '../../DiscoverFeaturesModuleConfig'
 import { FeatureRegistry } from '../../FeatureRegistry'
+import { Protocol } from '../../models'
 import { DiscoverFeaturesService } from '../../services'
 
-import { V2DisclosuresMessageHandler, V2QueriesMessageHandler } from './handlers'
-import { V2QueriesMessage, V2DisclosuresMessage } from './messages'
+import { V1DiscloseMessageHandler, V1QueryMessageHandler } from './handlers'
+import { V1QueryMessage, V1DiscloseMessage, DiscloseProtocol } from './messages'
 
 @injectable()
-export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
+export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
   public constructor(
     featureRegistry: FeatureRegistry,
     eventEmitter: EventEmitter,
     dispatcher: Dispatcher,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    discoverFeaturesModuleConfig: DiscoverFeaturesModuleConfig
+    discoverFeaturesConfig: DiscoverFeaturesModuleConfig
   ) {
-    super(featureRegistry, eventEmitter, dispatcher, logger, discoverFeaturesModuleConfig)
+    super(featureRegistry, eventEmitter, dispatcher, logger, discoverFeaturesConfig)
+
     this.registerHandlers(dispatcher)
   }
 
   /**
    * The version of the discover features protocol this service supports
    */
-  public readonly version = 'v2'
+  public readonly version = 'v1'
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new V2DisclosuresMessageHandler(this))
-    dispatcher.registerHandler(new V2QueriesMessageHandler(this))
+    dispatcher.registerHandler(new V1DiscloseMessageHandler(this))
+    dispatcher.registerHandler(new V1QueryMessageHandler(this))
   }
 
   public async createQuery(
     agentContext: AgentContext,
     options: CreateQueryOptions
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2QueriesMessage>> {
-    const queryMessage = new V2QueriesMessage({ queries: options.queries })
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V1QueryMessage>> {
+    if (options.queries.length > 1) {
+      throw new AriesFrameworkError('Discover Features V1 only supports a single query')
+    }
+
+    const queryMessage = new V1QueryMessage({
+      query: options.queries[0].match,
+      comment: options.comment,
+    })
 
     return { message: queryMessage }
   }
 
   public async processQuery(
-    messageContext: InboundMessageContext<V2QueriesMessage>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage> | void> {
-    const { queries, threadId } = messageContext.message
+    messageContext: InboundMessageContext<V1QueryMessage>
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | void> {
+    const { query, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()
 
@@ -66,7 +77,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
       type: DiscoverFeaturesEventTypes.QueryReceived,
       payload: {
         connection,
-        queries,
+        queries: [{ featureType: 'protocol', match: query }],
         protocolVersion: this.version,
         threadId,
       },
@@ -77,7 +88,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
     if (this.discoverFeaturesModuleConfig.autoAcceptDiscoverFeatureQueries) {
       return await this.createDisclosure(messageContext.agentContext, {
         threadId,
-        queries,
+        queries: [{ featureType: 'protocol', match: query }],
       })
     }
   }
@@ -85,19 +96,33 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
   public async createDisclosure(
     agentContext: AgentContext,
     options: CreateDisclosureOptions
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage>> {
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V1DiscloseMessage>> {
+    if (options.queries.length > 1) {
+      throw new AriesFrameworkError('Discover Features V1 only supports a single query')
+    }
+
+    if (!options.threadId) {
+      throw new AriesFrameworkError('Thread Id is required for Discover Features V1 disclosure')
+    }
+
     const matches = this.featureRegistry.query(...options.queries)
 
-    const discloseMessage = new V2DisclosuresMessage({
+    const discloseMessage = new V1DiscloseMessage({
       threadId: options.threadId,
-      features: matches,
+      protocols: matches.map(
+        (item) =>
+          new DiscloseProtocol({
+            protocolId: (item as Protocol).id,
+            roles: (item as Protocol).roles,
+          })
+      ),
     })
 
     return { message: discloseMessage }
   }
 
-  public async processDisclosure(messageContext: InboundMessageContext<V2DisclosuresMessage>): Promise<void> {
-    const { disclosures, threadId } = messageContext.message
+  public async processDisclosure(messageContext: InboundMessageContext<V1DiscloseMessage>): Promise<void> {
+    const { protocols, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()
 
@@ -105,7 +130,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
       type: DiscoverFeaturesEventTypes.DisclosureReceived,
       payload: {
         connection,
-        disclosures,
+        disclosures: protocols.map((item) => new Protocol({ id: item.protocolId, roles: item.roles })),
         protocolVersion: this.version,
         threadId,
       },
