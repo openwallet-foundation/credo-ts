@@ -24,7 +24,8 @@ import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
 import { orArrayToArray, w3cDate } from './jsonldUtil'
-import jsonld, { documentLoaderNode, documentLoaderXhr } from './libraries/jsonld'
+import { getDocumentLoader } from './libraries/documentLoader'
+import jsonld from './libraries/jsonld'
 import vc from './libraries/vc'
 import { W3cVerifiableCredential } from './models'
 import { W3cPresentation } from './models/presentation/W3Presentation'
@@ -302,15 +303,9 @@ export class W3cCredentialService {
         }
       }
 
-      let loader
-
-      if (isReactNative()) {
-        loader = documentLoaderXhr().apply(jsonld, [])
-      } else if (isNodeJS()) {
-        loader = documentLoaderNode().apply(jsonld, [])
-      } else {
-        throw new AriesFrameworkError('Unsupported environment')
-      }
+      // fetches the documentLoader from documentLoader.ts or documentLoader.native.ts depending on the platform at bundle time
+      const platformLoader = getDocumentLoader()
+      const loader = platformLoader.apply(jsonld, [])
 
       return await loader(url)
     }

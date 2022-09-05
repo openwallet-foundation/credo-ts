@@ -23,18 +23,4 @@ export interface DocumentLoaderResult {
 
 export type DocumentLoader = (url: string) => Promise<DocumentLoaderResult>
 
-export const documentLoaderXhr = () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const loader = require('@digitalcredentials/jsonld/lib/documentLoaders/xhr')
-
-  return loader as () => DocumentLoader
-}
-
-export const documentLoaderNode = () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const loader = require('@digitalcredentials/jsonld/lib/documentLoaders/node')
-
-  return loader as () => DocumentLoader
-}
-
 export default jsonld as unknown as JsonLd
