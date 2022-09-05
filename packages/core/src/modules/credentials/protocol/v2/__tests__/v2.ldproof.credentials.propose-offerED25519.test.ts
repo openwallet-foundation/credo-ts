@@ -1,8 +1,8 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type { SignCredentialOptionsRFC0593 } from '../../../../vc/models/W3cCredentialServiceOptions'
 import type { AcceptProposalOptions, AcceptRequestOptions } from '../../../CredentialsApiOptions'
+import type { SignCredentialOptionsRFC0593 } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'

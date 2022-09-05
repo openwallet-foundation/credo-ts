@@ -329,7 +329,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
 
     if (Array.isArray(credential.proof)) {
-      // const proofArray = credential.proof.map((proof) => new LinkedDataProof(proof))
       // question: what do we compare here, each element of the proof array with the request???
     } else {
       // do checks here
@@ -414,6 +413,25 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // we requested. We can take an example of the ACA-Py implementation:
     // https://github.com/hyperledger/aries-cloudagent-python/blob/main/aries_cloudagent/protocols/issue_credential/v2_0/formats/ld_proof/handler.py#L492
     // TODO don't call areCredentialsEqual, call compareStuff() as per aca-py
-    return true
+
+    const credentialAsJson = credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
+    const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
+
+    const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+    const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
+
+    if (Array.isArray(credential.proof)) {
+      // question: what do we compare here, each element of the proof array with the request???
+      return true
+    } else {
+      // do checks here
+      try {
+        this.compareCredentialSubject(credential, request.credential)
+        this.compareProofs(credential.proof, request.options)
+        return true
+      } catch (error) {
+        return false
+      }
+    }
   }
 }
