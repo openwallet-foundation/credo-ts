@@ -160,7 +160,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     // FIXME: validating an interface doesn't work.
-    MessageValidator.validateSync(credentialOfferJson)
+    const jsonLdCredential = new JsonLdCredential(credentialOfferJson)
+    MessageValidator.validateSync(jsonLdCredential)
   }
 
   public async acceptOffer(
@@ -205,7 +206,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     // FIXME: validating an interface doesn't work.
-    MessageValidator.validateSync(jsonLdFormat)
+    const jsonLdCredential = new JsonLdCredential(jsonLdFormat)
+    MessageValidator.validateSync(jsonLdCredential)
 
     // FIXME: SignCredentialOptions doesn't follow RFC0593
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
@@ -222,7 +224,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     // FIXME: validating an interface doesn't work.
-    MessageValidator.validateSync(requestJson)
+    const jsonLdCredential = new JsonLdCredential(requestJson)
+    MessageValidator.validateSync(jsonLdCredential)
   }
 
   public async acceptRequest(
