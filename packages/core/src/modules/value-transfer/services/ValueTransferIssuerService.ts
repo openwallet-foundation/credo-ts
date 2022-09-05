@@ -60,7 +60,7 @@ export class ValueTransferIssuerService {
    *
    * @returns Mint message for specified Witness DID
    */
-  public async mintCash(amount: number, witness: string, timeoutMs = 20000): Promise<void> {
+  public async mintCash(amount: number, witness?: string, waitForAck = true, timeoutMs = 20000): Promise<void> {
     const id = v4()
     this.config.logger.info(`> Issuer: mint cash with id ${id}`)
 
@@ -70,6 +70,11 @@ export class ValueTransferIssuerService {
     }
     if (this.config.valueTransferConfig?.witness) {
       throw new AriesFrameworkError(`Witness cannot add notes`)
+    }
+
+    const witnessDid = witness || this.config.valueTransferWitnessDid
+    if (!witnessDid) {
+      throw new AriesFrameworkError(`Witness DID must be set`)
     }
 
     // no notes to add
@@ -85,18 +90,30 @@ export class ValueTransferIssuerService {
 
     const message = new MintMessage({
       from: publicDid.did,
-      to: witness,
+      to: witnessDid,
       body: { startHash: transactionRecord.start, endHash: transactionRecord.end },
+      please_ack: waitForAck ? [] : undefined,
     })
 
     try {
+      if (!waitForAck) {
+        // commit state without awaiting witness
+        this.config.logger.info(`> Issuer: commit state without awaiting witness response for mint cash with id ${id}`)
+
+        const state = await this.valueTransferStateService.getPartyState()
+        if (state.proposedNextWallet) {
+          await this.valueTransfer.giver().commitTransaction()
+        }
+      }
+
       // Send mint message to Witness to update state
       await this.valueTransferService.sendMessage(message)
 
-      this.config.logger.info(`> Issuer: await witness response for mint cash with id ${id}`)
-
-      // await acknowledge from witness
-      await this.awaitCashMinted(timeoutMs)
+      if (waitForAck) {
+        this.config.logger.info(`> Issuer: await witness response for mint cash with id ${id}`)
+        // await acknowledge from witness
+        await this.awaitCashMinted(timeoutMs)
+      }
 
       this.config.logger.info(`> Issuer: mint cash with id ${id} completed!`)
     } catch (e) {

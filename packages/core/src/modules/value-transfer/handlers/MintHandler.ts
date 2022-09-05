@@ -20,6 +20,8 @@ export class MintHandler implements Handler<typeof DIDCommV2Message> {
 
   public async handle(messageContext: HandlerInboundMessage<MintHandler>) {
     const message = await this.valueTransferWitnessService.processCashMint(messageContext)
-    return this.valueTransferService.sendMessage(message)
+    if (messageContext.message.please_ack) {
+      return this.valueTransferService.sendMessage(message)
+    }
   }
 }

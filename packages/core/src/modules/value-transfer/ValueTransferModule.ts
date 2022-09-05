@@ -264,12 +264,16 @@ export class ValueTransferModule {
 
   /**
    * Mint cash by generating Verifiable Notes and sending mint message (state update) to Witness
-   * @param amount Amount of cash to mint
-   * @param witness DID of Witness to send mint message
+   * @param params
    */
-  public async mintCash(amount: number, witness: string, timeoutMs?: number): Promise<void> {
+  public async mintCash(params: {
+    amount: number
+    witness?: string
+    waitForAck?: boolean
+    timeoutMs?: number
+  }): Promise<void> {
     // Mint Verifiable Notes
-    await this.valueTransferIssuerService.mintCash(amount, witness, timeoutMs)
+    await this.valueTransferIssuerService.mintCash(params.amount, params.witness, params.waitForAck, params.timeoutMs)
   }
 
   /**

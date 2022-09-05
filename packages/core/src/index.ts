@@ -43,6 +43,7 @@ export * from './utils/JsonTransformer'
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
+export * from './crypto'
 
 const utils = {
   uuid,

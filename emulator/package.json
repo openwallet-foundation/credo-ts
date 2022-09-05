@@ -1,0 +1,23 @@
+{
+  "name": "emulator",
+  "version": "1.0.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "demo/"
+  },
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "ts-node src/main.ts",
+    "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"
+  },
+  "devDependencies": {
+    "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core",
+    "@aries-framework/node": "npm:@sicpa-dlab/aries-framework-node",
+    "@sicpa-dlab/value-transfer-protocol-ts": "0.0.42",
+    "clear": "^0.1.0",
+    "@stablelib/ed25519": "^1.0.3",
+    "ts-node": "^10.4.0"
+  }
+}
