@@ -1,7 +1,10 @@
 import type { AgentContext } from '../../../agent'
-import type { SignCredentialOptionsRFC0593 } from '../../vc/models/W3cCredentialServiceOptions'
 import type { CredentialFormatService } from '../formats'
-import type { JsonLdAcceptRequestOptions, JsonLdCredentialFormat } from '../formats/jsonld/JsonLdCredentialFormat'
+import type {
+  JsonLdAcceptRequestOptions,
+  JsonLdCredentialFormat,
+  SignCredentialOptionsRFC0593,
+} from '../formats/jsonld/JsonLdCredentialFormat'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
 import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
@@ -13,6 +16,7 @@ import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { DidResolverService } from '../../dids/services/DidResolverService'
 import { W3cCredentialService } from '../../vc'
 import { Ed25519Signature2018Fixtures } from '../../vc/__tests__/fixtures'
+import { CREDENTIALS_CONTEXT_V1_URL } from '../../vc/constants'
 import { W3cVerifiableCredential } from '../../vc/models'
 import { W3cCredential } from '../../vc/models/credential/W3cCredential'
 import { W3cCredentialRecord } from '../../vc/models/credential/W3cCredentialRecord'
@@ -106,6 +110,7 @@ const credentialAttachment = new Attachment({
     base64: JsonEncoder.toBase64(vc),
   }),
 })
+
 // A record is deserialized to JSON when it's stored into the storage. We want to simulate this behaviour for `offer`
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockCredentialRecord = ({
@@ -150,34 +155,17 @@ const mockCredentialRecord = ({
 
   return credentialRecord
 }
-
 const inputDoc = {
-  '@context': [
-    'https://www.w3.org/2018/credentials/v1',
-    'https://w3id.org/citizenship/v1',
-    'https://w3id.org/security/bbs/v1',
-  ],
-  id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
-  type: ['VerifiableCredential', 'PermanentResidentCard'],
+  '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
+  type: ['VerifiableCredential', 'UniversityDegreeCredential'],
   issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-  identifier: '83627465',
-  name: 'Permanent Resident Card',
-  description: 'Government of Example Permanent Resident Card.',
-  issuanceDate: '2019-12-03T12:19:52Z',
-  expirationDate: '2029-12-03T12:19:52Z',
+  issuanceDate: '2017-10-22T12:23:48Z',
   credentialSubject: {
-    id: 'did:example:b34ca6cd37bbf23',
-    type: ['PermanentResident', 'Person'],
-    givenName: 'JOHN',
-    familyName: 'SMITH',
-    gender: 'Male',
-    image: 'data:image/png;base64,iVBORw0KGgokJggg==',
-    residentSince: '2015-01-01',
-    lprCategory: 'C09',
-    lprNumber: '999-999-999',
-    commuterClassification: 'C1',
-    birthCountry: 'Bahamas',
-    birthDate: '1958-07-17',
+    degree: {
+      type: 'BachelorDegree',
+      name: 'Bachelor of Science and Arts',
+    },
+    alumniOf: 'oops',
   },
 }
 const verificationMethod = `8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K#8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K`
@@ -230,7 +218,7 @@ describe('JsonLd CredentialFormatService', () => {
         byteCount: undefined,
         data: {
           base64:
-            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwib3B0aW9ucyI6eyJwcm9vZlB1cnBvc2UiOiJhc3NlcnRpb25NZXRob2QiLCJwcm9vZlR5cGUiOiJFZDI1NTE5U2lnbmF0dXJlMjAxOCJ9fQ==',
+            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy9leGFtcGxlcy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiVW5pdmVyc2l0eURlZ3JlZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpc3N1YW5jZURhdGUiOiIyMDE3LTEwLTIyVDEyOjIzOjQ4WiIsImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImRlZ3JlZSI6eyJ0eXBlIjoiQmFjaGVsb3JEZWdyZWUiLCJuYW1lIjoiQmFjaGVsb3Igb2YgU2NpZW5jZSBhbmQgQXJ0cyJ9LCJhbHVtbmlPZiI6Im9vcHMifX0sIm9wdGlvbnMiOnsicHJvb2ZQdXJwb3NlIjoiYXNzZXJ0aW9uTWV0aG9kIiwicHJvb2ZUeXBlIjoiRWQyNTUxOVNpZ25hdHVyZTIwMTgifX0=',
           json: undefined,
           links: undefined,
           jws: undefined,
@@ -263,7 +251,7 @@ describe('JsonLd CredentialFormatService', () => {
         byteCount: undefined,
         data: {
           base64:
-            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3czaWQub3JnL2NpdGl6ZW5zaGlwL3YxIiwiaHR0cHM6Ly93M2lkLm9yZy9zZWN1cml0eS9iYnMvdjEiXSwiaWQiOiJodHRwczovL2lzc3Vlci5vaWRwLnVzY2lzLmdvdi9jcmVkZW50aWFscy84MzYyNzQ2NSIsInR5cGUiOlsiVmVyaWZpYWJsZUNyZWRlbnRpYWwiLCJQZXJtYW5lbnRSZXNpZGVudENhcmQiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpZGVudGlmaWVyIjoiODM2Mjc0NjUiLCJuYW1lIjoiUGVybWFuZW50IFJlc2lkZW50IENhcmQiLCJkZXNjcmlwdGlvbiI6IkdvdmVybm1lbnQgb2YgRXhhbXBsZSBQZXJtYW5lbnQgUmVzaWRlbnQgQ2FyZC4iLCJpc3N1YW5jZURhdGUiOiIyMDE5LTEyLTAzVDEyOjE5OjUyWiIsImV4cGlyYXRpb25EYXRlIjoiMjAyOS0xMi0wM1QxMjoxOTo1MloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpleGFtcGxlOmIzNGNhNmNkMzdiYmYyMyIsInR5cGUiOlsiUGVybWFuZW50UmVzaWRlbnQiLCJQZXJzb24iXSwiZ2l2ZW5OYW1lIjoiSk9ITiIsImZhbWlseU5hbWUiOiJTTUlUSCIsImdlbmRlciI6Ik1hbGUiLCJpbWFnZSI6ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb2tKZ2dnPT0iLCJyZXNpZGVudFNpbmNlIjoiMjAxNS0wMS0wMSIsImxwckNhdGVnb3J5IjoiQzA5IiwibHByTnVtYmVyIjoiOTk5LTk5OS05OTkiLCJjb21tdXRlckNsYXNzaWZpY2F0aW9uIjoiQzEiLCJiaXJ0aENvdW50cnkiOiJCYWhhbWFzIiwiYmlydGhEYXRlIjoiMTk1OC0wNy0xNyJ9fSwib3B0aW9ucyI6eyJwcm9vZlB1cnBvc2UiOiJhc3NlcnRpb25NZXRob2QiLCJwcm9vZlR5cGUiOiJFZDI1NTE5U2lnbmF0dXJlMjAxOCJ9fQ==',
+            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy9leGFtcGxlcy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiVW5pdmVyc2l0eURlZ3JlZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpc3N1YW5jZURhdGUiOiIyMDE3LTEwLTIyVDEyOjIzOjQ4WiIsImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImRlZ3JlZSI6eyJ0eXBlIjoiQmFjaGVsb3JEZWdyZWUiLCJuYW1lIjoiQmFjaGVsb3Igb2YgU2NpZW5jZSBhbmQgQXJ0cyJ9LCJhbHVtbmlPZiI6Im9vcHMifX0sIm9wdGlvbnMiOnsicHJvb2ZQdXJwb3NlIjoiYXNzZXJ0aW9uTWV0aG9kIiwicHJvb2ZUeXBlIjoiRWQyNTUxOVNpZ25hdHVyZTIwMTgifX0=',
           json: undefined,
           links: undefined,
           jws: undefined,
@@ -387,11 +375,19 @@ describe('JsonLd CredentialFormatService', () => {
   })
 
   describe('Process Credential', () => {
-    test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
-      const credentialRecord = mockCredentialRecord({
-        state: CredentialState.RequestSent,
-      })
-      const w3c = new W3cCredentialRecord({
+    const credentialRecord = mockCredentialRecord({
+      state: CredentialState.RequestSent,
+    })
+    let w3c: W3cCredentialRecord
+    let signCredentialOptionsWithProperty: SignCredentialOptionsRFC0593
+    beforeEach(async () => {
+      signCredentialOptionsWithProperty = signCredentialOptions
+      signCredentialOptionsWithProperty.options = {
+        proofPurpose: 'assertionMethod',
+        proofType: 'Ed25519Signature2018',
+      }
+
+      w3c = new W3cCredentialRecord({
         id: 'foo',
         createdAt: new Date(),
         credential: vc,
@@ -402,14 +398,15 @@ describe('JsonLd CredentialFormatService', () => {
           ],
         },
       })
-
+    })
+    test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
       // given
       mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
 
       // when
       await jsonldFormatService.processCredential(agentContext, {
         attachment: credentialAttachment,
-        requestAttachment: credentialAttachment,
+        requestAttachment: requestAttachment,
         credentialRecord,
       })
 
@@ -418,6 +415,123 @@ describe('JsonLd CredentialFormatService', () => {
       expect(credentialRecord.credentials.length).toBe(1)
       expect(credentialRecord.credentials[0].credentialRecordType).toBe('w3c')
       expect(credentialRecord.credentials[0].credentialRecordId).toBe('foo')
+    })
+
+    test('throws error if credential subject not equal to request subject', async () => {
+      const vcJson = {
+        ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+        credentialSubject: {
+          ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED.credentialSubject,
+          // missing alumni
+        },
+      }
+
+      const vc = JsonTransformer.fromJSON(vcJson, W3cVerifiableCredential)
+      const credentialAttachment = new Attachment({
+        mimeType: 'application/json',
+        data: new AttachmentData({
+          base64: JsonEncoder.toBase64(vc),
+        }),
+      })
+
+      // given
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
+
+      // when/then
+      await expect(
+        jsonldFormatService.processCredential(agentContext, {
+          attachment: credentialAttachment,
+          requestAttachment: requestAttachment,
+          credentialRecord,
+        })
+      ).rejects.toThrow('Received credential subject does not match subject from credential request')
+    })
+
+    test('throws error if credential domain not equal to request domain', async () => {
+      signCredentialOptionsWithProperty.options.domain = 'https://test.com'
+      const requestAttachmentWithDomain = new Attachment({
+        mimeType: 'application/json',
+        data: new AttachmentData({
+          base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
+        }),
+      })
+      // given
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
+
+      // when/then
+      await expect(
+        jsonldFormatService.processCredential(agentContext, {
+          attachment: credentialAttachment,
+          requestAttachment: requestAttachmentWithDomain,
+          credentialRecord,
+        })
+      ).rejects.toThrow('Received credential proof domain does not match domain from credential request')
+    })
+
+    test('throws error if credential challenge not equal to request challenge', async () => {
+      signCredentialOptionsWithProperty.options.challenge = '7bf32d0b-39d4-41f3-96b6-45de52988e4c'
+      const requestAttachmentWithChallenge = new Attachment({
+        mimeType: 'application/json',
+        data: new AttachmentData({
+          base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
+        }),
+      })
+
+      // given
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
+
+      // when/then
+      await expect(
+        jsonldFormatService.processCredential(agentContext, {
+          attachment: credentialAttachment,
+          requestAttachment: requestAttachmentWithChallenge,
+          credentialRecord,
+        })
+      ).rejects.toThrow('Received credential proof challenge does not match challenge from credential request')
+    })
+
+    test('throws error if credential proof type not equal to request proof type', async () => {
+      signCredentialOptionsWithProperty.options.proofType = 'Ed25519Signature2016'
+      const requestAttachmentWithProofType = new Attachment({
+        mimeType: 'application/json',
+        data: new AttachmentData({
+          base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
+        }),
+      })
+
+      // given
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
+
+      // when/then
+      await expect(
+        jsonldFormatService.processCredential(agentContext, {
+          attachment: credentialAttachment,
+          requestAttachment: requestAttachmentWithProofType,
+          credentialRecord,
+        })
+      ).rejects.toThrow('Received credential proof type does not match proof type from credential request')
+    })
+
+    test('throws error if credential proof purpose not equal to request proof purpose', async () => {
+      signCredentialOptionsWithProperty.options.proofPurpose = 'authentication'
+      const requestAttachmentWithProofPurpose = new Attachment({
+        mimeType: 'application/json',
+        data: new AttachmentData({
+          base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
+        }),
+      })
+
+      // given
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
+
+      // when/then
+      await expect(
+        jsonldFormatService.processCredential(agentContext, {
+          attachment: credentialAttachment,
+          requestAttachment: requestAttachmentWithProofPurpose,
+          credentialRecord,
+        })
+      ).rejects.toThrow('Received credential proof purpose does not match proof purpose from credential request')
     })
 
     test('are credentials equal', async () => {

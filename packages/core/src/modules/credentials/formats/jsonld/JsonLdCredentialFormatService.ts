@@ -9,7 +9,6 @@ import type {
 } from '..'
 import type { AgentContext } from '../../../../agent'
 import type { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
-import type { SignCredentialOptionsRFC0593 } from '../../../vc/models/W3cCredentialServiceOptions'
 import type {
   FormatAcceptRequestOptions,
   FormatAutoRespondCredentialOptions,
@@ -20,7 +19,7 @@ import type {
   FormatCreateRequestOptions,
   FormatProcessCredentialOptions,
 } from '../CredentialFormatServiceOptions'
-import type { JsonLdCredentialFormat } from './JsonLdCredentialFormat'
+import type { JsonLdCredentialFormat, SignCredentialOptionsRFC0593 } from './JsonLdCredentialFormat'
 import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
 
 import { injectable } from 'tsyringe'
@@ -28,6 +27,7 @@ import { injectable } from 'tsyringe'
 import { AriesFrameworkError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
+import { deepEqual } from '../../../../utils/objEqual'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
 import { proofTypeKeyTypeMapping } from '../../../dids/domain/key-type/keyDidMapping'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
@@ -322,23 +322,20 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // FIXME: we should do a lot of checks to verify if the credential we received is actually the credential
     // we requested. We can take an example of the ACA-Py implementation:
     // https://github.com/hyperledger/aries-cloudagent-python/blob/main/aries_cloudagent/protocols/issue_credential/v2_0/formats/ld_proof/handler.py#L492
-    // if (!this.areCredentialsEqual(attachment, requestAttachment)) {
-    //   throw new AriesFrameworkError(
-    //     `Received credential for credential record ${credentialRecord.id} does not match requested credential`
-    //   )
-    // }
 
     // compare stuff in the proof object of the credential and request...based on aca-py
 
-    // const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-    // const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
-    // if (Array.isArray(credential.proof)) {
-    //   const proofArray = credential.proof.map((proof) => new LinkedDataProof(proof))
-    // } else {
-    //   const credProof = new LinkedDataProof(credential.proof)
+    const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+    const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
 
-    //   this.compareStuff(credProof, request.options)
-    // }
+    if (Array.isArray(credential.proof)) {
+      // const proofArray = credential.proof.map((proof) => new LinkedDataProof(proof))
+      // question: what do we compare here, each element of the proof array with the request???
+    } else {
+      // do checks here
+      this.compareCredentialSubject(credential, request.credential)
+      this.compareProofs(credential.proof, request.options)
+    }
 
     const verifiableCredential = await this.w3cCredentialService.storeCredential(agentContext, {
       credential: credential,
@@ -350,9 +347,31 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     })
   }
 
-  private compareStuff(credentialProof: LinkedDataProof, requestProof: JsonLdOptionsRFC0593): void {
+  private compareCredentialSubject(credential: W3cVerifiableCredential, request: W3cCredential): void {
+    if (!deepEqual(credential.credentialSubject, request.credentialSubject)) {
+      throw new AriesFrameworkError('Received credential subject does not match subject from credential request')
+    }
+  }
+
+  private compareProofs(credentialProof: LinkedDataProof, requestProof: JsonLdOptionsRFC0593): void {
     if (credentialProof.domain !== requestProof.domain) {
-      throw Error('Received credential proof.domain does not match domain from credential request')
+      throw new AriesFrameworkError('Received credential proof domain does not match domain from credential request')
+    }
+
+    if (credentialProof.challenge !== requestProof.challenge) {
+      throw new AriesFrameworkError(
+        'Received credential proof challenge does not match challenge from credential request'
+      )
+    }
+
+    if (credentialProof.type !== requestProof.proofType) {
+      throw new AriesFrameworkError('Received credential proof type does not match proof type from credential request')
+    }
+
+    if (credentialProof.proofPurpose !== requestProof.proofPurpose) {
+      throw new AriesFrameworkError(
+        'Received credential proof purpose does not match proof purpose from credential request'
+      )
     }
   }
 

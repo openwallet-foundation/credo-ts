@@ -1,6 +1,5 @@
 import type { JsonObject } from '../../../types'
 import type { SingleOrArray } from '../../../utils/type'
-import type { JsonLdOptionsRFC0593 } from '../../credentials/formats/jsonld/JsonLdOptionsRFC0593'
 import type { ProofPurpose } from '../proof-purposes/ProofPurpose'
 import type { W3cCredential } from './credential/W3cCredential'
 import type { W3cVerifiableCredential } from './credential/W3cVerifiableCredential'
@@ -18,13 +17,6 @@ export interface SignCredentialOptions {
   credentialStatus?: {
     type: string
   }
-}
-
-// feel free to rename this, the RFC suffix is useful during dev
-
-export interface SignCredentialOptionsRFC0593 {
-  credential: W3cCredential
-  options: JsonLdOptionsRFC0593
 }
 
 export interface VerifyCredentialOptions {

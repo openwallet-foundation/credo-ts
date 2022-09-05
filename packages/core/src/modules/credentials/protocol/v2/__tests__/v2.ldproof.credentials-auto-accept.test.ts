@@ -1,10 +1,12 @@
 import type { ProposeCredentialOptions } from '../../..'
 import type { Agent } from '../../../../../agent/Agent'
-import type { SignCredentialOptionsRFC0593 } from '../../../../../modules/vc/models/W3cCredentialServiceOptions'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
 import type { AcceptOfferOptions, AcceptProposalOptions } from '../../../CredentialsApiOptions'
-import type { JsonLdCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type {
+  JsonLdCredentialFormat,
+  SignCredentialOptionsRFC0593,
+} from '../../../formats/jsonld/JsonLdCredentialFormat'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
