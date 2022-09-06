@@ -471,7 +471,7 @@ export class IndyLedgerService {
 
       // Throw an error if the pool doesn't have the specified version and acceptance mechanism
       if (
-        authorAgreement.acceptanceMechanisms.version !== taa.version ||
+        authorAgreement.version !== taa.version ||
         !(taa.acceptanceMechanism in authorAgreement.acceptanceMechanisms.aml)
       ) {
         // Throw an error with a helpful message
@@ -479,7 +479,7 @@ export class IndyLedgerService {
           taa.acceptanceMechanism
         )} and version ${JSON.stringify(taa.version)} in pool.\n Found ${JSON.stringify(
           Object.keys(authorAgreement.acceptanceMechanisms.aml)
-        )} and version ${authorAgreement.acceptanceMechanisms.version} in pool.`
+        )} and version ${authorAgreement.version} in pool.`
         throw new LedgerError(errMessage)
       }
 
