@@ -8,7 +8,7 @@ import { Equals, IsArray, IsInstance, IsNumber, IsOptional, IsString, ValidateNe
 import { DIDCommV2Message } from '../../../agent/didcomm'
 import { JsonTransformer } from '../../../utils'
 
-export const DEFAULT_TRANSACTION_UPDATE_ATTACHMENT_ID = 'application/wgp-tu'
+export const TRANSACTION_UPDATES_MEDIA_TYPE = 'application/wgp-tu'
 
 export type WitnessGossipMessageBodyParams = {
   tell?: TellItem
@@ -53,16 +53,16 @@ export class WitnessGossipMessageBody {
   }
 }
 
-export type TransactionUpdateAttachmentParams = {
+export type TransactionUpdatesAttachmentParams = {
   transactionUpdates: Array<TransactionUpdate>
 }
 
-export class TransactionUpdateAttachment {
+export class TransactionUpdatesAttachment {
   @Type(() => TransactionUpdate)
   @IsArray()
   public transactionUpdates!: Array<TransactionUpdate>
 
-  public constructor(options?: TransactionUpdateAttachmentParams) {
+  public constructor(options?: TransactionUpdatesAttachmentParams) {
     if (options) {
       this.transactionUpdates = options.transactionUpdates
     }
@@ -87,14 +87,16 @@ export class WitnessGossipMessage extends DIDCommV2Message {
     wid: string,
     transactionUpdates: TransactionUpdate[]
   ): Attachment {
-    const attachment = new TransactionUpdateAttachment({ transactionUpdates })
-    return WitnessGossipMessage.createJSONAttachment(wid, JsonTransformer.toJSON(attachment))
+    const attachedMessage = new TransactionUpdatesAttachment({ transactionUpdates })
+    const attachment = WitnessGossipMessage.createJSONAttachment(wid, JsonTransformer.toJSON(attachedMessage))
+    attachment.media_type = TRANSACTION_UPDATES_MEDIA_TYPE
+    return attachment
   }
 
-  public transactionUpdates(wid?: string): TransactionUpdate[] | undefined {
-    const id = wid || DEFAULT_TRANSACTION_UPDATE_ATTACHMENT_ID
-    const attachment = this.attachedMessage(id, TransactionUpdateAttachment)
-    return attachment?.transactionUpdates
+  public transactionUpdates(wid: string): TransactionUpdate[] | undefined {
+    const id = wid
+    const attachedMessage = this.attachedMessage(id, TransactionUpdatesAttachment)
+    return attachedMessage?.transactionUpdates
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -494,7 +494,7 @@ export class ValueTransferWitnessService {
       return this.witness.createReceipt(record.receipt, valueTransferDelta)
     }
 
-    const { error, receipt, getterDelta, giverDelta } = await this.gossipService.doSafeOperationWithWitnessSate(
+    const { error, receipt, getterDelta, giverDelta } = await this.gossipService.doSafeOperationWithWitnessState(
       operation
     )
     if (error || !receipt || !getterDelta || !giverDelta) {
@@ -603,13 +603,13 @@ export class ValueTransferWitnessService {
 
     const witnessState = await this.valueTransferStateService.getWitnessState()
 
-    witnessState.applyPartyStateTransitions([transactionRecord])
+    witnessState.settleTransaction([transactionRecord])
 
     const operation = async () => {
       return this.valueTransferStateService.storeWitnessState(witnessState)
     }
 
-    await this.gossipService.doSafeOperationWithWitnessSate(operation)
+    await this.gossipService.doSafeOperationWithWitnessState(operation)
 
     const message = new MintResponseMessage({
       from: witnessState.info.publicDid,

@@ -90,7 +90,7 @@ export class AgentConfig {
   }
 
   public get witnessTockTime() {
-    return this.initConfig.valueTransferConfig?.witness?.tockTime || 1000 * 5
+    return this.initConfig.valueTransferConfig?.witness?.tockTime || 1000 * 10
   }
 
   public get witnessCleanupTime() {

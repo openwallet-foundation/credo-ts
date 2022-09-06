@@ -10,7 +10,7 @@ import type {
 } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { interval } from 'rxjs'
+import { interval, timer } from 'rxjs'
 import { takeUntil } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -23,6 +23,8 @@ import { WitnessStateRepository } from '../../value-transfer/repository/WitnessS
 import { ValueTransferCryptoService } from '../../value-transfer/services/ValueTransferCryptoService'
 import { ValueTransferStateService } from '../../value-transfer/services/ValueTransferStateService'
 import { WitnessGossipMessage } from '../messages'
+
+const milleiumMs = Date.parse('2000-01-01T00:00:00.000Z')
 
 @scoped(Lifecycle.ContainerScoped)
 export class GossipService {
@@ -62,11 +64,15 @@ export class GossipService {
 
   public async startGossiping(): Promise<void> {
     //init worker to propagate transaction updates
-    interval(this.config.witnessTockTime)
+    const nowMs = Date.now()
+    const startTock = Math.ceil((nowMs - milleiumMs) / this.config.witnessTockTime)
+    const startTockMs = milleiumMs + startTock * this.config.witnessTockTime
+
+    timer(new Date(startTockMs), this.config.witnessTockTime)
       .pipe(takeUntil(this.config.stop$))
-      .subscribe(async () => {
+      .subscribe(async (value: number) => {
         try {
-          await this.gossipSignedTransactions()
+          await this.gossipSignedTransactions(startTock + value)
         } catch (error) {
           this.config.logger.info(`Witness: Unexpected error happened while gossiping transaction. Error: ${error}`)
         }
@@ -77,7 +83,7 @@ export class GossipService {
       .pipe(takeUntil(this.config.stop$))
       .subscribe(async () => {
         try {
-          await this.doSafeOperationWithWitnessSate(this.cleanupState)
+          await this.doSafeOperationWithWitnessState(this.cleanupState)
         } catch (error) {
           this.config.logger.info(`Witness: Unexpected error happened while cleaning state. Error: ${error}`)
         }
@@ -131,15 +137,15 @@ export class GossipService {
   /**
    * Gossip signed transaction updates to all known knownWitnesses
    */
-  private async gossipSignedTransactions(): Promise<void> {
+  private async gossipSignedTransactions(tim: number): Promise<void> {
     this.config.logger.info(`> Witness: gossip transaction`)
 
     const state = await this.valueTransferStateService.getWitnessStateRecord()
 
     const operation = async () => {
-      return this.witness.prepareTransactionUpdate()
+      return this.witness.prepareTransactionUpdate(tim)
     }
-    const { transactionUpdate, error } = await this.doSafeOperationWithWitnessSate(operation)
+    const { transactionUpdate, error } = await this.doSafeOperationWithWitnessState(operation)
     if (error) {
       this.config.logger.info(`  < Witness: Unable to prepare transaction update. Error: ${error}`)
       return
@@ -202,7 +208,7 @@ export class GossipService {
         })
       }
 
-      await this.resendTransactionUpdateIfNeed(state, witnessGossipMessage)
+      await this.resendTransactionUpdateIfNeeded(state, witnessGossipMessage)
     }
 
     const ask = witnessGossipMessage.body.ask
@@ -217,15 +223,21 @@ export class GossipService {
     this.config.logger.info(`       Register state hashes : ${stateAfter.witnessState.partyStateHashes.size}`)
     this.config.logger.info(`       Register state hashes : ${stateAfter.witnessState.partyStateHashes}`)
     this.config.logger.info(
-      `       Register gap state hashes : ${stateAfter.witnessState.partyStateGapsTracker.length}`
+      `       Register gap state hashes : ${stateAfter.witnessState.partyStateGappedUpdates.length}`
     )
   }
 
   private async processReceivedTransactionUpdates(witnessGossipMessage: WitnessGossipMessage): Promise<void> {
-    const transactionUpdates = witnessGossipMessage.transactionUpdates(witnessGossipMessage.body?.tell?.id)
-
     this.config.logger.info('> Witness: process transactions')
     this.config.logger.info(`   Sender: ${witnessGossipMessage.from}`)
+
+    if (!witnessGossipMessage.body?.tell) {
+      this.config.logger.info('   Witness gossip message body does not contain tell field')
+      return
+    }
+
+    const transactionUpdates = witnessGossipMessage.transactionUpdates(witnessGossipMessage.body?.tell?.id)
+
     this.config.logger.info(`   Number of transactions: ${transactionUpdates?.length}`)
 
     // received Transaction updates which need to be applied
@@ -238,14 +250,14 @@ export class GossipService {
     const operation = async () => {
       return this.witness.processTransactionUpdates(transactionUpdates)
     }
-    await this.doSafeOperationWithWitnessSate(operation)
+    await this.doSafeOperationWithWitnessState(operation)
 
     this.config.logger.info('< Witness: process transactions completed')
     return
   }
 
   private async processReceivedAskForTransactionUpdates(witnessGossipMessage: WitnessGossipMessage): Promise<void> {
-    const state = await this.doSafeOperationWithWitnessSate(this.valueTransferStateService.getWitnessStateRecord)
+    const state = await this.doSafeOperationWithWitnessState(this.valueTransferStateService.getWitnessStateRecord)
 
     const ask = witnessGossipMessage.body.ask
     if (!ask) return
@@ -270,28 +282,29 @@ export class GossipService {
     }
 
     // filter all transaction by requested tock
-    // ISSUE: tock is not time. each witness may have different tocks
-    // How properly request transactions??
     const transactionUpdates = state.witnessState.transactionUpdatesHistory
-      .filter((item: TransactionUpdateHistoryItem) => item.transactionUpdate.tim > ask.since)
       .map((item: TransactionUpdateHistoryItem) => item.transactionUpdate)
+      .filter((update: TransactionUpdate) => update.tim > ask.since)
 
     this.config.logger.info(`   Number of transactions: ${transactionUpdates.length}`)
 
-    let transactionUpdateForOtherWitnesses: TransactionUpdate | undefined = undefined
+    // TODO: The commented out code below should be removed because witness must not issue and gossip
+    // a transaction update for a currently running, not yet complete tock
 
-    if (state.witnessState.pendingTransactionRecords.length) {
-      // there is signed receipt which were not included into tock yet
-      // we need to generate new tock and gossip it
-      this.config.logger.info(`  Witness: There is pending transactions: prepare transaction update and gossip it`)
+    // let transactionUpdateForOtherWitnesses: TransactionUpdate | undefined = undefined
 
-      const { transactionUpdate, error } = await this.witness.prepareTransactionUpdate()
-      if (transactionUpdate && !error && transactionUpdate.num) {
-        // include transaction update into response for witness - requester
-        transactionUpdates.push(transactionUpdate)
-        transactionUpdateForOtherWitnesses = transactionUpdate
-      }
-    }
+    // if (state.witnessState.pendingTransactionRecords.length) {
+    //   // there is signed receipt which were not included into tock yet
+    //   // we need to generate new tock and gossip it
+    //   this.config.logger.info(`  Witness: There is pending transactions: prepare transaction update and gossip it`)
+
+    //   const { transactionUpdate, error } = await this.witness.prepareTransactionUpdate(tim)
+    //   if (transactionUpdate && !error && transactionUpdate.num) {
+    //     // include transaction update into response for witness - requester
+    //     transactionUpdates.push(transactionUpdate)
+    //     transactionUpdateForOtherWitnesses = transactionUpdate
+    //   }
+    // }
 
     const attachments = [WitnessGossipMessage.createTransactionUpdateJSONAttachment(state.wid, transactionUpdates)]
 
@@ -307,10 +320,10 @@ export class GossipService {
 
     await this.sendMessageToWitness(message)
 
-    // gossip transaction update to other witnesses as well
-    if (transactionUpdateForOtherWitnesses) {
-      await this.gossipTransactionUpdate(state, transactionUpdateForOtherWitnesses, [witnessGossipMessage.from])
-    }
+    // // gossip transaction update to other witnesses as well
+    // if (transactionUpdateForOtherWitnesses) {
+    //   await this.gossipTransactionUpdate(state, transactionUpdateForOtherWitnesses, [witnessGossipMessage.from])
+    // }
 
     this.config.logger.info('< Witness: process ask for transactions completed')
   }
@@ -338,35 +351,34 @@ export class GossipService {
 
   private async gossipTransactionUpdate(
     state: WitnessStateRecord,
-    transactionUpdate: TransactionUpdate,
-    exclude: string[] = []
+    transactionUpdate: TransactionUpdate
   ): Promise<void> {
     // prepare message and send to all known knownWitnesses
     for (const witness of state.knownWitnesses) {
-      if (!exclude.includes(witness.gossipDid)) {
-        const body = { tell: { id: state.witnessState.info.gossipDid } }
-        const attachments = [
-          WitnessGossipMessage.createTransactionUpdateJSONAttachment(state.witnessState.info.gossipDid, [
-            transactionUpdate,
-          ]),
-        ]
-        const message = new WitnessGossipMessage({
-          from: state.gossipDid,
-          to: witness.gossipDid,
-          body,
-          attachments,
-        })
-        await this.sendMessageToWitness(message)
-      }
+      const body = { tell: { id: state.witnessState.info.wid } }
+      const attachments = [
+        WitnessGossipMessage.createTransactionUpdateJSONAttachment(state.witnessState.info.wid, [transactionUpdate]),
+      ]
+      const message = new WitnessGossipMessage({
+        from: state.gossipDid,
+        to: witness.gossipDid,
+        body,
+        attachments,
+      })
+      await this.sendMessageToWitness(message)
     }
   }
 
-  private async resendTransactionUpdateIfNeed(
+  private async resendTransactionUpdateIfNeeded(
     state: WitnessStateRecord,
     originalMessage: WitnessGossipMessage
   ): Promise<void> {
-    // 1. message received from original initiator - not re-sent from other witness
-    if (originalMessage.from !== originalMessage.body.tell?.id) return
+    const initiatorDid = state.witnessState.mappingTable.find(
+      (witness) => witness.wid === originalMessage.body.tell?.id
+    )?.gossipDid
+
+    // 1. message received from initiator - not re-sent from other witness
+    if (originalMessage.from !== initiatorDid) return
 
     // 2. message is not received in response on ask
     if (originalMessage.thid) return
@@ -374,7 +386,7 @@ export class GossipService {
     // re-send received transaction updated to other witnesses
     for (const witness of state.knownWitnesses) {
       // 1. do not re-send to original sender
-      if (originalMessage.from !== witness.gossipDid) continue
+      if (originalMessage.from === witness.gossipDid) continue
       const message = new WitnessGossipMessage({
         from: state.gossipDid,
         to: witness.gossipDid,
@@ -439,7 +451,7 @@ export class GossipService {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public async doSafeOperationWithWitnessSate(operation: () => Promise<any>): Promise<any> {
+  public async doSafeOperationWithWitnessState<T>(operation: () => Promise<T>): Promise<T> {
     // FIXME: `safeSateOperation` locks the whole WitnessState
     // I used it only for functions mutating the state to prevent concurrent updates
     // We need to discuss the list of read/write operations which should use this lock and how to do it properly
