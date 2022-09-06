@@ -812,7 +812,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     return new V2CredentialProblemReportMessage({
       description: {
         en: options.message,
-        code: CredentialProblemReportReason.IssuanceAbandoned,
+        code: options.code || CredentialProblemReportReason.IssuanceAbandoned,
       },
     })
   }

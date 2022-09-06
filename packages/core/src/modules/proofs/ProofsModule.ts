@@ -15,7 +15,6 @@ import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections/services/ConnectionService'
 import { RoutingService } from '../routing/services/RoutingService'
 
-import { ProblemReportMessage, ProblemReportReason } from '../../modules/problem-reports'
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import { PresentationProblemReportReason } from './errors'
 import {
@@ -288,23 +287,11 @@ export class ProofsModule {
 
     // if presentation was made by established connection, attempt to send problem report upon presentation decline
     if (proofRecord.connectionId) {
-      const connection = await this.connectionService.getById(proofRecord.connectionId)
-
-      const problemReportMessage = new ProblemReportMessage({
-        description: {
-          en: `Proof Request ${proofRecordId} has been declined`,
-          code: ProblemReportReason.RequestDeclined,
-        }
-      })
-
-      problemReportMessage.setThread({
-        threadId: proofRecord.threadId,
-      })
-
-      const outboundMessage = createOutboundMessage(connection, problemReportMessage)
-      if (outboundMessage) {
-        await this.messageSender.sendMessage(outboundMessage)
-      }
+      this.sendProblemReport(
+        proofRecord.id,
+        `Presentation request ${proofRecordId} has been declined`,
+        PresentationProblemReportReason.RequestDeclined,
+      )
     }
 
     return proofRecord
@@ -406,7 +393,7 @@ export class ProofsModule {
    * @param message message to send
    * @returns proof record associated with the proof problem report message
    */
-  public async sendProblemReport(proofRecordId: string, message: string) {
+  public async sendProblemReport(proofRecordId: string, message: string, code?: PresentationProblemReportReason) {
     const record = await this.proofService.getById(proofRecordId)
     if (!record.connectionId) {
       throw new AriesFrameworkError(`No connectionId found for proof record '${record.id}'.`)
@@ -415,7 +402,7 @@ export class ProofsModule {
     const presentationProblemReportMessage = new PresentationProblemReportMessage({
       description: {
         en: message,
-        code: PresentationProblemReportReason.Abandoned,
+        code: code || PresentationProblemReportReason.Abandoned,
       },
     })
     presentationProblemReportMessage.setThread({

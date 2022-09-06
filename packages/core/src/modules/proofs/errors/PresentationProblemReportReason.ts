@@ -5,4 +5,5 @@
  */
 export enum PresentationProblemReportReason {
   Abandoned = 'abandoned',
+  RequestDeclined = 'request-declined'
 }
