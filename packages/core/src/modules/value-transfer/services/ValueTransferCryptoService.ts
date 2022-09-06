@@ -1,10 +1,9 @@
+import type { Buffer } from '../../../utils'
 import type { CryptoInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Lifecycle, scoped } from 'tsyringe'
-import { v4, parse as parseUUID } from 'uuid'
 
 import { KeyType } from '../../../crypto'
-import { Buffer } from '../../../utils'
 import { Key } from '../../dids'
 import { getEd25519VerificationMethod } from '../../dids/domain/key-type/ed25519'
 import { DidService } from '../../dids/services/DidService'
@@ -95,6 +94,6 @@ export class ValueTransferCryptoService implements CryptoInterface {
   }
 
   public randomBytes(size: number): Uint8Array {
-    return Buffer.concat([new Uint8Array(parseUUID(v4())), new Uint8Array(parseUUID(v4()))])
+    return this.keysService.randomBytes(size)
   }
 }

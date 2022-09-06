@@ -1,13 +1,10 @@
 import type { KeyPair } from '../../../crypto'
-import type { Logger } from '../../../logger'
 import type { Buffer } from '../../../utils'
 import type { VerificationMethod } from '../../dids'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { Lifecycle, scoped } from 'tsyringe'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
-import { InjectionSymbols } from '../../../constants'
-import { Crypto, KeyFormat, KeyType } from '../../../crypto'
+import { CryptoService, KeyFormat, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { TypedArrayEncoder } from '../../../utils'
 import { verificationKeyTypeToKeyTypeMapping } from '../../dids/domain/verificationMethod/VerificationMethod'
@@ -15,29 +12,23 @@ import { KeyRecord, KeyRepository } from '../repository'
 
 @scoped(Lifecycle.ContainerScoped)
 export class KeyService {
-  private logger: Logger
-  private crypto: Crypto
+  private cryptoService: CryptoService
   private keyRepository: KeyRepository
 
-  public constructor(
-    agentConfig: AgentConfig,
-    @inject(InjectionSymbols.Crypto) crypto: Crypto,
-    ketRepository: KeyRepository
-  ) {
-    this.logger = agentConfig.logger
-    this.crypto = crypto
+  public constructor(cryptoService: CryptoService, ketRepository: KeyRepository) {
+    this.cryptoService = cryptoService
     this.keyRepository = ketRepository
   }
 
   public async createKey(params: { keyType?: KeyType; seed?: string }): Promise<KeyPair> {
-    return await this.crypto.createKey({
+    return await this.cryptoService.createKey({
       keyType: params.keyType || KeyType.Ed25519,
       seed: params.seed,
     })
   }
 
   public async convertEd25519ToX25519Key(params: { keyPair: KeyPair }): Promise<KeyPair> {
-    return await this.crypto.convertEd25519ToX25519Key(params.keyPair)
+    return await this.cryptoService.convertEd25519ToX25519Key(params.keyPair)
   }
 
   public async storeKey(params: {
@@ -81,7 +72,7 @@ export class KeyService {
     if (!keyRecord) {
       throw new AriesFrameworkError(`Unable to find sign key for did: ${params.kid}`)
     }
-    return this.crypto.sign({
+    return this.cryptoService.sign({
       payload: params.payload,
       verKey: keyRecord.publicKeyBytes,
       signKey: keyRecord.privateKeyBytes,
@@ -90,7 +81,7 @@ export class KeyService {
   }
 
   public async verify(params: { payload: Buffer; signature: Buffer; key: VerificationMethod }): Promise<boolean> {
-    return this.crypto.verify({
+    return this.cryptoService.verify({
       payload: params.payload,
       signature: params.signature,
       key: params.key.keyBytes,
@@ -107,7 +98,7 @@ export class KeyService {
     if (!senderKeyRecord) {
       throw new AriesFrameworkError(`Unable to find sign key for did: ${params.senderKid}`)
     }
-    return this.crypto.encrypt({
+    return this.cryptoService.encrypt({
       payload: params.payload,
       senderPublicKey: senderKeyRecord.publicKeyBytes,
       senderPrivateKey: senderKeyRecord.privateKeyBytes,
@@ -125,13 +116,17 @@ export class KeyService {
     if (!recipientKeyRecord) {
       throw new AriesFrameworkError(`Unable to find sign key for did: ${params.recipientKid}`)
     }
-    return this.crypto.decrypt({
+    return this.cryptoService.decrypt({
       payload: params.payload,
       senderPublicKey: params.senderKey.keyBytes,
       recipientPublicKey: recipientKeyRecord.publicKeyBytes,
       recipientPrivateKey: recipientKeyRecord.privateKeyBytes,
       keyType: recipientKeyRecord.keyType,
     })
+  }
+
+  public randomBytes(size: number): Uint8Array {
+    return this.cryptoService.randomBytes(size)
   }
 
   public update(keyRecord: KeyRecord): Promise<void> {
