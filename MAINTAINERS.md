@@ -10,3 +10,4 @@
 | Karim Stekelenburg | [@karimStekelenburg](https://github.com/karimStekelenburg) | ssi_karim#3505   |
 | Timo Glastra       | [@TimoGlastra](https://github.com/TimoGlastra)             | TimoGlastra#2988 |
 | Ariel Gentile      | [@genaris](https://github.com/genaris)                     | GenAris#4962     |
+| Jan Rietveld       | [@janrtvld](https://github.com/janrtvld)                   | janrtvld#3868    |
