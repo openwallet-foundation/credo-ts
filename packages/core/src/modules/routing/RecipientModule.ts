@@ -1,6 +1,6 @@
 import type { Logger } from '../../logger'
 import type { DependencyManager } from '../../plugins'
-import type { OutboundWebSocketClosedEvent } from '../../transport'
+import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
 import type { OutboundMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
@@ -141,14 +141,27 @@ export class RecipientModule {
   }
 
   private async openWebSocketAndPickUp(mediator: MediationRecord, pickupStrategy: MediatorPickupStrategy) {
-    let interval = 50
+    const { baseMediatorReconnectionIntervalMs, maximumMediatorReconnectionIntervalMs } = this.agentConfig
+    let interval = baseMediatorReconnectionIntervalMs
+
+    const stopConditions$ = merge(this.agentConfig.stop$, this.stopMessagePickup$).pipe()
+
+    // Reset back off interval when the websocket is successfully opened again
+    this.eventEmitter
+      .observable<OutboundWebSocketOpenedEvent>(TransportEventTypes.OutboundWebSocketOpenedEvent)
+      .pipe(
+        // Stop when the agent shuts down or stop message pickup signal is received
+        takeUntil(stopConditions$),
+        filter((e) => e.payload.connectionId === mediator.connectionId)
+      )
+      .subscribe(() => {
+        interval = baseMediatorReconnectionIntervalMs
+      })
 
     // Listens to Outbound websocket closed events and will reopen the websocket connection
     // in a recursive back off strategy if it matches the following criteria:
     // - Agent is not shutdown
     // - Socket was for current mediator connection id
-
-    const stopConditions$ = merge(this.agentConfig.stop$, this.stopMessagePickup$).pipe()
     this.eventEmitter
       .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
       .pipe(
@@ -157,10 +170,12 @@ export class RecipientModule {
         filter((e) => e.payload.connectionId === mediator.connectionId),
         // Make sure we're not reconnecting multiple times
         throttleTime(interval),
-        // Increase the interval (recursive back-off)
-        tap(() => (interval *= 2)),
         // Wait for interval time before reconnecting
-        delayWhen(() => timer(interval))
+        delayWhen(() => timer(interval)),
+        // Increase the interval (recursive back-off)
+        tap(() => {
+          interval = Math.min(interval * 2, maximumMediatorReconnectionIntervalMs)
+        })
       )
       .subscribe({
         next: async () => {
