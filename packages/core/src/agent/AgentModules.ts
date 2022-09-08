@@ -22,6 +22,9 @@ import { WalletModule } from '../wallet'
  */
 export type ModulesMap = { [key: string]: Module }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type EmptyModuleMap = {}
+
 /**
  * Default modules can be optionally defined to provide custom configuration. This type makes it so that it is not
  * possible to use a different key for the default modules
@@ -37,6 +40,10 @@ export type DefaultAgentModules = {
   [moduleKey in keyof ReturnType<typeof getDefaultAgentModules>]: ReturnType<
     ReturnType<typeof getDefaultAgentModules>[moduleKey]
   >
+}
+
+export type WithoutDefaultModules<Modules extends ModulesMap> = {
+  [moduleKey in Exclude<keyof Modules, keyof DefaultAgentModules>]: Modules[moduleKey]
 }
 
 /**
@@ -76,11 +83,6 @@ export type AgentApi<Modules extends ModulesMap> = {
     ? moduleKey
     : never]: Modules[moduleKey]['api'] extends Constructor<unknown> ? InstanceType<Modules[moduleKey]['api']> : never
 }
-
-/**
- * Agent api for the default agent modules.
- */
-export type DefaultAgentApi = AgentApi<DefaultAgentModules>
 
 /**
  * Method to get the default agent modules to be registered on any agent instance.
@@ -163,6 +165,8 @@ export function extendModulesWithDefaultModules<AgentModules extends AgentModule
  * Modules that don't have an api class defined ({@link Module.api} is undefined) will be ignored and won't be added to the
  * api object.
  *
+ * If the api of a module is passed in the `excluded` array, the api will not be added to the resulting api object.
+ *
  * @example
  * If the dependency manager has the following modules configured:
  * ```ts
@@ -188,13 +192,20 @@ export function extendModulesWithDefaultModules<AgentModules extends AgentModule
  * The `indy` module has been ignored because it doesn't define an api class.
  */
 export function getAgentApi<AgentModules extends ModulesMap>(
-  dependencyManager: DependencyManager
+  dependencyManager: DependencyManager,
+  excludedApis: unknown[] = []
 ): AgentApi<AgentModules> {
   // Create the api object based on the `api` properties on the modules. If no `api` exists
   // on the module it will be ignored.
   const api = Object.entries(dependencyManager.registeredModules).reduce((api, [moduleKey, module]) => {
+    // Module has no api
     if (!module.api) return api
-    return { ...api, [moduleKey]: dependencyManager.resolve(module.api) }
+
+    const apiInstance = dependencyManager.resolve(module.api)
+
+    // Api is excluded
+    if (excludedApis.includes(apiInstance)) return api
+    return { ...api, [moduleKey]: apiInstance }
   }, {}) as AgentApi<AgentModules>
 
   return api

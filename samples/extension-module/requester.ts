@@ -58,7 +58,7 @@ const run = async () => {
     .subscribe(subject)
 
   // Send a dummy request and wait for response
-  const record = await agent.dummy.request(connectionRecord.id)
+  const record = await agent.api.dummy.request(connectionRecord.id)
   agent.config.logger.info(`Request received for Dummy Record: ${record.id}`)
 
   const dummyRecord = await firstValueFrom(subject)

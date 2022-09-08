@@ -1,5 +1,5 @@
 import type { TenantsModuleConfigOptions } from './TenantsModuleConfig'
-import type { ModulesMap, DependencyManager, Module, DefaultAgentModules } from '@aries-framework/core'
+import type { ModulesMap, DependencyManager, Module, EmptyModuleMap } from '@aries-framework/core'
 import type { Constructor } from '@aries-framework/core/src/utils/mixins'
 
 import { InjectionSymbols } from '@aries-framework/core'
@@ -11,9 +11,10 @@ import { TenantSessionCoordinator } from './context/TenantSessionCoordinator'
 import { TenantRepository, TenantRoutingRepository } from './repository'
 import { TenantRecordService } from './services'
 
-export class TenantsModule<AgentModules extends ModulesMap = DefaultAgentModules> implements Module {
+export class TenantsModule<AgentModules extends ModulesMap = EmptyModuleMap> implements Module {
   public readonly config: TenantsModuleConfig
-  public readonly api: Constructor<TenantsApi<AgentModules & DefaultAgentModules>> = TenantsApi
+
+  public readonly api: Constructor<TenantsApi<AgentModules>> = TenantsApi
 
   public constructor(config?: TenantsModuleConfigOptions) {
     this.config = new TenantsModuleConfig(config)

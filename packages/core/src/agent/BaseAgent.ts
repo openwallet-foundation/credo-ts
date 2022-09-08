@@ -1,13 +1,25 @@
 import type { Logger } from '../logger'
 import type { DependencyManager } from '../plugins'
 import type { AgentConfig } from './AgentConfig'
-import type { AgentApi, DefaultAgentApi, DefaultAgentModules, ModulesMap } from './AgentModules'
+import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules } from './AgentModules'
 import type { TransportSession } from './TransportService'
 
 import { AriesFrameworkError } from '../error'
+import { BasicMessagesApi } from '../modules/basic-messages'
+import { ConnectionsApi } from '../modules/connections'
+import { CredentialsApi } from '../modules/credentials'
+import { DidsApi } from '../modules/dids'
+import { DiscoverFeaturesApi } from '../modules/discover-features'
+import { GenericRecordsApi } from '../modules/generic-records'
+import { LedgerApi } from '../modules/ledger'
+import { OutOfBandApi } from '../modules/oob'
+import { ProofsApi } from '../modules/proofs/ProofsApi'
+import { QuestionAnswerApi } from '../modules/question-answer'
+import { MediatorApi, RecipientApi } from '../modules/routing'
 import { StorageUpdateService } from '../storage'
 import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
 import { DEFAULT_UPDATE_CONFIG } from '../storage/migration/updates'
+import { WalletApi } from '../wallet'
 import { WalletError } from '../wallet/error'
 
 import { getAgentApi } from './AgentModules'
@@ -17,7 +29,7 @@ import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { AgentContext } from './context'
 
-export abstract class BaseAgent<AgentModules extends ModulesMap = DefaultAgentModules> {
+export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap> {
   protected agentConfig: AgentConfig
   protected logger: Logger
   public readonly dependencyManager: DependencyManager
@@ -28,7 +40,21 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = DefaultAgentMo
   protected _isInitialized = false
   protected agentContext: AgentContext
 
-  public readonly api: DefaultAgentApi & AgentApi<AgentModules>
+  public readonly connections: ConnectionsApi
+  public readonly credentials: CredentialsApi
+  public readonly proofs: ProofsApi
+  public readonly mediator: MediatorApi
+  public readonly mediationRecipient: RecipientApi
+  public readonly basicMessages: BasicMessagesApi
+  public readonly questionAnswer: QuestionAnswerApi
+  public readonly genericRecords: GenericRecordsApi
+  public readonly ledger: LedgerApi
+  public readonly discovery: DiscoverFeaturesApi
+  public readonly dids: DidsApi
+  public readonly wallet: WalletApi
+  public readonly oob: OutOfBandApi
+
+  public readonly api: AgentApi<WithoutDefaultModules<AgentModules>>
 
   public constructor(agentConfig: AgentConfig, dependencyManager: DependencyManager) {
     this.dependencyManager = dependencyManager
@@ -55,8 +81,38 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = DefaultAgentMo
     this.transportService = this.dependencyManager.resolve(TransportService)
     this.agentContext = this.dependencyManager.resolve(AgentContext)
 
+    this.connections = this.dependencyManager.resolve(ConnectionsApi)
+    this.credentials = this.dependencyManager.resolve(CredentialsApi) as CredentialsApi
+    this.proofs = this.dependencyManager.resolve(ProofsApi)
+    this.mediator = this.dependencyManager.resolve(MediatorApi)
+    this.mediationRecipient = this.dependencyManager.resolve(RecipientApi)
+    this.basicMessages = this.dependencyManager.resolve(BasicMessagesApi)
+    this.questionAnswer = this.dependencyManager.resolve(QuestionAnswerApi)
+    this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
+    this.ledger = this.dependencyManager.resolve(LedgerApi)
+    this.discovery = this.dependencyManager.resolve(DiscoverFeaturesApi)
+    this.dids = this.dependencyManager.resolve(DidsApi)
+    this.wallet = this.dependencyManager.resolve(WalletApi)
+    this.oob = this.dependencyManager.resolve(OutOfBandApi)
+
+    const defaultApis = [
+      this.connections,
+      this.credentials,
+      this.proofs,
+      this.mediator,
+      this.mediationRecipient,
+      this.basicMessages,
+      this.questionAnswer,
+      this.genericRecords,
+      this.ledger,
+      this.discovery,
+      this.dids,
+      this.wallet,
+      this.oob,
+    ]
+
     // Set the api of the registered modules on the agent
-    this.api = getAgentApi(this.dependencyManager) as DefaultAgentApi & AgentApi<AgentModules>
+    this.api = getAgentApi(this.dependencyManager, defaultApis)
   }
 
   public get isInitialized() {

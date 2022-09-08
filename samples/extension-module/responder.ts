@@ -61,7 +61,7 @@ const run = async () => {
   // Subscribe to dummy record events
   agent.events.on(DummyEventTypes.StateChanged, async (event: DummyStateChangedEvent) => {
     if (event.payload.dummyRecord.state === DummyState.RequestReceived) {
-      await agent.dummy.respond(event.payload.dummyRecord.id)
+      await agent.api.dummy.respond(event.payload.dummyRecord.id)
     }
   })
 

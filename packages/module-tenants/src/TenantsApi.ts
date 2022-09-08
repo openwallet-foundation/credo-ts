@@ -1,5 +1,5 @@
 import type { CreateTenantOptions, GetTenantAgentOptions, WithTenantAgentCallback } from './TenantsApiOptions'
-import type { DefaultAgentModules, ModulesMap } from '@aries-framework/core'
+import type { EmptyModuleMap, ModulesMap } from '@aries-framework/core'
 
 import { AgentContext, inject, InjectionSymbols, AgentContextProvider, injectable, Logger } from '@aries-framework/core'
 
@@ -7,7 +7,7 @@ import { TenantAgent } from './TenantAgent'
 import { TenantRecordService } from './services'
 
 @injectable()
-export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
+export class TenantsApi<AgentModules extends ModulesMap = EmptyModuleMap> {
   private agentContext: AgentContext
   private tenantRecordService: TenantRecordService
   private agentContextProvider: AgentContextProvider
@@ -80,6 +80,7 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
     const tenantAgent = await this.getTenantAgent({ tenantId })
 
     this.logger.trace(`Deleting wallet for tenant '${tenantId}'`)
+    console.log(tenantAgent)
     await tenantAgent.wallet.delete()
     this.logger.trace(`Shutting down agent for tenant '${tenantId}'`)
     await tenantAgent.endSession()

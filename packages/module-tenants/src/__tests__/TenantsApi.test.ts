@@ -193,10 +193,8 @@ describe('TenantsApi', () => {
   describe('deleteTenantById', () => {
     test('deletes the tenant and removes the wallet', async () => {
       const tenantAgentMock = {
-        api: {
-          wallet: {
-            delete: jest.fn(),
-          },
+        wallet: {
+          delete: jest.fn(),
         },
         endSession: jest.fn(),
       } as unknown as TenantAgent

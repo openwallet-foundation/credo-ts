@@ -42,7 +42,7 @@ describe('Tenants Sessions E2E', () => {
   test('create 100 sessions in parallel for the same tenant and close them', async () => {
     const numberOfSessions = 100
 
-    const tenantRecord = await agent.tenants.createTenant({
+    const tenantRecord = await agent.api.tenants.createTenant({
       config: {
         label: 'Agent 1 Tenant 1',
       },
@@ -51,7 +51,7 @@ describe('Tenants Sessions E2E', () => {
     const tenantAgentPromises = []
 
     for (let session = 0; session < numberOfSessions; session++) {
-      tenantAgentPromises.push(agent.tenants.getTenantAgent({ tenantId: tenantRecord.id }))
+      tenantAgentPromises.push(agent.api.tenants.getTenantAgent({ tenantId: tenantRecord.id }))
     }
 
     const tenantAgents = await Promise.all(tenantAgentPromises)
@@ -65,7 +65,7 @@ describe('Tenants Sessions E2E', () => {
 
     const tenantRecordPromises = []
     for (let tenantNo = 0; tenantNo < numberOfTenants; tenantNo++) {
-      const tenantRecord = agent.tenants.createTenant({
+      const tenantRecord = agent.api.tenants.createTenant({
         config: {
           label: 'Agent 1 Tenant 1',
         },
@@ -79,7 +79,7 @@ describe('Tenants Sessions E2E', () => {
     const tenantAgentPromises = []
     for (const tenantRecord of tenantRecords) {
       for (let session = 0; session < numberOfSessions; session++) {
-        tenantAgentPromises.push(agent.tenants.getTenantAgent({ tenantId: tenantRecord.id }))
+        tenantAgentPromises.push(agent.api.tenants.getTenantAgent({ tenantId: tenantRecord.id }))
       }
     }
 

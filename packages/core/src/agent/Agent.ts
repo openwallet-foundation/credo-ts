@@ -2,7 +2,7 @@ import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
-import type { AgentApi, AgentModulesInput, DefaultAgentApi, ModulesMap } from './AgentModules'
+import type { AgentModulesInput, ModulesMap } from './AgentModules'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { Subscription } from 'rxjs'
 
@@ -40,14 +40,7 @@ interface AgentOptions<AgentModules extends AgentModulesInput> {
 export class Agent<AgentModules extends AgentModulesInput = ModulesMap> extends BaseAgent<AgentModules> {
   public messageSubscription: Subscription
 
-  public static create<AgentModules extends AgentModulesInput = ModulesMap>(
-    agentConfig: AgentOptions<AgentModules>,
-    dependencyManager: DependencyManager = new DependencyManager()
-  ): Agent<AgentModules> & DefaultAgentApi & AgentApi<AgentModules> {
-    return new Agent(agentConfig, dependencyManager) as Agent<AgentModules> & DefaultAgentApi & AgentApi<AgentModules>
-  }
-
-  private constructor(options: AgentOptions<AgentModules>, dependencyManager: DependencyManager) {
+  public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
     const agentConfig = new AgentConfig(options.config, options.dependencies)
     const modulesWithDefaultModules = extendModulesWithDefaultModules(agentConfig, options.modules)
 

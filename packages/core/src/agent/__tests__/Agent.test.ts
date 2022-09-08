@@ -56,24 +56,10 @@ class MyModule implements Module {
 
 describe('Agent', () => {
   describe('Module registration', () => {
-    test('registers default modules if no modules were provided', () => {
+    test('does not return default modules on modules key if no modules were provided', () => {
       const agent = new Agent(agentOptions)
 
-      expect(agent.api).toEqual({
-        connections: expect.any(ConnectionsApi),
-        credentials: expect.any(CredentialsApi),
-        proofs: expect.any(ProofsApi),
-        mediator: expect.any(MediatorApi),
-        mediationRecipient: expect.any(RecipientApi),
-        basicMessages: expect.any(BasicMessagesApi),
-        questionAnswer: expect.any(QuestionAnswerApi),
-        genericRecords: expect.any(GenericRecordsApi),
-        ledger: expect.any(LedgerApi),
-        discovery: expect.any(DiscoverFeaturesApi),
-        dids: expect.any(DidsApi),
-        wallet: expect.any(WalletApi),
-        oob: expect.any(OutOfBandApi),
-      })
+      expect(agent.api).toEqual({})
     })
 
     test('registers custom and default modules if custom modules are provided', () => {
@@ -86,19 +72,6 @@ describe('Agent', () => {
 
       expect(agent.api.myModule.myModuleMethod).toBe(myModuleMethod)
       expect(agent.api).toEqual({
-        connections: expect.any(ConnectionsApi),
-        credentials: expect.any(CredentialsApi),
-        proofs: expect.any(ProofsApi),
-        mediator: expect.any(MediatorApi),
-        mediationRecipient: expect.any(RecipientApi),
-        basicMessages: expect.any(BasicMessagesApi),
-        questionAnswer: expect.any(QuestionAnswerApi),
-        genericRecords: expect.any(GenericRecordsApi),
-        ledger: expect.any(LedgerApi),
-        discovery: expect.any(DiscoverFeaturesApi),
-        dids: expect.any(DidsApi),
-        wallet: expect.any(WalletApi),
-        oob: expect.any(OutOfBandApi),
         myModule: expect.any(MyApi),
       })
     })
@@ -115,21 +88,8 @@ describe('Agent', () => {
       })
 
       // Should be custom module config property, not the default value
-      expect(agent.api.mediationRecipient.config.maximumMessagePickup).toBe(42)
+      expect(agent.mediationRecipient.config.maximumMessagePickup).toBe(42)
       expect(agent.api).toEqual({
-        connections: expect.any(ConnectionsApi),
-        credentials: expect.any(CredentialsApi),
-        proofs: expect.any(ProofsApi),
-        mediator: expect.any(MediatorApi),
-        mediationRecipient: expect.any(RecipientApi),
-        basicMessages: expect.any(BasicMessagesApi),
-        questionAnswer: expect.any(QuestionAnswerApi),
-        genericRecords: expect.any(GenericRecordsApi),
-        ledger: expect.any(LedgerApi),
-        discovery: expect.any(DiscoverFeaturesApi),
-        dids: expect.any(DidsApi),
-        wallet: expect.any(WalletApi),
-        oob: expect.any(OutOfBandApi),
         myModule: expect.any(MyApi),
       })
     })
