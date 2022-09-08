@@ -75,6 +75,8 @@ export class DiscoverFeaturesApi<
    * Perform a simple query to a connection to verify if it supports a particular protocol based in
    * an input message. Query is performed using RFC 0031 protocol.
    *
+   * TODO: Update to use specific events from this module. Make timeout configurable
+   *
    * @param connectionId target connection id
    * @param message object containing a {ParsedMessageType} to search for
    * @returns boolean indicating whether the message is supported or not
@@ -120,13 +122,12 @@ export class DiscoverFeaturesApi<
   }
 
   /**
-   * Send a query to an existing connection for discovering supported features. Depending on options, it will do a
-   * simple query through Discover Features V1 protocol (Aries RFC 0031) or multiple feature query by Discover
-   * Features V2 (Aries RFC 0557).
+   * Send feature queries to an existing connection for discovering supported features of any kind.
    *
-   * @param connectionId connection to query features from
-   * @param options query string for simple protocol support (using Discover Features V1) or set of queries to ask
-   * multiple features (using Discover Features V2 protocol). Optional comment string only used for simple queries.
+   * Note: V1 protocol only supports a single query and is limited to protocols
+   *
+   * @param options feature queries to perform, protocol version and optional comment string (only used
+   * in V1 protocol).
    */
   public async queryFeatures(options: QueryFeaturesOptions<DFSs>) {
     const service = this.getService(options.protocolVersion)
@@ -143,11 +144,16 @@ export class DiscoverFeaturesApi<
   }
 
   /**
-   * Disclose features to a connection, either proactively or as a response to a query. Uses Discover
-   * Features V2 (Aries RFC 0557).
+   * Disclose features to a connection, either proactively or as a response to a query.
    *
-   * @param connectionId: connection to disclose features to
-   * @param options: queries array for features to match from registry, and optional thread id
+   * Features are disclosed based on queries that will be performed to Agent's Feature Registry,
+   * meaning that they should be registered prior to disclosure. When sending disclosure as response,
+   * these queries will usually match those from the corresponding Query or Queries message.
+   *
+   * Note: V1 protocol only supports sending disclosures as a response to a query.
+   *
+   * @param options multiple properties like protocol version to use, disclosure queries and thread id
+   * (in case of disclosure as response to query)
    */
   public async discloseFeatures(options: DiscloseFeaturesOptions) {
     const service = this.getService(options.protocolVersion)

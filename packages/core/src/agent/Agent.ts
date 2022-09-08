@@ -92,6 +92,9 @@ export class Agent extends BaseAgent {
     return this.eventEmitter
   }
 
+  /**
+   * Agent's feature registry
+   */
   public get features() {
     return this.featureRegistry
   }

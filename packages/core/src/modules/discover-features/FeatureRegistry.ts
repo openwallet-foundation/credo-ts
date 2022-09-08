@@ -9,7 +9,7 @@ class FeatureRegistry {
   /**
    * Register a single or set of Features on the registry
    *
-   * @param features set of {Feature} objects
+   * @param features set of {Feature} objects or any inherited class
    */
   public register(...features: Feature[]) {
     for (const feature of features) {
