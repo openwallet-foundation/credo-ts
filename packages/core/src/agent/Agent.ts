@@ -137,7 +137,13 @@ export class Agent {
       .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
       .pipe(
         takeUntil(this.agentConfig.stop$),
-        concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message, { connection: e.payload.connection }))
+        concatMap((e) =>
+          this.messageReceiver
+            .receiveMessage(e.payload.message, { connection: e.payload.connection })
+            .catch((error) => {
+              this.logger.error('Failed to process message', { error })
+            })
+        )
       )
       .subscribe()
   }
