@@ -85,48 +85,48 @@ describe('Tenants E2E', () => {
 
   test('create get and delete a tenant', async () => {
     // Create tenant
-    let tenantRecord1 = await agent1.api.tenants.createTenant({
+    let tenantRecord1 = await agent1.modules.tenants.createTenant({
       config: {
         label: 'Tenant 1',
       },
     })
 
     // Retrieve tenant record from storage
-    tenantRecord1 = await agent1.api.tenants.getTenantById(tenantRecord1.id)
+    tenantRecord1 = await agent1.modules.tenants.getTenantById(tenantRecord1.id)
 
     // Get tenant agent
-    const tenantAgent = await agent1.api.tenants.getTenantAgent({
+    const tenantAgent = await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord1.id,
     })
     await tenantAgent.endSession()
 
     // Delete tenant agent
-    await agent1.api.tenants.deleteTenantById(tenantRecord1.id)
+    await agent1.modules.tenants.deleteTenantById(tenantRecord1.id)
 
     // Can not get tenant agent again
-    await expect(agent1.api.tenants.getTenantAgent({ tenantId: tenantRecord1.id })).rejects.toThrow(
+    await expect(agent1.modules.tenants.getTenantAgent({ tenantId: tenantRecord1.id })).rejects.toThrow(
       `TenantRecord: record with id ${tenantRecord1.id} not found.`
     )
   })
 
   test('create a connection between two tenants within the same agent', async () => {
     // Create tenants
-    const tenantRecord1 = await agent1.api.tenants.createTenant({
+    const tenantRecord1 = await agent1.modules.tenants.createTenant({
       config: {
         label: 'Tenant 1',
       },
     })
-    const tenantRecord2 = await agent1.api.tenants.createTenant({
+    const tenantRecord2 = await agent1.modules.tenants.createTenant({
       config: {
         label: 'Tenant 2',
       },
     })
 
-    const tenantAgent1 = await agent1.api.tenants.getTenantAgent({
+    const tenantAgent1 = await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord1.id,
     })
 
-    const tenantAgent2 = await agent1.api.tenants.getTenantAgent({
+    const tenantAgent2 = await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord2.id,
     })
 
@@ -157,27 +157,27 @@ describe('Tenants E2E', () => {
     await tenantAgent2.endSession()
 
     // Delete tenants (will also delete wallets)
-    await agent1.api.tenants.deleteTenantById(tenantAgent1.context.contextCorrelationId)
-    await agent1.api.tenants.deleteTenantById(tenantAgent2.context.contextCorrelationId)
+    await agent1.modules.tenants.deleteTenantById(tenantAgent1.context.contextCorrelationId)
+    await agent1.modules.tenants.deleteTenantById(tenantAgent2.context.contextCorrelationId)
   })
 
   test('create a connection between two tenants within different agents', async () => {
     // Create tenants
-    const tenantRecord1 = await agent1.api.tenants.createTenant({
+    const tenantRecord1 = await agent1.modules.tenants.createTenant({
       config: {
         label: 'Agent 1 Tenant 1',
       },
     })
-    const tenantAgent1 = await agent1.api.tenants.getTenantAgent({
+    const tenantAgent1 = await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord1.id,
     })
 
-    const tenantRecord2 = await agent2.api.tenants.createTenant({
+    const tenantRecord2 = await agent2.modules.tenants.createTenant({
       config: {
         label: 'Agent 2 Tenant 1',
       },
     })
-    const tenantAgent2 = await agent2.api.tenants.getTenantAgent({
+    const tenantAgent2 = await agent2.modules.tenants.getTenantAgent({
       tenantId: tenantRecord2.id,
     })
 
@@ -198,18 +198,18 @@ describe('Tenants E2E', () => {
     await tenantAgent2.endSession()
 
     // Delete tenants (will also delete wallets)
-    await agent1.api.tenants.deleteTenantById(tenantRecord1.id)
-    await agent2.api.tenants.deleteTenantById(tenantRecord2.id)
+    await agent1.modules.tenants.deleteTenantById(tenantRecord1.id)
+    await agent2.modules.tenants.deleteTenantById(tenantRecord2.id)
   })
 
   test('perform actions within the callback of withTenantAgent', async () => {
-    const tenantRecord = await agent1.api.tenants.createTenant({
+    const tenantRecord = await agent1.modules.tenants.createTenant({
       config: {
         label: 'Agent 1 Tenant 1',
       },
     })
 
-    await agent1.api.tenants.withTenantAgent({ tenantId: tenantRecord.id }, async (tenantAgent) => {
+    await agent1.modules.tenants.withTenantAgent({ tenantId: tenantRecord.id }, async (tenantAgent) => {
       const outOfBandRecord = await tenantAgent.oob.createInvitation()
 
       expect(outOfBandRecord).toBeInstanceOf(OutOfBandRecord)
@@ -217,6 +217,6 @@ describe('Tenants E2E', () => {
       expect(tenantAgent.config.label).toBe('Agent 1 Tenant 1')
     })
 
-    await agent1.api.tenants.deleteTenantById(tenantRecord.id)
+    await agent1.modules.tenants.deleteTenantById(tenantRecord.id)
   })
 })

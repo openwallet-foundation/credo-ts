@@ -54,7 +54,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly wallet: WalletApi
   public readonly oob: OutOfBandApi
 
-  public readonly api: AgentApi<WithoutDefaultModules<AgentModules>>
+  public readonly modules: AgentApi<WithoutDefaultModules<AgentModules>>
 
   public constructor(agentConfig: AgentConfig, dependencyManager: DependencyManager) {
     this.dependencyManager = dependencyManager
@@ -111,8 +111,8 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       this.oob,
     ]
 
-    // Set the api of the registered modules on the agent
-    this.api = getAgentApi(this.dependencyManager, defaultApis)
+    // Set the api of the registered modules on the agent, excluding the default apis
+    this.modules = getAgentApi(this.dependencyManager, defaultApis)
   }
 
   public get isInitialized() {

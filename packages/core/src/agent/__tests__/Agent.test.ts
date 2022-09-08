@@ -59,7 +59,7 @@ describe('Agent', () => {
     test('does not return default modules on modules key if no modules were provided', () => {
       const agent = new Agent(agentOptions)
 
-      expect(agent.api).toEqual({})
+      expect(agent.modules).toEqual({})
     })
 
     test('registers custom and default modules if custom modules are provided', () => {
@@ -70,8 +70,8 @@ describe('Agent', () => {
         },
       })
 
-      expect(agent.api.myModule.myModuleMethod).toBe(myModuleMethod)
-      expect(agent.api).toEqual({
+      expect(agent.modules.myModule.myModuleMethod).toBe(myModuleMethod)
+      expect(agent.modules).toEqual({
         myModule: expect.any(MyApi),
       })
     })
@@ -89,7 +89,7 @@ describe('Agent', () => {
 
       // Should be custom module config property, not the default value
       expect(agent.mediationRecipient.config.maximumMessagePickup).toBe(42)
-      expect(agent.api).toEqual({
+      expect(agent.modules).toEqual({
         myModule: expect.any(MyApi),
       })
     })
