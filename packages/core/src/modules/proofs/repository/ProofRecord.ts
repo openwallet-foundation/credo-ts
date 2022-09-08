@@ -1,6 +1,5 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptProof } from '../models/ProofAutoAcceptType'
-import type { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import type { ProofState } from '../models/ProofState'
 
 import { AriesFrameworkError } from '../../../error'
@@ -10,7 +9,7 @@ import { uuid } from '../../../utils/uuid'
 export interface ProofRecordProps {
   id?: string
   createdAt?: Date
-  protocolVersion: ProofProtocolVersion
+  protocolVersion: string
   isVerified?: boolean
   state: ProofState
   connectionId?: string
@@ -34,7 +33,7 @@ export type DefaultProofTags = {
 export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public connectionId?: string
   public threadId!: string
-  public protocolVersion!: ProofProtocolVersion
+  public protocolVersion!: string
   public parentThreadId?: string
   public isVerified?: boolean
   public state!: ProofState
