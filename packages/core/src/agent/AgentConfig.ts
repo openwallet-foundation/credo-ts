@@ -84,7 +84,7 @@ export class AgentConfig {
   }
 
   public get baseMediatorReconnectionIntervalMs() {
-    return this.initConfig.baseMediatorReconnectionIntervalMs ?? 1000
+    return this.initConfig.baseMediatorReconnectionIntervalMs ?? 100
   }
 
   public get maximumMediatorReconnectionIntervalMs() {
