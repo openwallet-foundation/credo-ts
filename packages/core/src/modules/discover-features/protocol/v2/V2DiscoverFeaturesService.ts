@@ -77,7 +77,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
     if (this.discoverFeaturesModuleConfig.autoAcceptDiscoverFeatureQueries) {
       return await this.createDisclosure(messageContext.agentContext, {
         threadId,
-        queries,
+        disclosureQueries: queries,
       })
     }
   }
@@ -86,7 +86,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
     agentContext: AgentContext,
     options: CreateDisclosureOptions
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage>> {
-    const matches = this.featureRegistry.query(...options.queries)
+    const matches = this.featureRegistry.query(...options.disclosureQueries)
 
     const discloseMessage = new V2DisclosuresMessage({
       threadId: options.threadId,

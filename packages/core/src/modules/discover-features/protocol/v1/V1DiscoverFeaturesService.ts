@@ -58,6 +58,10 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
       throw new AriesFrameworkError('Discover Features V1 only supports a single query')
     }
 
+    if (options.queries[0].featureType !== 'protocol') {
+      throw new AriesFrameworkError('Discover Features V1 only supports querying for protocol support')
+    }
+
     const queryMessage = new V1QueryMessage({
       query: options.queries[0].match,
       comment: options.comment,
@@ -88,7 +92,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
     if (this.discoverFeaturesModuleConfig.autoAcceptDiscoverFeatureQueries) {
       return await this.createDisclosure(messageContext.agentContext, {
         threadId,
-        queries: [{ featureType: 'protocol', match: query }],
+        disclosureQueries: [{ featureType: 'protocol', match: query }],
       })
     }
   }
@@ -97,7 +101,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
     agentContext: AgentContext,
     options: CreateDisclosureOptions
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<V1DiscloseMessage>> {
-    if (options.queries.length > 1) {
+    if (options.disclosureQueries.length > 1) {
       throw new AriesFrameworkError('Discover Features V1 only supports a single query')
     }
 
@@ -105,7 +109,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
       throw new AriesFrameworkError('Thread Id is required for Discover Features V1 disclosure')
     }
 
-    const matches = this.featureRegistry.query(...options.queries)
+    const matches = this.featureRegistry.query(...options.disclosureQueries)
 
     const discloseMessage = new V1DiscloseMessage({
       threadId: options.threadId,

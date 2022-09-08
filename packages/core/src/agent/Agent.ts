@@ -92,6 +92,10 @@ export class Agent extends BaseAgent {
     return this.eventEmitter
   }
 
+  public get features() {
+    return this.featureRegistry
+  }
+
   public async initialize() {
     await super.initialize()
 

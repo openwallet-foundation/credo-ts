@@ -154,7 +154,7 @@ export class DiscoverFeaturesApi<
 
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
     const { message: disclosuresMessage } = await service.createDisclosure(this.agentContext, {
-      queries: options.queries,
+      disclosureQueries: options.disclosureQueries,
       threadId: options.threadId,
     })
 

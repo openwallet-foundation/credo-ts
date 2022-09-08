@@ -8,7 +8,7 @@ import { BasicMessagesApi } from '../modules/basic-messages/BasicMessagesApi'
 import { ConnectionsApi } from '../modules/connections/ConnectionsApi'
 import { CredentialsApi } from '../modules/credentials/CredentialsApi'
 import { DidsApi } from '../modules/dids/DidsApi'
-import { DiscoverFeaturesApi } from '../modules/discover-features'
+import { DiscoverFeaturesApi, FeatureRegistry } from '../modules/discover-features'
 import { GenericRecordsApi } from '../modules/generic-records/GenericRecordsApi'
 import { LedgerApi } from '../modules/ledger/LedgerApi'
 import { OutOfBandApi } from '../modules/oob/OutOfBandApi'
@@ -33,6 +33,7 @@ export abstract class BaseAgent {
   protected logger: Logger
   public readonly dependencyManager: DependencyManager
   protected eventEmitter: EventEmitter
+  protected featureRegistry: FeatureRegistry
   protected messageReceiver: MessageReceiver
   protected transportService: TransportService
   protected messageSender: MessageSender
@@ -75,6 +76,7 @@ export abstract class BaseAgent {
 
     // Resolve instances after everything is registered
     this.eventEmitter = this.dependencyManager.resolve(EventEmitter)
+    this.featureRegistry = this.dependencyManager.resolve(FeatureRegistry)
     this.messageSender = this.dependencyManager.resolve(MessageSender)
     this.messageReceiver = this.dependencyManager.resolve(MessageReceiver)
     this.transportService = this.dependencyManager.resolve(TransportService)

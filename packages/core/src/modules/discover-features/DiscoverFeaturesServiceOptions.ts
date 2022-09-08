@@ -7,7 +7,7 @@ export interface CreateQueryOptions {
 }
 
 export interface CreateDisclosureOptions {
-  queries: FeatureQueryOptions[]
+  disclosureQueries: FeatureQueryOptions[]
   threadId?: string
 }
 
