@@ -32,6 +32,8 @@ export interface QueryFeaturesOptions<DFSs extends DiscoverFeaturesService[] = D
   extends BaseOptions {
   protocolVersion: ProtocolVersionType<DFSs>
   queries: FeatureQueryOptions[]
+  awaitDisclosures?: boolean
+  awaitDisclosuresTimeoutMs?: number
   comment?: string
 }
 
