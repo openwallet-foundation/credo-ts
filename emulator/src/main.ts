@@ -3,6 +3,7 @@ import { WitnessEmulator } from './WitnessEmulator'
 import { createUsersList, createWitnessTable } from './utils'
 import { randomString } from '@sicpa-dlab/aries-framework-core/src/utils/string'
 import { config } from './config'
+import { flushAndClose } from './metrics'
 
 const run = async () => {
   console.log('Emulator: Starting...')
@@ -57,4 +58,7 @@ const run = async () => {
   await userEmulator.run()
 }
 
-run()
+run().catch((e) => {
+  console.error(e)
+  return flushAndClose()
+})

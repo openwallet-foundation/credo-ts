@@ -3,6 +3,7 @@ import type { InitConfig } from '@aries-framework/core'
 import { Agent, DidMarker, HttpOutboundTransport, Transports } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 import { randomUUID } from 'crypto'
+import { reportGossipCompleted, reportGossipStart } from './metrics'
 
 export interface EmulatorUserConfig {
   host?: string
@@ -52,9 +53,14 @@ export class User {
   public async run() {
     await this.agent.initialize()
     console.log(`User ${this.agent.config.label} started!`)
+
+    let transactionsSent = 0
     setInterval(async () => {
       console.log(`User ${this.agent.config.label} trigger message`)
+
+      await reportGossipStart(this.agent.config.label, ++transactionsSent)
       await this.agent.valueTransfer.mintCash({ amount: User.amount, waitForAck: false })
+      await reportGossipCompleted(this.agent.config.label, transactionsSent)
     }, this.config.interval || 1000 * 3)
   }
 }
