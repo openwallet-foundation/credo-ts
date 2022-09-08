@@ -80,7 +80,6 @@ export class TenantsApi<AgentModules extends ModulesMap = EmptyModuleMap> {
     const tenantAgent = await this.getTenantAgent({ tenantId })
 
     this.logger.trace(`Deleting wallet for tenant '${tenantId}'`)
-    console.log(tenantAgent)
     await tenantAgent.wallet.delete()
     this.logger.trace(`Shutting down agent for tenant '${tenantId}'`)
     await tenantAgent.endSession()
