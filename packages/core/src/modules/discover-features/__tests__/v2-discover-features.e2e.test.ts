@@ -59,6 +59,7 @@ describe('v2 discover features', () => {
     const faberReplay = new ReplaySubject<DiscoverFeaturesDisclosureReceivedEvent>()
     const aliceReplay = new ReplaySubject<DiscoverFeaturesQueryReceivedEvent>()
 
+    faberAgent.discovery.config.autoAcceptQueries
     faberAgent.events
       .observable<DiscoverFeaturesDisclosureReceivedEvent>(DiscoverFeaturesEventTypes.DisclosureReceived)
       .subscribe(faberReplay)

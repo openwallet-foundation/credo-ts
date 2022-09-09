@@ -88,7 +88,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
 
     // Process query and send responde automatically if configured to do so, otherwise
     // just send the event and let controller decide
-    if (this.discoverFeaturesModuleConfig.autoAcceptDiscoverFeatureQueries) {
+    if (this.discoverFeaturesModuleConfig.autoAcceptQueries) {
       return await this.createDisclosure({
         threadId,
         disclosureQueries: [{ featureType: 'protocol', match: query }],

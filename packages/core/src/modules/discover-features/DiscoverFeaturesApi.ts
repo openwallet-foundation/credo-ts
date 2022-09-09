@@ -1,6 +1,6 @@
 import type { Feature } from '../../agent/models'
+import type { DiscloseFeaturesOptions, QueryFeaturesOptions, ServiceMap } from './DiscoverFeaturesApiOptions'
 import type { DiscoverFeaturesDisclosureReceivedEvent } from './DiscoverFeaturesEvents'
-import type { DiscloseFeaturesOptions, QueryFeaturesOptions, ServiceMap } from './DiscoverFeaturesModuleOptions'
 import type { DiscoverFeaturesService } from './services'
 
 import { firstValueFrom, of, ReplaySubject, Subject } from 'rxjs'
@@ -16,6 +16,7 @@ import { inject, injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
 import { DiscoverFeaturesEventTypes } from './DiscoverFeaturesEvents'
+import { DiscoverFeaturesModuleConfig } from './DiscoverFeaturesModuleConfig'
 import { V1DiscoverFeaturesService, V2DiscoverFeaturesService } from './protocol'
 
 export interface DiscoverFeaturesApi<DFSs extends DiscoverFeaturesService[]> {
@@ -27,6 +28,11 @@ export class DiscoverFeaturesApi<
   DFSs extends DiscoverFeaturesService[] = [V1DiscoverFeaturesService, V2DiscoverFeaturesService]
 > implements DiscoverFeaturesApi<DFSs>
 {
+  /**
+   * Configuration for Discover Features module
+   */
+  public readonly config: DiscoverFeaturesModuleConfig
+
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
@@ -41,13 +47,15 @@ export class DiscoverFeaturesApi<
     v2Service: V2DiscoverFeaturesService,
     eventEmitter: EventEmitter,
     @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
-    agentContext: AgentContext
+    agentContext: AgentContext,
+    config: DiscoverFeaturesModuleConfig
   ) {
     this.connectionService = connectionService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.stop$ = stop$
     this.agentContext = agentContext
+    this.config = config
 
     // Dynamically build service map. This will be extracted once services are registered dynamically
     this.serviceMap = [v1Service, v2Service].reduce(

@@ -18,7 +18,8 @@ export class DiscoverFeaturesModuleConfig {
     this.options = options ?? {}
   }
 
-  public get autoAcceptDiscoverFeatureQueries() {
+  /** {@inheritDoc DiscoverFeaturesModuleConfigOptions.autoAcceptQueries} */
+  public get autoAcceptQueries() {
     return this.options.autoAcceptQueries ?? true
   }
 }
