@@ -17,7 +17,7 @@ export type CustomW3cCredentialTags = TagsBase & {
   expandedTypes?: Array<string>
 }
 
-export type DefaultCredentialTags = {
+export type DefaultW3cCredentialTags = {
   issuerId: string
   subjectIds: Array<string>
   schemaIds: Array<string>
@@ -26,7 +26,7 @@ export type DefaultCredentialTags = {
   givenId?: string
 }
 
-export class W3cCredentialRecord extends BaseRecord<DefaultCredentialTags, CustomW3cCredentialTags> {
+export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, CustomW3cCredentialTags> {
   public static readonly type = 'W3cCredentialRecord'
   public readonly type = W3cCredentialRecord.type
 

@@ -6,7 +6,7 @@ import { SIGNATURE_LENGTH as ED25519_SIGNATURE_LENGTH } from '@stablelib/ed25519
 import { agentDependencies } from '../../tests/helpers'
 import testLogger from '../../tests/logger'
 import { KeyType } from '../crypto'
-import { Bls12381g2SigningProvider, SigningProviderRegistry } from '../crypto/signing-provider'
+import { SigningProviderRegistry } from '../crypto/signing-provider'
 import { KeyDerivationMethod } from '../types'
 import { TypedArrayEncoder } from '../utils'
 
@@ -27,11 +27,7 @@ describe('IndyWallet', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    indyWallet = new IndyWallet(
-      agentDependencies,
-      testLogger,
-      new SigningProviderRegistry([new Bls12381g2SigningProvider()])
-    )
+    indyWallet = new IndyWallet(agentDependencies, testLogger, new SigningProviderRegistry([]))
     await indyWallet.createAndOpen(walletConfig)
   })
 

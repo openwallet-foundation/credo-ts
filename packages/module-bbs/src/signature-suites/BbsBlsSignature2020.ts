@@ -11,24 +11,27 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../types'
-import type { DocumentLoader, Proof, VerificationMethod } from '../../jsonldUtil'
 import type {
   SignatureSuiteOptions,
   CreateProofOptions,
+  VerifyProofOptions,
   CanonizeOptions,
   CreateVerifyDataOptions,
-  VerifyProofOptions,
-  VerifySignatureOptions,
   SuiteSignOptions,
-} from './types'
+  VerifySignatureOptions,
+} from '../types'
+import type { VerificationMethod, JsonObject, DocumentLoader, Proof } from '@aries-framework/core'
 
-import { AriesFrameworkError } from '../../../../error'
-import { TypedArrayEncoder } from '../../../../utils'
-import { SECURITY_CONTEXT_BBS_URL, SECURITY_CONTEXT_URL } from '../../constants'
-import { w3cDate } from '../../jsonldUtil'
-import jsonld from '../../libraries/jsonld'
-import { suites } from '../../libraries/jsonld-signatures'
+import {
+  AriesFrameworkError,
+  TypedArrayEncoder,
+  SECURITY_CONTEXT_BBS_URL,
+  SECURITY_CONTEXT_URL,
+  w3cDate,
+} from '@aries-framework/core'
+// TODO: what to do with these imports? It's a re-export of libraries, with some types added
+import jsonld from '@aries-framework/core/src/modules/vc/libraries/jsonld'
+import { suites } from '@aries-framework/core/src/modules/vc/libraries/jsonld-signatures'
 
 /**
  * A BBS+ signature suite for use with BLS12-381 key pairs
@@ -361,7 +364,7 @@ export class BbsBlsSignature2020 extends suites.LinkedDataProof {
       throw new Error('The verification method has been revoked.')
     }
 
-    return document as VerificationMethod
+    return document as unknown as VerificationMethod
   }
 
   /**

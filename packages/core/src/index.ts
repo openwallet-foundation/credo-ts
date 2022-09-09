@@ -13,7 +13,15 @@ export { AgentMessage } from './agent/AgentMessage'
 export { Dispatcher } from './agent/Dispatcher'
 export { MessageSender } from './agent/MessageSender'
 export type { AgentDependencies } from './agent/AgentDependencies'
-export type { InitConfig, OutboundPackage, EncryptedMessage, WalletConfig } from './types'
+export type {
+  InitConfig,
+  OutboundPackage,
+  EncryptedMessage,
+  WalletConfig,
+  JsonArray,
+  JsonObject,
+  JsonValue,
+} from './types'
 export { DidCommMimeType, KeyDerivationMethod } from './types'
 export type { FileSystem } from './storage/FileSystem'
 export * from './storage/BaseRecord'
@@ -23,7 +31,7 @@ export * from './storage/RepositoryEvents'
 export { StorageService } from './storage/StorageService'
 export { getDirFromFilePath } from './utils/path'
 export { InjectionSymbols } from './constants'
-export type { Wallet } from './wallet/Wallet'
+export * from './wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
 export { Attachment } from './decorators/attachment/Attachment'
@@ -42,13 +50,13 @@ export * from './modules/ledger'
 export * from './modules/routing'
 export * from './modules/question-answer'
 export * from './modules/oob'
-export * from './wallet/WalletApi'
 export * from './modules/dids'
-export { JsonEncoder, JsonTransformer, isJsonObject, isValidJweStructure } from './utils'
+export * from './modules/vc'
+export { JsonEncoder, JsonTransformer, isJsonObject, isValidJweStructure, TypedArrayEncoder, Buffer } from './utils'
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
-export { Key, KeyType } from './crypto'
+export * from './crypto'
 export { parseMessageType, IsValidMessageType } from './utils/messageType'
 
 export * from './agent/Events'

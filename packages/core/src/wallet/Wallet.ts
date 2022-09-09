@@ -23,9 +23,9 @@ export interface Wallet extends Disposable {
   export(exportConfig: WalletExportImportConfig): Promise<void>
   import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
 
-  createKey(options: CreateKeyOptions): Promise<Key>
-  sign(options: SignOptions): Promise<Buffer>
-  verify(options: VerifyOptions): Promise<boolean>
+  createKey(options: WalletCreateKeyOptions): Promise<Key>
+  sign(options: WalletSignOptions): Promise<Buffer>
+  verify(options: WalletVerifyOptions): Promise<boolean>
 
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>
@@ -40,17 +40,17 @@ export interface DidInfo {
   verkey: string
 }
 
-export interface CreateKeyOptions {
+export interface WalletCreateKeyOptions {
   keyType: KeyType
   seed?: string
 }
 
-export interface SignOptions {
+export interface WalletSignOptions {
   data: Buffer | Buffer[]
   key: Key
 }
 
-export interface VerifyOptions {
+export interface WalletVerifyOptions {
   data: Buffer | Buffer[]
   key: Key
   signature: Buffer

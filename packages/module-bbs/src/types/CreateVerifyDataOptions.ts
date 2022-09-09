@@ -11,18 +11,32 @@
  * limitations under the License.
  */
 
-import type { JsonArray, JsonObject } from '../../../../../types'
+import type { JsonObject, DocumentLoader } from '@aries-framework/core'
 
 /**
- * Result for getting proofs from a JSON-LD document
+ * Options for creating a proof
  */
-export interface GetProofsResult {
+export interface CreateVerifyDataOptions {
   /**
-   * The JSON-LD document with the linked data proofs removed.
+   * Document to create the proof for
    */
-  document: JsonObject
+  readonly document: JsonObject
   /**
-   * The list of proofs that matched the requested type.
+   * The proof
    */
-  proofs: JsonArray
+  readonly proof: JsonObject
+  /**
+   * Optional custom document loader
+   */
+
+  documentLoader?: DocumentLoader
+  /**
+   * Optional expansion map
+   */
+
+  expansionMap?: () => void
+  /**
+   * Indicates whether to compact the proof
+   */
+  readonly compactProof: boolean
 }

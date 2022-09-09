@@ -11,9 +11,7 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../../types'
-import type { DocumentLoader, Proof } from '../../../jsonldUtil'
-import type { ProofPurpose } from '../../../proof-purposes/ProofPurpose'
+import type { Proof, JsonObject, ProofPurpose, DocumentLoader } from '@aries-framework/core'
 
 /**
  * Options for verifying a proof

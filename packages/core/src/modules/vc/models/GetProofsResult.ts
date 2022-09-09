@@ -11,9 +11,18 @@
  * limitations under the License.
  */
 
-export { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
-export { BbsBlsSignature2020 } from './BbsBlsSignature2020'
-export { BbsBlsSignatureProof2020 } from './BbsBlsSignatureProof2020'
-export * from './types'
+import type { JsonObject, JsonArray } from '../../../types'
 
-export { deriveProof } from './deriveProof'
+/**
+ * Result for getting proofs from a JSON-LD document
+ */
+export interface GetProofsResult {
+  /**
+   * The JSON-LD document with the linked data proofs removed.
+   */
+  document: JsonObject
+  /**
+   * The list of proofs that matched the requested type.
+   */
+  proofs: JsonArray
+}

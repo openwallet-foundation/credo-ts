@@ -7,9 +7,9 @@ import type {
   DidInfo,
   UnpackedMessageContext,
   DidConfig,
-  CreateKeyOptions,
-  SignOptions,
-  VerifyOptions,
+  WalletCreateKeyOptions,
+  WalletSignOptions,
+  WalletVerifyOptions,
 } from '../../src/wallet'
 
 export class MockWallet implements Wallet {
@@ -57,14 +57,14 @@ export class MockWallet implements Wallet {
   public unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext> {
     throw new Error('Method not implemented.')
   }
-  public sign(options: SignOptions): Promise<Buffer> {
+  public sign(options: WalletSignOptions): Promise<Buffer> {
     throw new Error('Method not implemented.')
   }
-  public verify(options: VerifyOptions): Promise<boolean> {
+  public verify(options: WalletVerifyOptions): Promise<boolean> {
     throw new Error('Method not implemented.')
   }
 
-  public createKey(options: CreateKeyOptions): Promise<Key> {
+  public createKey(options: WalletCreateKeyOptions): Promise<Key> {
     throw new Error('Method not implemented.')
   }
 

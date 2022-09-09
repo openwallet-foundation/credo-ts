@@ -11,17 +11,12 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../../types'
-import type { DocumentLoader } from '../../../jsonldUtil'
+import type { DocumentLoader } from '@aries-framework/core'
 
 /**
- * Options for signing using a signature suite
+ * Options for canonizing a document
  */
-export interface SuiteSignOptions {
-  /**
-   * Input document to sign
-   */
-  readonly document: JsonObject
+export interface CanonizeOptions {
   /**
    * Optional custom document loader
    */
@@ -29,13 +24,10 @@ export interface SuiteSignOptions {
   /**
    * Optional expansion map
    */
+  // eslint-disable-next-line
   expansionMap?: () => void
   /**
-   * The array of statements to sign
+   * Indicates whether to skip expansion during canonization
    */
-  readonly verifyData: readonly Uint8Array[]
-  /**
-   * The proof
-   */
-  readonly proof: JsonObject
+  readonly skipExpansion?: boolean
 }

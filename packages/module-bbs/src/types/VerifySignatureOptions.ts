@@ -11,20 +11,34 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '../../../jsonldUtil'
+import type { VerificationMethod, JsonObject, Proof, DocumentLoader } from '@aries-framework/core'
 
 /**
- * Options for getting the type from a JSON-LD document
+ * Options for verifying a signature
  */
-export interface GetTypeOptions {
+export interface VerifySignatureOptions {
+  /**
+   * Document to verify
+   */
+  readonly document: JsonObject
+  /**
+   * Array of statements to verify
+   */
+  readonly verifyData: Uint8Array[]
+  /**
+   * Verification method to verify the signature against
+   */
+  readonly verificationMethod: VerificationMethod
+  /**
+   * Proof to verify
+   */
+  readonly proof: Proof
   /**
    * Optional custom document loader
    */
-  // eslint-disable-next-line
   documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
-  // eslint-disable-next-line
   expansionMap?: () => void
 }

@@ -1,13 +1,7 @@
-import type { SigningProvider, CreateKeyPairOptions, SignOptions, VerifyOptions, KeyPair } from './SigningProvider'
+import type { SigningProvider, CreateKeyPairOptions, KeyPair, SignOptions, VerifyOptions } from '@aries-framework/core'
 
+import { KeyType, injectable, TypedArrayEncoder, SigningProviderError, Buffer } from '@aries-framework/core'
 import { bls12381toBbs, verify, sign, generateBls12381G2KeyPair } from '@mattrglobal/bbs-signatures'
-
-import { injectable } from '../../plugins'
-import { TypedArrayEncoder } from '../../utils'
-import { Buffer } from '../../utils/buffer'
-import { KeyType } from '../KeyType'
-
-import { SigningProviderError } from './SigningProviderError'
 
 /**
  * This will be extracted to the bbs package.

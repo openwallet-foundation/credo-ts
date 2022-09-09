@@ -11,29 +11,20 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../../types'
-import type { DocumentLoader, Proof, VerificationMethod } from '../../../jsonldUtil'
+import type { DocumentLoader, ProofPurpose, JsonObject } from '@aries-framework/core'
 
 /**
- * Options for verifying a signature
+ * Options for creating a proof
  */
-export interface VerifySignatureOptions {
+export interface CreateProofOptions {
   /**
-   * Document to verify
+   * Document to create the proof for
    */
   readonly document: JsonObject
   /**
-   * Array of statements to verify
+   * The proof purpose to specify for the generated proof
    */
-  readonly verifyData: Uint8Array[]
-  /**
-   * Verification method to verify the signature against
-   */
-  readonly verificationMethod: VerificationMethod
-  /**
-   * Proof to verify
-   */
-  readonly proof: Proof
+  readonly purpose: ProofPurpose
   /**
    * Optional custom document loader
    */
@@ -42,4 +33,8 @@ export interface VerifySignatureOptions {
    * Optional expansion map
    */
   expansionMap?: () => void
+  /**
+   * Indicates whether to compact the resulting proof
+   */
+  readonly compactProof: boolean
 }

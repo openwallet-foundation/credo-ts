@@ -8,12 +8,12 @@ import type {
 } from '../types'
 import type { Buffer } from '../utils/buffer'
 import type {
-  CreateKeyOptions,
+  WalletCreateKeyOptions,
   DidConfig,
   DidInfo,
-  SignOptions,
+  WalletSignOptions,
   UnpackedMessageContext,
-  VerifyOptions,
+  WalletVerifyOptions,
   Wallet,
 } from './Wallet'
 import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
@@ -470,7 +470,7 @@ export class IndyWallet implements Wallet {
    * @throws {WalletError} When an unsupported keytype is requested
    * @throws {WalletError} When the key could not be created
    */
-  public async createKey({ seed, keyType }: CreateKeyOptions): Promise<Key> {
+  public async createKey({ seed, keyType }: WalletCreateKeyOptions): Promise<Key> {
     try {
       // Ed25519 is supported natively in Indy wallet
       if (keyType === KeyType.Ed25519) {
@@ -508,7 +508,7 @@ export class IndyWallet implements Wallet {
    *
    * @returns A signature for the data
    */
-  public async sign({ data, key }: SignOptions): Promise<Buffer> {
+  public async sign({ data, key }: WalletSignOptions): Promise<Buffer> {
     try {
       // Ed25519 is supported natively in Indy wallet
       if (key.keyType === KeyType.Ed25519) {
@@ -555,7 +555,7 @@ export class IndyWallet implements Wallet {
    * @throws {WalletError} When it could not do the verification
    * @throws {WalletError} When an unsupported keytype is used
    */
-  public async verify({ data, key, signature }: VerifyOptions): Promise<boolean> {
+  public async verify({ data, key, signature }: WalletVerifyOptions): Promise<boolean> {
     try {
       // Ed25519 is supported natively in Indy wallet
       if (key.keyType === KeyType.Ed25519) {

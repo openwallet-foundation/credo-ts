@@ -1,14 +1,13 @@
 import type { Wallet } from '..'
+import type { LdKeyPairOptions } from '../modules/vc/models/LdKeyPair'
 import type { Key } from './Key'
-import type { LdKeyPairOptions } from './LdKeyPair'
 
 import { VerificationMethod } from '../modules/dids'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type/keyDidMapping'
+import { LdKeyPair } from '../modules/vc/models/LdKeyPair'
 import { JsonTransformer } from '../utils'
 import { MessageValidator } from '../utils/MessageValidator'
 import { Buffer } from '../utils/buffer'
-
-import { LdKeyPair } from './LdKeyPair'
 
 interface WalletKeyPairOptions extends LdKeyPairOptions {
   wallet: Wallet

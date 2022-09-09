@@ -1,3 +1,7 @@
 export * from './credential/W3cCredential'
 export * from './credential/W3cVerifiableCredential'
 export * from './credential/W3cVerifyCredentialResult'
+export * from './GetProofsOptions'
+export * from './GetProofsResult'
+export * from './GetTypeOptions'
+export * from './LdKeyPair'

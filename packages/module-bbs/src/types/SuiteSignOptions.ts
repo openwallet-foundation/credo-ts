@@ -11,31 +11,30 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../../types'
-import type { DocumentLoader } from '../../../jsonldUtil'
+import type { JsonObject, DocumentLoader } from '@aries-framework/core'
 
 /**
- * Options for getting a proof from a JSON-LD document
+ * Options for signing using a signature suite
  */
-export interface GetProofsOptions {
+export interface SuiteSignOptions {
   /**
-   * The JSON-LD document to extract the proofs from.
+   * Input document to sign
    */
   readonly document: JsonObject
   /**
-   * Optional the proof type(s) to filter the returned proofs by
-   */
-  readonly proofType?: string | readonly string[]
-  /**
    * Optional custom document loader
    */
-  documentLoader?(): DocumentLoader
+  documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
-  expansionMap?(): () => void
+  expansionMap?: () => void
   /**
-   * Optional property to indicate whether to skip compacting the resulting proof
+   * The array of statements to sign
    */
-  readonly skipProofCompaction?: boolean
+  readonly verifyData: readonly Uint8Array[]
+  /**
+   * The proof
+   */
+  readonly proof: JsonObject
 }

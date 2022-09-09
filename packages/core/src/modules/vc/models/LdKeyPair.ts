@@ -1,4 +1,4 @@
-import type { VerificationMethod } from '../modules/dids'
+import type { VerificationMethod } from '../../dids'
 
 export interface LdKeyPairOptions {
   id: string

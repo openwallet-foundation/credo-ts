@@ -23,14 +23,14 @@ import { DidResolverService, VerificationMethod } from '../dids'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
+import { deriveProof } from './deriveProof'
 import { orArrayToArray, w3cDate } from './jsonldUtil'
 import jsonld, { documentLoaderNode, documentLoaderXhr } from './libraries/jsonld'
 import vc from './libraries/vc'
 import { W3cVerifiableCredential } from './models'
-import { W3cPresentation } from './models/presentation/W3Presentation'
+import { W3cPresentation } from './models/presentation/W3cPresentation'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
 import { W3cCredentialRecord, W3cCredentialRepository } from './repository'
-import { deriveProof } from './signature-suites/bbs'
 
 @injectable()
 export class W3cCredentialService {
@@ -267,6 +267,7 @@ export class W3cCredentialService {
   }
 
   public async deriveProof(agentContext: AgentContext, options: DeriveProofOptions): Promise<W3cVerifiableCredential> {
+    // TODO: make suite dynamic
     const suiteInfo = this.suiteRegistry.getByProofType('BbsBlsSignatureProof2020')
     const SuiteClass = suiteInfo.suiteClass
 

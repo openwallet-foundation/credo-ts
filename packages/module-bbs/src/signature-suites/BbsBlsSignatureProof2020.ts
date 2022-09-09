@@ -11,21 +11,17 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../types'
-import type { Proof } from '../../jsonldUtil'
-import type { DocumentLoader } from '../../libraries/jsonld'
-import type { DeriveProofOptions, VerifyProofOptions, CreateVerifyDataOptions, CanonizeOptions } from './types'
-import type { VerifyProofResult } from './types/VerifyProofResult'
+import type { DeriveProofOptions, VerifyProofOptions, CreateVerifyDataOptions, CanonizeOptions } from '../types'
+import type { VerifyProofResult } from '../types/VerifyProofResult'
+import type { JsonObject, DocumentLoader, Proof } from '@aries-framework/core/src'
 
+import { AriesFrameworkError, TypedArrayEncoder, SECURITY_CONTEXT_URL } from '@aries-framework/core'
+// TODO: what to do with these imports? It's a re-export of libraries, with some types added
+import jsonld from '@aries-framework/core/build/modules/vc/libraries/jsonld'
+import { suites } from '@aries-framework/core/build/modules/vc/libraries/jsonld-signatures'
 import { blsCreateProof, blsVerifyProof } from '@mattrglobal/bbs-signatures'
 import { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 import { randomBytes } from '@stablelib/random'
-
-import { AriesFrameworkError } from '../../../../error'
-import { TypedArrayEncoder } from '../../../../utils'
-import { SECURITY_CONTEXT_URL } from '../../constants'
-import jsonld from '../../libraries/jsonld'
-import { suites } from '../../libraries/jsonld-signatures'
 
 import { BbsBlsSignature2020 } from './BbsBlsSignature2020'
 
