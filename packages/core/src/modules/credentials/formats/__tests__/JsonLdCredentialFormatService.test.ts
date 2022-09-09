@@ -1,34 +1,34 @@
-import type { AgentContext } from '../../../agent'
-import type { CredentialFormatService } from '../formats'
+import type { AgentContext } from '../../../../agent'
+import type { CredentialFormatService } from '../../formats'
 import type {
   JsonLdAcceptRequestOptions,
   JsonLdCredentialFormat,
   SignCredentialOptionsRFC0593,
-} from '../formats/jsonld/JsonLdCredentialFormat'
-import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
-import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
-import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
+} from '../../formats/jsonld/JsonLdCredentialFormat'
+import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
+import type { V2OfferCredentialMessageOptions } from '../../protocol/v2/messages/V2OfferCredentialMessage'
+import type { CustomCredentialTags } from '../../repository/CredentialExchangeRecord'
 
-import { getAgentContext, mockFunction } from '../../../../tests/helpers'
-import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { JsonTransformer } from '../../../utils'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
-import { DidResolverService } from '../../dids/services/DidResolverService'
-import { W3cCredentialService } from '../../vc'
-import { Ed25519Signature2018Fixtures } from '../../vc/__tests__/fixtures'
-import { CREDENTIALS_CONTEXT_V1_URL } from '../../vc/constants'
-import { W3cVerifiableCredential } from '../../vc/models'
-import { W3cCredential } from '../../vc/models/credential/W3cCredential'
-import { W3cCredentialRecord } from '../../vc/models/credential/W3cCredentialRecord'
-import { JsonLdCredentialFormatService } from '../formats/jsonld/JsonLdCredentialFormatService'
-import { CredentialState } from '../models'
-import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID } from '../protocol/v1/messages'
-import { V2CredentialPreview } from '../protocol/v2/messages'
-import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
-import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
+import { getAgentContext, mockFunction } from '../../../../../tests/helpers'
+import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
+import { JsonTransformer } from '../../../../utils'
+import { JsonEncoder } from '../../../../utils/JsonEncoder'
+import { DidResolverService } from '../../../dids/services/DidResolverService'
+import { W3cCredentialService } from '../../../vc'
+import { Ed25519Signature2018Fixtures } from '../../../vc/__tests__/fixtures'
+import { CREDENTIALS_CONTEXT_V1_URL } from '../../../vc/constants'
+import { W3cVerifiableCredential } from '../../../vc/models'
+import { W3cCredential } from '../../../vc/models/credential/W3cCredential'
+import { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
+import { JsonLdCredentialFormatService } from '../../formats/jsonld/JsonLdCredentialFormatService'
+import { CredentialState } from '../../models'
+import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID } from '../../protocol/v1/messages'
+import { V2CredentialPreview } from '../../protocol/v2/messages'
+import { V2OfferCredentialMessage } from '../../protocol/v2/messages/V2OfferCredentialMessage'
+import { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 
-jest.mock('../../vc/W3cCredentialService')
-jest.mock('../../dids/services/DidResolverService')
+jest.mock('../../../vc/W3cCredentialService')
+jest.mock('../../../dids/services/DidResolverService')
 
 const W3cCredentialServiceMock = W3cCredentialService as jest.Mock<W3cCredentialService>
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>

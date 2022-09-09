@@ -13,7 +13,7 @@ import type { GetRequestedCredentialsFormat } from './indy/IndyProofFormatsServi
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
-  CreateProposalOptions,
+  FormatCreateProposalOptions,
   CreateRequestOptions,
   FormatCreatePresentationOptions,
   ProcessPresentationOptions,
@@ -40,7 +40,7 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
     this.agentConfig = agentConfig
   }
 
-  abstract createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat>
+  abstract createProposal(options: FormatCreateProposalOptions): Promise<ProofAttachmentFormat>
 
   abstract processProposal(options: ProcessProposalOptions): Promise<void>
 

@@ -1,41 +1,40 @@
-import type { AgentContext } from '../../../agent'
-import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { ParseRevocationRegistryDefinitionTemplate } from '../../ledger/services/IndyLedgerService'
-import type { CredentialFormatService } from '../formats'
-import type { IndyCredentialFormat } from '../formats/indy/IndyCredentialFormat'
-import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
-import type { V2OfferCredentialMessageOptions } from '../protocol/v2/messages/V2OfferCredentialMessage'
-import type { CustomCredentialTags } from '../repository/CredentialExchangeRecord'
+import type { AgentContext } from '../../../../agent'
+import type { AgentConfig } from '../../../../agent/AgentConfig'
+import type { ParseRevocationRegistryDefinitionTemplate } from '../../../ledger/services/IndyLedgerService'
+import type { CredentialFormatService } from '../../formats'
+import type { IndyCredentialFormat } from '../../formats/indy/IndyCredentialFormat'
+import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
+import type { V2OfferCredentialMessageOptions } from '../../protocol/v2/messages/V2OfferCredentialMessage'
+import type { CustomCredentialTags } from '../../repository/CredentialExchangeRecord'
 import type { RevocRegDef } from 'indy-sdk'
 
-import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
-import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
-import { JsonEncoder } from '../../../utils/JsonEncoder'
-import { ConnectionService } from '../../connections/services/ConnectionService'
-import { DidResolverService } from '../../dids/services/DidResolverService'
-import { IndyHolderService } from '../../indy/services/IndyHolderService'
-import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
-import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
-import { IndyCredentialFormatService } from '../formats'
-import { IndyCredentialUtils } from '../formats/indy/IndyCredentialUtils'
-import { CredentialState } from '../models'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
+import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
+import { JsonEncoder } from '../../../../utils/JsonEncoder'
+import { ConnectionService } from '../../../connections/services/ConnectionService'
+import { DidResolverService } from '../../../dids/services/DidResolverService'
+import { IndyHolderService } from '../../../indy/services/IndyHolderService'
+import { IndyIssuerService } from '../../../indy/services/IndyIssuerService'
+import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
+import { credDef, credReq, schema } from '../../__tests__/fixtures'
+import { IndyCredentialFormatService } from '../../formats'
+import { IndyCredentialUtils } from '../../formats/indy/IndyCredentialUtils'
+import { CredentialState } from '../../models'
 import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
-} from '../protocol/v1/messages'
-import { V2CredentialPreview } from '../protocol/v2/messages'
-import { V2OfferCredentialMessage } from '../protocol/v2/messages/V2OfferCredentialMessage'
-import { CredentialMetadataKeys } from '../repository'
-import { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
+} from '../../protocol/v1/messages'
+import { V2CredentialPreview } from '../../protocol/v2/messages'
+import { V2OfferCredentialMessage } from '../../protocol/v2/messages/V2OfferCredentialMessage'
+import { CredentialMetadataKeys } from '../../repository'
+import { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 
-import { credDef, credReq, schema } from './fixtures'
-
-jest.mock('../../../modules/ledger/services/IndyLedgerService')
-jest.mock('../../indy/services/IndyHolderService')
-jest.mock('../../indy/services/IndyIssuerService')
-jest.mock('../../dids/services/DidResolverService')
-jest.mock('../../connections/services/ConnectionService')
+jest.mock('../../../../modules/ledger/services/IndyLedgerService')
+jest.mock('../../../indy/services/IndyHolderService')
+jest.mock('../../../indy/services/IndyIssuerService')
+jest.mock('../../../dids/services/DidResolverService')
+jest.mock('../../../connections/services/ConnectionService')
 
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyHolderServiceMock = IndyHolderService as jest.Mock<IndyHolderService>
