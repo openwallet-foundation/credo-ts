@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { Dispatcher } from '../../../agent/Dispatcher'
 import type { EventEmitter } from '../../../agent/EventEmitter'
+import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { DiscoverFeaturesModuleConfig } from '../DiscoverFeaturesModuleConfig'
@@ -9,7 +10,6 @@ import type {
   CreateQueryOptions,
   DiscoverFeaturesProtocolMsgReturnType,
 } from '../DiscoverFeaturesServiceOptions'
-import type { FeatureRegistry } from '../FeatureRegistry'
 
 export abstract class DiscoverFeaturesService {
   protected featureRegistry: FeatureRegistry

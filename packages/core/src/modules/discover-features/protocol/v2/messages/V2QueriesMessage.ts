@@ -1,11 +1,11 @@
-import type { FeatureQueryOptions } from '../../../models'
+import type { FeatureQueryOptions } from '../../../../../agent/models'
 
 import { Type } from 'class-transformer'
 import { ArrayNotEmpty, IsInstance } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
+import { FeatureQuery } from '../../../../../agent/models'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { FeatureQuery } from '../../../models'
 
 export interface V2DiscoverFeaturesQueriesMessageOptions {
   id?: string

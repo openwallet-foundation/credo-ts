@@ -2,7 +2,6 @@ import type { Constructor } from '../../../utils/mixins'
 import type { DidRegistrar, DidResolver } from '../domain'
 
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { FeatureRegistry } from '../../discover-features'
 import { DidsApi } from '../DidsApi'
 import { DidsModule } from '../DidsModule'
 import { DidsModuleConfig } from '../DidsModuleConfig'
@@ -24,15 +23,10 @@ const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
-jest.mock('../../discover-features/FeatureRegistry')
-const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
-
-const featureRegistry = new FeatureRegistryMock()
-
 describe('DidsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const didsModule = new DidsModule()
-    didsModule.register(featureRegistry, dependencyManager)
+    didsModule.register(dependencyManager)
 
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(DidsApi)
@@ -62,7 +56,7 @@ describe('DidsModule', () => {
     new DidsModule({
       registrars: [registrar],
       resolvers: [resolver],
-    }).register(featureRegistry, dependencyManager)
+    }).register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidResolverToken, resolver)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRegistrarToken, registrar)

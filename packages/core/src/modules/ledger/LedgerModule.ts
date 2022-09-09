@@ -1,5 +1,4 @@
 import type { DependencyManager, Module } from '../../plugins'
-import type { FeatureRegistry } from '../discover-features'
 import type { LedgerModuleConfigOptions } from './LedgerModuleConfig'
 
 import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
@@ -19,7 +18,7 @@ export class LedgerModule implements Module {
   /**
    * Registers the dependencies of the ledger module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager) {
     // Api
     dependencyManager.registerContextScoped(LedgerApi)
 

@@ -1,7 +1,7 @@
+import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
-import type { FeatureRegistry } from '../discover-features'
 
-import { Protocol } from '../discover-features'
+import { Protocol } from '../../agent/models'
 
 import { QuestionAnswerApi } from './QuestionAnswerApi'
 import { QuestionAnswerRole } from './QuestionAnswerRole'
@@ -12,7 +12,7 @@ export class QuestionAnswerModule implements Module {
   /**
    * Registers the dependencies of the question answer module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
     dependencyManager.registerContextScoped(QuestionAnswerApi)
 

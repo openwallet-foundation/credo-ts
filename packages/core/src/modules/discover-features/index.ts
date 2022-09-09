@@ -1,5 +1,3 @@
 export * from './DiscoverFeaturesApi'
 export * from './DiscoverFeaturesModule'
-export * from './FeatureRegistry'
 export * from './protocol'
-export * from './models'

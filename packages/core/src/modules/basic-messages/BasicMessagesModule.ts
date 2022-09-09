@@ -1,7 +1,7 @@
+import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
-import type { FeatureRegistry } from '../discover-features'
 
-import { Protocol } from '../discover-features'
+import { Protocol } from '../../agent/models'
 
 import { BasicMessageRole } from './BasicMessageRole'
 import { BasicMessagesApi } from './BasicMessagesApi'
@@ -12,7 +12,7 @@ export class BasicMessagesModule implements Module {
   /**
    * Registers the dependencies of the basic message module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
     dependencyManager.registerContextScoped(BasicMessagesApi)
 

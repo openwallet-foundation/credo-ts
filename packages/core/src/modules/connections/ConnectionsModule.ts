@@ -1,8 +1,8 @@
+import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
-import type { FeatureRegistry } from '../discover-features'
 import type { ConnectionsModuleConfigOptions } from './ConnectionsModuleConfig'
 
-import { Protocol } from '../discover-features'
+import { Protocol } from '../../agent/models'
 
 import { ConnectionsApi } from './ConnectionsApi'
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
@@ -21,7 +21,7 @@ export class ConnectionsModule implements Module {
   /**
    * Registers the dependencies of the connections module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
     dependencyManager.registerContextScoped(ConnectionsApi)
 

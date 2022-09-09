@@ -1,10 +1,11 @@
+import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
 import type { DiscoverFeaturesModuleConfigOptions } from './DiscoverFeaturesModuleConfig'
-import type { FeatureRegistry } from './FeatureRegistry'
+
+import { Protocol } from '../../agent/models'
 
 import { DiscoverFeaturesApi } from './DiscoverFeaturesApi'
 import { DiscoverFeaturesModuleConfig } from './DiscoverFeaturesModuleConfig'
-import { Protocol } from './models'
 import { V1DiscoverFeaturesService } from './protocol/v1'
 import { V2DiscoverFeaturesService } from './protocol/v2'
 
@@ -18,7 +19,7 @@ export class DiscoverFeaturesModule implements Module {
   /**
    * Registers the dependencies of the discover features module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
     dependencyManager.registerContextScoped(DiscoverFeaturesApi)
 

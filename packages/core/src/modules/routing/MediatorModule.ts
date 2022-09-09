@@ -1,8 +1,8 @@
+import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
-import type { FeatureRegistry } from '../discover-features'
 import type { MediatorModuleConfigOptions } from './MediatorModuleConfig'
 
-import { Protocol } from '../discover-features'
+import { Protocol } from '../../agent/models'
 
 import { MediatorApi } from './MediatorApi'
 import { MediatorModuleConfig } from './MediatorModuleConfig'
@@ -21,7 +21,7 @@ export class MediatorModule implements Module {
   /**
    * Registers the dependencies of the question answer module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
     dependencyManager.registerContextScoped(MediatorApi)
 

@@ -1,5 +1,4 @@
 import type { DependencyManager, Module } from '../../plugins'
-import type { FeatureRegistry } from '../discover-features'
 
 import { GenericRecordsApi } from './GenericRecordsApi'
 import { GenericRecordsRepository } from './repository/GenericRecordsRepository'
@@ -9,7 +8,7 @@ export class GenericRecordsModule implements Module {
   /**
    * Registers the dependencies of the generic records module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager) {
     // Api
     dependencyManager.registerContextScoped(GenericRecordsApi)
 

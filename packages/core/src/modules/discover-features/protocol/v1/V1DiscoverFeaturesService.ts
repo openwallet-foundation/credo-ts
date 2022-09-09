@@ -12,14 +12,14 @@ import type {
 
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { FeatureRegistry } from '../../../../agent/FeatureRegistry'
+import { Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
 import { AriesFrameworkError } from '../../../../error'
 import { Logger } from '../../../../logger'
 import { inject, injectable } from '../../../../plugins'
 import { DiscoverFeaturesEventTypes } from '../../DiscoverFeaturesEvents'
 import { DiscoverFeaturesModuleConfig } from '../../DiscoverFeaturesModuleConfig'
-import { FeatureRegistry } from '../../FeatureRegistry'
-import { Protocol } from '../../models'
 import { DiscoverFeaturesService } from '../../services'
 
 import { V1DiscloseMessageHandler, V1QueryMessageHandler } from './handlers'

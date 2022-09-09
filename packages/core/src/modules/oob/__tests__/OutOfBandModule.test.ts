@@ -1,5 +1,5 @@
+import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { FeatureRegistry } from '../../discover-features'
 import { OutOfBandApi } from '../OutOfBandApi'
 import { OutOfBandModule } from '../OutOfBandModule'
 import { OutOfBandService } from '../OutOfBandService'
@@ -10,13 +10,13 @@ const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
-jest.mock('../../discover-features/FeatureRegistry')
+jest.mock('../../../agent/FeatureRegistry')
 const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
 
 const featureRegistry = new FeatureRegistryMock()
 describe('OutOfBandModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    new OutOfBandModule().register(featureRegistry, dependencyManager)
+    new OutOfBandModule().register(dependencyManager, featureRegistry)
 
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(OutOfBandApi)

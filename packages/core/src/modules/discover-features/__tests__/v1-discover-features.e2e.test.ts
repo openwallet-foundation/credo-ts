@@ -18,7 +18,6 @@ import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
 describe('v1 discover features', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let aliceConnection: ConnectionRecord
   let faberConnection: ConnectionRecord
 
   beforeAll(async () => {

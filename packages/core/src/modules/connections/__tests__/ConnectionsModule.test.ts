@@ -1,5 +1,5 @@
+import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
-import { FeatureRegistry } from '../../discover-features'
 import { ConnectionsApi } from '../ConnectionsApi'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
@@ -12,7 +12,7 @@ const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
-jest.mock('../../discover-features/FeatureRegistry')
+jest.mock('../../../agent/FeatureRegistry')
 const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
 
 const featureRegistry = new FeatureRegistryMock()
@@ -20,7 +20,7 @@ const featureRegistry = new FeatureRegistryMock()
 describe('ConnectionsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const connectionsModule = new ConnectionsModule()
-    connectionsModule.register(featureRegistry, dependencyManager)
+    connectionsModule.register(dependencyManager, featureRegistry)
 
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(ConnectionsApi)

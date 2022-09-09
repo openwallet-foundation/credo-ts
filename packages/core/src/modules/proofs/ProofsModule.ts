@@ -1,8 +1,8 @@
+import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
-import type { FeatureRegistry } from '../discover-features'
 import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
 
-import { Protocol } from '../discover-features'
+import { Protocol } from '../../agent/models'
 
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
@@ -21,7 +21,7 @@ export class ProofsModule implements Module {
   /**
    * Registers the dependencies of the proofs module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
     dependencyManager.registerContextScoped(ProofsApi)
 

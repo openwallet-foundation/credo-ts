@@ -1,7 +1,7 @@
+import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
-import type { FeatureRegistry } from '../discover-features'
 
-import { Protocol } from '../discover-features'
+import { Protocol } from '../../agent/models'
 
 import { OutOfBandApi } from './OutOfBandApi'
 import { OutOfBandService } from './OutOfBandService'
@@ -11,7 +11,7 @@ export class OutOfBandModule implements Module {
   /**
    * Registers the dependencies of the ot of band module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
     dependencyManager.registerContextScoped(OutOfBandApi)
 

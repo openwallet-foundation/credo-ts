@@ -1,8 +1,8 @@
+import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
-import type { FeatureRegistry } from '../discover-features'
 import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
 
-import { Protocol } from '../discover-features'
+import { Protocol } from '../../agent/models'
 
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
@@ -22,7 +22,7 @@ export class CredentialsModule implements Module {
   /**
    * Registers the dependencies of the credentials module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
     dependencyManager.registerContextScoped(CredentialsApi)
 

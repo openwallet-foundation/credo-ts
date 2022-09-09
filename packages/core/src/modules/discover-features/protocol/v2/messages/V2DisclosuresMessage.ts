@@ -2,8 +2,8 @@ import { Type } from 'class-transformer'
 import { IsInstance } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
+import { Feature } from '../../../../../agent/models'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { Feature } from '../../../models/Feature'
 
 export interface V2DisclosuresMessageOptions {
   id?: string

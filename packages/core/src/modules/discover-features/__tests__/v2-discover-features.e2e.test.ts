@@ -11,8 +11,8 @@ import { SubjectInboundTransport } from '../../../../../../tests/transport/Subje
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getBaseConfig, makeConnection } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
+import { GoalCode, Feature } from '../../../agent/models'
 import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
-import { GoalCode, Feature } from '../models'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
 

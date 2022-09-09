@@ -1,5 +1,5 @@
 import type { TenantsModuleConfigOptions } from './TenantsModuleConfig'
-import type { DependencyManager, FeatureRegistry, Module } from '@aries-framework/core'
+import type { DependencyManager, Module } from '@aries-framework/core'
 
 import { InjectionSymbols } from '@aries-framework/core'
 
@@ -20,7 +20,7 @@ export class TenantsModule implements Module {
   /**
    * Registers the dependencies of the tenants module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager) {
     // Api
     // NOTE: this is a singleton because tenants can't have their own tenants. This makes sure the tenants api is always used in the root agent context.
     dependencyManager.registerSingleton(TenantsApi)

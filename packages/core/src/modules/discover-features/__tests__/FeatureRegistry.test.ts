@@ -1,7 +1,6 @@
+import { FeatureRegistry } from '../../../agent/FeatureRegistry'
+import { Feature, GoalCode, Protocol } from '../../../agent/models'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { FeatureRegistry } from '../FeatureRegistry'
-import { Feature, Protocol } from '../models'
-import { GoalCode } from '../models/GoalCode'
 
 describe('Feature Registry', () => {
   test('register goal codes', () => {

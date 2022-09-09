@@ -1,6 +1,6 @@
 import type { BaseEvent } from '../../agent/Events'
+import type { Feature, FeatureQueryOptions } from '../../agent/models'
 import type { ConnectionRecord } from '../connections'
-import type { Feature, FeatureQueryOptions } from './models'
 
 export enum DiscoverFeaturesEventTypes {
   QueryReceived = 'QueryReceived',

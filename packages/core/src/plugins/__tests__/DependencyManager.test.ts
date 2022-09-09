@@ -2,7 +2,7 @@ import type { Module } from '../Module'
 
 import { container as rootContainer, injectable, Lifecycle } from 'tsyringe'
 
-import { FeatureRegistry } from '../../modules/discover-features'
+import { FeatureRegistry } from '../../agent/FeatureRegistry'
 import { DependencyManager } from '../DependencyManager'
 
 class Instance {
@@ -37,10 +37,10 @@ describe('DependencyManager', () => {
 
       dependencyManager.registerModules(module1, module2)
       expect(module1.register).toHaveBeenCalledTimes(1)
-      expect(module1.register).toHaveBeenLastCalledWith(featureRegistry, dependencyManager)
+      expect(module1.register).toHaveBeenLastCalledWith(dependencyManager, featureRegistry)
 
       expect(module2.register).toHaveBeenCalledTimes(1)
-      expect(module2.register).toHaveBeenLastCalledWith(featureRegistry, dependencyManager)
+      expect(module2.register).toHaveBeenLastCalledWith(dependencyManager, featureRegistry)
     })
   })
 

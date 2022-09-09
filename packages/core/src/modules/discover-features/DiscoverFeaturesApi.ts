@@ -1,6 +1,6 @@
+import type { Feature } from '../../agent/models'
 import type { DiscoverFeaturesDisclosureReceivedEvent } from './DiscoverFeaturesEvents'
 import type { DiscloseFeaturesOptions, QueryFeaturesOptions, ServiceMap } from './DiscoverFeaturesModuleOptions'
-import type { Feature } from './models'
 import type { DiscoverFeaturesService } from './services'
 
 import { firstValueFrom, of, ReplaySubject, Subject } from 'rxjs'

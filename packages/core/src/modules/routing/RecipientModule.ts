@@ -1,8 +1,8 @@
+import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
-import type { FeatureRegistry } from '../discover-features'
 import type { RecipientModuleConfigOptions } from './RecipientModuleConfig'
 
-import { Protocol } from '../discover-features'
+import { Protocol } from '../../agent/models'
 
 import { RecipientApi } from './RecipientApi'
 import { RecipientModuleConfig } from './RecipientModuleConfig'
@@ -20,7 +20,7 @@ export class RecipientModule implements Module {
   /**
    * Registers the dependencies of the mediator recipient module on the dependency manager.
    */
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
     dependencyManager.registerContextScoped(RecipientApi)
 

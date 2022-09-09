@@ -1,4 +1,4 @@
-import type { FeatureQueryOptions } from './models'
+import type { FeatureQueryOptions } from '../../agent/models'
 import type { DiscoverFeaturesService } from './services'
 
 /**

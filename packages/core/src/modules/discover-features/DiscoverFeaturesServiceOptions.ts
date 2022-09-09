@@ -1,5 +1,5 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
-import type { FeatureQueryOptions } from './models'
+import type { FeatureQueryOptions } from '../../agent/models'
 
 export interface CreateQueryOptions {
   queries: FeatureQueryOptions[]

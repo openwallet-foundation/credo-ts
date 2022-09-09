@@ -6,7 +6,7 @@ import { DummyRepository } from './repository'
 import { DummyService } from './services'
 
 export class DummyModule implements Module {
-  public register(featureRegistry: FeatureRegistry, dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
     dependencyManager.registerContextScoped(DummyModule)
 

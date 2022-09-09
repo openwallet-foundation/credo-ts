@@ -1,4 +1,4 @@
-import { FeatureRegistry, InjectionSymbols } from '@aries-framework/core'
+import { InjectionSymbols } from '@aries-framework/core'
 
 import { DependencyManager } from '../../../core/src/plugins/DependencyManager'
 import { TenantsApi } from '../TenantsApi'
@@ -14,15 +14,10 @@ const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
-jest.mock('../../../core/src/modules/discover-features/FeatureRegistry')
-const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
-
-const featureRegistry = new FeatureRegistryMock()
-
 describe('TenantsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const tenantsModule = new TenantsModule()
-    tenantsModule.register(featureRegistry, dependencyManager)
+    tenantsModule.register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(6)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TenantsApi)

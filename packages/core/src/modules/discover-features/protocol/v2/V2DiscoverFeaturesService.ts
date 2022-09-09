@@ -11,12 +11,12 @@ import type {
 
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import { InjectionSymbols } from '../../../../constants'
 import { Logger } from '../../../../logger'
 import { inject, injectable } from '../../../../plugins'
 import { DiscoverFeaturesEventTypes } from '../../DiscoverFeaturesEvents'
 import { DiscoverFeaturesModuleConfig } from '../../DiscoverFeaturesModuleConfig'
-import { FeatureRegistry } from '../../FeatureRegistry'
 import { DiscoverFeaturesService } from '../../services'
 
 import { V2DisclosuresMessageHandler, V2QueriesMessageHandler } from './handlers'
