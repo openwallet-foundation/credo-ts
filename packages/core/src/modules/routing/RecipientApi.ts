@@ -255,7 +255,7 @@ export class RecipientApi {
         awaitDisclosures: true,
       })
 
-      if (discloseForPickupV2?.find((item) => item.id === StatusMessage.type.protocolUri)) {
+      if (discloseForPickupV2.features?.find((item) => item.id === StatusMessage.type.protocolUri)) {
         mediatorPickupStrategy = MediatorPickupStrategy.PickUpV2
       } else {
         const discloseForPickupV1 = await this.discoverFeaturesApi.queryFeatures({
@@ -265,7 +265,9 @@ export class RecipientApi {
           awaitDisclosures: true,
         })
         // Use explicit pickup strategy
-        mediatorPickupStrategy = discloseForPickupV1?.find((item) => item.id === BatchPickupMessage.type.protocolUri)
+        mediatorPickupStrategy = discloseForPickupV1.features?.find(
+          (item) => item.id === BatchPickupMessage.type.protocolUri
+        )
           ? MediatorPickupStrategy.PickUpV1
           : MediatorPickupStrategy.Implicit
       }
