@@ -3,7 +3,7 @@ import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
 import type { OutboundTransport } from './OutboundTransport'
-import type { OutboundWebSocketClosedEvent } from './TransportEventTypes'
+import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from './TransportEventTypes'
 import type WebSocket from 'ws'
 
 import { AgentConfig } from '../agent/AgentConfig'
@@ -139,6 +139,14 @@ export class WsOutboundTransport implements OutboundTransport {
       socket.onopen = () => {
         this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)
         resolve(socket)
+
+        this.eventEmitter.emit<OutboundWebSocketOpenedEvent>({
+          type: TransportEventTypes.OutboundWebSocketOpenedEvent,
+          payload: {
+            socketId,
+            connectionId: connectionId,
+          },
+        })
       }
 
       socket.onerror = (error) => {
