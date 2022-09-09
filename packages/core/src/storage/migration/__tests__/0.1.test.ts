@@ -78,7 +78,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       // is opened as an existing wallet instead of a new wallet
       storageService.records = JSON.parse(aliceMediationRecordsString)
 
-      expect(await updateAssistant.getNeededUpdates()).toEqual([
+      expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([
         {
           fromVersion: '0.1',
           toVersion: '0.2',
@@ -86,10 +86,10 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         },
       ])
 
-      await updateAssistant.update()
+      await updateAssistant.update('0.2')
 
-      expect(await updateAssistant.isUpToDate()).toBe(true)
-      expect(await updateAssistant.getNeededUpdates()).toEqual([])
+      expect(await updateAssistant.isUpToDate('0.2')).toBe(true)
+      expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([])
       expect(storageService.records).toMatchSnapshot(mediationRoleUpdateStrategy)
 
       // Need to remove backupFiles after each run so we don't get IOErrors
@@ -138,8 +138,8 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.records = JSON.parse(aliceCredentialRecordsString)
 
-    expect(await updateAssistant.isUpToDate()).toBe(false)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(false)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([
       {
         fromVersion: '0.1',
         toVersion: '0.2',
@@ -147,10 +147,10 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       },
     ])
 
-    await updateAssistant.update()
+    await updateAssistant.update('0.2')
 
-    expect(await updateAssistant.isUpToDate()).toBe(true)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([])
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([])
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
@@ -181,7 +181,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       {
         label: 'Test Agent',
         walletConfig,
-        autoUpdateStorageOnStartup: true,
       },
       agentDependencies,
       dependencyManager
@@ -189,18 +188,31 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
 
     const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
-    // We need to manually initialize the wallet as we're using the in memory wallet service
-    // When we call agent.initialize() it will create the wallet and store the current framework
-    // version in the in memory storage service. We need to manually set the records between initializing
-    // the wallet and calling agent.initialize()
-    await agent.wallet.initialize(walletConfig)
+    const updateAssistant = new UpdateAssistant(agent, {
+      v0_1ToV0_2: {
+        mediationRoleUpdateStrategy: 'doNotChange',
+      },
+    })
+
+    await updateAssistant.initialize()
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
     storageService.records = JSON.parse(aliceCredentialRecordsString)
 
-    await agent.initialize()
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(false)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([
+      {
+        fromVersion: '0.1',
+        toVersion: '0.2',
+        doUpdate: expect.any(Function),
+      },
+    ])
 
+    await updateAssistant.update('0.2')
+
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([])
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
@@ -231,7 +243,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       {
         label: 'Test Agent',
         walletConfig,
-        autoUpdateStorageOnStartup: true,
       },
       agentDependencies,
       dependencyManager
@@ -239,18 +250,31 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
 
     const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
-    // We need to manually initialize the wallet as we're using the in memory wallet service
-    // When we call agent.initialize() it will create the wallet and store the current framework
-    // version in the in memory storage service. We need to manually set the records between initializing
-    // the wallet and calling agent.initialize()
-    await agent.wallet.initialize(walletConfig)
+    const updateAssistant = new UpdateAssistant(agent, {
+      v0_1ToV0_2: {
+        mediationRoleUpdateStrategy: 'doNotChange',
+      },
+    })
+
+    await updateAssistant.initialize()
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
     storageService.records = JSON.parse(aliceConnectionRecordsString)
 
-    await agent.initialize()
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(false)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([
+      {
+        fromVersion: '0.1',
+        toVersion: '0.2',
+        doUpdate: expect.any(Function),
+      },
+    ])
 
+    await updateAssistant.update('0.2')
+
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([])
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors

@@ -1,4 +1,4 @@
-import { isFirstVersionHigherThanSecond, parseVersionString } from '../version'
+import { isFirstVersionEqualToSecond, isFirstVersionHigherThanSecond, parseVersionString } from '../version'
 
 describe('version', () => {
   describe('parseVersionString()', () => {
@@ -33,6 +33,33 @@ describe('version', () => {
     it('returns false if the major and minor version digit of both versions are equal', () => {
       expect(isFirstVersionHigherThanSecond([1, 0], [1, 0])).toBe(false)
       expect(isFirstVersionHigherThanSecond([2, 10], [2, 10])).toBe(false)
+    })
+  })
+
+  describe('isFirstVersionEqualToSecond()', () => {
+    it('returns false if the major version digit of the first version is lower than the second', () => {
+      expect(isFirstVersionEqualToSecond([2, 0], [1, 0])).toBe(false)
+      expect(isFirstVersionEqualToSecond([2, 1], [1, 10])).toBe(false)
+    })
+
+    it('returns false if the major version digit of the first version is higher than the second', () => {
+      expect(isFirstVersionEqualToSecond([1, 0], [2, 0])).toBe(false)
+      expect(isFirstVersionEqualToSecond([1, 10], [2, 1])).toBe(false)
+    })
+
+    it('returns false if the major version digit of both versions are equal, but the minor version of the first version is lower', () => {
+      expect(isFirstVersionEqualToSecond([1, 10], [1, 0])).toBe(false)
+      expect(isFirstVersionEqualToSecond([2, 11], [2, 10])).toBe(false)
+    })
+
+    it('returns false if the major version digit of both versions are equal, but the minor version of the second version is lower', () => {
+      expect(isFirstVersionEqualToSecond([1, 0], [1, 10])).toBe(false)
+      expect(isFirstVersionEqualToSecond([2, 10], [2, 11])).toBe(false)
+    })
+
+    it('returns true if the major and minor version digit of both versions are equal', () => {
+      expect(isFirstVersionEqualToSecond([1, 0], [1, 0])).toBe(true)
+      expect(isFirstVersionEqualToSecond([2, 10], [2, 10])).toBe(true)
     })
   })
 })

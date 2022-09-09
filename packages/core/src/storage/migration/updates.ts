@@ -23,7 +23,7 @@ export const DEFAULT_UPDATE_CONFIG: UpdateConfig = {
   },
 }
 
-export const supportedUpdates: Update[] = [
+export const supportedUpdates = [
   {
     fromVersion: '0.1',
     toVersion: '0.2',
@@ -34,7 +34,13 @@ export const supportedUpdates: Update[] = [
     toVersion: '0.3',
     doUpdate: updateV0_2ToV0_3,
   },
-]
+] as const
 
 // Current version is last toVersion from the supported updates
-export const CURRENT_FRAMEWORK_STORAGE_VERSION = supportedUpdates[supportedUpdates.length - 1].toVersion
+export const CURRENT_FRAMEWORK_STORAGE_VERSION = supportedUpdates[supportedUpdates.length - 1].toVersion as LastItem<
+  typeof supportedUpdates
+>['toVersion']
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type LastItem<T extends readonly unknown[]> = T extends readonly [...infer _, infer U] ? U : T[0] | undefined
+export type UpdateToVersion = typeof supportedUpdates[number]['toVersion']
