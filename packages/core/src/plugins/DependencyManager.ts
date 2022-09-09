@@ -4,6 +4,8 @@ import type { DependencyContainer } from 'tsyringe'
 
 import { container as rootContainer, InjectionToken, Lifecycle } from 'tsyringe'
 
+import { FeatureRegistry } from '../agent/FeatureRegistry'
+
 export { InjectionToken }
 
 export class DependencyManager {
@@ -14,7 +16,8 @@ export class DependencyManager {
   }
 
   public registerModules(...modules: Module[]) {
-    modules.forEach((module) => module.register(this))
+    const featureRegistry = this.resolve(FeatureRegistry)
+    modules.forEach((module) => module.register(this, featureRegistry))
   }
 
   public registerSingleton<T>(from: InjectionToken<T>, to: InjectionToken<T>): void

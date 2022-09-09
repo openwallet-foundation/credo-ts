@@ -23,6 +23,7 @@ import { WalletApi } from '../wallet/WalletApi'
 import { WalletError } from '../wallet/error'
 
 import { EventEmitter } from './EventEmitter'
+import { FeatureRegistry } from './FeatureRegistry'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
@@ -33,6 +34,7 @@ export abstract class BaseAgent {
   protected logger: Logger
   public readonly dependencyManager: DependencyManager
   protected eventEmitter: EventEmitter
+  protected featureRegistry: FeatureRegistry
   protected messageReceiver: MessageReceiver
   protected transportService: TransportService
   protected messageSender: MessageSender
@@ -75,6 +77,7 @@ export abstract class BaseAgent {
 
     // Resolve instances after everything is registered
     this.eventEmitter = this.dependencyManager.resolve(EventEmitter)
+    this.featureRegistry = this.dependencyManager.resolve(FeatureRegistry)
     this.messageSender = this.dependencyManager.resolve(MessageSender)
     this.messageReceiver = this.dependencyManager.resolve(MessageReceiver)
     this.transportService = this.dependencyManager.resolve(TransportService)
