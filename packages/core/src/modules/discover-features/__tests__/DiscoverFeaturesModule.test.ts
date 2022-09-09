@@ -2,6 +2,7 @@ import { DependencyManager } from '../../../plugins/DependencyManager'
 import { DiscoverFeaturesApi } from '../DiscoverFeaturesApi'
 import { DiscoverFeaturesModule } from '../DiscoverFeaturesModule'
 import { FeatureRegistry } from '../FeatureRegistry'
+import { Protocol } from '../models'
 import { V1DiscoverFeaturesService } from '../protocol/v1'
 import { V2DiscoverFeaturesService } from '../protocol/v2'
 
@@ -24,5 +25,16 @@ describe('DiscoverFeaturesModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V1DiscoverFeaturesService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V2DiscoverFeaturesService)
+
+    expect(featureRegistry.register).toHaveBeenCalledWith(
+      new Protocol({
+        id: 'https://didcomm.org/discover-features/1.0',
+        roles: ['requester', 'responder'],
+      }),
+      new Protocol({
+        id: 'https://didcomm.org/discover-features/2.0',
+        roles: ['requester', 'responder'],
+      })
+    )
   })
 })

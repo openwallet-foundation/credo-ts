@@ -82,7 +82,7 @@ export class DiscoverFeaturesApi<
 
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
 
-    const { message: queryMessage } = await service.createQuery(this.agentContext, {
+    const { message: queryMessage } = await service.createQuery({
       queries: options.queries,
       comment: options.comment,
     })
@@ -133,7 +133,7 @@ export class DiscoverFeaturesApi<
     const service = this.getService(options.protocolVersion)
 
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
-    const { message: disclosuresMessage } = await service.createDisclosure(this.agentContext, {
+    const { message: disclosuresMessage } = await service.createDisclosure({
       disclosureQueries: options.disclosureQueries,
       threadId: options.threadId,
     })

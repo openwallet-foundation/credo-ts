@@ -1,4 +1,3 @@
-import type { AgentContext } from '../../../../agent'
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type {
@@ -51,7 +50,6 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
   }
 
   public async createQuery(
-    agentContext: AgentContext,
     options: CreateQueryOptions
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<V1QueryMessage>> {
     if (options.queries.length > 1) {
@@ -90,7 +88,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
     // Process query and send responde automatically if configured to do so, otherwise
     // just send the event and let controller decide
     if (this.discoverFeaturesModuleConfig.autoAcceptDiscoverFeatureQueries) {
-      return await this.createDisclosure(messageContext.agentContext, {
+      return await this.createDisclosure({
         threadId,
         disclosureQueries: [{ featureType: 'protocol', match: query }],
       })
@@ -98,11 +96,10 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
   }
 
   public async createDisclosure(
-    agentContext: AgentContext,
     options: CreateDisclosureOptions
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<V1DiscloseMessage>> {
-    if (options.disclosureQueries.length > 1) {
-      throw new AriesFrameworkError('Discover Features V1 only supports a single query')
+    if (options.disclosureQueries.some((item) => item.featureType !== 'protocol')) {
+      throw new AriesFrameworkError('Discover Features V1 only supports protocols')
     }
 
     if (!options.threadId) {

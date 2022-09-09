@@ -1,17 +1,17 @@
-import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord } from '../../../../connections'
+import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
+import type { ConnectionRecord } from '../../connections'
 import type {
   DiscoverFeaturesDisclosureReceivedEvent,
   DiscoverFeaturesQueryReceivedEvent,
-} from '../../../DiscoverFeaturesEvents'
+} from '../DiscoverFeaturesEvents'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { getBaseConfig, makeConnection } from '../../../../../../tests/helpers'
-import { Agent } from '../../../../../agent/Agent'
-import { DiscoverFeaturesEventTypes } from '../../../DiscoverFeaturesEvents'
+import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { getBaseConfig, makeConnection } from '../../../../tests/helpers'
+import { Agent } from '../../../agent/Agent'
+import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
 
@@ -44,7 +44,7 @@ describe('v1 discover features', () => {
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
-    ;[faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
+    ;[faberConnection] = await makeConnection(faberAgent, aliceAgent)
   })
 
   afterAll(async () => {
@@ -87,5 +87,19 @@ describe('v1 discover features', () => {
         { type: 'protocol', id: 'https://didcomm.org/issue-credential/2.0', roles: ['holder', 'issuer'] },
       ],
     })
+  })
+
+  test('Faber asks Alice for issue credential protocol support synchronously', async () => {
+    const matchingFeatures = await faberAgent.discovery.queryFeatures({
+      connectionId: faberConnection.id,
+      protocolVersion: 'v1',
+      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
+      awaitDisclosures: true,
+    })
+
+    expect(matchingFeatures).toMatchObject([
+      { type: 'protocol', id: 'https://didcomm.org/issue-credential/1.0', roles: ['holder', 'issuer'] },
+      { type: 'protocol', id: 'https://didcomm.org/issue-credential/2.0', roles: ['holder', 'issuer'] },
+    ])
   })
 })

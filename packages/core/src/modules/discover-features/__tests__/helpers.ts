@@ -1,7 +1,7 @@
 import type {
   DiscoverFeaturesDisclosureReceivedEvent,
   DiscoverFeaturesQueryReceivedEvent,
-} from '../../../DiscoverFeaturesEvents'
+} from '../DiscoverFeaturesEvents'
 import type { Observable } from 'rxjs'
 
 import { map, catchError, timeout, firstValueFrom, ReplaySubject } from 'rxjs'

@@ -1,24 +1,21 @@
-import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord } from '../../../../connections'
+import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
+import type { ConnectionRecord } from '../../connections'
 import type {
   DiscoverFeaturesDisclosureReceivedEvent,
   DiscoverFeaturesQueryReceivedEvent,
-} from '../../../DiscoverFeaturesEvents'
+} from '../DiscoverFeaturesEvents'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { getBaseConfig, makeConnection } from '../../../../../../tests/helpers'
-import testLogger from '../../../../../../tests/logger'
-import { Agent } from '../../../../../agent/Agent'
-import { DiscoverFeaturesEventTypes } from '../../../DiscoverFeaturesEvents'
-import { Feature } from '../../../models'
-import { GoalCode } from '../../../models/GoalCode'
+import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { getBaseConfig, makeConnection } from '../../../../tests/helpers'
+import { Agent } from '../../../agent/Agent'
+import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
+import { GoalCode, Feature } from '../models'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
 
-const logger = testLogger
 describe('v2 discover features', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
@@ -34,12 +31,10 @@ describe('v2 discover features', () => {
     }
     const faberConfig = getBaseConfig('Faber Discover Features V2 E2E', {
       endpoints: ['rxjs:faber'],
-      //logger,
     })
 
     const aliceConfig = getBaseConfig('Alice Discover Features V2 E2E', {
       endpoints: ['rxjs:alice'],
-      //logger,
     })
     faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
@@ -218,5 +213,19 @@ describe('v2 discover features', () => {
         { type: 'aip', id: 'AIP2.0/MEDIATE' },
       ],
     })
+  })
+
+  test('Faber asks Alice for issue credential protocol support synchronously', async () => {
+    const matchingFeatures = await faberAgent.discovery.queryFeatures({
+      connectionId: faberConnection.id,
+      protocolVersion: 'v2',
+      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
+      awaitDisclosures: true,
+    })
+
+    expect(matchingFeatures).toMatchObject([
+      { type: 'protocol', id: 'https://didcomm.org/issue-credential/1.0', roles: ['holder', 'issuer'] },
+      { type: 'protocol', id: 'https://didcomm.org/issue-credential/2.0', roles: ['holder', 'issuer'] },
+    ])
   })
 })

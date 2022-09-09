@@ -1,4 +1,3 @@
-import type { AgentContext } from '../../../agent'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { Dispatcher } from '../../../agent/Dispatcher'
 import type { EventEmitter } from '../../../agent/EventEmitter'
@@ -35,17 +34,12 @@ export abstract class DiscoverFeaturesService {
 
   abstract readonly version: string
 
-  abstract createQuery(
-    agentContext: AgentContext,
-    options: CreateQueryOptions
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
+  abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
   abstract processQuery(
     messageContext: InboundMessageContext<AgentMessage>
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | void>
 
-  // methods for offer
   abstract createDisclosure(
-    agentContext: AgentContext,
     options: CreateDisclosureOptions
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
   abstract processDisclosure(messageContext: InboundMessageContext<AgentMessage>): Promise<void>

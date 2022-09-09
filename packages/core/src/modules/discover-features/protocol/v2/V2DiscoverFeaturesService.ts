@@ -1,4 +1,3 @@
-import type { AgentContext } from '../../../../agent'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type {
   DiscoverFeaturesDisclosureReceivedEvent,
@@ -47,7 +46,6 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
   }
 
   public async createQuery(
-    agentContext: AgentContext,
     options: CreateQueryOptions
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2QueriesMessage>> {
     const queryMessage = new V2QueriesMessage({ queries: options.queries })
@@ -75,7 +73,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
     // Process query and send responde automatically if configured to do so, otherwise
     // just send the event and let controller decide
     if (this.discoverFeaturesModuleConfig.autoAcceptDiscoverFeatureQueries) {
-      return await this.createDisclosure(messageContext.agentContext, {
+      return await this.createDisclosure({
         threadId,
         disclosureQueries: queries,
       })
@@ -83,7 +81,6 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
   }
 
   public async createDisclosure(
-    agentContext: AgentContext,
     options: CreateDisclosureOptions
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage>> {
     const matches = this.featureRegistry.query(...options.disclosureQueries)

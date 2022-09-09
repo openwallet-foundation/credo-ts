@@ -1,7 +1,7 @@
 import type { FeatureQueryOptions } from '../../../models'
 
 import { Type } from 'class-transformer'
-import { IsInstance } from 'class-validator'
+import { ArrayNotEmpty, IsInstance } from 'class-validator'
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
@@ -29,5 +29,6 @@ export class V2QueriesMessage extends AgentMessage {
 
   @IsInstance(FeatureQuery, { each: true })
   @Type(() => FeatureQuery)
+  @ArrayNotEmpty()
   public queries!: FeatureQuery[]
 }
