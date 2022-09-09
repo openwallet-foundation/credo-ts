@@ -7,7 +7,7 @@ import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormat } from '../../formats/ProofFormat'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
-import type { CreateProblemReportOptions, FormatCreateProposalOptions } from '../../formats/models/ProofFormatServiceOptions'
+import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type {
   CreateAckOptions,
@@ -89,9 +89,6 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
 
-      const formatOptions: FormatCreateProposalOptions = {
-        formats: await IndyProofUtils.createRequestFromPreview(options),
-      }
       formats.push(
         await service.createProposal({
           formats:
