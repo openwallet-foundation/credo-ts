@@ -78,6 +78,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
     this.eventEmitter.emit<DiscoverFeaturesQueryReceivedEvent>(messageContext.agentContext, {
       type: DiscoverFeaturesEventTypes.QueryReceived,
       payload: {
+        message: messageContext.message,
         connection,
         queries: [{ featureType: 'protocol', match: query }],
         protocolVersion: this.version,
@@ -130,6 +131,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
     this.eventEmitter.emit<DiscoverFeaturesDisclosureReceivedEvent>(messageContext.agentContext, {
       type: DiscoverFeaturesEventTypes.DisclosureReceived,
       payload: {
+        message: messageContext.message,
         connection,
         disclosures: protocols.map((item) => new Protocol({ id: item.protocolId, roles: item.roles })),
         protocolVersion: this.version,

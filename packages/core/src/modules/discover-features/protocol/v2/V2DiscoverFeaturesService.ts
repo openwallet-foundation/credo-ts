@@ -63,6 +63,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
     this.eventEmitter.emit<DiscoverFeaturesQueryReceivedEvent>(messageContext.agentContext, {
       type: DiscoverFeaturesEventTypes.QueryReceived,
       payload: {
+        message: messageContext.message,
         connection,
         queries,
         protocolVersion: this.version,
@@ -101,6 +102,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
     this.eventEmitter.emit<DiscoverFeaturesDisclosureReceivedEvent>(messageContext.agentContext, {
       type: DiscoverFeaturesEventTypes.DisclosureReceived,
       payload: {
+        message: messageContext.message,
         connection,
         disclosures,
         protocolVersion: this.version,
