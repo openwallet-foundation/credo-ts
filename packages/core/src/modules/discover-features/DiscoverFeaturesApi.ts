@@ -19,8 +19,12 @@ import { DiscoverFeaturesEventTypes } from './DiscoverFeaturesEvents'
 import { DiscoverFeaturesModuleConfig } from './DiscoverFeaturesModuleConfig'
 import { V1DiscoverFeaturesService, V2DiscoverFeaturesService } from './protocol'
 
+export interface QueryFeaturesReturnType {
+  features?: Feature[]
+}
+
 export interface DiscoverFeaturesApi<DFSs extends DiscoverFeaturesService[]> {
-  queryFeatures(options: QueryFeaturesOptions<DFSs>): Promise<Feature[] | void>
+  queryFeatures(options: QueryFeaturesOptions<DFSs>): Promise<QueryFeaturesReturnType>
   discloseFeatures(options: DiscloseFeaturesOptions<DFSs>): Promise<void>
 }
 @injectable()
@@ -119,10 +123,7 @@ export class DiscoverFeaturesApi<
 
     await this.messageSender.sendMessage(this.agentContext, outbound)
 
-    if (options.awaitDisclosures) {
-      const features = await firstValueFrom(replaySubject)
-      return features
-    }
+    return { features: options.awaitDisclosures ? await firstValueFrom(replaySubject) : undefined }
   }
 
   /**

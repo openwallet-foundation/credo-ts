@@ -96,9 +96,11 @@ describe('v1 discover features', () => {
       awaitDisclosures: true,
     })
 
-    expect(matchingFeatures).toMatchObject([
-      { type: 'protocol', id: 'https://didcomm.org/issue-credential/1.0', roles: ['holder', 'issuer'] },
-      { type: 'protocol', id: 'https://didcomm.org/issue-credential/2.0', roles: ['holder', 'issuer'] },
-    ])
+    expect(matchingFeatures).toMatchObject({
+      features: [
+        { type: 'protocol', id: 'https://didcomm.org/issue-credential/1.0', roles: ['holder', 'issuer'] },
+        { type: 'protocol', id: 'https://didcomm.org/issue-credential/2.0', roles: ['holder', 'issuer'] },
+      ],
+    })
   })
 })
