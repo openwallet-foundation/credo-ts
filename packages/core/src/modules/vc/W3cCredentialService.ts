@@ -18,7 +18,6 @@ import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
 import { JsonTransformer } from '../../utils'
-import { isNodeJS, isReactNative } from '../../utils/environment'
 import { DidResolverService, VerificationMethod } from '../dids'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 
