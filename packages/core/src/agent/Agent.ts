@@ -38,6 +38,7 @@ import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
+import { FeatureRegistry } from './FeatureRegistry'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
@@ -90,6 +91,13 @@ export class Agent extends BaseAgent {
 
   public get events() {
     return this.eventEmitter
+  }
+
+  /**
+   * Agent's feature registry
+   */
+  public get features() {
+    return this.featureRegistry
   }
 
   public async initialize() {
@@ -156,6 +164,7 @@ export class Agent extends BaseAgent {
     dependencyManager.registerSingleton(TransportService)
     dependencyManager.registerSingleton(Dispatcher)
     dependencyManager.registerSingleton(EnvelopeService)
+    dependencyManager.registerSingleton(FeatureRegistry)
     dependencyManager.registerSingleton(JwsService)
     dependencyManager.registerSingleton(CacheRepository)
     dependencyManager.registerSingleton(DidCommMessageRepository)

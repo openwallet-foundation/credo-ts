@@ -1,7 +1,7 @@
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { AgentMessage } from '../../../../../agent/AgentMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 export interface DiscoverFeaturesQueryMessageOptions {
   id?: string
@@ -9,7 +9,7 @@ export interface DiscoverFeaturesQueryMessageOptions {
   comment?: string
 }
 
-export class QueryMessage extends AgentMessage {
+export class V1QueryMessage extends AgentMessage {
   public constructor(options: DiscoverFeaturesQueryMessageOptions) {
     super()
 
@@ -20,8 +20,8 @@ export class QueryMessage extends AgentMessage {
     }
   }
 
-  @IsValidMessageType(QueryMessage.type)
-  public readonly type = QueryMessage.type.messageTypeUri
+  @IsValidMessageType(V1QueryMessage.type)
+  public readonly type = V1QueryMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/discover-features/1.0/query')
 
   @IsString()

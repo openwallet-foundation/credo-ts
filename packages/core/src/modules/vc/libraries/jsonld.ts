@@ -4,14 +4,6 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 //@ts-ignore
 import jsonld from '@digitalcredentials/jsonld'
-// No type definitions available for this library
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//@ts-ignore
-import nodeDocumentLoader from '@digitalcredentials/jsonld/lib/documentLoaders/node'
-// No type definitions available for this library
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//@ts-ignore
-import xhrDocumentLoader from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
 
 interface JsonLd {
   compact(document: any, context: any, options?: any): any
@@ -30,8 +22,5 @@ export interface DocumentLoaderResult {
 }
 
 export type DocumentLoader = (url: string) => Promise<DocumentLoaderResult>
-
-export const documentLoaderXhr = xhrDocumentLoader as () => DocumentLoader
-export const documentLoaderNode = nodeDocumentLoader as () => DocumentLoader
 
 export default jsonld as unknown as JsonLd

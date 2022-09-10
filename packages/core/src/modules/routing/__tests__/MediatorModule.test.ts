@@ -1,3 +1,4 @@
+import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { MediatorApi } from '../MediatorApi'
 import { MediatorModule } from '../MediatorModule'
@@ -10,9 +11,13 @@ const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
+jest.mock('../../../agent/FeatureRegistry')
+const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
+
+const featureRegistry = new FeatureRegistryMock()
 describe('MediatorModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    new MediatorModule().register(dependencyManager)
+    new MediatorModule().register(dependencyManager, featureRegistry)
 
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(MediatorApi)
