@@ -7,7 +7,7 @@ import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { Agent } from '../../../../src'
-import { agentDependencies } from '../../../../tests/helpers'
+import { agentDependencies as dependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { DependencyManager } from '../../../plugins'
 import * as uuid from '../../../utils/uuid'
@@ -57,10 +57,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
 
       const agent = new Agent(
         {
-          label: 'Test Agent',
-          walletConfig,
+          config: { label: 'Test Agent', walletConfig },
+          dependencies,
         },
-        agentDependencies,
         dependencyManager
       )
 
@@ -117,10 +116,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
 
     const agent = new Agent(
       {
-        label: 'Test Agent',
-        walletConfig,
+        config: { label: 'Test Agent', walletConfig },
+        dependencies,
       },
-      agentDependencies,
       dependencyManager
     )
 
@@ -179,10 +177,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
 
     const agent = new Agent(
       {
-        label: 'Test Agent',
-        walletConfig,
+        config: { label: 'Test Agent', walletConfig, autoUpdateStorageOnStartup: true },
+        dependencies,
       },
-      agentDependencies,
       dependencyManager
     )
 
@@ -241,10 +238,13 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
 
     const agent = new Agent(
       {
-        label: 'Test Agent',
-        walletConfig,
+        config: {
+          label: 'Test Agent',
+          walletConfig,
+          autoUpdateStorageOnStartup: true,
+        },
+        dependencies,
       },
-      agentDependencies,
       dependencyManager
     )
 

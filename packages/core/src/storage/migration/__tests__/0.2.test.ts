@@ -37,10 +37,12 @@ describe('UpdateAssistant | v0.2 - v0.3', () => {
 
     const agent = new Agent(
       {
-        label: 'Test Agent',
-        walletConfig,
+        config: {
+          label: 'Test Agent',
+          walletConfig,
+        },
+        dependencies: agentDependencies,
       },
-      agentDependencies,
       dependencyManager
     )
 
@@ -102,11 +104,13 @@ describe('UpdateAssistant | v0.2 - v0.3', () => {
 
     const agent = new Agent(
       {
-        label: 'Test Agent',
-        walletConfig,
-        autoUpdateStorageOnStartup: true,
+        config: {
+          label: 'Test Agent',
+          walletConfig,
+          autoUpdateStorageOnStartup: true,
+        },
+        dependencies: agentDependencies,
       },
-      agentDependencies,
       dependencyManager
     )
 

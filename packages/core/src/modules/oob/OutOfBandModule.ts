@@ -8,6 +8,8 @@ import { OutOfBandService } from './OutOfBandService'
 import { OutOfBandRepository } from './repository'
 
 export class OutOfBandModule implements Module {
+  public readonly api = OutOfBandApi
+
   /**
    * Registers the dependencies of the ot of band module on the dependency manager.
    */

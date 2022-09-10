@@ -5,7 +5,7 @@ import type { Wallet } from '@aries-framework/core'
 
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 
-import { genesisPath, getBaseConfig } from '../../../../tests/helpers'
+import { genesisPath, getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { KeyType } from '../../../crypto'
 import { TypedArrayEncoder } from '../../../utils'
@@ -14,7 +14,7 @@ import { PeerDidNumAlgo } from '../methods/peer/didPeer'
 
 import { InjectionSymbols, JsonTransformer } from '@aries-framework/core'
 
-const { config, agentDependencies } = getBaseConfig('Faber Dids Registrar', {
+const agentOptions = getAgentOptions('Faber Dids Registrar', {
   indyLedgers: [
     {
       id: `localhost`,
@@ -29,7 +29,7 @@ describe('dids', () => {
   let agent: Agent
 
   beforeAll(async () => {
-    agent = new Agent(config, agentDependencies)
+    agent = new Agent(agentOptions)
     await agent.initialize()
   })
 

@@ -12,6 +12,7 @@ import { MediationRecipientService, RoutingService } from './services'
 
 export class RecipientModule implements Module {
   public readonly config: RecipientModuleConfig
+  public readonly api = RecipientApi
 
   public constructor(config?: RecipientModuleConfigOptions) {
     this.config = new RecipientModuleConfig(config)

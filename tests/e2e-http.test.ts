@@ -1,23 +1,23 @@
-import { getBaseConfig } from '../packages/core/tests/helpers'
+import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 
 import { HttpOutboundTransport, Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 import { HttpInboundTransport } from '@aries-framework/node'
 
-const recipientConfig = getBaseConfig('E2E HTTP Recipient', {
+const recipientAgentOptions = getAgentOptions('E2E HTTP Recipient', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
 
 const mediatorPort = 3000
-const mediatorConfig = getBaseConfig('E2E HTTP Mediator', {
+const mediatorAgentOptions = getAgentOptions('E2E HTTP Mediator', {
   endpoints: [`http://localhost:${mediatorPort}`],
   autoAcceptMediationRequests: true,
 })
 
 const senderPort = 3001
-const senderConfig = getBaseConfig('E2E HTTP Sender', {
+const senderAgentOptions = getAgentOptions('E2E HTTP Sender', {
   endpoints: [`http://localhost:${senderPort}`],
   mediatorPollingInterval: 1000,
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -30,9 +30,9 @@ describe('E2E HTTP tests', () => {
   let senderAgent: Agent
 
   beforeEach(async () => {
-    recipientAgent = new Agent(recipientConfig.config, recipientConfig.agentDependencies)
-    mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
-    senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)
+    recipientAgent = new Agent(recipientAgentOptions)
+    mediatorAgent = new Agent(mediatorAgentOptions)
+    senderAgent = new Agent(senderAgentOptions)
   })
 
   afterEach(async () => {

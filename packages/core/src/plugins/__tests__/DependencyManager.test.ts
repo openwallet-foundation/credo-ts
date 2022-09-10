@@ -1,4 +1,5 @@
 import type { Module } from '../Module'
+import type { DependencyContainer } from 'tsyringe'
 
 import { container as rootContainer, injectable, Lifecycle } from 'tsyringe'
 
@@ -10,11 +11,15 @@ class Instance {
 }
 const instance = new Instance()
 
-const container = rootContainer.createChildContainer()
-const dependencyManager = new DependencyManager(container)
-const featureRegistry = container.resolve(FeatureRegistry)
-
 describe('DependencyManager', () => {
+  let container: DependencyContainer
+  let dependencyManager: DependencyManager
+
+  beforeEach(() => {
+    container = rootContainer.createChildContainer()
+    dependencyManager = new DependencyManager(container)
+  })
+
   afterEach(() => {
     jest.resetAllMocks()
     container.reset()
@@ -35,12 +40,19 @@ describe('DependencyManager', () => {
       const module1 = new Module1()
       const module2 = new Module2()
 
-      dependencyManager.registerModules(module1, module2)
+      const featureRegistry = container.resolve(FeatureRegistry)
+
+      dependencyManager.registerModules({ module1, module2 })
       expect(module1.register).toHaveBeenCalledTimes(1)
       expect(module1.register).toHaveBeenLastCalledWith(dependencyManager, featureRegistry)
 
       expect(module2.register).toHaveBeenCalledTimes(1)
       expect(module2.register).toHaveBeenLastCalledWith(dependencyManager, featureRegistry)
+
+      expect(dependencyManager.registeredModules).toMatchObject({
+        module1,
+        module2,
+      })
     })
   })
 
@@ -120,6 +132,23 @@ describe('DependencyManager', () => {
       const childDependencyManager = dependencyManager.createChild()
       expect(createChildSpy).toHaveBeenCalledTimes(1)
       expect(childDependencyManager.container).toBe(createChildSpy.mock.results[0].value)
+    })
+
+    it('inherits the registeredModules from the parent dependency manager', () => {
+      const module = {
+        register: jest.fn(),
+      }
+
+      dependencyManager.registerModules({
+        module1: module,
+        module2: module,
+      })
+
+      const childDependencyManager = dependencyManager.createChild()
+      expect(childDependencyManager.registeredModules).toMatchObject({
+        module1: module,
+        module2: module,
+      })
     })
   })
 })

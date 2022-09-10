@@ -9,6 +9,8 @@ import { BasicMessageRepository } from './repository'
 import { BasicMessageService } from './services'
 
 export class BasicMessagesModule implements Module {
+  public readonly api = BasicMessagesApi
+
   /**
    * Registers the dependencies of the basic message module on the dependency manager.
    */
