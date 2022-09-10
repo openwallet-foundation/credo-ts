@@ -2,7 +2,7 @@ import type { DependencyManager, Module } from '../../plugins'
 
 import { injectable } from 'tsyringe'
 
-import { agentDependencies, getAgentOptions } from '../../../tests/helpers'
+import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
@@ -244,7 +244,7 @@ describe('Agent', () => {
   })
 
   it('all core features are properly registered', () => {
-    const agent = new Agent(agentOptions)
+    const agent = new Agent(agentOptionsgi)
     const registry = agent.dependencyManager.resolve(FeatureRegistry)
 
     const protocols = registry.query({ featureType: 'protocol', match: '*' }).map((p) => p.id)
