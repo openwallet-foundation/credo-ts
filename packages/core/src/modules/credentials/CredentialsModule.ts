@@ -14,6 +14,7 @@ import { CredentialRepository } from './repository'
 
 export class CredentialsModule implements Module {
   public readonly config: CredentialsModuleConfig
+  public readonly api = CredentialsApi
 
   public constructor(config?: CredentialsModuleConfigOptions) {
     this.config = new CredentialsModuleConfig(config)

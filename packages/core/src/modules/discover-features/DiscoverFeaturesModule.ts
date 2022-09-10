@@ -10,6 +10,7 @@ import { V1DiscoverFeaturesService } from './protocol/v1'
 import { V2DiscoverFeaturesService } from './protocol/v2'
 
 export class DiscoverFeaturesModule implements Module {
+  public readonly api = DiscoverFeaturesApi
   public readonly config: DiscoverFeaturesModuleConfig
 
   public constructor(config?: DiscoverFeaturesModuleConfigOptions) {

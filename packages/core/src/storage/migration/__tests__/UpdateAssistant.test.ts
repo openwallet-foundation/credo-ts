@@ -1,13 +1,13 @@
 import type { BaseRecord } from '../../BaseRecord'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import { getBaseConfig } from '../../../../tests/helpers'
+import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { DependencyManager } from '../../../plugins'
 import { UpdateAssistant } from '../UpdateAssistant'
 
-const { agentDependencies, config } = getBaseConfig('UpdateAssistant')
+const agentOptions = getAgentOptions('UpdateAssistant')
 
 describe('UpdateAssistant', () => {
   let updateAssistant: UpdateAssistant
@@ -19,7 +19,7 @@ describe('UpdateAssistant', () => {
     storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
-    agent = new Agent(config, agentDependencies, dependencyManager)
+    agent = new Agent(agentOptions, dependencyManager)
 
     updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {

@@ -1,12 +1,13 @@
 import type { InitConfig } from '@aries-framework/core'
 
-import { OutOfBandRecord, Agent, DependencyManager } from '@aries-framework/core'
+import { OutOfBandRecord, Agent } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import testLogger from '../../core/tests/logger'
-import { TenantsApi, TenantsModule } from '../src'
+
+import { TenantsModule } from '@aries-framework/module-tenants'
 
 jest.setTimeout(2000000)
 
@@ -32,18 +33,22 @@ const agent2Config: InitConfig = {
   autoAcceptConnections: true,
 }
 
-// Register tenant module. For now we need to create a custom dependency manager
-// and register all plugins before initializing the agent. Later, we can add the module registration
-// to the agent constructor.
-const agent1DependencyManager = new DependencyManager()
-agent1DependencyManager.registerModules(new TenantsModule())
-
-const agent2DependencyManager = new DependencyManager()
-agent2DependencyManager.registerModules(new TenantsModule())
-
 // Create multi-tenant agents
-const agent1 = new Agent(agent1Config, agentDependencies, agent1DependencyManager)
-const agent2 = new Agent(agent2Config, agentDependencies, agent2DependencyManager)
+const agent1 = new Agent({
+  config: agent1Config,
+  modules: {
+    tenants: new TenantsModule(),
+  },
+  dependencies: agentDependencies,
+})
+
+const agent2 = new Agent({
+  config: agent2Config,
+  modules: {
+    tenants: new TenantsModule(),
+  },
+  dependencies: agentDependencies,
+})
 
 // Register inbound and outbound transports (so we can communicate with ourselves)
 const agent1InboundTransport = new SubjectInboundTransport()
@@ -65,9 +70,6 @@ agent2.registerOutboundTransport(
   })
 )
 
-const agent1TenantsApi = agent1.dependencyManager.resolve(TenantsApi)
-const agent2TenantsApi = agent2.dependencyManager.resolve(TenantsApi)
-
 describe('Tenants E2E', () => {
   beforeAll(async () => {
     await agent1.initialize()
@@ -83,47 +85,48 @@ describe('Tenants E2E', () => {
 
   test('create get and delete a tenant', async () => {
     // Create tenant
-    let tenantRecord1 = await agent1TenantsApi.createTenant({
+    let tenantRecord1 = await agent1.modules.tenants.createTenant({
       config: {
         label: 'Tenant 1',
       },
     })
 
     // Retrieve tenant record from storage
-    tenantRecord1 = await agent1TenantsApi.getTenantById(tenantRecord1.id)
+    tenantRecord1 = await agent1.modules.tenants.getTenantById(tenantRecord1.id)
 
     // Get tenant agent
-    const tenantAgent = await agent1TenantsApi.getTenantAgent({
+    const tenantAgent = await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord1.id,
     })
     await tenantAgent.endSession()
 
     // Delete tenant agent
-    await agent1TenantsApi.deleteTenantById(tenantRecord1.id)
+    await agent1.modules.tenants.deleteTenantById(tenantRecord1.id)
 
     // Can not get tenant agent again
-    await expect(agent1TenantsApi.getTenantAgent({ tenantId: tenantRecord1.id })).rejects.toThrow(
+    await expect(agent1.modules.tenants.getTenantAgent({ tenantId: tenantRecord1.id })).rejects.toThrow(
       `TenantRecord: record with id ${tenantRecord1.id} not found.`
     )
   })
 
   test('create a connection between two tenants within the same agent', async () => {
     // Create tenants
-    const tenantRecord1 = await agent1TenantsApi.createTenant({
+    const tenantRecord1 = await agent1.modules.tenants.createTenant({
       config: {
         label: 'Tenant 1',
       },
     })
-    const tenantRecord2 = await agent1TenantsApi.createTenant({
+    const tenantRecord2 = await agent1.modules.tenants.createTenant({
       config: {
         label: 'Tenant 2',
       },
     })
 
-    const tenantAgent1 = await agent1TenantsApi.getTenantAgent({
+    const tenantAgent1 = await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord1.id,
     })
-    const tenantAgent2 = await agent1TenantsApi.getTenantAgent({
+
+    const tenantAgent2 = await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord2.id,
     })
 
@@ -154,27 +157,27 @@ describe('Tenants E2E', () => {
     await tenantAgent2.endSession()
 
     // Delete tenants (will also delete wallets)
-    await agent1TenantsApi.deleteTenantById(tenantAgent1.context.contextCorrelationId)
-    await agent1TenantsApi.deleteTenantById(tenantAgent2.context.contextCorrelationId)
+    await agent1.modules.tenants.deleteTenantById(tenantAgent1.context.contextCorrelationId)
+    await agent1.modules.tenants.deleteTenantById(tenantAgent2.context.contextCorrelationId)
   })
 
   test('create a connection between two tenants within different agents', async () => {
     // Create tenants
-    const tenantRecord1 = await agent1TenantsApi.createTenant({
+    const tenantRecord1 = await agent1.modules.tenants.createTenant({
       config: {
         label: 'Agent 1 Tenant 1',
       },
     })
-    const tenantAgent1 = await agent1TenantsApi.getTenantAgent({
+    const tenantAgent1 = await agent1.modules.tenants.getTenantAgent({
       tenantId: tenantRecord1.id,
     })
 
-    const tenantRecord2 = await agent2TenantsApi.createTenant({
+    const tenantRecord2 = await agent2.modules.tenants.createTenant({
       config: {
         label: 'Agent 2 Tenant 1',
       },
     })
-    const tenantAgent2 = await agent2TenantsApi.getTenantAgent({
+    const tenantAgent2 = await agent2.modules.tenants.getTenantAgent({
       tenantId: tenantRecord2.id,
     })
 
@@ -195,18 +198,18 @@ describe('Tenants E2E', () => {
     await tenantAgent2.endSession()
 
     // Delete tenants (will also delete wallets)
-    await agent1TenantsApi.deleteTenantById(tenantRecord1.id)
-    await agent2TenantsApi.deleteTenantById(tenantRecord2.id)
+    await agent1.modules.tenants.deleteTenantById(tenantRecord1.id)
+    await agent2.modules.tenants.deleteTenantById(tenantRecord2.id)
   })
 
   test('perform actions within the callback of withTenantAgent', async () => {
-    const tenantRecord = await agent1TenantsApi.createTenant({
+    const tenantRecord = await agent1.modules.tenants.createTenant({
       config: {
         label: 'Agent 1 Tenant 1',
       },
     })
 
-    await agent1TenantsApi.withTenantAgent({ tenantId: tenantRecord.id }, async (tenantAgent) => {
+    await agent1.modules.tenants.withTenantAgent({ tenantId: tenantRecord.id }, async (tenantAgent) => {
       const outOfBandRecord = await tenantAgent.oob.createInvitation()
 
       expect(outOfBandRecord).toBeInstanceOf(OutOfBandRecord)
@@ -214,6 +217,6 @@ describe('Tenants E2E', () => {
       expect(tenantAgent.config.label).toBe('Agent 1 Tenant 1')
     })
 
-    await agent1TenantsApi.deleteTenantById(tenantRecord.id)
+    await agent1.modules.tenants.deleteTenantById(tenantRecord.id)
   })
 })

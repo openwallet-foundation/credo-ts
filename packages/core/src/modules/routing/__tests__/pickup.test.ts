@@ -5,16 +5,16 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getBaseConfig, waitForBasicMessage } from '../../../../tests/helpers'
+import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 
-const recipientConfig = getBaseConfig('Mediation: Recipient Pickup', {
+const recipientOptions = getAgentOptions('Mediation: Recipient Pickup', {
   autoAcceptConnections: true,
   indyLedgers: [],
 })
-const mediatorConfig = getBaseConfig('Mediation: Mediator Pickup', {
+const mediatorOptions = getAgentOptions('Mediation: Mediator Pickup', {
   autoAcceptConnections: true,
   endpoints: ['rxjs:mediator'],
   indyLedgers: [],
@@ -39,7 +39,7 @@ describe('E2E Pick Up protocol', () => {
     }
 
     // Initialize mediatorReceived message
-    mediatorAgent = new Agent(mediatorConfig.config, recipientConfig.agentDependencies)
+    mediatorAgent = new Agent(mediatorOptions)
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
@@ -52,7 +52,7 @@ describe('E2E Pick Up protocol', () => {
     })
 
     // Initialize recipient
-    recipientAgent = new Agent(recipientConfig.config, recipientConfig.agentDependencies)
+    recipientAgent = new Agent(recipientOptions)
     recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
@@ -91,7 +91,7 @@ describe('E2E Pick Up protocol', () => {
     }
 
     // Initialize mediatorReceived message
-    mediatorAgent = new Agent(mediatorConfig.config, recipientConfig.agentDependencies)
+    mediatorAgent = new Agent(mediatorOptions)
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
@@ -104,7 +104,7 @@ describe('E2E Pick Up protocol', () => {
     })
 
     // Initialize recipient
-    recipientAgent = new Agent(recipientConfig.config, recipientConfig.agentDependencies)
+    recipientAgent = new Agent(recipientOptions)
     recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 

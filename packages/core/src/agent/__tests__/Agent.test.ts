@@ -1,4 +1,8 @@
-import { getBaseConfig } from '../../../tests/helpers'
+import type { DependencyManager, Module } from '../../plugins'
+
+import { injectable } from 'tsyringe'
+
+import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
@@ -15,11 +19,12 @@ import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import { V1ProofService } from '../../modules/proofs/protocol/v1'
 import { V2ProofService } from '../../modules/proofs/protocol/v2'
 import {
-  MediatorApi,
-  RecipientApi,
-  MediationRepository,
-  MediatorService,
   MediationRecipientService,
+  MediationRepository,
+  MediatorApi,
+  MediatorService,
+  RecipientApi,
+  RecipientModule,
 } from '../../modules/routing'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../../storage/IndyStorageService'
@@ -31,9 +36,62 @@ import { FeatureRegistry } from '../FeatureRegistry'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
 
-const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test')
+const agentOptions = getAgentOptions('Agent Class Test')
+
+const myModuleMethod = jest.fn()
+@injectable()
+class MyApi {
+  public myModuleMethod = myModuleMethod
+}
+
+class MyModule implements Module {
+  public api = MyApi
+  public register(dependencyManager: DependencyManager) {
+    dependencyManager.registerContextScoped(MyApi)
+  }
+}
 
 describe('Agent', () => {
+  describe('Module registration', () => {
+    test('does not return default modules on modules key if no modules were provided', () => {
+      const agent = new Agent(agentOptions)
+
+      expect(agent.modules).toEqual({})
+    })
+
+    test('registers custom and default modules if custom modules are provided', () => {
+      const agent = new Agent({
+        ...agentOptions,
+        modules: {
+          myModule: new MyModule(),
+        },
+      })
+
+      expect(agent.modules.myModule.myModuleMethod).toBe(myModuleMethod)
+      expect(agent.modules).toEqual({
+        myModule: expect.any(MyApi),
+      })
+    })
+
+    test('override default module configuration', () => {
+      const agent = new Agent({
+        ...agentOptions,
+        modules: {
+          myModule: new MyModule(),
+          mediationRecipient: new RecipientModule({
+            maximumMessagePickup: 42,
+          }),
+        },
+      })
+
+      // Should be custom module config property, not the default value
+      expect(agent.mediationRecipient.config.maximumMessagePickup).toBe(42)
+      expect(agent.modules).toEqual({
+        myModule: expect.any(MyApi),
+      })
+    })
+  })
+
   describe('Initialization', () => {
     let agent: Agent
 
@@ -48,7 +106,7 @@ describe('Agent', () => {
     it('isInitialized should only return true after initialization', async () => {
       expect.assertions(2)
 
-      agent = new Agent(config, dependencies)
+      agent = new Agent(agentOptions)
 
       expect(agent.isInitialized).toBe(false)
       await agent.initialize()
@@ -58,7 +116,7 @@ describe('Agent', () => {
     it('wallet isInitialized should return true after agent initialization if wallet config is set in agent constructor', async () => {
       expect.assertions(4)
 
-      agent = new Agent(config, dependencies)
+      agent = new Agent(agentOptions)
       const wallet = agent.context.wallet
 
       expect(agent.isInitialized).toBe(false)
@@ -71,8 +129,8 @@ describe('Agent', () => {
     it('wallet must be initialized if wallet config is not set before agent can be initialized', async () => {
       expect.assertions(9)
 
-      const { walletConfig, ...withoutWalletConfig } = config
-      agent = new Agent(withoutWalletConfig, dependencies)
+      const { walletConfig, ...withoutWalletConfig } = agentOptions.config
+      agent = new Agent({ ...agentOptions, config: withoutWalletConfig })
 
       expect(agent.isInitialized).toBe(false)
       expect(agent.wallet.isInitialized).toBe(false)
@@ -92,24 +150,9 @@ describe('Agent', () => {
     })
   })
 
-  describe('Change label', () => {
-    let agent: Agent
-
-    it('should return new label after setter is called', async () => {
-      expect.assertions(2)
-      const newLabel = 'Agent: Agent Class Test 2'
-
-      agent = new Agent(config, dependencies)
-      expect(agent.config.label).toBe(config.label)
-
-      agent.config.label = newLabel
-      expect(agent.config.label).toBe(newLabel)
-    })
-  })
-
   describe('Dependency Injection', () => {
     it('should be able to resolve registered instances', () => {
-      const agent = new Agent(config, dependencies)
+      const agent = new Agent(agentOptions)
       const container = agent.dependencyManager
 
       // Modules
@@ -140,7 +183,7 @@ describe('Agent', () => {
       expect(container.resolve(IndyLedgerService)).toBeInstanceOf(IndyLedgerService)
 
       // Symbols, interface based
-      expect(container.resolve(InjectionSymbols.Logger)).toBe(config.logger)
+      expect(container.resolve(InjectionSymbols.Logger)).toBe(agentOptions.config.logger)
       expect(container.resolve(InjectionSymbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
       expect(container.resolve(InjectionSymbols.StorageService)).toBeInstanceOf(IndyStorageService)
 
@@ -152,7 +195,7 @@ describe('Agent', () => {
     })
 
     it('should return the same instance for consequent resolves', () => {
-      const agent = new Agent(config, dependencies)
+      const agent = new Agent(agentOptions)
       const container = agent.dependencyManager
 
       // Modules
@@ -201,7 +244,7 @@ describe('Agent', () => {
   })
 
   it('all core features are properly registered', () => {
-    const agent = new Agent(config, dependencies)
+    const agent = new Agent(agentOptions)
     const registry = agent.dependencyManager.resolve(FeatureRegistry)
 
     const protocols = registry.query({ featureType: 'protocol', match: '*' }).map((p) => p.id)

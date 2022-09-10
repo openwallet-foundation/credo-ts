@@ -2,13 +2,16 @@ import type { DependencyManager, FeatureRegistry, Module } from '@aries-framewor
 
 import { Protocol } from '@aries-framework/core'
 
+import { DummyApi } from './DummyApi'
 import { DummyRepository } from './repository'
 import { DummyService } from './services'
 
 export class DummyModule implements Module {
+  public api = DummyApi
+
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
-    dependencyManager.registerContextScoped(DummyModule)
+    dependencyManager.registerContextScoped(DummyApi)
 
     dependencyManager.registerSingleton(DummyRepository)
     dependencyManager.registerSingleton(DummyService)

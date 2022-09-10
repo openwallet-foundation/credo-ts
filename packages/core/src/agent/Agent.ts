@@ -2,6 +2,7 @@ import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
+import type { AgentModulesInput, ModulesMap } from './AgentModules'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { Subscription } from 'rxjs'
 
@@ -12,27 +13,14 @@ import { CacheRepository } from '../cache'
 import { InjectionSymbols } from '../constants'
 import { JwsService } from '../crypto/JwsService'
 import { AriesFrameworkError } from '../error'
-import { BasicMessagesModule } from '../modules/basic-messages'
-import { ConnectionsModule } from '../modules/connections'
-import { CredentialsModule } from '../modules/credentials'
-import { DidsModule } from '../modules/dids'
-import { DiscoverFeaturesModule } from '../modules/discover-features'
-import { GenericRecordsModule } from '../modules/generic-records'
-import { IndyModule } from '../modules/indy'
-import { LedgerModule } from '../modules/ledger'
-import { OutOfBandModule } from '../modules/oob'
-import { ProofsModule } from '../modules/proofs'
-import { QuestionAnswerModule } from '../modules/question-answer'
-import { MediatorModule, RecipientModule } from '../modules/routing'
-import { W3cVcModule } from '../modules/vc'
 import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
-import { WalletModule } from '../wallet'
 import { IndyWallet } from '../wallet/IndyWallet'
 
 import { AgentConfig } from './AgentConfig'
+import { extendModulesWithDefaultModules } from './AgentModules'
 import { BaseAgent } from './BaseAgent'
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
@@ -44,17 +32,71 @@ import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { AgentContext, DefaultAgentContextProvider } from './context'
 
-export class Agent extends BaseAgent {
+interface AgentOptions<AgentModules extends AgentModulesInput> {
+  config: InitConfig
+  modules?: AgentModules
+  dependencies: AgentDependencies
+}
+
+export class Agent<AgentModules extends AgentModulesInput = ModulesMap> extends BaseAgent<AgentModules> {
   public messageSubscription: Subscription
 
-  public constructor(
-    initialConfig: InitConfig,
-    dependencies: AgentDependencies,
-    dependencyManager?: DependencyManager
-  ) {
-    // NOTE: we can't create variables before calling super as TS will complain that the super call must be the
-    // the first statement in the constructor.
-    super(new AgentConfig(initialConfig, dependencies), dependencyManager ?? new DependencyManager())
+  public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
+    const agentConfig = new AgentConfig(options.config, options.dependencies)
+    const modulesWithDefaultModules = extendModulesWithDefaultModules(agentConfig, options.modules)
+
+    // Register internal dependencies
+    dependencyManager.registerSingleton(EventEmitter)
+    dependencyManager.registerSingleton(MessageSender)
+    dependencyManager.registerSingleton(MessageReceiver)
+    dependencyManager.registerSingleton(TransportService)
+    dependencyManager.registerSingleton(Dispatcher)
+    dependencyManager.registerSingleton(EnvelopeService)
+    dependencyManager.registerSingleton(FeatureRegistry)
+    dependencyManager.registerSingleton(JwsService)
+    dependencyManager.registerSingleton(CacheRepository)
+    dependencyManager.registerSingleton(DidCommMessageRepository)
+    dependencyManager.registerSingleton(StorageVersionRepository)
+    dependencyManager.registerSingleton(StorageUpdateService)
+
+    dependencyManager.registerInstance(AgentConfig, agentConfig)
+    dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, agentConfig.agentDependencies)
+    dependencyManager.registerInstance(InjectionSymbols.Stop$, new Subject<boolean>())
+    dependencyManager.registerInstance(InjectionSymbols.FileSystem, new agentConfig.agentDependencies.FileSystem())
+
+    // Register possibly already defined services
+    if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
+      dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndyWallet)
+    }
+    if (!dependencyManager.isRegistered(InjectionSymbols.Logger)) {
+      dependencyManager.registerInstance(InjectionSymbols.Logger, agentConfig.logger)
+    }
+    if (!dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
+      dependencyManager.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
+    }
+    if (!dependencyManager.isRegistered(InjectionSymbols.MessageRepository)) {
+      dependencyManager.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
+    }
+
+    // Register all modules. This will also include the default modules
+    dependencyManager.registerModules(modulesWithDefaultModules)
+
+    // TODO: contextCorrelationId for base wallet
+    // Bind the default agent context to the container for use in modules etc.
+    dependencyManager.registerInstance(
+      AgentContext,
+      new AgentContext({
+        dependencyManager,
+        contextCorrelationId: 'default',
+      })
+    )
+
+    // If no agent context provider has been registered we use the default agent context provider.
+    if (!dependencyManager.isRegistered(InjectionSymbols.AgentContextProvider)) {
+      dependencyManager.registerSingleton(InjectionSymbols.AgentContextProvider, DefaultAgentContextProvider)
+    }
+
+    super(agentConfig, dependencyManager)
 
     const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
 
@@ -154,91 +196,6 @@ export class Agent extends BaseAgent {
     }
 
     this._isInitialized = false
-  }
-
-  protected registerDependencies(dependencyManager: DependencyManager) {
-    // Register internal dependencies
-    dependencyManager.registerSingleton(EventEmitter)
-    dependencyManager.registerSingleton(MessageSender)
-    dependencyManager.registerSingleton(MessageReceiver)
-    dependencyManager.registerSingleton(TransportService)
-    dependencyManager.registerSingleton(Dispatcher)
-    dependencyManager.registerSingleton(EnvelopeService)
-    dependencyManager.registerSingleton(FeatureRegistry)
-    dependencyManager.registerSingleton(JwsService)
-    dependencyManager.registerSingleton(CacheRepository)
-    dependencyManager.registerSingleton(DidCommMessageRepository)
-    dependencyManager.registerSingleton(StorageVersionRepository)
-    dependencyManager.registerSingleton(StorageUpdateService)
-
-    dependencyManager.registerInstance(AgentConfig, this.agentConfig)
-    dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, this.agentConfig.agentDependencies)
-    dependencyManager.registerInstance(InjectionSymbols.Stop$, new Subject<boolean>())
-    dependencyManager.registerInstance(InjectionSymbols.FileSystem, new this.agentConfig.agentDependencies.FileSystem())
-
-    // Register possibly already defined services
-    if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
-      dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndyWallet)
-    }
-    if (!dependencyManager.isRegistered(InjectionSymbols.Logger)) {
-      dependencyManager.registerInstance(InjectionSymbols.Logger, this.logger)
-    }
-    if (!dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
-      dependencyManager.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
-    }
-    if (!dependencyManager.isRegistered(InjectionSymbols.MessageRepository)) {
-      dependencyManager.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
-    }
-
-    // Register all modules
-    dependencyManager.registerModules(
-      new ConnectionsModule({
-        autoAcceptConnections: this.agentConfig.autoAcceptConnections,
-      }),
-      new CredentialsModule({
-        autoAcceptCredentials: this.agentConfig.autoAcceptCredentials,
-      }),
-      new ProofsModule({
-        autoAcceptProofs: this.agentConfig.autoAcceptProofs,
-      }),
-      new MediatorModule({
-        autoAcceptMediationRequests: this.agentConfig.autoAcceptMediationRequests,
-      }),
-      new RecipientModule({
-        maximumMessagePickup: this.agentConfig.maximumMessagePickup,
-        mediatorInvitationUrl: this.agentConfig.mediatorConnectionsInvite,
-        mediatorPickupStrategy: this.agentConfig.mediatorPickupStrategy,
-        mediatorPollingInterval: this.agentConfig.mediatorPollingInterval,
-      }),
-      new BasicMessagesModule(),
-      new QuestionAnswerModule(),
-      new GenericRecordsModule(),
-      new LedgerModule({
-        connectToIndyLedgersOnStartup: this.agentConfig.connectToIndyLedgersOnStartup,
-        indyLedgers: this.agentConfig.indyLedgers,
-      }),
-      new DiscoverFeaturesModule(),
-      new DidsModule(),
-      new WalletModule(),
-      new OutOfBandModule(),
-      new IndyModule(),
-      new W3cVcModule()
-    )
-
-    // TODO: contextCorrelationId for base wallet
-    // Bind the default agent context to the container for use in modules etc.
-    dependencyManager.registerInstance(
-      AgentContext,
-      new AgentContext({
-        dependencyManager,
-        contextCorrelationId: 'default',
-      })
-    )
-
-    // If no agent context provider has been registered we use the default agent context provider.
-    if (!this.dependencyManager.isRegistered(InjectionSymbols.AgentContextProvider)) {
-      this.dependencyManager.registerSingleton(InjectionSymbols.AgentContextProvider, DefaultAgentContextProvider)
-    }
   }
 
   protected async getMediationConnection(mediatorInvitationUrl: string) {

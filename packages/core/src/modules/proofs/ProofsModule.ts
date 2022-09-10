@@ -13,6 +13,7 @@ import { ProofRepository } from './repository'
 
 export class ProofsModule implements Module {
   public readonly config: ProofsModuleConfig
+  public readonly api = ProofsApi
 
   public constructor(config?: ProofsModuleConfigOptions) {
     this.config = new ProofsModuleConfig(config)
