@@ -244,7 +244,7 @@ describe('Agent', () => {
   })
 
   it('all core features are properly registered', () => {
-    const agent = new Agent(agentOptionsgi)
+    const agent = new Agent(agentOptions)
     const registry = agent.dependencyManager.resolve(FeatureRegistry)
 
     const protocols = registry.query({ featureType: 'protocol', match: '*' }).map((p) => p.id)
