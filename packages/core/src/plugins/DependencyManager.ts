@@ -4,6 +4,7 @@ import type { DependencyContainer } from 'tsyringe'
 
 import { container as rootContainer, InjectionToken, Lifecycle } from 'tsyringe'
 
+import { FeatureRegistry } from '../agent/FeatureRegistry'
 import { AriesFrameworkError } from '../error'
 
 export { InjectionToken }
@@ -21,6 +22,8 @@ export class DependencyManager {
   }
 
   public registerModules(modules: ModulesMap) {
+    const featureRegistry = this.resolve(FeatureRegistry)
+
     for (const [moduleKey, module] of Object.entries(modules)) {
       if (this.registeredModules[moduleKey]) {
         throw new AriesFrameworkError(
@@ -29,7 +32,7 @@ export class DependencyManager {
       }
 
       this.registeredModules[moduleKey] = module
-      module.register(this)
+      module.register(this, featureRegistry)
     }
   }
 

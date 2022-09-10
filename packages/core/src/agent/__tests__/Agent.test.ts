@@ -2,7 +2,7 @@ import type { DependencyManager, Module } from '../../plugins'
 
 import { injectable } from 'tsyringe'
 
-import { getAgentOptions } from '../../../tests/helpers'
+import { agentDependencies, getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
@@ -32,6 +32,7 @@ import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
 import { EnvelopeService } from '../EnvelopeService'
+import { FeatureRegistry } from '../FeatureRegistry'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
 
@@ -237,7 +238,36 @@ describe('Agent', () => {
       expect(container.resolve(MessageSender)).toBe(container.resolve(MessageSender))
       expect(container.resolve(MessageReceiver)).toBe(container.resolve(MessageReceiver))
       expect(container.resolve(Dispatcher)).toBe(container.resolve(Dispatcher))
+      expect(container.resolve(FeatureRegistry)).toBe(container.resolve(FeatureRegistry))
       expect(container.resolve(EnvelopeService)).toBe(container.resolve(EnvelopeService))
     })
+  })
+
+  it('all core features are properly registered', () => {
+    const agent = new Agent(agentOptions)
+    const registry = agent.dependencyManager.resolve(FeatureRegistry)
+
+    const protocols = registry.query({ featureType: 'protocol', match: '*' }).map((p) => p.id)
+
+    expect(protocols).toEqual(
+      expect.arrayContaining([
+        'https://didcomm.org/basicmessage/1.0',
+        'https://didcomm.org/connections/1.0',
+        'https://didcomm.org/coordinate-mediation/1.0',
+        'https://didcomm.org/didexchange/1.0',
+        'https://didcomm.org/discover-features/1.0',
+        'https://didcomm.org/discover-features/2.0',
+        'https://didcomm.org/issue-credential/1.0',
+        'https://didcomm.org/issue-credential/2.0',
+        'https://didcomm.org/messagepickup/1.0',
+        'https://didcomm.org/messagepickup/2.0',
+        'https://didcomm.org/out-of-band/1.1',
+        'https://didcomm.org/present-proof/1.0',
+        'https://didcomm.org/revocation_notification/1.0',
+        'https://didcomm.org/revocation_notification/2.0',
+        'https://didcomm.org/questionanswer/1.0',
+      ])
+    )
+    expect(protocols.length).toEqual(15)
   })
 })
