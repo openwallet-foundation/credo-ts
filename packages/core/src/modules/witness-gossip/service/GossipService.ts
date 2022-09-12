@@ -12,7 +12,7 @@ import type {
 import { ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { interval } from 'rxjs'
 import { takeUntil } from 'rxjs/operators'
-import { Lifecycle, scoped } from 'tsyringe'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -23,12 +23,17 @@ import { WitnessStateRepository } from '../../value-transfer/repository/WitnessS
 import { ValueTransferCryptoService } from '../../value-transfer/services/ValueTransferCryptoService'
 import { ValueTransferStateService } from '../../value-transfer/services/ValueTransferStateService'
 import { WitnessGossipMessage } from '../messages'
+import { InjectionSymbols } from '../../../constants'
+import { MetricsService } from '../../../metrics'
+import { Buffer } from '../../../utils'
+import { performance } from 'perf_hooks'
 
 @scoped(Lifecycle.ContainerScoped)
 export class GossipService {
   private config: AgentConfig
   private valueTransferCryptoService: ValueTransferCryptoService
   private valueTransferStateService: ValueTransferStateService
+  private metricsService: MetricsService
   private witnessStateRepository: WitnessStateRepository
   private eventEmitter: EventEmitter
   private witness: Witness
@@ -39,6 +44,7 @@ export class GossipService {
     config: AgentConfig,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferStateService,
+    @inject(InjectionSymbols.MetricsService) metricsService: MetricsService,
     witnessStateRepository: WitnessStateRepository,
     eventEmitter: EventEmitter,
     messageSender: MessageSender
@@ -46,6 +52,7 @@ export class GossipService {
     this.config = config
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
+    this.metricsService = metricsService
     this.witnessStateRepository = witnessStateRepository
     this.eventEmitter = eventEmitter
     this.messageSender = messageSender
@@ -125,6 +132,8 @@ export class GossipService {
 
     await this.sendMessage(message)
 
+    await this.metricsService.reportGossipMessageSize(state.wid, Buffer.byteLength(JSON.stringify(message)))
+
     this.config.logger.info(`> Witness: request transaction updates for paused transaction ${pthid} sent!`)
   }
 
@@ -153,6 +162,8 @@ export class GossipService {
 
     await this.gossipTransactionUpdate(state, transactionUpdate)
 
+    await this.metricsService.reportTockTransactionsCount(state.wid, transactionUpdate.num)
+
     this.config.logger.info(`   < Witness: gossip transaction completed!`)
     return
   }
@@ -164,6 +175,8 @@ export class GossipService {
    * */
   public async processWitnessGossipInfo(messageContext: InboundMessageContext<WitnessGossipMessage>): Promise<void> {
     const { message: witnessGossipMessage } = messageContext
+
+    const processStartTime = Date.now()
 
     this.config.logger.info('> Witness: process gossip message')
     this.config.logger.info(`   Sender: ${witnessGossipMessage.from}`)
@@ -178,6 +191,11 @@ export class GossipService {
 
     this.config.logger.info(`   Last state tracker: ${state.witnessState.lastUpdateTracker}`)
     this.config.logger.info(`   Registered state hashes : ${state.witnessState.partyStateHashes.size}`)
+
+    await this.metricsService.reportGossipMessageSize(
+      state.wid,
+      Buffer.byteLength(JSON.stringify(witnessGossipMessage))
+    )
 
     // validate that message sender is one of known knownWitnesses
     const knownWitness = state.knownWitnesses.find((witness) => witness.gossipDid === witnessGossipMessage.from)
@@ -219,6 +237,10 @@ export class GossipService {
     this.config.logger.info(
       `       Register gap state hashes : ${stateAfter.witnessState.partyStateGapsTracker.length}`
     )
+
+    const processEndTime = Date.now()
+    await this.metricsService.reportTransactionUpdateTime(state.wid, processEndTime - processStartTime)
+    await this.metricsService.reportWitnessStateSize(state.wid, Buffer.byteLength(JSON.stringify(state)))
   }
 
   private async processReceivedTransactionUpdates(witnessGossipMessage: WitnessGossipMessage): Promise<void> {
@@ -241,7 +263,6 @@ export class GossipService {
     await this.doSafeOperationWithWitnessSate(operation)
 
     this.config.logger.info('< Witness: process transactions completed')
-    return
   }
 
   private async processReceivedAskForTransactionUpdates(witnessGossipMessage: WitnessGossipMessage): Promise<void> {
@@ -307,6 +328,8 @@ export class GossipService {
 
     await this.sendMessageToWitness(message)
 
+    await this.metricsService.reportGossipMessageSize(state.wid, Buffer.byteLength(JSON.stringify(message)))
+
     // gossip transaction update to other witnesses as well
     if (transactionUpdateForOtherWitnesses) {
       await this.gossipTransactionUpdate(state, transactionUpdateForOtherWitnesses, [witnessGossipMessage.from])
@@ -357,6 +380,7 @@ export class GossipService {
           attachments,
         })
         await this.sendMessageToWitness(message)
+        await this.metricsService.reportGossipMessageSize(state.wid, Buffer.byteLength(JSON.stringify(message)))
       }
     }
   }

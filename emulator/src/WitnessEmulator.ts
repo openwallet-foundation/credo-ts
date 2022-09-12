@@ -4,6 +4,7 @@ import type { WitnessInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Agent, DidMarker, HttpOutboundTransport, Transports } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 import { randomUUID } from 'crypto'
+import { MetricsService } from './metrics'
 
 export interface EmulatorWitnessConfig {
   host?: string
@@ -54,6 +55,7 @@ export class Witness {
         },
       },
       transports: [Transports.HTTP],
+      metricsService: new MetricsService(),
     }
 
     this.agent = new Agent(config, agentDependencies)

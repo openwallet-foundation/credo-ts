@@ -1,9 +1,9 @@
 import type { InitConfig } from '@aries-framework/core'
 
-import { Agent, DidMarker, HttpOutboundTransport, Transports } from '@aries-framework/core'
+import { Agent, DidMarker, HttpOutboundTransport, Transports, InjectionSymbols } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 import { randomUUID } from 'crypto'
-import { reportGossipCompleted, reportGossipStart } from './metrics'
+import { MetricsService } from './metrics'
 
 export interface EmulatorUserConfig {
   host?: string
@@ -17,12 +17,16 @@ export interface EmulatorUserConfig {
 
 export class User {
   private agent: Agent
+  private metricsService: MetricsService
   private config: EmulatorUserConfig
   private static amount = 1
 
   public constructor(userConfig: EmulatorUserConfig) {
     const name = userConfig.label ?? randomUUID()
     const endpoint = `${userConfig.host}:${userConfig.port!}`
+
+    this.metricsService = new MetricsService()
+
     const config: InitConfig = {
       label: name,
       walletConfig: { id: name, key: name },
@@ -41,6 +45,7 @@ export class User {
         },
       },
       transports: [Transports.HTTP],
+      metricsService: this.metricsService,
     }
 
     this.agent = new Agent(config, agentDependencies)
@@ -54,13 +59,14 @@ export class User {
     await this.agent.initialize()
     console.log(`User ${this.agent.config.label} started!`)
 
-    let transactionsSent = 0
     setInterval(async () => {
       console.log(`User ${this.agent.config.label} trigger message`)
 
-      await reportGossipStart(this.agent.config.label, ++transactionsSent)
+      const transactionId = randomUUID()
+
+      await this.metricsService.reportGossipStart(this.agent.config.label, transactionId)
       await this.agent.valueTransfer.mintCash({ amount: User.amount, waitForAck: false })
-      await reportGossipCompleted(this.agent.config.label, transactionsSent)
+      await this.metricsService.reportGossipCompleted(this.agent.config.label, transactionId)
     }, this.config.interval || 1000 * 3)
   }
 }

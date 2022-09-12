@@ -1,6 +1,7 @@
 import type { TransportPriorityOptions } from './agent/MessageSender'
 import type { DIDCommMessage, EncryptedMessage, DIDCommV2Message } from './agent/didcomm/index'
 import type { Logger } from './logger'
+import type { MetricsService } from './metrics'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
 import type { DidType } from './modules/dids'
@@ -86,6 +87,7 @@ export interface InitConfig {
   autoAcceptProofs?: AutoAcceptProof
   autoAcceptCredentials?: AutoAcceptCredential
   logger?: Logger
+  metricsService?: MetricsService
   didCommMimeType?: DidCommMimeType
   supportOffline?: boolean
   catchErrors?: boolean

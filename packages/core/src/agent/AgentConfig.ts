@@ -1,4 +1,5 @@
 import type { Logger } from '../logger'
+import type { MetricsService } from '../metrics'
 import type { FileSystem } from '../storage/FileSystem'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
@@ -8,6 +9,7 @@ import { Subject } from 'rxjs'
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
+import { DummyMetricsService } from '../metrics'
 import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
 import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
 import { offlineTransports, onlineTransports } from '../modules/routing/types'
@@ -18,6 +20,7 @@ export class AgentConfig {
   private initConfig: InitConfig
   public label: string
   public logger: Logger
+  public metricsService: MetricsService
   public readonly agentDependencies: AgentDependencies
   public readonly fileSystem: FileSystem
 
@@ -28,6 +31,7 @@ export class AgentConfig {
     this.initConfig = initConfig
     this.label = initConfig.label
     this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
+    this.metricsService = initConfig.metricsService ?? new DummyMetricsService()
     this.agentDependencies = agentDependencies
     this.fileSystem = new agentDependencies.FileSystem()
 
