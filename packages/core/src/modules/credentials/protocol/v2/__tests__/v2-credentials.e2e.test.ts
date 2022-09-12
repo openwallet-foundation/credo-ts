@@ -365,6 +365,7 @@ describe('v2 credentials', () => {
       state: CredentialState.CredentialReceived,
     })
 
+    // testLogger.test('Alice sends credential ack to Faber')
     await aliceAgent.credentials.acceptCredential({ credentialRecordId: aliceCredentialRecord.id })
 
     testLogger.test('Faber waits for credential ack from Alice')
@@ -427,7 +428,6 @@ describe('v2 credentials', () => {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
-
     faberCredentialRecord = await faberAgent.credentials.negotiateProposal({
       credentialRecordId: faberCredentialRecord.id,
       credentialFormats: {

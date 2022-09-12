@@ -30,7 +30,7 @@ import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHa
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { MediationState } from './models/MediationState'
-import { StatusRequestMessage, BatchPickupMessage } from './protocol'
+import { StatusRequestMessage, BatchPickupMessage, StatusMessage } from './protocol'
 import { StatusHandler, MessageDeliveryHandler } from './protocol/pickup/v2/handlers'
 import { MediationRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
@@ -248,20 +248,26 @@ export class RecipientApi {
     // If mediator pickup strategy is not configured we try to query if batch pickup
     // is supported through the discover features protocol
     if (!mediatorPickupStrategy) {
-      const isPickUpV2Supported = await this.discoverFeaturesApi.isProtocolSupported(
-        mediator.connectionId,
-        StatusRequestMessage
-      )
-      if (isPickUpV2Supported) {
+      const discloseForPickupV2 = await this.discoverFeaturesApi.queryFeatures({
+        connectionId: mediator.connectionId,
+        protocolVersion: 'v1',
+        queries: [{ featureType: 'protocol', match: StatusMessage.type.protocolUri }],
+        awaitDisclosures: true,
+      })
+
+      if (discloseForPickupV2.features?.find((item) => item.id === StatusMessage.type.protocolUri)) {
         mediatorPickupStrategy = MediatorPickupStrategy.PickUpV2
       } else {
-        const isBatchPickupSupported = await this.discoverFeaturesApi.isProtocolSupported(
-          mediator.connectionId,
-          BatchPickupMessage
-        )
-
+        const discloseForPickupV1 = await this.discoverFeaturesApi.queryFeatures({
+          connectionId: mediator.connectionId,
+          protocolVersion: 'v1',
+          queries: [{ featureType: 'protocol', match: BatchPickupMessage.type.protocolUri }],
+          awaitDisclosures: true,
+        })
         // Use explicit pickup strategy
-        mediatorPickupStrategy = isBatchPickupSupported
+        mediatorPickupStrategy = discloseForPickupV1.features?.find(
+          (item) => item.id === BatchPickupMessage.type.protocolUri
+        )
           ? MediatorPickupStrategy.PickUpV1
           : MediatorPickupStrategy.Implicit
       }

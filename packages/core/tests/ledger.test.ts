@@ -5,17 +5,15 @@ import { Agent } from '../src/agent/Agent'
 import { DID_IDENTIFIER_REGEX, isAbbreviatedVerkey, isFullVerkey, VERKEY_REGEX } from '../src/utils/did'
 import { sleep } from '../src/utils/sleep'
 
-import { genesisPath, getBaseConfig } from './helpers'
+import { genesisPath, getAgentOptions } from './helpers'
 import testLogger from './logger'
-
-const { config: faberConfig, agentDependencies: faberDependencies } = getBaseConfig('Faber Ledger')
 
 describe('ledger', () => {
   let faberAgent: Agent
   let schemaId: indy.SchemaId
 
   beforeAll(async () => {
-    faberAgent = new Agent(faberConfig, faberDependencies)
+    faberAgent = new Agent(getAgentOptions('Faber Ledger'))
     await faberAgent.initialize()
   })
 
@@ -141,7 +139,7 @@ describe('ledger', () => {
 
   it('should correctly store the genesis file if genesis transactions is passed', async () => {
     const genesisTransactions = await promises.readFile(genesisPath, { encoding: 'utf-8' })
-    const { config, agentDependencies: dependencies } = getBaseConfig('Faber Ledger Genesis Transactions', {
+    const agentOptions = getAgentOptions('Faber Ledger Genesis Transactions', {
       indyLedgers: [
         {
           id: 'pool-Faber Ledger Genesis Transactions',
@@ -150,7 +148,7 @@ describe('ledger', () => {
         },
       ],
     })
-    const agent = new Agent(config, dependencies)
+    const agent = new Agent(agentOptions)
     await agent.initialize()
 
     if (!faberAgent.publicDid?.did) {

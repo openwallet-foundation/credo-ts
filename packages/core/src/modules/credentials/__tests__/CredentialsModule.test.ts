@@ -1,3 +1,4 @@
+import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { CredentialsApi } from '../CredentialsApi'
 import { CredentialsModule } from '../CredentialsModule'
@@ -13,10 +14,15 @@ const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
+jest.mock('../../../agent/FeatureRegistry')
+const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
+
+const featureRegistry = new FeatureRegistryMock()
+
 describe('CredentialsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const credentialsModule = new CredentialsModule()
-    credentialsModule.register(dependencyManager)
+    credentialsModule.register(dependencyManager, featureRegistry)
 
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(CredentialsApi)

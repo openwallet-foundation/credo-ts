@@ -20,6 +20,7 @@ import type {
   CreateProofRequestFromProposalOptions,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
+  DeleteProofOptions,
 } from './models/ProofServiceOptions'
 import type { ProofRecord } from './repository/ProofRecord'
 
@@ -510,9 +511,10 @@ export class ProofsApi<
    *
    * @param proofId the proof record id
    */
-  public async deleteById(proofId: string) {
+  public async deleteById(proofId: string, options?: DeleteProofOptions) {
     const proofRecord = await this.getById(proofId)
-    return await this.proofRepository.delete(this.agentContext, proofRecord)
+    const service = this.getService(proofRecord.protocolVersion)
+    return service.delete(this.agentContext, proofRecord, options)
   }
 
   /**

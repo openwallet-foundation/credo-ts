@@ -71,3 +71,7 @@ export interface ProofRequestFromProposalOptions<PFs extends ProofFormat[]> {
   proofRecord: ProofRecord
   proofFormats: ProofFormatPayload<PFs, 'createProofRequestFromProposal'>
 }
+
+export interface DeleteProofOptions {
+  deleteAssociatedDidCommMessages?: boolean
+}

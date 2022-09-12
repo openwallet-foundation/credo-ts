@@ -21,6 +21,7 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
+  DeleteProofOptions,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
   GetRequestedCredentialsForProofRequestOptions,
@@ -214,6 +215,25 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
       agentMessage: options.message,
       role: options.role,
     })
+  }
+
+  public async delete(
+    agentContext: AgentContext,
+    proofRecord: ProofRecord,
+    options?: DeleteProofOptions
+  ): Promise<void> {
+    await this.proofRepository.delete(agentContext, proofRecord)
+
+    const deleteAssociatedDidCommMessages = options?.deleteAssociatedDidCommMessages ?? true
+
+    if (deleteAssociatedDidCommMessages) {
+      const didCommMessages = await this.didCommMessageRepository.findByQuery(agentContext, {
+        associatedRecordId: proofRecord.id,
+      })
+      for (const didCommMessage of didCommMessages) {
+        await this.didCommMessageRepository.delete(agentContext, didCommMessage)
+      }
+    }
   }
 
   public abstract getRequestedCredentialsForProofRequest(

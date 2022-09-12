@@ -10,16 +10,16 @@ import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import { MediationState, MediatorPickupStrategy } from '../src/modules/routing'
 
-import { getBaseConfig, waitForBasicMessage } from './helpers'
+import { getAgentOptions, waitForBasicMessage } from './helpers'
 
-const faberConfig = getBaseConfig('OOB mediation provision - Faber Agent', {
+const faberAgentOptions = getAgentOptions('OOB mediation provision - Faber Agent', {
   endpoints: ['rxjs:faber'],
 })
-const aliceConfig = getBaseConfig('OOB mediation provision - Alice Recipient Agent', {
+const aliceAgentOptions = getAgentOptions('OOB mediation provision - Alice Recipient Agent', {
   endpoints: ['rxjs:alice'],
   mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
-const mediatorConfig = getBaseConfig('OOB mediation provision - Mediator Agent', {
+const mediatorAgentOptions = getAgentOptions('OOB mediation provision - Mediator Agent', {
   endpoints: ['rxjs:mediator'],
   autoAcceptMediationRequests: true,
 })
@@ -49,17 +49,17 @@ describe('out of band with mediation set up with provision method', () => {
       'rxjs:mediator': mediatorMessages,
     }
 
-    mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
+    mediatorAgent = new Agent(mediatorAgentOptions)
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await mediatorAgent.initialize()
 
-    faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+    faberAgent = new Agent(faberAgentOptions)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     const mediationOutOfBandRecord = await mediatorAgent.oob.createInvitation(makeConnectionConfig)
