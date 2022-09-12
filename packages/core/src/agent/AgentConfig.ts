@@ -90,23 +90,23 @@ export class AgentConfig {
   }
 
   public get witnessTockTime() {
-    return this.initConfig.valueTransferConfig?.witness?.tockTime || 1000 * 5
+    return this.initConfig.valueTransferConfig?.witness?.tockTime
   }
 
   public get witnessCleanupTime() {
-    return this.initConfig.valueTransferConfig?.witness?.cleanupTime || 1000 * 60 * 10
+    return this.initConfig.valueTransferConfig?.witness?.cleanupTime
   }
 
   public get witnessRedeliverTime() {
-    return this.initConfig.valueTransferConfig?.witness?.redeliverTime || 1000 * 60 * 2
+    return this.initConfig.valueTransferConfig?.witness?.redeliverTime
   }
 
   public get witnessHistoryThreshold() {
-    return this.initConfig.valueTransferConfig?.witness?.historyThreshold || 1000 * 60 * 60
+    return this.initConfig.valueTransferConfig?.witness?.historyThreshold
   }
 
   public get witnessRedeliveryThreshold() {
-    return this.initConfig.valueTransferConfig?.witness?.redeliveryThreshold || 1000 * 60 * 60
+    return this.initConfig.valueTransferConfig?.witness?.redeliveryThreshold
   }
 
   public get witnessIssuerDids() {

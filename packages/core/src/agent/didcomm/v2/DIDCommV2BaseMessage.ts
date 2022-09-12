@@ -10,6 +10,7 @@ import { MessageIdRegExp, MessageTypeRegExp } from '../validation'
 export const ATTACHMENT_MEDIA_TYPE = 'application/json'
 
 export type DIDCommV2MessageParams = {
+  type?: string
   id?: string
   from?: string
   to?: string
@@ -74,8 +75,9 @@ export class DIDCommV2BaseMessage {
   public constructor(options?: DIDCommV2MessageParams) {
     if (options) {
       this.id = options.id || this.generateId()
+      this.type = options.type || this.type
       this.from = options.from
-      this.to = options.to ? [options.to] : undefined
+      this.to = typeof options.to === 'string' ? [options.to] : options.to
       this.thid = options.thid
       this.pthid = options.pthid
       this.created_time = options.created_time
