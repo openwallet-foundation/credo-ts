@@ -203,7 +203,7 @@ export class ConnectionsModule {
    *  Either updates or creates an array of string conection types
    * @param connectionId
    * @param type
-   * @throws AriesFrameworkError if connectionId is invalid or does not exist
+   * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
    */
   public async addConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.findById(connectionId)
@@ -211,6 +211,7 @@ export class ConnectionsModule {
       const tags = record.getTags()['connectionType']
       if (tags) record.setTag('connectionType', [type, ...tags])
       else record.setTag('connectionType', [type])
+      await this.connectionService.update(record)
     } else {
       throw new AriesFrameworkError('The provided connectionId did not match a known record')
     }
@@ -219,7 +220,7 @@ export class ConnectionsModule {
    * Removes the given tag from the given record found by connectionId, if the tag exists otherwise does nothing
    * @param connectionId
    * @param type
-   * @throws AriesFrameworkError if connectionId is invalid or does not exist
+   * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
    */
   public async removeConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.findById(connectionId)
@@ -231,6 +232,7 @@ export class ConnectionsModule {
         })
         record.setTag('connectionType', [...newTags])
       }
+      await this.connectionService.update(record)
     } else {
       throw new AriesFrameworkError('The provided connectionId did not match a known record')
     }
@@ -239,7 +241,7 @@ export class ConnectionsModule {
    * Gets the known connection types for the record matching the given connectionId
    * @param connectionId
    * @returns An array of known connection types or null if none exist
-   * @throws AriesFrameworkError if the given connectionId is invalid or does not exist
+   * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
    */
   public async getConnectionTypes(connectionId: string) {
     const record = await this.findById(connectionId)
@@ -248,7 +250,45 @@ export class ConnectionsModule {
       if (tags) return tags
       else return null
     } else {
-      throw new AriesFrameworkError('The provide connectionId did not match a knwon record')
+      throw new AriesFrameworkError('The provide connectionId did not match a known record')
+    }
+  }
+  /**
+   * tries to find the target tag on the record corrisponding to provided connectionId
+   * @param connectionId 
+   * @param targetTag name of the target tag as a string (case sensitive)
+   * @returns The target tag or null if it does not exist
+   * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
+   */
+  public async getTagFromRecord(connectionId: string, targetTag: string) {
+    const record = await this.findById(connectionId)
+    if (record) {
+      const tag = record.getTag(targetTag)
+      if (tag != undefined)
+        return tag
+      else
+        return null
+    } else {
+      throw new AriesFrameworkError('The provided connectionId did not match a known record')
+    }
+  }
+  /**
+   * Tries to get all the tags corrisponding to the provided connectionId
+   * @param conectionId 
+   * @returns All tags associated with a given object
+   * @throws AriesFrameworkError if the record corripsoning to the provided connectionId cannot be found
+   */
+  public async getAllTagsFromRecord(conectionId: string) {
+    const record = await this.findById(conectionId)
+    if (record) {
+      const tags = record.getTags()
+      if (tags != undefined) {
+        return tags
+      } else {
+        return null
+      }
+    } else {
+      throw new AriesFrameworkError('The provided connectionId did not match a known record')
     }
   }
 
