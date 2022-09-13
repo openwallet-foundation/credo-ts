@@ -71,7 +71,7 @@ export class ValueTransferStateService implements StorageInterface {
 
   /** @inheritDoc {StorageService#safeMutation} */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public async safeOperationWithWitnessState(operation: () => Promise<any>): Promise<any> {
+  public async safeOperationWithWitnessState<T>(operation: () => Promise<T>): Promise<T> {
     return this.witnessStateLock.acquire(
       WitnessStateRecord.id,
       async () => {

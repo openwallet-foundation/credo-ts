@@ -598,7 +598,7 @@ export class ValueTransferWitnessService {
 
     const witnessState = await this.valueTransferStateService.getWitnessState()
 
-    witnessState.applyPartyStateTransitions([transactionRecord])
+    witnessState.settleTransaction([transactionRecord])
 
     const operation = async () => {
       return this.valueTransferStateService.storeWitnessState(witnessState)
