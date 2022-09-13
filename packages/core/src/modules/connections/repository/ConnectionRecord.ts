@@ -1,6 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { HandshakeProtocol } from '../models'
-import type { ConnectionType } from '../models/ConnectionType'
+import { ConnectionType } from '../models/ConnectionType'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -25,6 +25,7 @@ export interface ConnectionRecordProps {
   protocol?: HandshakeProtocol
   outOfBandId?: string
   invitationDid?: string
+  connectionType?: [ConnectionType | string]
 }
 
 export type CustomConnectionTags = TagsBase
@@ -37,13 +38,12 @@ export type DefaultConnectionTags = {
   theirDid?: string
   outOfBandId?: string
   invitationDid?: string
-  connectionType?: ConnectionType.Mediator
+  connectionType?: [ConnectionType | string]
 }
 
 export class ConnectionRecord
   extends BaseRecord<DefaultConnectionTags, CustomConnectionTags>
-  implements ConnectionRecordProps
-{
+  implements ConnectionRecordProps {
   public state!: DidExchangeState
   public role!: DidExchangeRole
 
@@ -62,6 +62,7 @@ export class ConnectionRecord
   public protocol?: HandshakeProtocol
   public outOfBandId?: string
   public invitationDid?: string
+  public connectionType?: [ConnectionType | string]
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
@@ -101,6 +102,7 @@ export class ConnectionRecord
       theirDid: this.theirDid,
       outOfBandId: this.outOfBandId,
       invitationDid: this.invitationDid,
+      connectionType: this.connectionType,
     }
   }
 
