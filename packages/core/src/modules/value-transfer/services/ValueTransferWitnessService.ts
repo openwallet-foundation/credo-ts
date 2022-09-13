@@ -7,7 +7,7 @@ import {
   ErrorCodes,
   TransactionRecord,
   ValueTransfer,
-  WitnessInfo,
+  WitnessDetails,
   WitnessState,
 } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -16,7 +16,6 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { AriesFrameworkError } from '../../../error'
-import { WitnessType } from '../../../types'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { DidMarker, DidService } from '../../dids'
 import { WellKnownService } from '../../well-known'
@@ -126,16 +125,7 @@ export class ValueTransferWitnessService {
       throw new AriesFrameworkError('Witness table must be provided.')
     }
 
-    // search for first type one witness
-    // else for type two
-    // else any other
-    const topWitness =
-      config.knownWitnesses.find((witness) => witness.wid !== config.wid && witness.type === WitnessType.One) ??
-      config.knownWitnesses.find((witness) => witness.wid !== config.wid && witness.type === WitnessType.Two) ??
-      config.knownWitnesses.find((witness) => witness.wid !== config.wid) ??
-      config.knownWitnesses[0]
-
-    const info = new WitnessInfo({
+    const info = new WitnessDetails({
       wid: config.wid,
       gossipDid: gossipDid.did,
       publicDid: publicDid.did,
@@ -148,7 +138,6 @@ export class ValueTransferWitnessService {
 
     const state = new WitnessStateRecord({
       witnessState,
-      topWitness,
     })
 
     await this.witnessStateRepository.save(state)
@@ -177,7 +166,7 @@ export class ValueTransferWitnessService {
     const { message: requestAcceptanceMessage } = messageContext
 
     this.config.logger.info(
-      `> Witness: process request acceptance message for VTP transaction ${requestAcceptanceMessage.thid}`
+      `> Witness ${this.config.label}: process request acceptance message for VTP transaction ${requestAcceptanceMessage.thid}`
     )
 
     // Get Witness state
@@ -267,7 +256,7 @@ export class ValueTransferWitnessService {
     })
 
     this.config.logger.info(
-      `< Witness: process request acceptance message for VTP transaction ${requestAcceptanceMessage.thid} completed!`
+      `< Witness ${this.config.label}: process request acceptance message for VTP transaction ${requestAcceptanceMessage.thid} completed!`
     )
 
     return { record, message: requestAcceptedWitnessedMessage }
@@ -282,7 +271,7 @@ export class ValueTransferWitnessService {
     problemReport?: ProblemReportMessage
   }> {
     this.config.logger.info(
-      `   > Witness: resume processing of request acceptance for VTP transaction ${record.threadId}`
+      `   > Witness ${this.config.label}: resume processing of request acceptance for VTP transaction ${record.threadId}`
     )
 
     //Call VTP package to process received Payment Request request
@@ -325,7 +314,7 @@ export class ValueTransferWitnessService {
     })
 
     this.config.logger.info(
-      `   < Witness: resume processing of request acceptance for VTP transaction ${record.threadId} completed!`
+      `   < Witness ${this.config.label}: resume processing of request acceptance for VTP transaction ${record.threadId} completed!`
     )
 
     return { record, message: requestAcceptedWitnessedMessage }
@@ -351,14 +340,14 @@ export class ValueTransferWitnessService {
     const { message: cashAcceptedMessage } = messageContext
 
     this.config.logger.info(
-      `> Witness: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid}`
+      `> Witness ${this.config.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid}`
     )
 
     const record = await this.valueTransferRepository.getByThread(cashAcceptedMessage.thid)
 
     if (record.finished) {
       this.config.logger.warn(
-        `> Witness: skipping cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} in ${record.state} state`
+        `> Witness ${this.config.label}: skipping cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} in ${record.state} state`
       )
       return { record }
     }
@@ -435,7 +424,7 @@ export class ValueTransferWitnessService {
     )
 
     this.config.logger.info(
-      `< Witness: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} completed!`
+      `< Witness ${this.config.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} completed!`
     )
 
     return { record, message: cashAcceptedWitnessedMessage }
@@ -461,13 +450,15 @@ export class ValueTransferWitnessService {
     // Verify that we are in appropriate state to perform action
     const { message: cashRemovedMessage } = messageContext
 
-    this.config.logger.info(`> Witness: process cash removal message for VTP transaction ${cashRemovedMessage.thid}`)
+    this.config.logger.info(
+      `> Witness ${this.config.label}: process cash removal message for VTP transaction ${cashRemovedMessage.thid}`
+    )
 
     const record = await this.valueTransferRepository.getByThread(cashRemovedMessage.thid)
 
     if (record.finished) {
       this.config.logger.warn(
-        `> Witness: skipping cash removal message for VTP transaction ${cashRemovedMessage.thid} in ${record.state} state`
+        `> Witness ${this.config.label}: skipping cash removal message for VTP transaction ${cashRemovedMessage.thid} in ${record.state} state`
       )
       return { record }
     }
@@ -560,10 +551,12 @@ export class ValueTransferWitnessService {
     )
 
     this.config.logger.info(
-      `< Witness: process cash removal message for VTP transaction ${cashRemovedMessage.thid} completed!`
+      `< Witness ${this.config.label}: process cash removal message for VTP transaction ${cashRemovedMessage.thid} completed!`
     )
     this.config.logger.info(
-      `< Witness: transaction completed in ${record.receipt.witness.getElapsedTimeInSeconds()} seconds`
+      `< Witness ${
+        this.config.label
+      }: transaction completed in ${record.receipt.witness.getElapsedTimeInSeconds()} seconds`
     )
 
     return { record, getterMessage: getterReceiptMessage, giverMessage: giverReceiptMessage }
@@ -579,7 +572,9 @@ export class ValueTransferWitnessService {
    *    * Witnessed Cash Removal message
    */
   public async processCashMint(messageContext: InboundMessageContext<MintMessage>): Promise<MintResponseMessage> {
-    this.config.logger.info(`> Witness: process cash mint request from '${messageContext.message.from}'`)
+    this.config.logger.info(
+      `> Witness ${this.config.label}: process cash mint request from '${messageContext.message.from}'`
+    )
 
     const issuerDids = this.config.witnessIssuerDids
     if (!issuerDids) {
@@ -617,7 +612,9 @@ export class ValueTransferWitnessService {
       thid: messageContext.message.id,
     })
 
-    this.config.logger.info(`< Witness: process cash mint request from '${messageContext.message.from}' completed!`)
+    this.config.logger.info(
+      `< Witness ${this.config.label}: process cash mint request from '${messageContext.message.from}' completed!`
+    )
 
     return message
   }
@@ -626,7 +623,9 @@ export class ValueTransferWitnessService {
    * Pause VTP transaction processing and request for transactions from other witness
    * */
   private async pauseTransaction(record: ValueTransferRecord, message: ValueTransferBaseMessage): Promise<void> {
-    this.config.logger.info(`> Witness: pause transaction '${record.threadId}' and request updates`)
+    this.config.logger.info(
+      `> Witness ${this.config.label}: pause transaction '${record.threadId}' and request updates`
+    )
 
     record.status = ValueTransferTransactionStatus.Paused
     record.lastMessage = message
@@ -635,7 +634,9 @@ export class ValueTransferWitnessService {
 
     await this.gossipService.requestMissingTransactions(record.threadId)
 
-    this.config.logger.info(`< Witness: pause transaction '${record.threadId}' and request updates`)
+    this.config.logger.info(
+      `< Witness ${this.config.label}: pause transaction '${record.threadId}' and request updates`
+    )
     return
   }
 
@@ -643,10 +644,15 @@ export class ValueTransferWitnessService {
    * Resume processing of VTP transaction
    * */
   public async resumeTransaction(thid: string): Promise<void> {
-    this.config.logger.info(`> Witness: resume transaction '${thid}'`)
+    this.config.logger.info(`> Witness ${this.config.label}: resume transaction '${thid}'`)
 
     const record = await this.valueTransferRepository.findByThread(thid)
-    if (!record) return
+    if (!record) {
+      this.config.logger.error(
+        `  Witness ${this.config.label}: unable to resume transaction with thid '${thid}. Record not found'`
+      )
+      return
+    }
 
     record.assertRole(ValueTransferRole.Witness)
     record.assertStatus(ValueTransferTransactionStatus.Paused)
@@ -661,13 +667,6 @@ export class ValueTransferWitnessService {
       await this.processRequestAcceptance(context)
       return
     }
-
-    // if (record.state === ValueTransferState.OfferAcceptanceReceived) {
-    //   const requestAcceptance = JsonTransformer.fromJSON(record.lastMessage, OfferAcceptedMessage)
-    //   const context = new InboundMessageContext(requestAcceptance)
-    //   await this.processOfferAcceptance(context)
-    //   return
-    // }
 
     if (record.state === ValueTransferState.RequestAcceptanceSent) {
       const requestAcceptance = JsonTransformer.fromJSON(record.lastMessage, CashAcceptedMessage)
@@ -689,7 +688,7 @@ export class ValueTransferWitnessService {
     record.lastMessage = undefined
     await this.valueTransferRepository.update(record)
 
-    this.config.logger.info(`< Witness: transaction resumed ${thid}`)
+    this.config.logger.info(`< Witness ${this.config.label}: transaction resumed ${thid}`)
   }
 
   public async processWitnessTableQuery(
@@ -716,7 +715,7 @@ export class ValueTransferWitnessService {
     )
 
     const message = new WitnessTableMessage({
-      from: state.gossipDid,
+      from: state.publicDid,
       to: witnessTableQuery.from,
       body: { witnesses },
       thid: witnessTableQuery.id,
