@@ -2,6 +2,10 @@
 
 This file is intended for developers working on the internals of the framework. If you're just looking how to get started with the framework, see the [docs](./docs)
 
+## Notice on building packages
+
+There is a common issue with building packages in forked monorepositories. See details [here](https://github.com/sicpa-dlab/cbdc-projects/blob/main/docs/devs/forked-monorepo-build.md).
+
 ## Running tests
 
 Test are executed using jest. Some test require either the **mediator agents** or the **ledger** to be running. When running tests that require a connection to the ledger pool, you need to set the `TEST_AGENT_PUBLIC_DID_SEED` and `GENESIS_TXN_PATH` environment variables.

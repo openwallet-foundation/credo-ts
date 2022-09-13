@@ -62,7 +62,7 @@ export class ValueTransferIssuerService {
    */
   public async mintCash(amount: number, witness: string, timeoutMs = 20000): Promise<void> {
     const id = v4()
-    this.config.logger.info(`> Issuer: mint cash with id ${id}`)
+    this.config.logger.info(`> Issuer ${this.config.label}: mint cash with id ${id}`)
 
     const publicDid = await this.didService.getPublicDid()
     if (!publicDid) {
@@ -98,11 +98,11 @@ export class ValueTransferIssuerService {
       // await acknowledge from witness
       await this.awaitCashMinted(timeoutMs)
 
-      this.config.logger.info(`> Issuer: mint cash with id ${id} completed!`)
+      this.config.logger.info(`> Issuer ${this.config.label}: mint cash with id ${id} completed!`)
     } catch (e) {
       // either could not send mint message to witness or did not receive response
       await this.valueTransfer.giver().abortTransaction()
-      this.config.logger.info(`> Issuer: mint cash with id ${id} failed!`)
+      this.config.logger.info(`> Issuer ${this.config.label}: mint cash with id ${id} failed!`)
       throw e
     }
   }
@@ -115,7 +115,7 @@ export class ValueTransferIssuerService {
   }
 
   public async processCashMintResponse(messageContext: InboundMessageContext<MintResponseMessage>): Promise<void> {
-    this.config.logger.info(`> Issuer: process cash mint response ${messageContext.message.thid}`)
+    this.config.logger.info(`> Issuer ${this.config.label}: process cash mint response ${messageContext.message.thid}`)
 
     // Commit transaction and raise event
     const state = await this.valueTransferStateService.getPartyState()
@@ -129,7 +129,9 @@ export class ValueTransferIssuerService {
       payload: {},
     })
 
-    this.config.logger.info(`< Issuer: process cash mint response ${messageContext.message.thid} completed!`)
+    this.config.logger.info(
+      `< Issuer ${this.config.label}: process cash mint response ${messageContext.message.thid} completed!`
+    )
   }
 
   /**
