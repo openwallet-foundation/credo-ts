@@ -16,6 +16,7 @@ import { CacheRepository } from '../cache'
 import { InjectionSymbols } from '../constants'
 import { JwsService } from '../crypto/JwsService'
 import { AriesFrameworkError } from '../error'
+import { ActionMenuModule } from '../modules/action-menu'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
@@ -68,6 +69,7 @@ export class Agent {
   public readonly genericRecords: GenericRecordsModule
   public readonly ledger: LedgerModule
   public readonly questionAnswer!: QuestionAnswerModule
+  public readonly actionMenu!: ActionMenuModule
   public readonly credentials: CredentialsModule
   public readonly mediationRecipient: RecipientModule
   public readonly mediator: MediatorModule
@@ -122,6 +124,7 @@ export class Agent {
     this.mediationRecipient = this.dependencyManager.resolve(RecipientModule)
     this.basicMessages = this.dependencyManager.resolve(BasicMessagesModule)
     this.questionAnswer = this.dependencyManager.resolve(QuestionAnswerModule)
+    this.actionMenu = this.dependencyManager.resolve(ActionMenuModule)
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsModule)
     this.ledger = this.dependencyManager.resolve(LedgerModule)
     this.discovery = this.dependencyManager.resolve(DiscoverFeaturesModule)
@@ -134,7 +137,13 @@ export class Agent {
       .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
       .pipe(
         takeUntil(this.agentConfig.stop$),
-        concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message, { connection: e.payload.connection }))
+        concatMap((e) =>
+          this.messageReceiver
+            .receiveMessage(e.payload.message, { connection: e.payload.connection })
+            .catch((error) => {
+              this.logger.error('Failed to process message', { error })
+            })
+        )
       )
       .subscribe()
   }
@@ -342,6 +351,7 @@ export class Agent {
       RecipientModule,
       BasicMessagesModule,
       QuestionAnswerModule,
+      ActionMenuModule,
       GenericRecordsModule,
       LedgerModule,
       DiscoverFeaturesModule,

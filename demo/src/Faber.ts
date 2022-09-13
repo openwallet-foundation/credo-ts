@@ -1,15 +1,21 @@
-import type { ConnectionRecord } from '@aries-framework/core'
+import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
 import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { V1CredentialPreview, AttributeFilter, ProofAttributeInfo, utils } from '@aries-framework/core'
+import {
+  V1CredentialPreview,
+  AttributeFilter,
+  ProofAttributeInfo,
+  utils,
+  ConnectionEventTypes,
+} from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
 import { Color, greenText, Output, purpleText, redText } from './OutputClass'
 
 export class Faber extends BaseAgent {
-  public connectionRecordAliceId?: string
+  public outOfBandId?: string
   public credentialDefinition?: CredDef
   public ui: BottomBar
 
@@ -25,29 +31,73 @@ export class Faber extends BaseAgent {
   }
 
   private async getConnectionRecord() {
-    if (!this.connectionRecordAliceId) {
+    if (!this.outOfBandId) {
       throw Error(redText(Output.MissingConnectionRecord))
     }
-    return await this.agent.connections.getById(this.connectionRecordAliceId)
-  }
 
-  private async receiveConnectionRequest(invitationUrl: string) {
-    const { connectionRecord } = await this.agent.oob.receiveInvitationFromUrl(invitationUrl)
-    if (!connectionRecord) {
-      throw new Error(redText(Output.NoConnectionRecordFromOutOfBand))
+    const [connection] = await this.agent.connections.findAllByOutOfBandId(this.outOfBandId)
+
+    if (!connection) {
+      throw Error(redText(Output.MissingConnectionRecord))
     }
-    return connectionRecord
+
+    return connection
   }
 
-  private async waitForConnection(connectionRecord: ConnectionRecord) {
-    connectionRecord = await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
+  private async printConnectionInvite() {
+    const outOfBand = await this.agent.oob.createInvitation()
+    this.outOfBandId = outOfBand.id
+
+    console.log(
+      Output.ConnectionLink,
+      outOfBand.outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }),
+      '\n'
+    )
+  }
+
+  private async waitForConnection() {
+    if (!this.outOfBandId) {
+      throw new Error(redText(Output.MissingConnectionRecord))
+    }
+
+    console.log('Waiting for Alice to finish connection...')
+
+    const getConnectionRecord = (outOfBandId: string) =>
+      new Promise<ConnectionRecord>((resolve, reject) => {
+        // Timeout of 20 seconds
+        const timeoutId = setTimeout(() => reject(new Error(redText(Output.MissingConnectionRecord))), 20000)
+
+        // Start listener
+        this.agent.events.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, (e) => {
+          if (e.payload.connectionRecord.outOfBandId !== outOfBandId) return
+
+          clearTimeout(timeoutId)
+          resolve(e.payload.connectionRecord)
+        })
+
+        // Also retrieve the connection record by invitation if the event has already fired
+        void this.agent.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {
+          if (connectionRecord) {
+            clearTimeout(timeoutId)
+            resolve(connectionRecord)
+          }
+        })
+      })
+
+    const connectionRecord = await getConnectionRecord(this.outOfBandId)
+
+    try {
+      await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
+    } catch (e) {
+      console.log(redText(`\nTimeout of 20 seconds reached.. Returning to home screen.\n`))
+      return
+    }
     console.log(greenText(Output.ConnectionEstablished))
-    return connectionRecord.id
   }
 
-  public async acceptConnection(invitation_url: string) {
-    const connectionRecord = await this.receiveConnectionRequest(invitation_url)
-    this.connectionRecordAliceId = await this.waitForConnection(connectionRecord)
+  public async setupConnection() {
+    await this.printConnectionInvite()
+    await this.waitForConnection()
   }
 
   private printSchema(name: string, version: string, attributes: string[]) {

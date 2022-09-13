@@ -7,21 +7,17 @@ import { SubjectInboundTransport } from '../../../../../../tests/transport/Subje
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getBaseConfig, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { ConsoleLogger, LogLevel } from '../../../logger'
 import { HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 
-const logger = new ConsoleLogger(LogLevel.info)
-const recipientConfig = getBaseConfig('Mediation: Recipient', {
+const recipientConfig = getBaseConfig('Pickup: Recipient', {
   autoAcceptConnections: true,
   indyLedgers: [],
-  logger,
 })
-const mediatorConfig = getBaseConfig('Mediation: Mediator', {
+const mediatorConfig = getBaseConfig('Pickup: Mediator', {
   autoAcceptConnections: true,
   endpoints: ['rxjs:mediator'],
   indyLedgers: [],
-  logger,
 })
 
 describe('E2E Pick Up protocol', () => {

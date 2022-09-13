@@ -66,7 +66,6 @@ export class ConnectionResponseHandler implements Handler {
     }
 
     messageContext.connection = connectionRecord
-    // The presence of outOfBandRecord is not mandatory when the old connection invitation is used
     const connection = await this.connectionService.processResponse(messageContext, outOfBandRecord)
 
     // TODO: should we only send ping message in case of autoAcceptConnection or always?

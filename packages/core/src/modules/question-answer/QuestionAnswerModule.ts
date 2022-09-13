@@ -1,5 +1,4 @@
 import type { DependencyManager } from '../../plugins'
-import type { ValidResponse } from './models'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
@@ -8,6 +7,7 @@ import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections'
 
 import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
+import { ValidResponse } from './models'
 import { QuestionAnswerRepository } from './repository'
 import { QuestionAnswerService } from './services'
 
@@ -51,7 +51,7 @@ export class QuestionAnswerModule {
 
     const { questionMessage, questionAnswerRecord } = await this.questionAnswerService.createQuestion(connectionId, {
       question: config.question,
-      validResponses: config.validResponses,
+      validResponses: config.validResponses.map((item) => new ValidResponse(item)),
       detail: config?.detail,
     })
     const outboundMessage = createOutboundMessage(connection, questionMessage)
@@ -90,6 +90,17 @@ export class QuestionAnswerModule {
    */
   public getAll() {
     return this.questionAnswerService.getAll()
+  }
+
+  /**
+   * Retrieve a question answer record by id
+   *
+   * @param questionAnswerId The questionAnswer record id
+   * @return The question answer record or null if not found
+   *
+   */
+  public findById(questionAnswerId: string) {
+    return this.questionAnswerService.findById(questionAnswerId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

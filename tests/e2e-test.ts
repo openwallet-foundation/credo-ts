@@ -93,8 +93,6 @@ export async function e2eTest({
   expect(verifierProof.state).toBe(ProofState.Done)
 
   // We want to stop the mediator polling before the agent is shutdown.
-  // FIXME: add a way to stop mediator polling from the public api, and make sure this is
-  // being handled in the agent shutdown so we don't get any errors with wallets being closed.
-  recipientAgent.config.stop$.next(true)
+  await recipientAgent.mediationRecipient.stopMessagePickup()
   await sleep(2000)
 }

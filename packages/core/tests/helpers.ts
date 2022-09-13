@@ -275,7 +275,9 @@ export function getMockConnection({
 export function getMockOutOfBand({
   label,
   serviceEndpoint,
-  recipientKeys,
+  recipientKeys = [
+    new DidKey(Key.fromPublicKeyBase58('ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7', KeyType.Ed25519)).did,
+  ],
   mediatorId,
   role,
   state,
@@ -303,9 +305,7 @@ export function getMockOutOfBand({
         id: `#inline-0`,
         priority: 0,
         serviceEndpoint: serviceEndpoint ?? 'http://example.com',
-        recipientKeys: recipientKeys || [
-          new DidKey(Key.fromPublicKeyBase58('ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7', KeyType.Ed25519)).did,
-        ],
+        recipientKeys,
         routingKeys: [],
       }),
     ],
@@ -318,6 +318,9 @@ export function getMockOutOfBand({
     outOfBandInvitation: outOfBandInvitation,
     reusable,
     reuseConnectionId,
+    tags: {
+      recipientKeyFingerprints: recipientKeys.map((didKey) => DidKey.fromDid(didKey).key.fingerprint),
+    },
   })
   return outOfBandRecord
 }
@@ -638,7 +641,17 @@ export async function setupCredentialTests(
 
   const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
 
-  return { faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection }
+  const faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
+  const aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()
+
+  faberAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(faberReplay)
+  aliceAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(aliceReplay)
+
+  return { faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection, faberReplay, aliceReplay }
 }
 
 export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {

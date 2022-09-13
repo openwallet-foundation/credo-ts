@@ -7,7 +7,6 @@ import { SubjectInboundTransport } from '../../../../../../tests/transport/Subje
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getBaseConfig, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { sleep } from '../../../utils/sleep'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
@@ -32,12 +31,6 @@ describe('mediator establishment', () => {
   let senderAgent: Agent
 
   afterEach(async () => {
-    // We want to stop the mediator polling before the agent is shutdown.
-    // FIXME: add a way to stop mediator polling from the public api, and make sure this is
-    // being handled in the agent shutdown so we don't get any errors with wallets being closed.
-    recipientAgent.config.stop$.next(true)
-    await sleep(1000)
-
     await recipientAgent?.shutdown()
     await recipientAgent?.wallet.delete()
     await mediatorAgent?.shutdown()

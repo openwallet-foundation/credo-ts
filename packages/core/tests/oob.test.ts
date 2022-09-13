@@ -172,7 +172,7 @@ describe('out of band', () => {
       expect(outOfBandInvitation.getRequests()).toBeUndefined()
 
       // expect contains services
-      const [service] = outOfBandInvitation.services as OutOfBandDidCommService[]
+      const [service] = outOfBandInvitation.getInlineServices()
       expect(service).toMatchObject(
         new OutOfBandDidCommService({
           id: expect.any(String),
@@ -196,7 +196,7 @@ describe('out of band', () => {
       expect(outOfBandInvitation.getRequests()).toHaveLength(1)
 
       // expect contains services
-      const [service] = outOfBandInvitation.services
+      const [service] = outOfBandInvitation.getServices()
       expect(service).toMatchObject(
         new OutOfBandDidCommService({
           id: expect.any(String),
@@ -220,7 +220,7 @@ describe('out of band', () => {
       expect(outOfBandInvitation.getRequests()).toHaveLength(1)
 
       // expect contains services
-      const [service] = outOfBandInvitation.services as OutOfBandDidCommService[]
+      const [service] = outOfBandInvitation.getInlineServices()
       expect(service).toMatchObject(
         new OutOfBandDidCommService({
           id: expect.any(String),
@@ -467,8 +467,8 @@ describe('out of band', () => {
       const outOfBandRecord2 = await faberAgent.oob.createInvitation(makeConnectionConfig)
 
       // Take over the recipientKeys from the first invitation so they match when encoded
-      const firstInvitationService = outOfBandRecord.outOfBandInvitation.services[0] as OutOfBandDidCommService
-      const secondInvitationService = outOfBandRecord2.outOfBandInvitation.services[0] as OutOfBandDidCommService
+      const [firstInvitationService] = outOfBandRecord.outOfBandInvitation.getInlineServices()
+      const [secondInvitationService] = outOfBandRecord2.outOfBandInvitation.getInlineServices()
       secondInvitationService.recipientKeys = firstInvitationService.recipientKeys
 
       aliceAgent.events.on(OutOfBandEventTypes.HandshakeReused, aliceReuseListener)
@@ -678,19 +678,6 @@ describe('out of band', () => {
 
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
         new AriesFrameworkError('There is no message in requests~attach supported by agent.')
-      )
-    })
-
-    test('throw an error when a did is used in the out of band message', async () => {
-      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
-      const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
-        ...issueCredentialConfig,
-        messages: [message],
-      })
-      outOfBandInvitation.services = ['somedid']
-
-      await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
-        new AriesFrameworkError('Dids are not currently supported in out-of-band invitation services attribute.')
       )
     })
   })
