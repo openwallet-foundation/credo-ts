@@ -1,6 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { HandshakeProtocol } from '../models'
-import { ConnectionType } from '../models/ConnectionType'
+import type { ConnectionType } from '../models/ConnectionType'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -43,7 +43,8 @@ export type DefaultConnectionTags = {
 
 export class ConnectionRecord
   extends BaseRecord<DefaultConnectionTags, CustomConnectionTags>
-  implements ConnectionRecordProps {
+  implements ConnectionRecordProps
+{
   public state!: DidExchangeState
   public role!: DidExchangeRole
 

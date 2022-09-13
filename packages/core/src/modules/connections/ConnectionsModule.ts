@@ -1,6 +1,7 @@
 import type { DependencyManager } from '../../plugins'
 import type { Key } from '../dids'
 import type { OutOfBandRecord } from '../oob/repository'
+import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
 
@@ -27,7 +28,7 @@ import {
   DidExchangeResponseHandler,
   DidExchangeCompleteHandler,
 } from './handlers'
-import { ConnectionType, HandshakeProtocol } from './models'
+import { HandshakeProtocol } from './models'
 import { ConnectionRepository } from './repository'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
@@ -200,46 +201,43 @@ export class ConnectionsModule {
   /**
    * Allows for the addition of connectionType to the record.
    *  Either updates or creates an array of string conection types
-   * @param connectionId 
-   * @param type 
+   * @param connectionId
+   * @param type
    * @throws AriesFrameworkError if connectionId is invalid or does not exist
    */
   public async addConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.findById(connectionId)
     if (record) {
       const tags = record.getTags()['connectionType']
-      if (tags)
-        record.setTag('connectionType', [type, ...tags])
-      else
-        record.setTag('connectionType', [type])
+      if (tags) record.setTag('connectionType', [type, ...tags])
+      else record.setTag('connectionType', [type])
     } else {
-      throw new AriesFrameworkError("The provided connectionId did not match a known record")
+      throw new AriesFrameworkError('The provided connectionId did not match a known record')
     }
   }
   /**
    * Removes the given tag from the given record found by connectionId, if the tag exists otherwise does nothing
-   * @param connectionId 
-   * @param type 
+   * @param connectionId
+   * @param type
    * @throws AriesFrameworkError if connectionId is invalid or does not exist
    */
   public async removeConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.findById(connectionId)
     if (record) {
-      let tags = record.getTags()['connectionType']
+      const tags = record.getTags()['connectionType']
       if (tags) {
         const newTags = tags.filter((value: string) => {
-          if (value != type)
-            return value
+          if (value != type) return value
         })
-        record.setTag('connectionType', [...tags])
+        record.setTag('connectionType', [...newTags])
       }
     } else {
-      throw new AriesFrameworkError("The provided connectionId did not match a known record")
+      throw new AriesFrameworkError('The provided connectionId did not match a known record')
     }
   }
   /**
    * Gets the known connection types for the record matching the given connectionId
-   * @param connectionId 
+   * @param connectionId
    * @returns An array of known connection types or null if none exist
    * @throws AriesFrameworkError if the given connectionId is invalid or does not exist
    */
@@ -247,12 +245,10 @@ export class ConnectionsModule {
     const record = await this.findById(connectionId)
     if (record) {
       const tags = record.getTags()['connectionType']
-      if (tags)
-        return tags
-      else
-        return null
+      if (tags) return tags
+      else return null
     } else {
-      throw new AriesFrameworkError("The provide connectionId did not match a knwon record")
+      throw new AriesFrameworkError('The provide connectionId did not match a knwon record')
     }
   }
 
