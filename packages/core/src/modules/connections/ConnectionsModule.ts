@@ -255,7 +255,7 @@ export class ConnectionsModule {
   }
   /**
    * tries to find the target tag on the record corrisponding to provided connectionId
-   * @param connectionId 
+   * @param connectionId
    * @param targetTag name of the target tag as a string (case sensitive)
    * @returns The target tag or null if it does not exist
    * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
@@ -264,17 +264,15 @@ export class ConnectionsModule {
     const record = await this.findById(connectionId)
     if (record) {
       const tag = record.getTag(targetTag)
-      if (tag != undefined)
-        return tag
-      else
-        return null
+      if (tag != undefined) return tag
+      else return null
     } else {
       throw new AriesFrameworkError('The provided connectionId did not match a known record')
     }
   }
   /**
    * Tries to get all the tags corrisponding to the provided connectionId
-   * @param conectionId 
+   * @param conectionId
    * @returns All tags associated with a given object
    * @throws AriesFrameworkError if the record corripsoning to the provided connectionId cannot be found
    */

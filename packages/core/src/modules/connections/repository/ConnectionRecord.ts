@@ -25,6 +25,7 @@ export interface ConnectionRecordProps {
   protocol?: HandshakeProtocol
   outOfBandId?: string
   invitationDid?: string
+  connectionType?: [ConnectionType | string]
 }
 
 export type CustomConnectionTags = TagsBase
@@ -42,7 +43,8 @@ export type DefaultConnectionTags = {
 
 export class ConnectionRecord
   extends BaseRecord<DefaultConnectionTags, CustomConnectionTags>
-  implements ConnectionRecordProps {
+  implements ConnectionRecordProps
+{
   public state!: DidExchangeState
   public role!: DidExchangeRole
 
@@ -61,6 +63,7 @@ export class ConnectionRecord
   public protocol?: HandshakeProtocol
   public outOfBandId?: string
   public invitationDid?: string
+  public connectionType?: [ConnectionType | string]
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
