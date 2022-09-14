@@ -96,7 +96,7 @@ export class EnvelopeService {
           plaintextMessage: decryptedMessageContext.plaintextMessage,
           sender: decryptedMessageContext.senderKid,
           recipient: decryptedMessageContext.recipientKid,
-          version: DIDCommVersion.V1,
+          version: DIDCommVersion.V2,
         }
       }
     }
@@ -106,7 +106,7 @@ export class EnvelopeService {
         plaintextMessage: decryptedMessageContext.plaintextMessage,
         sender: decryptedMessageContext.senderKid,
         recipient: decryptedMessageContext.recipientKid,
-        version: DIDCommVersion.V1,
+        version: DIDCommVersion.V2,
       }
     }
     return {
