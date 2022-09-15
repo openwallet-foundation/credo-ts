@@ -25,7 +25,6 @@ export interface ConnectionRecordProps {
   protocol?: HandshakeProtocol
   outOfBandId?: string
   invitationDid?: string
-  connectionType?: [ConnectionType | string]
 }
 
 export type CustomConnectionTags = TagsBase
@@ -63,7 +62,6 @@ export class ConnectionRecord
   public protocol?: HandshakeProtocol
   public outOfBandId?: string
   public invitationDid?: string
-  public connectionType?: [ConnectionType | string]
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
@@ -103,7 +101,6 @@ export class ConnectionRecord
       theirDid: this.theirDid,
       outOfBandId: this.outOfBandId,
       invitationDid: this.invitationDid,
-      connectionType: this.connectionType,
     }
   }
 

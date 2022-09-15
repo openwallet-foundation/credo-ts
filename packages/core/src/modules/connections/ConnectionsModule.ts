@@ -208,9 +208,8 @@ export class ConnectionsModule {
   public async addConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.findById(connectionId)
     if (record) {
-      const tags = record.getTags()['connectionType']
-      if (tags) record.setTag('connectionType', [type, ...tags])
-      else record.setTag('connectionType', [type])
+      const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+      record.setTag('connectionType', [type, ...tags])
       await this.connectionService.update(record)
     } else {
       throw new AriesFrameworkError('The provided connectionId did not match a known record')
@@ -225,13 +224,13 @@ export class ConnectionsModule {
   public async removeConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.findById(connectionId)
     if (record) {
-      const tags = record.getTags()['connectionType']
-      if (tags) {
-        const newTags = tags.filter((value: string) => {
-          if (value != type) return value
-        })
-        record.setTag('connectionType', [...newTags])
-      }
+      const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+
+      const newTags = tags.filter((value: string) => {
+        if (value != type) return value
+      })
+      record.setTag('connectionType', [...newTags])
+
       await this.connectionService.update(record)
     } else {
       throw new AriesFrameworkError('The provided connectionId did not match a known record')
@@ -246,9 +245,8 @@ export class ConnectionsModule {
   public async getConnectionTypes(connectionId: string) {
     const record = await this.findById(connectionId)
     if (record) {
-      const tags = record.getTags()['connectionType']
-      if (tags) return tags
-      else return null
+      const tags = record.getTag('connectionType') as string[]
+      return tags || null
     } else {
       throw new AriesFrameworkError('The provide connectionId did not match a known record')
     }
@@ -264,8 +262,7 @@ export class ConnectionsModule {
     const record = await this.findById(connectionId)
     if (record) {
       const tag = record.getTag(targetTag)
-      if (tag != undefined) return tag
-      else return null
+      return tag || null
     } else {
       throw new AriesFrameworkError('The provided connectionId did not match a known record')
     }
@@ -280,11 +277,7 @@ export class ConnectionsModule {
     const record = await this.findById(conectionId)
     if (record) {
       const tags = record.getTags()
-      if (tags != undefined) {
-        return tags
-      } else {
-        return null
-      }
+      return tags || null
     } else {
       throw new AriesFrameworkError('The provided connectionId did not match a known record')
     }
