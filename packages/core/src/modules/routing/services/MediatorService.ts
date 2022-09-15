@@ -1,7 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { EncryptedMessage } from '../../../types'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
-import type { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage } from '../messages'
+import type { ForwardMessage, MediationRequestMessage, KeylistUpdateMessage } from '../messages'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -10,7 +10,7 @@ import { AriesFrameworkError } from '../../../error'
 import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { Wallet } from '../../../wallet/Wallet'
-import { didKeyToVerkey } from '../../dids/helpers'
+import { didKeyToVerkey, verkeyToDidKey } from '../../dids/helpers'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
   KeylistUpdateAction,
@@ -149,9 +149,12 @@ export class MediatorService {
 
     await this.updateState(mediationRecord, MediationState.Granted)
 
+    // Use our useDidKey configuration, as this is the first interaction for this protocol
+    const useDidKey = this.agentConfig.useDidKeyInProtocols
+
     const message = new MediationGrantMessage({
       endpoint: this.agentConfig.endpoints[0],
-      routingKeys: this.getRoutingKeys(),
+      routingKeys: useDidKey ? this.getRoutingKeys().map(verkeyToDidKey) : this.getRoutingKeys(),
       threadId: mediationRecord.threadId,
     })
 
