@@ -70,6 +70,11 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
     options: AutoSelectCredentialsForProofRequestOptions
   ): Promise<FormatRequestedCredentialReturn<PFs>>
 
+  // Get Requested Credentials
+  getRequestedCredentialsForProofRequest(
+    options: AutoSelectCredentialsForProofRequestOptions
+  ): Promise<FormatRetrievedCredentialOptions<PFs>>
+
   sendProblemReport(proofRecordId: string, message: string): Promise<ProofRecord>
 
   // Record Methods
@@ -444,6 +449,30 @@ export class ProofsApi<
         config: options.config,
       })
     return await service.autoSelectCredentialsForProofRequest(retrievedCredentials)
+  }
+
+  /**
+  * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
+  * use credentials in the wallet to build indy requested credentials object for input to proof creation.
+  * If restrictions allow, self attested attributes will be used.
+  *
+  *
+  * @param proofRecordId the id of the proof request to get the matching credentials for
+  * @param config optional configuration for credential selection process. Use `filterByPresentationPreview` (default `true`) to only include
+  *  credentials that match the presentation preview from the presentation proposal (if available).
+
+  * @returns RetrievedCredentials object
+  */
+  public async getRequestedCredentialsForProofRequest(
+    options: AutoSelectCredentialsForProofRequestOptions
+  ): Promise<FormatRetrievedCredentialOptions<PFs>> {
+    const record = await this.getById(options.proofRecordId)
+    const service = this.getService(record.protocolVersion)
+
+    return await service.getRequestedCredentialsForProofRequest(this.agentContext, {
+      proofRecord: record,
+      config: options.config,
+    })
   }
 
   /**
