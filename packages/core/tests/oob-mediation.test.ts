@@ -91,7 +91,7 @@ describe('out of band with mediation', () => {
     mediatorAliceConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorAliceConnection!.id)
     expect(mediatorAliceConnection.state).toBe(DidExchangeState.Completed)
 
-    // ========== Set meadiation between Alice and Mediator agents ==========
+    // ========== Set mediation between Alice and Mediator agents ==========
     const mediationRecord = await aliceAgent.mediationRecipient.requestAndAwaitGrant(aliceMediatorConnection)
     const connectonRecord = await aliceAgent.connections.findById(mediationRecord.connectionId)
     const tag = connectonRecord?.getTag('connectionType')
