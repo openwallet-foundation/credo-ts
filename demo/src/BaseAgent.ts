@@ -42,7 +42,7 @@ export class BaseAgent {
 
     this.config = config
 
-    this.agent = new Agent(config, agentDependencies)
+    this.agent = new Agent({ config, dependencies: agentDependencies })
     this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
     this.agent.registerOutboundTransport(new HttpOutboundTransport())
   }

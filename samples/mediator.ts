@@ -53,7 +53,7 @@ const agentConfig: InitConfig = {
 }
 
 // Set up agent
-const agent = new Agent(agentConfig, agentDependencies)
+const agent = new Agent({ config: agentConfig, dependencies: agentDependencies })
 const config = agent.config
 
 // Create all transports

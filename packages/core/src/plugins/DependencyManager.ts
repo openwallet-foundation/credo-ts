@@ -1,22 +1,41 @@
+import type { ModulesMap } from '../agent/AgentModules'
 import type { Constructor } from '../utils/mixins'
-import type { Module } from './Module'
 import type { DependencyContainer } from 'tsyringe'
 
 import 'reflect-metadata'
 
 import { container as rootContainer, InjectionToken, Lifecycle } from 'tsyringe'
 
+import { FeatureRegistry } from '../agent/FeatureRegistry'
+import { AriesFrameworkError } from '../error'
+
 export { InjectionToken }
 
 export class DependencyManager {
   public readonly container: DependencyContainer
+  public readonly registeredModules: ModulesMap
 
-  public constructor(container: DependencyContainer = rootContainer.createChildContainer()) {
+  public constructor(
+    container: DependencyContainer = rootContainer.createChildContainer(),
+    registeredModules: ModulesMap = {}
+  ) {
     this.container = container
+    this.registeredModules = registeredModules
   }
 
-  public registerModules(...modules: Module[]) {
-    modules.forEach((module) => module.register(this))
+  public registerModules(modules: ModulesMap) {
+    const featureRegistry = this.resolve(FeatureRegistry)
+
+    for (const [moduleKey, module] of Object.entries(modules)) {
+      if (this.registeredModules[moduleKey]) {
+        throw new AriesFrameworkError(
+          `Module with key ${moduleKey} has already been registered. Only a single module can be registered with the same key.`
+        )
+      }
+
+      this.registeredModules[moduleKey] = module
+      module.register(this, featureRegistry)
+    }
   }
 
   public registerSingleton<T>(from: InjectionToken<T>, to: InjectionToken<T>): void
@@ -59,6 +78,6 @@ export class DependencyManager {
   }
 
   public createChild() {
-    return new DependencyManager(this.container.createChildContainer())
+    return new DependencyManager(this.container.createChildContainer(), this.registeredModules)
   }
 }

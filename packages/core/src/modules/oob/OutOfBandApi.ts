@@ -12,6 +12,7 @@ import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
+import { FeatureRegistry } from '../../agent/FeatureRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { InjectionSymbols } from '../../constants'
@@ -83,6 +84,7 @@ export class OutOfBandApi {
   private connectionsApi: ConnectionsApi
   private didCommMessageRepository: DidCommMessageRepository
   private dispatcher: Dispatcher
+  private featureRegistry: FeatureRegistry
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private agentContext: AgentContext
@@ -90,6 +92,7 @@ export class OutOfBandApi {
 
   public constructor(
     dispatcher: Dispatcher,
+    featureRegistry: FeatureRegistry,
     outOfBandService: OutOfBandService,
     routingService: RoutingService,
     connectionsApi: ConnectionsApi,
@@ -100,6 +103,7 @@ export class OutOfBandApi {
     agentContext: AgentContext
   ) {
     this.dispatcher = dispatcher
+    this.featureRegistry = featureRegistry
     this.agentContext = agentContext
     this.logger = logger
     this.outOfBandService = outOfBandService

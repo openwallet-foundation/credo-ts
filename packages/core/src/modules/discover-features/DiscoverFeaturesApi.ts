@@ -1,101 +1,153 @@
-import type { AgentMessageProcessedEvent } from '../../agent/Events'
-import type { ParsedMessageType } from '../../utils/messageType'
+import type { Feature } from '../../agent/models'
+import type { DiscloseFeaturesOptions, QueryFeaturesOptions, ServiceMap } from './DiscoverFeaturesApiOptions'
+import type { DiscoverFeaturesDisclosureReceivedEvent } from './DiscoverFeaturesEvents'
+import type { DiscoverFeaturesService } from './services'
 
 import { firstValueFrom, of, ReplaySubject, Subject } from 'rxjs'
 import { catchError, filter, map, takeUntil, timeout } from 'rxjs/operators'
 
 import { AgentContext } from '../../agent'
-import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { InjectionSymbols } from '../../constants'
+import { AriesFrameworkError } from '../../error'
 import { inject, injectable } from '../../plugins'
-import { canHandleMessageType, parseMessageType } from '../../utils/messageType'
 import { ConnectionService } from '../connections/services'
 
-import { DiscloseMessageHandler, QueryMessageHandler } from './handlers'
-import { DiscloseMessage } from './messages'
-import { DiscoverFeaturesService } from './services'
+import { DiscoverFeaturesEventTypes } from './DiscoverFeaturesEvents'
+import { DiscoverFeaturesModuleConfig } from './DiscoverFeaturesModuleConfig'
+import { V1DiscoverFeaturesService, V2DiscoverFeaturesService } from './protocol'
 
+export interface QueryFeaturesReturnType {
+  features?: Feature[]
+}
+
+export interface DiscoverFeaturesApi<DFSs extends DiscoverFeaturesService[]> {
+  queryFeatures(options: QueryFeaturesOptions<DFSs>): Promise<QueryFeaturesReturnType>
+  discloseFeatures(options: DiscloseFeaturesOptions<DFSs>): Promise<void>
+}
 @injectable()
-export class DiscoverFeaturesApi {
+export class DiscoverFeaturesApi<
+  DFSs extends DiscoverFeaturesService[] = [V1DiscoverFeaturesService, V2DiscoverFeaturesService]
+> implements DiscoverFeaturesApi<DFSs>
+{
+  /**
+   * Configuration for Discover Features module
+   */
+  public readonly config: DiscoverFeaturesModuleConfig
+
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private discoverFeaturesService: DiscoverFeaturesService
   private eventEmitter: EventEmitter
   private stop$: Subject<boolean>
   private agentContext: AgentContext
+  private serviceMap: ServiceMap<DFSs>
 
   public constructor(
-    dispatcher: Dispatcher,
     connectionService: ConnectionService,
     messageSender: MessageSender,
-    discoverFeaturesService: DiscoverFeaturesService,
+    v1Service: V1DiscoverFeaturesService,
+    v2Service: V2DiscoverFeaturesService,
     eventEmitter: EventEmitter,
     @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
-    agentContext: AgentContext
+    agentContext: AgentContext,
+    config: DiscoverFeaturesModuleConfig
   ) {
     this.connectionService = connectionService
     this.messageSender = messageSender
-    this.discoverFeaturesService = discoverFeaturesService
-    this.registerHandlers(dispatcher)
     this.eventEmitter = eventEmitter
     this.stop$ = stop$
     this.agentContext = agentContext
+    this.config = config
+
+    // Dynamically build service map. This will be extracted once services are registered dynamically
+    this.serviceMap = [v1Service, v2Service].reduce(
+      (serviceMap, service) => ({
+        ...serviceMap,
+        [service.version]: service,
+      }),
+      {}
+    ) as ServiceMap<DFSs>
   }
 
-  public async isProtocolSupported(connectionId: string, message: { type: ParsedMessageType }) {
-    const { protocolUri } = message.type
+  public getService<PVT extends DiscoverFeaturesService['version']>(protocolVersion: PVT): DiscoverFeaturesService {
+    if (!this.serviceMap[protocolVersion]) {
+      throw new AriesFrameworkError(`No discover features service registered for protocol version ${protocolVersion}`)
+    }
 
-    // Listen for response to our feature query
-    const replaySubject = new ReplaySubject(1)
-    this.eventEmitter
-      .observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
-      .pipe(
-        // Stop when the agent shuts down
-        takeUntil(this.stop$),
-        filterContextCorrelationId(this.agentContext.contextCorrelationId),
-        // filter by connection id and query disclose message type
-        filter(
-          (e) =>
-            e.payload.connection?.id === connectionId &&
-            canHandleMessageType(DiscloseMessage, parseMessageType(e.payload.message.type))
-        ),
-        // Return whether the protocol is supported
-        map((e) => {
-          const message = e.payload.message as DiscloseMessage
-          return message.protocols.map((p) => p.protocolId).includes(protocolUri)
-        }),
-        // TODO: make configurable
-        // If we don't have an answer in 7 seconds (no response, not supported, etc...) error
-        timeout(7000),
-        // We want to return false if an error occurred
-        catchError(() => of(false))
-      )
-      .subscribe(replaySubject)
+    return this.serviceMap[protocolVersion]
+  }
 
-    await this.queryFeatures(connectionId, {
-      query: protocolUri,
-      comment: 'Detect if protocol is supported',
+  /**
+   * Send a query to an existing connection for discovering supported features of any kind. If desired, do the query synchronously,
+   * meaning that it will await the response (or timeout) before resolving. Otherwise, response can be hooked by subscribing to
+   * {DiscoverFeaturesDisclosureReceivedEvent}.
+   *
+   * Note: V1 protocol only supports a single query and is limited to protocols
+   *
+   * @param options feature queries to perform, protocol version and optional comment string (only used
+   * in V1 protocol). If awaitDisclosures is set, perform the query synchronously with awaitDisclosuresTimeoutMs timeout.
+   */
+  public async queryFeatures(options: QueryFeaturesOptions<DFSs>) {
+    const service = this.getService(options.protocolVersion)
+
+    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+
+    const { message: queryMessage } = await service.createQuery({
+      queries: options.queries,
+      comment: options.comment,
     })
 
-    const isProtocolSupported = await firstValueFrom(replaySubject)
-    return isProtocolSupported
-  }
-
-  public async queryFeatures(connectionId: string, options: { query: string; comment?: string }) {
-    const connection = await this.connectionService.getById(this.agentContext, connectionId)
-
-    const queryMessage = await this.discoverFeaturesService.createQuery(options)
-
     const outbound = createOutboundMessage(connection, queryMessage)
+
+    const replaySubject = new ReplaySubject<Feature[]>(1)
+    if (options.awaitDisclosures) {
+      // Listen for response to our feature query
+      this.eventEmitter
+        .observable<DiscoverFeaturesDisclosureReceivedEvent>(DiscoverFeaturesEventTypes.DisclosureReceived)
+        .pipe(
+          // Stop when the agent shuts down
+          takeUntil(this.stop$),
+          // filter by connection id
+          filter((e) => e.payload.connection?.id === connection.id),
+          // Return disclosures
+          map((e) => e.payload.disclosures),
+          // If we don't have an answer in timeoutMs miliseconds (no response, not supported, etc...) error
+          timeout(options.awaitDisclosuresTimeoutMs ?? 7000), // TODO: Harmonize default timeouts across the framework
+          // We want to return false if an error occurred
+          catchError(() => of([]))
+        )
+        .subscribe(replaySubject)
+    }
+
     await this.messageSender.sendMessage(this.agentContext, outbound)
+
+    return { features: options.awaitDisclosures ? await firstValueFrom(replaySubject) : undefined }
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new DiscloseMessageHandler())
-    dispatcher.registerHandler(new QueryMessageHandler(this.discoverFeaturesService))
+  /**
+   * Disclose features to a connection, either proactively or as a response to a query.
+   *
+   * Features are disclosed based on queries that will be performed to Agent's Feature Registry,
+   * meaning that they should be registered prior to disclosure. When sending disclosure as response,
+   * these queries will usually match those from the corresponding Query or Queries message.
+   *
+   * Note: V1 protocol only supports sending disclosures as a response to a query.
+   *
+   * @param options multiple properties like protocol version to use, disclosure queries and thread id
+   * (in case of disclosure as response to query)
+   */
+  public async discloseFeatures(options: DiscloseFeaturesOptions) {
+    const service = this.getService(options.protocolVersion)
+
+    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+    const { message: disclosuresMessage } = await service.createDisclosure({
+      disclosureQueries: options.disclosureQueries,
+      threadId: options.threadId,
+    })
+
+    const outbound = createOutboundMessage(connection, disclosuresMessage)
+    await this.messageSender.sendMessage(this.agentContext, outbound)
   }
 }

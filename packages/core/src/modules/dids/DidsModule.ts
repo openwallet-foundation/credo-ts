@@ -14,6 +14,8 @@ export class DidsModule implements Module {
     this.config = new DidsModuleConfig(config)
   }
 
+  public readonly api = DidsApi
+
   /**
    * Registers the dependencies of the dids module module on the dependency manager.
    */

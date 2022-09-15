@@ -10,12 +10,12 @@ import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
 import { createOutboundMessage } from '../src/agent/helpers'
 
-import { getBaseConfig } from './helpers'
+import { getAgentOptions } from './helpers'
 
-const aliceConfig = getBaseConfig('Multi Protocol Versions - Alice', {
+const aliceAgentOptions = getAgentOptions('Multi Protocol Versions - Alice', {
   endpoints: ['rxjs:alice'],
 })
-const bobConfig = getBaseConfig('Multi Protocol Versions - Bob', {
+const bobAgentOptions = getAgentOptions('Multi Protocol Versions - Bob', {
   endpoints: ['rxjs:bob'],
 })
 
@@ -41,7 +41,7 @@ describe('multi version protocols', () => {
 
     const mockHandle = jest.fn()
 
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
 
@@ -51,7 +51,7 @@ describe('multi version protocols', () => {
 
     await aliceAgent.initialize()
 
-    bobAgent = new Agent(bobConfig.config, bobConfig.agentDependencies)
+    bobAgent = new Agent(bobAgentOptions)
     bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()

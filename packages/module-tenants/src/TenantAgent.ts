@@ -1,8 +1,8 @@
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext, DefaultAgentModules, ModulesMap } from '@aries-framework/core'
 
 import { AriesFrameworkError, BaseAgent } from '@aries-framework/core'
 
-export class TenantAgent extends BaseAgent {
+export class TenantAgent<AgentModules extends ModulesMap = DefaultAgentModules> extends BaseAgent<AgentModules> {
   private sessionHasEnded = false
 
   public constructor(agentContext: AgentContext) {
@@ -25,9 +25,5 @@ export class TenantAgent extends BaseAgent {
     await this.agentContext.endSession()
     this._isInitialized = false
     this.sessionHasEnded = true
-  }
-
-  protected registerDependencies() {
-    // Nothing to do here
   }
 }

@@ -29,7 +29,7 @@ import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 
 import {
-  getBaseConfig,
+  getAgentOptions,
   issueCredential,
   makeConnection,
   prepareForIssuance,
@@ -221,7 +221,7 @@ describe('Present Proof', () => {
 
     const unique = uuid().substring(0, 4)
 
-    const mediatorConfig = getBaseConfig(`Connectionless proofs with mediator Mediator-${unique}`, {
+    const mediatorAgentOptions = getAgentOptions(`Connectionless proofs with mediator Mediator-${unique}`, {
       autoAcceptMediationRequests: true,
       endpoints: ['rxjs:mediator'],
     })
@@ -235,7 +235,7 @@ describe('Present Proof', () => {
     }
 
     // Initialize mediator
-    const mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
+    const mediatorAgent = new Agent(mediatorAgentOptions)
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
@@ -250,7 +250,7 @@ describe('Present Proof', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const faberConfig = getBaseConfig(`Connectionless proofs with mediator Faber-${unique}`, {
+    const faberAgentOptions = getAgentOptions(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
         domain: 'https://example.com',
@@ -258,7 +258,7 @@ describe('Present Proof', () => {
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
-    const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
+    const aliceAgentOptions = getAgentOptions(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
         domain: 'https://example.com',
@@ -266,12 +266,12 @@ describe('Present Proof', () => {
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
-    const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+    const faberAgent = new Agent(faberAgentOptions)
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     await faberAgent.initialize()
 
-    const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    const aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     await aliceAgent.initialize()
