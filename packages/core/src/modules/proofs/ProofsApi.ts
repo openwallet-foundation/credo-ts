@@ -452,17 +452,15 @@ export class ProofsApi<
   }
 
   /**
-  * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
-  * use credentials in the wallet to build indy requested credentials object for input to proof creation.
-  * If restrictions allow, self attested attributes will be used.
-  *
-  *
-  * @param proofRecordId the id of the proof request to get the matching credentials for
-  * @param config optional configuration for credential selection process. Use `filterByPresentationPreview` (default `true`) to only include
-  *  credentials that match the presentation preview from the presentation proposal (if available).
-
-  * @returns RetrievedCredentials object
-  */
+   * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
+   * use credentials in the wallet to build indy requested credentials object for input to proof creation.
+   * If restrictions allow, self attested attributes will be used.
+   *
+   *
+   * @param proofRecordId the id of the proof request to get the matching credentials for
+   * @param options multiple properties like proof record id and optional configuration
+   * @returns RetrievedCredentials object
+   */
   public async getRequestedCredentialsForProofRequest(
     options: AutoSelectCredentialsForProofRequestOptions
   ): Promise<FormatRetrievedCredentialOptions<PFs>> {
