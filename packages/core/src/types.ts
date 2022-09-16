@@ -1,9 +1,9 @@
 import type { AgentMessage } from './agent/AgentMessage'
-import type { ResolvedDidCommService } from './agent/MessageSender'
 import type { Key } from './crypto'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/models/CredentialAutoAcceptType'
+import type { ResolvedDidCommService } from './modules/didcomm'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
@@ -75,6 +75,8 @@ export interface InitConfig {
   mediatorPollingInterval?: number
   mediatorPickupStrategy?: MediatorPickupStrategy
   maximumMessagePickup?: number
+  baseMediatorReconnectionIntervalMs?: number
+  maximumMediatorReconnectionIntervalMs?: number
 
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string

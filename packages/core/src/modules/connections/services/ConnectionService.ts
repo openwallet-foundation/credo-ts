@@ -106,24 +106,12 @@ export class ConnectionService {
     // We take just the first one for now.
     const [invitationDid] = outOfBandInvitation.invitationDids
 
-    const didDocument = await this.registerCreatedPeerDidDocument(agentContext, didDoc)
-
-    const connectionRecord = await this.createConnection(agentContext, {
-      protocol: HandshakeProtocol.Connections,
-      role: DidExchangeRole.Requester,
-      state: DidExchangeState.InvitationReceived,
-      theirLabel: outOfBandInvitation.label,
-      alias: config?.alias,
-      did: didDocument.id,
-      mediatorId,
-      autoAcceptConnection: config?.autoAcceptConnection,
-      outOfBandId: outOfBandRecord.id,
-      invitationDid,
-      imageUrl: outOfBandInvitation.imageUrl,
+    const { did: peerDid } = await this.createDid(agentContext, {
+      role: DidDocumentRole.Created,
+      didDoc,
     })
 
-    const { label, imageUrl, autoAcceptConnection } = config
-
+    const { label, imageUrl } = config
     const connectionRequest = new ConnectionRequestMessage({
       label: label ?? agentContext.config.label,
       did: didDoc.id,
@@ -131,11 +119,26 @@ export class ConnectionService {
       imageUrl: imageUrl ?? agentContext.config.connectionImageUrl,
     })
 
-    if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
-      connectionRecord.autoAcceptConnection = config?.autoAcceptConnection
-    }
+    connectionRequest.setThread({
+      threadId: connectionRequest.id,
+      parentThreadId: outOfBandInvitation.id,
+    })
 
-    connectionRecord.threadId = connectionRequest.id
+    const connectionRecord = await this.createConnection(agentContext, {
+      protocol: HandshakeProtocol.Connections,
+      role: DidExchangeRole.Requester,
+      state: DidExchangeState.InvitationReceived,
+      theirLabel: outOfBandInvitation.label,
+      alias: config?.alias,
+      did: peerDid,
+      mediatorId,
+      autoAcceptConnection: config?.autoAcceptConnection,
+      outOfBandId: outOfBandRecord.id,
+      invitationDid,
+      imageUrl: outOfBandInvitation.imageUrl,
+      threadId: connectionRequest.id,
+    })
+
     await this.updateState(agentContext, connectionRecord, DidExchangeState.RequestSent)
 
     return {
@@ -163,7 +166,10 @@ export class ConnectionService {
       })
     }
 
-    const didDocument = await this.storeReceivedPeerDidDocument(messageContext.agentContext, message.connection.didDoc)
+    const { did: peerDid } = await this.createDid(messageContext.agentContext, {
+      role: DidDocumentRole.Received,
+      didDoc: message.connection.didDoc,
+    })
 
     const connectionRecord = await this.createConnection(messageContext.agentContext, {
       protocol: HandshakeProtocol.Connections,
@@ -172,7 +178,7 @@ export class ConnectionService {
       theirLabel: message.label,
       imageUrl: message.imageUrl,
       outOfBandId: outOfBandRecord.id,
-      theirDid: didDocument.id,
+      theirDid: peerDid,
       threadId: message.threadId,
       mediatorId: outOfBandRecord.mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
@@ -203,13 +209,12 @@ export class ConnectionService {
 
     const didDoc = routing
       ? this.createDidDoc(routing)
-      : this.createDidDocFromOutOfBandDidCommServices(
-          outOfBandRecord.outOfBandInvitation.services.filter(
-            (s): s is OutOfBandDidCommService => typeof s !== 'string'
-          )
-        )
+      : this.createDidDocFromOutOfBandDidCommServices(outOfBandRecord.outOfBandInvitation.getInlineServices())
 
-    const didDocument = await this.registerCreatedPeerDidDocument(agentContext, didDoc)
+    const { did: peerDid } = await this.createDid(agentContext, {
+      role: DidDocumentRole.Created,
+      didDoc,
+    })
 
     const connection = new Connection({
       did: didDoc.id,
@@ -229,7 +234,7 @@ export class ConnectionService {
       connectionSig: await signData(connectionJson, agentContext.wallet, signingKey),
     })
 
-    connectionRecord.did = didDocument.id
+    connectionRecord.did = peerDid
     await this.updateState(agentContext, connectionRecord, DidExchangeState.ResponseSent)
 
     this.logger.debug(`Create message ${ConnectionResponseMessage.type.messageTypeUri} end`, {
@@ -305,9 +310,12 @@ export class ConnectionService {
       throw new AriesFrameworkError('DID Document is missing.')
     }
 
-    const didDocument = await this.storeReceivedPeerDidDocument(messageContext.agentContext, connection.didDoc)
+    const { did: peerDid } = await this.createDid(messageContext.agentContext, {
+      role: DidDocumentRole.Received,
+      didDoc: connection.didDoc,
+    })
 
-    connectionRecord.theirDid = didDocument.id
+    connectionRecord.theirDid = peerDid
     connectionRecord.threadId = message.threadId
 
     await this.updateState(messageContext.agentContext, connectionRecord, DidExchangeState.ResponseReceived)
@@ -625,52 +633,15 @@ export class ConnectionService {
     return connectionRecord
   }
 
-  private async registerCreatedPeerDidDocument(agentContext: AgentContext, didDoc: DidDoc) {
+  private async createDid(agentContext: AgentContext, { role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {
     // Convert the legacy did doc to a new did document
     const didDocument = convertToNewDidDocument(didDoc)
 
-    // Register did:peer document. This will generate the id property and save it to a did record
-    const result = await this.didRegistrarService.create<PeerDidCreateOptions>(agentContext, {
-      method: 'peer',
-      didDocument,
-      options: {
-        numAlgo: PeerDidNumAlgo.GenesisDoc,
-      },
-    })
-
-    if (result.didState?.state !== 'finished') {
-      throw new AriesFrameworkError(`Did document creation failed: ${JSON.stringify(result.didState)}`)
-    }
-
-    this.logger.debug(`Did document with did ${result.didState.did} created.`, {
-      did: result.didState.did,
-      didDocument: result.didState.didDocument,
-    })
-
-    const didRecord = await this.didRepository.getById(agentContext, result.didState.did)
-
-    // Store the unqualified did with the legacy did document in the metadata
-    // Can be removed at a later stage if we know for sure we don't need it anymore
-    didRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {
-      unqualifiedDid: didDoc.id,
-      didDocumentString: JsonTransformer.serialize(didDoc),
-    })
-
-    await this.didRepository.update(agentContext, didRecord)
-    return result.didState.didDocument
-  }
-
-  private async storeReceivedPeerDidDocument(agentContext: AgentContext, didDoc: DidDoc) {
-    // Convert the legacy did doc to a new did document
-    const didDocument = convertToNewDidDocument(didDoc)
-
-    // TODO: Move this into the didcomm module, and add a method called store received did document.
-    // This can be called from both the did exchange and the connection protocol.
     const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
     didDocument.id = peerDid
     const didRecord = new DidRecord({
       id: peerDid,
-      role: DidDocumentRole.Received,
+      role,
       didDocument,
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
@@ -695,7 +666,7 @@ export class ConnectionService {
 
     await this.didRepository.save(agentContext, didRecord)
     this.logger.debug('Did record created.', didRecord)
-    return didDocument
+    return { did: peerDid, didDocument }
   }
 
   private createDidDoc(routing: Routing) {

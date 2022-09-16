@@ -35,6 +35,7 @@ import { uuid } from './utils/uuid'
 
 export * from './plugins'
 export * from './transport'
+export * from './modules/action-menu'
 export * from './modules/basic-messages'
 export * from './modules/common'
 export * from './modules/credentials'

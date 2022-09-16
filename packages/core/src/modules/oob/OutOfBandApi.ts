@@ -12,7 +12,6 @@ import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
-import { FeatureRegistry } from '../../agent/FeatureRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { InjectionSymbols } from '../../constants'
@@ -25,9 +24,9 @@ import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
 import { parseInvitationUrl, parseInvitationShortUrl } from '../../utils/parseInvitation'
 import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connections'
+import { DidCommDocumentService } from '../didcomm'
 import { DidKey } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
-import { outOfBandServiceToNumAlgo2Did } from '../dids/methods/peer/peerDidNumAlgo2'
 import { RoutingService } from '../routing/services/RoutingService'
 
 import { OutOfBandService } from './OutOfBandService'
@@ -84,7 +83,7 @@ export class OutOfBandApi {
   private connectionsApi: ConnectionsApi
   private didCommMessageRepository: DidCommMessageRepository
   private dispatcher: Dispatcher
-  private featureRegistry: FeatureRegistry
+  private didCommDocumentService: DidCommDocumentService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private agentContext: AgentContext
@@ -92,7 +91,7 @@ export class OutOfBandApi {
 
   public constructor(
     dispatcher: Dispatcher,
-    featureRegistry: FeatureRegistry,
+    didCommDocumentService: DidCommDocumentService,
     outOfBandService: OutOfBandService,
     routingService: RoutingService,
     connectionsApi: ConnectionsApi,
@@ -103,7 +102,7 @@ export class OutOfBandApi {
     agentContext: AgentContext
   ) {
     this.dispatcher = dispatcher
-    this.featureRegistry = featureRegistry
+    this.didCommDocumentService = didCommDocumentService
     this.agentContext = agentContext
     this.logger = logger
     this.outOfBandService = outOfBandService
@@ -210,6 +209,11 @@ export class OutOfBandApi {
       outOfBandInvitation: outOfBandInvitation,
       reusable: multiUseInvitation,
       autoAcceptConnection,
+      tags: {
+        recipientKeyFingerprints: services
+          .reduce<string[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
+          .map((didKey) => DidKey.fromDid(didKey).key.fingerprint),
+      },
     })
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)
@@ -354,12 +358,33 @@ export class OutOfBandApi {
       )
     }
 
+    const recipientKeyFingerprints: string[] = []
+    for (const service of outOfBandInvitation.getServices()) {
+      // Resolve dids to DIDDocs to retrieve services
+      if (typeof service === 'string') {
+        this.logger.debug(`Resolving services for did ${service}.`)
+        const resolvedDidCommServices = await this.didCommDocumentService.resolveServicesFromDid(
+          this.agentContext,
+          service
+        )
+        recipientKeyFingerprints.push(
+          ...resolvedDidCommServices
+            .reduce<Key[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
+            .map((key) => key.fingerprint)
+        )
+      } else {
+        recipientKeyFingerprints.push(...service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).key.fingerprint))
+      }
+    }
+
     outOfBandRecord = new OutOfBandRecord({
       role: OutOfBandRole.Receiver,
       state: OutOfBandState.Initial,
       outOfBandInvitation: outOfBandInvitation,
       autoAcceptConnection,
+      tags: { recipientKeyFingerprints },
     })
+
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)
     this.outOfBandService.emitStateChangedEvent(this.agentContext, outOfBandRecord, null)
 
@@ -407,10 +432,11 @@ export class OutOfBandApi {
 
     const { outOfBandInvitation } = outOfBandRecord
     const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, routing } = config
-    const { handshakeProtocols, services } = outOfBandInvitation
+    const { handshakeProtocols } = outOfBandInvitation
+    const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
 
-    const existingConnection = await this.findExistingConnection(services)
+    const existingConnection = await this.findExistingConnection(outOfBandInvitation)
 
     await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.PrepareResponse)
 
@@ -582,26 +608,20 @@ export class OutOfBandApi {
     return handshakeProtocol
   }
 
-  private async findExistingConnection(services: Array<OutOfBandDidCommService | string>) {
-    this.logger.debug('Searching for an existing connection for out-of-band invitation services.', { services })
+  private async findExistingConnection(outOfBandInvitation: OutOfBandInvitation) {
+    this.logger.debug('Searching for an existing connection for out-of-band invitation.', { outOfBandInvitation })
 
-    // TODO: for each did we should look for a connection with the invitation did OR a connection with theirDid that matches the service did
-    for (const didOrService of services) {
-      // We need to check if the service is an instance of string because of limitations from class-validator
-      if (typeof didOrService === 'string' || didOrService instanceof String) {
-        // TODO await this.connectionsApi.findByTheirDid()
-        throw new AriesFrameworkError('Dids are not currently supported in out-of-band invitation services attribute.')
-      }
-
-      const did = outOfBandServiceToNumAlgo2Did(didOrService)
-      const connections = await this.connectionsApi.findByInvitationDid(did)
-      this.logger.debug(`Retrieved ${connections.length} connections for invitation did ${did}`)
+    for (const invitationDid of outOfBandInvitation.invitationDids) {
+      const connections = await this.connectionsApi.findByInvitationDid(invitationDid)
+      this.logger.debug(`Retrieved ${connections.length} connections for invitation did ${invitationDid}`)
 
       if (connections.length === 1) {
         const [firstConnection] = connections
         return firstConnection
       } else if (connections.length > 1) {
-        this.logger.warn(`There is more than one connection created from invitationDid ${did}. Taking the first one.`)
+        this.logger.warn(
+          `There is more than one connection created from invitationDid ${invitationDid}. Taking the first one.`
+        )
         const [firstConnection] = connections
         return firstConnection
       }
@@ -649,19 +669,36 @@ export class OutOfBandApi {
 
     this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
+    let serviceEndpoint: string | undefined
+    let recipientKeys: string[] | undefined
+    let routingKeys: string[] = []
+
     // The framework currently supports only older OOB messages with `~service` decorator.
     // TODO: support receiving messages with other services so we don't have to transform the service
     // to ~service decorator
     const [service] = services
 
     if (typeof service === 'string') {
-      throw new AriesFrameworkError('Dids are not currently supported in out-of-band invitation services attribute.')
+      const [didService] = await this.didCommDocumentService.resolveServicesFromDid(this.agentContext, service)
+      if (didService) {
+        serviceEndpoint = didService.serviceEndpoint
+        recipientKeys = didService.recipientKeys.map((key) => key.publicKeyBase58)
+        routingKeys = didService.routingKeys.map((key) => key.publicKeyBase58) || []
+      }
+    } else {
+      serviceEndpoint = service.serviceEndpoint
+      recipientKeys = service.recipientKeys.map(didKeyToVerkey)
+      routingKeys = service.routingKeys?.map(didKeyToVerkey) || []
+    }
+
+    if (!serviceEndpoint || !recipientKeys) {
+      throw new AriesFrameworkError('Service not found')
     }
 
     const serviceDecorator = new ServiceDecorator({
-      recipientKeys: service.recipientKeys.map(didKeyToVerkey),
-      routingKeys: service.routingKeys?.map(didKeyToVerkey) || [],
-      serviceEndpoint: service.serviceEndpoint,
+      recipientKeys,
+      routingKeys,
+      serviceEndpoint,
     })
 
     plaintextMessage['~service'] = JsonTransformer.toJSON(serviceDecorator)

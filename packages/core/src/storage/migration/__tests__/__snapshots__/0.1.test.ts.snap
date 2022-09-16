@@ -782,7 +782,11 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
+        ],
+      },
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.577Z",
       "id": "1-4e4f-41d9-94c4-f49351b811f1",
@@ -841,7 +845,11 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6MktCZAQNGvWb4WHAjwBqPtXhZdDYorbSJkGW9vj1uhw1HD",
+        ],
+      },
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.608Z",
       "id": "2-4e4f-41d9-94c4-f49351b811f1",
@@ -900,7 +908,11 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6Mkt1tsp15cnDD7wBCFgehiR2SxHX1aPxt4sueE24twH9Bd",
+        ],
+      },
       "autoAcceptConnection": false,
       "createdAt": "2022-04-30T13:02:21.628Z",
       "id": "3-4e4f-41d9-94c4-f49351b811f1",
@@ -959,7 +971,11 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6Mkmod8vp2nURVktVC5ceQeyr2VUz26iu2ZANLNVg9pMawa",
+        ],
+      },
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.635Z",
       "id": "4-4e4f-41d9-94c4-f49351b811f1",
@@ -1018,7 +1034,11 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6MkjDJL4X7YGoH6gjamhZR2NzowPZqtJfX5kPuNuWiVdjMr",
+        ],
+      },
       "autoAcceptConnection": false,
       "createdAt": "2022-04-30T13:02:21.641Z",
       "id": "5-4e4f-41d9-94c4-f49351b811f1",
@@ -1135,7 +1155,11 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6MkuWTEmH1mUo6W96zSWyH612hFHowRzNEscPYBL2CCMyC2",
+        ],
+      },
       "autoAcceptConnection": true,
       "createdAt": "2022-04-30T13:02:21.653Z",
       "id": "7-4e4f-41d9-94c4-f49351b811f1",

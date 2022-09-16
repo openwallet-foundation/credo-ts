@@ -1,6 +1,7 @@
 import type { Module } from '../../plugins'
 
 import {
+  ActionMenuModule,
   ConnectionsModule,
   CredentialsModule,
   ProofsModule,
@@ -68,6 +69,7 @@ describe('AgentModules', () => {
         mediator: expect.any(MediatorModule),
         mediationRecipient: expect.any(RecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
+        actionMenu: expect.any(ActionMenuModule),
         questionAnswer: expect.any(QuestionAnswerModule),
         genericRecords: expect.any(GenericRecordsModule),
         ledger: expect.any(LedgerModule),
@@ -93,6 +95,7 @@ describe('AgentModules', () => {
         mediator: expect.any(MediatorModule),
         mediationRecipient: expect.any(RecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
+        actionMenu: expect.any(ActionMenuModule),
         questionAnswer: expect.any(QuestionAnswerModule),
         genericRecords: expect.any(GenericRecordsModule),
         ledger: expect.any(LedgerModule),
@@ -121,6 +124,7 @@ describe('AgentModules', () => {
         mediator: expect.any(MediatorModule),
         mediationRecipient: expect.any(RecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
+        actionMenu: expect.any(ActionMenuModule),
         questionAnswer: expect.any(QuestionAnswerModule),
         genericRecords: expect.any(GenericRecordsModule),
         ledger: expect.any(LedgerModule),
