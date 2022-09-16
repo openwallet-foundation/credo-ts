@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
+import type { InitConfig } from '../../../types'
 
 import { Subject } from 'rxjs'
 
@@ -7,7 +8,7 @@ import { SubjectInboundTransport } from '../../../../../../tests/transport/Subje
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getBaseConfig, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { ConnectionRecord, HandshakeProtocol } from '../../connections'
+import { HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
@@ -39,14 +40,7 @@ describe('mediator establishment', () => {
     await senderAgent?.wallet.delete()
   })
 
-  test(`Mediation end-to-end flow
-        1. Start mediator agent and create invitation
-        2. Start recipient agent with mediatorConnectionsInvite from mediator
-        3. Assert mediator and recipient are connected and mediation state is Granted
-        4. Start sender agent and create connection with recipient
-        5. Assert endpoint in recipient invitation for sender is mediator endpoint
-        6. Send basic message from sender to recipient and assert it is received on the recipient side
-`, async () => {
+  const e2eMediationTest = async (mediatorAgentConfig: InitConfig, recipientAgentConfig: InitConfig) => {
     const mediatorMessages = new Subject<SubjectMessage>()
     const recipientMessages = new Subject<SubjectMessage>()
     const senderMessages = new Subject<SubjectMessage>()
@@ -56,8 +50,8 @@ describe('mediator establishment', () => {
       'rxjs:sender': senderMessages,
     }
 
-    // Initialize mediatorReceived message
-    mediatorAgent = new Agent(mediatorConfig.config, recipientConfig.agentDependencies)
+    // Initialize mediator
+    mediatorAgent = new Agent(mediatorAgentConfig, mediatorConfig.agentDependencies)
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
@@ -66,10 +60,40 @@ describe('mediator establishment', () => {
     const mediatorOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
     // Initialize recipient with mediation connections invitation
+    recipientAgent = new Agent(
+      {
+        ...recipientAgentConfig,
+        mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+          domain: 'https://example.com/ssi',
+        }),
+      },
+      recipientConfig.agentDependencies
+    )
+    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    recipientAgent.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
+    await recipientAgent.initialize()
+
+    const recipientMediator = await recipientAgent.mediationRecipient.findDefaultMediator()
+    const recipientMediatorConnection = await recipientAgent.connections.getById(recipientMediator!.connectionId)
+    expect(recipientMediatorConnection?.isReady).toBe(true)
+
+    const [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(
+      mediatorOutOfBandRecord.id
+    )
+    expect(mediatorRecipientConnection!.isReady).toBe(true)
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection!)
+    expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection!)
+
+    expect(recipientMediator?.state).toBe(MediationState.Granted)
+
+    // Restart recipient agent
+    await recipientAgent.shutdown()
     recipientAgent = new Agent(
       {
         ...recipientConfig.config,
@@ -83,23 +107,6 @@ describe('mediator establishment', () => {
     recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     recipientAgent.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
     await recipientAgent.initialize()
-
-    const recipientMediator = await recipientAgent.mediationRecipient.findDefaultMediator()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
-    const recipientMediatorConnection = await recipientAgent.connections.getById(recipientMediator!.connectionId)
-
-    expect(recipientMediatorConnection).toBeInstanceOf(ConnectionRecord)
-    expect(recipientMediatorConnection?.isReady).toBe(true)
-
-    const [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(
-      mediatorOutOfBandRecord.id
-    )
-    expect(mediatorRecipientConnection!.isReady).toBe(true)
-
-    expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection)
-    expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection!)
-
-    expect(recipientMediator?.state).toBe(MediationState.Granted)
 
     // Initialize sender agent
     senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)
@@ -119,14 +126,14 @@ describe('mediator establishment', () => {
     )
 
     senderRecipientConnection = await senderAgent.connections.returnWhenIsConnected(senderRecipientConnection!.id)
-
-    let [recipientSenderConnection] = await recipientAgent.connections.findAllByOutOfBandId(recipientOutOfBandRecord.id)
+    const [recipientSenderConnection] = await recipientAgent.connections.findAllByOutOfBandId(
+      recipientOutOfBandRecord.id
+    )
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
     expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
+
     expect(recipientSenderConnection!.isReady).toBe(true)
     expect(senderRecipientConnection.isReady).toBe(true)
-
-    recipientSenderConnection = await recipientAgent.connections.returnWhenIsConnected(recipientSenderConnection!.id)
 
     const message = 'hello, world'
     await senderAgent.basicMessages.sendMessage(senderRecipientConnection.id, message)
@@ -136,6 +143,31 @@ describe('mediator establishment', () => {
     })
 
     expect(basicMessage.content).toBe(message)
+  }
+
+  test(`Mediation end-to-end flow
+        1. Start mediator agent and create invitation
+        2. Start recipient agent with mediatorConnectionsInvite from mediator
+        3. Assert mediator and recipient are connected and mediation state is Granted
+        4. Start sender agent and create connection with recipient
+        5. Assert endpoint in recipient invitation for sender is mediator endpoint
+        6. Send basic message from sender to recipient and assert it is received on the recipient side
+`, async () => {
+    await e2eMediationTest(mediatorConfig.config, {
+      ...recipientConfig.config,
+      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+    })
+  })
+
+  test('Mediation end-to-end flow (use did:key in both sides)', async () => {
+    await e2eMediationTest(
+      { ...mediatorConfig.config, useDidKeyInProtocols: true },
+      {
+        ...recipientConfig.config,
+        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        useDidKeyInProtocols: true,
+      }
+    )
   })
 
   test('restart recipient agent and create connection through mediator after recipient agent is restarted', async () => {

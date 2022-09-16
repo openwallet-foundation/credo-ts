@@ -11,6 +11,7 @@ import { AriesFrameworkError } from '../../../../error'
 import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { DidExchangeState } from '../../../connections'
+import { ConnectionMetadataKeys } from '../../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { Key } from '../../../dids'
@@ -108,6 +109,9 @@ describe('MediationRecipientService', () => {
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
+      expect(mockConnection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toEqual({
+        'https://didcomm.org/coordinate-mediation/1.0': false,
+      })
       expect(mediationRecord.routingKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
     })
 
@@ -123,6 +127,9 @@ describe('MediationRecipientService', () => {
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
+      expect(mockConnection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toEqual({
+        'https://didcomm.org/coordinate-mediation/1.0': true,
+      })
       expect(mediationRecord.routingKeys).toEqual(['8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'])
     })
   })
