@@ -8,7 +8,7 @@ import { SubjectInboundTransport } from '../../../../../../tests/transport/Subje
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getBaseConfig, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { HandshakeProtocol } from '../../connections'
+import { ConnectionRecord, HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
@@ -78,7 +78,10 @@ describe('mediator establishment', () => {
     await recipientAgent.initialize()
 
     const recipientMediator = await recipientAgent.mediationRecipient.findDefaultMediator()
+    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
     const recipientMediatorConnection = await recipientAgent.connections.getById(recipientMediator!.connectionId)
+
+    expect(recipientMediatorConnection).toBeInstanceOf(ConnectionRecord)
     expect(recipientMediatorConnection?.isReady).toBe(true)
 
     const [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(
@@ -86,27 +89,10 @@ describe('mediator establishment', () => {
     )
     expect(mediatorRecipientConnection!.isReady).toBe(true)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection!)
+    expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection)
     expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection!)
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
-
-    // Restart recipient agent
-    await recipientAgent.shutdown()
-    recipientAgent = new Agent(
-      {
-        ...recipientConfig.config,
-        mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-          domain: 'https://example.com/ssi',
-        }),
-        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-      },
-      recipientConfig.agentDependencies
-    )
-    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    recipientAgent.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
-    await recipientAgent.initialize()
 
     // Initialize sender agent
     senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)
@@ -126,14 +112,14 @@ describe('mediator establishment', () => {
     )
 
     senderRecipientConnection = await senderAgent.connections.returnWhenIsConnected(senderRecipientConnection!.id)
-    const [recipientSenderConnection] = await recipientAgent.connections.findAllByOutOfBandId(
-      recipientOutOfBandRecord.id
-    )
+
+    let [recipientSenderConnection] = await recipientAgent.connections.findAllByOutOfBandId(recipientOutOfBandRecord.id)
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
     expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
-
     expect(recipientSenderConnection!.isReady).toBe(true)
     expect(senderRecipientConnection.isReady).toBe(true)
+
+    recipientSenderConnection = await recipientAgent.connections.returnWhenIsConnected(recipientSenderConnection!.id)
 
     const message = 'hello, world'
     await senderAgent.basicMessages.sendMessage(senderRecipientConnection.id, message)
