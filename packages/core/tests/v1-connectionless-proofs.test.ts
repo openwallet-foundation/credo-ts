@@ -8,7 +8,6 @@ import { Subject, ReplaySubject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { InjectionSymbols } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { HandshakeProtocol } from '../src/modules/connections'

@@ -18,7 +18,6 @@ import { MediatorModule, RecipientModule } from '../modules/routing'
 import { W3cVcModule } from '../modules/vc'
 import { WalletModule } from '../wallet'
 
-
 /**
  * Simple utility type that represent a map of modules. This is used to map from moduleKey (api key) to the api in the framework.
  */
