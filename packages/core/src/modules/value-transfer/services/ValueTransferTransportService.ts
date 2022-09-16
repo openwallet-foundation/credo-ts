@@ -3,20 +3,27 @@ import type { TransportInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { AgentConfig } from '../../../agent/AgentConfig'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { DIDCommV2Message } from '../../../agent/didcomm/v2/DIDCommV2Message'
+import { JsonEncoder } from '../../../utils'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferTransportService implements TransportInterface {
+  private config: AgentConfig
   private messageSender: MessageSender
 
-  public constructor(messageSender: MessageSender) {
+  public constructor(config: AgentConfig, messageSender: MessageSender) {
+    this.config = config
     this.messageSender = messageSender
   }
 
   public async send(message: any): Promise<void> {
-    const didcommmessae = new DIDCommV2Message({ ...message })
-    await this.messageSender.sendDIDCommV2Message(didcommmessae, SendingMessageType.Encrypted)
+    this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
+    this.config.logger.debug(` Message: ${JsonEncoder.toString(message)}`)
+    const didcomMessage = new DIDCommV2Message({ ...message })
+    const sendingMessageType = didcomMessage.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
+    await this.messageSender.sendDIDCommV2Message(didcomMessage, sendingMessageType)
   }
 }

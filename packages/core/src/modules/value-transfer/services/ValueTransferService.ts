@@ -2,10 +2,20 @@ import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Transports } from '../../routing/types'
 import type { ValueTransferStateChangedEvent, WitnessTableReceivedEvent } from '../ValueTransferEvents'
-import type { WitnessTableMessage } from '../messages'
+import type { WitnessTableMessage, ProblemReportMessage } from '../messages'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 
-import { PartyState, ValueTransfer, Wallet } from '@sicpa-dlab/value-transfer-protocol-ts'
+import {
+  Getter,
+  Giver,
+  PartyState,
+  ProblemReport,
+  TransactionRole,
+  TransactionState,
+  TransactionStatus,
+  Wallet,
+  Witness,
+} from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -19,30 +29,31 @@ import { JsonEncoder } from '../../../utils'
 import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
-import { ValueTransferRole } from '../ValueTransferRole'
-import { ValueTransferState } from '../ValueTransferState'
-import { ProblemReportMessage, WitnessTableQueryMessage } from '../messages'
-import { ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
+import { WitnessTableQueryMessage } from '../messages'
+import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferStateService } from './ValueTransferStateService'
+import { ValueTransferTransportService } from './ValueTransferTransportService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferService {
-  private config: AgentConfig
-  private valueTransfer: ValueTransfer
-  private valueTransferRepository: ValueTransferRepository
-  private valueTransferStateRepository: ValueTransferStateRepository
-  private valueTransferCryptoService: ValueTransferCryptoService
-  private valueTransferStateService: ValueTransferStateService
-  private witnessStateRepository: WitnessStateRepository
-  private didService: DidService
-  private didResolverService: DidResolverService
-  private eventEmitter: EventEmitter
-  private messageSender: MessageSender
+  protected config: AgentConfig
+  protected valueTransferRepository: ValueTransferRepository
+  protected valueTransferStateRepository: ValueTransferStateRepository
+  protected valueTransferCryptoService: ValueTransferCryptoService
+  protected valueTransferStateService: ValueTransferStateService
+  protected witnessStateRepository: WitnessStateRepository
+  protected didService: DidService
+  protected didResolverService: DidResolverService
+  protected eventEmitter: EventEmitter
+  protected messageSender: MessageSender
+  protected getter: Getter
+  protected giver: Giver
+  protected witness: Witness
 
   public constructor(
     config: AgentConfig,
@@ -50,6 +61,7 @@ export class ValueTransferService {
     valueTransferStateRepository: ValueTransferStateRepository,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferStateService,
+    valueTransferTransportService: ValueTransferTransportService,
     witnessStateRepository: WitnessStateRepository,
     didService: DidService,
     didResolverService: DidResolverService,
@@ -66,13 +78,41 @@ export class ValueTransferService {
     this.didResolverService = didResolverService
     this.eventEmitter = eventEmitter
     this.messageSender = messageSender
-
-    this.valueTransfer = new ValueTransfer(
+    this.getter = new Getter(
+      {
+        crypto: valueTransferCryptoService,
+        storage: valueTransferStateService,
+        transport: valueTransferTransportService,
+        logger: this.config.logger,
+      },
+      {
+        witness: config.valueTransferWitnessDid,
+        label: config.label,
+      }
+    )
+    this.giver = new Giver(
+      {
+        crypto: valueTransferCryptoService,
+        storage: valueTransferStateService,
+        transport: valueTransferTransportService,
+        logger: this.config.logger,
+      },
+      {
+        witness: config.valueTransferWitnessDid,
+        label: config.label,
+      }
+    )
+    this.witness = new Witness(
       {
         crypto: this.valueTransferCryptoService,
         storage: this.valueTransferStateService,
+        transport: valueTransferTransportService,
+        logger: this.config.logger,
       },
-      {}
+      {
+        label: config.label,
+        issuers: config.witnessIssuerDids,
+      }
     )
   }
 
@@ -112,95 +152,49 @@ export class ValueTransferService {
       return {}
     }
 
-    if (record.role === ValueTransferRole.Witness) {
-      // When Witness receives Problem Report he needs to forward this to the 3rd party
-      const forwardedProblemReportMessage = new ProblemReportMessage({
-        from: record.witness?.did,
-        to: messageContext.message.from === record.getter?.did ? record.giver?.did : record.getter?.did,
-        body: problemReportMessage.body,
-        pthid: problemReportMessage.pthid,
-      })
-
-      record.problemReportMessage = problemReportMessage
-      await this.updateState(record, ValueTransferState.Failed, ValueTransferTransactionStatus.Finished)
-      return {
-        record,
-        message: forwardedProblemReportMessage,
-      }
+    if (record.transaction.role === TransactionRole.Witness) {
+      await this.witness.processProblemReport(new ProblemReport(problemReportMessage))
     }
-    if (record.role === ValueTransferRole.Getter) {
-      // If Getter has already accepted the cash -> he needs to rollback the state
-      await this.valueTransfer.getter().abortTransaction()
+    if (record.transaction.role === TransactionRole.Getter) {
+      await this.getter.processProblemReport(new ProblemReport(problemReportMessage))
     }
-    if (record.role === ValueTransferRole.Giver) {
-      // If Giver has already accepted the request and marked the cash for spending -> he needs to free the cash
-      await this.valueTransfer.giver().abortTransaction()
+    if (record.transaction.role === TransactionRole.Giver) {
+      await this.giver.processProblemReport(new ProblemReport(problemReportMessage))
     }
 
-    // Update Value Transfer record and raise event
-    record.problemReportMessage = problemReportMessage
-    await this.updateState(record, ValueTransferState.Failed, ValueTransferTransactionStatus.Finished)
     return { record }
   }
 
   public async abortTransaction(
-    record: ValueTransferRecord,
+    id: string,
+    send = true,
     code?: string,
     reason?: string
   ): Promise<{
-    record: ValueTransferRecord
-    message?: ProblemReportMessage
+    record?: ValueTransferRecord
   }> {
-    if (record.role === ValueTransferRole.Witness) {
-      // TODO: discuss whether Witness can abort transaction
-      throw new AriesFrameworkError('Transaction cannot be canceled by Witness.')
+    const record = await this.findById(id)
+    if (!record) {
+      this.config.logger.error(`Unable to abort transaction ${id}. Transaction does not exist`)
+      return {}
     }
 
-    if (record.state === ValueTransferState.Completed) {
-      throw new AriesFrameworkError('Transaction cannot be canceled as it is already completed.')
+    if (record.transaction.role === TransactionRole.Witness) {
+      await this.witness.abortTransaction(record.id, code, reason, send)
     }
-
-    if (record.state === ValueTransferState.Failed) {
-      throw new AriesFrameworkError('Transaction cannot be canceled as it is failed.')
+    if (record.transaction.role === TransactionRole.Getter) {
+      await this.getter.abortTransaction(record.id, code, reason, send)
     }
-
-    if (record.status === ValueTransferTransactionStatus.InProgress) {
-      const valueTransferParty =
-        record.role === ValueTransferRole.Giver ? this.valueTransfer.giver() : this.valueTransfer.getter()
-      await valueTransferParty.abortTransaction()
+    if (record.transaction.role === TransactionRole.Giver) {
+      await this.giver.abortTransaction(record.id, code, reason, send)
     }
-
-    let from = undefined
-    let to = undefined
-
-    if (record.role === ValueTransferRole.Giver) {
-      from = record.giver?.did
-      to = record.state === ValueTransferState.ReceiptReceived ? record.witness?.did : record.getter?.did
-    } else if (record.role === ValueTransferRole.Getter) {
-      from = record.getter?.did
-      to = record.state === ValueTransferState.OfferReceived ? record.witness?.did : record.giver?.did
-    }
-
-    const problemReport = new ProblemReportMessage({
-      from,
-      to,
-      pthid: record.threadId,
-      body: {
-        code: code || 'e.p.transaction-aborted',
-        comment: reason || `Transaction aborted by ${from}`,
-      },
-    })
-
-    record.problemReportMessage = problemReport
-
-    await this.updateState(record, ValueTransferState.Failed, ValueTransferTransactionStatus.Finished)
-    return { record, message: problemReport }
+    return { record }
   }
 
   public async getPendingTransactions(): Promise<{
     records?: ValueTransferRecord[] | null
   }> {
-    const records = await this.valueTransferRepository.findByQuery({ status: ValueTransferTransactionStatus.Pending })
+    const records = await this.valueTransferRepository.findByQuery({ status: TransactionStatus.Pending })
     return { records }
   }
 
@@ -208,7 +202,7 @@ export class ValueTransferService {
     record?: ValueTransferRecord | null
   }> {
     const record = await this.valueTransferRepository.findSingleByQuery({
-      status: ValueTransferTransactionStatus.InProgress,
+      status: TransactionStatus.InProgress,
     })
     return { record }
   }
@@ -254,7 +248,8 @@ export class ValueTransferService {
     const isCompleted = (record: ValueTransferRecord) => {
       return (
         record.id === recordId &&
-        (record.state === ValueTransferState.Completed || record.state === ValueTransferState.Failed)
+        (record.transaction.state === TransactionState.Completed ||
+          record.transaction.state === TransactionState.Failed)
       )
     }
 
@@ -308,23 +303,12 @@ export class ValueTransferService {
     return this.valueTransferRepository.getById(recordId)
   }
 
-  public async findAllByQuery(query: Partial<ValueTransferTags>) {
-    return this.valueTransferRepository.findByQuery(query)
+  public async findById(recordId: string): Promise<ValueTransferRecord | null> {
+    return this.valueTransferRepository.findById(recordId)
   }
 
-  public async updateState(
-    record: ValueTransferRecord,
-    state: ValueTransferState,
-    status: ValueTransferTransactionStatus
-  ) {
-    const previousState = record.state
-    record.state = state
-    record.status = status
-    await this.valueTransferRepository.update(record)
-    this.eventEmitter.emit<ValueTransferStateChangedEvent>({
-      type: ValueTransferEventTypes.ValueTransferStateChanged,
-      payload: { record: record, previousState },
-    })
+  public async findAllByQuery(query: Partial<ValueTransferTags>) {
+    return this.valueTransferRepository.findByQuery(query)
   }
 
   public async findPartyState(): Promise<ValueTransferStateRecord | null> {
@@ -337,5 +321,14 @@ export class ValueTransferService {
 
   public async getTransactionDid(usePublicDid?: boolean) {
     return this.didService.getPublicDidOrCreateNew(usePublicDid)
+  }
+
+  public async emitStateChangedEvent(id: string): Promise<ValueTransferRecord> {
+    const record = await this.valueTransferRepository.getById(id)
+    this.eventEmitter.emit<ValueTransferStateChangedEvent>({
+      type: ValueTransferEventTypes.ValueTransferStateChanged,
+      payload: { record },
+    })
+    return record
   }
 }

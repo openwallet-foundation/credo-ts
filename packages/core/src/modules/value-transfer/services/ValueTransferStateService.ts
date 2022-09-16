@@ -1,25 +1,32 @@
 import type { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
-import type { PartyState, StorageInterface, WitnessState } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type {
+  PartyState,
+  PartyStorageInterface,
+  WitnessState,
+  Transaction,
+} from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import AsyncLock from 'async-lock'
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { WitnessStateRecord } from '../repository'
+import { ValueTransferRecord, ValueTransferRepository, WitnessStateRecord } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 
 @scoped(Lifecycle.ContainerScoped)
-export class ValueTransferStateService implements StorageInterface {
+export class ValueTransferStateService implements PartyStorageInterface {
+  private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository
   private witnessStateRepository: WitnessStateRepository
   private valueTransferStateRecord?: ValueTransferStateRecord
-  // private witnessStateRecord?: WitnessStateRecord
   private witnessStateLock: AsyncLock
 
   public constructor(
+    valueTransferRepository: ValueTransferRepository,
     valueTransferStateRepository: ValueTransferStateRepository,
     witnessStateRepository: WitnessStateRepository
   ) {
+    this.valueTransferRepository = valueTransferRepository
     this.valueTransferStateRepository = valueTransferStateRepository
     this.witnessStateRepository = witnessStateRepository
     this.witnessStateLock = new AsyncLock()
@@ -47,17 +54,10 @@ export class ValueTransferStateService implements StorageInterface {
   }
 
   public async getWitnessStateRecord(): Promise<WitnessStateRecord> {
-    // if (!this.witnessStateRecord) {
-    //   this.witnessStateRecord = await this.witnessStateRepository.getSingleByQuery({})
-    // }
-    // return this.witnessStateRecord
     return await this.witnessStateRepository.getSingleByQuery({})
   }
 
   public async getWitnessState(): Promise<WitnessState> {
-    // if (!this.witnessStateRecord) {
-    //   this.witnessStateRecord = await this.witnessStateRepository.getSingleByQuery({})
-    // }
     const record = await this.witnessStateRepository.getSingleByQuery({})
     return record.witnessState
   }
@@ -70,7 +70,6 @@ export class ValueTransferStateService implements StorageInterface {
   }
 
   /** @inheritDoc {StorageService#safeMutation} */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async safeOperationWithWitnessState<T>(operation: () => Promise<T>): Promise<T> {
     return this.witnessStateLock.acquire(
       WitnessStateRecord.id,
@@ -79,5 +78,34 @@ export class ValueTransferStateService implements StorageInterface {
       },
       { maxOccupationTime: 60 * 1000 }
     )
+  }
+
+  public async addTransaction(transaction: Transaction): Promise<void> {
+    const record = new ValueTransferRecord({
+      id: transaction.id,
+      transaction,
+    })
+    return this.valueTransferRepository.save(record)
+  }
+
+  public async deleteTransaction(id: string): Promise<void> {
+    const record = await this.valueTransferRepository.getById(id)
+    await this.valueTransferRepository.delete(record)
+  }
+
+  public async findTransaction(id: string): Promise<Transaction | undefined> {
+    const record = await this.valueTransferRepository.findById(id)
+    return record?.transaction
+  }
+
+  public async getTransaction(id: string): Promise<Transaction> {
+    const record = await this.valueTransferRepository.getById(id)
+    return record?.transaction
+  }
+
+  public async updateTransaction(transaction: Transaction): Promise<void> {
+    const record = await this.valueTransferRepository.getById(transaction.id)
+    record.transaction = transaction
+    await this.valueTransferRepository.update(record)
   }
 }

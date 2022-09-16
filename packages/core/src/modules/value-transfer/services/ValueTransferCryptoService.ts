@@ -96,4 +96,9 @@ export class ValueTransferCryptoService implements CryptoInterface {
   public randomBytes(size: number): Uint8Array {
     return this.keysService.randomBytes(size)
   }
+
+  public async checkDid(did: string): Promise<string | undefined> {
+    const didRecord = await this.didService.findById(did)
+    return didRecord?.did
+  }
 }

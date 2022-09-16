@@ -1,6 +1,6 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-import { Attachment, WitnessGossipInfoBody } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { GossipAttachment, WitnessGossipInfoBody } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
 import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -20,9 +20,9 @@ export class WitnessGossipMessage extends DIDCommV2Message {
   @ValidateNested()
   public body!: WitnessGossipInfoBody
 
-  @Type(() => Attachment)
+  @Type(() => GossipAttachment)
   @IsOptional()
-  public attachments?: Array<Attachment>
+  public attachments?: Array<GossipAttachment>
 
   public constructor(options?: WitnessGossipMessageParams) {
     super(options)

@@ -13,7 +13,7 @@ export type ProblemReportV2MessageOptions = DIDCommV2MessageParams & {
 
 export interface ProblemReportV2 {
   code: string
-  comment?: string
+  comment: string
   escalate_to?: string
   args?: string[]
 }
