@@ -14,7 +14,6 @@ import {
   V2_INDY_PRESENTATION,
 } from '../src/modules/proofs/formats/ProofFormatConstants'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
-import { FormatRetrievedCredentialOptions } from '../src/modules/proofs/models/ProofServiceOptions'
 import {
   V2PresentationMessage,
   V2ProposalPresentationMessage,
@@ -38,8 +37,8 @@ describe('Present Proof', () => {
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-      ; ({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-        await setupProofsTest('Faber agent', 'Alice agent'))
+    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
+      await setupProofsTest('Faber agent', 'Alice agent'))
   })
 
   afterAll(async () => {
@@ -489,11 +488,6 @@ describe('Present Proof', () => {
     testLogger.test('Alice waits for presentation request from Faber')
     aliceProofRecord = await aliceProofRecordPromise
 
-    const request = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-      associatedRecordId: faberProofRecord.id,
-      messageClass: V2RequestPresentationMessage,
-    })
-
     const retrievedCredentials = await faberAgent.proofs.getRequestedCredentialsForProofRequest({
       proofRecordId: faberProofRecord.id,
       config: {},
@@ -502,6 +496,7 @@ describe('Present Proof', () => {
     if (retrievedCredentials.proofFormats.indy) {
       const keys = Object.keys(retrievedCredentials.proofFormats.indy?.requestedAttributes)
       expect(keys).toContain('name')
+      expect(keys).toContain('image_0')
     } else {
       fail()
     }
