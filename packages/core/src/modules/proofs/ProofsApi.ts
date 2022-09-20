@@ -10,7 +10,7 @@ import type {
 } from './ProofsApiOptions'
 import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
-import type { AutoSelectCredentialsForProofRequestOptions } from './models/ModuleOptions'
+import type { AutoSelectCredentialsForProofRequestOptions, GetRequestedCredentialsForProofRequest } from './models/ModuleOptions'
 import type {
   CreateOutOfBandRequestOptions,
   CreatePresentationOptions,
@@ -460,7 +460,7 @@ export class ProofsApi<
    * @returns RetrievedCredentials object
    */
   public async getRequestedCredentialsForProofRequest(
-    options: AutoSelectCredentialsForProofRequestOptions
+    options: GetRequestedCredentialsForProofRequest
   ): Promise<FormatRetrievedCredentialOptions<PFs>> {
     const record = await this.getById(options.proofRecordId)
     const service = this.getService(record.protocolVersion)
