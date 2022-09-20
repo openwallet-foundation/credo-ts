@@ -77,6 +77,7 @@ export interface InitConfig {
   maximumMessagePickup?: number
   baseMediatorReconnectionIntervalMs?: number
   maximumMediatorReconnectionIntervalMs?: number
+  useDidKeyInProtocols?: boolean
 
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string

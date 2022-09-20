@@ -11,11 +11,18 @@ import { AriesFrameworkError } from '../../../../error'
 import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { DidExchangeState } from '../../../connections'
+import { ConnectionMetadataKeys } from '../../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { Key } from '../../../dids'
 import { DidRepository } from '../../../dids/repository/DidRepository'
-import { MediationGrantMessage } from '../../messages'
+import { RoutingEventTypes } from '../../RoutingEvents'
+import {
+  KeylistUpdateAction,
+  KeylistUpdateResponseMessage,
+  KeylistUpdateResult,
+  MediationGrantMessage,
+} from '../../messages'
 import { MediationRole, MediationState } from '../../models'
 import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../../protocol'
 import { MediationRecord } from '../../repository/MediationRecord'
@@ -104,10 +111,17 @@ describe('MediationRecipientService', () => {
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(mediationGrant, { connection: mockConnection })
+      const connection = getMockConnection({
+        state: DidExchangeState.Completed,
+      })
+
+      const messageContext = new InboundMessageContext(mediationGrant, { connection })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
+      expect(connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toEqual({
+        'https://didcomm.org/coordinate-mediation/1.0': false,
+      })
       expect(mediationRecord.routingKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
     })
 
@@ -119,10 +133,17 @@ describe('MediationRecipientService', () => {
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(mediationGrant, { connection: mockConnection })
+      const connection = getMockConnection({
+        state: DidExchangeState.Completed,
+      })
+
+      const messageContext = new InboundMessageContext(mediationGrant, { connection })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
+      expect(connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toEqual({
+        'https://didcomm.org/coordinate-mediation/1.0': true,
+      })
       expect(mediationRecord.routingKeys).toEqual(['8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'])
     })
   })
@@ -151,6 +172,49 @@ describe('MediationRecipientService', () => {
       await expect(mediationRecipientService.createStatusRequest(mediationRecord)).rejects.toThrowError(
         'Mediation record is not ready to be used. Expected granted, found invalid state requested'
       )
+    })
+  })
+
+  describe('processKeylistUpdateResults', () => {
+    it('it stores did:key-encoded keys in base58 format', async () => {
+      const spyAddRecipientKey = jest.spyOn(mediationRecord, 'addRecipientKey')
+
+      const connection = getMockConnection({
+        state: DidExchangeState.Completed,
+      })
+
+      const keylist = [
+        {
+          result: KeylistUpdateResult.Success,
+          recipientKey: 'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th',
+          action: KeylistUpdateAction.add,
+        },
+      ]
+
+      const keyListUpdateResponse = new KeylistUpdateResponseMessage({
+        threadId: uuid(),
+        keylist,
+      })
+
+      const messageContext = new InboundMessageContext(keyListUpdateResponse, { connection })
+
+      expect(connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toBeNull()
+
+      await mediationRecipientService.processKeylistUpdateResults(messageContext)
+
+      expect(connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toEqual({
+        'https://didcomm.org/coordinate-mediation/1.0': true,
+      })
+
+      expect(eventEmitter.emit).toHaveBeenCalledWith({
+        type: RoutingEventTypes.RecipientKeylistUpdated,
+        payload: {
+          mediationRecord,
+          keylist,
+        },
+      })
+      expect(spyAddRecipientKey).toHaveBeenCalledWith('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K')
+      spyAddRecipientKey.mockClear()
     })
   })
 

@@ -5,7 +5,7 @@ import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
-import type { KeylistUpdateResponseMessage, MediationDenyMessage, MediationGrantMessage } from '../messages'
+import type { MediationDenyMessage } from '../messages'
 import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
 import type { GetRoutingOptions } from './RoutingService'
 
@@ -21,13 +21,19 @@ import { KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils'
+import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { Key } from '../../dids'
-import { didKeyToVerkey } from '../../dids/helpers'
+import { didKeyToVerkey, isDidKey, verkeyToDidKey } from '../../dids/helpers'
 import { ProblemReportError } from '../../problem-reports'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { RoutingProblemReportReason } from '../error'
-import { KeylistUpdateAction, MediationRequestMessage } from '../messages'
+import {
+  KeylistUpdateAction,
+  KeylistUpdateResponseMessage,
+  MediationRequestMessage,
+  MediationGrantMessage,
+} from '../messages'
 import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMessage'
 import { MediationRole, MediationState } from '../models'
 import { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from '../protocol/pickup/v2/messages'
@@ -104,6 +110,10 @@ export class MediationRecipientService {
     // Update record
     mediationRecord.endpoint = messageContext.message.endpoint
 
+    // Update connection metadata to use their key format in further protocol messages
+    const connectionUsesDidKey = messageContext.message.routingKeys.some(isDidKey)
+    await this.updateUseDidKeysFlag(connection, MediationGrantMessage.type.protocolUri, connectionUsesDidKey)
+
     // According to RFC 0211 keys should be a did key, but base58 encoded verkey was used before
     // RFC was accepted. This converts the key to a public key base58 if it is a did key.
     mediationRecord.routingKeys = messageContext.message.routingKeys.map(didKeyToVerkey)
@@ -122,12 +132,16 @@ export class MediationRecipientService {
 
     const keylist = messageContext.message.updated
 
+    // Update connection metadata to use their key format in further protocol messages
+    const connectionUsesDidKey = keylist.some((key) => isDidKey(key.recipientKey))
+    await this.updateUseDidKeysFlag(connection, KeylistUpdateResponseMessage.type.protocolUri, connectionUsesDidKey)
+
     // update keylist in mediationRecord
     for (const update of keylist) {
       if (update.action === KeylistUpdateAction.add) {
-        mediationRecord.addRecipientKey(update.recipientKey)
+        mediationRecord.addRecipientKey(didKeyToVerkey(update.recipientKey))
       } else if (update.action === KeylistUpdateAction.remove) {
-        mediationRecord.removeRecipientKey(update.recipientKey)
+        mediationRecord.removeRecipientKey(didKeyToVerkey(update.recipientKey))
       }
     }
 
@@ -146,8 +160,17 @@ export class MediationRecipientService {
     verKey: string,
     timeoutMs = 15000 // TODO: this should be a configurable value in agent config
   ): Promise<MediationRecord> {
-    const message = this.createKeylistUpdateMessage(verKey)
     const connection = await this.connectionService.getById(mediationRecord.connectionId)
+
+    // Use our useDidKey configuration unless we know the key formatting other party is using
+    let useDidKey = this.config.useDidKeyInProtocols
+
+    const useDidKeysConnectionMetadata = connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)
+    if (useDidKeysConnectionMetadata) {
+      useDidKey = useDidKeysConnectionMetadata[KeylistUpdateMessage.type.protocolUri] ?? useDidKey
+    }
+
+    const message = this.createKeylistUpdateMessage(useDidKey ? verkeyToDidKey(verKey) : verKey)
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Recipient)
@@ -380,6 +403,13 @@ export class MediationRecipientService {
       mediationRecord.setTag('default', false)
       await this.mediationRepository.update(mediationRecord)
     }
+  }
+
+  private async updateUseDidKeysFlag(connection: ConnectionRecord, protocolUri: string, connectionUsesDidKey: boolean) {
+    const useDidKeysForProtocol = connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol) ?? {}
+    useDidKeysForProtocol[protocolUri] = connectionUsesDidKey
+    connection.metadata.set(ConnectionMetadataKeys.UseDidKeysForProtocol, useDidKeysForProtocol)
+    await this.connectionService.update(connection)
   }
 }
 
