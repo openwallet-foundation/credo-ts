@@ -10,7 +10,10 @@ import type {
 } from './ProofsApiOptions'
 import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
-import type { AutoSelectCredentialsForProofRequestOptions, GetRequestedCredentialsForProofRequest } from './models/ModuleOptions'
+import type {
+  AutoSelectCredentialsForProofRequestOptions,
+  GetRequestedCredentialsForProofRequest,
+} from './models/ModuleOptions'
 import type {
   CreateOutOfBandRequestOptions,
   CreatePresentationOptions,
