@@ -1,7 +1,8 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { EncryptedMessage } from '../../../types'
+import type { ConnectionRecord } from '../../connections'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
-import type { ForwardMessage, MediationRequestMessage, KeylistUpdateMessage } from '../messages'
+import type { ForwardMessage, MediationRequestMessage } from '../messages'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -10,9 +11,12 @@ import { AriesFrameworkError } from '../../../error'
 import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { Wallet } from '../../../wallet/Wallet'
-import { didKeyToVerkey, verkeyToDidKey } from '../../dids/helpers'
+import { ConnectionService } from '../../connections'
+import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
+import { didKeyToVerkey, isDidKey, verkeyToDidKey } from '../../dids/helpers'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
+  KeylistUpdateMessage,
   KeylistUpdateAction,
   KeylistUpdateResult,
   KeylistUpdated,
@@ -33,6 +37,7 @@ export class MediatorService {
   private mediatorRoutingRepository: MediatorRoutingRepository
   private wallet: Wallet
   private eventEmitter: EventEmitter
+  private connectionService: ConnectionService
   private _mediatorRoutingRecord?: MediatorRoutingRecord
 
   public constructor(
@@ -40,13 +45,15 @@ export class MediatorService {
     mediatorRoutingRepository: MediatorRoutingRepository,
     agentConfig: AgentConfig,
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    connectionService: ConnectionService
   ) {
     this.mediationRepository = mediationRepository
     this.mediatorRoutingRepository = mediatorRoutingRepository
     this.agentConfig = agentConfig
     this.wallet = wallet
     this.eventEmitter = eventEmitter
+    this.connectionService = connectionService
   }
 
   public async initialize() {
@@ -113,6 +120,10 @@ export class MediatorService {
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Mediator)
+
+    // Update connection metadata to use their key format in further protocol messages
+    const connectionUsesDidKey = message.updates.some((update) => isDidKey(update.recipientKey))
+    await this.updateUseDidKeysFlag(connection, KeylistUpdateMessage.type.protocolUri, connectionUsesDidKey)
 
     for (const update of message.updates) {
       const updated = new KeylistUpdated({
@@ -209,5 +220,12 @@ export class MediatorService {
         previousState,
       },
     })
+  }
+
+  private async updateUseDidKeysFlag(connection: ConnectionRecord, protocolUri: string, connectionUsesDidKey: boolean) {
+    const useDidKeysForProtocol = connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol) ?? {}
+    useDidKeysForProtocol[protocolUri] = connectionUsesDidKey
+    connection.metadata.set(ConnectionMetadataKeys.UseDidKeysForProtocol, useDidKeysForProtocol)
+    await this.connectionService.update(connection)
   }
 }

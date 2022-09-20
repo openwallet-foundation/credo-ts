@@ -2,7 +2,7 @@ import { getAgentConfig, getMockConnection, mockFunction } from '../../../../../
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
-import { DidExchangeState } from '../../../connections'
+import { ConnectionService, DidExchangeState } from '../../../connections'
 import { isDidKey } from '../../../dids/helpers'
 import { KeylistUpdateAction, KeylistUpdateMessage, KeylistUpdateResult } from '../../messages'
 import { MediationRole, MediationState } from '../../models'
@@ -17,12 +17,15 @@ const MediationRepositoryMock = MediationRepository as jest.Mock<MediationReposi
 jest.mock('../../repository/MediatorRoutingRepository')
 const MediatorRoutingRepositoryMock = MediatorRoutingRepository as jest.Mock<MediatorRoutingRepository>
 
+jest.mock('../../../connections/services/ConnectionService')
+const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
+
 jest.mock('../../../../wallet/IndyWallet')
 const WalletMock = IndyWallet as jest.Mock<IndyWallet>
 
 const mediationRepository = new MediationRepositoryMock()
 const mediatorRoutingRepository = new MediatorRoutingRepositoryMock()
-
+const connectionService = new ConnectionServiceMock()
 const wallet = new WalletMock()
 
 const mockConnection = getMockConnection({
@@ -37,7 +40,8 @@ describe('MediatorService - default config', () => {
     mediatorRoutingRepository,
     agentConfig,
     wallet,
-    new EventEmitter(agentConfig)
+    new EventEmitter(agentConfig),
+    connectionService
   )
 
   describe('createGrantMediationMessage', () => {
@@ -161,7 +165,8 @@ describe('MediatorService - useDidKeyInProtocols set to true', () => {
     mediatorRoutingRepository,
     agentConfig,
     wallet,
-    new EventEmitter(agentConfig)
+    new EventEmitter(agentConfig),
+    connectionService
   )
 
   describe('createGrantMediationMessage', () => {
