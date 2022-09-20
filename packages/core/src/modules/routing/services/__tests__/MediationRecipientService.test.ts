@@ -16,7 +16,13 @@ import { ConnectionRepository } from '../../../connections/repository/Connection
 import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { Key } from '../../../dids'
 import { DidRepository } from '../../../dids/repository/DidRepository'
-import { MediationGrantMessage } from '../../messages'
+import { RoutingEventTypes } from '../../RoutingEvents'
+import {
+  KeylistUpdateAction,
+  KeylistUpdateResponseMessage,
+  KeylistUpdateResult,
+  MediationGrantMessage,
+} from '../../messages'
 import { MediationRole, MediationState } from '../../models'
 import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../../protocol'
 import { MediationRecord } from '../../repository/MediationRecord'
@@ -158,6 +164,38 @@ describe('MediationRecipientService', () => {
       await expect(mediationRecipientService.createStatusRequest(mediationRecord)).rejects.toThrowError(
         'Mediation record is not ready to be used. Expected granted, found invalid state requested'
       )
+    })
+  })
+
+  describe('processKeylistUpdateResults', () => {
+    it('it stores did:key-encoded keys in base58 format', async () => {
+      const spyAddRecipientKey = jest.spyOn(mediationRecord, 'addRecipientKey')
+
+      const keylist = [
+        {
+          result: KeylistUpdateResult.Success,
+          recipientKey: 'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th',
+          action: KeylistUpdateAction.add,
+        },
+      ]
+
+      const keyListUpdateResponse = new KeylistUpdateResponseMessage({
+        threadId: uuid(),
+        keylist,
+      })
+
+      const messageContext = new InboundMessageContext(keyListUpdateResponse, { connection: mockConnection })
+      await mediationRecipientService.processKeylistUpdateResults(messageContext)
+
+      expect(eventEmitter.emit).toHaveBeenCalledWith({
+        type: RoutingEventTypes.RecipientKeylistUpdated,
+        payload: {
+          mediationRecord,
+          keylist,
+        },
+      })
+      expect(spyAddRecipientKey).toHaveBeenCalledWith('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K')
+      spyAddRecipientKey.mockClear()
     })
   })
 

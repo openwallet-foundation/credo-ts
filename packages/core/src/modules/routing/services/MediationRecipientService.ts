@@ -134,9 +134,9 @@ export class MediationRecipientService {
     // update keylist in mediationRecord
     for (const update of keylist) {
       if (update.action === KeylistUpdateAction.add) {
-        mediationRecord.addRecipientKey(verkeyToDidKey(update.recipientKey))
+        mediationRecord.addRecipientKey(didKeyToVerkey(update.recipientKey))
       } else if (update.action === KeylistUpdateAction.remove) {
-        mediationRecord.removeRecipientKey(verkeyToDidKey(update.recipientKey))
+        mediationRecord.removeRecipientKey(didKeyToVerkey(update.recipientKey))
       }
     }
 
