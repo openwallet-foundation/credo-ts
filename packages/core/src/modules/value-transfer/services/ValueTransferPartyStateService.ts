@@ -9,12 +9,12 @@ import type {
 import AsyncLock from 'async-lock'
 import { Lifecycle, scoped } from 'tsyringe'
 
+import { WitnessStateRepository } from '../../witness-gossip/repository/WitnessStateRepository'
 import { ValueTransferRecord, ValueTransferRepository, WitnessStateRecord } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
-import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 
 @scoped(Lifecycle.ContainerScoped)
-export class ValueTransferStateService implements PartyStorageInterface {
+export class ValueTransferPartyStateService implements PartyStorageInterface {
   private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository
   private witnessStateRepository: WitnessStateRepository
@@ -86,11 +86,6 @@ export class ValueTransferStateService implements PartyStorageInterface {
       transaction,
     })
     return this.valueTransferRepository.save(record)
-  }
-
-  public async deleteTransaction(id: string): Promise<void> {
-    const record = await this.valueTransferRepository.getById(id)
-    await this.valueTransferRepository.delete(record)
   }
 
   public async findTransaction(id: string): Promise<Transaction | undefined> {

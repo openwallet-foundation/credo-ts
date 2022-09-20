@@ -1,11 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ResumeValueTransferTransactionEvent } from '../ValueTransferEvents'
-import type {
-  WitnessTableQueryMessage,
-  CashAcceptedMessage,
-  CashRemovedMessage,
-  RequestAcceptedMessage,
-} from '../messages'
+import type { CashAcceptedMessage, CashRemovedMessage, RequestAcceptedMessage } from '../messages'
 import type { MintMessage } from '../messages/MintMessage'
 import type { ValueTransferRecord } from '../repository'
 
@@ -24,18 +19,17 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { DidMarker, DidService } from '../../dids'
 import { WellKnownService } from '../../well-known'
+import { WitnessStateRecord } from '../../witness-gossip/repository/WitnessStateRecord'
+import { WitnessStateRepository } from '../../witness-gossip/repository/WitnessStateRepository'
 import { GossipService } from '../../witness-gossip/service'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
-import { WitnessTableMessage } from '../messages'
 import { MintResponseMessage } from '../messages/MintResponseMessage'
 import { ValueTransferRepository } from '../repository'
-import { WitnessStateRecord } from '../repository/WitnessStateRecord'
-import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferService } from './ValueTransferService'
-import { ValueTransferStateService } from './ValueTransferStateService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
+import { ValueTransferWitnessStateService } from './ValueTransferWitnessStateService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferWitnessService {
@@ -43,7 +37,7 @@ export class ValueTransferWitnessService {
   private valueTransferRepository: ValueTransferRepository
   private valueTransferService: ValueTransferService
   private valueTransferCryptoService: ValueTransferCryptoService
-  private valueTransferStateService: ValueTransferStateService
+  private valueTransferWitnessStateService: ValueTransferWitnessStateService
   private witnessStateRepository: WitnessStateRepository
   private gossipService: GossipService
   private didService: DidService
@@ -56,7 +50,7 @@ export class ValueTransferWitnessService {
     valueTransferRepository: ValueTransferRepository,
     valueTransferService: ValueTransferService,
     valueTransferCryptoService: ValueTransferCryptoService,
-    valueTransferStateService: ValueTransferStateService,
+    valueTransferWitnessStateService: ValueTransferWitnessStateService,
     valueTransferTransportService: ValueTransferTransportService,
     witnessStateRepository: WitnessStateRepository,
     gossipService: GossipService,
@@ -68,7 +62,7 @@ export class ValueTransferWitnessService {
     this.valueTransferRepository = valueTransferRepository
     this.valueTransferService = valueTransferService
     this.valueTransferCryptoService = valueTransferCryptoService
-    this.valueTransferStateService = valueTransferStateService
+    this.valueTransferWitnessStateService = valueTransferWitnessStateService
     this.witnessStateRepository = witnessStateRepository
     this.didService = didService
     this.gossipService = gossipService
@@ -84,10 +78,10 @@ export class ValueTransferWitnessService {
 
     this.witness = new Witness(
       {
-        crypto: this.valueTransferCryptoService,
-        storage: this.valueTransferStateService,
+        crypto: valueTransferCryptoService,
+        storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
-        logger: this.config.logger,
+        logger: config.logger,
       },
       {
         label: config.label,
@@ -300,24 +294,5 @@ export class ValueTransferWitnessService {
     await this.witness.resumeTransaction(thid)
 
     this.config.logger.info(`< Witness ${this.config.label}: transaction resumed ${thid}`)
-  }
-
-  public async processWitnessTableQuery(messageContext: InboundMessageContext<WitnessTableQueryMessage>): Promise<{
-    message?: WitnessTableMessage
-  }> {
-    this.config.logger.info('> Witness process witness table query message')
-
-    const { message: witnessTableQuery } = messageContext
-
-    const { message, error } = await this.witness.processWitnessTableQuery(witnessTableQuery)
-    if (error || !message) {
-      this.config.logger.error(`  Witness: Failed to process table query: ${error?.message}`)
-      return {}
-    }
-
-    const witnessTableMessage = new WitnessTableMessage(message)
-
-    this.config.logger.info('> Witness process witness table query message completed!')
-    return { message: witnessTableMessage }
   }
 }

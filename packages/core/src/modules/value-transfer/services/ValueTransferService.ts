@@ -1,8 +1,8 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Transports } from '../../routing/types'
-import type { ValueTransferStateChangedEvent, WitnessTableReceivedEvent } from '../ValueTransferEvents'
-import type { WitnessTableMessage, ProblemReportMessage } from '../messages'
+import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
+import type { ProblemReportMessage } from '../messages'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 
 import {
@@ -28,16 +28,17 @@ import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils'
 import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
+import { WitnessTableQueryMessage } from '../../witness-gossip/messages/WitnessTableQueryMessage'
+import { WitnessStateRepository } from '../../witness-gossip/repository/WitnessStateRepository'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
-import { WitnessTableQueryMessage } from '../messages'
 import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
-import { WitnessStateRepository } from '../repository/WitnessStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
-import { ValueTransferStateService } from './ValueTransferStateService'
+import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
+import { ValueTransferWitnessStateService } from './ValueTransferWitnessStateService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferService {
@@ -45,7 +46,8 @@ export class ValueTransferService {
   protected valueTransferRepository: ValueTransferRepository
   protected valueTransferStateRepository: ValueTransferStateRepository
   protected valueTransferCryptoService: ValueTransferCryptoService
-  protected valueTransferStateService: ValueTransferStateService
+  protected valueTransferStateService: ValueTransferPartyStateService
+  protected valueTransferWitnessStateService: ValueTransferWitnessStateService
   protected witnessStateRepository: WitnessStateRepository
   protected didService: DidService
   protected didResolverService: DidResolverService
@@ -60,7 +62,8 @@ export class ValueTransferService {
     valueTransferRepository: ValueTransferRepository,
     valueTransferStateRepository: ValueTransferStateRepository,
     valueTransferCryptoService: ValueTransferCryptoService,
-    valueTransferStateService: ValueTransferStateService,
+    valueTransferStateService: ValueTransferPartyStateService,
+    valueTransferWitnessStateService: ValueTransferWitnessStateService,
     valueTransferTransportService: ValueTransferTransportService,
     witnessStateRepository: WitnessStateRepository,
     didService: DidService,
@@ -73,6 +76,7 @@ export class ValueTransferService {
     this.valueTransferStateRepository = valueTransferStateRepository
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
+    this.valueTransferWitnessStateService = valueTransferWitnessStateService
     this.witnessStateRepository = witnessStateRepository
     this.didService = didService
     this.didResolverService = didResolverService
@@ -83,7 +87,7 @@ export class ValueTransferService {
         crypto: valueTransferCryptoService,
         storage: valueTransferStateService,
         transport: valueTransferTransportService,
-        logger: this.config.logger,
+        logger: config.logger,
       },
       {
         witness: config.valueTransferWitnessDid,
@@ -95,7 +99,7 @@ export class ValueTransferService {
         crypto: valueTransferCryptoService,
         storage: valueTransferStateService,
         transport: valueTransferTransportService,
-        logger: this.config.logger,
+        logger: config.logger,
       },
       {
         witness: config.valueTransferWitnessDid,
@@ -104,10 +108,10 @@ export class ValueTransferService {
     )
     this.witness = new Witness(
       {
-        crypto: this.valueTransferCryptoService,
-        storage: this.valueTransferStateService,
+        crypto: valueTransferCryptoService,
+        storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
-        logger: this.config.logger,
+        logger: config.logger,
       },
       {
         label: config.label,
@@ -224,24 +228,6 @@ export class ValueTransferService {
       body: {},
     })
     await this.sendMessage(message)
-  }
-
-  public async processWitnessTable(messageContext: InboundMessageContext<WitnessTableMessage>): Promise<void> {
-    this.config.logger.info('> Witness process witness table message')
-
-    const { message: witnessTable } = messageContext
-
-    if (!witnessTable.from) {
-      this.config.logger.info('   Unknown Witness Table sender')
-      return
-    }
-
-    this.eventEmitter.emit<WitnessTableReceivedEvent>({
-      type: ValueTransferEventTypes.WitnessTableReceived,
-      payload: {
-        witnesses: witnessTable.body.witnesses,
-      },
-    })
   }
 
   public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {

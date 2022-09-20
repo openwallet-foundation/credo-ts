@@ -15,8 +15,8 @@ import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRepository } from '../repository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
+import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
 import { ValueTransferService } from './ValueTransferService'
-import { ValueTransferStateService } from './ValueTransferStateService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -25,7 +25,7 @@ export class ValueTransferIssuerService {
   private valueTransferRepository: ValueTransferRepository
   private valueTransferService: ValueTransferService
   private valueTransferCryptoService: ValueTransferCryptoService
-  private valueTransferStateService: ValueTransferStateService
+  private valueTransferStateService: ValueTransferPartyStateService
   private didService: DidService
   private giver: Giver
   private eventEmitter: EventEmitter
@@ -35,7 +35,7 @@ export class ValueTransferIssuerService {
     valueTransferRepository: ValueTransferRepository,
     valueTransferService: ValueTransferService,
     valueTransferCryptoService: ValueTransferCryptoService,
-    valueTransferStateService: ValueTransferStateService,
+    valueTransferStateService: ValueTransferPartyStateService,
     valueTransferTransportService: ValueTransferTransportService,
     didService: DidService,
     eventEmitter: EventEmitter

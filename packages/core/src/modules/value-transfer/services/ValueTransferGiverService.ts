@@ -15,8 +15,8 @@ import { OfferMessage } from '../messages'
 import { ValueTransferRepository } from '../repository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
+import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
 import { ValueTransferService } from './ValueTransferService'
-import { ValueTransferStateService } from './ValueTransferStateService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
 
 @scoped(Lifecycle.ContainerScoped)
@@ -25,7 +25,7 @@ export class ValueTransferGiverService {
   private valueTransferRepository: ValueTransferRepository
   private valueTransferService: ValueTransferService
   private valueTransferCryptoService: ValueTransferCryptoService
-  private valueTransferStateService: ValueTransferStateService
+  private valueTransferStateService: ValueTransferPartyStateService
   private eventEmitter: EventEmitter
   private giver: Giver
 
@@ -34,7 +34,7 @@ export class ValueTransferGiverService {
     valueTransferRepository: ValueTransferRepository,
     valueTransferService: ValueTransferService,
     valueTransferCryptoService: ValueTransferCryptoService,
-    valueTransferStateService: ValueTransferStateService,
+    valueTransferStateService: ValueTransferPartyStateService,
     valueTransferTransportService: ValueTransferTransportService,
     eventEmitter: EventEmitter
   ) {
