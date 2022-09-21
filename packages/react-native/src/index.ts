@@ -15,6 +15,20 @@ import { ReactNativeFileSystem } from './ReactNativeFileSystem'
 const fetch = global.fetch as unknown as AgentDependencies['fetch']
 const WebSocket = global.WebSocket as unknown as AgentDependencies['WebSocketClass']
 
+declare global {
+  const crypto: {
+    getRandomValues(
+      array: Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array | Uint8ClampedArray
+    ): Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array | Uint8ClampedArray
+    [prop: string]: unknown
+  }
+}
+
+const randomBytes = (size: number) => {
+  const array = new Uint8Array(size)
+  return crypto.getRandomValues(array) as typeof array
+}
+
 const agentDependencies: AgentDependencies = {
   FileSystem: ReactNativeFileSystem,
   fetch,
@@ -22,6 +36,7 @@ const agentDependencies: AgentDependencies = {
   WebSocketClass: WebSocket,
   indy,
   didcomm,
+  randomBytes,
 }
 
 export { agentDependencies }

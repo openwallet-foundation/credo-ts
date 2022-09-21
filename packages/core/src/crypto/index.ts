@@ -1,3 +1,2 @@
-export * from './Crypto'
-export * from './MixedCrypto'
+export * from './CryptoService'
 export * from './types'

@@ -1,5 +1,6 @@
 import type { AgentDependencies } from '@aries-framework/core'
 
+import { randomBytes } from 'crypto'
 import * as didcomm from 'didcomm-node'
 import { EventEmitter } from 'events'
 import * as indy from 'indy-sdk'
@@ -17,6 +18,7 @@ const agentDependencies: AgentDependencies = {
   WebSocketClass: WebSocket,
   indy,
   didcomm,
+  randomBytes,
 }
 
 export { agentDependencies, HttpInboundTransport, WsInboundTransport }

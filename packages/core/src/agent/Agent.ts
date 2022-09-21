@@ -14,7 +14,6 @@ import { concatMap, takeUntil } from 'rxjs/operators'
 import { container as baseContainer } from 'tsyringe'
 
 import { InjectionSymbols } from '../constants'
-import { MixedCrypto } from '../crypto'
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
@@ -92,7 +91,6 @@ export class Agent {
     this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
     this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
     this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
-    this.container.registerSingleton(InjectionSymbols.Crypto, MixedCrypto)
 
     this.logger.info('Creating agent with config', {
       ...initialConfig,
