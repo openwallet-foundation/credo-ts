@@ -150,6 +150,49 @@ This meeting is for contributors to groom and plan the backlog, and discuss issu
 Meeting agendas and recordings can be found [here](https://wiki.hyperledger.org/display/ARIES/Framework+JS+Meetings).
 Feel free to join!
 
+## Comparison with upstream
+
+This document provides key differences between [Sicpa fork](https://github.com/sicpa-dlab/aries-framework-javascript) and [upstream repository](https://github.com/hyperledger/aries-framework-javascript) Aries Frameworks.
+
+### Additions in Sicpa Fork
+
+- [Packages](https://github.com/sicpa-dlab/value-transfer-ui-mobile/tree/main/packages) for NFC and IPC transports.
+- DIDComm V2 support:
+  - Reworked `Message Sender / Mesasge Receiver` to support both types of messages DIDComm V1 and DIDComm V2.
+    - DIDComm V1 has not been tested for a while. It may be broken, but there should not be difficult issues.
+    - DIDComm V1 messages are still used for old V1 protocols like connection, issuance, verification. In the future, these protocols potentially can be adopted for DIDComm V2as well.
+  - Added `Key Service` - an extra layer for keys generation, management, and storing into collection (Libindy wallet API is used as for other AFJ collections).
+    - In the upstream (DIDComm V1) keys are fully managed by Libindy. But libindy does not provide an ability to get private part of a key.
+    - In order to integrate DIDComm V2 packing library we have to resolve and pass private part of the keys.
+  - Added `DID Service` - managing DIDs. The same reason as for Key Service - for DIDComm V1 DID's are completely managed by Libindy.
+- Out-of-Band module - according to DIDComm V2 specification it seems to be a proper way exchange DIDs (create invitations and accept Contacts).
+- Connection: DIDComm V1 protocols (like `issuance`, `verification`) depends on the `Conenction` module.
+  - There is `Connection` protocol which is used for establishing of secure communication channel between parties.
+  - Other protocols requires passing Connection for protocol execution.
+  - For DIDComm V2 we just pass DID's directly.
+- Message handlers for Value Transfer and Gossip modules for handling our protocols.
+- Adopted `Request Mediation` protocol for DIDComm V2.
+- Adopted `Trust Ping` protocol for DIDComm V2.
+
+### Important additions in the upstream
+
+- Bugixes:
+  - [error if unpacked message does not match JWE structure](https://github.com/hyperledger/aries-framework-javascript/issues/639)
+  - [avoid crash when an unexpected message arrives](https://github.com/hyperledger/aries-framework-javascript/issues/1019)
+  - [optional fields in did document](https://github.com/hyperledger/aries-framework-javascript/issues/726)
+  - [clone record before emitting event](https://github.com/hyperledger/aries-framework-javascript/issues/938)
+  - [initial plugin api](https://github.com/hyperledger/aries-framework-javascript/pull/907)
+- Features:
+  - [Supported Postgres wallet type](https://github.com/hyperledger/aries-framework-javascript/issues/699)
+  - [Present proof as nested protocol](https://github.com/hyperledger/aries-framework-javascript/pull/972)
+  - [Supported advanced wallet query](https://github.com/hyperledger/aries-framework-javascript/pull/831)
+  - [Supported new did document in didcomm message exchange](https://github.com/hyperledger/aries-framework-javascript/issues/609)
+  - [add settings to control back off strategy on mediator reconnection](https://github.com/hyperledger/aries-framework-javascript/issues/1017)
+  - DIDComm V1 protocols:
+    - [Supported Out-of-Band](https://github.com/hyperledger/aries-framework-javascript/pull/717) DIDComm V1 protocol.
+    - [Supported Action Menu](https://github.com/hyperledger/aries-rfcs/blob/main/features/0509-action-menu/README.md) DIDComm V1 protocol.
+    - [Supported Question Answer](https://github.com/hyperledger/aries-framework-javascript/pull/557) DIDComm V1 protocol.
+
 ## License
 
 Hyperledger Aries Framework JavaScript is licensed under the [Apache License Version 2.0 (Apache-2.0)](/LICENSE).
