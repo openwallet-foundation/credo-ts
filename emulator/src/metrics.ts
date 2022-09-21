@@ -8,12 +8,13 @@ const token = '7j0n6J-XtyKy0LWvdzcGQfg4u2QYvGczyX2WtTPUP4axMfunoe3yLn3JSG7Bm6OxX
 const org = 'dsr'
 const bucket = 'dsr-test'
 
-const gossipVersion = '1.0'
+const gossipVersion = '2.0'
 
 const machineName = os.hostname()
 
 export class MetricsService implements MetricsServiceInterface {
   private client: InfluxDB = new InfluxDB({ url: 'http://localhost:8086', token: token })
+  private static transactionCount: number = 0
 
   constructor() {
     const writeApi = this.client.getWriteApi(org, bucket)
@@ -35,9 +36,10 @@ export class MetricsService implements MetricsServiceInterface {
     const point = new Point('gossip-start')
       .stringField('wid', witnessId)
       .stringField('trId', transactionId)
-      .stringField('gossipVersion', gossipVersion)
+      .tag('trId', transactionId)
       .timestamp(new Date())
 
+    console.log(++MetricsService.transactionCount)
     await this.writeAndFlushPoint(point)
   }
 
@@ -48,7 +50,7 @@ export class MetricsService implements MetricsServiceInterface {
     const point = new Point('gossip-end')
       .stringField('wid', witnessId)
       .stringField('trId', transactionId)
-      .stringField('gossipVersion', gossipVersion)
+      .tag('trId', transactionId)
       .timestamp(new Date())
     await this.writeAndFlushPoint(point)
   }
@@ -57,7 +59,6 @@ export class MetricsService implements MetricsServiceInterface {
     const point = new Point('tock-transactions-count')
       .stringField('wid', witnessId)
       .intField('trCount', count)
-      .stringField('gossipVersion', gossipVersion)
       .timestamp(new Date())
     await this.writeAndFlushPoint(point)
   }
@@ -66,7 +67,6 @@ export class MetricsService implements MetricsServiceInterface {
     const point = new Point('gossip-message-size')
       .stringField('wid', witnessId)
       .floatField('size', sizeInBytes)
-      .stringField('gossipVersion', gossipVersion)
       .timestamp(new Date())
     await this.writeAndFlushPoint(point)
   }
@@ -75,7 +75,6 @@ export class MetricsService implements MetricsServiceInterface {
     const point = new Point('tu-processing-time')
       .stringField('wid', witnessId)
       .floatField('processTime', timeInMs)
-      .stringField('gossipVersion', gossipVersion)
       .timestamp(new Date())
     await this.writeAndFlushPoint(point)
   }
@@ -84,20 +83,20 @@ export class MetricsService implements MetricsServiceInterface {
     const point = new Point('witness-state-size')
       .stringField('wid', witnessId)
       .floatField('size', sizeInBytes)
-      .stringField('gossipVersion', gossipVersion)
       .timestamp(new Date())
     await this.writeAndFlushPoint(point)
   }
 
   private async writeAndFlushPoint(point: Point): Promise<void> {
+    const version = Math.random() < 0.5 ? '1.0' : '2.0'
     const writeOptions: Partial<WriteOptions> = {
+      defaultTags: { machineName, gossipVersion: version },
       maxRetries: 0,
       writeFailed: (error: any, lines: Array<string>, attempt: number, expires: number): Promise<void> | void => {
         console.log('Write to influxdb failed', { error, lines })
       },
     }
     const writeApi = this.client.getWriteApi(org, bucket, undefined, writeOptions)
-    writeApi.useDefaultTags({ machineName: machineName })
     console.debug('Writing point', { point })
     writeApi.writePoint(point)
 
