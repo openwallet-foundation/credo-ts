@@ -15,12 +15,7 @@ import { ValueTransferGetterService } from '../../value-transfer/services/ValueT
 import { ValueTransferGiverService } from '../../value-transfer/services/ValueTransferGiverService'
 import { WellKnownService } from '../../well-known'
 import { OutOfBandEventTypes } from '../OutOfBandEvents'
-import {
-  AndroidNearbyHandshakeAttachment,
-  PaymentOfferAttachment,
-  OutOfBandGoalCode,
-  OutOfBandInvitationMessage,
-} from '../messages'
+import { AndroidNearbyHandshakeAttachment, OutOfBandGoalCode, OutOfBandInvitationMessage } from '../messages'
 
 @scoped(Lifecycle.ContainerScoped)
 export class OutOfBandService {
@@ -81,30 +76,6 @@ export class OutOfBandService {
         attachments: [OutOfBandInvitationMessage.createAndroidNearbyHandshakeJSONAttachment(handshakeAttachment)],
       })
       return message
-    }
-
-    if (goalCode === OutOfBandGoalCode.PaymentOffer) {
-      if (!attachments || !attachments.length) {
-        throw new AriesFrameworkError(`Attachment must be passed for 'OfferPayment' goal code`)
-      }
-      const messageAttachments = []
-
-      const offerAttachment = JsonTransformer.fromJSON(attachments[0], PaymentOfferAttachment)
-      messageAttachments.push(OutOfBandInvitationMessage.createPaymentOfferJSONAttachment(offerAttachment))
-
-      if (attachments[1]) {
-        const handshakeAttachment = JsonTransformer.fromJSON(attachments[1], AndroidNearbyHandshakeAttachment)
-        messageAttachments.push(
-          OutOfBandInvitationMessage.createAndroidNearbyHandshakeJSONAttachment(handshakeAttachment)
-        )
-      }
-
-      return new OutOfBandInvitationMessage({
-        from: did.did,
-        to,
-        body,
-        attachments: messageAttachments,
-      })
     }
 
     return new OutOfBandInvitationMessage({
