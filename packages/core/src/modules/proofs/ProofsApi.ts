@@ -3,7 +3,7 @@ import type { ProofService } from './ProofService'
 import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
-  OutOfBandRequestOptions,
+  CreateProofRequestOptions,
   ProposeProofOptions,
   RequestProofOptions,
   ServiceMap,
@@ -12,7 +12,6 @@ import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
 import type { AutoSelectCredentialsForProofRequestOptions } from './models/ModuleOptions'
 import type {
-  CreateOutOfBandRequestOptions,
   CreatePresentationOptions,
   CreateProposalOptions,
   CreateRequestOptions,
@@ -57,7 +56,7 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
   declineRequest(proofRecordId: string): Promise<ProofRecord>
 
   // out of band
-  createOutOfBandRequest(options: OutOfBandRequestOptions<PFs, PSs>): Promise<{
+  createRequest(options: CreateProofRequestOptions<PFs, PSs>): Promise<{
     message: AgentMessage
     proofRecord: ProofRecord
   }>
@@ -325,39 +324,20 @@ export class ProofsApi<
     }
   }
 
-  public async createOutOfBandRequest(options: OutOfBandRequestOptions<PFs, PSs>): Promise<{
+  public async createRequest(options: CreateProofRequestOptions<PFs, PSs>): Promise<{
     message: AgentMessage
     proofRecord: ProofRecord
   }> {
     const service = this.getService(options.protocolVersion)
 
-    const createProofRequest: CreateOutOfBandRequestOptions<PFs> = {
+    const createProofRequest: CreateRequestOptions<PFs> = {
       proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
       comment: options.comment,
+      parentThreadId: options.parentThreadId,
     }
 
-    const { message, proofRecord } = await service.createRequest(this.agentContext, createProofRequest)
-
-    // Create and set ~service decorator
-
-    const routing = await this.routingService.getRouting(this.agentContext)
-    message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.recipientKey.publicKeyBase58],
-      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
-    })
-    // Save ~service decorator to record (to remember our verkey)
-
-    await service.saveOrUpdatePresentationMessage(this.agentContext, {
-      message,
-      proofRecord: proofRecord,
-      role: DidCommMessageRole.Sender,
-    })
-
-    await service.update(this.agentContext, proofRecord)
-
-    return { proofRecord, message }
+    return await service.createRequest(this.agentContext, createProofRequest)
   }
 
   public async declineRequest(proofRecordId: string): Promise<ProofRecord> {
