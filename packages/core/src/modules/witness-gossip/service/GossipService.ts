@@ -11,6 +11,7 @@ import { ValueTransferEventTypes } from '../../value-transfer/ValueTransferEvent
 import { ValueTransferCryptoService } from '../../value-transfer/services/ValueTransferCryptoService'
 import { ValueTransferLoggerService } from '../../value-transfer/services/ValueTransferLoggerService'
 import { ValueTransferStateService } from '../../value-transfer/services/ValueTransferStateService'
+import { ValueTransferTransportService } from '../../value-transfer/services/ValueTransferTransportService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class GossipService {
