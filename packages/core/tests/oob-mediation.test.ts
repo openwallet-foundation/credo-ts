@@ -11,6 +11,7 @@ import { ConnectionType } from '../src/modules/connections/models/ConnectionType
 import { MediationState, MediatorPickupStrategy } from '../src/modules/routing'
 
 import { getBaseConfig, waitForBasicMessage } from './helpers'
+import exp from 'constants'
 
 const faberConfig = getBaseConfig('OOB mediation - Faber Agent', {
   endpoints: ['rxjs:faber'],
@@ -95,6 +96,12 @@ describe('out of band with mediation', () => {
     const mediationRecord = await aliceAgent.mediationRecipient.requestAndAwaitGrant(aliceMediatorConnection)
     const connectonTypes = await aliceAgent.connections.getConnectionTypes(mediationRecord.connectionId)
     expect(connectonTypes).toContain(ConnectionType.Mediator)
+    await aliceAgent.connections.addConnectionType(mediationRecord.connectionId, 'test')
+    expect(await aliceAgent.connections.getConnectionTypes(mediationRecord.connectionId)).toContain('test')
+    await aliceAgent.connections.removeConnectionType(mediationRecord.connectionId, 'test')
+    expect(await aliceAgent.connections.getConnectionTypes(mediationRecord.connectionId)).toEqual([
+      ConnectionType.Mediator,
+    ])
     expect(mediationRecord.state).toBe(MediationState.Granted)
 
     await aliceAgent.mediationRecipient.setDefaultMediator(mediationRecord)
