@@ -135,7 +135,15 @@ export class DidService {
       .addKeyAgreement(getX25519VerificationMethod({ controller: '', id: '', key: params.x25519Key }))
 
     if (params.transports.includes(Transports.HTTP) || params.transports.includes(Transports.HTTPS)) {
-      if (params.needMediation) {
+      if (params.endpoint) {
+        didDocumentBuilder.addService(
+          new DidCommV2Service({
+            id: Transports.HTTP,
+            serviceEndpoint: params.endpoint,
+            routingKeys: [],
+          })
+        )
+      } else if (params.needMediation) {
         mediator = await this.mediationRecipientService.findDefaultMediator()
         if (mediator && mediator.endpoint && params.needMediation) {
           didDocumentBuilder.addService(
@@ -146,14 +154,6 @@ export class DidService {
             })
           )
         }
-      } else if (params.endpoint) {
-        didDocumentBuilder.addService(
-          new DidCommV2Service({
-            id: Transports.HTTP,
-            serviceEndpoint: params.endpoint,
-            routingKeys: [],
-          })
-        )
       }
     }
 
@@ -162,7 +162,12 @@ export class DidService {
     }
 
     if (params.transports.includes(Transports.Nearby)) {
-      didDocumentBuilder.addService(new DidCommV2Service({ id: Transports.Nearby, serviceEndpoint: Transports.Nearby }))
+      didDocumentBuilder.addService(
+        new DidCommV2Service({
+          id: Transports.Nearby,
+          serviceEndpoint: Transports.Nearby,
+        })
+      )
     }
 
     const didDocument = didDocumentBuilder.build()
@@ -175,21 +180,8 @@ export class DidService {
   }
 
   public async getPublicDid() {
-    const hasInternetAccess = await this.agentConfig.hasInternetAccess()
-    if (!hasInternetAccess) {
-      // find for a public DID which supports Offline transports only
-      const offlinePublicDid = await this.findOfflineStaticDid()
-      if (offlinePublicDid) return offlinePublicDid
-    }
-
-    if (hasInternetAccess) {
-      // find for a public DID which supports Online transports
-      const onlinePublicDid = await this.findOnlineStaticDid()
-      if (onlinePublicDid) return onlinePublicDid
-    }
-
     // find for a public DID which is not marked
-    const publicDid = await this.findStaticDid()
+    const publicDid = await this.findPublicDid()
     if (publicDid) return publicDid
   }
 
@@ -287,17 +279,10 @@ export class DidService {
     return undefined
   }
 
-  public async findOnlineStaticDid() {
+  public async findPublicDid(): Promise<DidRecord | null> {
     return this.didRepository.findSingleByQuery({
       isStatic: true,
-      marker: DidMarker.Online,
-    })
-  }
-
-  public async findOfflineStaticDid() {
-    return this.didRepository.findSingleByQuery({
-      isStatic: true,
-      marker: DidMarker.Offline,
+      marker: DidMarker.Public,
     })
   }
 }

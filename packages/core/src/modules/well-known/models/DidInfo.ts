@@ -1,8 +1,3 @@
-export enum DidConnectivity {
-  Online = 'online',
-  Offline = 'offline',
-}
-
 interface DidMetaProps {
   did: string
   label?: string

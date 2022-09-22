@@ -223,7 +223,7 @@ export class Agent {
         seed: publicDidSeed,
         type: publicDidType,
         transports: this.agentConfig.transports,
-        marker: this.agentConfig.onlineTransports.length ? DidMarker.Online : DidMarker.Offline,
+        marker: DidMarker.Public,
         needMediation: true,
       })
     }

@@ -18,14 +18,9 @@ export class Bob extends BaseAgent {
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
-          seed: '6b8b882e2618fa5d45ee7229ca880073',
-          transports: [Transports.NFC],
-          marker: DidMarker.Offline,
-        },
-        {
           seed: '6b8b882e2618fa5d45ee7229ca880074',
           transports: [Transports.NFC, Transports.HTTP],
-          marker: DidMarker.Online,
+          marker: DidMarker.Public,
         },
       ],
       valueTransferConfig: {
@@ -37,7 +32,7 @@ export class Bob extends BaseAgent {
   public static async build(): Promise<Bob> {
     const getter = new Bob('bob', undefined)
     await getter.initializeAgent()
-    const publicDid = await getter.agent.getStaticDid(DidMarker.Online)
+    const publicDid = await getter.agent.getStaticDid(DidMarker.Public)
     console.log(`Bob Public DID: ${publicDid?.did}`)
     return getter
   }

@@ -104,11 +104,10 @@ export class ValueTransferWitnessService {
     // witness has already been initialized
     if (existingState) return
 
-    const publicDid = await this.didService.findStaticDid(DidMarker.Online)
-    const gossipDid = await this.didService.findStaticDid(DidMarker.Restricted)
-    if (!publicDid || !gossipDid) {
+    const did = await this.didService.findStaticDid(DidMarker.Public)
+    if (!did) {
       throw new AriesFrameworkError(
-        'Witness public DID not found. Please set `Online` and `Restricted` markers must be used in the agent config.'
+        'Witness public DID not found. Please set `Public` marker for static DID in the agent config.'
       )
     }
 
@@ -120,8 +119,7 @@ export class ValueTransferWitnessService {
 
     const info = new WitnessDetails({
       wid: config.wid,
-      gossipDid: gossipDid.did,
-      publicDid: publicDid.did,
+      did: did.did,
     })
 
     const witnessState = new WitnessState({

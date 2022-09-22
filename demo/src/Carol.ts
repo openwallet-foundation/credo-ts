@@ -18,14 +18,9 @@ export class Carol extends BaseAgent {
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
-          seed: '6b8b882e2618fa5d45ee7229ca880071',
-          transports: [Transports.Nearby],
-          marker: DidMarker.Offline,
-        },
-        {
           seed: '6b8b882e2618fa5d45ee7229ca880072',
           transports: [Transports.Nearby, Transports.HTTP],
-          marker: DidMarker.Online,
+          marker: DidMarker.Public,
         },
       ],
       valueTransferConfig: {
@@ -37,7 +32,7 @@ export class Carol extends BaseAgent {
   public static async build(): Promise<Carol> {
     const getter = new Carol('carol', undefined)
     await getter.initializeAgent()
-    const publicDid = await getter.agent.getStaticDid(DidMarker.Online)
+    const publicDid = await getter.agent.getStaticDid(DidMarker.Public)
     console.log(`Carol Public DID: ${publicDid?.did}`)
     return getter
   }

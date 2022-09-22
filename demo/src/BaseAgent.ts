@@ -18,7 +18,7 @@ import {
   Transports,
   WsOutboundTransport,
 } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 
 import { greenText } from './OutputClass'
 import { FileInboundTransport } from './transports/FileInboundTransport'
@@ -56,32 +56,22 @@ export const logger: Logger = {
 
 export class BaseAgent {
   public static defaultMediatorConnectionInvite =
-    'http://localhost:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6IjZiZmYxNDM1LWRmNjgtNDAwNi05MWU2LTY1NWFiZGUzNTc2MCIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTbkhTOWYzaHJNdUxyTjl6NlpobzdUY0JSdlN5SzdIUGpRdHdLbXUzb3NXd0YuVno2TWtyYWhBb1ZMUVM5UzVHRjVzVUt0dWRYTWVkVVNaZGRlSmhqSHRBRmFWNGhvVi5TVzNzaWN5STZJbWgwZEhBNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDBzZXlKeklqb2lkM002THk5c2IyTmhiR2h2YzNRNk16QXdNQzloY0drdmRqRWlMQ0owSWpvaVpHMGlMQ0p5SWpwYlhYMWQiLCJib2R5Ijp7ImdvYWxfY29kZSI6Im1lZGlhdG9yLXByb3Zpc2lvbiJ9LCJ0eXBlIjoiaHR0cHM6Ly9kaWRjb21tLm9yZy9vdXQtb2YtYmFuZC8yLjAvaW52aXRhdGlvbiIsImFsZyI6IkhTMjU2In0='
+    'http://localhost:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6ImIwMWNiNTI2LTNkNjAtNDY3OC1hMDRhLWY4NDVjMzZkYjRlNCIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTbkhTOWYzaHJNdUxyTjl6NlpobzdUY0JSdlN5SzdIUGpRdHdLbXUzb3NXd0YuVno2TWtyYWhBb1ZMUVM5UzVHRjVzVUt0dWRYTWVkVVNaZGRlSmhqSHRBRmFWNGhvVi5TVzNzaWN5STZJbWgwZEhBNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDBzZXlKeklqb2lkM002THk5c2IyTmhiR2h2YzNRNk16QXdNQzloY0drdmRqRWlMQ0owSWpvaVpHMGlMQ0p5SWpwYlhYMWQiLCJib2R5Ijp7ImdvYWxfY29kZSI6Im1lZGlhdG9yLXByb3Zpc2lvbiJ9LCJ0eXBlIjoiaHR0cHM6Ly9kaWRjb21tLm9yZy9vdXQtb2YtYmFuZC8yLjAvaW52aXRhdGlvbiIsImFsZyI6IkhTMjU2In0='
 
   public static witnessTable = [
     {
       wid: '1',
-      publicDid:
-        'did:peer:2.Ez6LSfsT5gHMCVEya8VDwW9QbAdVUhJCKbVscrrb82SwCPKKT.Vz6MkgNdE8ad1k8cPCHnXZ6vSxrTuFauRKDzzUHLPvdsLycz5.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFgwc2V5SnpJam9pZDNNNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDFkIl19',
-      gossipDid:
-        'did:peer:2.Ez6LSgsy8rk3cqGtuAreZnshv6gxHNmiDEZuZDBhwVuq6CSRo.Vz6Mkh3jfDfCeecVzDaAwdGJJEHKLAyHDjYJWqda6kKGYrxaL.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFgwc2V5SnpJam9pZDNNNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDFkIl19',
+      did: 'did:peer:2.Ez6LSfsT5gHMCVEya8VDwW9QbAdVUhJCKbVscrrb82SwCPKKT.Vz6MkgNdE8ad1k8cPCHnXZ6vSxrTuFauRKDzzUHLPvdsLycz5.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwidCI6ImRtIiwiciI6W119',
       type: '1',
     },
     {
       wid: '2',
-      publicDid:
-        'did:peer:2.Ez6LSrBqyFyuFyjhCsq8cHyB323nMQmK3P1bimYjDda4pKznt.Vz6MkkNzZMiDUaJpikZDe3qymeAJNcwuCz8gotsQjR65FxGjT.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFgwc2V5SnpJam9pZDNNNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDFkIl19',
-
-      gossipDid:
-        'did:peer:2.Ez6LSf78EoiNQDBn596j9LzfCUBobzap9x3Uz1AFoBUCMz6Sh.Vz6Mks75WKq9vdP3T3uW7nRHrLd1B3XTeiune1zGYrMcHpWmh.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFgwc2V5SnpJam9pZDNNNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDFkIl19',
+      did: 'did:peer:2.Ez6LSrBqyFyuFyjhCsq8cHyB323nMQmK3P1bimYjDda4pKznt.Vz6MkkNzZMiDUaJpikZDe3qymeAJNcwuCz8gotsQjR65FxGjT.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgyIiwidCI6ImRtIiwiciI6W119',
       type: '2',
     },
     {
       wid: '3',
-      publicDid:
-        'did:peer:2.Ez6LSbnBiAoatfuxLwzotC8UjUW4RGRezHQom34W3x65r1WbZ.Vz6MkodK1b4VEngLqN3cPPqhuFrvUgadNJfbcAjQAP6KHQwUz.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFgwc2V5SnpJam9pZDNNNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDFkIl19',
-      gossipDid:
-        'did:peer:2.Ez6LSeDLApPnRG7bjAEFoHWUWjYXQHYthvV7RPLSd6iizXLcu.Vz6Mkq1ieJYpzW9GbG41FaARDHTCcFumxKVd9qMmuk6f6LuoE.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFgwc2V5SnpJam9pZDNNNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDFkIl19',
+      did: 'did:peer:2.Ez6LSbnBiAoatfuxLwzotC8UjUW4RGRezHQom34W3x65r1WbZ.Vz6MkodK1b4VEngLqN3cPPqhuFrvUgadNJfbcAjQAP6KHQwUz.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgzIiwidCI6ImRtIiwiciI6W119',
       type: '2',
     },
   ]
@@ -144,6 +134,9 @@ export class BaseAgent {
 
     if (transports.includes(Transports.HTTP) || transports.includes(Transports.HTTPS)) {
       this.outBoundTransport = new HttpOutboundTransport()
+      if (props.port) {
+        this.agent.registerInboundTransport(new HttpInboundTransport({ port: props.port }))
+      }
       this.agent.registerOutboundTransport(this.outBoundTransport)
     }
 

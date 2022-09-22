@@ -19,7 +19,7 @@ export class Anna extends BaseAgent {
       staticDids: [
         {
           seed: '6b8b882e2618fa5d45ee7229ca880070',
-          marker: DidMarker.Online,
+          marker: DidMarker.Public,
           transports: [Transports.Nearby, Transports.NFC, Transports.HTTP],
         },
       ],
@@ -37,7 +37,7 @@ export class Anna extends BaseAgent {
     const giver = new Anna('anna', undefined)
     await giver.initializeAgent()
 
-    const publicDid = await giver.agent.getStaticDid(DidMarker.Online)
+    const publicDid = await giver.agent.getStaticDid(DidMarker.Public)
     console.log(`Anna Public DID: ${publicDid?.did}`)
 
     const active = await giver.agent.valueTransfer.getActiveTransaction()

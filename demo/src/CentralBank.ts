@@ -6,23 +6,20 @@ import { Output } from './OutputClass'
 
 export class CentralBank extends BaseAgent {
   public static wid = '1'
+  public static host = 'http://localhost'
 
   public constructor(name: string, port?: number) {
+    const endpoint = `${CentralBank.host}:${port}`
     super({
       name,
       port,
-      transports: [Transports.HTTP, Transports.WS],
-      mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
+      transports: [Transports.HTTP],
       staticDids: [
         {
           seed: '6b8b882e2618fa5d45ee7229ca880085',
-          transports: [Transports.HTTP, Transports.WS],
-          marker: DidMarker.Online,
-        },
-        {
-          seed: '6b8b882e2618fa5d45ee7229ca880086',
           transports: [Transports.HTTP],
-          marker: DidMarker.Restricted,
+          marker: DidMarker.Public,
+          endpoint,
         },
       ],
       valueTransferConfig: {
@@ -38,13 +35,10 @@ export class CentralBank extends BaseAgent {
   }
 
   public static async build(): Promise<CentralBank> {
-    const witness = new CentralBank('centralBank', undefined)
+    const witness = new CentralBank('centralBank', 8081)
     await witness.initializeAgent()
-    const publicDid = await witness.agent.getStaticDid(DidMarker.Online)
+    const publicDid = await witness.agent.getStaticDid(DidMarker.Public)
     console.log(`CentralBank Public DID: ${publicDid?.did}`)
-
-    const gossipDid = await witness.agent.getStaticDid(DidMarker.Restricted)
-    console.log(`CentralBank Gossip DID: ${gossipDid?.did}`)
     return witness
   }
 

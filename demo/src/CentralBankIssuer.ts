@@ -10,7 +10,7 @@ import { greenText, Output, redText } from './OutputClass'
 export class CentralBankIssuer extends BaseAgent {
   public valueTransferRecordId?: string
   private static readonly witnessDid =
-    'did:peer:2.Ez6LSfsT5gHMCVEya8VDwW9QbAdVUhJCKbVscrrb82SwCPKKT.Vz6MkgNdE8ad1k8cPCHnXZ6vSxrTuFauRKDzzUHLPvdsLycz5.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFgwc2V5SnpJam9pZDNNNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDFkIl19'
+    'did:peer:2.Ez6LSfsT5gHMCVEya8VDwW9QbAdVUhJCKbVscrrb82SwCPKKT.Vz6MkgNdE8ad1k8cPCHnXZ6vSxrTuFauRKDzzUHLPvdsLycz5.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwidCI6ImRtIiwiciI6W119'
 
   public constructor(name: string, port?: number) {
     super({
@@ -22,7 +22,7 @@ export class CentralBankIssuer extends BaseAgent {
         {
           seed: 'ade127f2fb0b4ee3bf846f63b6006183',
           transports: [Transports.HTTP, Transports.WS],
-          marker: DidMarker.Online,
+          marker: DidMarker.Public,
         },
       ],
       valueTransferConfig: {},
@@ -32,7 +32,7 @@ export class CentralBankIssuer extends BaseAgent {
   public static async build(): Promise<CentralBankIssuer> {
     const centralBankIssuer = new CentralBankIssuer('centralBankIssuer', undefined)
     await centralBankIssuer.initializeAgent()
-    const publicDid = await centralBankIssuer.agent.getStaticDid(DidMarker.Online)
+    const publicDid = await centralBankIssuer.agent.getStaticDid(DidMarker.Public)
     console.log(`CentralBankIssuer Public DID: ${publicDid?.did}`)
 
     const active = await centralBankIssuer.agent.valueTransfer.getActiveTransaction()
