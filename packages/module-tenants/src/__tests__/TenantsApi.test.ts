@@ -1,6 +1,6 @@
 import { Agent, AgentContext, InjectionSymbols } from '@aries-framework/core'
 
-import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../core/tests/helpers'
+import { getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests/helpers'
 import { TenantAgent } from '../TenantAgent'
 import { TenantsApi } from '../TenantsApi'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'
@@ -15,11 +15,11 @@ const AgentContextProviderMock = TenantAgentContextProvider as jest.Mock<TenantA
 
 const tenantRecordService = new TenantRecordServiceMock()
 const agentContextProvider = new AgentContextProviderMock()
-const agentConfig = getAgentConfig('TenantsApi')
-const rootAgent = new Agent(agentConfig, agentDependencies)
+const agentOptions = getAgentOptions('TenantsApi')
+const rootAgent = new Agent(agentOptions)
 rootAgent.dependencyManager.registerInstance(InjectionSymbols.AgentContextProvider, agentContextProvider)
 
-const tenantsApi = new TenantsApi(tenantRecordService, rootAgent.context, agentContextProvider, agentConfig.logger)
+const tenantsApi = new TenantsApi(tenantRecordService, rootAgent.context, agentContextProvider, rootAgent.config.logger)
 
 describe('TenantsApi', () => {
   describe('getTenantAgent', () => {
@@ -28,7 +28,7 @@ describe('TenantsApi', () => {
       const tenantAgentContext = getAgentContext({
         contextCorrelationId: 'tenant-id',
         dependencyManager: tenantDependencyManager,
-        agentConfig: agentConfig.extend({
+        agentConfig: rootAgent.config.extend({
           label: 'tenant-agent',
           walletConfig: {
             id: 'Wallet: TenantsApi: tenant-id',
@@ -65,7 +65,7 @@ describe('TenantsApi', () => {
       const tenantAgentContext = getAgentContext({
         contextCorrelationId: 'tenant-id',
         dependencyManager: tenantDependencyManager,
-        agentConfig: agentConfig.extend({
+        agentConfig: rootAgent.config.extend({
           label: 'tenant-agent',
           walletConfig: {
             id: 'Wallet: TenantsApi: tenant-id',
@@ -103,7 +103,7 @@ describe('TenantsApi', () => {
       const tenantAgentContext = getAgentContext({
         contextCorrelationId: 'tenant-id',
         dependencyManager: tenantDependencyManager,
-        agentConfig: agentConfig.extend({
+        agentConfig: rootAgent.config.extend({
           label: 'tenant-agent',
           walletConfig: {
             id: 'Wallet: TenantsApi: tenant-id',

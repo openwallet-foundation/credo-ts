@@ -3,16 +3,18 @@ import type { ProofService } from './ProofService'
 import type {
   AcceptPresentationOptions,
   AcceptProposalOptions,
-  OutOfBandRequestOptions,
+  CreateProofRequestOptions,
   ProposeProofOptions,
   RequestProofOptions,
   ServiceMap,
 } from './ProofsApiOptions'
 import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
-import type { AutoSelectCredentialsForProofRequestOptions } from './models/ModuleOptions'
 import type {
-  CreateOutOfBandRequestOptions,
+  AutoSelectCredentialsForProofRequestOptions,
+  GetRequestedCredentialsForProofRequest,
+} from './models/ModuleOptions'
+import type {
   CreatePresentationOptions,
   CreateProposalOptions,
   CreateRequestOptions,
@@ -20,6 +22,7 @@ import type {
   CreateProofRequestFromProposalOptions,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
+  DeleteProofOptions,
 } from './models/ProofServiceOptions'
 import type { ProofRecord } from './repository/ProofRecord'
 
@@ -56,7 +59,7 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
   declineRequest(proofRecordId: string): Promise<ProofRecord>
 
   // out of band
-  createOutOfBandRequest(options: OutOfBandRequestOptions<PFs, PSs>): Promise<{
+  createRequest(options: CreateProofRequestOptions<PFs, PSs>): Promise<{
     message: AgentMessage
     proofRecord: ProofRecord
   }>
@@ -68,6 +71,11 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
   autoSelectCredentialsForProofRequest(
     options: AutoSelectCredentialsForProofRequestOptions
   ): Promise<FormatRequestedCredentialReturn<PFs>>
+
+  // Get Requested Credentials
+  getRequestedCredentialsForProofRequest(
+    options: AutoSelectCredentialsForProofRequestOptions
+  ): Promise<FormatRetrievedCredentialOptions<PFs>>
 
   sendProblemReport(proofRecordId: string, message: string): Promise<ProofRecord>
 
@@ -324,39 +332,20 @@ export class ProofsApi<
     }
   }
 
-  public async createOutOfBandRequest(options: OutOfBandRequestOptions<PFs, PSs>): Promise<{
+  public async createRequest(options: CreateProofRequestOptions<PFs, PSs>): Promise<{
     message: AgentMessage
     proofRecord: ProofRecord
   }> {
     const service = this.getService(options.protocolVersion)
 
-    const createProofRequest: CreateOutOfBandRequestOptions<PFs> = {
+    const createProofRequest: CreateRequestOptions<PFs> = {
       proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
       comment: options.comment,
+      parentThreadId: options.parentThreadId,
     }
 
-    const { message, proofRecord } = await service.createRequest(this.agentContext, createProofRequest)
-
-    // Create and set ~service decorator
-
-    const routing = await this.routingService.getRouting(this.agentContext)
-    message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.recipientKey.publicKeyBase58],
-      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
-    })
-    // Save ~service decorator to record (to remember our verkey)
-
-    await service.saveOrUpdatePresentationMessage(this.agentContext, {
-      message,
-      proofRecord: proofRecord,
-      role: DidCommMessageRole.Sender,
-    })
-
-    await service.update(this.agentContext, proofRecord)
-
-    return { proofRecord, message }
+    return await service.createRequest(this.agentContext, createProofRequest)
   }
 
   public async declineRequest(proofRecordId: string): Promise<ProofRecord> {
@@ -446,6 +435,26 @@ export class ProofsApi<
   }
 
   /**
+   * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
+   * use credentials in the wallet to build indy requested credentials object for input to proof creation.
+   * If restrictions allow, self attested attributes will be used.
+   *
+   * @param options multiple properties like proof record id and optional configuration
+   * @returns RetrievedCredentials object
+   */
+  public async getRequestedCredentialsForProofRequest(
+    options: GetRequestedCredentialsForProofRequest
+  ): Promise<FormatRetrievedCredentialOptions<PFs>> {
+    const record = await this.getById(options.proofRecordId)
+    const service = this.getService(record.protocolVersion)
+
+    return await service.getRequestedCredentialsForProofRequest(this.agentContext, {
+      proofRecord: record,
+      config: options.config,
+    })
+  }
+
+  /**
    * Send problem report message for a proof record
    *
    * @param proofRecordId  The id of the proof record for which to send problem report
@@ -510,9 +519,10 @@ export class ProofsApi<
    *
    * @param proofId the proof record id
    */
-  public async deleteById(proofId: string) {
+  public async deleteById(proofId: string, options?: DeleteProofOptions) {
     const proofRecord = await this.getById(proofId)
-    return await this.proofRepository.delete(this.agentContext, proofRecord)
+    const service = this.getService(proofRecord.protocolVersion)
+    return service.delete(this.agentContext, proofRecord, options)
   }
 
   /**

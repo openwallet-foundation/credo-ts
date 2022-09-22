@@ -1,6 +1,6 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
-import type { OutOfBandRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { CreateProofRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
 import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
 
@@ -27,7 +27,7 @@ import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
 import {
-  getBaseConfig,
+  getAgentOptions,
   issueCredential,
   makeConnection,
   prepareForIssuance,
@@ -79,7 +79,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: OutOfBandRequestOptions<[IndyProofFormat], [V2ProofService]> = {
+    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
@@ -97,11 +97,15 @@ describe('Present Proof', () => {
     })
 
     // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createOutOfBandRequest(
-      outOfBandRequestOptions
-    )
+    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
 
-    await aliceAgent.receiveMessage(message.toJSON())
+    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberProofRecord.id,
+      message,
+      domain: 'https://a-domain.com',
+    })
+
+    await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofRecord = await aliceProofRecordPromise
@@ -178,7 +182,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: OutOfBandRequestOptions<[IndyProofFormat], [V2ProofService]> = {
+    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
@@ -201,9 +205,14 @@ describe('Present Proof', () => {
     })
 
     // eslint-disable-next-line prefer-const
-    let { message } = await faberAgent.proofs.createOutOfBandRequest(outOfBandRequestOptions)
+    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
 
-    await aliceAgent.receiveMessage(message.toJSON())
+    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberProofRecord.id,
+      message,
+      domain: 'https://a-domain.com',
+    })
+    await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     await aliceProofRecordPromise
 
@@ -220,7 +229,7 @@ describe('Present Proof', () => {
 
     const unique = uuid().substring(0, 4)
 
-    const mediatorConfig = getBaseConfig(`Connectionless proofs with mediator Mediator-${unique}`, {
+    const mediatorOptions = getAgentOptions(`Connectionless proofs with mediator Mediator-${unique}`, {
       autoAcceptMediationRequests: true,
       endpoints: ['rxjs:mediator'],
     })
@@ -234,7 +243,7 @@ describe('Present Proof', () => {
     }
 
     // Initialize mediator
-    const mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
+    const mediatorAgent = new Agent(mediatorOptions)
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
@@ -249,7 +258,7 @@ describe('Present Proof', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const faberConfig = getBaseConfig(`Connectionless proofs with mediator Faber-${unique}`, {
+    const faberOptions = getAgentOptions(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
         domain: 'https://example.com',
@@ -257,7 +266,7 @@ describe('Present Proof', () => {
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
-    const aliceConfig = getBaseConfig(`Connectionless proofs with mediator Alice-${unique}`, {
+    const aliceOptions = getAgentOptions(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       // logger: new TestLogger(LogLevel.test),
       mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
@@ -266,12 +275,12 @@ describe('Present Proof', () => {
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     })
 
-    const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+    const faberAgent = new Agent(faberOptions)
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     await faberAgent.initialize()
 
-    const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    const aliceAgent = new Agent(aliceOptions)
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     await aliceAgent.initialize()
@@ -339,7 +348,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: OutOfBandRequestOptions<[IndyProofFormat], [V2ProofService]> = {
+    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
@@ -362,14 +371,20 @@ describe('Present Proof', () => {
     })
 
     // eslint-disable-next-line prefer-const
-    let { message } = await faberAgent.proofs.createOutOfBandRequest(outOfBandRequestOptions)
+    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
+
+    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberProofRecord.id,
+      message,
+      domain: 'https://a-domain.com',
+    })
 
     const mediationRecord = await faberAgent.mediationRecipient.findDefaultMediator()
     if (!mediationRecord) {
       throw new Error('Faber agent has no default mediator')
     }
 
-    expect(message).toMatchObject({
+    expect(requestMessage).toMatchObject({
       service: {
         recipientKeys: [expect.any(String)],
         routingKeys: mediationRecord.routingKeys,
@@ -377,7 +392,7 @@ describe('Present Proof', () => {
       },
     })
 
-    await aliceAgent.receiveMessage(message.toJSON())
+    await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     await aliceProofRecordPromise
 

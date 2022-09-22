@@ -57,7 +57,6 @@ const schemaTemplate: SchemaTemplate = {
   version: '4.2.0',
 }
 
-const schemaUrlTrunk = `${did}/anoncreds/v0/SCHEMA/awesomeSchema/4.2.0`
 const credDefUrlTrunk = `${did}/anoncreds/v0/CLAIM_DEF/99/someTag`
 const invalidCredDefUrlTrunk = `did:indy:${indyNamespace}:${did}/anoncreds/v0/I_AM_INVALID/99/sth`
 const invalidSchemaUrlTrunk = `did:indy:${indyNamespace}:${did}/anoncreds/v0/I_AM_INVALID/awesomeSchema/4.2.0`
@@ -76,7 +75,7 @@ describe('Mangle indy identifiers', () => {
       expect(getLegacyIndySchemaId(qualifiedIdentifierSchema)).toBe(schemaId)
     })
     it('should return the unqualified identifier if it is passed to unqualify for a schema', () => {
-      expect(getLegacyIndySchemaId(schemaId)).toBe(schemaId)
+      expect(getLegacyIndySchemaId(qualifiedIdentifierSchema)).toBe(schemaId)
     })
     it('should throw an error if the provided identifier for a schema has an invalid tail format', () => {
       expect(() => getLegacyIndySchemaId(invalidSchemaUrlTrunk)).toThrowError(

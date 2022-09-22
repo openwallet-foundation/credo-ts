@@ -6,7 +6,7 @@ import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { prepareForIssuance, waitForCredentialRecordSubject, getBaseConfig } from '../../../../../../tests/helpers'
+import { prepareForIssuance, waitForCredentialRecordSubject, getAgentOptions } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { CredentialEventTypes } from '../../../CredentialEvents'
@@ -15,11 +15,11 @@ import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V2CredentialPreview } from '../messages'
 
-const faberConfig = getBaseConfig('Faber connection-less Credentials V2', {
+const faberAgentOptions = getAgentOptions('Faber connection-less Credentials V2', {
   endpoints: ['rxjs:faber'],
 })
 
-const aliceConfig = getBaseConfig('Alice connection-less Credentials V2', {
+const aliceAgentOptions = getAgentOptions('Alice connection-less Credentials V2', {
   endpoints: ['rxjs:alice'],
 })
 
@@ -43,12 +43,12 @@ describe('V2 Connectionless Credentials', () => {
       'rxjs:faber': faberMessages,
       'rxjs:alice': aliceMessages,
     }
-    faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+    faberAgent = new Agent(faberAgentOptions)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()

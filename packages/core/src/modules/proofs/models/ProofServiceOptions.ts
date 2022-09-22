@@ -28,11 +28,6 @@ export interface CreateRequestAsResponseOptions<PFs extends ProofFormat[]> exten
   proofFormats: ProofFormatPayload<PFs, 'createRequestAsResponse'>
 }
 
-// ----- Out Of Band Proof ----- //
-export interface CreateOutOfBandRequestOptions<PFs extends ProofFormat[]> extends BaseOptions {
-  proofFormats: ProofFormatPayload<PFs, 'createOutOfBandRequest'>
-}
-
 export interface CreateRequestOptions<PFs extends ProofFormat[]> extends BaseOptions {
   connectionRecord?: ConnectionRecord
   proofFormats: ProofFormatPayload<PFs, 'createRequest'>
@@ -70,4 +65,8 @@ export interface GetRequestedCredentialsForProofRequestOptions {
 export interface ProofRequestFromProposalOptions<PFs extends ProofFormat[]> {
   proofRecord: ProofRecord
   proofFormats: ProofFormatPayload<PFs, 'createProofRequestFromProposal'>
+}
+
+export interface DeleteProofOptions {
+  deleteAssociatedDidCommMessages?: boolean
 }

@@ -47,7 +47,11 @@ export function getLegacyIndyCredentialDefinitionId(qualifiedIdentifier: string)
 }
 
 export function getLegacyIndySchemaId(qualifiedIdentifier: string) {
-  if (!isQualifiedIndyIdentifier(qualifiedIdentifier)) return qualifiedIdentifier
+  if (!isQualifiedIndyIdentifier(qualifiedIdentifier)) {
+    throw new AriesFrameworkError(
+      `Identifier ${qualifiedIdentifier} not a qualified indy identifier. Hint: Needs to start with 'did:indy:'`
+    )
+  }
 
   const lastColonIndex = qualifiedIdentifier.lastIndexOf(':')
   const identifierTrunk = qualifiedIdentifier.substring(lastColonIndex + 1)

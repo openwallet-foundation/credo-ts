@@ -9,7 +9,7 @@ import { DidExchangeState, HandshakeProtocol } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 
-import { getBaseConfig } from './helpers'
+import { getAgentOptions } from './helpers'
 
 describe('connections', () => {
   let faberAgent: Agent
@@ -26,13 +26,13 @@ describe('connections', () => {
   })
 
   it('one should be able to make multiple connections using a multi use invite', async () => {
-    const faberConfig = getBaseConfig('Faber Agent Connections', {
+    const faberAgentOptions = getAgentOptions('Faber Agent Connections', {
       endpoints: ['rxjs:faber'],
     })
-    const aliceConfig = getBaseConfig('Alice Agent Connections', {
+    const aliceAgentOptions = getAgentOptions('Alice Agent Connections', {
       endpoints: ['rxjs:alice'],
     })
-    const acmeConfig = getBaseConfig('Acme Agent Connections', {
+    const acmeAgentOptions = getAgentOptions('Acme Agent Connections', {
       endpoints: ['rxjs:acme'],
     })
 
@@ -45,17 +45,17 @@ describe('connections', () => {
       'rxjs:acme': acmeMessages,
     }
 
-    faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+    faberAgent = new Agent(faberAgentOptions)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    acmeAgent = new Agent(acmeConfig.config, acmeConfig.agentDependencies)
+    acmeAgent = new Agent(acmeAgentOptions)
     acmeAgent.registerInboundTransport(new SubjectInboundTransport(acmeMessages))
     acmeAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await acmeAgent.initialize()
@@ -100,19 +100,19 @@ describe('connections', () => {
       'rxjs:faber': faberMessages,
     }
 
-    const faberConfig = getBaseConfig('Faber Agent Connections 2', {
+    const faberAgentOptions = getAgentOptions('Faber Agent Connections 2', {
       endpoints: ['rxjs:faber'],
     })
-    const aliceConfig = getBaseConfig('Alice Agent Connections 2')
+    const aliceAgentOptions = getAgentOptions('Alice Agent Connections 2')
 
     // Faber defines both inbound and outbound transports
-    faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+    faberAgent = new Agent(faberAgentOptions)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     // Alice only has outbound transport
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
