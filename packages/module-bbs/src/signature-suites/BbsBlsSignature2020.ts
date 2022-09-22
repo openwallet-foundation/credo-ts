@@ -28,15 +28,16 @@ import {
   SECURITY_CONTEXT_BBS_URL,
   SECURITY_CONTEXT_URL,
   w3cDate,
+  vcLibraries,
 } from '@aries-framework/core'
-// TODO: what to do with these imports? It's a re-export of libraries, with some types added
-import jsonld from '@aries-framework/core/src/modules/vc/libraries/jsonld'
-import { suites } from '@aries-framework/core/src/modules/vc/libraries/jsonld-signatures'
+
+const { jsonld, jsonldSignatures } = vcLibraries
+const LinkedDataProof = jsonldSignatures.suites.LinkedDataProof
 
 /**
  * A BBS+ signature suite for use with BLS12-381 key pairs
  */
-export class BbsBlsSignature2020 extends suites.LinkedDataProof {
+export class BbsBlsSignature2020 extends LinkedDataProof {
   private proof: Record<string, unknown>
   /**
    * Default constructor

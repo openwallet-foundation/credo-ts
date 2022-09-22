@@ -1,20 +1,20 @@
+import type { DependencyManager } from '@aries-framework/core'
+
 import {
-  InjectionSymbols,
   KeyType,
   SigningProviderToken,
   VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
+  SignatureSuiteToken,
 } from '@aries-framework/core'
 
-import { DependencyManager } from '@aries-framework/core'
-import { SignatureSuiteToken } from '@aries-framework/core/src/modules/vc/SignatureSuiteRegistry'
-import { BbsBlsSignature2020, BbsBlsSignatureProof2020 } from '..'
 import { BbsModule } from '../BbsModule'
 import { Bls12381g2SigningProvider } from '../Bls12381g2SigningProvider'
+import { BbsBlsSignature2020, BbsBlsSignatureProof2020 } from '../signature-suites'
 
-jest.mock('../../../core/src/plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
-
-const dependencyManager = new DependencyManagerMock()
+const dependencyManager = {
+  registerInstance: jest.fn(),
+  registerSingleton: jest.fn(),
+} as unknown as DependencyManager
 
 describe('BbsModule', () => {
   test('registers dependencies on the dependency manager', () => {

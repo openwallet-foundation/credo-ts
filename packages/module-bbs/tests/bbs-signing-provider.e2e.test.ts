@@ -14,6 +14,8 @@ import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 import testLogger from '../../core/tests/logger'
 import { Bls12381g2SigningProvider } from '../src'
 
+import { describeSkipNode17And18 } from './util'
+
 // use raw key derivation method to speed up wallet creating / opening / closing between tests
 const walletConfig: WalletConfig = {
   id: 'Wallet: IndyWalletTest',
@@ -22,7 +24,7 @@ const walletConfig: WalletConfig = {
   keyDerivationMethod: KeyDerivationMethod.Raw,
 }
 
-describe('BBS Signing Provider', () => {
+describeSkipNode17And18('BBS Signing Provider', () => {
   let indyWallet: IndyWallet
   const seed = 'sample-seed'
   const message = TypedArrayEncoder.fromString('sample-message')

@@ -15,17 +15,17 @@ import type { DeriveProofOptions, VerifyProofOptions, CreateVerifyDataOptions, C
 import type { VerifyProofResult } from '../types/VerifyProofResult'
 import type { JsonObject, DocumentLoader, Proof } from '@aries-framework/core/src'
 
-import { AriesFrameworkError, TypedArrayEncoder, SECURITY_CONTEXT_URL } from '@aries-framework/core'
-// TODO: what to do with these imports? It's a re-export of libraries, with some types added
-import jsonld from '@aries-framework/core/build/modules/vc/libraries/jsonld'
-import { suites } from '@aries-framework/core/build/modules/vc/libraries/jsonld-signatures'
+import { AriesFrameworkError, TypedArrayEncoder, SECURITY_CONTEXT_URL, vcLibraries } from '@aries-framework/core'
 import { blsCreateProof, blsVerifyProof } from '@mattrglobal/bbs-signatures'
 import { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
 import { randomBytes } from '@stablelib/random'
 
 import { BbsBlsSignature2020 } from './BbsBlsSignature2020'
 
-export class BbsBlsSignatureProof2020 extends suites.LinkedDataProof {
+const { jsonld, jsonldSignatures } = vcLibraries
+const LinkedDataProof = jsonldSignatures.suites.LinkedDataProof
+
+export class BbsBlsSignatureProof2020 extends LinkedDataProof {
   public constructor({ useNativeCanonize, key, LDKeyClass }: Record<string, unknown> = {}) {
     super({
       type: 'BbsBlsSignatureProof2020',

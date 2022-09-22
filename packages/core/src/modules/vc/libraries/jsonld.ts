@@ -13,7 +13,7 @@ import nodeDocumentLoader from '@digitalcredentials/jsonld/lib/documentLoaders/n
 //@ts-ignore
 import xhrDocumentLoader from '@digitalcredentials/jsonld/lib/documentLoaders/xhr'
 
-interface JsonLd {
+export interface JsonLd {
   compact(document: any, context: any, options?: any): any
   fromRDF(document: any): any
   frame(document: any, revealDocument: any, options?: any): any

@@ -1,8 +1,11 @@
 import type { DependencyManager, Module } from '@aries-framework/core'
 
-import { KeyType, SigningProviderToken } from '@aries-framework/core'
-import { VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020 } from '@aries-framework/core/src/modules/dids/domain/key-type/bls12381g2'
-import { SignatureSuiteToken } from '@aries-framework/core/src/modules/vc/SignatureSuiteRegistry'
+import {
+  KeyType,
+  SigningProviderToken,
+  VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
+  SignatureSuiteToken,
+} from '@aries-framework/core'
 
 import { Bls12381g2SigningProvider } from './Bls12381g2SigningProvider'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020 } from './signature-suites'

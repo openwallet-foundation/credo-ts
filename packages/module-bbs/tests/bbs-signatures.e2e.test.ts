@@ -1,24 +1,38 @@
-import { KeyType, JsonTransformer, AgentContext, DidResolverService, DidKey, Key } from '@aries-framework/core'
+import type { W3cCredentialRepository } from '../../core/src/modules/vc/repository'
+import type { AgentContext } from '@aries-framework/core'
+
 import {
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  KeyType,
+  JsonTransformer,
+  DidResolverService,
+  DidKey,
+  Key,
   SigningProviderRegistry,
   W3cVerifiableCredential,
   W3cCredentialService,
   W3cCredential,
   CredentialIssuancePurpose,
+  VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
+  orArrayToArray,
+  vcLibraries,
+  LinkedDataProof,
+  W3cPresentation,
+  W3cVerifiablePresentation,
+  IndyWallet,
+  Ed25519Signature2018,
 } from '@aries-framework/core'
-import { VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020 } from '@aries-framework/core'
-import { orArrayToArray } from '@aries-framework/core'
-import { purposes } from '@aries-framework/core/src/modules/vc/libraries/jsonld-signatures'
-import { LinkedDataProof } from '@aries-framework/core/src/modules/vc/models/LinkedDataProof'
-import { W3cVerifiablePresentation } from '@aries-framework/core/src/modules/vc/models/presentation/W3cVerifiablePresentation'
-import { W3cPresentation } from '@aries-framework/core/src/modules/vc/models/presentation/W3cPresentation'
-import { W3cCredentialRepository } from '@aries-framework/core/src/modules/vc/repository'
-import { SignatureSuiteRegistry } from '@aries-framework/core/src/modules/vc/SignatureSuiteRegistry'
-import { getAgentConfig, getAgentContext } from '@aries-framework/core/tests/helpers'
-import { customDocumentLoader } from '@aries-framework/core/src/modules/vc/__tests__/documentLoader'
-import { IndyWallet } from '@aries-framework/core/src/wallet/IndyWallet'
+
+import { SignatureSuiteRegistry } from '../../core/src/modules/vc/SignatureSuiteRegistry'
+import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
+import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2SigningProvider } from '../src'
+
 import { BbsBlsSignature2020Fixtures } from './fixtures'
+import { describeSkipNode17And18 } from './util'
+
+const { jsonldSignatures } = vcLibraries
+const { purposes } = jsonldSignatures
 
 const signatureSuiteRegistry = new SignatureSuiteRegistry([
   {
@@ -33,23 +47,23 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
     verificationMethodTypes: [VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020],
     keyTypes: [KeyType.Bls12381g2],
   },
+  {
+    suiteClass: Ed25519Signature2018,
+    proofType: 'Ed25519Signature2018',
+    verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
+    keyTypes: [KeyType.Ed25519],
+  },
 ])
 
 const signingProviderRegistry = new SigningProviderRegistry([new Bls12381g2SigningProvider()])
 
-jest.mock('../../ledger/services/IndyLedgerService')
+const agentConfig = getAgentConfig('BbsSignaturesE2eTest')
 
-jest.mock('../repository/W3cCredentialRepository')
-const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
-
-const agentConfig = getAgentConfig('W3cCredentialServiceTest')
-
-describe('BBS W3cCredentialService', () => {
+describeSkipNode17And18('BBS W3cCredentialService', () => {
   let wallet: IndyWallet
   let agentContext: AgentContext
   let didResolverService: DidResolverService
   let w3cCredentialService: W3cCredentialService
-  let w3cCredentialRepository: W3cCredentialRepository
   const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
@@ -61,8 +75,11 @@ describe('BBS W3cCredentialService', () => {
       wallet,
     })
     didResolverService = new DidResolverService(agentConfig.logger, [])
-    w3cCredentialRepository = new W3cCredentialRepositoryMock()
-    w3cCredentialService = new W3cCredentialService(w3cCredentialRepository, didResolverService, signatureSuiteRegistry)
+    w3cCredentialService = new W3cCredentialService(
+      {} as unknown as W3cCredentialRepository,
+      didResolverService,
+      signatureSuiteRegistry
+    )
     w3cCredentialService.documentLoaderWithContext = () => customDocumentLoader
   })
 
