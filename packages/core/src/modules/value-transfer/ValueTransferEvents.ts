@@ -1,7 +1,6 @@
 import type { BaseEvent } from '../../agent/Events'
-import type { ValueTransferState } from './ValueTransferState'
-import type { WitnessData } from './messages'
 import type { ValueTransferRecord } from './repository'
+import type { TransactionState, WitnessData } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 export enum ValueTransferEventTypes {
   ValueTransferStateChanged = 'ValueTransferStateChanged',
@@ -14,7 +13,7 @@ export interface ValueTransferStateChangedEvent extends BaseEvent {
   type: typeof ValueTransferEventTypes.ValueTransferStateChanged
   payload: {
     record: ValueTransferRecord
-    previousState?: ValueTransferState | null
+    previousState?: TransactionState | null
   }
 }
 

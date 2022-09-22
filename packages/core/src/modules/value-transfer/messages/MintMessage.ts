@@ -2,7 +2,7 @@ import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { transformUint8Array } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Expose, Transform, Type } from 'class-transformer'
-import { Equals, IsObject, ValidateNested } from 'class-validator'
+import { Equals, IsObject, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 
@@ -25,6 +25,9 @@ export class MintMessage extends DIDCommV2Message {
   @ValidateNested()
   @Type(() => MintMessageBody)
   public body!: MintMessageBody
+
+  @IsString()
+  public from!: string
 
   @Equals(MintMessage.type)
   public readonly type = MintMessage.type

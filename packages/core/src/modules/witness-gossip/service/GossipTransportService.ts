@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import type { VtpTransportInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipTransportInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -10,7 +9,7 @@ import { DIDCommV2Message } from '../../../agent/didcomm/v2/DIDCommV2Message'
 import { JsonEncoder } from '../../../utils'
 
 @scoped(Lifecycle.ContainerScoped)
-export class ValueTransferTransportService implements VtpTransportInterface {
+export class GossipTransportService implements GossipTransportInterface {
   private config: AgentConfig
   private messageSender: MessageSender
 
@@ -19,6 +18,7 @@ export class ValueTransferTransportService implements VtpTransportInterface {
     this.messageSender = messageSender
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async send(message: any): Promise<void> {
     this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
     this.config.logger.debug(` Message: ${JsonEncoder.toString(message)}`)

@@ -1,5 +1,5 @@
 import type { Buffer } from '../../../utils'
-import type { CryptoInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { VtpCryptoInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -10,7 +10,7 @@ import { DidService } from '../../dids/services/DidService'
 import { KeyService } from '../../keys'
 
 @scoped(Lifecycle.ContainerScoped)
-export class ValueTransferCryptoService implements CryptoInterface {
+export class ValueTransferCryptoService implements VtpCryptoInterface {
   private didService: DidService
   private keysService: KeyService
 
@@ -69,31 +69,12 @@ export class ValueTransferCryptoService implements CryptoInterface {
     return this.keysService.verify({ payload, signature, key })
   }
 
-  public async encrypt(payload: Buffer, senderDID: string, recipientDID: string): Promise<Buffer> {
-    const senderKid = (await this.didService.getDIDDoc(senderDID)).agreementKeyId
-    const recipientKey = (await this.didService.getDIDDoc(recipientDID)).getKeyAgreement()
-    if (!senderKid) {
-      throw new Error(`Unable to locate encryption key for DID '${senderDID}'`)
-    }
-    if (!recipientKey) {
-      throw new Error(`Unable to locate encryption key for DID '${recipientKey}'`)
-    }
-    return this.keysService.encrypt({ payload, senderKid, recipientKey })
-  }
-
-  public async decrypt(payload: Buffer, senderDID: string, recipientDID: string): Promise<Buffer> {
-    const recipientKid = (await this.didService.getDIDDoc(recipientDID)).agreementKeyId
-    const senderKey = (await this.didService.getDIDDoc(senderDID)).getKeyAgreement()
-    if (!recipientKid) {
-      throw new Error(`Unable to locate encryption key for DID '${recipientDID}'`)
-    }
-    if (!senderKey) {
-      throw new Error(`Unable to locate encryption key for DID '${senderKey}'`)
-    }
-    return this.keysService.decrypt({ payload, senderKey, recipientKid })
-  }
-
   public randomBytes(size: number): Uint8Array {
     return this.keysService.randomBytes(size)
+  }
+
+  public async checkDidExists(did: string): Promise<string | undefined> {
+    const didRecord = await this.didService.findById(did)
+    return didRecord?.did
   }
 }

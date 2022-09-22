@@ -1,19 +1,19 @@
 import type { HandlerInboundMessage, Handler } from '../../../agent/Handler'
 import type { DIDCommV2Message } from '../../../agent/didcomm'
-import type { ValueTransferService } from '../services/ValueTransferService'
+import type { GossipService } from '../service'
 
 import { WitnessTableMessage } from '../messages'
 
 export class WitnessTableHandler implements Handler<typeof DIDCommV2Message> {
-  private valueTransferService: ValueTransferService
+  private gossipService: GossipService
 
   public readonly supportedMessages = [WitnessTableMessage]
 
-  public constructor(valueTransferService: ValueTransferService) {
-    this.valueTransferService = valueTransferService
+  public constructor(gossipService: GossipService) {
+    this.gossipService = gossipService
   }
 
   public async handle(messageContext: HandlerInboundMessage<WitnessTableHandler>) {
-    await this.valueTransferService.processWitnessTable(messageContext)
+    await this.gossipService.processWitnessTable(messageContext)
   }
 }

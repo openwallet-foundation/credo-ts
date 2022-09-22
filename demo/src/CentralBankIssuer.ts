@@ -1,9 +1,10 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { ValueTransferRecord } from '@aries-framework/core'
 
-import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
+import { DidMarker, Transports } from '@aries-framework/core'
+import { TransactionState } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { BaseAgent } from './BaseAgent'
+import { BaseAgent, logger } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class CentralBankIssuer extends BaseAgent {
@@ -34,14 +35,14 @@ export class CentralBankIssuer extends BaseAgent {
     const publicDid = await centralBankIssuer.agent.getStaticDid(DidMarker.Online)
     console.log(`CentralBankIssuer Public DID: ${publicDid?.did}`)
 
-    const trustPing = await centralBankIssuer.agent.connections.sendTrustPing(CentralBankIssuer.witnessDid)
-    await centralBankIssuer.agent.connections.awaitTrustPingResponse(trustPing.id)
-    console.log(`Trust Ping response received from the Witness`)
-
     const active = await centralBankIssuer.agent.valueTransfer.getActiveTransaction()
     if (active.record?.id) {
       await centralBankIssuer.agent.valueTransfer.abortTransaction(active.record?.id)
     }
+
+    const trustPing = await centralBankIssuer.agent.connections.sendTrustPing(CentralBankIssuer.witnessDid)
+    await centralBankIssuer.agent.connections.awaitTrustPingResponse(trustPing.id)
+    console.log(`Trust Ping response received from the Witness`)
 
     await centralBankIssuer.agent.valueTransfer.mintCash(10, CentralBankIssuer.witnessDid)
 
@@ -53,7 +54,7 @@ export class CentralBankIssuer extends BaseAgent {
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
     const { record } = await this.agent.valueTransfer.acceptPaymentRequest({ recordId: valueTransferRecord.id })
-    this.valueTransferRecordId = record.id
+    this.valueTransferRecordId = record?.id
     console.log(greenText('\nPayment request accepted!\n'))
     await this.waitForPayment()
   }
@@ -71,16 +72,16 @@ export class CentralBankIssuer extends BaseAgent {
     console.log('Waiting for finishing payment...')
     try {
       const record = await this.agent.valueTransfer.returnWhenIsCompleted(valueTransferRecord.id)
-      if (record.state === ValueTransferState.Completed) {
+      if (record.state === TransactionState.Completed) {
         console.log(greenText(Output.PaymentDone))
         console.log(greenText('Receipt:'))
         console.log(record.receipt)
         const balance = await this.agent.valueTransfer.getBalance()
         console.log(greenText('Balance: ' + balance))
       }
-      if (record.state === ValueTransferState.Failed) {
+      if (record.state === TransactionState.Failed) {
         console.log(redText('Payment Failed:'))
-        console.log(record.problemReportMessage)
+        console.log(record.error)
       }
     } catch (e) {
       console.log(redText(`\nTimeout of 120 seconds reached.. Returning to home screen.\n`))

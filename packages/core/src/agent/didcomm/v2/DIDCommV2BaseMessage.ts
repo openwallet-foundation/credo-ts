@@ -13,7 +13,7 @@ export type DIDCommV2MessageParams = {
   type?: string
   id?: string
   from?: string
-  to?: string
+  to?: string | string[]
   thid?: string
   pthid?: string
   created_time?: number
