@@ -91,7 +91,6 @@ export class LedgerApi {
     // Schema in wallet
     if (schemaRecord) {
       // Transform qualified to unqualified
-      schemaRecord.schema.id = getLegacyIndySchemaId(schemaRecord.schema.id)
       return {
         ...schemaRecord?.schema,
         id: getLegacyIndySchemaId(schemaRecord.id),
@@ -162,10 +161,10 @@ export class LedgerApi {
     // Credential Definition in wallet
     if (credentialDefinitionRecord) {
       // Transform qualified to unqualified
-      credentialDefinitionRecord.credentialDefinition.id = getLegacyIndyCredentialDefinitionId(
-        credentialDefinitionRecord.credentialDefinition.id
-      )
-      return credentialDefinitionRecord.credentialDefinition
+      return {
+        ...credentialDefinitionRecord.credentialDefinition,
+        id: getLegacyIndyCredentialDefinitionId(credentialDefinitionRecord.credentialDefinition.id),
+      }
     }
 
     // Check for the credential on the ledger.

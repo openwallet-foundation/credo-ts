@@ -65,17 +65,6 @@ export function getLegacyIndySchemaId(qualifiedIdentifier: string) {
 
 /**
  *
- * @see https://hyperledger.github.io/indy-did-method/#schema
- *
- */
-export function schemaToQualifiedIndySchemaTrunk(schema: SchemaTemplate | Schema, schemaId: string): string {
-  const did = didFromSchemaId(schemaId)
-  const didUrl = `${did}/anoncreds/v0/SCHEMA/${schema.name}/${schema.version}`
-  return didUrl
-}
-
-/**
- *
  * @see https://hyperledger.github.io/indy-did-method/#cred-def
  *
  */
@@ -104,6 +93,11 @@ export function getQualifiedIdentifierCredentialDefinition(
   return `did:indy:${indyNamespace}:${didUrl}`
 }
 
+/**
+ *
+ * @see https://hyperledger.github.io/indy-did-method/#schema
+ *
+ */
 export function getQualifiedIdentifierSchema(
   indyNamespace: string,
   schemaTemplate: SchemaTemplate | Schema,
@@ -111,6 +105,7 @@ export function getQualifiedIdentifierSchema(
 ): IndyNamespace {
   if (isQualifiedIndyIdentifier(schemaId)) return schemaId as IndyNamespace
 
-  const didUrl = schemaToQualifiedIndySchemaTrunk(schemaTemplate, schemaId)
+  const did = didFromSchemaId(schemaId)
+  const didUrl = `${did}/anoncreds/v0/SCHEMA/${schemaTemplate.name}/${schemaTemplate.version}`
   return `did:indy:${indyNamespace}:${didUrl}`
 }

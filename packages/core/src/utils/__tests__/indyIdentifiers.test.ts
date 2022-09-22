@@ -3,7 +3,6 @@ import type { SchemaTemplate } from '../../modules/ledger/services/IndyLedgerSer
 import type { CredDef, Schema } from 'indy-sdk'
 
 import {
-  schemaToQualifiedIndySchemaTrunk,
   isQualifiedIndyIdentifier,
   getLegacyIndySchemaId,
   getLegacyIndyCredentialDefinitionId,
@@ -99,10 +98,6 @@ describe('Mangle indy identifiers', () => {
     })
   })
 
-  test('get DID url trunk from schema', () => {
-    expect(schemaToQualifiedIndySchemaTrunk(schemaTemplate, schemaId)).toBe(schemaUrlTrunk)
-  })
-
   test('get DID url trunk from credential', () => {
     expect(credentialDefinitionToQualifiedIndyCredentialDefinitionIdTrunk(credDef.id, credDefTemplate)).toBe(
       credDefUrlTrunk
@@ -110,9 +105,6 @@ describe('Mangle indy identifiers', () => {
   })
 
   describe('getQualifiedIndyId', () => {
-    it('should correctly create the Url trunk for a schema', () => {
-      expect(schemaToQualifiedIndySchemaTrunk(schemaTemplate, schemaId)).toBe(schemaUrlTrunk)
-    })
     it('should correctly create the Url trunk for a credential definition', () => {
       expect(credentialDefinitionToQualifiedIndyCredentialDefinitionIdTrunk(credDef.id, credDefTemplate)).toBe(
         credDefUrlTrunk
