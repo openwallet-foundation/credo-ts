@@ -1,4 +1,4 @@
-import type { FileSystem } from '../../..'
+import type { FileSystem } from '../../../storage/FileSystem'
 
 import { unlinkSync, readFileSync } from 'fs'
 import path from 'path'
