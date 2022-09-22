@@ -1,8 +1,5 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type {
-  ResumeValueTransferTransactionEvent,
-  WitnessTableReceivedEvent,
-} from '../../value-transfer/ValueTransferEvents'
+import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '../../value-transfer'
 import type { WitnessGossipMessage } from '../messages'
 import type { WitnessTableQueryMessage } from '@aries-framework/core'
 import type { TransactionRecord, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -13,12 +10,12 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { ValueTransferEventTypes } from '../../value-transfer/ValueTransferEvents'
-import { ValueTransferCryptoService } from '../../value-transfer/services/ValueTransferCryptoService'
-import { ValueTransferLoggerService } from '../../value-transfer/services/ValueTransferLoggerService'
-import { ValueTransferTransportService } from '../../value-transfer/services/ValueTransferTransportService'
 import { WitnessTableMessage } from '../messages'
 
+import { GossipCryptoService } from './GossipCryptoService'
+import { GossipLoggerService } from './GossipLoggerService'
 import { WitnessGossipStateService } from './GossipStateService'
+import { GossipTransportService } from './GossipTransportService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class GossipService {
@@ -30,22 +27,22 @@ export class GossipService {
 
   public constructor(
     config: AgentConfig,
-    valueTransferCryptoService: ValueTransferCryptoService,
-    witnessGossipStateService: WitnessGossipStateService,
-    valueTransferTransportService: ValueTransferTransportService,
-    valueTransferLoggerService: ValueTransferLoggerService,
+    gossipCryptoService: GossipCryptoService,
+    gossipStateService: WitnessGossipStateService,
+    gossipTransportService: GossipTransportService,
+    gossipLoggerService: GossipLoggerService,
     eventEmitter: EventEmitter
   ) {
     this.config = config
-    this.witnessGossipStateService = witnessGossipStateService
+    this.witnessGossipStateService = gossipStateService
     this.eventEmitter = eventEmitter
 
     this.gossip = new Gossip(
       {
-        logger: valueTransferLoggerService,
-        crypto: valueTransferCryptoService,
-        storage: witnessGossipStateService,
-        transport: valueTransferTransportService,
+        logger: gossipLoggerService,
+        crypto: gossipCryptoService,
+        storage: gossipStateService,
+        transport: gossipTransportService,
       },
       {
         redeliveryThreshold: config.witnessRedeliveryThreshold,
@@ -57,27 +54,6 @@ export class GossipService {
   public async startGossiping() {
     if (!this.gossipingStarted) await this.gossip.start()
     this.gossipingStarted = true
-  }
-
-  /**
-   * Build {@link WitnessGossipMessage} for requesting missing transactions from the top witness.
-   * */
-  public async requestMissingTransactions(pthid?: string): Promise<void> {
-    this.config.logger.info(
-      `> Witness ${this.config.label}: request transaction updates for paused transaction ${pthid}`
-    )
-
-    const { error } = await this.gossip.askTransactionUpdates(pthid)
-    if (error) {
-      this.config.logger.error(
-        `  < Witness ${this.config.label}: Unable to request missing transactions. Error: ${error}`
-      )
-      return
-    }
-
-    this.config.logger.info(
-      `> Witness ${this.config.label}: request transaction updates for paused transaction ${pthid} sent!`
-    )
   }
 
   /**
@@ -104,26 +80,14 @@ export class GossipService {
     }
 
     if (witnessGossipMessage.body.tell && witnessGossipMessage.pthid) {
-      this.resumeTransaction(witnessGossipMessage.pthid)
+      // Resume VTP Transaction if exists -> this event will be caught in WitnessService
+      this.eventEmitter.emit<ResumeValueTransferTransactionEvent>({
+        type: ValueTransferEventTypes.ResumeTransaction,
+        payload: {
+          thid: witnessGossipMessage.pthid,
+        },
+      })
     }
-  }
-
-  private resumeTransaction(id: string): void {
-    // Resume VTP Transaction if exists -> this event will be caught in WitnessService
-    this.eventEmitter.emit<ResumeValueTransferTransactionEvent>({
-      type: ValueTransferEventTypes.ResumeTransaction,
-      payload: {
-        thid: id,
-      },
-    })
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public async doSafeOperationWithWitnessSate(operation: () => Promise<any>): Promise<any> {
-    // FIXME: `safeSateOperation` locks the whole WitnessState
-    // I used it only for functions mutating the state to prevent concurrent updates
-    // We need to discuss the list of read/write operations which should use this lock and how to do it properly
-    return this.witnessGossipStateService.safeOperationWithWitnessState(operation.bind(this))
   }
 
   public async checkPartyStateHash(hash: Uint8Array): Promise<Uint8Array | undefined> {
@@ -134,12 +98,12 @@ export class GossipService {
     return this.gossip.getWitnessDetails()
   }
 
-  public async getMappingTable(): Promise<Array<WitnessDetails>> {
-    return this.gossip.getMappingTable()
-  }
-
   public async settlePartyStateTransition(transactionRecord: TransactionRecord): Promise<void> {
     return this.gossip.settlePartyStateTransition(transactionRecord)
+  }
+
+  public async askTransactionUpdates(id?: string) {
+    return this.gossip.askTransactionUpdates(id)
   }
 
   public async processWitnessTableQuery(messageContext: InboundMessageContext<WitnessTableQueryMessage>): Promise<{
@@ -177,5 +141,13 @@ export class GossipService {
         witnesses: witnessTable.body.witnesses,
       },
     })
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public async doSafeOperationWithWitnessSate(operation: () => Promise<any>): Promise<any> {
+    // FIXME: `safeSateOperation` locks the whole WitnessState
+    // I used it only for functions mutating the state to prevent concurrent updates
+    // We need to discuss the list of read/write operations which should use this lock and how to do it properly
+    return this.witnessGossipStateService.safeOperationWithWitnessState(operation.bind(this))
   }
 }

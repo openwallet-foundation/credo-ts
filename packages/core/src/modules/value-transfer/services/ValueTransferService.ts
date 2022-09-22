@@ -30,6 +30,7 @@ import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { WitnessTableQueryMessage } from '../../witness-gossip/messages/WitnessTableQueryMessage'
 import { WitnessStateRepository } from '../../witness-gossip/repository/WitnessStateRepository'
+import { GossipService } from '../../witness-gossip/service'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
@@ -65,6 +66,7 @@ export class ValueTransferService {
     valueTransferStateService: ValueTransferPartyStateService,
     valueTransferWitnessStateService: ValueTransferWitnessStateService,
     valueTransferTransportService: ValueTransferTransportService,
+    gossipService: GossipService,
     witnessStateRepository: WitnessStateRepository,
     didService: DidService,
     didResolverService: DidResolverService,
@@ -112,6 +114,7 @@ export class ValueTransferService {
         storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
         logger: config.logger,
+        gossip: gossipService,
       },
       {
         label: config.label,

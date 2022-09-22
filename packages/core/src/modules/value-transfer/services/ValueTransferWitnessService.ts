@@ -82,6 +82,7 @@ export class ValueTransferWitnessService {
         storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
         logger: config.logger,
+        gossip: gossipService,
       },
       {
         label: config.label,

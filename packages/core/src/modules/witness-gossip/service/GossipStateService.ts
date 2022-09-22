@@ -1,4 +1,4 @@
-import type { WitnessState, WitnessGossipStorageInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipStorageInterface, WitnessState } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import AsyncLock from 'async-lock'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -6,7 +6,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { WitnessStateRecord, WitnessStateRepository } from '../repository'
 
 @scoped(Lifecycle.ContainerScoped)
-export class WitnessGossipStateService implements WitnessGossipStorageInterface {
+export class WitnessGossipStateService implements GossipStorageInterface {
   private witnessStateRepository: WitnessStateRepository
   private witnessStateLock: AsyncLock
 

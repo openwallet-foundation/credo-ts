@@ -1,9 +1,9 @@
 import type { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import type {
   PartyState,
-  PartyStorageInterface,
   WitnessState,
   Transaction,
+  VtpPartyStorageInterface,
 } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import AsyncLock from 'async-lock'
@@ -14,7 +14,7 @@ import { ValueTransferRecord, ValueTransferRepository, WitnessStateRecord } from
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
 @scoped(Lifecycle.ContainerScoped)
-export class ValueTransferPartyStateService implements PartyStorageInterface {
+export class ValueTransferPartyStateService implements VtpPartyStorageInterface {
   private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository
   private witnessStateRepository: WitnessStateRepository

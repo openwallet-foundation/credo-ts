@@ -1,30 +1,21 @@
-import type {
-  Transaction,
-  WitnessStorageInterface,
-  TransactionRecord,
-  WitnessDetails,
-} from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { Transaction, VtpWitnessStorageInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { GossipService } from '../../witness-gossip/service'
 import { ValueTransferRecord, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
 @scoped(Lifecycle.ContainerScoped)
-export class ValueTransferWitnessStateService implements WitnessStorageInterface {
+export class ValueTransferWitnessStateService implements VtpWitnessStorageInterface {
   private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository
-  private gossipService: GossipService
 
   public constructor(
     valueTransferRepository: ValueTransferRepository,
-    valueTransferStateRepository: ValueTransferStateRepository,
-    gossipService: GossipService
+    valueTransferStateRepository: ValueTransferStateRepository
   ) {
     this.valueTransferRepository = valueTransferRepository
     this.valueTransferStateRepository = valueTransferStateRepository
-    this.gossipService = gossipService
   }
 
   public async addTransaction(transaction: Transaction): Promise<void> {
@@ -49,17 +40,5 @@ export class ValueTransferWitnessStateService implements WitnessStorageInterface
     const record = await this.valueTransferRepository.getById(transaction.id)
     record.transaction = transaction
     await this.valueTransferRepository.update(record)
-  }
-
-  public async checkPartyStateHash(hash: Uint8Array): Promise<Uint8Array | undefined> {
-    return this.gossipService.checkPartyStateHash(hash)
-  }
-
-  public async getWitnessDetails(): Promise<WitnessDetails> {
-    return this.gossipService.getWitnessDetails()
-  }
-
-  public async settlePartyStateTransition(transactionRecord: TransactionRecord): Promise<void> {
-    return this.gossipService.settlePartyStateTransition(transactionRecord)
   }
 }
