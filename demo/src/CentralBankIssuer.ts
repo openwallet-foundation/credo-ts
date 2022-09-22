@@ -4,7 +4,7 @@ import type { ValueTransferRecord } from '@aries-framework/core'
 import { DidMarker, Transports } from '@aries-framework/core'
 import { TransactionState } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { BaseAgent, logger } from './BaseAgent'
+import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class CentralBankIssuer extends BaseAgent {
