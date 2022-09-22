@@ -1,5 +1,5 @@
 import { InfluxDB, Point, WriteOptions } from '@influxdata/influxdb-client'
-import { MetricsService as MetricsServiceInterface } from '@aries-framework/core'
+import type { MetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import os from 'os'
 
@@ -12,7 +12,7 @@ const gossipVersion = '2.0'
 
 const machineName = os.hostname()
 
-export class MetricsService implements MetricsServiceInterface {
+export class MetricsService implements MetricsInterface {
   private client: InfluxDB = new InfluxDB({ url: 'http://localhost:8086', token: token })
   private static transactionCount: number = 0
 

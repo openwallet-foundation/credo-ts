@@ -1,5 +1,5 @@
 import type { InitConfig } from '@aries-framework/core'
-import type { WitnessInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Agent, DidMarker, HttpOutboundTransport, Transports } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
@@ -16,7 +16,7 @@ export interface EmulatorWitnessConfig {
   publicDidSeed?: string
   gossipDidSeed?: string
   tockTime?: number
-  knownWitnesses?: WitnessInfo[]
+  knownWitnesses?: WitnessDetails[]
 }
 
 export class Witness {

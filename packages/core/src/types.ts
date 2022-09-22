@@ -1,7 +1,6 @@
 import type { TransportPriorityOptions } from './agent/MessageSender'
 import type { DIDCommMessage, EncryptedMessage, DIDCommV2Message } from './agent/didcomm/index'
 import type { Logger } from './logger'
-import type { MetricsService } from './metrics'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
 import type { DidType } from './modules/dids'
@@ -12,7 +11,7 @@ import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy, MediatorDeliveryStrategy } from './modules/routing'
 import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
-import type { WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { MetricsInterface, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -87,7 +86,7 @@ export interface InitConfig {
   autoAcceptProofs?: AutoAcceptProof
   autoAcceptCredentials?: AutoAcceptCredential
   logger?: Logger
-  metricsService?: MetricsService
+  metricsService?: MetricsInterface
   didCommMimeType?: DidCommMimeType
   supportOffline?: boolean
   catchErrors?: boolean

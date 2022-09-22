@@ -1,6 +1,6 @@
 import type { EmulatorUserConfig } from './UserEmulator'
 import type { EmulatorWitnessConfig } from './WitnessEmulator'
-import type { WitnessInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import {
   Key,
@@ -70,7 +70,7 @@ function createWitnessDid(options: { seed?: string; host: string }): CreateDidRe
   return createPeerDid({ seed, serviceEndpoints: { http: host } })
 }
 
-const createWitnessConfig = (config: EmulatorWitnessConfig, witnessTable: WitnessInfo[]): CreateWitnessResult => {
+const createWitnessConfig = (config: EmulatorWitnessConfig, witnessTable: WitnessDetails[]): CreateWitnessResult => {
   const endpoint = `${config.host}:${config.port}`
   const publicDid = createWitnessDid({
     host: endpoint,
@@ -97,8 +97,8 @@ export const createUsersList = (users: EmulatorUserConfig[]): string[] => {
   return users.map((user) => createUserDid(user).did)
 }
 
-export const createWitnessTable = (witnesses: EmulatorWitnessConfig[]): WitnessInfo[] => {
-  const witnessTable: WitnessInfo[] = []
+export const createWitnessTable = (witnesses: EmulatorWitnessConfig[]): WitnessDetails[] => {
+  const witnessTable: WitnessDetails[] = []
   witnesses.forEach((witnessConfig) => createWitnessConfig(witnessConfig, witnessTable))
   return witnessTable
 }

@@ -61,12 +61,7 @@ export class User {
 
     setInterval(async () => {
       console.log(`User ${this.agent.config.label} trigger message`)
-
-      const transactionId = randomUUID()
-
-      await this.metricsService.reportGossipStart(this.agent.config.label, transactionId)
       await this.agent.valueTransfer.mintCash({ amount: User.amount, waitForAck: false })
-      await this.metricsService.reportGossipCompleted(this.agent.config.label, transactionId)
     }, this.config.interval || 1000 * 3)
   }
 }

@@ -2,8 +2,8 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { ResumeValueTransferTransactionEvent } from '../../value-transfer/ValueTransferEvents'
 import type { WitnessGossipMessage } from '../messages'
 
-import { Gossip, WitnessGossipInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { Lifecycle, scoped } from 'tsyringe'
+import { Gossip, MetricsInterface, WitnessGossipInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -12,6 +12,7 @@ import { ValueTransferCryptoService } from '../../value-transfer/services/ValueT
 import { ValueTransferLoggerService } from '../../value-transfer/services/ValueTransferLoggerService'
 import { ValueTransferStateService } from '../../value-transfer/services/ValueTransferStateService'
 import { ValueTransferTransportService } from '../../value-transfer/services/ValueTransferTransportService'
+import { InjectionSymbols } from '../../../constants'
 
 @scoped(Lifecycle.ContainerScoped)
 export class GossipService {
@@ -25,6 +26,7 @@ export class GossipService {
     config: AgentConfig,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferStateService,
+    @inject(InjectionSymbols.MetricsService) metricsService: MetricsInterface,
     valueTransferTransportService: ValueTransferTransportService,
     valueTransferLoggerService: ValueTransferLoggerService,
     eventEmitter: EventEmitter
@@ -39,6 +41,7 @@ export class GossipService {
         crypto: valueTransferCryptoService,
         storage: valueTransferStateService,
         transport: valueTransferTransportService,
+        metrics: metricsService,
       },
       {
         redeliveryThreshold: config.witnessRedeliveryThreshold,

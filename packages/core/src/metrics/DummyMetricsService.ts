@@ -1,6 +1,6 @@
-import type { MetricsService } from './MetricsService'
+import type { MetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-export class DummyMetricsService implements MetricsService {
+export class DummyMetricsService implements MetricsInterface {
   public reportGossipCompleted(witnessId: string, transactionId: string): Promise<void> {
     return Promise.resolve()
   }
