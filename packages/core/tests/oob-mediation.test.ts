@@ -11,7 +11,6 @@ import { ConnectionType } from '../src/modules/connections/models/ConnectionType
 import { MediationState, MediatorPickupStrategy } from '../src/modules/routing'
 
 import { getBaseConfig, waitForBasicMessage } from './helpers'
-import exp from 'constants'
 
 const faberConfig = getBaseConfig('OOB mediation - Faber Agent', {
   endpoints: ['rxjs:faber'],
