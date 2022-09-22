@@ -30,9 +30,9 @@ import {
   ProofEventTypes,
   ProofState,
   ValueTransferEventTypes,
-  ValueTransferState,
   JsonEncoder,
 } from '@aries-framework/core'
+import { TransactionState } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { ui } from 'inquirer'
 
 import { Color, purpleText } from './OutputClass'
@@ -111,7 +111,7 @@ export class Listener {
     giver.agent.events.on(
       ValueTransferEventTypes.ValueTransferStateChanged,
       async ({ payload }: ValueTransferStateChangedEvent) => {
-        if (payload.record.state === ValueTransferState.RequestReceived) {
+        if (payload.record.state === TransactionState.RequestReceived) {
           await this.newPaymentRequestPrompt(payload.record, giverInquirer)
         }
       }
@@ -132,7 +132,7 @@ export class Listener {
     centralBankIssuer.agent.events.on(
       ValueTransferEventTypes.ValueTransferStateChanged,
       async ({ payload }: ValueTransferStateChangedEvent) => {
-        if (payload.record.state === ValueTransferState.RequestReceived) {
+        if (payload.record.state === TransactionState.RequestReceived) {
           await centralBankIssuer.acceptPaymentRequest(payload.record)
         }
       }
@@ -143,7 +143,7 @@ export class Listener {
     getter.agent.events.on(
       ValueTransferEventTypes.ValueTransferStateChanged,
       async ({ payload }: ValueTransferStateChangedEvent) => {
-        if (payload.record.state === ValueTransferState.OfferReceived) {
+        if (payload.record.state === TransactionState.OfferReceived) {
           await this.newPaymentOfferPrompt(payload.record, getterInquirer)
         }
       }

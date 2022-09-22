@@ -30,6 +30,7 @@ import { RecipientModule } from '../modules/routing/RecipientModule'
 import { ValueTransferModule, ValueTransferService } from '../modules/value-transfer'
 import { ValueTransferWitnessService } from '../modules/value-transfer/services/ValueTransferWitnessService'
 import { GossipModule } from '../modules/witness-gossip/GossipModule'
+import { GossipService } from '../modules/witness-gossip/service'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -57,6 +58,7 @@ export class Agent {
   private didService: DidService
   private valueTransferService: ValueTransferService
   private valueTransferWitnessService: ValueTransferWitnessService
+  private gossipService: GossipService
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
@@ -115,6 +117,7 @@ export class Agent {
     this.walletService = this.container.resolve(InjectionSymbols.Wallet)
     this.valueTransferService = this.container.resolve(ValueTransferService)
     this.valueTransferWitnessService = this.container.resolve(ValueTransferWitnessService)
+    this.gossipService = this.container.resolve(GossipService)
     this.didService = this.container.resolve(DidService)
 
     // We set the modules in the constructor because that allows to set them as read-only
@@ -224,7 +227,7 @@ export class Agent {
         seed: publicDidSeed,
         type: publicDidType,
         transports: this.agentConfig.transports,
-        marker: this.agentConfig.onlineTransports.length ? DidMarker.Online : DidMarker.Offline,
+        marker: DidMarker.Public,
         needMediation: true,
       })
     }

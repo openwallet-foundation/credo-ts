@@ -9,9 +9,7 @@ export enum DidType {
 }
 
 export enum DidMarker {
-  Offline = 'offline',
-  Online = 'online',
-  Restricted = 'restricted',
+  Public = 'public',
   Queries = 'queries',
 }
 

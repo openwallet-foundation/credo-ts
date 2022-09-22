@@ -1,7 +1,7 @@
 import type { Transports } from '../routing/types'
-import type { ProblemReportMessage, RequestAcceptedMessage, RequestMessage, OfferMessage } from './messages'
+import type { RequestMessage, OfferMessage } from './messages'
 import type { ValueTransferRecord, ValueTransferTags } from './repository'
-import type { Timeouts, VerifiableNote } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -20,12 +20,8 @@ import {
   RequestAcceptedWitnessedHandler,
   RequestHandler,
   MintHandler,
-  WitnessTableQueryHandler,
-  WitnessTableHandler,
   MintResponseHandler,
 } from './handlers'
-import { OfferAcceptedHandler } from './handlers/OfferAcceptedHandler'
-import { OfferAcceptedWitnessedHandler } from './handlers/OfferAcceptedWitnessedHandler'
 import { ValueTransferService } from './services'
 import { ValueTransferGetterService } from './services/ValueTransferGetterService'
 import { ValueTransferGiverService } from './services/ValueTransferGiverService'
@@ -90,13 +86,7 @@ export class ValueTransferModule {
     attachment?: Record<string, unknown>
   }): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
     // Create Payment Request and Value Transfer record
-    const { message, record } = await this.valueTransferGetterService.createRequest(params)
-
-    // Send Payment Request to Witness
-    if (params.transport) {
-      await this.valueTransferService.sendMessage(message, params.transport)
-    }
-    return { message, record }
+    return this.valueTransferGetterService.createRequest(params)
   }
 
   /**
@@ -120,23 +110,13 @@ export class ValueTransferModule {
     timeouts?: Timeouts
     usePublicDid?: boolean
   }): Promise<{
-    record: ValueTransferRecord
-    message: RequestAcceptedMessage | ProblemReportMessage
+    record?: ValueTransferRecord
   }> {
     // Get Value Transfer record
     const record = await this.valueTransferService.getById(params.recordId)
 
     // Accept Payment Request
-    const { message, record: updatedRecord } = await this.valueTransferGiverService.acceptRequest(
-      record,
-      params.timeouts,
-      params.usePublicDid
-    )
-
-    // Send Payment Request Acceptance to Witness
-    await this.valueTransferService.sendMessage(message)
-
-    return { record: updatedRecord, message }
+    return this.valueTransferGiverService.acceptRequest(record, params.timeouts, params.usePublicDid)
   }
 
   /**
@@ -171,13 +151,7 @@ export class ValueTransferModule {
     attachment?: Record<string, unknown>
   }): Promise<{ record: ValueTransferRecord; message: OfferMessage }> {
     // Create Payment Request and Value Transfer record
-    const { message, record } = await this.valueTransferGiverService.offerPayment(params)
-
-    // Send Payment Offer to Witness
-    if (params.transport) {
-      await this.valueTransferService.sendMessage(message, params.transport)
-    }
-    return { message, record }
+    return this.valueTransferGiverService.offerPayment(params)
   }
 
   /**
@@ -197,23 +171,13 @@ export class ValueTransferModule {
    * @returns Value Transfer record and Payment Request Acceptance Message
    */
   public async acceptPaymentOffer(params: { recordId: string; witness?: string; timeouts?: Timeouts }): Promise<{
-    record: ValueTransferRecord
-    message: RequestMessage | ProblemReportMessage
+    record?: ValueTransferRecord
   }> {
     // Get Value Transfer record
     const record = await this.valueTransferService.getById(params.recordId)
 
     // Accept Payment Request
-    const { message, record: updatedRecord } = await this.valueTransferGetterService.acceptOffer(
-      record,
-      params.witness,
-      params.timeouts
-    )
-
-    // Send Payment Request Acceptance to Witness
-    await this.valueTransferService.sendMessage(message)
-
-    return { record: updatedRecord, message }
+    return this.valueTransferGetterService.acceptOffer(record, params.witness, params.timeouts)
   }
 
   /**
@@ -243,37 +207,35 @@ export class ValueTransferModule {
    * @returns Value Transfer record and sent Problem Report Message
    * */
   public async abortTransaction(
-    recordId: string,
+    id: string,
     send = true,
     code?: string,
     reason?: string
   ): Promise<{
-    record: ValueTransferRecord
-    message: ProblemReportMessage | undefined
+    record?: ValueTransferRecord
   }> {
-    // Get Value Transfer record
-    const record = await this.valueTransferService.getById(recordId)
-
     // Abort transaction
-    const { message } = await this.valueTransferService.abortTransaction(record, code, reason)
-    // Send Transaction Abort message to Witness
-    if (message && send) await this.valueTransferService.sendMessage(message)
-
-    return { record, message }
+    return this.valueTransferService.abortTransaction(id, send, code, reason)
   }
 
   /**
    * Mint cash by generating Verifiable Notes and sending mint message (state update) to Witness
-   * @param params
+   *
+   * @param amount Amount of cash to mint
+   * @param witness DID of Witness to send mint message
+   * @param send Whether Mint message should be sent to witness
+   * @param awaitResponse Whether response from the witness should be awaited before commiting the state
+   * @param timeoutMs Amount of seconds to wait for an mint approval from witness
    */
-  public async mintCash(params: {
-    amount: number
-    witness?: string
-    waitForAck?: boolean
-    timeoutMs?: number
-  }): Promise<void> {
+  public async mintCash(
+    amount: number,
+    witness: string,
+    send = true,
+    awaitResponse = true,
+    timeoutMs = 20000
+  ): Promise<void> {
     // Mint Verifiable Notes
-    await this.valueTransferIssuerService.mintCash(params.amount, params.witness, params.waitForAck, params.timeoutMs)
+    await this.valueTransferIssuerService.mintCash(amount, witness, send, awaitResponse, timeoutMs)
   }
 
   /**
@@ -299,16 +261,6 @@ export class ValueTransferModule {
     record?: ValueTransferRecord | null
   }> {
     return this.valueTransferService.getActiveTransaction()
-  }
-
-  /**
-   * Add notes into the wallet.
-   * Init payment state if it's missing.
-   *
-   * @param notes Verifiable notes to add.
-   */
-  public async receiveNotes(notes: VerifiableNote[]) {
-    await this.valueTransferIssuerService.receiveNotes(notes)
   }
 
   /**
@@ -338,18 +290,6 @@ export class ValueTransferModule {
         this.valueTransferResponseCoordinator
       )
     )
-    dispatcher.registerHandler(new RequestAcceptedHandler(this.valueTransferService, this.valueTransferWitnessService))
-    dispatcher.registerHandler(
-      new RequestAcceptedWitnessedHandler(this.valueTransferService, this.valueTransferGetterService)
-    )
-    dispatcher.registerHandler(new CashAcceptedHandler(this.valueTransferService, this.valueTransferWitnessService))
-    dispatcher.registerHandler(
-      new CashAcceptedWitnessedHandler(this.valueTransferService, this.valueTransferGiverService)
-    )
-    dispatcher.registerHandler(new CashRemovedHandler(this.valueTransferService, this.valueTransferWitnessService))
-    dispatcher.registerHandler(new GetterReceiptHandler(this.valueTransferGetterService))
-    dispatcher.registerHandler(new GiverReceiptHandler(this.valueTransferGiverService))
-    dispatcher.registerHandler(new ProblemReportHandler(this.valueTransferService))
     dispatcher.registerHandler(
       new OfferHandler(
         this.valueTransferService,
@@ -357,13 +297,15 @@ export class ValueTransferModule {
         this.valueTransferResponseCoordinator
       )
     )
-    dispatcher.registerHandler(new OfferAcceptedHandler(this.valueTransferService, this.valueTransferWitnessService))
-    dispatcher.registerHandler(
-      new OfferAcceptedWitnessedHandler(this.valueTransferService, this.valueTransferGiverService)
-    )
-    dispatcher.registerHandler(new MintHandler(this.valueTransferService, this.valueTransferWitnessService))
+    dispatcher.registerHandler(new RequestAcceptedHandler(this.valueTransferWitnessService))
+    dispatcher.registerHandler(new RequestAcceptedWitnessedHandler(this.valueTransferGetterService))
+    dispatcher.registerHandler(new CashAcceptedHandler(this.valueTransferWitnessService))
+    dispatcher.registerHandler(new CashAcceptedWitnessedHandler(this.valueTransferGiverService))
+    dispatcher.registerHandler(new CashRemovedHandler(this.valueTransferWitnessService))
+    dispatcher.registerHandler(new GetterReceiptHandler(this.valueTransferGetterService))
+    dispatcher.registerHandler(new GiverReceiptHandler(this.valueTransferGiverService))
+    dispatcher.registerHandler(new ProblemReportHandler(this.valueTransferService))
+    dispatcher.registerHandler(new MintHandler(this.valueTransferWitnessService))
     dispatcher.registerHandler(new MintResponseHandler(this.valueTransferIssuerService))
-    dispatcher.registerHandler(new WitnessTableQueryHandler(this.valueTransferWitnessService))
-    dispatcher.registerHandler(new WitnessTableHandler(this.valueTransferService))
   }
 }

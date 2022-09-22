@@ -1,39 +1,30 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
-import type { GetterReceiptMessage, OfferMessage, RequestAcceptedWitnessedMessage } from '../messages'
-import type { Getter, Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { Transports } from '../../routing/types'
+import type { OfferMessage, RequestAcceptedWitnessedMessage, GetterReceiptMessage } from '../messages'
+import type { ValueTransferRecord } from '../repository'
+import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { TaggedPrice, ValueTransfer } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Getter, GetterReceipt, Offer, RequestAcceptanceWitnessed } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 import { v4 } from 'uuid'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
-import { DidService } from '../../dids/services/DidService'
-import { WellKnownService } from '../../well-known'
-import { ValueTransferEventTypes } from '../ValueTransferEvents'
-import { ValueTransferRole } from '../ValueTransferRole'
-import { ValueTransferState } from '../ValueTransferState'
-import { CashAcceptedMessage, ProblemReportMessage, RequestMessage } from '../messages'
-import { ValueTransferBaseMessage } from '../messages/ValueTransferBaseMessage'
-import { ValueTransferRecord, ValueTransferRepository, ValueTransferTransactionStatus } from '../repository'
+import { RequestMessage } from '../messages'
+import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
+import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
 import { ValueTransferService } from './ValueTransferService'
-import { ValueTransferStateService } from './ValueTransferStateService'
+import { ValueTransferTransportService } from './ValueTransferTransportService'
 
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferGetterService {
   private config: AgentConfig
   private valueTransferRepository: ValueTransferRepository
-  private valueTransferStateRepository: ValueTransferStateRepository
   private valueTransferService: ValueTransferService
-  private valueTransferCryptoService: ValueTransferCryptoService
-  private valueTransferStateService: ValueTransferStateService
-  private didService: DidService
-  private wellKnownService: WellKnownService
   private eventEmitter: EventEmitter
   private getter: Getter
 
@@ -43,28 +34,27 @@ export class ValueTransferGetterService {
     valueTransferStateRepository: ValueTransferStateRepository,
     valueTransferService: ValueTransferService,
     valueTransferCryptoService: ValueTransferCryptoService,
-    valueTransferStateService: ValueTransferStateService,
-    didService: DidService,
-    wellKnownService: WellKnownService,
+    valueTransferStateService: ValueTransferPartyStateService,
+    valueTransferTransportService: ValueTransferTransportService,
     eventEmitter: EventEmitter
   ) {
     this.config = config
     this.valueTransferRepository = valueTransferRepository
-    this.valueTransferStateRepository = valueTransferStateRepository
     this.valueTransferService = valueTransferService
-    this.valueTransferCryptoService = valueTransferCryptoService
-    this.valueTransferStateService = valueTransferStateService
-    this.didService = didService
-    this.wellKnownService = wellKnownService
     this.eventEmitter = eventEmitter
 
-    this.getter = new ValueTransfer(
+    this.getter = new Getter(
       {
-        crypto: this.valueTransferCryptoService,
-        storage: this.valueTransferStateService,
+        crypto: valueTransferCryptoService,
+        storage: valueTransferStateService,
+        transport: valueTransferTransportService,
+        logger: this.config.logger,
       },
-      {}
-    ).getter()
+      {
+        witness: config.valueTransferWitnessDid,
+        label: config.label,
+      }
+    )
   }
 
   /**
@@ -94,7 +84,7 @@ export class ValueTransferGetterService {
     usePublicDid?: boolean
     timeouts?: Timeouts
     attachment?: Record<string, unknown>
-    thid?: string
+    transport?: Transports
   }): Promise<{
     record: ValueTransferRecord
     message: RequestMessage
@@ -105,58 +95,27 @@ export class ValueTransferGetterService {
     // Get payment public DID from the storage or generate a new one if requested
     const usePublicDid = params.usePublicDid || true
     const getter = await this.valueTransferService.getTransactionDid(usePublicDid)
-    const witness = params.witness || this.config.valueTransferWitnessDid
-    if (!witness) {
-      throw new AriesFrameworkError(`Witness DID either must be set in the Agent config or provided as a parameter`)
-    }
 
     // Call VTP package to create payment request
-    const givenTotal = new TaggedPrice({ amount: params.amount, uoa: params.unitOfAmount })
-    const { error, receipt } = await this.getter.createRequest({
+    const { error, transaction, message } = await this.getter.createRequest({
       getterId: getter.did,
-      witnessId: witness,
       giverId: params.giver,
-      givenTotal,
-      timeouts: params.timeouts,
+      witnessId: params.witness,
+      send: false,
+      ...params,
     })
-    if (error || !receipt) {
-      throw new AriesFrameworkError(`VTP: Failed to create Payment Request: ${error?.message}`)
+    if (error || !transaction || !message) {
+      this.config.logger.error(`Failed to create Payment Request: ${error?.message}`)
+      throw new AriesFrameworkError(`Failed to create Payment Request: ${error?.message}`)
     }
 
-    const attachments = [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)]
-    if (params.attachment) {
-      attachments.push(ValueTransferBaseMessage.createCustomJSONAttachment(params.attachment))
+    const requestMessage = new RequestMessage(message)
+
+    if (params.transport) {
+      await this.valueTransferService.sendMessage(requestMessage, params.transport)
     }
 
-    const requestMessage = new RequestMessage({
-      id,
-      from: getter.did,
-      to: params.giver,
-      attachments,
-      thid: params.thid,
-    })
-
-    const getterInfo = await this.wellKnownService.resolve(getter.did)
-    const witnessInfo = await this.wellKnownService.resolve(witness)
-    const giverInfo = await this.wellKnownService.resolve(params.giver)
-
-    // Create Value Transfer record and raise event
-    const record = new ValueTransferRecord({
-      role: ValueTransferRole.Getter,
-      state: ValueTransferState.RequestSent,
-      threadId: requestMessage.id,
-      receipt,
-      getter: getterInfo,
-      witness: witnessInfo,
-      giver: giverInfo,
-      status: ValueTransferTransactionStatus.Pending,
-    })
-
-    await this.valueTransferRepository.save(record)
-    this.eventEmitter.emit<ValueTransferStateChangedEvent>({
-      type: ValueTransferEventTypes.ValueTransferStateChanged,
-      payload: { record },
-    })
+    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.config.logger.info(`< Getter: request payment VTP transaction with ${id} completed`)
 
@@ -175,75 +134,24 @@ export class ValueTransferGetterService {
    */
   public async processOffer(messageContext: InboundMessageContext<OfferMessage>): Promise<{
     record?: ValueTransferRecord
-    message: OfferMessage | ProblemReportMessage
   }> {
     const { message: offerMessage } = messageContext
 
     this.config.logger.info(`> Getter: process offer message for VTP transaction ${offerMessage.id}`)
 
-    const existingRecord = await this.valueTransferRepository.findByThread(offerMessage.id)
-    if (existingRecord) {
-      this.config.logger.info(`> Getter: offer ${offerMessage.id} has already been processed`)
-      throw new AriesFrameworkError(`Payment Offer ${offerMessage.id} has already been processed`)
+    const offer = new Offer(offerMessage)
+    const { error, transaction, message } = await this.getter.processOffer(offer)
+    if (error || !transaction || !message) {
+      this.config.logger.error(
+        ` Getter: process offer message for VTP transaction ${offerMessage.id} failed. Error: ${error}`
+      )
+      return {}
     }
 
-    const receipt = offerMessage.valueTransferMessage
-    if (!receipt) {
-      const problemReport = new ProblemReportMessage({
-        to: offerMessage.from,
-        pthid: offerMessage.id,
-        body: {
-          code: 'e.p.req.bad-offer',
-          comment: `Missing required base64 or json encoded attachment data for payment offer with thread id ${offerMessage.thid}`,
-        },
-      })
-      return { message: problemReport }
-    }
-
-    // ensure that DID exist in the wallet
-    if (receipt.isGetterSet) {
-      const did = await this.didService.findById(receipt.getterId)
-      if (!did) {
-        const problemReport = new ProblemReportMessage({
-          to: offerMessage.from,
-          pthid: offerMessage.id,
-          body: {
-            code: 'e.p.req.bad-getter',
-            comment: `Requested getter '${receipt.getterId}' does not exist in the wallet`,
-          },
-        })
-        return {
-          message: problemReport,
-        }
-      }
-    }
-
-    const getterInfo = receipt.isGetterSet ? await this.wellKnownService.resolve(receipt.getterId) : undefined
-    const witnessInfo = receipt.isWitnessSet ? await this.wellKnownService.resolve(receipt.witnessId) : undefined
-    const giverInfo = await this.wellKnownService.resolve(receipt.giverId)
-
-    // Create Value Transfer record and raise event
-    const record = new ValueTransferRecord({
-      role: ValueTransferRole.Getter,
-      state: ValueTransferState.OfferReceived,
-      status: ValueTransferTransactionStatus.Pending,
-      threadId: offerMessage.id,
-      receipt,
-      getter: getterInfo,
-      witness: witnessInfo,
-      giver: giverInfo,
-      attachment: offerMessage.getCustomAttachment,
-    })
-
-    await this.valueTransferRepository.save(record)
-    this.eventEmitter.emit<ValueTransferStateChangedEvent>({
-      type: ValueTransferEventTypes.ValueTransferStateChanged,
-      payload: { record },
-    })
+    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.config.logger.info(`< Getter: process offer message for VTP transaction ${offerMessage.thid} completed!`)
-
-    return { record, message: offerMessage }
+    return { record }
   }
 
   /**
@@ -263,85 +171,26 @@ export class ValueTransferGetterService {
     timeouts?: Timeouts
   ): Promise<{
     record: ValueTransferRecord
-    message: RequestMessage | ProblemReportMessage
   }> {
-    this.config.logger.info(`> Getter: accept offer message for VTP transaction ${record.threadId}`)
+    this.config.logger.info(`> Getter: accept offer message for VTP transaction ${record.id}`)
 
-    // Verify that we are in appropriate state to perform action
-    record.assertRole(ValueTransferRole.Getter)
-    record.assertState(ValueTransferState.OfferReceived)
+    const getterId = record.transaction.getter ?? (await this.valueTransferService.getTransactionDid()).id
 
-    const witness = witnessDid || this.config.valueTransferWitnessDid || record.witness?.did
-    if (!witness) {
-      throw new AriesFrameworkError(`Unable to accept payment offer without specifying of Witness DID.`)
-    }
-
-    const activeTransaction = await this.valueTransferService.getActiveTransaction()
-    if (activeTransaction.record) {
-      throw new AriesFrameworkError(
-        `Offer cannot be accepted as there is another active transaction: ${activeTransaction.record?.id}`
-      )
-    }
-
-    const getterId = record.getter?.did ?? (await this.valueTransferService.getTransactionDid()).id
-
-    const { error, receipt } = await this.getter.createRequest({
-      getterId: getterId,
-      witnessId: witness,
-      giverId: record.giver?.did,
-      givenTotal: record.givenTotal,
-      timeouts: timeouts,
-    })
-    if (error || !receipt) {
-      // VTP message verification failed
-      this.config.logger.error(`Offer verification failed. Error: ${error}`)
-      const problemReport = new ProblemReportMessage({
-        from: record.getter?.did,
-        to: record.giver?.did,
-        pthid: record.threadId,
-        body: {
-          code: error?.code || 'invalid-payment-offer',
-          comment: `Offer verification failed. Error: ${error}`,
-        },
-      })
-
-      // Update Value Transfer record
-      record.problemReportMessage = problemReport
-      await this.valueTransferService.updateState(
-        record,
-        ValueTransferState.Failed,
-        ValueTransferTransactionStatus.Finished
-      )
-      return {
-        record,
-        message: problemReport,
-      }
-    }
-
-    const getterInfo = await this.wellKnownService.resolve(getterId)
-    const witnessInfo = await this.wellKnownService.resolve(witness)
-
-    // Update Value Transfer record
-    record.receipt = receipt
-    record.getter = getterInfo
-    record.witness = witnessInfo
-
-    const requestMessage = new RequestMessage({
-      from: record.getter?.did,
-      to: record.giver?.did,
-      thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createVtpReceiptJSONAttachment(receipt)],
-    })
-
-    await this.valueTransferService.updateState(
-      record,
-      ValueTransferState.RequestForOfferSent,
-      ValueTransferTransactionStatus.InProgress
+    const { error, transaction, message } = await this.getter.acceptOffer(
+      record.transaction.id,
+      getterId,
+      witnessDid,
+      timeouts
     )
+    if (error || !transaction || !message) {
+      this.config.logger.error(`VTP: Failed to accept Payment Offer: ${error?.message}`)
+      return { record }
+    }
 
-    this.config.logger.info(`> Getter: accept offer message for VTP transaction ${record.threadId} completed!`)
+    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    return { record, message: requestMessage }
+    this.config.logger.info(`> Getter: accept offer message for VTP transaction ${record.id} completed!`)
+    return { record: updatedRecord }
   }
 
   /**
@@ -356,8 +205,7 @@ export class ValueTransferGetterService {
   public async processRequestAcceptanceWitnessed(
     messageContext: InboundMessageContext<RequestAcceptedWitnessedMessage>
   ): Promise<{
-    record: ValueTransferRecord
-    message?: CashAcceptedMessage | ProblemReportMessage
+    record?: ValueTransferRecord
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: requestAcceptedWitnessedMessage } = messageContext
@@ -366,89 +214,19 @@ export class ValueTransferGetterService {
       `> Getter: process request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.thid}`
     )
 
-    const record = await this.valueTransferRepository.getByThread(requestAcceptedWitnessedMessage.thid)
-
-    if (record.finished) {
-      this.config.logger.warn(
-        `> Getter: skipping request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.thid} in ${record.state} state`
-      )
-      return { record }
+    const requestAcceptanceWitnessed = new RequestAcceptanceWitnessed(requestAcceptedWitnessedMessage)
+    const { error, transaction, message } = await this.getter.acceptCash(requestAcceptanceWitnessed)
+    if (error || !transaction || !message) {
+      this.config.logger.error(`VTP: Failed to process Request Acceptance: ${error?.message}`)
+      return {}
     }
 
-    record.assertRole(ValueTransferRole.Getter)
-    record.assertState([ValueTransferState.RequestSent, ValueTransferState.RequestForOfferSent])
-
-    const valueTransferDelta = requestAcceptedWitnessedMessage.valueTransferDelta
-    if (!valueTransferDelta) {
-      const problemReport = new ProblemReportMessage({
-        from: record.getter?.did,
-        to: requestAcceptedWitnessedMessage.from,
-        pthid: record.threadId,
-        body: {
-          code: 'e.p.req.bad-request',
-          comment: `Missing required base64 or json encoded attachment data for payment request with thread id ${requestAcceptedWitnessedMessage.thid}`,
-        },
-      })
-      return { record, message: problemReport }
-    }
-
-    // Call VTP to accept cash
-    const { error, receipt, delta } = await this.getter.acceptCash(record.receipt, valueTransferDelta)
-    if (error || !receipt || !delta) {
-      // VTP message verification failed
-      this.config.logger.error(`Request Acceptance verification failed. Error: ${error}`)
-      const problemReportMessage = new ProblemReportMessage({
-        from: record.getter?.did,
-        to: record.witness?.did,
-        pthid: record.threadId,
-        body: {
-          code: error?.code || 'invalid-request-acceptance',
-          comment: `Request Acceptance verification failed. Error: ${error}`,
-        },
-      })
-
-      // Update Value Transfer record
-      record.problemReportMessage = problemReportMessage
-      await this.valueTransferService.updateState(
-        record,
-        ValueTransferState.Failed,
-        ValueTransferTransactionStatus.Finished
-      )
-      return {
-        record,
-        message: problemReportMessage,
-      }
-    }
-
-    // VTP message verification succeed
-    const cashAcceptedMessage = new CashAcceptedMessage({
-      from: record.getter?.did,
-      to: record.witness?.did,
-      thid: record.threadId,
-      attachments: [ValueTransferBaseMessage.createVtpDeltaJSONAttachment(delta)],
-    })
-
-    // Update Value Transfer record
-    // Update Value Transfer record and raise event
-
-    const witnessInfo = record.witness?.did ? record.witness : await this.wellKnownService.resolve(receipt.witnessId)
-    const giverInfo = record.giver?.did ? record.giver : await this.wellKnownService.resolve(receipt.giverId)
-
-    record.receipt = receipt
-    record.witness = witnessInfo
-    record.giver = giverInfo
-
-    await this.valueTransferService.updateState(
-      record,
-      ValueTransferState.CashAcceptanceSent,
-      ValueTransferTransactionStatus.InProgress
-    )
+    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.config.logger.info(
       `< Getter: process request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.thid}`
     )
-
-    return { record, message: cashAcceptedMessage }
+    return { record: updatedRecord }
   }
 
   /**
@@ -461,84 +239,25 @@ export class ValueTransferGetterService {
    *    * Receipt Message
    */
   public async processReceipt(messageContext: InboundMessageContext<GetterReceiptMessage>): Promise<{
-    record: ValueTransferRecord
-    message?: GetterReceiptMessage | ProblemReportMessage
+    record?: ValueTransferRecord
   }> {
     // Verify that we are in appropriate state to perform action
     const { message: getterReceiptMessage } = messageContext
 
     this.config.logger.info(`> Getter: process receipt message for VTP transaction ${getterReceiptMessage.thid}`)
 
-    const record = await this.valueTransferRepository.getByThread(getterReceiptMessage.thid)
-
-    if (record.finished) {
-      this.config.logger.warn(
-        `> Getter: skipping receipt message for VTP transaction ${getterReceiptMessage.thid} in ${record.state} state`
-      )
-      return { record }
+    const receipt = new GetterReceipt(getterReceiptMessage)
+    const { error, transaction, message } = await this.getter.processReceipt(receipt)
+    if (error || !transaction || !message) {
+      this.config.logger.error(`VTP: Failed to process Receipt: ${error?.message}`)
+      return {}
     }
 
-    record.assertState(ValueTransferState.CashAcceptanceSent)
-    record.assertRole(ValueTransferRole.Getter)
-
-    await this.valueTransferService.updateState(
-      record,
-      ValueTransferState.ReceiptReceived,
-      ValueTransferTransactionStatus.InProgress
-    )
-
-    const valueTransferDelta = getterReceiptMessage.valueTransferDelta
-    if (!valueTransferDelta) {
-      const problemReport = new ProblemReportMessage({
-        pthid: record.threadId,
-        body: {
-          code: 'e.p.req.bad-receipt',
-          comment: `Missing required base64 or json encoded attachment data for receipt with thread id ${record.threadId}`,
-        },
-      })
-      return { record, message: problemReport }
-    }
-
-    // Call VTP to process Receipt
-    const { error, receipt } = await this.getter.processReceipt(record.receipt, valueTransferDelta)
-    if (error || !receipt) {
-      // VTP message verification failed
-      this.config.logger.error(`Receipt verification failed. Error: ${error}`)
-      const problemReportMessage = new ProblemReportMessage({
-        pthid: getterReceiptMessage.thid,
-        body: {
-          code: error?.code || 'invalid-payment-receipt',
-          comment: `Receipt verification failed. Error: ${error}`,
-        },
-      })
-
-      await this.getter.abortTransaction()
-      record.problemReportMessage = problemReportMessage
-
-      await this.valueTransferService.updateState(
-        record,
-        ValueTransferState.Failed,
-        ValueTransferTransactionStatus.Finished
-      )
-      return { record, message: problemReportMessage }
-    }
-
-    // VTP message verification succeed
-    record.receipt = receipt
-
-    await this.valueTransferService.updateState(
-      record,
-      ValueTransferState.Completed,
-      ValueTransferTransactionStatus.Finished
-    )
+    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.config.logger.info(
       `< Getter: process receipt message for VTP transaction ${getterReceiptMessage.thid} completed!`
     )
-    this.config.logger.info(
-      `< Getter: transaction completed in ${record.receipt.getter.getElapsedTimeInSeconds()} seconds`
-    )
-
-    return { record, message: getterReceiptMessage }
+    return { record }
   }
 }

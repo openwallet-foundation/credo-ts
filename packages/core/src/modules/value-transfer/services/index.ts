@@ -1,3 +1,6 @@
 export * from './ValueTransferService'
 export * from './ValueTransferCryptoService'
-export * from './ValueTransferStateService'
+export * from './ValueTransferPartyStateService'
+export * from './ValueTransferWitnessStateService'
+export * from './ValueTransferTransportService'
+export * from './ValueTransferLoggerService'

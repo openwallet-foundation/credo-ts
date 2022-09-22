@@ -1,7 +1,8 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { ValueTransferRecord } from '@aries-framework/core'
 
-import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
+import { DidMarker, Transports } from '@aries-framework/core'
+import { TransactionState } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
@@ -9,7 +10,7 @@ import { greenText, Output, redText } from './OutputClass'
 export class CentralBankIssuer extends BaseAgent {
   public valueTransferRecordId?: string
   private static readonly witnessDid =
-    'did:peer:2.Ez6LSfsT5gHMCVEya8VDwW9QbAdVUhJCKbVscrrb82SwCPKKT.Vz6MkgNdE8ad1k8cPCHnXZ6vSxrTuFauRKDzzUHLPvdsLycz5.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAwL2FwaS92MSIsInQiOiJkbSIsInIiOlsiZGlkOnBlZXI6Mi5FejZMU25IUzlmM2hyTXVMck45ejZaaG83VGNCUnZTeUs3SFBqUXR3S211M29zV3dGLlZ6Nk1rcmFoQW9WTFFTOVM1R0Y1c1VLdHVkWE1lZFVTWmRkZUpoakh0QUZhVjRob1YuU1czc2ljeUk2SW1oMGRIQTZMeTlzYjJOaGJHaHZjM1E2TXpBd01DOWhjR2t2ZGpFaUxDSjBJam9pWkcwaUxDSnlJanBiWFgwc2V5SnpJam9pZDNNNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDFkIl19'
+    'did:peer:2.Ez6LSfsT5gHMCVEya8VDwW9QbAdVUhJCKbVscrrb82SwCPKKT.Vz6MkgNdE8ad1k8cPCHnXZ6vSxrTuFauRKDzzUHLPvdsLycz5.SeyJzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwidCI6ImRtIiwiciI6W119'
 
   public constructor(name: string, port?: number) {
     super({
@@ -21,7 +22,7 @@ export class CentralBankIssuer extends BaseAgent {
         {
           seed: 'ade127f2fb0b4ee3bf846f63b6006183',
           transports: [Transports.HTTP, Transports.WS],
-          marker: DidMarker.Online,
+          marker: DidMarker.Public,
         },
       ],
       valueTransferConfig: {},
@@ -31,17 +32,17 @@ export class CentralBankIssuer extends BaseAgent {
   public static async build(): Promise<CentralBankIssuer> {
     const centralBankIssuer = new CentralBankIssuer('centralBankIssuer', undefined)
     await centralBankIssuer.initializeAgent()
-    const publicDid = await centralBankIssuer.agent.getStaticDid(DidMarker.Online)
+    const publicDid = await centralBankIssuer.agent.getStaticDid(DidMarker.Public)
     console.log(`CentralBankIssuer Public DID: ${publicDid?.did}`)
-
-    const trustPing = await centralBankIssuer.agent.connections.sendTrustPing(CentralBankIssuer.witnessDid)
-    await centralBankIssuer.agent.connections.awaitTrustPingResponse(trustPing.id)
-    console.log(`Trust Ping response received from the Witness`)
 
     const active = await centralBankIssuer.agent.valueTransfer.getActiveTransaction()
     if (active.record?.id) {
       await centralBankIssuer.agent.valueTransfer.abortTransaction(active.record?.id)
     }
+
+    const trustPing = await centralBankIssuer.agent.connections.sendTrustPing(CentralBankIssuer.witnessDid)
+    await centralBankIssuer.agent.connections.awaitTrustPingResponse(trustPing.id)
+    console.log(`Trust Ping response received from the Witness`)
 
     await centralBankIssuer.agent.valueTransfer.mintCash(10, CentralBankIssuer.witnessDid)
 
@@ -53,7 +54,7 @@ export class CentralBankIssuer extends BaseAgent {
 
   public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
     const { record } = await this.agent.valueTransfer.acceptPaymentRequest({ recordId: valueTransferRecord.id })
-    this.valueTransferRecordId = record.id
+    this.valueTransferRecordId = record?.id
     console.log(greenText('\nPayment request accepted!\n'))
     await this.waitForPayment()
   }
@@ -71,16 +72,16 @@ export class CentralBankIssuer extends BaseAgent {
     console.log('Waiting for finishing payment...')
     try {
       const record = await this.agent.valueTransfer.returnWhenIsCompleted(valueTransferRecord.id)
-      if (record.state === ValueTransferState.Completed) {
+      if (record.state === TransactionState.Completed) {
         console.log(greenText(Output.PaymentDone))
         console.log(greenText('Receipt:'))
         console.log(record.receipt)
         const balance = await this.agent.valueTransfer.getBalance()
         console.log(greenText('Balance: ' + balance))
       }
-      if (record.state === ValueTransferState.Failed) {
+      if (record.state === TransactionState.Failed) {
         console.log(redText('Payment Failed:'))
-        console.log(record.problemReportMessage)
+        console.log(record.error)
       }
     } catch (e) {
       console.log(redText(`\nTimeout of 120 seconds reached.. Returning to home screen.\n`))

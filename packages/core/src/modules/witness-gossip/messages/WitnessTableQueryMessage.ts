@@ -1,7 +1,7 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Type } from 'class-transformer'
-import { Equals, IsInstance, ValidateNested } from 'class-validator'
+import { Equals, IsInstance, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 
@@ -20,6 +20,9 @@ export class WitnessTableQueryMessage extends DIDCommV2Message {
   @ValidateNested()
   @IsInstance(WitnessTableQueryMessageBody)
   public body!: WitnessTableQueryMessageBody
+
+  @IsString()
+  public from!: string
 
   public constructor(options?: WitnessTableQueryMessageParams) {
     super(options)

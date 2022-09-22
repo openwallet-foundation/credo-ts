@@ -1,7 +1,8 @@
 /*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
 import type { ValueTransferRecord } from '@aries-framework/core'
 
-import { DidMarker, Transports, ValueTransferState } from '@aries-framework/core'
+import { DidMarker, Transports } from '@aries-framework/core'
+import { TransactionState } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
@@ -17,14 +18,9 @@ export class Carol extends BaseAgent {
       mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
-          seed: '6b8b882e2618fa5d45ee7229ca880071',
-          transports: [Transports.Nearby],
-          marker: DidMarker.Offline,
-        },
-        {
           seed: '6b8b882e2618fa5d45ee7229ca880072',
           transports: [Transports.Nearby, Transports.HTTP],
-          marker: DidMarker.Online,
+          marker: DidMarker.Public,
         },
       ],
       valueTransferConfig: {
@@ -36,7 +32,7 @@ export class Carol extends BaseAgent {
   public static async build(): Promise<Carol> {
     const getter = new Carol('carol', undefined)
     await getter.initializeAgent()
-    const publicDid = await getter.agent.getStaticDid(DidMarker.Online)
+    const publicDid = await getter.agent.getStaticDid(DidMarker.Public)
     console.log(`Carol Public DID: ${publicDid?.did}`)
     return getter
   }
@@ -64,16 +60,16 @@ export class Carol extends BaseAgent {
       recordId: valueTransferRecord.id,
       witness,
     })
-    this.valueTransferRecordId = record.id
+    this.valueTransferRecordId = record?.id
     console.log(greenText('\nPayment offer accepted!\n'))
     await this.waitForPayment()
   }
 
   public async abortPaymentOffer(valueTransferRecord: ValueTransferRecord) {
     const { record } = await this.agent.valueTransfer.abortTransaction(valueTransferRecord.id)
-    this.valueTransferRecordId = record.id
+    this.valueTransferRecordId = record?.id
     console.log(redText('\nPayment request rejected!\n'))
-    console.log(record.problemReportMessage)
+    console.log(record?.error)
   }
 
   private async waitForPayment() {
@@ -82,16 +78,16 @@ export class Carol extends BaseAgent {
     console.log('Waiting for Giver to pay...')
     try {
       const record = await this.agent.valueTransfer.returnWhenIsCompleted(valueTransferRecord.id)
-      if (record.state === ValueTransferState.Completed) {
+      if (record.state === TransactionState.Completed) {
         console.log(greenText(Output.PaymentDone))
         console.log(greenText('Receipt:'))
         console.log(record.receipt)
         const balance = await this.agent.valueTransfer.getBalance()
         console.log(greenText('Balance: ' + balance))
       }
-      if (record.state === ValueTransferState.Failed) {
+      if (record.state === TransactionState.Failed) {
         console.log(redText('Payment Failed:'))
-        console.log(record.problemReportMessage)
+        console.log(record.error)
       }
     } catch (e) {
       console.log(redText(`\nTimeout of 120 seconds reached.. Returning to home screen.\n`))

@@ -33,12 +33,8 @@ export class WitnessStateRecord extends BaseRecord<DefaultWitnessStateTags, Cust
     }
   }
 
-  public get gossipDid(): string {
-    return this.witnessState.info.gossipDid
-  }
-
-  public get publicDid(): string {
-    return this.witnessState.info.publicDid
+  public get did(): string {
+    return this.witnessState.info.did
   }
 
   public getTags() {

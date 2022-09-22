@@ -27,6 +27,9 @@ export class MintMessage extends DIDCommV2Message {
   @Type(() => MintMessageBody)
   public body!: MintMessageBody
 
+  @IsString()
+  public from!: string
+
   @Equals(MintMessage.type)
   public readonly type = MintMessage.type
   public static readonly type = 'https://didcomm.org/vtp/1.0/mint'

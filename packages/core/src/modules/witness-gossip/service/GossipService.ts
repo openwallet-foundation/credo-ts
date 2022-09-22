@@ -1,6 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { ResumeValueTransferTransactionEvent } from '../../value-transfer/ValueTransferEvents'
-import type { WitnessGossipMessage } from '../messages'
+import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '../../value-transfer'
+import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
+import type { TransactionRecord, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Gossip, MetricsInterface, WitnessGossipInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -8,42 +9,45 @@ import { inject, Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { ValueTransferEventTypes } from '../../value-transfer/ValueTransferEvents'
-import { ValueTransferCryptoService } from '../../value-transfer/services/ValueTransferCryptoService'
-import { ValueTransferLoggerService } from '../../value-transfer/services/ValueTransferLoggerService'
-import { ValueTransferStateService } from '../../value-transfer/services/ValueTransferStateService'
-import { ValueTransferTransportService } from '../../value-transfer/services/ValueTransferTransportService'
+import { WitnessTableMessage } from '../messages'
+
+import { GossipCryptoService } from './GossipCryptoService'
+import { GossipLoggerService } from './GossipLoggerService'
+import { WitnessGossipStateService } from './GossipStateService'
+import { GossipTransportService } from './GossipTransportService'
 import { InjectionSymbols } from '../../../constants'
 
 @scoped(Lifecycle.ContainerScoped)
 export class GossipService {
-  private config: AgentConfig
   private gossip: Gossip
+  private config: AgentConfig
   private eventEmitter: EventEmitter
-  private valueTransferStateService: ValueTransferStateService
+  private witnessGossipStateService: WitnessGossipStateService
   private gossipingStarted = false
 
   public constructor(
     config: AgentConfig,
-    valueTransferCryptoService: ValueTransferCryptoService,
-    valueTransferStateService: ValueTransferStateService,
+    gossipCryptoService: GossipCryptoService,
+    gossipStateService: WitnessGossipStateService,
     @inject(InjectionSymbols.MetricsService) metricsService: MetricsInterface,
-    valueTransferTransportService: ValueTransferTransportService,
-    valueTransferLoggerService: ValueTransferLoggerService,
+    gossipTransportService: GossipTransportService,
+    gossipLoggerService: GossipLoggerService,
     eventEmitter: EventEmitter
   ) {
     this.config = config
-    this.valueTransferStateService = valueTransferStateService
+    this.witnessGossipStateService = gossipStateService
     this.eventEmitter = eventEmitter
 
     this.gossip = new Gossip(
       {
-        logger: valueTransferLoggerService,
-        crypto: valueTransferCryptoService,
-        storage: valueTransferStateService,
-        transport: valueTransferTransportService,
+        logger: gossipLoggerService,
+        crypto: gossipCryptoService,
+        storage: gossipStateService,
+        transport: gossipTransportService,
         metrics: metricsService,
       },
       {
+        label: config.label,
         redeliveryThreshold: config.witnessRedeliveryThreshold,
         historyThreshold: config.witnessHistoryThreshold,
       }
@@ -53,27 +57,6 @@ export class GossipService {
   public async startGossiping() {
     if (!this.gossipingStarted) await this.gossip.start()
     this.gossipingStarted = true
-  }
-
-  /**
-   * Build {@link WitnessGossipMessage} for requesting missing transactions from the top witness.
-   * */
-  public async requestMissingTransactions(pthid?: string): Promise<void> {
-    this.config.logger.info(
-      `> Witness ${this.config.label}: request transaction updates for paused transaction ${pthid}`
-    )
-
-    const { error } = await this.gossip.askTransactionUpdates(pthid)
-    if (error) {
-      this.config.logger.error(
-        `  < Witness ${this.config.label}: Unable to request missing transactions. Error: ${error}`
-      )
-      return
-    }
-
-    this.config.logger.info(
-      `> Witness ${this.config.label}: request transaction updates for paused transaction ${pthid} sent!`
-    )
   }
 
   /**
@@ -100,16 +83,65 @@ export class GossipService {
     }
 
     if (witnessGossipMessage.body.tell && witnessGossipMessage.pthid) {
-      this.resumeTransaction(witnessGossipMessage.pthid)
+      // Resume VTP Transaction if exists -> this event will be caught in WitnessService
+      this.eventEmitter.emit<ResumeValueTransferTransactionEvent>({
+        type: ValueTransferEventTypes.ResumeTransaction,
+        payload: {
+          thid: witnessGossipMessage.pthid,
+        },
+      })
     }
   }
 
-  private resumeTransaction(id: string): void {
-    // Resume VTP Transaction if exists -> this event will be caught in WitnessService
-    this.eventEmitter.emit<ResumeValueTransferTransactionEvent>({
-      type: ValueTransferEventTypes.ResumeTransaction,
+  public async checkPartyStateHash(hash: Uint8Array): Promise<Uint8Array | undefined> {
+    return this.gossip.checkPartyStateHash(hash)
+  }
+
+  public async getWitnessDetails(): Promise<WitnessDetails> {
+    return this.gossip.getWitnessDetails()
+  }
+
+  public async settlePartyStateTransition(transactionRecord: TransactionRecord): Promise<void> {
+    return this.gossip.settlePartyStateTransition(transactionRecord)
+  }
+
+  public async askTransactionUpdates(id?: string) {
+    return this.gossip.askTransactionUpdates(id)
+  }
+
+  public async processWitnessTableQuery(messageContext: InboundMessageContext<WitnessTableQueryMessage>): Promise<{
+    message?: WitnessTableMessage
+  }> {
+    this.config.logger.info('> Witness process witness table query message')
+
+    const { message: witnessTableQuery } = messageContext
+
+    const { message, error } = await this.gossip.processWitnessTableQuery(witnessTableQuery)
+    if (error || !message) {
+      this.config.logger.error(`  Witness: Failed to process table query: ${error?.message}`)
+      return {}
+    }
+
+    const witnessTableMessage = new WitnessTableMessage(message)
+
+    this.config.logger.info('> Witness process witness table query message completed!')
+    return { message: witnessTableMessage }
+  }
+
+  public async processWitnessTable(messageContext: InboundMessageContext<WitnessTableMessage>): Promise<void> {
+    this.config.logger.info('> Witness process witness table message')
+
+    const { message: witnessTable } = messageContext
+
+    if (!witnessTable.from) {
+      this.config.logger.info('   Unknown Witness Table sender')
+      return
+    }
+
+    this.eventEmitter.emit<WitnessTableReceivedEvent>({
+      type: ValueTransferEventTypes.WitnessTableReceived,
       payload: {
-        thid: id,
+        witnesses: witnessTable.body.witnesses,
       },
     })
   }
@@ -119,6 +151,6 @@ export class GossipService {
     // FIXME: `safeSateOperation` locks the whole WitnessState
     // I used it only for functions mutating the state to prevent concurrent updates
     // We need to discuss the list of read/write operations which should use this lock and how to do it properly
-    return this.valueTransferStateService.safeOperationWithWitnessState(operation.bind(this))
+    return this.witnessGossipStateService.safeOperationWithWitnessState(operation.bind(this))
   }
 }
