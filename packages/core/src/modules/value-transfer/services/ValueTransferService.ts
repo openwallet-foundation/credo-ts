@@ -224,6 +224,9 @@ export class ValueTransferService {
     }
 
     const did = await this.didService.findStaticDid(DidMarker.Queries)
+    if (!did?.did) {
+      throw new AriesFrameworkError(`Unable to get DID for query preparation.`)
+    }
 
     const message = new WitnessTableQueryMessage({
       from: did?.did,

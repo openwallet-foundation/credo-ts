@@ -1,7 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { OfferMessage, RequestAcceptedWitnessedMessage, GetterReceiptMessage } from '../messages'
 import type { ValueTransferRecord } from '../repository'
-import type { Transports } from '@aries-framework/core'
+import type { Transports } from '../../routing/types'
 import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Getter, GetterReceipt, Offer, RequestAcceptanceWitnessed } from '@sicpa-dlab/value-transfer-protocol-ts'

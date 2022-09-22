@@ -1,7 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '../../value-transfer'
-import type { WitnessGossipMessage } from '../messages'
-import type { WitnessTableQueryMessage } from '@aries-framework/core'
+import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
 import type { TransactionRecord, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Gossip, WitnessGossipInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
