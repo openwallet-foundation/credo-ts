@@ -161,8 +161,8 @@ export class ValueTransferWitnessService {
     )
 
     const requestAcceptance = new RequestAcceptance(requestAcceptanceMessage)
-    const { error, transaction, message } = await this.witness.processRequestAcceptance(requestAcceptance)
-    if (error || !transaction || !message) {
+    const { error, transaction } = await this.witness.processRequestAcceptance(requestAcceptance)
+    if (error || !transaction) {
       throw new AriesFrameworkError(`Failed to create Payment Request: ${error?.message}`)
     }
 
@@ -197,8 +197,8 @@ export class ValueTransferWitnessService {
     )
 
     const cashAcceptance = new CashAcceptance(cashAcceptedMessage)
-    const { error, transaction, message } = await this.witness.processCashAcceptance(cashAcceptance)
-    if (error || !transaction || !message) {
+    const { error, transaction } = await this.witness.processCashAcceptance(cashAcceptance)
+    if (error || !transaction) {
       this.config.logger.error(
         ` Giver: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} failed. Error: ${error}`
       )
@@ -236,8 +236,8 @@ export class ValueTransferWitnessService {
     )
 
     const cashRemoval = new CashRemoval(cashRemovedMessage)
-    const { error, transaction, getterMessage, giverMessage } = await this.witness.createReceipt(cashRemoval)
-    if (error || !transaction || !getterMessage || !giverMessage) {
+    const { error, transaction } = await this.witness.createReceipt(cashRemoval)
+    if (error || !transaction) {
       this.config.logger.error(
         ` Giver: process cash removal message for VTP transaction ${cashRemovedMessage.thid} failed. Error: ${error}`
       )

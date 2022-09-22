@@ -45,6 +45,7 @@ export class GossipService {
         transport: gossipTransportService,
       },
       {
+        label: config.label,
         redeliveryThreshold: config.witnessRedeliveryThreshold,
         historyThreshold: config.witnessHistoryThreshold,
       }

@@ -18,7 +18,7 @@ export class GossipTransportService implements GossipTransportInterface {
     this.messageSender = messageSender
   }
 
-  // @ts-ignore
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async send(message: any): Promise<void> {
     this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
     this.config.logger.debug(` Message: ${JsonEncoder.toString(message)}`)
