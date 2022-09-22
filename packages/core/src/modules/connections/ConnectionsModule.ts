@@ -203,7 +203,7 @@ export class ConnectionsModule {
    *  Either updates or creates an array of string conection types
    * @param connectionId
    * @param type
-   * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
+   * @throws {RecordNotFoundError} If no record is found
    */
   public async addConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
@@ -216,7 +216,7 @@ export class ConnectionsModule {
    * Removes the given tag from the given record found by connectionId, if the tag exists otherwise does nothing
    * @param connectionId
    * @param type
-   * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
+   * @throws {RecordNotFoundError} If no record is found
    */
   public async removeConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
@@ -234,7 +234,7 @@ export class ConnectionsModule {
    * Gets the known connection types for the record matching the given connectionId
    * @param connectionId
    * @returns An array of known connection types or null if none exist
-   * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
+   * @throws {RecordNotFoundError} If no record is found
    */
   public async getConnectionTypes(connectionId: string) {
     const record = await this.getById(connectionId)
