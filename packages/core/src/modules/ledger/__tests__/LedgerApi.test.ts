@@ -27,7 +27,7 @@ const AnonCredsSchemaRepositoryMock = AnonCredsSchemaRepository as jest.Mock<Ano
 
 const did = 'Y5bj4SjCiTM9PgeheKAiXx'
 
-const schemaId = 'abcd:2:awesomeSchema:1'
+const schemaId = 'Y5bj4SjCiTM9PgeheKAiXx:2:awesomeSchema:1'
 
 const schema: Indy.Schema = {
   id: schemaId,
@@ -214,13 +214,14 @@ describe('LedgerApi', () => {
       it('should return the schema from anonCreds when it already exists', async () => {
         mockProperty(wallet, 'publicDid', { did: did, verkey: 'abcde' })
         mockFunction(anonCredsSchemaRepository.findById).mockResolvedValueOnce(
-          new AnonCredsSchemaRecord({ schema: schema })
+          new AnonCredsSchemaRecord({ schema: { ...schema, id: schemaIdQualified } })
         )
         mockFunction(ledgerService.getDidIndyNamespace).mockReturnValueOnce(pools[0].indyNamespace)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { id, ...schemaWithoutId } = schema
         await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toMatchObject({
-          ...schemaWithoutId,
+          ...schema,
+          id: schema.id,
         })
         expect(anonCredsSchemaRepository.findById).toHaveBeenCalledWith(agentContext, schemaIdQualified)
       })

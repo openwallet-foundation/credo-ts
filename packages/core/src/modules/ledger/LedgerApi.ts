@@ -92,8 +92,8 @@ export class LedgerApi {
     if (schemaRecord) {
       // Transform qualified to unqualified
       return {
-        ...schemaRecord?.schema,
-        id: getLegacyIndySchemaId(schemaRecord.id),
+        ...schemaRecord.schema,
+        id: getLegacyIndySchemaId(schemaRecord.schema.id),
       }
     }
 
@@ -106,6 +106,7 @@ export class LedgerApi {
       schema: { ...createdSchema, id: qualifiedIdentifier },
     })
     await this.anonCredsSchemaRepository.save(this.agentContext, anonCredsSchema)
+
     return createdSchema
   }
 
