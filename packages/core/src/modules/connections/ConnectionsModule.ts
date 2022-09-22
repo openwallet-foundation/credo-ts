@@ -207,10 +207,10 @@ export class ConnectionsModule {
    */
   public async addConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
-    const tags = record.getTags()['connectionType']
-    if (tags) record.setTag('connectionType', [type, ...tags])
-    else record.setTag('connectionType', [type])
-    await this.connectionService.update(record)
+    
+      const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+      record.setTag('connectionType', [type, ...tags])
+      await this.connectionService.update(record)
   }
   /**
    * Removes the given tag from the given record found by connectionId, if the tag exists otherwise does nothing
@@ -220,14 +220,17 @@ export class ConnectionsModule {
    */
   public async removeConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
-    const tags = record.getTags()['connectionType']
-    if (tags) {
+    
+      const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+
       const newTags = tags.filter((value: string) => {
         if (value != type) return value
       })
       record.setTag('connectionType', [...newTags])
-    }
-    await this.connectionService.update(record)
+
+      await this.connectionService.update(record)
+   
+
   }
   /**
    * Gets the known connection types for the record matching the given connectionId
@@ -237,14 +240,8 @@ export class ConnectionsModule {
    */
   public async getConnectionTypes(connectionId: string) {
     const record = await this.getById(connectionId)
-
-    const tags = record.getTags()['connectionType']
-    if (tags) return tags
-    else return null
-  }
-
-  public async findAllByConnectionType(types: [ConnectionType | string]) {
-    return this.connectionService.findAllByConnectionType(types)
+      const tags = record.getTag('connectionType') as string[]
+      return tags || null
   }
 
   /**

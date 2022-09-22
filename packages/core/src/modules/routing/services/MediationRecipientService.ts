@@ -85,11 +85,9 @@ export class MediationRecipientService {
       role: MediationRole.Recipient,
       connectionId: connection.id,
     })
-    const connectonRecord = await this.connectionService.findById(mediationRecord.connectionId)
-    if (connectonRecord) {
-      connectonRecord.setTag('connectionType', ConnectionType.Mediator)
-      await this.connectionService.update(connectonRecord)
-    }
+    connection.setTag('connectionType', [ConnectionType.Mediator])
+    await this.connectionService.update(connection)
+
     await this.mediationRepository.save(mediationRecord)
     this.emitStateChangedEvent(mediationRecord, null)
 
