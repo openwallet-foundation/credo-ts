@@ -5,16 +5,16 @@ import { TenantAgent } from '../TenantAgent'
 
 describe('TenantAgent', () => {
   test('possible to construct a TenantAgent instance', () => {
-    const agent = new Agent(
-      {
+    const agent = new Agent({
+      config: {
         label: 'test',
         walletConfig: {
           id: 'Wallet: TenantAgentRoot',
           key: 'Wallet: TenantAgentRoot',
         },
       },
-      agentDependencies
-    )
+      dependencies: agentDependencies,
+    })
 
     const tenantDependencyManager = agent.dependencyManager.createChild()
 

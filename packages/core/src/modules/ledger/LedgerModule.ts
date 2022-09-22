@@ -10,6 +10,7 @@ import { IndyLedgerService, IndyPoolService } from './services'
 
 export class LedgerModule implements Module {
   public readonly config: LedgerModuleConfig
+  public readonly api = LedgerApi
 
   public constructor(config?: LedgerModuleConfigOptions) {
     this.config = new LedgerModuleConfig(config)

@@ -1,3 +1,4 @@
+import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { BasicMessagesApi } from '../BasicMessagesApi'
 import { BasicMessagesModule } from '../BasicMessagesModule'
@@ -9,9 +10,14 @@ const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
+jest.mock('../../../agent/FeatureRegistry')
+const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
+
+const featureRegistry = new FeatureRegistryMock()
+
 describe('BasicMessagesModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    new BasicMessagesModule().register(dependencyManager)
+    new BasicMessagesModule().register(dependencyManager, featureRegistry)
 
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(BasicMessagesApi)

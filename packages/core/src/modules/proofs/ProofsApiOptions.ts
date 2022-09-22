@@ -63,12 +63,13 @@ export interface RequestProofOptions<
   parentThreadId?: string
 }
 
-export interface OutOfBandRequestOptions<
+export interface CreateProofRequestOptions<
   PFs extends ProofFormat[] = ProofFormat[],
   PSs extends ProofService[] = ProofService[]
 > {
   protocolVersion: ProtocolVersionType<PSs>
-  proofFormats: ProofFormatPayload<PFs, 'createOutOfBandRequest'>
+  proofFormats: ProofFormatPayload<PFs, 'createRequest'>
   comment?: string
   autoAcceptProof?: AutoAcceptProof
+  parentThreadId?: string
 }

@@ -428,6 +428,80 @@ describe('Present Proof', () => {
     })
   })
 
+  test('Alice provides credentials via call to getRequestedCredentials', async () => {
+    const attributes = {
+      name: new ProofAttributeInfo({
+        name: 'name',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+      image_0: new ProofAttributeInfo({
+        name: 'image_0',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    // Sample predicates
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const requestProofsOptions: RequestProofOptions = {
+      protocolVersion: ProofProtocolVersion.V2,
+      connectionId: faberConnection.id,
+      proofFormats: {
+        indy: {
+          name: 'proof-request',
+          version: '1.0',
+          nonce: '1298236324864',
+          requestedAttributes: attributes,
+          requestedPredicates: predicates,
+        },
+      },
+    }
+
+    const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+      state: ProofState.RequestReceived,
+    })
+
+    // Faber sends a presentation request to Alice
+    testLogger.test('Faber sends a presentation request to Alice')
+    faberProofRecord = await faberAgent.proofs.requestProof(requestProofsOptions)
+
+    // Alice waits for presentation request from Faber
+    testLogger.test('Alice waits for presentation request from Faber')
+    aliceProofRecord = await aliceProofRecordPromise
+
+    const retrievedCredentials = await faberAgent.proofs.getRequestedCredentialsForProofRequest({
+      proofRecordId: faberProofRecord.id,
+      config: {},
+    })
+
+    if (retrievedCredentials.proofFormats.indy) {
+      const keys = Object.keys(retrievedCredentials.proofFormats.indy?.requestedAttributes)
+      expect(keys).toContain('name')
+      expect(keys).toContain('image_0')
+    } else {
+      fail()
+    }
+  })
+
   test('Faber starts with proof request to Alice but gets Problem Reported', async () => {
     const attributes = {
       name: new ProofAttributeInfo({

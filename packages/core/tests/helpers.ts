@@ -21,7 +21,7 @@ import type { Observable } from 'rxjs'
 
 import path from 'path'
 import { firstValueFrom, ReplaySubject, Subject } from 'rxjs'
-import { catchError, filter, map, tap, timeout } from 'rxjs/operators'
+import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
@@ -47,7 +47,8 @@ import { Key, KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/models/CredentialAutoAcceptType'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/messages/V1CredentialPreview'
-import { DidCommV1Service, DidKey } from '../src/modules/dids'
+import { DidCommV1Service } from '../src/modules/dids'
+import { DidKey } from '../src/modules/dids/methods/key'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
@@ -72,7 +73,7 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 export { agentDependencies }
 
-export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
+export function getAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
@@ -96,10 +97,10 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     ...extraConfig,
   }
 
-  return { config, agentDependencies } as const
+  return { config, dependencies: agentDependencies } as const
 }
 
-export function getBasePostgresConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
+export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
@@ -133,12 +134,12 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
     ...extraConfig,
   }
 
-  return { config, agentDependencies } as const
+  return { config, dependencies: agentDependencies } as const
 }
 
 export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
-  const { config, agentDependencies } = getBaseConfig(name, extraConfig)
-  return new AgentConfig(config, agentDependencies)
+  const { config, dependencies } = getAgentOptions(name, extraConfig)
+  return new AgentConfig(config, dependencies)
 }
 
 export function getAgentContext({
@@ -659,21 +660,21 @@ export async function setupCredentialTests(
     'rxjs:faber': faberMessages,
     'rxjs:alice': aliceMessages,
   }
-  const faberConfig = getBaseConfig(faberName, {
+  const faberAgentOptions = getAgentOptions(faberName, {
     endpoints: ['rxjs:faber'],
     autoAcceptCredentials,
   })
 
-  const aliceConfig = getBaseConfig(aliceName, {
+  const aliceAgentOptions = getAgentOptions(aliceName, {
     endpoints: ['rxjs:alice'],
     autoAcceptCredentials,
   })
-  const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+  const faberAgent = new Agent(faberAgentOptions)
   faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
   faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await faberAgent.initialize()
 
-  const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+  const aliceAgent = new Agent(aliceAgentOptions)
   aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
   aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await aliceAgent.initialize()
@@ -706,12 +707,12 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
 
   const unique = uuid().substring(0, 4)
 
-  const faberConfig = getBaseConfig(`${faberName}-${unique}`, {
+  const faberAgentOptions = getAgentOptions(`${faberName}-${unique}`, {
     autoAcceptProofs,
     endpoints: ['rxjs:faber'],
   })
 
-  const aliceConfig = getBaseConfig(`${aliceName}-${unique}`, {
+  const aliceAgentOptions = getAgentOptions(`${aliceName}-${unique}`, {
     autoAcceptProofs,
     endpoints: ['rxjs:alice'],
   })
@@ -723,12 +724,12 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     'rxjs:faber': faberMessages,
     'rxjs:alice': aliceMessages,
   }
-  const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+  const faberAgent = new Agent(faberAgentOptions)
   faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
   faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await faberAgent.initialize()
 
-  const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+  const aliceAgent = new Agent(aliceAgentOptions)
   aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
   aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await aliceAgent.initialize()

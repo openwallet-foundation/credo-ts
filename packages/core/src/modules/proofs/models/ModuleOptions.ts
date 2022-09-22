@@ -18,3 +18,5 @@ export interface AutoSelectCredentialsForProofRequestOptions {
   proofRecordId: string
   config?: GetRequestedCredentialsConfig
 }
+
+export type GetRequestedCredentialsForProofRequest = AutoSelectCredentialsForProofRequestOptions
