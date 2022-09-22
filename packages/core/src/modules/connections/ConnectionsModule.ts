@@ -206,15 +206,11 @@ export class ConnectionsModule {
    * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
    */
   public async addConnectionType(connectionId: string, type: ConnectionType | string) {
-    const record = await this.findById(connectionId)
-    if (record) {
-      const tags = record.getTags()['connectionType']
-      if (tags) record.setTag('connectionType', [type, ...tags])
-      else record.setTag('connectionType', [type])
-      await this.connectionService.update(record)
-    } else {
-      throw new AriesFrameworkError('The provided connectionId did not match a known record')
-    }
+    const record = await this.getById(connectionId)
+    const tags = record.getTags()['connectionType']
+    if (tags) record.setTag('connectionType', [type, ...tags])
+    else record.setTag('connectionType', [type])
+    await this.connectionService.update(record)
   }
   /**
    * Removes the given tag from the given record found by connectionId, if the tag exists otherwise does nothing
@@ -223,19 +219,15 @@ export class ConnectionsModule {
    * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
    */
   public async removeConnectionType(connectionId: string, type: ConnectionType | string) {
-    const record = await this.findById(connectionId)
-    if (record) {
-      const tags = record.getTags()['connectionType']
-      if (tags) {
-        const newTags = tags.filter((value: string) => {
-          if (value != type) return value
-        })
-        record.setTag('connectionType', [...newTags])
-      }
-      await this.connectionService.update(record)
-    } else {
-      throw new AriesFrameworkError('The provided connectionId did not match a known record')
+    const record = await this.getById(connectionId)
+    const tags = record.getTags()['connectionType']
+    if (tags) {
+      const newTags = tags.filter((value: string) => {
+        if (value != type) return value
+      })
+      record.setTag('connectionType', [...newTags])
     }
+    await this.connectionService.update(record)
   }
   /**
    * Gets the known connection types for the record matching the given connectionId
@@ -244,50 +236,15 @@ export class ConnectionsModule {
    * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
    */
   public async getConnectionTypes(connectionId: string) {
-    const record = await this.findById(connectionId)
-    if (record) {
-      const tags = record.getTags()['connectionType']
-      if (tags) return tags
-      else return null
-    } else {
-      throw new AriesFrameworkError('The provide connectionId did not match a known record')
-    }
+    const record = await this.getById(connectionId)
+
+    const tags = record.getTags()['connectionType']
+    if (tags) return tags
+    else return null
   }
-  /**
-   * tries to find the target tag on the record corrisponding to provided connectionId
-   * @param connectionId
-   * @param targetTag name of the target tag as a string (case sensitive)
-   * @returns The target tag or null if it does not exist
-   * @throws AriesFrameworkError if the record corrisponding to the provided connectionId cannot be found
-   */
-  public async getTagFromRecord(connectionId: string, targetTag: string) {
-    const record = await this.findById(connectionId)
-    if (record) {
-      const tag = record.getTag(targetTag)
-      if (tag != undefined) return tag
-      else return null
-    } else {
-      throw new AriesFrameworkError('The provided connectionId did not match a known record')
-    }
-  }
-  /**
-   * Tries to get all the tags corrisponding to the provided connectionId
-   * @param conectionId
-   * @returns All tags associated with a given object
-   * @throws AriesFrameworkError if the record corripsoning to the provided connectionId cannot be found
-   */
-  public async getAllTagsFromRecord(conectionId: string) {
-    const record = await this.findById(conectionId)
-    if (record) {
-      const tags = record.getTags()
-      if (tags != undefined) {
-        return tags
-      } else {
-        return null
-      }
-    } else {
-      throw new AriesFrameworkError('The provided connectionId did not match a known record')
-    }
+
+  public async findAllByConnectionType(types: [ConnectionType | string]) {
+    return this.connectionService.findAllByConnectionType(types)
   }
 
   /**
