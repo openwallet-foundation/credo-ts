@@ -34,6 +34,7 @@ RUN apt-get install -y --no-install-recommends yarn
 # install rust and set up rustup
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
+RUN rustup default 1.63.0
 
 # clone indy-sdk and build postgres plugin
 RUN git clone https://github.com/hyperledger/indy-sdk.git
