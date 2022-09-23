@@ -2,7 +2,7 @@ import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { transformUint8Array } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Expose, Transform, Type } from 'class-transformer'
-import { Equals, IsArray, IsObject, IsOptional, ValidateNested } from 'class-validator'
+import { Equals, IsArray, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 

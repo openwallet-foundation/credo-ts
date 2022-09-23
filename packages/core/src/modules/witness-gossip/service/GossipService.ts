@@ -3,7 +3,7 @@ import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } f
 import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
 import type { TransactionRecord, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Gossip, MetricsInterface, WitnessGossipInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Gossip, GossipMetricsInterface, WitnessGossipInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -29,7 +29,7 @@ export class GossipService {
     config: AgentConfig,
     gossipCryptoService: GossipCryptoService,
     gossipStateService: WitnessGossipStateService,
-    @inject(InjectionSymbols.MetricsService) metricsService: MetricsInterface,
+    @inject(InjectionSymbols.MetricsService) metricsService: GossipMetricsInterface,
     gossipTransportService: GossipTransportService,
     gossipLoggerService: GossipLoggerService,
     eventEmitter: EventEmitter

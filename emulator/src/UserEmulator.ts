@@ -1,6 +1,14 @@
 import type { InitConfig } from '@aries-framework/core'
 
-import { Agent, DidMarker, HttpOutboundTransport, Transports, InjectionSymbols } from '@aries-framework/core'
+import {
+  Agent,
+  DidMarker,
+  HttpOutboundTransport,
+  Transports,
+  InjectionSymbols,
+  ConsoleLogger,
+  LogLevel,
+} from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 import { randomUUID } from 'crypto'
 import { MetricsService } from './metrics'
@@ -30,10 +38,11 @@ export class User {
     const config: InitConfig = {
       label: name,
       walletConfig: { id: name, key: name },
+      logger: new ConsoleLogger(LogLevel.error),
       staticDids: [
         {
           seed: userConfig.publicDidSeed,
-          marker: DidMarker.Online,
+          marker: DidMarker.Public,
           endpoint,
           transports: [Transports.HTTP],
           needMediation: false,
@@ -61,7 +70,7 @@ export class User {
 
     setInterval(async () => {
       console.log(`User ${this.agent.config.label} trigger message`)
-      await this.agent.valueTransfer.mintCash({ amount: User.amount, waitForAck: false })
+      await this.agent.valueTransfer.mintCash(User.amount, this.config.witness!)
     }, this.config.interval || 1000 * 3)
   }
 }

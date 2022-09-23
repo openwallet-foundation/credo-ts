@@ -11,7 +11,7 @@ import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy, MediatorDeliveryStrategy } from './modules/routing'
 import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
-import type { MetricsInterface, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipMetricsInterface, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -86,7 +86,7 @@ export interface InitConfig {
   autoAcceptProofs?: AutoAcceptProof
   autoAcceptCredentials?: AutoAcceptCredential
   logger?: Logger
-  metricsService?: MetricsInterface
+  metricsService?: GossipMetricsInterface
   didCommMimeType?: DidCommMimeType
   supportOffline?: boolean
   catchErrors?: boolean

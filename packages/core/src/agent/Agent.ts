@@ -6,7 +6,7 @@ import type { Wallet } from '../wallet/Wallet'
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { TransportSession } from './TransportService'
-import type { MetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipMetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 import type { Subscription } from 'rxjs'
 import type { DependencyContainer } from 'tsyringe'
 
@@ -74,7 +74,7 @@ export class Agent {
   public readonly valueTransfer: ValueTransferModule
   public readonly gossip: GossipModule
   public readonly outOfBand: OutOfBandModule
-  public readonly metrics: MetricsInterface
+  public readonly metrics: GossipMetricsInterface
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
     // Create child container so we don't interfere with anything outside of this agent

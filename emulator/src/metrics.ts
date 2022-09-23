@@ -1,10 +1,10 @@
 import { InfluxDB, Point, WriteOptions } from '@influxdata/influxdb-client'
-import type { MetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipMetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import os from 'os'
 
 // You can generate an API token from the "API Tokens Tab" in the UI
-const token = '7j0n6J-XtyKy0LWvdzcGQfg4u2QYvGczyX2WtTPUP4axMfunoe3yLn3JSG7Bm6OxXHNiRhOK3jnuVmnUcLfyNQ=='
+const token = 'MhMBt404X09WwKg6f2WxNtFw_SO0JMI7Nrpk_qQGeB12HF5NW65D91ZYTrAW6meLYSkuxOr2_uur5g3FcXSOHQ=='
 const org = 'dsr'
 const bucket = 'dsr-test'
 
@@ -12,7 +12,7 @@ const gossipVersion = '2.0'
 
 const machineName = os.hostname()
 
-export class MetricsService implements MetricsInterface {
+export class MetricsService implements GossipMetricsInterface {
   private client: InfluxDB = new InfluxDB({ url: 'http://localhost:8086', token: token })
   private static transactionCount: number = 0
 

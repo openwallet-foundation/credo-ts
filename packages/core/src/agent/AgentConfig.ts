@@ -2,7 +2,7 @@ import type { Logger } from '../logger'
 import type { FileSystem } from '../storage/FileSystem'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
-import type { MetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipMetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Subject } from 'rxjs'
 
@@ -20,7 +20,7 @@ export class AgentConfig {
   private initConfig: InitConfig
   public label: string
   public logger: Logger
-  public metricsService: MetricsInterface
+  public metricsService: GossipMetricsInterface
   public readonly agentDependencies: AgentDependencies
   public readonly fileSystem: FileSystem
 

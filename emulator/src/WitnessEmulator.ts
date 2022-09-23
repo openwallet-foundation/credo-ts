@@ -1,7 +1,6 @@
 import type { InitConfig } from '@aries-framework/core'
+import { Agent, ConsoleLogger, DidMarker, HttpOutboundTransport, LogLevel, Transports } from '@aries-framework/core'
 import type { WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
-
-import { Agent, DidMarker, HttpOutboundTransport, Transports } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 import { randomUUID } from 'crypto'
 import { MetricsService } from './metrics'
@@ -30,17 +29,18 @@ export class Witness {
     const config: InitConfig = {
       label: name,
       walletConfig: { id: name, key: name },
+      logger: new ConsoleLogger(LogLevel.error),
       staticDids: [
         {
           seed: witnessConfig.publicDidSeed,
-          marker: DidMarker.Online,
+          marker: DidMarker.Public,
           endpoint: endpoint,
           transports: [Transports.HTTP],
           needMediation: false,
         },
         {
           seed: witnessConfig.gossipDidSeed,
-          marker: DidMarker.Restricted,
+          marker: DidMarker.Queries,
           endpoint: endpoint,
           transports: [Transports.HTTP],
           needMediation: false,
@@ -68,9 +68,9 @@ export class Witness {
   public async run() {
     await this.agent.initialize()
     console.log(`Witness ${this.agent.config.label} started!`)
-    const publicDid = await this.agent.getStaticDid(DidMarker.Online)
+    const publicDid = await this.agent.getStaticDid(DidMarker.Public)
     console.log(`Witness ${this.agent.config.label} Public DID: ${publicDid?.did}`)
-    const gossipDid = await this.agent.getStaticDid(DidMarker.Restricted)
+    const gossipDid = await this.agent.getStaticDid(DidMarker.Queries)
     console.log(`Witness ${this.agent.config.label} Gossip DID: ${gossipDid?.did}`)
   }
 }

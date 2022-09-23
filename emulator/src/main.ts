@@ -35,7 +35,7 @@ const run = async () => {
 
   users = users.map((user) => ({
     ...user,
-    witness: user.witness ?? witnessTable[user.witnessIndex || 0].publicDid,
+    witness: user.witness ?? witnessTable[user.witnessIndex || 0].did,
   }))
 
   witnesses = witnesses.map((witnessConfig) => ({

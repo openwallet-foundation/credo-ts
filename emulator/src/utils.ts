@@ -82,8 +82,7 @@ const createWitnessConfig = (config: EmulatorWitnessConfig, witnessTable: Witnes
   })
   witnessTable.push({
     label: config.label,
-    publicDid: publicDid.did,
-    gossipDid: gossipDid.did,
+    did: gossipDid.did,
     type: config.type,
     wid: config.wid ?? config.port!.toString(),
   })
