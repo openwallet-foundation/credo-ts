@@ -20,7 +20,7 @@ export class GossipTransportService implements GossipTransportInterface {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async send(message: any): Promise<void> {
-    this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
+    this.config.logger.info(`Sending Gossip message with type '${message.type}' to DID ${message?.to}`)
     this.config.logger.debug(` Message: ${JsonEncoder.toString(message)}`)
     const didcomMessage = new DIDCommV2Message({ ...message })
     const sendingMessageType = didcomMessage.to ? SendingMessageType.Encrypted : SendingMessageType.Signed

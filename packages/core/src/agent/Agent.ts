@@ -20,6 +20,8 @@ import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidMarker, DidService } from '../modules/dids'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
+import { GossipModule } from '../modules/gossip/GossipModule'
+import { GossipService } from '../modules/gossip/service'
 import { KeysModule } from '../modules/keys'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { OutOfBandModule } from '../modules/out-of-band'
@@ -28,8 +30,6 @@ import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { ValueTransferModule, ValueTransferService } from '../modules/value-transfer'
 import { ValueTransferWitnessService } from '../modules/value-transfer/services/ValueTransferWitnessService'
-import { GossipModule } from '../modules/witness-gossip/GossipModule'
-import { GossipService } from '../modules/witness-gossip/service'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
 import { IndyWallet } from '../wallet/IndyWallet'
@@ -258,7 +258,7 @@ export class Agent {
     // VTP state initialization
     if (valueTransferConfig) {
       if (valueTransferConfig.witness) {
-        return this.valueTransferWitnessService.init()
+        await this.gossipService.init()
       } else {
         await this.valueTransferService.initPartyState()
       }

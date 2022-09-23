@@ -1,10 +1,11 @@
 import { Lifecycle, scoped } from 'tsyringe'
 
-import { DidService } from '../../dids/services'
-import { DidInfo } from '../models'
+import { DidInfo } from '../domain'
+
+import { DidService } from './DidService'
 
 @scoped(Lifecycle.ContainerScoped)
-export class WellKnownService {
+export class DidWellKnownService {
   private didService: DidService
 
   public constructor(didService: DidService) {

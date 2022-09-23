@@ -25,5 +25,6 @@ export class ValueTransferTransportService implements VtpTransportInterface {
     const didcomMessage = new DIDCommV2Message({ ...message })
     const sendingMessageType = didcomMessage.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     await this.messageSender.sendDIDCommV2Message(didcomMessage, sendingMessageType)
+    this.config.logger.info('message sent!')
   }
 }

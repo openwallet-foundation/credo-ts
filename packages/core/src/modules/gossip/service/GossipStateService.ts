@@ -15,10 +15,6 @@ export class WitnessGossipStateService implements GossipStorageInterface {
     this.witnessStateLock = new AsyncLock()
   }
 
-  public async getWitnessStateRecord(): Promise<WitnessStateRecord> {
-    return await this.witnessStateRepository.getSingleByQuery({})
-  }
-
   public async getWitnessState(): Promise<WitnessState> {
     const record = await this.witnessStateRepository.getSingleByQuery({})
     return record.witnessState
@@ -28,7 +24,6 @@ export class WitnessGossipStateService implements GossipStorageInterface {
     const record = await this.witnessStateRepository.getSingleByQuery({})
     record.witnessState = witnessState
     await this.witnessStateRepository.update(record)
-    // this.witnessStateRecord = record
   }
 
   /** @inheritDoc {StorageService#safeMutation} */

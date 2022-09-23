@@ -4,27 +4,15 @@ import type { CashAcceptedMessage, CashRemovedMessage, RequestAcceptedMessage } 
 import type { MintMessage } from '../messages/MintMessage'
 import type { ValueTransferRecord } from '../repository'
 
-import {
-  WitnessDetails,
-  WitnessState,
-  Witness,
-  RequestAcceptance,
-  CashRemoval,
-  CashAcceptance,
-} from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Witness, RequestAcceptance, CashRemoval, CashAcceptance } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
-import { DidMarker, DidService } from '../../dids'
-import { WellKnownService } from '../../well-known'
-import { WitnessStateRecord } from '../../witness-gossip/repository/WitnessStateRecord'
-import { WitnessStateRepository } from '../../witness-gossip/repository/WitnessStateRepository'
-import { GossipService } from '../../witness-gossip/service'
+import { GossipService } from '../../gossip/service'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { MintResponseMessage } from '../messages/MintResponseMessage'
-import { ValueTransferRepository } from '../repository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferService } from './ValueTransferService'
@@ -34,40 +22,22 @@ import { ValueTransferWitnessStateService } from './ValueTransferWitnessStateSer
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferWitnessService {
   private config: AgentConfig
-  private valueTransferRepository: ValueTransferRepository
   private valueTransferService: ValueTransferService
-  private valueTransferCryptoService: ValueTransferCryptoService
-  private valueTransferWitnessStateService: ValueTransferWitnessStateService
-  private witnessStateRepository: WitnessStateRepository
-  private gossipService: GossipService
-  private didService: DidService
   private eventEmitter: EventEmitter
   private witness: Witness
-  private wellKnownService: WellKnownService
 
   public constructor(
     config: AgentConfig,
-    valueTransferRepository: ValueTransferRepository,
     valueTransferService: ValueTransferService,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferWitnessStateService: ValueTransferWitnessStateService,
     valueTransferTransportService: ValueTransferTransportService,
-    witnessStateRepository: WitnessStateRepository,
     gossipService: GossipService,
-    didService: DidService,
-    eventEmitter: EventEmitter,
-    wellKnownService: WellKnownService
+    eventEmitter: EventEmitter
   ) {
     this.config = config
-    this.valueTransferRepository = valueTransferRepository
     this.valueTransferService = valueTransferService
-    this.valueTransferCryptoService = valueTransferCryptoService
-    this.valueTransferWitnessStateService = valueTransferWitnessStateService
-    this.witnessStateRepository = witnessStateRepository
-    this.didService = didService
-    this.gossipService = gossipService
     this.eventEmitter = eventEmitter
-    this.wellKnownService = wellKnownService
 
     this.eventEmitter.on(
       ValueTransferEventTypes.ResumeTransaction,
@@ -89,51 +59,6 @@ export class ValueTransferWitnessService {
         issuers: config.witnessIssuerDids,
       }
     )
-  }
-
-  public async init(): Promise<void> {
-    await this.initState()
-    await this.gossipService.startGossiping()
-  }
-
-  private async initState(): Promise<void> {
-    this.config.logger.info('> VTP Witness state initialization started')
-
-    const existingState = await this.witnessStateRepository.findSingleByQuery({})
-
-    // witness has already been initialized
-    if (existingState) return
-
-    const did = await this.didService.findStaticDid(DidMarker.Public)
-    if (!did) {
-      throw new AriesFrameworkError(
-        'Witness public DID not found. Please set `Public` marker for static DID in the agent config.'
-      )
-    }
-
-    const config = this.config.valueWitnessConfig
-
-    if (!config || !config?.knownWitnesses.length) {
-      throw new AriesFrameworkError('Witness table must be provided.')
-    }
-
-    const info = new WitnessDetails({
-      wid: config.wid,
-      did: did.did,
-    })
-
-    const witnessState = new WitnessState({
-      info,
-      mappingTable: config.knownWitnesses,
-    })
-
-    const state = new WitnessStateRecord({
-      witnessState,
-    })
-
-    await this.witnessStateRepository.save(state)
-
-    this.config.logger.info('< VTP Witness state initialization completed!')
   }
 
   /**
