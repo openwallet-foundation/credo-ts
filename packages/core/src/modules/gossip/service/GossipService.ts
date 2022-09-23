@@ -1,15 +1,18 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '../../value-transfer'
 import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
-import type { TransactionRecord, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { TransactionRecord } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Gossip, GossipMetricsInterface, WitnessGossipInfo } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Gossip, WitnessGossipInfo, GossipMetricsInterface WitnessState, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { AriesFrameworkError } from '../../../error'
+import { DidMarker, DidService } from '../../dids'
 import { ValueTransferEventTypes } from '../../value-transfer/ValueTransferEvents'
 import { WitnessTableMessage } from '../messages'
+import { WitnessStateRecord, WitnessStateRepository } from '../repository'
 
 import { GossipCryptoService } from './GossipCryptoService'
 import { GossipLoggerService } from './GossipLoggerService'
@@ -22,7 +25,9 @@ export class GossipService {
   private gossip: Gossip
   private config: AgentConfig
   private eventEmitter: EventEmitter
+  private witnessStateRepository: WitnessStateRepository
   private witnessGossipStateService: WitnessGossipStateService
+  private didService: DidService
   private gossipingStarted = false
 
   public constructor(
@@ -32,10 +37,14 @@ export class GossipService {
     @inject(InjectionSymbols.MetricsService) metricsService: GossipMetricsInterface,
     gossipTransportService: GossipTransportService,
     gossipLoggerService: GossipLoggerService,
+    witnessStateRepository: WitnessStateRepository,
+    didService: DidService,
     eventEmitter: EventEmitter
   ) {
     this.config = config
+    this.witnessStateRepository = witnessStateRepository
     this.witnessGossipStateService = gossipStateService
+    this.didService = didService
     this.eventEmitter = eventEmitter
 
     this.gossip = new Gossip(
@@ -54,7 +63,52 @@ export class GossipService {
     )
   }
 
-  public async startGossiping() {
+  public async init(): Promise<void> {
+    await this.initState()
+    await this.startGossiping()
+  }
+
+  private async initState(): Promise<void> {
+    this.config.logger.info('> Witness Gossip state initialization started')
+
+    const existingState = await this.witnessStateRepository.findSingleByQuery({})
+
+    // witness has already been initialized
+    if (existingState) return
+
+    const did = await this.didService.findStaticDid(DidMarker.Public)
+    if (!did) {
+      throw new AriesFrameworkError(
+        'Witness public DID not found. Please set `Public` marker for static DID in the agent config.'
+      )
+    }
+
+    const config = this.config.valueWitnessConfig
+
+    if (!config || !config?.knownWitnesses.length) {
+      throw new AriesFrameworkError('Witness table must be provided.')
+    }
+
+    const info = new WitnessDetails({
+      wid: config.wid,
+      did: did.did,
+    })
+
+    const witnessState = new WitnessState({
+      info,
+      mappingTable: config.knownWitnesses,
+    })
+
+    const state = new WitnessStateRecord({
+      witnessState,
+    })
+
+    await this.witnessStateRepository.save(state)
+
+    this.config.logger.info('< Witness Gossip state initialization completed!')
+  }
+
+  private async startGossiping() {
     if (!this.gossipingStarted) await this.gossip.start()
     this.gossipingStarted = true
   }

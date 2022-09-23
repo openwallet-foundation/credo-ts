@@ -1,8 +1,7 @@
 import type { Logger } from '../../../logger'
+import type { DidInfo, DidDocument, DidProps } from '../../dids/domain'
 import type { MediationRecord } from '../../routing/repository'
-import type { DidInfo } from '../../well-known'
 import type { DidMetadataChangedEvent, DidReceivedEvent } from '../DidEvents'
-import type { DidDocument, DidProps } from '../domain'
 import type { DidTags } from '../repository'
 import type { DIDMetadata } from '../types'
 
@@ -181,7 +180,7 @@ export class DidService {
 
   public async getPublicDid() {
     // find for a public DID which is not marked
-    const publicDid = await this.findPublicDid()
+    const publicDid = await this.findStaticDid(DidMarker.Public)
     if (publicDid) return publicDid
   }
 
@@ -277,12 +276,5 @@ export class DidService {
     })
     if (did.length) return did[0]
     return undefined
-  }
-
-  public async findPublicDid(): Promise<DidRecord | null> {
-    return this.didRepository.findSingleByQuery({
-      isStatic: true,
-      marker: DidMarker.Public,
-    })
   }
 }

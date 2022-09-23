@@ -11,9 +11,9 @@ import { SendingMessageType } from '../../../agent/didcomm/types'
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { DidService } from '../../dids'
+import { DidWellKnownService } from '../../dids/services/DidWellKnownService'
 import { ValueTransferGetterService } from '../../value-transfer/services/ValueTransferGetterService'
 import { ValueTransferGiverService } from '../../value-transfer/services/ValueTransferGiverService'
-import { WellKnownService } from '../../well-known'
 import { OutOfBandEventTypes } from '../OutOfBandEvents'
 import { AndroidNearbyHandshakeAttachment, OutOfBandGoalCode, OutOfBandInvitationMessage } from '../messages'
 
@@ -21,7 +21,7 @@ import { AndroidNearbyHandshakeAttachment, OutOfBandGoalCode, OutOfBandInvitatio
 export class OutOfBandService {
   private agentConfig: AgentConfig
   private didService: DidService
-  private wellKnownService: WellKnownService
+  private wellKnownService: DidWellKnownService
   private eventEmitter: EventEmitter
   private valueTransferGetterService: ValueTransferGetterService
   private valueTransferGiverService: ValueTransferGiverService
@@ -30,7 +30,7 @@ export class OutOfBandService {
   public constructor(
     agentConfig: AgentConfig,
     didService: DidService,
-    wellKnownService: WellKnownService,
+    wellKnownService: DidWellKnownService,
     eventEmitter: EventEmitter,
     valueTransferGetterService: ValueTransferGetterService,
     valueTransferGiverService: ValueTransferGiverService,
