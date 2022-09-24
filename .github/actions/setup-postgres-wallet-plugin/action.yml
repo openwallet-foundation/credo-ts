@@ -5,11 +5,15 @@ author: 'sairanjit.tummalapalli@ayanworks.com'
 runs:
   using: composite
   steps:
+    # cargo build failing on latest release of rust due to
+    # socket2 dependency in the plugin https://users.rust-lang.org/t/build-broken-with-parse-quote-spanned-is-ambiguous/80280/2
+    # so pointing rust version to 1.63.0
     - name: Setup Postgres wallet plugin
       run: |
         sudo apt-get install -y libzmq3-dev libsodium-dev pkg-config libssl-dev
         curl https://sh.rustup.rs -sSf | bash -s -- -y
         export PATH="/root/.cargo/bin:${PATH}"
+        rustup default 1.63.0
         cd ../
         git clone https://github.com/hyperledger/indy-sdk.git
         cd indy-sdk/experimental/plugins/postgres_storage/
