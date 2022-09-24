@@ -34,6 +34,8 @@ RUN apt-get install -y --no-install-recommends yarn
 # install rust and set up rustup
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
+
+# cargo build failing on latest release of rust due to socket2 dependency in the plugin https://users.rust-lang.org/t/build-broken-with-parse-quote-spanned-is-ambiguous/80280/2 so pointing rust version to 1.63.0
 RUN rustup default 1.63.0
 
 # clone indy-sdk and build postgres plugin
