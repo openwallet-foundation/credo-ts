@@ -54,9 +54,9 @@ export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation =
 }
 
 //This currently does not follow the RFC because of issues with fetch, currently uses a janky work around
-export const oobInvitationfromShortUrl = async (response: Response): Promise<OutOfBandInvitation> => {
+export const oobInvitationFromShortUrl = async (response: Response): Promise<OutOfBandInvitation> => {
   if (response) {
-    if (response.headers.get('Content-Type') === 'application/json' && response.ok) {
+    if (response.headers.get('Content-Type')?.startsWith('application/json') && response.ok) {
       const invitationJson = await response.json()
       const parsedMessageType = parseMessageType(invitationJson['@type'])
       if (supportsIncomingMessageType(parsedMessageType, OutOfBandInvitation.type)) {
@@ -107,7 +107,7 @@ export const parseInvitationShortUrl = async (
     return convertToNewInvitation(invitation)
   } else {
     try {
-      return oobInvitationfromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
+      return oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
     } catch (error) {
       throw new AriesFrameworkError(
         'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`, or be valid shortened URL'
