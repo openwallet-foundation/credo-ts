@@ -1,23 +1,21 @@
-import type {
-  FormatAcceptOfferOptions,
-  FormatAcceptProposalOptions,
-  FormatCreateOfferOptions,
-  FormatCreateOfferReturn,
-  FormatCreateProposalOptions,
-  FormatCreateReturn,
-  FormatProcessOptions,
-} from '..'
 import type { AgentContext } from '../../../../agent'
 import type { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import type {
+  FormatAcceptOfferOptions,
+  FormatAcceptProposalOptions,
   FormatAcceptRequestOptions,
   FormatAutoRespondCredentialOptions,
   FormatAutoRespondOfferOptions,
   FormatAutoRespondProposalOptions,
   FormatAutoRespondRequestOptions,
+  FormatCreateOfferOptions,
+  FormatCreateOfferReturn,
+  FormatCreateProposalOptions,
   FormatCreateProposalReturn,
   FormatCreateRequestOptions,
+  FormatCreateReturn,
   FormatProcessCredentialOptions,
+  FormatProcessOptions,
 } from '../CredentialFormatServiceOptions'
 import type { JsonLdCredentialFormat, SignCredentialOptionsRFC0593 } from './JsonLdCredentialFormat'
 import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
