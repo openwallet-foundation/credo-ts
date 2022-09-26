@@ -1,5 +1,4 @@
-import { Expose } from 'class-transformer'
-import { IsObject, IsOptional, IsString } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
 
 import { W3cCredential } from '../../../vc/models/credential/W3cCredential'
 
@@ -22,16 +21,10 @@ export class JsonLdCredential {
     }
   }
 
-  @Expose({ name: 'credential' })
-  @IsObject()
+  @Type(() => W3cCredential)
   public credential!: W3cCredential
 
   @Expose({ name: 'options' })
-  @IsObject()
+  @Type(() => JsonLdOptionsRFC0593)
   public options!: JsonLdOptionsRFC0593
-
-  @Expose({ name: 'verificationMethod' })
-  @IsString()
-  @IsOptional()
-  public verificationMethod!: string
 }

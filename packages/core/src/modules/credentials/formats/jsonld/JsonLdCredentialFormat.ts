@@ -6,8 +6,6 @@ export interface JsonLdAcceptRequestOptions extends SignCredentialOptionsRFC0593
   verificationMethod?: string
 }
 
-// feel free to rename this, the RFC suffix is useful during dev
-
 export interface SignCredentialOptionsRFC0593 {
   credential: W3cCredential
   options: JsonLdOptionsRFC0593
