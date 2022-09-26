@@ -212,11 +212,11 @@ export class ValueTransferWitnessService {
   /**
    * Resume processing of VTP transaction
    * */
-  public async resumeTransaction(thid: string): Promise<void> {
-    this.config.logger.info(`> Witness ${this.config.label}: resume transaction '${thid}'`)
+  public async resumeTransaction(id: string): Promise<void> {
+    this.config.logger.info(`> Witness ${this.config.label}: resume transaction '${id}'`)
 
-    await this.witness.resumeTransaction(thid)
+    await this.witness.resumeTransaction(id)
 
-    this.config.logger.info(`< Witness ${this.config.label}: transaction resumed ${thid}`)
+    this.config.logger.info(`< Witness ${this.config.label}: transaction resumed ${id}`)
   }
 }

@@ -97,7 +97,7 @@ export class ValueTransferGiverService {
     // Get payment public DID from the storage or generate a new one if requested
     const giver = await this.valueTransferService.getTransactionDid(params.usePublicDid)
 
-    const { error, transaction, message } = await this.giver.offerPayment({
+    const { error, transaction, message } = await this.giver.createOffer({
       giverId: giver.did,
       getterId: params.getter,
       witnessId: params.witness,
@@ -162,7 +162,6 @@ export class ValueTransferGiverService {
    *
    * @param record Value Transfer record containing Payment Request to accept.
    * @param timeouts (Optional) Giver timeouts to which value transfer must fit.
-   * @param usePublicDid (Optional) Boolean value that indicates whether Public DID should be used if giver is not specified in Value Transfer record.
    *
    * @returns
    *    * Value Transfer record
@@ -170,8 +169,7 @@ export class ValueTransferGiverService {
    */
   public async acceptRequest(
     record: ValueTransferRecord,
-    timeouts?: Timeouts,
-    usePublicDid?: boolean
+    timeouts?: Timeouts
   ): Promise<{
     record?: ValueTransferRecord
   }> {
@@ -179,9 +177,7 @@ export class ValueTransferGiverService {
       `> Giver: accept payment request message for VTP transaction ${record.transaction.threadId}`
     )
 
-    const giverDid = record.transaction.giver ?? (await this.valueTransferService.getTransactionDid(usePublicDid)).id
-
-    const { error, transaction, message } = await this.giver.acceptRequest(record.transaction.id, giverDid, timeouts)
+    const { error, transaction, message } = await this.giver.acceptRequest(record.transaction.id, timeouts)
     if (error || !transaction || !message) {
       this.config.logger.error(
         ` Giver: accept request message for VTP transaction ${record.transaction.threadId} failed. Error: ${error}`

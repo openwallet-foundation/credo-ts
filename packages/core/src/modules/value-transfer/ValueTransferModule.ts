@@ -105,18 +105,14 @@ export class ValueTransferModule {
    *
    * @returns Value Transfer record and Payment Request Acceptance Message
    */
-  public async acceptPaymentRequest(params: {
-    recordId: string
-    timeouts?: Timeouts
-    usePublicDid?: boolean
-  }): Promise<{
+  public async acceptPaymentRequest(params: { recordId: string; timeouts?: Timeouts }): Promise<{
     record?: ValueTransferRecord
   }> {
     // Get Value Transfer record
     const record = await this.valueTransferService.getById(params.recordId)
 
     // Accept Payment Request
-    return this.valueTransferGiverService.acceptRequest(record, params.timeouts, params.usePublicDid)
+    return this.valueTransferGiverService.acceptRequest(record, params.timeouts)
   }
 
   /**

@@ -93,8 +93,7 @@ export class ValueTransferGetterService {
     this.config.logger.info(`> Getter: request payment VTP transaction with ${id}`)
 
     // Get payment public DID from the storage or generate a new one if requested
-    const usePublicDid = params.usePublicDid || true
-    const getter = await this.valueTransferService.getTransactionDid(usePublicDid)
+    const getter = await this.valueTransferService.getTransactionDid(params.usePublicDid)
 
     // Call VTP package to create payment request
     const { error, transaction, message } = await this.getter.createRequest({
@@ -174,14 +173,7 @@ export class ValueTransferGetterService {
   }> {
     this.config.logger.info(`> Getter: accept offer message for VTP transaction ${record.id}`)
 
-    const getterId = record.transaction.getter ?? (await this.valueTransferService.getTransactionDid()).id
-
-    const { error, transaction, message } = await this.getter.acceptOffer(
-      record.transaction.id,
-      getterId,
-      witnessDid,
-      timeouts
-    )
+    const { error, transaction, message } = await this.getter.acceptOffer(record.transaction.id, witnessDid, timeouts)
     if (error || !transaction || !message) {
       this.config.logger.error(`VTP: Failed to accept Payment Offer: ${error?.message}`)
       return { record }
