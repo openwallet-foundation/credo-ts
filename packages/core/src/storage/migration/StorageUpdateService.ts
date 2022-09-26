@@ -1,9 +1,11 @@
 import type { AgentContext } from '../../agent'
 import type { VersionString } from '../../utils/version'
+import type { UpdateToVersion } from './updates'
 
 import { InjectionSymbols } from '../../constants'
 import { Logger } from '../../logger'
 import { injectable, inject } from '../../plugins'
+import { isFirstVersionEqualToSecond, isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
 
 import { StorageVersionRecord } from './repository/StorageVersionRecord'
 import { StorageVersionRepository } from './repository/StorageVersionRepository'
@@ -24,10 +26,14 @@ export class StorageUpdateService {
     this.storageVersionRepository = storageVersionRepository
   }
 
-  public async isUpToDate(agentContext: AgentContext) {
-    const currentStorageVersion = await this.getCurrentStorageVersion(agentContext)
+  public async isUpToDate(agentContext: AgentContext, updateToVersion?: UpdateToVersion) {
+    const currentStorageVersion = parseVersionString(await this.getCurrentStorageVersion(agentContext))
 
-    const isUpToDate = CURRENT_FRAMEWORK_STORAGE_VERSION === currentStorageVersion
+    const compareToVersion = parseVersionString(updateToVersion ?? CURRENT_FRAMEWORK_STORAGE_VERSION)
+
+    const isUpToDate =
+      isFirstVersionEqualToSecond(currentStorageVersion, compareToVersion) ||
+      isFirstVersionHigherThanSecond(currentStorageVersion, compareToVersion)
 
     return isUpToDate
   }
@@ -65,7 +71,7 @@ export class StorageUpdateService {
    * Retrieve the update record, creating it if it doesn't exist already.
    *
    * The storageVersion will be set to the INITIAL_STORAGE_VERSION if it doesn't exist yet,
-   * as we can assume the wallet was created before the udpate record existed
+   * as we can assume the wallet was created before the update record existed
    */
   public async getStorageVersionRecord(agentContext: AgentContext) {
     let storageVersionRecord = await this.storageVersionRepository.findById(
