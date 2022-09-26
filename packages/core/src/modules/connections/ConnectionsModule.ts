@@ -243,6 +243,15 @@ export class ConnectionsModule {
   }
 
   /**
+   * 
+   * @param connectionTypes An array of connection types to query for a match for
+   * @returns a promise of ab array of connection records
+   */
+  public async findAllByConnectionType(connectionTypes: [ConnectionType | string]){
+    return this.connectionService.findAllByConnectionType(connectionTypes)
+  }
+
+  /**
    * Retrieve a connection record by id
    *
    * @param connectionId The connection record id
