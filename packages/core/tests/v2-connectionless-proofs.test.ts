@@ -1,6 +1,6 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
-import type { OutOfBandRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { CreateProofRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
 import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
 
@@ -79,7 +79,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: OutOfBandRequestOptions<[IndyProofFormat], [V2ProofService]> = {
+    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
@@ -97,11 +97,15 @@ describe('Present Proof', () => {
     })
 
     // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createOutOfBandRequest(
-      outOfBandRequestOptions
-    )
+    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
 
-    await aliceAgent.receiveMessage(message.toJSON())
+    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberProofRecord.id,
+      message,
+      domain: 'https://a-domain.com',
+    })
+
+    await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofRecord = await aliceProofRecordPromise
@@ -178,7 +182,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: OutOfBandRequestOptions<[IndyProofFormat], [V2ProofService]> = {
+    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
@@ -201,9 +205,14 @@ describe('Present Proof', () => {
     })
 
     // eslint-disable-next-line prefer-const
-    let { message } = await faberAgent.proofs.createOutOfBandRequest(outOfBandRequestOptions)
+    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
 
-    await aliceAgent.receiveMessage(message.toJSON())
+    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberProofRecord.id,
+      message,
+      domain: 'https://a-domain.com',
+    })
+    await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     await aliceProofRecordPromise
 
@@ -339,7 +348,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: OutOfBandRequestOptions<[IndyProofFormat], [V2ProofService]> = {
+    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
         indy: {
@@ -362,14 +371,20 @@ describe('Present Proof', () => {
     })
 
     // eslint-disable-next-line prefer-const
-    let { message } = await faberAgent.proofs.createOutOfBandRequest(outOfBandRequestOptions)
+    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
+
+    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberProofRecord.id,
+      message,
+      domain: 'https://a-domain.com',
+    })
 
     const mediationRecord = await faberAgent.mediationRecipient.findDefaultMediator()
     if (!mediationRecord) {
       throw new Error('Faber agent has no default mediator')
     }
 
-    expect(message).toMatchObject({
+    expect(requestMessage).toMatchObject({
       service: {
         recipientKeys: [expect.any(String)],
         routingKeys: mediationRecord.routingKeys,
@@ -377,7 +392,7 @@ describe('Present Proof', () => {
       },
     })
 
-    await aliceAgent.receiveMessage(message.toJSON())
+    await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     await aliceProofRecordPromise
 
