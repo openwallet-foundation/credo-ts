@@ -3,8 +3,8 @@ import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } f
 import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
 import type { TransactionRecord } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Gossip, WitnessGossipInfo, GossipMetricsInterface WitnessState, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { Gossip, WitnessGossipInfo, WitnessState, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -18,7 +18,6 @@ import { GossipCryptoService } from './GossipCryptoService'
 import { GossipLoggerService } from './GossipLoggerService'
 import { WitnessGossipStateService } from './GossipStateService'
 import { GossipTransportService } from './GossipTransportService'
-import { InjectionSymbols } from '../../../constants'
 
 @scoped(Lifecycle.ContainerScoped)
 export class GossipService {
@@ -34,7 +33,6 @@ export class GossipService {
     config: AgentConfig,
     gossipCryptoService: GossipCryptoService,
     gossipStateService: WitnessGossipStateService,
-    @inject(InjectionSymbols.MetricsService) metricsService: GossipMetricsInterface,
     gossipTransportService: GossipTransportService,
     gossipLoggerService: GossipLoggerService,
     witnessStateRepository: WitnessStateRepository,
@@ -53,7 +51,7 @@ export class GossipService {
         crypto: gossipCryptoService,
         storage: gossipStateService,
         transport: gossipTransportService,
-        metrics: metricsService,
+        metrics: config.witnessGossipMetrics,
       },
       {
         label: config.label,

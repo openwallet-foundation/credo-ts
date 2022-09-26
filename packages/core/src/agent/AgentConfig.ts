@@ -2,14 +2,12 @@ import type { Logger } from '../logger'
 import type { FileSystem } from '../storage/FileSystem'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
-import type { GossipMetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Subject } from 'rxjs'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
-import { DummyMetricsService } from '../metrics'
 import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
 import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
 import { offlineTransports, onlineTransports } from '../modules/routing/types'
@@ -17,10 +15,9 @@ import { AutoAcceptValueTransfer } from '../modules/value-transfer/ValueTransfer
 import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
-  private initConfig: InitConfig
+  private readonly initConfig: InitConfig
   public label: string
   public logger: Logger
-  public metricsService: GossipMetricsInterface
   public readonly agentDependencies: AgentDependencies
   public readonly fileSystem: FileSystem
 
@@ -31,7 +28,6 @@ export class AgentConfig {
     this.initConfig = initConfig
     this.label = initConfig.label
     this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
-    this.metricsService = initConfig.metricsService ?? new DummyMetricsService()
     this.agentDependencies = agentDependencies
     this.fileSystem = new agentDependencies.FileSystem()
 
@@ -115,6 +111,10 @@ export class AgentConfig {
 
   public get witnessIssuerDids() {
     return this.initConfig.valueTransferConfig?.witness?.issuerDids
+  }
+
+  public get witnessGossipMetrics() {
+    return this.initConfig.valueTransferConfig?.witness?.gossipMetricsService
   }
 
   public get valueTransferWitnessDid() {

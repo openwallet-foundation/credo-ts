@@ -13,7 +13,6 @@ export interface EmulatorWitnessConfig {
   type?: string
   issuerDids?: string[]
   publicDidSeed?: string
-  gossipDidSeed?: string
   tockTime?: number
   knownWitnesses?: WitnessDetails[]
 }
@@ -26,6 +25,7 @@ export class Witness {
     const name = witnessConfig.label ?? randomUUID()
     const endpoint = `${witnessConfig.host}:${witnessConfig.port!}`
     const wid = witnessConfig.wid ?? witnessConfig.port!.toString()
+
     const config: InitConfig = {
       label: name,
       walletConfig: { id: name, key: name },
@@ -38,13 +38,6 @@ export class Witness {
           transports: [Transports.HTTP],
           needMediation: false,
         },
-        {
-          seed: witnessConfig.gossipDidSeed,
-          marker: DidMarker.Queries,
-          endpoint: endpoint,
-          transports: [Transports.HTTP],
-          needMediation: false,
-        },
       ],
       valueTransferConfig: {
         witness: {
@@ -52,10 +45,10 @@ export class Witness {
           knownWitnesses: witnessConfig.knownWitnesses || [],
           issuerDids: witnessConfig.issuerDids,
           tockTime: witnessConfig.tockTime,
+          gossipMetricsService: new MetricsService(),
         },
       },
       transports: [Transports.HTTP],
-      metricsService: new MetricsService(),
     }
 
     this.agent = new Agent(config, agentDependencies)
@@ -70,8 +63,6 @@ export class Witness {
     console.log(`Witness ${this.agent.config.label} started!`)
     const publicDid = await this.agent.getStaticDid(DidMarker.Public)
     console.log(`Witness ${this.agent.config.label} Public DID: ${publicDid?.did}`)
-    const gossipDid = await this.agent.getStaticDid(DidMarker.Queries)
-    console.log(`Witness ${this.agent.config.label} Gossip DID: ${gossipDid?.did}`)
   }
 }
 

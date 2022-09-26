@@ -74,7 +74,6 @@ export class Agent {
   public readonly valueTransfer: ValueTransferModule
   public readonly gossip: GossipModule
   public readonly outOfBand: OutOfBandModule
-  public readonly metrics: GossipMetricsInterface
 
   public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
     // Create child container so we don't interfere with anything outside of this agent
@@ -82,14 +81,12 @@ export class Agent {
 
     this.agentConfig = new AgentConfig(initialConfig, dependencies)
     this.logger = this.agentConfig.logger
-    this.metrics = this.agentConfig.metricsService
 
     // Bind class based instances
     this.container.registerInstance(AgentConfig, this.agentConfig)
 
     // Based on interfaces. Need to register which class to use
     this.container.registerInstance(InjectionSymbols.Logger, this.logger)
-    this.container.registerInstance(InjectionSymbols.MetricsService, this.metrics)
     this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
     this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
     this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)

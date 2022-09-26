@@ -4,7 +4,7 @@ import type { GossipMetricsInterface } from '@sicpa-dlab/value-transfer-protocol
 import os from 'os'
 
 // You can generate an API token from the "API Tokens Tab" in the UI
-const token = 'MhMBt404X09WwKg6f2WxNtFw_SO0JMI7Nrpk_qQGeB12HF5NW65D91ZYTrAW6meLYSkuxOr2_uur5g3FcXSOHQ=='
+const token = 'PsxPtqHVTPON1ln95oCLfxNBKwqcjFltLLM2KOWJ_pa0QH-rHkYFhmZReK0oNpWzIMbPk7xjnBS1MxUNYDIFHA=='
 const org = 'dsr'
 const bucket = 'dsr-test'
 

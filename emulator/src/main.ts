@@ -20,7 +20,6 @@ const run = async () => {
     host: config.host,
     port: startPort++,
     publicDidSeed: witness.publicDidSeed ?? randomString(32),
-    gossipDidSeed: witness.gossipDidSeed ?? randomString(32),
   }))
   console.log('witnesses')
   console.log(witnesses)

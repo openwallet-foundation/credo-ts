@@ -20,11 +20,6 @@ interface CreateDidResult {
   did: string
 }
 
-interface CreateWitnessResult {
-  publicDid: string
-  gossipDid: string
-}
-
 interface CreatePeerDidOptions {
   seed?: string
   serviceEndpoints: { http?: string }
@@ -60,44 +55,27 @@ function createPeerDid(options: CreatePeerDidOptions) {
   }
 }
 
-function createUserDid(config: EmulatorUserConfig): CreateDidResult {
+function createEmulatorDid(config: EmulatorUserConfig | EmulatorWitnessConfig): CreateDidResult {
   const endpoint = `${config.host}:${config.port}`
   return createPeerDid({ seed: config.publicDidSeed, serviceEndpoints: { http: endpoint } })
 }
 
-function createWitnessDid(options: { seed?: string; host: string }): CreateDidResult {
-  const { seed, host } = options
-  return createPeerDid({ seed, serviceEndpoints: { http: host } })
-}
-
-const createWitnessConfig = (config: EmulatorWitnessConfig, witnessTable: WitnessDetails[]): CreateWitnessResult => {
-  const endpoint = `${config.host}:${config.port}`
-  const publicDid = createWitnessDid({
-    host: endpoint,
-    seed: config.publicDidSeed,
-  })
-  const gossipDid = createWitnessDid({
-    host: endpoint,
-    seed: config.gossipDidSeed,
-  })
+const addWitnessToTable = (config: EmulatorWitnessConfig, witnessTable: WitnessDetails[]) => {
+  const publicDid = createEmulatorDid(config)
   witnessTable.push({
     label: config.label,
-    did: gossipDid.did,
+    did: publicDid.did,
     type: config.type,
     wid: config.wid ?? config.port!.toString(),
   })
-  return {
-    publicDid: publicDid.did,
-    gossipDid: gossipDid.did,
-  }
 }
 
 export const createUsersList = (users: EmulatorUserConfig[]): string[] => {
-  return users.map((user) => createUserDid(user).did)
+  return users.map((user) => createEmulatorDid(user).did)
 }
 
 export const createWitnessTable = (witnesses: EmulatorWitnessConfig[]): WitnessDetails[] => {
   const witnessTable: WitnessDetails[] = []
-  witnesses.forEach((witnessConfig) => createWitnessConfig(witnessConfig, witnessTable))
+  witnesses.forEach((witnessConfig) => addWitnessToTable(witnessConfig, witnessTable))
   return witnessTable
 }

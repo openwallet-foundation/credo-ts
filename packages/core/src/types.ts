@@ -51,7 +51,7 @@ export interface ValueTransferPartyConfig {
 export enum WitnessType {
   One = '1',
   Two = '2',
-  Three = '2',
+  Three = '3',
 }
 
 export interface ValueTransferWitnessConfig {
@@ -63,6 +63,7 @@ export interface ValueTransferWitnessConfig {
   historyThreshold?: number
   redeliveryThreshold?: number
   issuerDids?: string[]
+  gossipMetricsService?: GossipMetricsInterface
 }
 
 export interface ValueTransferConfig {
@@ -86,7 +87,6 @@ export interface InitConfig {
   autoAcceptProofs?: AutoAcceptProof
   autoAcceptCredentials?: AutoAcceptCredential
   logger?: Logger
-  metricsService?: GossipMetricsInterface
   didCommMimeType?: DidCommMimeType
   supportOffline?: boolean
   catchErrors?: boolean

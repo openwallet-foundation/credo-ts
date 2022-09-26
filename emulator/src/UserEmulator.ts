@@ -1,14 +1,6 @@
 import type { InitConfig } from '@aries-framework/core'
 
-import {
-  Agent,
-  DidMarker,
-  HttpOutboundTransport,
-  Transports,
-  InjectionSymbols,
-  ConsoleLogger,
-  LogLevel,
-} from '@aries-framework/core'
+import { Agent, DidMarker, HttpOutboundTransport, Transports, ConsoleLogger, LogLevel } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 import { randomUUID } from 'crypto'
 import { MetricsService } from './metrics'
@@ -24,16 +16,13 @@ export interface EmulatorUserConfig {
 }
 
 export class User {
-  private agent: Agent
-  private metricsService: MetricsService
-  private config: EmulatorUserConfig
+  private readonly agent: Agent
+  private readonly config: EmulatorUserConfig
   private static amount = 1
 
   public constructor(userConfig: EmulatorUserConfig) {
     const name = userConfig.label ?? randomUUID()
     const endpoint = `${userConfig.host}:${userConfig.port!}`
-
-    this.metricsService = new MetricsService()
 
     const config: InitConfig = {
       label: name,
@@ -54,7 +43,6 @@ export class User {
         },
       },
       transports: [Transports.HTTP],
-      metricsService: this.metricsService,
     }
 
     this.agent = new Agent(config, agentDependencies)
