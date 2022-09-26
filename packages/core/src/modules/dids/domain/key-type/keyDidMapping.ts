@@ -1,8 +1,6 @@
 import type { Key } from '../../../../crypto/Key'
 import type { VerificationMethod } from '../verificationMethod'
 
-import { ProofType } from '@sphereon/pex'
-
 import { KeyType } from '../../../../crypto'
 
 import { keyDidBls12381g1 } from './bls12381g1'

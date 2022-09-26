@@ -1,6 +1,5 @@
 import type { DidDocumentService } from './service'
 
-import { ProofType } from '@sphereon/pex/dist/main/lib/types/SSI.types'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
