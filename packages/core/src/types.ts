@@ -14,8 +14,6 @@ import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
 import type { WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { PackedMessage } from './agent/didcomm/types'
-
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
   Argon2IMod = 'ARGON2I_MOD',

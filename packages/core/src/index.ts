@@ -49,4 +49,4 @@ const utils = {
 }
 
 export { utils }
-export { EncryptedMessage } from './agent/didcomm'
+export { EncryptedMessage, SignedMessage } from './agent/didcomm'

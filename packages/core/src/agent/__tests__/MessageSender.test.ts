@@ -50,6 +50,7 @@ describe('MessageSender', () => {
     iv: 'base64url',
     ciphertext: 'base64url',
     tag: 'base64url',
+    recipients: [],
   }
 
   const enveloperService = new EnvelopeService()
