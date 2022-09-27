@@ -71,24 +71,24 @@ export class ValueTransferWitnessService {
    *
    * @returns
    *    * Value Transfer record
-   *    * Witnessed Request Acceptance message
    */
   public async processRequestAcceptance(messageContext: InboundMessageContext<RequestAcceptedMessage>): Promise<{
     record?: ValueTransferRecord
   }> {
-    // Verify that we are in appropriate state to perform action
     const { message: requestAcceptanceMessage } = messageContext
 
     this.config.logger.info(
       `> Witness ${this.config.label}: process request acceptance message for VTP transaction ${requestAcceptanceMessage.thid}`
     )
 
+    // Call VTP library to handle request acceptance
     const requestAcceptance = new RequestAcceptance(requestAcceptanceMessage)
     const { error, transaction } = await this.witness.processRequestAcceptance(requestAcceptance)
     if (error || !transaction) {
       throw new AriesFrameworkError(`Failed to create Payment Request: ${error?.message}`)
     }
 
+    // Raise event
     const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.config.logger.info(
@@ -107,18 +107,17 @@ export class ValueTransferWitnessService {
    *
    * @returns
    *    * Value Transfer record
-   *    * Witnessed Cash Acceptance message
    */
   public async processCashAcceptance(messageContext: InboundMessageContext<CashAcceptedMessage>): Promise<{
     record?: ValueTransferRecord
   }> {
-    // Verify that we are in appropriate state to perform action
     const { message: cashAcceptedMessage } = messageContext
 
     this.config.logger.info(
       `> Witness ${this.config.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid}`
     )
 
+    // Call VTP library to handle cash acceptance
     const cashAcceptance = new CashAcceptance(cashAcceptedMessage)
     const { error, transaction } = await this.witness.processCashAcceptance(cashAcceptance)
     if (error || !transaction) {
@@ -128,6 +127,7 @@ export class ValueTransferWitnessService {
       return {}
     }
 
+    // Rasie event
     const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.config.logger.info(
@@ -146,18 +146,17 @@ export class ValueTransferWitnessService {
    *
    * @returns
    *    * Value Transfer record
-   *    * Witnessed Cash Removal message
    */
   public async processCashRemoval(messageContext: InboundMessageContext<CashRemovedMessage>): Promise<{
     record?: ValueTransferRecord
   }> {
-    // Verify that we are in appropriate state to perform action
     const { message: cashRemovedMessage } = messageContext
 
     this.config.logger.info(
       `> Witness ${this.config.label}: process cash removal message for VTP transaction ${cashRemovedMessage.thid}`
     )
 
+    // Call VTP library to handle cash removal and create receipt
     const cashRemoval = new CashRemoval(cashRemovedMessage)
     const { error, transaction } = await this.witness.createReceipt(cashRemoval)
     if (error || !transaction) {
@@ -167,6 +166,7 @@ export class ValueTransferWitnessService {
       return {}
     }
 
+    // Raise event
     const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.config.logger.info(
@@ -183,7 +183,6 @@ export class ValueTransferWitnessService {
    *
    * @param messageContext The record context containing the message.@returns
    *    * Value Transfer record
-   *    * Witnessed Cash Removal message
    */
   public async processCashMint(messageContext: InboundMessageContext<MintMessage>): Promise<{
     message?: MintResponseMessage
@@ -194,6 +193,7 @@ export class ValueTransferWitnessService {
 
     const { message: mintMessage } = messageContext
 
+    // Call VTP library to handle cash mint
     const { error, message } = await this.witness.processCashMint(mintMessage)
     if (error || !message) {
       this.config.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
@@ -215,6 +215,7 @@ export class ValueTransferWitnessService {
   public async resumeTransaction(id: string): Promise<void> {
     this.config.logger.info(`> Witness ${this.config.label}: resume transaction '${id}'`)
 
+    // Call VTP library to resume transaction
     await this.witness.resumeTransaction(id)
 
     this.config.logger.info(`< Witness ${this.config.label}: transaction resumed ${id}`)

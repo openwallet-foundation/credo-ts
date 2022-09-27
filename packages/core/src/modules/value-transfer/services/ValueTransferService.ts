@@ -307,12 +307,8 @@ export class ValueTransferService {
     return this.valueTransferStateRepository.findSingleByQuery({})
   }
 
-  public async getPartyState(): Promise<ValueTransferStateRecord> {
-    return this.valueTransferStateRepository.getSingleByQuery({})
-  }
-
-  public async getTransactionDid(usePublicDid?: boolean) {
-    return this.didService.getPublicDidOrCreateNew(usePublicDid)
+  public async getPartyPublicDid() {
+    return this.didService.getPublicDid()
   }
 
   public async emitStateChangedEvent(id: string): Promise<ValueTransferRecord> {

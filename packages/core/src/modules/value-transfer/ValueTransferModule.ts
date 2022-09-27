@@ -103,7 +103,7 @@ export class ValueTransferModule {
    *   usePublicDid Boolean value that indicates whether Public DID should be used if giver is not specified in Value Transfer record
    * }
    *
-   * @returns Value Transfer record and Payment Request Acceptance Message
+   * @returns Value Transfer record
    */
   public async acceptPaymentRequest(params: { recordId: string; timeouts?: Timeouts }): Promise<{
     record?: ValueTransferRecord
@@ -134,7 +134,7 @@ export class ValueTransferModule {
    *  skipSending (Optional) - skip sending of transaction (false by default)
    * }
    *
-   * @returns Value Transfer record and Payment Request Message
+   * @returns Value Transfer record and Payment Offer Message
    */
   public async offerPayment(params: {
     amount: number
@@ -164,7 +164,7 @@ export class ValueTransferModule {
    *   }
    * }
    *
-   * @returns Value Transfer record and Payment Request Acceptance Message
+   * @returns Value Transfer record
    */
   public async acceptPaymentOffer(params: { recordId: string; witness?: string; timeouts?: Timeouts }): Promise<{
     record?: ValueTransferRecord
@@ -210,7 +210,6 @@ export class ValueTransferModule {
   ): Promise<{
     record?: ValueTransferRecord
   }> {
-    // Abort transaction
     return this.valueTransferService.abortTransaction(id, send, code, reason)
   }
 
@@ -230,8 +229,7 @@ export class ValueTransferModule {
     awaitResponse = true,
     timeoutMs = 20000
   ): Promise<void> {
-    // Mint Verifiable Notes
-    await this.valueTransferIssuerService.mintCash(amount, witness, send, awaitResponse, timeoutMs)
+    return this.valueTransferIssuerService.mintCash(amount, witness, send, awaitResponse, timeoutMs)
   }
 
   /**
