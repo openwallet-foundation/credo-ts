@@ -10,9 +10,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
-import { DidService } from '../../dids/services/DidService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
-import { ValueTransferRepository } from '../repository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
@@ -22,30 +20,20 @@ import { ValueTransferTransportService } from './ValueTransferTransportService'
 @scoped(Lifecycle.ContainerScoped)
 export class ValueTransferIssuerService {
   private config: AgentConfig
-  private valueTransferRepository: ValueTransferRepository
   private valueTransferService: ValueTransferService
-  private valueTransferCryptoService: ValueTransferCryptoService
-  private valueTransferStateService: ValueTransferPartyStateService
-  private didService: DidService
   private giver: Giver
   private eventEmitter: EventEmitter
 
   public constructor(
     config: AgentConfig,
-    valueTransferRepository: ValueTransferRepository,
     valueTransferService: ValueTransferService,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferPartyStateService,
     valueTransferTransportService: ValueTransferTransportService,
-    didService: DidService,
     eventEmitter: EventEmitter
   ) {
     this.config = config
-    this.valueTransferRepository = valueTransferRepository
     this.valueTransferService = valueTransferService
-    this.valueTransferCryptoService = valueTransferCryptoService
-    this.valueTransferStateService = valueTransferStateService
-    this.didService = didService
     this.eventEmitter = eventEmitter
     this.giver = new Giver(
       {
@@ -81,21 +69,24 @@ export class ValueTransferIssuerService {
   ): Promise<void> {
     this.config.logger.info(`> Issuer ${this.config.label}: mint cash with`)
 
-    const publicDid = await this.didService.getPublicDid()
+    // Get party public DID from the storage
+    const publicDid = await this.valueTransferService.getPartyPublicDid()
     if (!publicDid) {
       throw new AriesFrameworkError('Public DID is not found')
     }
 
+    // Call VTP library to start cash minting
     const { error, transaction, message } = await this.giver.startCashMinting(publicDid.did, amount, witness, send)
     if (error || !transaction || !message) {
       this.config.logger.error(`Issuer: Failed to mint cash: ${error?.message}`)
       return
     }
 
-    // await acknowledge from witness
     if (awaitResponse) {
+      // Await acknowledge from witness if requested
       await this.awaitCashMinted(timeoutMs)
     } else {
+      // Complete cash minting without awaiting response
       const { error } = await this.giver.completeCashMinting(transaction.id)
       if (error) {
         this.config.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
@@ -113,13 +104,14 @@ export class ValueTransferIssuerService {
   public async processCashMintResponse(messageContext: InboundMessageContext<MintResponseMessage>): Promise<void> {
     this.config.logger.info(`> Issuer ${this.config.label}: process cash mint response ${messageContext.message.thid}`)
 
-    // Commit transaction and raise event
+    // Call VTP library to complete cash minting
     const { error, transaction } = await this.giver.completeCashMinting(messageContext.message.thid)
     if (error || !transaction) {
       this.config.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
       return
     }
 
+    // Raise event
     this.eventEmitter.emit<CashMintedEvent>({
       type: ValueTransferEventTypes.CashMinted,
       payload: {},
