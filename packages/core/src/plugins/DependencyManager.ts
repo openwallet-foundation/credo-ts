@@ -2,8 +2,6 @@ import type { ModulesMap } from '../agent/AgentModules'
 import type { Constructor } from '../utils/mixins'
 import type { DependencyContainer } from 'tsyringe'
 
-import 'reflect-metadata'
-
 import { container as rootContainer, InjectionToken, Lifecycle } from 'tsyringe'
 
 import { FeatureRegistry } from '../agent/FeatureRegistry'

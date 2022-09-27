@@ -24,19 +24,6 @@ const keyDidMapping: Record<KeyType, KeyDidMapping> = {
   [KeyType.Bls12381g1g2]: keyDidBls12381g1g2,
 }
 
-// export const proofTypeKeyTypeMapping: Record<ProofType, string> = {
-//   [ProofType.Ed25519Signature2018]: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-//   [ProofType.Ed25519Signature2020]: '',
-//   [ProofType.EcdsaSecp256k1Signature2019]: '',
-//   [ProofType.EcdsaSecp256k1RecoverySignature2020]: '',
-//   [ProofType.JsonWebSignature2020]: '',
-//   [ProofType.RsaSignature2018]: '',
-//   [ProofType.GpgSignature2020]: '',
-//   [ProofType.JcsEd25519Signature2020]: '',
-//   [ProofType.BbsBlsSignatureProof2020]: VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
-//   [ProofType.BbsBlsBoundSignatureProof2020]: '',
-// }
-
 export const proofTypeKeyTypeMapping: Record<string, string> = {
   ['Ed25519Signature2018']: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   ['BbsBlsSignature2020']: VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
