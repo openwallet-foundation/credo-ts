@@ -220,19 +220,16 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // (attachment in the request message from holder to issuer)
     const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
-    let verificationMethod = credentialFormats?.jsonld?.verificationMethod
-
     const credentialData = jsonLdFormat ?? credentialRequest
+    const jsonLdCredential = new JsonLdCredential(credentialData)
+    MessageValidator.validateSync(jsonLdCredential)
+
+    const verificationMethod =
+      credentialFormats?.jsonld?.verificationMethod ??
+      (await this.deriveVerificationMethod(agentContext, credentialData.credential, credentialRequest))
 
     if (!verificationMethod) {
-      verificationMethod = await this.deriveVerificationMethod(
-        agentContext,
-        credentialData.credential,
-        credentialRequest
-      )
-      if (!verificationMethod) {
-        throw new AriesFrameworkError('Missing verification method in credential data')
-      }
+      throw new AriesFrameworkError('Missing verification method in credential data')
     }
     const format = new CredentialFormatSpec({
       attachId,

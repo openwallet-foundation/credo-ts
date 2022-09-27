@@ -61,7 +61,7 @@ describe('credentials', () => {
     // ==============================
     // TESTS v2 BEGIN
     // ==========================
-    xtest('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
+    test('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
       testLogger.test('Alice sends credential proposal to Faber')
 
       const options: ProposeCredentialOptions<
@@ -174,7 +174,7 @@ describe('credentials', () => {
       await aliceAgent.wallet.delete()
     })
 
-    xtest('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `contentApproved`', async () => {
+    test('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `contentApproved`', async () => {
       testLogger.test('Alice sends credential proposal to Faber')
       const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
         connectionId: aliceConnection.id,
