@@ -10,6 +10,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionRepository } from '../modules/connections'
+import { DidDocument } from '../modules/dids/domain/DidDocument'
 import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { KeyRepository } from '../modules/keys/repository'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
@@ -75,29 +76,35 @@ export class MessageReceiver {
    */
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
     this.logger.debug(`Agent ${this.config.label} received message`)
-    if (this.isEncryptedMessage(inboundMessage)) {
-      await this.receivePackedMessage(
-        {
-          type: SendingMessageType.Encrypted,
-          message: inboundMessage as EncryptedMessage,
-        },
-        session
-      )
-    } else if (this.isSignedMessage(inboundMessage)) {
-      await this.receivePackedMessage(
-        {
-          type: SendingMessageType.Signed,
-          message: inboundMessage as SignedMessage,
-        },
-        session
-      )
-    } else if (this.isPlaintextMessage(inboundMessage)) {
-      await this.receivePlaintextMessage({
-        type: SendingMessageType.Plain,
-        message: inboundMessage as PlaintextMessage,
-      })
-    } else {
-      throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
+    try {
+      if (this.isEncryptedMessage(inboundMessage)) {
+        return await this.receivePackedMessage(
+          {
+            type: SendingMessageType.Encrypted,
+            message: inboundMessage as EncryptedMessage,
+          },
+          session
+        )
+      }
+      if (this.isSignedMessage(inboundMessage)) {
+        return await this.receivePackedMessage(
+          {
+            type: SendingMessageType.Signed,
+            message: inboundMessage as SignedMessage,
+          },
+          session
+        )
+      }
+      if (this.isPlaintextMessage(inboundMessage)) {
+        return await this.receivePlaintextMessage({
+          type: SendingMessageType.Plain,
+          message: inboundMessage as PlaintextMessage,
+        })
+      }
+
+      this.logger.error('Unable to parse incoming message: unrecognized format')
+    } catch (e) {
+      this.logger.error(`Unable to process received message!. Error: ${e.message}`)
     }
   }
 
@@ -108,6 +115,13 @@ export class MessageReceiver {
   }
 
   private async receivePackedMessage(packedMessage: PackedMessage, session?: TransportSession) {
+    const isMessageRecipientExists = await this.checkMessageRecipientExists(packedMessage)
+    if (!isMessageRecipientExists) {
+      this.logger.info('Pass message as Relay to recipient')
+      await this.handleMessageAsRelay(packedMessage)
+      return
+    }
+
     const decryptedMessage = await this.decryptMessage(packedMessage)
     const { plaintextMessage, sender, recipient, version } = decryptedMessage
 
@@ -168,6 +182,61 @@ export class MessageReceiver {
       })
       throw error
     }
+  }
+
+  private async checkMessageRecipientExists(message: PackedMessage): Promise<boolean> {
+    const recipients = this.getMessageRecipients(message)
+    if (!recipients) {
+      this.logger.error('JWE message does not contain any recipient kid')
+      throw new AriesFrameworkError('Invalid JWE message. Message does not contain any recipient!')
+    }
+    for (const recipient of recipients) {
+      const keyRecord = await this.keyRepository.getByKid(recipient)
+      if (keyRecord) return true
+    }
+    this.logger.info('JWE message does not contain any known key to unpack it')
+    return false
+  }
+
+  private getMessageRecipients(message: PackedMessage): string[] {
+    if (message.type === SendingMessageType.Encrypted) {
+      return message.message.recipients.map((recipient) => recipient.header.kid)
+    } else {
+      return []
+    }
+  }
+
+  private getFirstValidRecipientDid(recipients: string[]): string | undefined {
+    for (const recipient of recipients) {
+      const did = DidDocument.extractDidFromKid(recipient)
+      if (did) return did
+    }
+    return undefined
+  }
+
+  private async handleMessageAsRelay(message: PackedMessage): Promise<void> {
+    this.logger.info('> Handle message as relay')
+
+    if (message.type !== SendingMessageType.Encrypted) {
+      this.logger.warn('Message cannot handled as relay because it is not JWE.')
+      return
+    }
+
+    const recipients = this.getMessageRecipients(message)
+    if (!recipients.length) {
+      this.logger.warn('Message cannot handled as relay because it does not contain any recipient kid')
+      return
+    }
+    const did = this.getFirstValidRecipientDid(recipients)
+    if (!did) {
+      this.logger.warn('Message cannot handled as relay because it does not contain any recipient kid containing DID')
+      return
+    }
+
+    await this.messageSender.sendMessageToDid(message.message, did)
+
+    this.logger.info('> Handle message as relay completed!')
+    return
   }
 
   private isPlaintextMessage(message: unknown): message is PlaintextMessage {

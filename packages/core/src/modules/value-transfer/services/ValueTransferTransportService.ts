@@ -19,12 +19,12 @@ export class ValueTransferTransportService implements VtpTransportInterface {
     this.messageSender = messageSender
   }
 
-  public async send(message: any): Promise<void> {
+  public async send(message: any, args?: any): Promise<void> {
     this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
     this.config.logger.debug(` Message: ${JsonEncoder.toString(message)}`)
     const didcomMessage = new DIDCommV2Message({ ...message })
     const sendingMessageType = didcomMessage.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
-    await this.messageSender.sendDIDCommV2Message(didcomMessage, sendingMessageType)
+    await this.messageSender.sendDIDCommV2Message(didcomMessage, sendingMessageType, undefined, args?.proxy)
     this.config.logger.info('message sent!')
   }
 }

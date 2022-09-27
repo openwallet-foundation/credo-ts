@@ -1,5 +1,6 @@
 import type { TransportPriorityOptions } from './agent/MessageSender'
 import type { DIDCommMessage, EncryptedMessage, DIDCommV2Message } from './agent/didcomm/index'
+import type { SignedMessage } from './agent/didcomm/types'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
@@ -12,6 +13,8 @@ import type { MediatorPickupStrategy, MediatorDeliveryStrategy } from './modules
 import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
 import type { WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
+
+import { PackedMessage } from './agent/didcomm/types'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -156,8 +159,10 @@ export interface OutboundServiceMessage<T extends DIDCommMessage = DIDCommMessag
   senderKey: string
 }
 
+export type OutboundPackagePayload = EncryptedMessage | SignedMessage | PlaintextMessage
+
 export interface OutboundPackage {
-  payload: EncryptedMessage | PlaintextMessage
+  payload: OutboundPackagePayload
   recipientDid?: string
   responseRequested?: boolean
   endpoint?: string

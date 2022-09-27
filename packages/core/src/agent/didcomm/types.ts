@@ -26,11 +26,21 @@ export type ReceivedPlainMessage = {
   message: PlaintextMessage
 }
 
+export type EncryptedMessageRecipientHeader = {
+  kid: string
+}
+
+export type EncryptedMessageRecipient = {
+  encrypted_key: string
+  header: EncryptedMessageRecipientHeader
+}
+
 export type EncryptedMessage = {
   protected: string
   iv: string
   ciphertext: string
   tag: string
+  recipients: EncryptedMessageRecipient[]
 }
 
 export type SignedMessage = {
