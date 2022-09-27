@@ -69,7 +69,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     })
 
     const jsonLdFormat = credentialFormats.jsonld
-
     if (!jsonLdFormat) {
       throw new AriesFrameworkError('Missing jsonld payload in createProposal')
     }
@@ -77,9 +76,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     const jsonLdCredential = new JsonLdCredential(jsonLdFormat)
     MessageValidator.validateSync(jsonLdCredential)
 
-    // FIXME: this doesn't follow RFC0593
     // jsonLdFormat is now of type SignCredentialOptionsRFC0593
-
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
     return { format, attachment }
   }
@@ -89,14 +86,11 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    * @param options the options needed to accept the proposal
    */
   public async processProposal(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
-    // FIXME: SignCredentialOptions doesn't follow RFC0593
     const credProposalJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
     if (!credProposalJson) {
       throw new AriesFrameworkError('Missing jsonld credential proposal data payload')
     }
-
-    // FIXME: validating an interface doesn't work.
 
     const messageToValidate = new JsonLdCredential(credProposalJson)
     MessageValidator.validateSync(messageToValidate)
@@ -116,7 +110,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     const credentialProposal = proposalAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
-    // FIXME: SignCredentialOptions doesn't follow RFC0593
     const offerData = jsonLdFormat ?? credentialProposal
 
     const attachment = this.getFormatData(offerData, format.attachId)
@@ -141,7 +134,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       format: JSONLD_VC_DETAIL,
     })
 
-    // FIXME: SignCredentialOptions doesn't follow RFC0593
     const jsonLdFormat = credentialFormats?.jsonld
 
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
@@ -150,14 +142,12 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   }
 
   public async processOffer(agentContext: AgentContext, { attachment }: FormatProcessOptions) {
-    // FIXME: SignCredentialOptions doesn't follow RFC0593
     const credentialOfferJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
     if (!credentialOfferJson) {
       throw new AriesFrameworkError('Missing jsonld credential offer data payload')
     }
 
-    // FIXME: validating an interface doesn't work.
     const jsonLdCredential = new JsonLdCredential(credentialOfferJson)
     MessageValidator.validateSync(jsonLdCredential)
   }
@@ -168,8 +158,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   ): Promise<FormatCreateReturn> {
     const jsonLdFormat = credentialFormats?.jsonld
 
-    // FIXME: SignCredentialOptions doesn't follow RFC0593
-    // FIXME: Add validation of the jsonLdFormat data (if present)
     const credentialOffer = offerAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
     const requestData = jsonLdFormat ?? credentialOffer
 
@@ -203,25 +191,21 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createRequest')
     }
 
-    // FIXME: validating an interface doesn't work.
     const jsonLdCredential = new JsonLdCredential(jsonLdFormat)
     MessageValidator.validateSync(jsonLdCredential)
 
-    // FIXME: SignCredentialOptions doesn't follow RFC0593
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
 
     return { format, attachment }
   }
 
   public async processRequest(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
-    // FIXME: SignCredentialOptions doesn't follow RFC0593
     const requestJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
     if (!requestJson) {
       throw new AriesFrameworkError('Missing jsonld credential request data payload')
     }
 
-    // FIXME: validating an interface doesn't work.
     const jsonLdCredential = new JsonLdCredential(requestJson)
     MessageValidator.validateSync(jsonLdCredential)
   }
@@ -238,13 +222,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     let verificationMethod = credentialFormats?.jsonld?.verificationMethod
 
-    // FIXME: Need to transform from json to class instance
-    // FIXME: SignCredentialOptions doesn't follow RFC0593
-    // FIXME: Add validation of the jsonLdFormat data (if present)
     const credentialData = jsonLdFormat ?? credentialRequest
 
-    // FIXME: we're not using all properties from the interface. If we're not using them,
-    // they shouldn't be in the interface.
     if (!verificationMethod) {
       verificationMethod = await this.deriveVerificationMethod(
         agentContext,
@@ -317,12 +296,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     const credentialAsJson = attachment.getDataAsJson<W3cVerifiableCredential>()
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
     MessageValidator.validateSync(credential)
-
-    // FIXME: we should verify the signature of the credential here to make sure we can work
-    // with the credential we received.
-    // FIXME: we should do a lot of checks to verify if the credential we received is actually the credential
-    // we requested. We can take an example of the ACA-Py implementation:
-    // https://github.com/hyperledger/aries-cloudagent-python/blob/main/aries_cloudagent/protocols/issue_credential/v2_0/formats/ld_proof/handler.py#L492
 
     // compare stuff in the proof object of the credential and request...based on aca-py
 
@@ -410,10 +383,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     agentContext: AgentContext,
     { credentialAttachment, requestAttachment }: FormatAutoRespondCredentialOptions
   ) {
-    // FIXME: we should do a lot of checks to verify if the credential we received is actually the credential
-    // we requested. We can take an example of the ACA-Py implementation:
-    // https://github.com/hyperledger/aries-cloudagent-python/blob/main/aries_cloudagent/protocols/issue_credential/v2_0/formats/ld_proof/handler.py#L492
-    // TODO don't call areCredentialsEqual, call compareStuff() as per aca-py
 
     const credentialAsJson = credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)

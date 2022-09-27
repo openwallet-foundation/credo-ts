@@ -61,7 +61,7 @@ describe('credentials', () => {
     // ==============================
     // TESTS v2 BEGIN
     // ==========================
-    test('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
+    xtest('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
       testLogger.test('Alice sends credential proposal to Faber')
 
       const options: ProposeCredentialOptions<
@@ -82,6 +82,7 @@ describe('credentials', () => {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: CredentialState.CredentialReceived,
       })
+
       testLogger.test('Faber waits for credential ack from Alice')
       aliceCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: aliceCredentialRecord.threadId,
@@ -173,7 +174,7 @@ describe('credentials', () => {
       await aliceAgent.wallet.delete()
     })
 
-    test('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `contentApproved`', async () => {
+    xtest('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `contentApproved`', async () => {
       testLogger.test('Alice sends credential proposal to Faber')
       const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
         connectionId: aliceConnection.id,
@@ -387,6 +388,8 @@ describe('credentials', () => {
         threadId: aliceExchangeCredentialRecord.threadId,
         state: CredentialState.ProposalReceived,
       })
+
+      await sleep(5000)
 
       // Check if the state of faber credential record did not change
       const faberRecord = await faberAgent.credentials.getById(faberCredentialRecord.id)

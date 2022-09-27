@@ -6,6 +6,7 @@ import type { Schema } from 'indy-sdk'
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+import { sleep } from '../../../../../utils/sleep'
 import { AutoAcceptCredential } from '../../../models/CredentialAutoAcceptType'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -458,6 +459,8 @@ describe('v2 credentials', () => {
 
       testLogger.test('Faber waits for credential proposal from Alice')
       const faberCredProposalRecord = await faberProposalReceivedPromise
+
+      await sleep(5000)
 
       // Check if the state of fabers credential record did not change
       const faberRecord = await faberAgent.credentials.getById(faberCredProposalRecord.id)
