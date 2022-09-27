@@ -3,15 +3,17 @@ import type { GossipMetricsInterface } from '@sicpa-dlab/value-transfer-protocol
 
 import os from 'os'
 
-// You can generate an API token from the "API Tokens Tab" in the UI
-const token = 'PsxPtqHVTPON1ln95oCLfxNBKwqcjFltLLM2KOWJ_pa0QH-rHkYFhmZReK0oNpWzIMbPk7xjnBS1MxUNYDIFHA=='
-const org = 'dsr'
-const bucket = 'dsr-test'
+const influxDbConfig = {
+  // You can generate an API token from the "API Tokens Tab" in the UI
+  token: 'PsxPtqHVTPON1ln95oCLfxNBKwqcjFltLLM2KOWJ_pa0QH-rHkYFhmZReK0oNpWzIMbPk7xjnBS1MxUNYDIFHA==',
+  org: 'dsr',
+  bucket: 'dsr-test',
+}
 
 const machineName = os.hostname()
 
 export class MetricsService implements GossipMetricsInterface {
-  private client: InfluxDB = new InfluxDB({ url: 'http://localhost:8086', token: token })
+  private client: InfluxDB = new InfluxDB({ url: 'http://localhost:8086', token: influxDbConfig.token })
 
   // Gossip protocol started to share transaction update
   public async reportGossipStart(witnessId: string, transactionUpdateId: string): Promise<void> {
@@ -66,6 +68,7 @@ export class MetricsService implements GossipMetricsInterface {
 
   private async writeAndFlushPoint(point: Point): Promise<void> {
     const gossipVersion = Math.random() < 0.5 ? '1.0' : '2.0'
+
     const writeOptions: Partial<WriteOptions> = {
       defaultTags: { machineName, gossipVersion },
       maxRetries: 0,
@@ -73,6 +76,8 @@ export class MetricsService implements GossipMetricsInterface {
         console.log('Write to influxdb failed', { error, lines })
       },
     }
+
+    const { org, bucket } = influxDbConfig
     const writeApi = this.client.getWriteApi(org, bucket, undefined, writeOptions)
     console.debug('Writing point', { point })
     writeApi.writePoint(point)
