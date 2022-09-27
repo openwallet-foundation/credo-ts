@@ -1,5 +1,5 @@
-import { EmulatorUserConfig } from './UserEmulator'
-import { EmulatorWitnessConfig } from './WitnessEmulator'
+import type { EmulatorUserConfig } from './UserEmulator'
+import type { EmulatorWitnessConfig } from './WitnessEmulator'
 
 export interface EmulatorConfig {
   host: string

@@ -44,7 +44,6 @@ export * from './logger'
 export * from './error'
 export * from './wallet/error'
 export * from './crypto'
-export * from './metrics'
 
 const utils = {
   uuid,

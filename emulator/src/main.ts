@@ -21,8 +21,6 @@ const run = async () => {
     port: startPort++,
     publicDidSeed: witness.publicDidSeed ?? randomString(32),
   }))
-  console.log('witnesses')
-  console.log(witnesses)
 
   console.log('Emulator: Preparing list of User DIDs...')
   const userList = createUsersList(users)
