@@ -383,7 +383,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     agentContext: AgentContext,
     { credentialAttachment, requestAttachment }: FormatAutoRespondCredentialOptions
   ) {
-
     const credentialAsJson = credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
 
