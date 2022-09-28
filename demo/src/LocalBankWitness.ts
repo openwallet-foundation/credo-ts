@@ -4,19 +4,19 @@ import { DidMarker, Transports } from '@aries-framework/core'
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
 
-export class GlobalBank extends BaseAgent {
-  public static wid = '2'
+export class LocalBankWitness extends BaseAgent {
+  public static wid = '3'
   public static host = 'http://localhost'
 
   public constructor(name: string, port?: number) {
-    const endpoint = `${GlobalBank.host}:${port}`
+    const endpoint = `${LocalBankWitness.host}:${port}`
     super({
       name,
       port,
       transports: [Transports.HTTP],
       staticDids: [
         {
-          seed: '6b8b882e2618fa5d45ee7229ca880087',
+          seed: '6b8b882e2618fa5d45ee7229ca880089',
           transports: [Transports.HTTP],
           marker: DidMarker.Public,
           endpoint,
@@ -24,18 +24,18 @@ export class GlobalBank extends BaseAgent {
       ],
       valueTransferConfig: {
         witness: {
-          wid: GlobalBank.wid,
+          wid: LocalBankWitness.wid,
           knownWitnesses: BaseAgent.witnessTable,
         },
       },
     })
   }
 
-  public static async build(): Promise<GlobalBank> {
-    const witness = new GlobalBank('globalBank', 8082)
+  public static async build(): Promise<LocalBankWitness> {
+    const witness = new LocalBankWitness('localBank', 8083)
     await witness.initializeAgent()
     const publicDid = await witness.agent.getStaticDid(DidMarker.Public)
-    console.log(`GlobalBank Public DID: ${publicDid?.did}`)
+    console.log(`LocalBank Public DID: ${publicDid?.did}`)
     return witness
   }
 

@@ -3,14 +3,14 @@ import { textSync } from 'figlet'
 import { prompt } from 'inquirer'
 
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
-import { CentralBank } from './CentralBank'
+import { CentralBankWitness } from './CentralBankWitness'
 import { Listener } from './Listener'
 import { Title } from './OutputClass'
 
 export const runWitness = async () => {
   clear()
   console.log(textSync('CentralBank', { horizontalLayout: 'full' }))
-  const witness = await CentralBankInquirer.build()
+  const witness = await CentralBankWitnessInquirer.build()
   await witness.processAnswer()
 }
 
@@ -19,12 +19,12 @@ enum PromptOptions {
   Restart = 'Restart',
 }
 
-export class CentralBankInquirer extends BaseInquirer {
-  public witness: CentralBank
+export class CentralBankWitnessInquirer extends BaseInquirer {
+  public witness: CentralBankWitness
   public promptOptionsString: string[]
   public listener: Listener
 
-  public constructor(witness: CentralBank) {
+  public constructor(witness: CentralBankWitness) {
     super()
     this.witness = witness
     this.listener = new Listener()
@@ -32,9 +32,9 @@ export class CentralBankInquirer extends BaseInquirer {
     this.listener.messageListener(this.witness.agent, this.witness.name)
   }
 
-  public static async build(): Promise<CentralBankInquirer> {
-    const getter = await CentralBank.build()
-    return new CentralBankInquirer(getter)
+  public static async build(): Promise<CentralBankWitnessInquirer> {
+    const getter = await CentralBankWitness.build()
+    return new CentralBankWitnessInquirer(getter)
   }
 
   private async getPromptChoice() {

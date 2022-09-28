@@ -1,6 +1,34 @@
 <h1 align="center"><b>DEMO</b></h1>
 
-This is the Aries Framework Javascript demo. Walk through the AFJ flow yourself together with agents Alice and Faber.
+This is the Aries Framework Javascript demo. Walk through the two AFJ flows yourself together with agents
+
+- SSI Credentials Exchange:
+  - Alice - credential holder and prover
+  - Faber - credential issue and verifier
+- Value Transfer:
+  - Anna - request payment / offer payment / accept payment request / accept payment offer.
+    - Online
+    - Supported transports: [NFC, AndroidNearby, HTTP]
+  - Bob - request payment / accept payment request.
+    - Offline - emulate the case when actor does not have the internet connection and uses proxy for doing transactions
+    - Supported transports: [NFC, HTTP]
+  - Carol - request payment / offer payment / accept payment request / accept payment offer.
+    - Online
+    - Supported transports: [AndroidNearby, HTTP]
+  - Central Bank Issuer - mint cash on start / accept payment request.
+    - Online
+    - Supported transports: [HTTP]
+  - Central Bank Witness - Type 1 Witness.
+    - Online
+    - Supported transports: [HTTP]
+  - Global Bank Witness - Type 2 Witness.
+    - Online
+    - Supported transports: [HTTP]
+  - Local Bank Witness - Type 2 Witness.
+    - Online
+    - Supported transports: [HTTP]
+
+## Features
 
 Alice, a former student of Faber College, connects with the College, is issued a credential about her degree and then is asked by the College for a proof.
 

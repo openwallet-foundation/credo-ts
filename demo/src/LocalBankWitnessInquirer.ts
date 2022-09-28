@@ -4,13 +4,13 @@ import { prompt } from 'inquirer'
 
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Listener } from './Listener'
-import { LocalBank } from './LocalBank'
+import { LocalBankWitness } from './LocalBankWitness'
 import { Title } from './OutputClass'
 
 export const runWitness = async () => {
   clear()
   console.log(textSync('LocalBank', { horizontalLayout: 'full' }))
-  const witness = await LocalBankInquirer.build()
+  const witness = await LocalBankWitnessInquirer.build()
   await witness.processAnswer()
 }
 
@@ -19,12 +19,12 @@ enum PromptOptions {
   Restart = 'Restart',
 }
 
-export class LocalBankInquirer extends BaseInquirer {
-  public witness: LocalBank
+export class LocalBankWitnessInquirer extends BaseInquirer {
+  public witness: LocalBankWitness
   public promptOptionsString: string[]
   public listener: Listener
 
-  public constructor(witness: LocalBank) {
+  public constructor(witness: LocalBankWitness) {
     super()
     this.witness = witness
     this.listener = new Listener()
@@ -32,9 +32,9 @@ export class LocalBankInquirer extends BaseInquirer {
     this.listener.messageListener(this.witness.agent, this.witness.name)
   }
 
-  public static async build(): Promise<LocalBankInquirer> {
-    const getter = await LocalBank.build()
-    return new LocalBankInquirer(getter)
+  public static async build(): Promise<LocalBankWitnessInquirer> {
+    const getter = await LocalBankWitness.build()
+    return new LocalBankWitnessInquirer(getter)
   }
 
   private async getPromptChoice() {
