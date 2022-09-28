@@ -51,6 +51,7 @@ export class GossipService {
         crypto: gossipCryptoService,
         storage: gossipStateService,
         transport: gossipTransportService,
+        metrics: config.witnessGossipMetrics,
       },
       {
         label: config.label,

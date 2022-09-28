@@ -15,7 +15,7 @@ import { AutoAcceptValueTransfer } from '../modules/value-transfer/ValueTransfer
 import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
-  private initConfig: InitConfig
+  private readonly initConfig: InitConfig
   public label: string
   public logger: Logger
   public readonly agentDependencies: AgentDependencies
@@ -111,6 +111,10 @@ export class AgentConfig {
 
   public get witnessIssuerDids() {
     return this.initConfig.valueTransferConfig?.witness?.issuerDids
+  }
+
+  public get witnessGossipMetrics() {
+    return this.initConfig.valueTransferConfig?.witness?.gossipMetricsService
   }
 
   public get valueTransferWitnessDid() {

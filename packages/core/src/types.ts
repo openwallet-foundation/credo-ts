@@ -11,7 +11,7 @@ import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy, MediatorDeliveryStrategy } from './modules/routing'
 import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
-import type { WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipMetricsInterface, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -51,7 +51,7 @@ export interface ValueTransferPartyConfig {
 export enum WitnessType {
   One = '1',
   Two = '2',
-  Three = '2',
+  Three = '3',
 }
 
 export interface ValueTransferWitnessConfig {
@@ -63,6 +63,7 @@ export interface ValueTransferWitnessConfig {
   historyThreshold?: number
   redeliveryThreshold?: number
   issuerDids?: string[]
+  gossipMetricsService?: GossipMetricsInterface
 }
 
 export interface ValueTransferConfig {
