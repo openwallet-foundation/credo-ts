@@ -105,7 +105,7 @@ export class Anna extends BaseAgent {
 
   public async requestPayment(witness: string, giver: string) {
     const { record } = await this.agent.valueTransfer.requestPayment({
-      amount: 10,
+      amount: 1,
       giver,
       witness,
       transport: Transports.NFC,

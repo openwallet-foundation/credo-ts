@@ -28,6 +28,9 @@ export class ForwardHandler implements Handler<typeof DIDCommV2Message> {
 
     // The message inside the forward message is packed so we just send the packed
     // message to the connection associated with it
-    await this.messageSender.sendDIDCommV2EncryptedMessage(messageContext.message.body.next, encryptedMessage)
+    const service = await this.messageSender.findCommonSupportedService(undefined, messageContext.message.body.next)
+    if (service) {
+      await this.messageSender.sendMessage(encryptedMessage, service, messageContext.message.body.next)
+    }
   }
 }

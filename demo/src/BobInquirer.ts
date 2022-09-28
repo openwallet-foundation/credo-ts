@@ -33,6 +33,7 @@ export class BobInquirer extends BaseInquirer {
     this.listener = new Listener()
     this.promptOptionsString = Object.values(PromptOptions)
     this.listener.messageListener(this.getter.agent, this.getter.name)
+    this.listener.paymentRequestListener(this.getter, this)
     this.listener.paymentOfferListener(this.getter, this)
   }
 
@@ -67,6 +68,17 @@ export class BobInquirer extends BaseInquirer {
     const witness = await prompt([this.inquireInput('Witness DID')])
     const giver = await prompt([this.inquireInput('Giver DID')])
     await this.getter.requestPayment(witness.input, giver.input)
+  }
+
+  public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
+    const balance = await this.getter.agent.valueTransfer.getBalance()
+    console.log(greenText(`\nCurrent balance: ${balance}`))
+    const confirm = await prompt([this.inquireConfirmation(Title.PaymentRequestTitle)])
+    if (confirm.options === ConfirmOptions.No) {
+      await this.getter.abortPaymentRequest(valueTransferRecord)
+    } else if (confirm.options === ConfirmOptions.Yes) {
+      await this.getter.acceptPaymentRequest(valueTransferRecord)
+    }
   }
 
   public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord) {

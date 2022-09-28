@@ -26,6 +26,7 @@ export class Bob extends BaseAgent {
       valueTransferConfig: {
         party: {},
       },
+      emulateOfflineCase: true,
     })
   }
 
@@ -54,6 +55,20 @@ export class Bob extends BaseAgent {
     this.valueTransferRecordId = record.id
     console.log(greenText('\nRequest Sent!\n'))
     await this.waitForPayment()
+  }
+
+  public async acceptPaymentRequest(valueTransferRecord: ValueTransferRecord) {
+    const { record } = await this.agent.valueTransfer.acceptPaymentRequest({ recordId: valueTransferRecord.id })
+    this.valueTransferRecordId = record?.id
+    console.log(greenText('\nPayment request accepted!\n'))
+    await this.waitForPayment()
+  }
+
+  public async abortPaymentRequest(valueTransferRecord: ValueTransferRecord) {
+    const { record } = await this.agent.valueTransfer.abortTransaction(valueTransferRecord.id)
+    this.valueTransferRecordId = record?.id
+    console.log(redText('\nPayment request rejected!\n'))
+    console.log(record?.error)
   }
 
   public async acceptPaymentOffer(valueTransferRecord: ValueTransferRecord, witness: string) {

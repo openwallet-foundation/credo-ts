@@ -30,7 +30,7 @@ export class DidResolverService {
     ]
   }
 
-  public async resolve(didUrl: string, options: DidResolutionOptions = {}): Promise<DidResolutionResult> {
+  public async resolve(didUrl?: string, options: DidResolutionOptions = {}): Promise<DidResolutionResult> {
     this.logger.debug(`resolving didUrl ${didUrl}`)
 
     const result = {
@@ -38,6 +38,10 @@ export class DidResolverService {
       didDocument: null,
       didDocumentMetadata: {},
       didType: DidType.Unknown,
+    }
+
+    if (!didUrl) {
+      return result
     }
 
     let parsed: ParsedDid

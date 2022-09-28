@@ -88,7 +88,6 @@ export interface InitConfig {
   autoAcceptCredentials?: AutoAcceptCredential
   logger?: Logger
   didCommMimeType?: DidCommMimeType
-  supportOffline?: boolean
   catchErrors?: boolean
 
   indyLedgers?: IndyPoolConfig[]
@@ -111,6 +110,7 @@ export interface InitConfig {
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string
   valueTransferConfig?: ValueTransferConfig
+  emulateOfflineCase?: boolean
 }
 
 export type PlaintextMessage = PlaintextMessageV1 | PlaintextMessageV2

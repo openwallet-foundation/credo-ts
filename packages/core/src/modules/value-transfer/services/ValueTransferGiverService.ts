@@ -184,7 +184,7 @@ export class ValueTransferGiverService {
       this.config.logger.error(
         ` Giver: accept request message for VTP transaction ${record.transaction.threadId} failed. Error: ${error}`
       )
-      return {}
+      throw new AriesFrameworkError(`Failed to accept Payment Request: ${error?.message}`)
     }
 
     // Raise event

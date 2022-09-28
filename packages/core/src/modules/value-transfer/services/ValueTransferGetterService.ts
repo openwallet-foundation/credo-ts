@@ -180,7 +180,7 @@ export class ValueTransferGetterService {
     const { error, transaction, message } = await this.getter.acceptOffer(record.transaction.id, witnessDid, timeouts)
     if (error || !transaction || !message) {
       this.config.logger.error(`VTP: Failed to accept Payment Offer: ${error?.message}`)
-      return { record }
+      throw new AriesFrameworkError(`Failed to accept Payment Offer: ${error?.message}`)
     }
 
     // Raise event

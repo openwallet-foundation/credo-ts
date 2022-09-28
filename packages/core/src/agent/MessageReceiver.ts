@@ -115,11 +115,13 @@ export class MessageReceiver {
   }
 
   private async receivePackedMessage(packedMessage: PackedMessage, session?: TransportSession) {
-    const isMessageRecipientExists = await this.checkMessageRecipientExists(packedMessage)
-    if (!isMessageRecipientExists) {
-      this.logger.info('Pass message as Relay to recipient')
-      await this.handleMessageAsRelay(packedMessage)
-      return
+    if (packedMessage.type === SendingMessageType.Encrypted) {
+      const isMessageRecipientExists = await this.checkMessageRecipientExists(packedMessage)
+      if (!isMessageRecipientExists) {
+        this.logger.info('Recipient key does not exist in the wallet -> Handle the message as Relay')
+        await this.handleMessageAsRelay(packedMessage)
+        return
+      }
     }
 
     const decryptedMessage = await this.decryptMessage(packedMessage)
@@ -191,7 +193,7 @@ export class MessageReceiver {
       throw new AriesFrameworkError('Invalid JWE message. Message does not contain any recipient!')
     }
     for (const recipient of recipients) {
-      const keyRecord = await this.keyRepository.getByKid(recipient)
+      const keyRecord = await this.keyRepository.findByKid(recipient)
       if (keyRecord) return true
     }
     this.logger.info('JWE message does not contain any known key to unpack it')
@@ -229,11 +231,19 @@ export class MessageReceiver {
     }
     const did = this.getFirstValidRecipientDid(recipients)
     if (!did) {
-      this.logger.warn('Message cannot handled as relay because it does not contain any recipient kid containing DID')
+      this.logger.warn(
+        'Message cannot handled as relay because its header does not contain any recipient kid containing DID'
+      )
       return
     }
 
-    await this.messageSender.sendMessageToDid(message.message, did)
+    const service = await this.messageSender.findCommonSupportedService(undefined, did)
+    if (!service) {
+      // if service not found - log error and return
+      this.logger.warn('Message cannot handled as relay because there is not supported transport to deliver it.')
+      return
+    }
+    await this.messageSender.sendMessage(message.message, service, did)
 
     this.logger.info('> Handle message as relay completed!')
     return

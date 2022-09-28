@@ -175,10 +175,6 @@ export class AgentConfig {
     return this.initConfig.connectionImageUrl
   }
 
-  public get supportOffline() {
-    return this.initConfig.supportOffline
-  }
-
   public get valueTransferConfig() {
     return this.initConfig.valueTransferConfig
   }
@@ -203,11 +199,15 @@ export class AgentConfig {
     return this.transports.filter((transport) => offlineTransports.includes(transport))
   }
 
+  public get pingAddress() {
+    return this.initConfig.mediatorConnectionsInvite || 'https://google.com'
+  }
+
   public async hasInternetAccess() {
-    if (!this.initConfig.supportOffline) return true
+    if (this.initConfig.emulateOfflineCase) return false
 
     return this.agentDependencies
-      .fetch('https://google.com') // FIXME: find better way to detect internet connectivity status
+      .fetch(this.pingAddress)
       .then(() => true)
       .catch(() => false)
   }
