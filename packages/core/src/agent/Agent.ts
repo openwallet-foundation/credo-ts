@@ -6,7 +6,6 @@ import type { Wallet } from '../wallet/Wallet'
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { TransportSession } from './TransportService'
-import type { GossipMetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 import type { Subscription } from 'rxjs'
 import type { DependencyContainer } from 'tsyringe'
 
