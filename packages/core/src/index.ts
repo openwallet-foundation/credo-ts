@@ -40,6 +40,7 @@ export * from './modules/value-transfer'
 export * from './modules/out-of-band'
 export * from './modules/gossip'
 export * from './utils/JsonTransformer'
+export * from './utils/string'
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
@@ -50,4 +51,4 @@ const utils = {
 }
 
 export { utils }
-export { EncryptedMessage } from './agent/didcomm'
+export { EncryptedMessage, SignedMessage } from './agent/didcomm'

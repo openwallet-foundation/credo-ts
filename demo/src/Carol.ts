@@ -34,6 +34,12 @@ export class Carol extends BaseAgent {
     await getter.initializeAgent()
     const publicDid = await getter.agent.getStaticDid(DidMarker.Public)
     console.log(`Carol Public DID: ${publicDid?.did}`)
+
+    const active = await getter.agent.valueTransfer.getActiveTransaction()
+    if (active.record?.id) {
+      await getter.agent.valueTransfer.abortTransaction(active.record?.id)
+    }
+
     return getter
   }
 

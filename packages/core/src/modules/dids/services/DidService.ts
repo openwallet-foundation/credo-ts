@@ -1,5 +1,5 @@
 import type { Logger } from '../../../logger'
-import type { DidInfo, DidDocument, DidProps } from '../../dids/domain'
+import type { DIDInformation, DidDocument, DidProps } from '../../dids/domain'
 import type { MediationRecord } from '../../routing/repository'
 import type { DidMetadataChangedEvent, DidReceivedEvent } from '../DidEvents'
 import type { DidTags } from '../repository'
@@ -204,7 +204,7 @@ export class DidService {
     return didDoc.didDocument
   }
 
-  public async storeRemoteDid({ did, label, logoUrl }: DidInfo) {
+  public async storeRemoteDid({ did, label, logoUrl }: DIDInformation) {
     const didDocument = await this.didResolverService.resolve(did)
     if (!didDocument.didDocument) {
       throw new AriesFrameworkError(`Unable to resolve DidDoc for the DID: ${did}`)
@@ -239,6 +239,44 @@ export class DidService {
       type: DidEventTypes.DidMetadataChanged,
       payload: { record: record },
     })
+  }
+
+  public async getDidMetadata(did: string): Promise<DIDMetadata> {
+    const didRecord = await this.getById(did)
+    return {
+      label: didRecord.label,
+      logoUrl: didRecord.logoUrl,
+    }
+  }
+
+  public async getDidInfo(did: string): Promise<DIDInformation> {
+    const didRecord = await this.findById(did)
+    if (didRecord) {
+      // did was stored before
+      return {
+        did: didRecord.did,
+        didDocument: didRecord.didDocument,
+        didType: didRecord.didType,
+        connectivity: didRecord.didDocument?.connectivity,
+        label: didRecord.label,
+        logoUrl: didRecord.logoUrl,
+      }
+    }
+
+    // resolve did information
+    const resolvedDid = await this.didResolverService.resolve(did)
+    if (!resolvedDid || !resolvedDid.didDocument) {
+      throw new AriesFrameworkError(`Unable to resolve DIDDocument for did: ${did}`)
+    }
+
+    return {
+      did: resolvedDid.didDocument?.id,
+      didDocument: resolvedDid.didDocument,
+      didType: resolvedDid.didType,
+      connectivity: resolvedDid.didDocument?.connectivity,
+      label: resolvedDid.didMeta?.label,
+      logoUrl: resolvedDid.didMeta?.logoUrl,
+    }
   }
 
   public async getAll(): Promise<DidRecord[]> {

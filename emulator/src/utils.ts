@@ -66,7 +66,7 @@ const addWitnessToTable = (config: EmulatorWitnessConfig, witnessTable: WitnessD
     label: config.label,
     did: publicDid.did,
     type: config.type,
-    wid: config.wid ?? config.port!.toString(),
+    wid: config.wid || config.port?.toString() || '',
   })
 }
 

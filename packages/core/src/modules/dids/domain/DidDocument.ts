@@ -3,7 +3,7 @@ import type { DidDocumentService } from './service'
 import { Expose, Transform, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested } from 'class-validator'
 
-import { TypedArrayEncoder } from '../../../utils'
+import { isDid, TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { onlineTransports } from '../../routing/types'
 
@@ -233,6 +233,11 @@ export class DidDocument {
 
   public toJSON() {
     return JsonTransformer.toJSON(this)
+  }
+
+  public static extractDidFromKid(kid: string): string | undefined {
+    const did = kid.includes('#') ? kid.split('#')[0] : kid
+    return isDid(did) ? did : undefined
   }
 
   public get connectivity() {

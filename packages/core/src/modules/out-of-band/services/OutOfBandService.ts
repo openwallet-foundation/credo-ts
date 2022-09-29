@@ -11,7 +11,7 @@ import { SendingMessageType } from '../../../agent/didcomm/types'
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { DidService } from '../../dids'
-import { DidWellKnownService } from '../../dids/services/DidWellKnownService'
+import { DidResolverService } from '../../dids/services/DidResolverService'
 import { ValueTransferGetterService } from '../../value-transfer/services/ValueTransferGetterService'
 import { ValueTransferGiverService } from '../../value-transfer/services/ValueTransferGiverService'
 import { OutOfBandEventTypes } from '../OutOfBandEvents'
@@ -21,7 +21,7 @@ import { AndroidNearbyHandshakeAttachment, OutOfBandGoalCode, OutOfBandInvitatio
 export class OutOfBandService {
   private agentConfig: AgentConfig
   private didService: DidService
-  private wellKnownService: DidWellKnownService
+  private didResolverService: DidResolverService
   private eventEmitter: EventEmitter
   private valueTransferGetterService: ValueTransferGetterService
   private valueTransferGiverService: ValueTransferGiverService
@@ -30,7 +30,7 @@ export class OutOfBandService {
   public constructor(
     agentConfig: AgentConfig,
     didService: DidService,
-    wellKnownService: DidWellKnownService,
+    didResolverService: DidResolverService,
     eventEmitter: EventEmitter,
     valueTransferGetterService: ValueTransferGetterService,
     valueTransferGiverService: ValueTransferGiverService,
@@ -38,7 +38,7 @@ export class OutOfBandService {
   ) {
     this.agentConfig = agentConfig
     this.didService = didService
-    this.wellKnownService = wellKnownService
+    this.didResolverService = didResolverService
     this.eventEmitter = eventEmitter
     this.valueTransferGetterService = valueTransferGetterService
     this.valueTransferGiverService = valueTransferGiverService
@@ -90,19 +90,20 @@ export class OutOfBandService {
 
   public async acceptOutOfBandInvitation(message: OutOfBandInvitationMessage) {
     if (message.body.goalCode === OutOfBandGoalCode.DidExchange) {
-      const didInfo = await this.wellKnownService.resolve(message.from)
-      if (!didInfo) {
+      const did = await this.didResolverService.resolve(message.from)
+      if (!did || !did.didDocument) {
         throw new AriesFrameworkError(`Unable to resolve info for the DID: ${message.from}`)
       }
-      await this.didService.storeRemoteDid(didInfo)
+      await this.didService.storeRemoteDid({
+        did: did.didDocument?.id,
+        label: did.didMeta?.label,
+        logoUrl: did.didMeta?.logoUrl,
+      })
     }
   }
 
   public async receiveOutOfBandInvitation(message: OutOfBandInvitationMessage) {
-    const senderInfo = await this.wellKnownService.resolve(message.from)
-    if (!senderInfo) {
-      throw new AriesFrameworkError(`Unable to resolve info for the DID: ${message.from}`)
-    }
+    const senderInfo = await this.didService.getDidInfo(message.from)
     this.eventEmitter.emit<OutOfBandEvent>({
       type: OutOfBandEventTypes.OutOfBandInvitationReceived,
       payload: {
@@ -113,7 +114,7 @@ export class OutOfBandService {
   }
 
   public async sendMessage(message: DIDCommV2Message, transport?: Transports) {
-    this.agentConfig.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
+    this.agentConfig.logger.info(`Sending oob message with type '${message.type}' to DID ${message?.to}`)
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     const transports = transport ? [transport] : undefined
     await this.messageSender.sendDIDCommV2Message(message, sendingMessageType, transports)

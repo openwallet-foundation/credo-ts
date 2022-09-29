@@ -25,6 +25,7 @@ export class ValueTransferWitnessService {
   private valueTransferService: ValueTransferService
   private eventEmitter: EventEmitter
   private witness: Witness
+  private gossipService: GossipService
 
   public constructor(
     config: AgentConfig,
@@ -38,6 +39,7 @@ export class ValueTransferWitnessService {
     this.config = config
     this.valueTransferService = valueTransferService
     this.eventEmitter = eventEmitter
+    this.gossipService = gossipService
 
     this.eventEmitter.on(
       ValueTransferEventTypes.ResumeTransaction,
@@ -158,7 +160,11 @@ export class ValueTransferWitnessService {
 
     // Call VTP library to handle cash removal and create receipt
     const cashRemoval = new CashRemoval(cashRemovedMessage)
-    const { error, transaction } = await this.witness.createReceipt(cashRemoval)
+
+    const operation = async () => {
+      return this.witness.createReceipt(cashRemoval)
+    }
+    const { error, transaction } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
     if (error || !transaction) {
       this.config.logger.error(
         ` Giver: process cash removal message for VTP transaction ${cashRemovedMessage.thid} failed. Error: ${error}`
@@ -194,7 +200,10 @@ export class ValueTransferWitnessService {
     const { message: mintMessage } = messageContext
 
     // Call VTP library to handle cash mint
-    const { error, message } = await this.witness.processCashMint(mintMessage)
+    const operation = async () => {
+      return await this.witness.processCashMint(mintMessage)
+    }
+    const { error, message } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
     if (error || !message) {
       this.config.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
       return {}

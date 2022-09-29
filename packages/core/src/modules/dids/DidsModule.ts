@@ -1,3 +1,4 @@
+import type { DIDInformation } from './domain'
 import type { DidRecord } from './repository'
 import type { DidResolutionOptions, DIDMetadata } from './types'
 
@@ -15,7 +16,7 @@ export class DidsModule {
     this.resolverService = resolverService
   }
 
-  public resolve(didUrl: string, options?: DidResolutionOptions) {
+  public resolve(didUrl?: string, options?: DidResolutionOptions) {
     return this.resolverService.resolve(didUrl, options)
   }
 
@@ -43,8 +44,16 @@ export class DidsModule {
     return this.didService.findAllByQuery(query)
   }
 
-  public async setDidMetadata(recordId: string, meta: DIDMetadata) {
-    const didRecord = await this.getById(recordId)
+  public async setDidMetadata(did: string, meta: DIDMetadata) {
+    const didRecord = await this.getById(did)
     return this.didService.setDidMetadata(didRecord, meta)
+  }
+
+  public async getDidMetadata(did: string): Promise<DIDMetadata> {
+    return this.didService.getDidMetadata(did)
+  }
+
+  public async getDidInfo(did: string): Promise<DIDInformation> {
+    return this.didService.getDidInfo(did)
   }
 }

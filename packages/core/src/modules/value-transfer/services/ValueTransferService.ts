@@ -169,7 +169,8 @@ export class ValueTransferService {
       await this.giver.processProblemReport(new ProblemReport(problemReportMessage))
     }
 
-    return { record }
+    const updatedRecord = await this.emitStateChangedEvent(record.transaction.id)
+    return { record: updatedRecord }
   }
 
   public async abortTransaction(
@@ -195,7 +196,9 @@ export class ValueTransferService {
     if (record.transaction.role === TransactionRole.Giver) {
       await this.giver.abortTransaction(record.id, code, reason, send)
     }
-    return { record }
+
+    const updatedRecord = await this.emitStateChangedEvent(record.transaction.id)
+    return { record: updatedRecord }
   }
 
   public async getPendingTransactions(): Promise<{

@@ -82,4 +82,8 @@ export class DIDCommV2Message extends DIDCommV2BaseMessage implements DIDCommMes
     const message = this.fromUrl({ url })
     return JsonTransformer.fromJSON(message, DIDCommV2Message)
   }
+
+  public recipient(): string | undefined {
+    return this.to?.length ? this.to[0] : undefined
+  }
 }

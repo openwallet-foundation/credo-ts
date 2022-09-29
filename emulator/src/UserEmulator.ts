@@ -1,9 +1,9 @@
+/* eslint-disable no-console */
 import type { InitConfig } from '@aries-framework/core'
 
 import { Agent, DidMarker, HttpOutboundTransport, Transports, ConsoleLogger, LogLevel } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 import { randomUUID } from 'crypto'
-import { MetricsService } from './metrics'
 
 export interface EmulatorUserConfig {
   host?: string
@@ -22,7 +22,7 @@ export class User {
 
   public constructor(userConfig: EmulatorUserConfig) {
     const name = userConfig.label ?? randomUUID()
-    const endpoint = `${userConfig.host}:${userConfig.port!}`
+    const endpoint = `${userConfig.host}:${userConfig.port}`
 
     const config: InitConfig = {
       label: name,
@@ -46,7 +46,7 @@ export class User {
     }
 
     this.agent = new Agent(config, agentDependencies)
-    this.agent.registerInboundTransport(new HttpInboundTransport({ port: userConfig.port! }))
+    this.agent.registerInboundTransport(new HttpInboundTransport({ port: userConfig.port || 8000 }))
     this.agent.registerOutboundTransport(new HttpOutboundTransport())
 
     this.config = userConfig
@@ -58,7 +58,7 @@ export class User {
 
     setInterval(async () => {
       console.log(`User ${this.agent.config.label} trigger message`)
-      await this.agent.valueTransfer.mintCash(User.amount, this.config.witness!)
+      await this.agent.valueTransfer.mintCash(User.amount, this.config.witness || '')
     }, this.config.interval || 1000 * 3)
   }
 }
@@ -66,7 +66,7 @@ export class User {
 export class UserEmulator {
   private users: User[] = []
 
-  constructor(users: EmulatorUserConfig[]) {
+  public constructor(users: EmulatorUserConfig[]) {
     this.users = users.map((userConfig) => new User(userConfig))
   }
 

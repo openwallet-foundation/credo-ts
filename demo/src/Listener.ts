@@ -88,7 +88,10 @@ export class Listener {
     console.log(purpleText(JsonEncoder.toString(valueTransferRecord.receipt)))
   }
 
-  private async newPaymentRequestPrompt(valueTransferRecord: ValueTransferRecord, giverInquirer: AnnaInquirer) {
+  private async newPaymentRequestPrompt(
+    valueTransferRecord: ValueTransferRecord,
+    giverInquirer: AnnaInquirer | BobInquirer
+  ) {
     this.printRequest(valueTransferRecord)
     this.turnListenerOn()
     await giverInquirer.acceptPaymentRequest(valueTransferRecord)
@@ -107,7 +110,7 @@ export class Listener {
     await getterInquirer.processAnswer()
   }
 
-  public paymentRequestListener(giver: Anna, giverInquirer: AnnaInquirer) {
+  public paymentRequestListener(giver: Anna | Bob, giverInquirer: AnnaInquirer | BobInquirer) {
     giver.agent.events.on(
       ValueTransferEventTypes.ValueTransferStateChanged,
       async ({ payload }: ValueTransferStateChangedEvent) => {

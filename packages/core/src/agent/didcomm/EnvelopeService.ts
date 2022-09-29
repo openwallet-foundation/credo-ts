@@ -1,5 +1,5 @@
 import type { DIDCommMessage } from './DIDCommMessage'
-import type { DecryptedMessageContext, EncryptedMessage, ProtectedMessage, PackedMessage } from './types'
+import type { DecryptedMessageContext, EncryptedMessage, ProtectedMessage, PackedMessage, SignedMessage } from './types'
 import type { PackMessageParams as DIDCommV1PackMessageParams } from './v1/DIDCommV1EnvelopeService'
 import type { DIDCommV1Message } from './v1/DIDCommV1Message'
 import type {
@@ -75,42 +75,51 @@ export class EnvelopeService {
 
   public async unpackMessage(message: PackedMessage): Promise<DecryptedMessageContext> {
     if (message.type === SendingMessageType.Encrypted) {
-      const protectedValue = JsonEncoder.fromBase64(message.message.protected) as ProtectedMessage
-      if (!protectedValue) {
-        throw new AriesFrameworkError(`Unable to unpack message.`)
-      }
-      if (
-        protectedValue.typ === DidCommV1Types.JwmV1 &&
-        (protectedValue.alg === DidCommV1Algorithms.Anoncrypt || protectedValue.alg === DidCommV1Algorithms.Authcrypt)
-      ) {
-        const decryptedMessageContext = await this.didCommV1EnvelopeService.unpackMessage(message.message)
-        return {
-          plaintextMessage: decryptedMessageContext.plaintextMessage,
-          sender: decryptedMessageContext.senderKey,
-          recipient: decryptedMessageContext.recipientKey,
-          version: DIDCommVersion.V1,
-        }
-      } else {
-        const decryptedMessageContext = await this.didCommV2EnvelopeService.unpackMessage(message.message)
-        return {
-          plaintextMessage: decryptedMessageContext.plaintextMessage,
-          sender: decryptedMessageContext.senderKid,
-          recipient: decryptedMessageContext.recipientKid,
-          version: DIDCommVersion.V1,
-        }
-      }
+      return this.unpackJWE(message.message)
     }
     if (message.type === SendingMessageType.Signed) {
-      const decryptedMessageContext = await this.didCommV2EnvelopeService.unpackMessage(message.message)
+      return this.unpackJWS(message.message)
+    }
+    return {
+      plaintextMessage: message.message,
+    }
+  }
+
+  public async unpackJWE(message: EncryptedMessage): Promise<DecryptedMessageContext> {
+    const protectedValue = JsonEncoder.fromBase64(message.protected) as ProtectedMessage
+    if (!protectedValue) {
+      throw new AriesFrameworkError(`Unable to unpack message.`)
+    }
+
+    if (
+      protectedValue.typ === DidCommV1Types.JwmV1 &&
+      (protectedValue.alg === DidCommV1Algorithms.Anoncrypt || protectedValue.alg === DidCommV1Algorithms.Authcrypt)
+    ) {
+      const decryptedMessageContext = await this.didCommV1EnvelopeService.unpackMessage(message)
+      return {
+        plaintextMessage: decryptedMessageContext.plaintextMessage,
+        sender: decryptedMessageContext.senderKey,
+        recipient: decryptedMessageContext.recipientKey,
+        version: DIDCommVersion.V1,
+      }
+    } else {
+      const decryptedMessageContext = await this.didCommV2EnvelopeService.unpackMessage(message)
       return {
         plaintextMessage: decryptedMessageContext.plaintextMessage,
         sender: decryptedMessageContext.senderKid,
         recipient: decryptedMessageContext.recipientKid,
-        version: DIDCommVersion.V1,
+        version: DIDCommVersion.V2,
       }
     }
+  }
+
+  public async unpackJWS(message: SignedMessage): Promise<DecryptedMessageContext> {
+    const decryptedMessageContext = await this.didCommV2EnvelopeService.unpackMessage(message)
     return {
-      plaintextMessage: message.message,
+      plaintextMessage: decryptedMessageContext.plaintextMessage,
+      sender: decryptedMessageContext.senderKid,
+      recipient: decryptedMessageContext.recipientKid,
+      version: DIDCommVersion.V2,
     }
   }
 }

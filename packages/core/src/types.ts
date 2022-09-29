@@ -1,5 +1,6 @@
 import type { TransportPriorityOptions } from './agent/MessageSender'
 import type { DIDCommMessage, EncryptedMessage, DIDCommV2Message } from './agent/didcomm/index'
+import type { SignedMessage } from './agent/didcomm/types'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
@@ -88,7 +89,6 @@ export interface InitConfig {
   autoAcceptCredentials?: AutoAcceptCredential
   logger?: Logger
   didCommMimeType?: DidCommMimeType
-  supportOffline?: boolean
   catchErrors?: boolean
 
   indyLedgers?: IndyPoolConfig[]
@@ -111,6 +111,9 @@ export interface InitConfig {
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string
   valueTransferConfig?: ValueTransferConfig
+  emulateOfflineCase?: boolean
+
+  defaultPingAddress?: string
 }
 
 export type PlaintextMessage = PlaintextMessageV1 | PlaintextMessageV2
@@ -157,8 +160,10 @@ export interface OutboundServiceMessage<T extends DIDCommMessage = DIDCommMessag
   senderKey: string
 }
 
+export type OutboundPackagePayload = EncryptedMessage | SignedMessage | PlaintextMessage
+
 export interface OutboundPackage {
-  payload: EncryptedMessage | PlaintextMessage
+  payload: OutboundPackagePayload
   recipientDid?: string
   responseRequested?: boolean
   endpoint?: string
