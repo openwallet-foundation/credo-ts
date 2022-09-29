@@ -78,7 +78,7 @@ export class ProofsModule {
     const { message, proofRecord } = await this.proofService.createProposal(connection, presentationProposal, config)
 
     const outbound = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
 
     return proofRecord
   }
@@ -129,7 +129,7 @@ export class ProofsModule {
     })
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return proofRecord
   }
@@ -163,7 +163,7 @@ export class ProofsModule {
     const { message, proofRecord } = await this.proofService.createRequest(proofRequest, connection, config)
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return proofRecord
   }
@@ -196,9 +196,9 @@ export class ProofsModule {
     const { message, proofRecord } = await this.proofService.createRequest(proofRequest, undefined, config)
 
     // Create and set ~service decorator
-    const routing = await this.mediationRecipientService.getRouting()
+    const routing = await this.mediationRecipientService.getRoutingDid()
     message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
+      serviceEndpoint: routing.endpoint,
       recipientKeys: [routing.verkey],
       routingKeys: routing.routingKeys,
     })
@@ -235,16 +235,16 @@ export class ProofsModule {
       const connection = await this.connectionService.getById(proofRecord.connectionId)
 
       const outboundMessage = createOutboundMessage(connection, message)
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
       return proofRecord
     }
     // Use ~service decorator otherwise
     else if (proofRecord.requestMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.mediationRecipientService.getRoutingDid()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
+        serviceEndpoint: routing.endpoint,
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })
@@ -256,7 +256,7 @@ export class ProofsModule {
       proofRecord.presentationMessage = message
       await this.proofService.update(proofRecord)
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],
@@ -300,14 +300,14 @@ export class ProofsModule {
     if (proofRecord.connectionId) {
       const connection = await this.connectionService.getById(proofRecord.connectionId)
       const outboundMessage = createOutboundMessage(connection, message)
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
     }
     // Use ~service decorator otherwise
     else if (proofRecord.requestMessage?.service && proofRecord.presentationMessage?.service) {
       const recipientService = proofRecord.presentationMessage?.service
       const ourService = proofRecord.requestMessage?.service
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],
@@ -396,7 +396,7 @@ export class ProofsModule {
       threadId: record.threadId,
     })
     const outboundMessage = createOutboundMessage(connection, presentationProblemReportMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return record
   }

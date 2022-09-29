@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { ProofRequest } from '../models'
@@ -19,7 +19,7 @@ export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#request-presentation
  */
-export class RequestPresentationMessage extends AgentMessage {
+export class RequestPresentationMessage extends DIDCommV1Message {
   public constructor(options: RequestPresentationOptions) {
     super()
 

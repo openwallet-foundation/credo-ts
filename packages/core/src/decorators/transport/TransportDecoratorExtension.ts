@@ -1,11 +1,11 @@
-import type { BaseMessageConstructor } from '../../agent/BaseMessage'
+import type { DIDComV1BaseMessageConstructor } from '../../agent/didcomm/v1/DIDCommV1BaseMessage'
 
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
 
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator'
 
-export function TransportDecorated<T extends BaseMessageConstructor>(Base: T) {
+export function TransportDecorated<T extends DIDComV1BaseMessageConstructor>(Base: T) {
   class TransportDecoratorExtension extends Base {
     @Expose({ name: '~transport' })
     @Type(() => TransportDecorator)

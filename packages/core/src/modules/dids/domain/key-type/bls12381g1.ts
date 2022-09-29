@@ -1,20 +1,20 @@
-import type { VerificationMethod } from '../verificationMethod'
 import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto'
 import { Key } from '../Key'
+import { VerificationMethod } from '../verificationMethod'
 
 import { getSignatureKeyBase } from './getSignatureKeyBase'
 
 const VERIFICATION_METHOD_TYPE_BLS12381G1_KEY_2020 = 'Bls12381G1Key2020'
 
 export function getBls12381g1VerificationMethod(did: string, key: Key) {
-  return {
+  return new VerificationMethod({
     id: `${did}#${key.fingerprint}`,
     type: VERIFICATION_METHOD_TYPE_BLS12381G1_KEY_2020,
     controller: did,
     publicKeyBase58: key.publicKeyBase58,
-  }
+  })
 }
 
 export function getBls12381g1DidDoc(did: string, key: Key) {

@@ -12,9 +12,14 @@ export class Faber extends BaseAgent {
   public connectionRecordAliceId?: string
   public credentialDefinition?: CredDef
   public ui: BottomBar
+  public static seed = '6b8b882e2618fa5d45ee7229ca880083'
 
   public constructor(port: number, name: string) {
-    super(port, name)
+    super({
+      port,
+      name,
+      publicDidSeed: Faber.seed,
+    })
     this.ui = new ui.BottomBar()
   }
 

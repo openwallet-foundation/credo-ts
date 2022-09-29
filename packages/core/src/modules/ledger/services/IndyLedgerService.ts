@@ -544,7 +544,7 @@ export interface ParseRevocationRegistryTemplate {
 
 export interface IndyEndpointAttrib {
   endpoint?: string
-  types?: Array<'endpoint' | 'did-communication' | 'DIDComm'>
+  types?: Array<'endpoint' | 'did-communication' | 'DIDCommMessaging'>
   routingKeys?: string[]
   [key: string]: unknown
 }

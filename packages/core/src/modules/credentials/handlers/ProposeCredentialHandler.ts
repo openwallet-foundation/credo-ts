@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
 import type { CredentialRecord } from '../repository/CredentialRecord'
 import type { CredentialService } from '../services'
@@ -7,7 +8,7 @@ import type { CredentialService } from '../services'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { ProposeCredentialMessage } from '../messages'
 
-export class ProposeCredentialHandler implements Handler {
+export class ProposeCredentialHandler implements Handler<typeof DIDCommV1Message> {
   private credentialService: CredentialService
   private agentConfig: AgentConfig
   private credentialAutoResponseCoordinator: CredentialResponseCoordinator

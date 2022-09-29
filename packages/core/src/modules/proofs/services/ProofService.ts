@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { ConnectionRecord } from '../../connections'
@@ -1145,7 +1145,7 @@ export interface ProofRequestTemplate {
   comment?: string
 }
 
-export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
+export interface ProofProtocolMsgReturnType<MessageType extends DIDCommV1Message> {
   message: MessageType
   proofRecord: ProofRecord
 }

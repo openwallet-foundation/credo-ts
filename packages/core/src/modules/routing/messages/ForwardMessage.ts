@@ -1,8 +1,10 @@
-import { Expose } from 'class-transformer'
-import { Equals, IsObject, IsString } from 'class-validator'
+import type { DIDCommV2MessageParams } from '../../../agent/didcomm/'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { EncryptedMessage } from '../../../types'
+import { Expose, Type } from 'class-transformer'
+import { Equals, IsObject, IsString, ValidateNested } from 'class-validator'
+
+import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm/'
+import { EncryptedMessage } from '../../../agent/didcomm/types'
 
 export interface ForwardMessageOptions {
   id?: string
@@ -13,7 +15,7 @@ export interface ForwardMessageOptions {
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0094-cross-domain-messaging/README.md#corerouting10forward
  */
-export class ForwardMessage extends AgentMessage {
+export class ForwardMessage extends DIDCommV1Message {
   /**
    * Create new ForwardMessage instance.
    *
@@ -39,4 +41,39 @@ export class ForwardMessage extends AgentMessage {
   @Expose({ name: 'msg' })
   @IsObject()
   public message!: EncryptedMessage
+}
+
+export class ForwardMessageV2Body {
+  @IsString()
+  public next!: string
+}
+
+export type ForwardMessageV2Options = {
+  body: ForwardMessageV2Body
+} & DIDCommV2MessageParams
+
+/**
+ * DIDComm V2 version of message defined here https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0094-cross-domain-messaging/README.md#corerouting10forward
+ */
+export class ForwardMessageV2 extends DIDCommV2Message {
+  /**
+   * Create new ForwardMessage instance.
+   *
+   * @param options
+   */
+  public constructor(options: ForwardMessageV2Options) {
+    super(options)
+
+    if (options) {
+      this.body = options.body
+    }
+  }
+
+  @Equals(ForwardMessageV2.type)
+  public readonly type = ForwardMessageV2.type
+  public static readonly type = 'https://didcomm.org/routing/2.0/forward'
+
+  @Type(() => ForwardMessageV2Body)
+  @ValidateNested()
+  public body!: ForwardMessageV2Body
 }

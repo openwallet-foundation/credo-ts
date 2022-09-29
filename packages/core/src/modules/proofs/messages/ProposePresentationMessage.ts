@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 
 import { PresentationPreview } from './PresentationPreview'
 
@@ -16,7 +16,7 @@ export interface ProposePresentationMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#propose-presentation
  */
-export class ProposePresentationMessage extends AgentMessage {
+export class ProposePresentationMessage extends DIDCommV1Message {
   public constructor(options: ProposePresentationMessageOptions) {
     super()
 

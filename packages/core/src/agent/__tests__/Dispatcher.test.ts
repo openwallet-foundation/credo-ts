@@ -1,30 +1,30 @@
 import type { Handler } from '../Handler'
 
 import { getAgentConfig } from '../../../tests/helpers'
-import { AgentMessage } from '../AgentMessage'
 import { Dispatcher } from '../Dispatcher'
 import { EventEmitter } from '../EventEmitter'
 import { MessageSender } from '../MessageSender'
+import { DIDCommV1Message } from '../didcomm/v1/DIDCommV1Message'
 
-class ConnectionInvitationTestMessage extends AgentMessage {
+class ConnectionInvitationTestMessage extends DIDCommV1Message {
   public static readonly type = 'https://didcomm.org/connections/1.0/invitation'
 }
-class ConnectionRequestTestMessage extends AgentMessage {
+class ConnectionRequestTestMessage extends DIDCommV1Message {
   public static readonly type = 'https://didcomm.org/connections/1.0/request'
 }
 
-class ConnectionResponseTestMessage extends AgentMessage {
+class ConnectionResponseTestMessage extends DIDCommV1Message {
   public static readonly type = 'https://didcomm.org/connections/1.0/response'
 }
 
-class NotificationAckTestMessage extends AgentMessage {
+class NotificationAckTestMessage extends DIDCommV1Message {
   public static readonly type = 'https://didcomm.org/notification/1.0/ack'
 }
-class CredentialProposalTestMessage extends AgentMessage {
+class CredentialProposalTestMessage extends DIDCommV1Message {
   public static readonly type = 'https://didcomm.org/issue-credential/1.0/credential-proposal'
 }
 
-class TestHandler implements Handler {
+class TestHandler implements Handler<typeof DIDCommV1Message> {
   // We want to pass various classes to test various behaviours so we dont need to strictly type it.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public constructor(classes: any[]) {

@@ -1,11 +1,12 @@
 import type { Logger } from '../../../logger'
 import type { DidResolver } from '../domain/DidResolver'
-import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
+import type { DIDMetadata, DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndyLedgerService } from '../../ledger'
+import { DidType } from '../domain/Did'
 import { parseDid } from '../domain/parse'
 import { IndyDidResolver } from '../methods/indy/IndyDidResolver'
 import { KeyDidResolver } from '../methods/key/KeyDidResolver'
@@ -29,13 +30,18 @@ export class DidResolverService {
     ]
   }
 
-  public async resolve(didUrl: string, options: DidResolutionOptions = {}): Promise<DidResolutionResult> {
+  public async resolve(didUrl?: string, options: DidResolutionOptions = {}): Promise<DidResolutionResult> {
     this.logger.debug(`resolving didUrl ${didUrl}`)
 
     const result = {
       didResolutionMetadata: {},
       didDocument: null,
       didDocumentMetadata: {},
+      didType: DidType.Unknown,
+    }
+
+    if (!didUrl) {
+      return result
     }
 
     let parsed: ParsedDid
@@ -56,10 +62,20 @@ export class DidResolverService {
       }
     }
 
-    return resolver.resolve(parsed.did, parsed, options)
+    const resolvedDid = await resolver.resolve(parsed.did, parsed, options)
+    resolvedDid.didMeta = await this.resolveDidMetadata(parsed.did)
+    return resolvedDid
   }
 
   private findResolver(parsed: ParsedDid): DidResolver | null {
     return this.resolvers.find((r) => r.supportedMethods.includes(parsed.method)) ?? null
+  }
+
+  private async resolveDidMetadata(did: string): Promise<DIDMetadata> {
+    this.logger.debug(`resolving did metadata  ${did}`)
+    return {
+      label: undefined,
+      logoUrl: undefined,
+    }
   }
 }

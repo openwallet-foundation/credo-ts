@@ -9,7 +9,7 @@ import { Agent } from '../src/agent/Agent'
 
 import { waitForBasicMessage, getBaseConfig } from './helpers'
 
-const aliceConfig = getBaseConfig('Agents Alice', {
+const aliceConfig = getBaseConfig('Agents Getter', {
   endpoints: ['rxjs:alice'],
 })
 const bobConfig = getBaseConfig('Agents Bob', {

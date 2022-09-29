@@ -64,6 +64,7 @@ export class ConnectionRecord
 
   @Type(() => ConnectionInvitationMessage)
   public invitation?: ConnectionInvitationMessage
+
   public alias?: string
   public autoAcceptConnection?: boolean
   public imageUrl?: string

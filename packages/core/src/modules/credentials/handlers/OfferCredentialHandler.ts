@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import type { CredentialResponseCoordinator } from '../CredentialResponseCoordinator'
 import type { CredentialRecord } from '../repository/CredentialRecord'
@@ -9,7 +10,7 @@ import { createOutboundMessage, createOutboundServiceMessage } from '../../../ag
 import { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 import { OfferCredentialMessage } from '../messages'
 
-export class OfferCredentialHandler implements Handler {
+export class OfferCredentialHandler implements Handler<typeof DIDCommV1Message> {
   private credentialService: CredentialService
   private agentConfig: AgentConfig
   private credentialResponseCoordinator: CredentialResponseCoordinator
@@ -48,9 +49,9 @@ export class OfferCredentialHandler implements Handler {
 
       return createOutboundMessage(messageContext.connection, message)
     } else if (record.offerMessage?.service) {
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.mediationRecipientService.getRoutingDid()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
+        serviceEndpoint: routing.endpoint,
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })

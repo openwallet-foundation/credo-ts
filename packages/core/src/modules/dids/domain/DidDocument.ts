@@ -3,10 +3,17 @@ import type { DidDocumentService } from './service'
 import { Expose, Transform, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested } from 'class-validator'
 
+import { isDid, TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { onlineTransports } from '../../routing/types'
 
 import { IndyAgentService, ServiceTransformer, DidCommService } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
+
+export enum DidConnectivity {
+  Online = 'online',
+  Offline = 'offline',
+}
 
 interface DidDocumentOptions {
   context?: string[]
@@ -104,7 +111,7 @@ export class DidDocument {
   }
 
   /**
-   * Returns all of the service endpoints matching the given type.
+   * Returns all of the service endpoint matching the given type.
    *
    * @param type The type of service(s) to query.
    */
@@ -113,7 +120,7 @@ export class DidDocument {
   }
 
   /**
-   * Returns all of the service endpoints matching the given class
+   * Returns all of the service endpoint matching the given class
    *
    * @param classType The class to query services.
    */
@@ -145,7 +152,97 @@ export class DidDocument {
     )
   }
 
+  public get verificationKey(): string {
+    // get first available verification key
+    return TypedArrayEncoder.toBase58(this.verificationMethod[0].keyBytes)
+  }
+
+  public getVerificationMethod(): VerificationMethod | undefined {
+    // get first available verification method
+    return this.verificationMethod && this.verificationMethod[0] ? this.verificationMethod[0] : undefined
+  }
+
+  public get verificationKeyId(): string | undefined {
+    // get id of first available verification key
+    return this.verificationMethod && this.verificationMethod[0] ? this.verificationMethod[0].id : undefined
+  }
+
+  public getKeyAgreement(): VerificationMethod | undefined {
+    const keyAgreement = this.keyAgreement[0]
+    if (keyAgreement) {
+      if (typeof keyAgreement === 'string') {
+        const verificationMethod = this.verificationMethod.find(
+          (verificationMethod) => keyAgreement === verificationMethod.id
+        )
+        if (!verificationMethod) {
+          throw new Error(`Unable to locate verification with id '${keyAgreement}'`)
+        }
+        return verificationMethod
+      } else {
+        return keyAgreement
+      }
+    }
+    return this.getVerificationMethod()
+  }
+
+  public get agreementKeyId(): string | undefined {
+    // get id of first available agreement key
+    const keyAgreement = this.keyAgreement[0]
+    if (keyAgreement) {
+      if (typeof keyAgreement === 'string') {
+        return keyAgreement
+      } else {
+        return keyAgreement.id
+      }
+    }
+    // else return id of verification key
+    return this.verificationKeyId
+  }
+
+  public getAuthentication(): VerificationMethod | undefined {
+    const authentication = this.authentication[0]
+    if (authentication) {
+      if (typeof authentication === 'string') {
+        const verificationMethod = this.verificationMethod.find(
+          (verificationMethod) => authentication === verificationMethod.id
+        )
+        if (!verificationMethod) {
+          throw new Error(`Unable to locate verification with id '${authentication}'`)
+        }
+        return verificationMethod
+      } else {
+        return authentication
+      }
+    }
+    return this.getVerificationMethod()
+  }
+
+  public get authenticationKeyId(): string | undefined {
+    // get id of first available agreement key
+    const authentication = this.authentication[0]
+    if (authentication) {
+      if (typeof authentication === 'string') {
+        return authentication
+      } else {
+        return authentication.id
+      }
+    }
+    // else return id of verification key
+    return this.verificationKeyId
+  }
+
   public toJSON() {
     return JsonTransformer.toJSON(this)
+  }
+
+  public static extractDidFromKid(kid: string): string | undefined {
+    const did = kid.includes('#') ? kid.split('#')[0] : kid
+    return isDid(did) ? did : undefined
+  }
+
+  public get connectivity() {
+    const transports = onlineTransports.map((transport) => transport.toString())
+    const service = this.service.find((service) => transports.includes(service.protocolScheme))
+    return service ? DidConnectivity.Online : DidConnectivity.Offline
   }
 }

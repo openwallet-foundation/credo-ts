@@ -1,20 +1,20 @@
 {
-  "name": "@aries-framework/node",
+  "name": "@sicpa-dlab/aries-framework-node",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.1.0",
+  "version": "0.1.5",
   "files": [
     "build",
     "bin"
   ],
   "license": "Apache-2.0",
   "publishConfig": {
-    "access": "public"
+    "registry": "https://npm.pkg.github.com"
   },
   "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/node",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "url": "https://github.com/sicpa-dlab/aries-framework-javascript/",
     "directory": "packages/node"
   },
   "bin": {
@@ -28,7 +28,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.1.0",
+    "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core",
+    "didcomm-node": "0.3.4",
     "express": "^4.17.1",
     "indy-sdk": "^1.16.0-dev-1636",
     "node-fetch": "^2.6.1",

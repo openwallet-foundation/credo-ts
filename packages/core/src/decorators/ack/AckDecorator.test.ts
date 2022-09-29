@@ -1,11 +1,11 @@
-import { BaseMessage } from '../../agent/BaseMessage'
+import { DIDCommV1Message } from '../../agent/didcomm'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { Compose } from '../../utils/mixins'
 
 import { AckDecorated } from './AckDecoratorExtension'
 
 describe('Decorators | AckDecoratorExtension', () => {
-  class TestMessage extends Compose(BaseMessage, [AckDecorated]) {
+  class TestMessage extends Compose(DIDCommV1Message, [AckDecorated]) {
     public toJSON(): Record<string, unknown> {
       return JsonTransformer.toJSON(this)
     }

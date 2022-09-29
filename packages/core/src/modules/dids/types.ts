@@ -1,4 +1,4 @@
-import type { DidDocument } from './domain'
+import type { DidDocument, DidType } from './domain'
 import type { DIDResolutionOptions, ParsedDID, DIDDocumentMetadata, DIDResolutionMetadata } from 'did-resolver'
 
 export type ParsedDid = ParsedDID
@@ -13,4 +13,11 @@ export interface DidResolutionResult {
   didResolutionMetadata: DidResolutionMetadata
   didDocument: DidDocument | null
   didDocumentMetadata: DidDocumentMetadata
+  didType: DidType
+  didMeta?: DIDMetadata
+}
+
+export interface DIDMetadata {
+  label?: string
+  logoUrl?: string
 }

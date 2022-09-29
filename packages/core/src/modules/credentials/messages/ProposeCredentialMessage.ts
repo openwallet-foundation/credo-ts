@@ -3,7 +3,7 @@ import type { Attachment } from '../../../decorators/attachment/Attachment'
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import { credDefIdRegex, indyDidRegex, schemaIdRegex, schemaVersionRegex } from '../../../utils'
 
 import { CredentialPreview } from './CredentialPreview'
@@ -26,7 +26,7 @@ export interface ProposeCredentialMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#propose-credential
  */
-export class ProposeCredentialMessage extends AgentMessage {
+export class ProposeCredentialMessage extends DIDCommV1Message {
   public constructor(options: ProposeCredentialMessageOptions) {
     super()
 

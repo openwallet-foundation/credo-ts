@@ -69,7 +69,7 @@ export class CredentialsModule {
     const { message, credentialRecord } = await this.credentialService.createProposal(connection, config)
 
     const outbound = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
 
     return credentialRecord
   }
@@ -129,7 +129,7 @@ export class CredentialsModule {
     })
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }
@@ -187,7 +187,7 @@ export class CredentialsModule {
     })
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }
@@ -209,7 +209,7 @@ export class CredentialsModule {
     const { message, credentialRecord } = await this.credentialService.createOffer(credentialTemplate, connection)
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }
@@ -228,9 +228,9 @@ export class CredentialsModule {
     const { message, credentialRecord } = await this.credentialService.createOffer(credentialTemplate)
 
     // Create and set ~service decorator
-    const routing = await this.mediationRecipientService.getRouting()
+    const routing = await this.mediationRecipientService.getRoutingDid()
     message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
+      serviceEndpoint: routing.endpoint,
       recipientKeys: [routing.verkey],
       routingKeys: routing.routingKeys,
     })
@@ -267,15 +267,15 @@ export class CredentialsModule {
       })
       const outboundMessage = createOutboundMessage(connection, message)
 
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
       return credentialRecord
     }
     // Use ~service decorator otherwise
     else if (record.offerMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRouting()
+      const routing = await this.mediationRecipientService.getRoutingDid()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
+        serviceEndpoint: routing.endpoint,
         recipientKeys: [routing.verkey],
         routingKeys: routing.routingKeys,
       })
@@ -291,7 +291,7 @@ export class CredentialsModule {
       credentialRecord.requestMessage = message
       await this.credentialService.update(credentialRecord)
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],
@@ -349,7 +349,7 @@ export class CredentialsModule {
     })
 
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }
@@ -375,7 +375,7 @@ export class CredentialsModule {
       const connection = await this.connectionService.getById(credentialRecord.connectionId)
       const outboundMessage = createOutboundMessage(connection, message)
 
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
     }
     // Use ~service decorator otherwise
     else if (credentialRecord.requestMessage?.service && credentialRecord.offerMessage?.service) {
@@ -387,7 +387,7 @@ export class CredentialsModule {
       credentialRecord.credentialMessage = message
       await this.credentialService.update(credentialRecord)
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],
@@ -420,14 +420,14 @@ export class CredentialsModule {
       const connection = await this.connectionService.getById(credentialRecord.connectionId)
       const outboundMessage = createOutboundMessage(connection, message)
 
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
     }
     // Use ~service decorator otherwise
     else if (credentialRecord.credentialMessage?.service && credentialRecord.requestMessage?.service) {
       const recipientService = credentialRecord.credentialMessage.service
       const ourService = credentialRecord.requestMessage.service
 
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.toDidCommService(),
         senderKey: ourService.recipientKeys[0],
@@ -466,7 +466,7 @@ export class CredentialsModule {
       threadId: record.threadId,
     })
     const outboundMessage = createOutboundMessage(connection, credentialProblemReportMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return record
   }

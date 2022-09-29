@@ -62,7 +62,7 @@ describe('DidResolver', () => {
 
       const endpoints: IndyEndpointAttrib = {
         endpoint: 'https://agent.com',
-        types: ['endpoint', 'did-communication', 'DIDComm'],
+        types: ['endpoint', 'did-communication', 'DIDCommMessaging'],
         routingKeys: ['routingKey1', 'routingKey2'],
       }
 

@@ -1,4 +1,4 @@
-import { AgentMessage } from '@aries-framework/core'
+import { DIDCommV1Message } from '@aries-framework/core'
 import { Equals } from 'class-validator'
 
 export interface DummyResponseMessageOptions {
@@ -6,7 +6,7 @@ export interface DummyResponseMessageOptions {
   threadId: string
 }
 
-export class DummyResponseMessage extends AgentMessage {
+export class DummyResponseMessage extends DIDCommV1Message {
   public constructor(options: DummyResponseMessageOptions) {
     super()
 

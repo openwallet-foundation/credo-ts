@@ -1,10 +1,11 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { BasicMessageService } from '../services/BasicMessageService'
 
 import { AriesFrameworkError } from '../../../error'
 import { BasicMessage } from '../messages'
 
-export class BasicMessageHandler implements Handler {
+export class BasicMessageHandler implements Handler<typeof DIDCommV1Message> {
   private basicMessageService: BasicMessageService
   public supportedMessages = [BasicMessage]
 
@@ -16,7 +17,7 @@ export class BasicMessageHandler implements Handler {
     const connection = messageContext.connection
 
     if (!connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipient} not found!`)
     }
 
     if (!connection.theirKey) {

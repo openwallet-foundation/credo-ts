@@ -12,7 +12,7 @@ import { getBaseConfig } from './helpers'
 const faberConfig = getBaseConfig('Faber Agent Connections', {
   endpoints: ['rxjs:faber'],
 })
-const aliceConfig = getBaseConfig('Alice Agent Connections', {
+const aliceConfig = getBaseConfig('Getter Agent Connections', {
   endpoints: ['rxjs:alice'],
 })
 

@@ -50,13 +50,13 @@ describe('DiscoverFeaturesService', () => {
 
   describe('createQuery', () => {
     it('should return a query message with the query and comment', async () => {
-      const message = await discoverFeaturesService.createQuery({
+      const message = await discoverFeaturesService.createQuery('', {
         query: '*',
         comment: 'Hello',
       })
 
-      expect(message.query).toBe('*')
-      expect(message.comment).toBe('Hello')
+      expect(message.body.query).toBe('*')
+      expect(message.body.comment).toBe('Hello')
     })
   })
 })

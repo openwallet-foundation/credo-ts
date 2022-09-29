@@ -1,8 +1,10 @@
+import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
 
 import { Equals, IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
+import { DIDCommV2Message } from '../../../agent/didcomm/v2/DIDCommV2Message'
 
 export interface TrustPingResponseMessageOptions {
   comment?: string
@@ -16,7 +18,7 @@ export interface TrustPingResponseMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0048-trust-ping/README.md#messages
  */
-export class TrustPingResponseMessage extends AgentMessage {
+export class TrustPingResponseMessage extends DIDCommV1Message {
   /**
    * Create new TrustPingResponseMessage instance.
    * responseRequested will be true if not passed
@@ -49,4 +51,19 @@ export class TrustPingResponseMessage extends AgentMessage {
   @IsString()
   @IsOptional()
   public comment?: string
+}
+
+export type TrustPingResponseMessageV2Params = { thid: string } & DIDCommV2MessageParams
+
+export class TrustPingResponseMessageV2 extends DIDCommV2Message {
+  @Equals(TrustPingResponseMessageV2.type)
+  public readonly type = TrustPingResponseMessageV2.type
+  public static readonly type = 'https://didcomm.org/trust-ping/2.0/ping-response'
+
+  public constructor(params?: TrustPingResponseMessageV2Params) {
+    super(params)
+  }
+
+  @IsString()
+  public thid!: string
 }

@@ -1,4 +1,4 @@
-import type { BaseMessageConstructor } from '../../agent/BaseMessage'
+import type { DIDComV1BaseMessageConstructor } from '../../agent/didcomm/v1/DIDCommV1BaseMessage'
 import type { ServiceDecoratorOptions } from './ServiceDecorator'
 
 import { Expose, Type } from 'class-transformer'
@@ -6,7 +6,7 @@ import { IsOptional, ValidateNested } from 'class-validator'
 
 import { ServiceDecorator } from './ServiceDecorator'
 
-export function ServiceDecorated<T extends BaseMessageConstructor>(Base: T) {
+export function ServiceDecorated<T extends DIDComV1BaseMessageConstructor>(Base: T) {
   class ServiceDecoratorExtension extends Base {
     @Expose({ name: '~service' })
     @Type(() => ServiceDecorator)

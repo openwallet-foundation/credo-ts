@@ -1,4 +1,5 @@
-import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { DIDCommMessage } from '../../../agent/didcomm'
+import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
@@ -206,16 +207,16 @@ export class ConnectionService {
     messageContext: InboundMessageContext<ConnectionRequestMessage>,
     routing?: Routing
   ): Promise<ConnectionRecord> {
-    const { message, recipientVerkey, senderVerkey } = messageContext
+    const { message, recipient, sender } = messageContext
 
-    if (!recipientVerkey || !senderVerkey) {
+    if (!recipient || !sender) {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
     }
 
-    let connectionRecord = await this.findByVerkey(recipientVerkey)
+    let connectionRecord = await this.findByVerkey(recipient)
     if (!connectionRecord) {
       throw new AriesFrameworkError(
-        `Unable to process connection request: connection for verkey ${recipientVerkey} not found`
+        `Unable to process connection request: connection for verkey ${recipient} not found`
       )
     }
     connectionRecord.assertState(ConnectionState.Invited)
@@ -314,17 +315,17 @@ export class ConnectionService {
   public async processResponse(
     messageContext: InboundMessageContext<ConnectionResponseMessage>
   ): Promise<ConnectionRecord> {
-    const { message, recipientVerkey, senderVerkey } = messageContext
+    const { message, recipient, sender } = messageContext
 
-    if (!recipientVerkey || !senderVerkey) {
+    if (!recipient || !sender) {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
     }
 
-    const connectionRecord = await this.findByVerkey(recipientVerkey)
+    const connectionRecord = await this.findByVerkey(recipient)
 
     if (!connectionRecord) {
       throw new AriesFrameworkError(
-        `Unable to process connection response: connection for verkey ${recipientVerkey} not found`
+        `Unable to process connection response: connection for verkey ${recipient} not found`
       )
     }
 
@@ -410,12 +411,10 @@ export class ConnectionService {
    * @returns updated connection record
    */
   public async processAck(messageContext: InboundMessageContext<AckMessage>): Promise<ConnectionRecord> {
-    const { connection, recipientVerkey } = messageContext
+    const { connection, recipient } = messageContext
 
     if (!connection) {
-      throw new AriesFrameworkError(
-        `Unable to process connection ack: connection for verkey ${recipientVerkey} not found`
-      )
+      throw new AriesFrameworkError(`Unable to process connection ack: connection for verkey ${recipient} not found`)
     }
 
     // TODO: This is better addressed in a middleware of some kind because
@@ -437,23 +436,23 @@ export class ConnectionService {
   public async processProblemReport(
     messageContext: InboundMessageContext<ConnectionProblemReportMessage>
   ): Promise<ConnectionRecord> {
-    const { message: connectionProblemReportMessage, recipientVerkey, senderVerkey } = messageContext
+    const { message: connectionProblemReportMessage, recipient, sender } = messageContext
 
-    this.logger.debug(`Processing connection problem report for verkey ${recipientVerkey}`)
+    this.logger.debug(`Processing connection problem report for verkey ${recipient}`)
 
-    if (!recipientVerkey) {
+    if (!recipient) {
       throw new AriesFrameworkError('Unable to process connection problem report without recipientVerkey')
     }
 
-    const connectionRecord = await this.findByVerkey(recipientVerkey)
+    const connectionRecord = await this.findByVerkey(recipient)
 
     if (!connectionRecord) {
       throw new AriesFrameworkError(
-        `Unable to process connection problem report: connection for verkey ${recipientVerkey} not found`
+        `Unable to process connection problem report: connection for verkey ${recipient} not found`
       )
     }
 
-    if (connectionRecord.theirKey && connectionRecord.theirKey !== senderVerkey) {
+    if (connectionRecord.theirKey && connectionRecord.theirKey !== sender) {
       throw new AriesFrameworkError("Sender verkey doesn't match verkey of connection record")
     }
 
@@ -475,8 +474,8 @@ export class ConnectionService {
       previousSentMessage,
       previousReceivedMessage,
     }: {
-      previousSentMessage?: AgentMessage
-      previousReceivedMessage?: AgentMessage
+      previousSentMessage?: DIDCommV1Message
+      previousReceivedMessage?: DIDCommV1Message
     } = {}
   ) {
     const { connection, message } = messageContext
@@ -494,7 +493,7 @@ export class ConnectionService {
 
       if (previousSentMessage) {
         // If we have previously sent a message, it is not allowed to receive an OOB/unpacked message
-        if (!messageContext.recipientVerkey) {
+        if (!messageContext.recipient) {
           throw new AriesFrameworkError(
             'Cannot verify service without recipientKey on incoming message (received unpacked message)'
           )
@@ -504,7 +503,7 @@ export class ConnectionService {
         // in the recipientKeys of previously sent message ~service decorator
         if (
           !previousSentMessage?.service ||
-          !previousSentMessage.service.recipientKeys.includes(messageContext.recipientVerkey)
+          !previousSentMessage.service.recipientKeys.includes(messageContext.recipient)
         ) {
           throw new AriesFrameworkError(
             'Previously sent message ~service recipientKeys does not include current received message recipient key'
@@ -514,7 +513,7 @@ export class ConnectionService {
 
       if (previousReceivedMessage) {
         // If we have previously received a message, it is not allowed to receive an OOB/unpacked/AnonCrypt message
-        if (!messageContext.senderVerkey) {
+        if (!messageContext.sender) {
           throw new AriesFrameworkError(
             'Cannot verify service without senderKey on incoming message (received AnonCrypt or unpacked message)'
           )
@@ -524,7 +523,7 @@ export class ConnectionService {
         // in the recipientKeys of previously received message ~service decorator
         if (
           !previousReceivedMessage.service ||
-          !previousReceivedMessage.service.recipientKeys.includes(messageContext.senderVerkey)
+          !previousReceivedMessage.service.recipientKeys.includes(messageContext.sender)
         ) {
           throw new AriesFrameworkError(
             'Previously received message ~service recipientKeys does not include current received message sender key'
@@ -533,7 +532,7 @@ export class ConnectionService {
       }
 
       // If message is received unpacked/, we need to make sure it included a ~service decorator
-      if (!message.service && !messageContext.recipientVerkey) {
+      if (!message.serviceDecorator() && !messageContext.recipient) {
         throw new AriesFrameworkError('Message recipientKey must have ~service decorator')
       }
     }
@@ -655,7 +654,7 @@ export class ConnectionService {
     tags?: CustomConnectionTags
     imageUrl?: string
   }): Promise<ConnectionRecord> {
-    const { endpoints, did, verkey, routingKeys, mediatorId } = options.routing
+    const { endpoint, did, verkey, routingKeys, mediatorId } = options.routing
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
@@ -664,17 +663,14 @@ export class ConnectionService {
     })
 
     // IndyAgentService is old service type
-    const services = endpoints.map(
-      (endpoint, index) =>
-        new IndyAgentService({
-          id: `${did}#IndyAgentService`,
-          serviceEndpoint: endpoint,
-          recipientKeys: [verkey],
-          routingKeys: routingKeys,
-          // Order of endpoint determines priority
-          priority: index,
-        })
-    )
+    const services = new IndyAgentService({
+      id: `${did}#IndyAgentService`,
+      serviceEndpoint: endpoint,
+      recipientKeys: [verkey],
+      routingKeys: routingKeys,
+      // Order of endpoint determines priority
+      priority: 0,
+    })
 
     // TODO: abstract the second parameter for ReferencedAuthentication away. This can be
     // inferred from the publicKey class instance
@@ -683,7 +679,7 @@ export class ConnectionService {
     const didDoc = new DidDoc({
       id: did,
       authentication: [auth],
-      service: services,
+      service: [services],
       publicKey: [publicKey],
     })
 
@@ -735,14 +731,14 @@ export class ConnectionService {
 }
 
 export interface Routing {
-  endpoints: string[]
   verkey: string
   did: string
+  endpoint: string
   routingKeys: string[]
   mediatorId?: string
 }
 
-export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
+export interface ConnectionProtocolMsgReturnType<MessageType extends DIDCommMessage> {
   message: MessageType
   connectionRecord: ConnectionRecord
 }

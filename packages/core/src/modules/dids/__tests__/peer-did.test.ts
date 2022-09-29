@@ -5,7 +5,7 @@ import { KeyType } from '../../../crypto'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
-import { DidCommService, DidDocument, DidDocumentBuilder, Key } from '../domain'
+import { DidCommService, DidDocument, DidDocumentBuilder, DidType, Key } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../domain/key-type/x25519'
@@ -113,6 +113,7 @@ describe('peer dids', () => {
         // of a key when we receive a message from another connection.
         recipientKeys: peerDid.didDocument.recipientKeys,
       },
+      didType: DidType.PeerDid,
     })
 
     await didRepository.save(didDocumentRecord)
@@ -150,6 +151,7 @@ describe('peer dids', () => {
         // of a key when we receive a message from another connection.
         recipientKeys: didPeer.didDocument.recipientKeys,
       },
+      didType: DidType.PeerDid,
     })
 
     await didRepository.save(didDocumentRecord)

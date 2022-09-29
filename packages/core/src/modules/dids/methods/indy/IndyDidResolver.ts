@@ -6,7 +6,7 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
 import { TypedArrayEncoder } from '../../../../utils/TypedArrayEncoder'
 import { getFullVerkey } from '../../../../utils/did'
-import { DidDocumentService } from '../../domain'
+import { DidDocumentService, DidType, VerificationMethod } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { DidCommService } from '../../domain/service/DidCommService'
 import { DidCommV2Service } from '../../domain/service/DidCommV2Service'
@@ -38,18 +38,22 @@ export class IndyDidResolver implements DidResolver {
       const builder = new DidDocumentBuilder(parsed.did)
         .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
         .addContext('https://w3id.org/security/suites/x25519-2019/v1')
-        .addVerificationMethod({
-          controller: parsed.did,
-          id: verificationMethodId,
-          publicKeyBase58: getFullVerkey(nym.did, nym.verkey),
-          type: 'Ed25519VerificationKey2018',
-        })
-        .addVerificationMethod({
-          controller: parsed.did,
-          id: keyAgreementId,
-          publicKeyBase58: publicKeyX25519,
-          type: 'X25519KeyAgreementKey2019',
-        })
+        .addVerificationMethod(
+          new VerificationMethod({
+            controller: parsed.did,
+            id: verificationMethodId,
+            publicKeyBase58: getFullVerkey(nym.did, nym.verkey),
+            type: 'Ed25519VerificationKey2018',
+          })
+        )
+        .addVerificationMethod(
+          new VerificationMethod({
+            controller: parsed.did,
+            id: keyAgreementId,
+            publicKeyBase58: publicKeyX25519,
+            type: 'X25519KeyAgreementKey2019',
+          })
+        )
         .addAuthentication(verificationMethodId)
         .addAssertionMethod(verificationMethodId)
         .addKeyAgreement(keyAgreementId)
@@ -60,6 +64,7 @@ export class IndyDidResolver implements DidResolver {
         didDocument: builder.build(),
         didDocumentMetadata,
         didResolutionMetadata: { contentType: 'application/did+ld+json' },
+        didType: DidType.Indy,
       }
     } catch (error) {
       return {
@@ -69,6 +74,7 @@ export class IndyDidResolver implements DidResolver {
           error: 'notFound',
           message: `resolver_error: Unable to resolve did '${did}': ${error}`,
         },
+        didType: DidType.Indy,
       }
     }
   }
@@ -104,8 +110,8 @@ export class IndyDidResolver implements DidResolver {
           })
         )
 
-        // If 'DIDComm' included in types, add DIDComm v2 entry
-        if (types?.includes('DIDComm')) {
+        // If 'DIDCommMessaging' included in types, add DIDComm v2 entry
+        if (types?.includes('DIDCommMessaging')) {
           builder
             .addService(
               new DidCommV2Service({

@@ -1,5 +1,5 @@
+import type { EncryptedMessage } from '../agent/didcomm'
 import type { Logger } from '../logger'
-import type { EncryptedMessage } from '../types'
 import type { MessageRepository } from './MessageRepository'
 
 import { Lifecycle, scoped } from 'tsyringe'

@@ -33,7 +33,7 @@ export class BasicMessagesModule {
 
     const basicMessage = await this.basicMessageService.createMessage(message, connection)
     const outboundMessage = createOutboundMessage(connection, basicMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
   }
 
   public async findAllByQuery(query: Partial<BasicMessageTags>) {

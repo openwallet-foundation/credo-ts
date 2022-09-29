@@ -1,4 +1,5 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { ConnectionService } from '../services/ConnectionService'
 import type { TrustPingService } from '../services/TrustPingService'
 
@@ -6,7 +7,7 @@ import { AriesFrameworkError } from '../../../error'
 import { TrustPingMessage } from '../messages'
 import { ConnectionState } from '../models'
 
-export class TrustPingMessageHandler implements Handler {
+export class TrustPingMessageHandler implements Handler<typeof DIDCommV1Message> {
   private trustPingService: TrustPingService
   private connectionService: ConnectionService
   public supportedMessages = [TrustPingMessage]
@@ -17,9 +18,9 @@ export class TrustPingMessageHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<TrustPingMessageHandler>) {
-    const { connection, recipientVerkey } = messageContext
+    const { connection, recipient } = messageContext
     if (!connection) {
-      throw new AriesFrameworkError(`Connection for verkey ${recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${recipient} not found!`)
     }
 
     // TODO: This is better addressed in a middleware of some kind because

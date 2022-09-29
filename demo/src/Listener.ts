@@ -1,5 +1,12 @@
 import type { Alice } from './Alice'
 import type { AliceInquirer } from './AliceInquirer'
+import type { Anna } from './Anna'
+import type { AnnaInquirer } from './AnnaInquirer'
+import type { Bob } from './Bob'
+import type { BobInquirer } from './BobInquirer'
+import type { Carol } from './Carol'
+import type { CarolInquirer } from './CarolInquirer'
+import type { CentralBankIssuer } from './CentralBankIssuer'
 import type { Faber } from './Faber'
 import type { FaberInquirer } from './FaberInquirer'
 import type {
@@ -9,6 +16,9 @@ import type {
   CredentialStateChangedEvent,
   ProofRecord,
   ProofStateChangedEvent,
+  ValueTransferStateChangedEvent,
+  ValueTransferRecord,
+  WitnessTableReceivedEvent,
 } from '@aries-framework/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
@@ -19,7 +29,10 @@ import {
   CredentialState,
   ProofEventTypes,
   ProofState,
+  ValueTransferEventTypes,
+  JsonEncoder,
 } from '@aries-framework/core'
+import { TransactionState } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { ui } from 'inquirer'
 
 import { Color, purpleText } from './OutputClass'
@@ -65,6 +78,76 @@ export class Listener {
       async ({ payload }: CredentialStateChangedEvent) => {
         if (payload.credentialRecord.state === CredentialState.OfferReceived) {
           await this.newCredentialPrompt(payload.credentialRecord, aliceInquirer)
+        }
+      }
+    )
+  }
+
+  private printRequest(valueTransferRecord: ValueTransferRecord) {
+    console.log('\n\nPayment Request:')
+    console.log(purpleText(JsonEncoder.toString(valueTransferRecord.receipt)))
+  }
+
+  private async newPaymentRequestPrompt(
+    valueTransferRecord: ValueTransferRecord,
+    giverInquirer: AnnaInquirer | BobInquirer
+  ) {
+    this.printRequest(valueTransferRecord)
+    this.turnListenerOn()
+    await giverInquirer.acceptPaymentRequest(valueTransferRecord)
+    this.turnListenerOff()
+    await giverInquirer.processAnswer()
+  }
+
+  private async newPaymentOfferPrompt(
+    valueTransferRecord: ValueTransferRecord,
+    getterInquirer: BobInquirer | CarolInquirer
+  ) {
+    this.printRequest(valueTransferRecord)
+    this.turnListenerOn()
+    await getterInquirer.acceptPaymentOffer(valueTransferRecord)
+    this.turnListenerOff()
+    await getterInquirer.processAnswer()
+  }
+
+  public paymentRequestListener(giver: Anna | Bob, giverInquirer: AnnaInquirer | BobInquirer) {
+    giver.agent.events.on(
+      ValueTransferEventTypes.ValueTransferStateChanged,
+      async ({ payload }: ValueTransferStateChangedEvent) => {
+        if (payload.record.state === TransactionState.RequestReceived) {
+          await this.newPaymentRequestPrompt(payload.record, giverInquirer)
+        }
+      }
+    )
+  }
+
+  public witnessTableListener(giver: Anna) {
+    giver.agent.events.on(
+      ValueTransferEventTypes.WitnessTableReceived,
+      async ({ payload }: WitnessTableReceivedEvent) => {
+        console.log('\n\nWitness Table received:')
+        console.log(purpleText(JsonEncoder.toString(payload.witnesses)))
+      }
+    )
+  }
+
+  public mintRequestListener(centralBankIssuer: CentralBankIssuer) {
+    centralBankIssuer.agent.events.on(
+      ValueTransferEventTypes.ValueTransferStateChanged,
+      async ({ payload }: ValueTransferStateChangedEvent) => {
+        if (payload.record.state === TransactionState.RequestReceived) {
+          await centralBankIssuer.acceptPaymentRequest(payload.record)
+        }
+      }
+    )
+  }
+
+  public paymentOfferListener(getter: Bob | Carol, getterInquirer: BobInquirer | CarolInquirer) {
+    getter.agent.events.on(
+      ValueTransferEventTypes.ValueTransferStateChanged,
+      async ({ payload }: ValueTransferStateChangedEvent) => {
+        if (payload.record.state === TransactionState.OfferReceived) {
+          await this.newPaymentOfferPrompt(payload.record, getterInquirer)
         }
       }
     )

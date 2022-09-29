@@ -10,10 +10,12 @@ import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
 import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
 import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
+import { offlineTransports, onlineTransports } from '../modules/routing/types'
+import { AutoAcceptValueTransfer } from '../modules/value-transfer/ValueTransferAutoAcceptType'
 import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
-  private initConfig: InitConfig
+  private readonly initConfig: InitConfig
   public label: string
   public logger: Logger
   public readonly agentDependencies: AgentDependencies
@@ -47,6 +49,14 @@ export class AgentConfig {
     return this.initConfig.publicDidSeed
   }
 
+  public get staticDids() {
+    return this.initConfig.staticDids || []
+  }
+
+  public get publicDidType() {
+    return this.initConfig.publicDidType
+  }
+
   public get indyLedgers() {
     return this.initConfig.indyLedgers ?? []
   }
@@ -67,6 +77,30 @@ export class AgentConfig {
     return this.initConfig.autoAcceptCredentials ?? AutoAcceptCredential.Never
   }
 
+  public get autoAcceptPaymentOffer() {
+    return this.initConfig.valueTransferConfig?.party?.autoAcceptPaymentOffer ?? AutoAcceptValueTransfer.Never
+  }
+
+  public get autoAcceptPaymentRequest() {
+    return this.initConfig.valueTransferConfig?.party?.autoAcceptPaymentRequest ?? AutoAcceptValueTransfer.Never
+  }
+
+  public get autoAcceptOfferedPaymentRequest() {
+    return this.initConfig.valueTransferConfig?.party?.autoAcceptOfferedPaymentRequest ?? AutoAcceptValueTransfer.Never
+  }
+
+  public get witnessIssuerDids() {
+    return this.initConfig.valueTransferConfig?.witness?.issuerDids
+  }
+
+  public get witnessGossipMetrics() {
+    return this.initConfig.valueTransferConfig?.witness?.gossipMetricsService
+  }
+
+  public get valueTransferWitnessDid() {
+    return this.initConfig.valueTransferConfig?.party?.witnessDid
+  }
+
   public get didCommMimeType() {
     return this.initConfig.didCommMimeType ?? DidCommMimeType.V0
   }
@@ -79,8 +113,20 @@ export class AgentConfig {
     return this.initConfig.mediatorPickupStrategy
   }
 
+  public get mediatorDeliveryStrategy() {
+    return this.initConfig.mediatorDeliveryStrategy
+  }
+
+  public get mediatorWebHookEndpoint() {
+    return this.initConfig.mediatorWebHookEndpoint
+  }
+
+  public get mediatorPushToken() {
+    return this.initConfig.mediatorPushToken
+  }
+
   public get endpoints(): [string, ...string[]] {
-    // if endpoints is not set, return queue endpoint
+    // if endpoint is not set, return queue endpoint
     // https://github.com/hyperledger/aries-rfcs/issues/405#issuecomment-582612875
     if (!this.initConfig.endpoints || this.initConfig.endpoints.length === 0) {
       return [DID_COMM_TRANSPORT_QUEUE]
@@ -111,5 +157,42 @@ export class AgentConfig {
 
   public get connectionImageUrl() {
     return this.initConfig.connectionImageUrl
+  }
+
+  public get valueTransferConfig() {
+    return this.initConfig.valueTransferConfig
+  }
+
+  public get valueWitnessConfig() {
+    return this.initConfig.valueTransferConfig?.witness
+  }
+
+  public get transports() {
+    return this.initConfig.transports || []
+  }
+
+  public get catchErrors() {
+    return this.initConfig.catchErrors || false
+  }
+
+  public get onlineTransports() {
+    return this.transports.filter((transport) => onlineTransports.includes(transport))
+  }
+
+  public get offlineTransports() {
+    return this.transports.filter((transport) => offlineTransports.includes(transport))
+  }
+
+  public get pingAddress() {
+    return this.initConfig.mediatorConnectionsInvite || this.initConfig.defaultPingAddress || 'https://www.sicpa.com'
+  }
+
+  public async hasInternetAccess() {
+    if (this.initConfig.emulateOfflineCase) return false
+
+    return this.agentDependencies
+      .fetch(this.pingAddress)
+      .then(() => true)
+      .catch(() => false)
   }
 }

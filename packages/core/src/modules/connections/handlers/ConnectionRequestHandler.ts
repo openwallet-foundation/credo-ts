@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import type { ConnectionService, Routing } from '../services/ConnectionService'
 
@@ -7,7 +8,7 @@ import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { ConnectionRequestMessage } from '../messages'
 
-export class ConnectionRequestHandler implements Handler {
+export class ConnectionRequestHandler implements Handler<typeof DIDCommV1Message> {
   private connectionService: ConnectionService
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
@@ -24,13 +25,13 @@ export class ConnectionRequestHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionRequestHandler>) {
-    if (!messageContext.recipientVerkey || !messageContext.senderVerkey) {
-      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
+    if (!messageContext.recipient || !messageContext.sender) {
+      throw new AriesFrameworkError('Unable to process connection request without senderKid or recipientKid')
     }
 
-    let connectionRecord = await this.connectionService.findByVerkey(messageContext.recipientVerkey)
+    let connectionRecord = await this.connectionService.findByVerkey(messageContext.recipient)
     if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipientVerkey} not found!`)
+      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipient} not found!`)
     }
 
     let routing: Routing | undefined
@@ -38,7 +39,7 @@ export class ConnectionRequestHandler implements Handler {
     // routing object is required for multi use invitation, because we're creating a
     // new keypair that possibly needs to be registered at a mediator
     if (connectionRecord.multiUseInvitation) {
-      routing = await this.mediationRecipientService.getRouting()
+      routing = await this.mediationRecipientService.getRoutingDid()
     }
 
     connectionRecord = await this.connectionService.processRequest(messageContext, routing)

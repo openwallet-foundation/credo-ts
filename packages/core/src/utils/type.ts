@@ -7,5 +7,5 @@ export const isNumber = (value: unknown): value is number => typeof value === 'n
 export const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
 
 export const isJsonObject = (value: unknown): value is JsonObject => {
-  return value !== undefined && typeof value === 'object' && value !== null && !Array.isArray(value)
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

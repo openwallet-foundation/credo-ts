@@ -1,1 +1,2 @@
-export { KeyType } from './KeyType'
+export * from './CryptoService'
+export * from './types'

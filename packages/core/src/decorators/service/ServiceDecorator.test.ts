@@ -1,11 +1,11 @@
-import { BaseMessage } from '../../agent/BaseMessage'
+import { DIDCommV1BaseMessage } from '../../agent/didcomm'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { Compose } from '../../utils/mixins'
 
 import { ServiceDecorated } from './ServiceDecoratorExtension'
 
 describe('Decorators | ServiceDecoratorExtension', () => {
-  class TestMessage extends Compose(BaseMessage, [ServiceDecorated]) {
+  class TestMessage extends Compose(DIDCommV1BaseMessage, [ServiceDecorated]) {
     public toJSON(): Record<string, unknown> {
       return JsonTransformer.toJSON(this)
     }

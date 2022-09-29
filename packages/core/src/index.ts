@@ -7,11 +7,10 @@ export { EventEmitter } from './agent/EventEmitter'
 export { Handler, HandlerInboundMessage } from './agent/Handler'
 export { InboundMessageContext } from './agent/models/InboundMessageContext'
 export { AgentConfig } from './agent/AgentConfig'
-export { AgentMessage } from './agent/AgentMessage'
 export { Dispatcher } from './agent/Dispatcher'
 export { MessageSender } from './agent/MessageSender'
 export type { AgentDependencies } from './agent/AgentDependencies'
-export type { InitConfig, OutboundPackage, EncryptedMessage } from './types'
+export type { InitConfig, OutboundPackage, PlaintextMessage, ValueTransferConfig, WitnessType } from './types'
 export { DidCommMimeType } from './types'
 export type { FileSystem } from './storage/FileSystem'
 export { BaseRecord } from './storage/BaseRecord'
@@ -23,6 +22,9 @@ export { InjectionSymbols } from './constants'
 export type { Wallet } from './wallet/Wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
+export { DIDCommV1Message, DIDCommV2Message } from './agent/didcomm'
+export { JsonEncoder } from './utils'
+export { sleep } from './utils/sleep'
 
 import { uuid } from './utils/uuid'
 
@@ -33,13 +35,20 @@ export * from './modules/proofs'
 export * from './modules/connections'
 export * from './modules/ledger'
 export * from './modules/routing'
+export * from './modules/dids'
+export * from './modules/value-transfer'
+export * from './modules/out-of-band'
+export * from './modules/gossip'
 export * from './utils/JsonTransformer'
+export * from './utils/string'
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
+export * from './crypto'
 
 const utils = {
   uuid,
 }
 
 export { utils }
+export { EncryptedMessage, SignedMessage } from './agent/didcomm'

@@ -24,6 +24,7 @@ const keyDidMapping: Record<KeyType, KeyDidMapping> = {
   [KeyType.Bls12381g1]: keyDidBls12381g1,
   [KeyType.Bls12381g2]: keyDidBls12381g2,
   [KeyType.Bls12381g1g2]: keyDidBls12381g1g2,
+  [KeyType.Secp256k1]: keyDidX25519, // FIXME Secp256k1
 }
 
 /**

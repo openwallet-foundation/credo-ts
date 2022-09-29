@@ -1,4 +1,4 @@
-import type { EncryptedMessage } from '../../types'
+import type { EncryptedMessage } from '../../agent/didcomm/types'
 import type { MediationRecord } from './repository'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -10,7 +10,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ConnectionService } from '../connections/services'
 
-import { KeylistUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler } from './handlers'
+import { DidListUpdateHandler, ForwardHandler, BatchPickupHandler, BatchHandler } from './handlers'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { MediatorService } from './services/MediatorService'
 import { MessagePickupService } from './services/MessagePickupService'
@@ -44,12 +44,12 @@ export class MediatorModule {
 
   public async grantRequestedMediation(mediatorId: string): Promise<MediationRecord> {
     const record = await this.mediatorService.getById(mediatorId)
-    const connectionRecord = await this.connectionService.getById(record.connectionId)
+    const connectionRecord = await this.connectionService.getById(record.did)
 
     const { message, mediationRecord } = await this.mediatorService.createGrantMediationMessage(record)
     const outboundMessage = createOutboundMessage(connectionRecord, message)
 
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return mediationRecord
   }
@@ -59,10 +59,10 @@ export class MediatorModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateHandler(this.mediatorService))
+    dispatcher.registerHandler(new DidListUpdateHandler(this.mediatorService, this.messageSender))
     dispatcher.registerHandler(new ForwardHandler(this.mediatorService, this.connectionService, this.messageSender))
-    dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
+    dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService, this.messageSender))
     dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
-    dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig))
+    dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig, this.messageSender))
   }
 }

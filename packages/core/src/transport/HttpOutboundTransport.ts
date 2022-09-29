@@ -39,9 +39,7 @@ export class HttpOutboundTransport implements OutboundTransport {
       throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
     }
 
-    this.logger.debug(`Sending outbound message to endpoint '${outboundPackage.endpoint}'`, {
-      payload: outboundPackage.payload,
-    })
+    this.logger.debug(`Sending outbound message to endpoint '${outboundPackage.endpoint}'`)
 
     try {
       const abortController = new AbortController()
@@ -49,11 +47,15 @@ export class HttpOutboundTransport implements OutboundTransport {
 
       let response
       let responseMessage
+
       try {
         response = await this.fetch(endpoint, {
           method: 'POST',
           body: JSON.stringify(payload),
-          headers: { 'Content-Type': this.agentConfig.didCommMimeType },
+          headers: {
+            Accept: this.agentConfig.didCommMimeType,
+            'Content-Type': this.agentConfig.didCommMimeType,
+          },
           signal: abortController.signal,
         })
         clearTimeout(id)
@@ -75,6 +77,9 @@ export class HttpOutboundTransport implements OutboundTransport {
       // TODO: check response header type (and also update inbound transports to use the correct headers types)
       if (response && responseMessage) {
         this.logger.debug(`Response received`, { responseMessage, status: response.status })
+        if (response.status === 500) {
+          throw new AriesFrameworkError(`Request failed with ${responseMessage}`)
+        }
 
         try {
           const encryptedMessage = JsonEncoder.fromString(responseMessage)

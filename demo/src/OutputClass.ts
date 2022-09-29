@@ -7,7 +7,12 @@ export enum Color {
 
 export enum Output {
   ConnectionEstablished = `\nConnection established!`,
+  PaymentReceived = `\nPayment Received!`,
+  PaymentDone = `\nPayment Done!`,
   MissingConnectionRecord = `\nNo connectionRecord ID has been set yet\n`,
+  MissingGiverDid = `\nNo giver DID has been set yet\n`,
+  MissingValueTransferRecord = `\nNo valueTransferRecord ID has been set yet\n`,
+  ConnectionInvitationSent = `\nConnection invitation sent\n\n`,
   ConnectionLink = `\nRun 'Receive connection invitation' in Faber and paste this invitation link:\n\n`,
   Exit = 'Shutting down agent...\nExiting...',
 }
@@ -18,6 +23,8 @@ export enum Title {
   MessageTitle = '\n\nWrite your message here:\n(Press enter to send or press q to exit)\n',
   ConfirmTitle = '\n\nAre you sure?',
   CredentialOfferTitle = '\n\nCredential offer received, do you want to accept it?',
+  PaymentRequestTitle = '\nDo you want to accept payment request?',
+  PaymentOfferTitle = '\nDo you want to accept payment offer?',
   ProofRequestTitle = '\n\nProof request received, do you want to accept it?',
 }
 

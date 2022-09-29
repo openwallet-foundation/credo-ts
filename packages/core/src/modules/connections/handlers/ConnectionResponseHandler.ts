@@ -1,11 +1,12 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { ConnectionResponseMessage } from '../messages'
 
-export class ConnectionResponseHandler implements Handler {
+export class ConnectionResponseHandler implements Handler<typeof DIDCommV1Message> {
   private connectionService: ConnectionService
   private agentConfig: AgentConfig
   public supportedMessages = [ConnectionResponseMessage]

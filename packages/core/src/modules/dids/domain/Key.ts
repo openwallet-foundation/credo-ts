@@ -50,4 +50,8 @@ export class Key {
   public get publicKeyBase58() {
     return TypedArrayEncoder.toBase58(this.publicKey)
   }
+
+  public buildKeyId(did: string): string {
+    return `${did}#${this.fingerprint}`
+  }
 }

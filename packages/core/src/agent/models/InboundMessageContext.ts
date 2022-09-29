@@ -1,29 +1,29 @@
 import type { ConnectionRecord } from '../../modules/connections'
-import type { AgentMessage } from '../AgentMessage'
+import type { DIDCommMessage } from '../didcomm'
 
 import { AriesFrameworkError } from '../../error'
 
 export interface MessageContextParams {
   connection?: ConnectionRecord
-  senderVerkey?: string
-  recipientVerkey?: string
+  sender?: string
+  recipient?: string
 }
 
-export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
+export class InboundMessageContext<T extends DIDCommMessage = DIDCommMessage> {
   public message: T
   public connection?: ConnectionRecord
-  public senderVerkey?: string
-  public recipientVerkey?: string
+  public sender?: string
+  public recipient?: string
 
   public constructor(message: T, context: MessageContextParams = {}) {
     this.message = message
-    this.recipientVerkey = context.recipientVerkey
-    this.senderVerkey = context.senderVerkey
+    this.recipient = context.recipient
+    this.sender = context.sender
     this.connection = context.connection
   }
 
   /**
-   * Assert the inbound message has a ready connection associated with it.
+   * Assert the inbound record has a ready connection associated with it.
    *
    * @throws {AriesFrameworkError} if there is no connection or the connection is not ready
    */

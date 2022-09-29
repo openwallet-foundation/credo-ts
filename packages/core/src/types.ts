@@ -1,11 +1,18 @@
-import type { AgentMessage } from './agent/AgentMessage'
+import type { TransportPriorityOptions } from './agent/MessageSender'
+import type { DIDCommMessage, EncryptedMessage, DIDCommV2Message } from './agent/didcomm/index'
+import type { SignedMessage } from './agent/didcomm/types'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoAcceptType'
+import type { DidType } from './modules/dids'
+import type { DidProps } from './modules/dids/domain/Did'
 import type { DidCommService } from './modules/dids/domain/service/DidCommService'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
-import type { MediatorPickupStrategy } from './modules/routing'
+import type { MediatorPickupStrategy, MediatorDeliveryStrategy } from './modules/routing'
+import type { Transports } from './modules/routing/types'
+import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
+import type { GossipMetricsInterface, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 export const enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -35,11 +42,34 @@ export interface WalletExportImportConfig {
   path: string
 }
 
-export type EncryptedMessage = {
-  protected: unknown
-  iv: unknown
-  ciphertext: unknown
-  tag: unknown
+export interface ValueTransferPartyConfig {
+  witnessDid?: string
+  autoAcceptPaymentOffer?: AutoAcceptValueTransfer
+  autoAcceptOfferedPaymentRequest?: AutoAcceptValueTransfer
+  autoAcceptPaymentRequest?: AutoAcceptValueTransfer
+}
+
+export enum WitnessType {
+  One = '1',
+  Two = '2',
+  Three = '3',
+}
+
+export interface ValueTransferWitnessConfig {
+  wid: string
+  knownWitnesses: WitnessDetails[]
+  tockTime?: number
+  cleanupTime?: number
+  redeliverTime?: number
+  historyThreshold?: number
+  redeliveryThreshold?: number
+  issuerDids?: string[]
+  gossipMetricsService?: GossipMetricsInterface
+}
+
+export interface ValueTransferConfig {
+  party?: ValueTransferPartyConfig
+  witness?: ValueTransferWitnessConfig
 }
 
 export enum DidCommMimeType {
@@ -51,6 +81,7 @@ export interface InitConfig {
   endpoints?: string[]
   label: string
   publicDidSeed?: string
+  publicDidType?: DidType
   mediatorRecordId?: string
   walletConfig?: WalletConfig
   autoAcceptConnections?: boolean
@@ -58,9 +89,12 @@ export interface InitConfig {
   autoAcceptCredentials?: AutoAcceptCredential
   logger?: Logger
   didCommMimeType?: DidCommMimeType
+  catchErrors?: boolean
 
   indyLedgers?: IndyPoolConfig[]
   connectToIndyLedgersOnStartup?: boolean
+
+  transports?: Transports[]
 
   autoAcceptMediationRequests?: boolean
   mediatorConnectionsInvite?: string
@@ -68,14 +102,31 @@ export interface InitConfig {
   clearDefaultMediator?: boolean
   mediatorPollingInterval?: number
   mediatorPickupStrategy?: MediatorPickupStrategy
+  mediatorDeliveryStrategy?: MediatorDeliveryStrategy
+  mediatorPushToken?: string
+  mediatorWebHookEndpoint?: string
+
+  staticDids?: DidProps[]
 
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string
+  valueTransferConfig?: ValueTransferConfig
+  emulateOfflineCase?: boolean
+
+  defaultPingAddress?: string
 }
 
-export interface PlaintextMessage {
+export type PlaintextMessage = PlaintextMessageV1 | PlaintextMessageV2
+
+export interface PlaintextMessageV1 {
   '@type': string
   '@id': string
+  [key: string]: unknown
+}
+
+export interface PlaintextMessageV2 {
+  type: string
+  id: string
   [key: string]: unknown
 }
 
@@ -85,19 +136,35 @@ export interface DecryptedMessageContext {
   recipientKey?: string
 }
 
-export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
+export interface OutboundMessage<T extends DIDCommMessage = DIDCommMessage> {
   payload: T
   connection: ConnectionRecord
 }
 
-export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {
+export interface OutboundPlainMessage<T extends DIDCommMessage = DIDCommMessage> {
+  payload: T
+}
+
+export interface OutboundSignedMessage<T extends DIDCommMessage = DIDCommMessage> {
+  payload: T
+  from: string
+}
+
+export interface OutboundDIDCommV2Message<T extends DIDCommV2Message = DIDCommV2Message> {
+  payload: T
+}
+
+export interface OutboundServiceMessage<T extends DIDCommMessage = DIDCommMessage> {
   payload: T
   service: DidCommService
   senderKey: string
 }
 
+export type OutboundPackagePayload = EncryptedMessage | SignedMessage | PlaintextMessage
+
 export interface OutboundPackage {
-  payload: EncryptedMessage
+  payload: OutboundPackagePayload
+  recipientDid?: string
   responseRequested?: boolean
   endpoint?: string
   connectionId?: string
@@ -107,4 +174,8 @@ export type JsonValue = string | number | boolean | null | JsonObject | JsonArra
 export type JsonArray = Array<JsonValue>
 export interface JsonObject {
   [property: string]: JsonValue
+}
+
+export type SendMessageOptions = {
+  transportPriority?: TransportPriorityOptions
 }

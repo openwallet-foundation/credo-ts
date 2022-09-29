@@ -16,7 +16,7 @@ import {
   WalletNotFoundError,
 } from '@aries-framework/core'
 
-const aliceConfig = getBaseConfig('wallet-tests-Alice')
+const aliceConfig = getBaseConfig('wallet-tests-Getter')
 const bobConfig = getBaseConfig('wallet-tests-Bob')
 
 describe('wallet', () => {

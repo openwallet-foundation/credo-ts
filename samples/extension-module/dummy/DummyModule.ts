@@ -35,7 +35,7 @@ export class DummyModule {
   public async request(connection: ConnectionRecord) {
     const { record, message: payload } = await this.dummyService.createRequest(connection)
 
-    await this.messageSender.sendMessage({ connection, payload })
+    await this.messageSender.sendDIDCommV1Message({ connection, payload })
 
     await this.dummyService.updateState(record, DummyState.RequestSent)
 
@@ -57,7 +57,7 @@ export class DummyModule {
 
     const payload = await this.dummyService.createResponse(record)
 
-    await this.messageSender.sendMessage({ connection, payload })
+    await this.messageSender.sendDIDCommV1Message({ connection, payload })
 
     await this.dummyService.updateState(record, DummyState.ResponseSent)
 

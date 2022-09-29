@@ -1,6 +1,8 @@
 import type { DidResolver } from '../../domain/DidResolver'
 import type { DidResolutionResult } from '../../types'
 
+import { DidType } from '../../domain/Did'
+
 import { DidKey } from './DidKey'
 
 export class KeyDidResolver implements DidResolver {
@@ -16,6 +18,7 @@ export class KeyDidResolver implements DidResolver {
         didDocument,
         didDocumentMetadata,
         didResolutionMetadata: { contentType: 'application/did+ld+json' },
+        didType: DidType.KeyDid,
       }
     } catch (error) {
       return {
@@ -25,6 +28,7 @@ export class KeyDidResolver implements DidResolver {
           error: 'notFound',
           message: `resolver_error: Unable to resolve did '${did}': ${error}`,
         },
+        didType: DidType.KeyDid,
       }
     }
   }

@@ -1,6 +1,6 @@
 import { Equals, IsEnum } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 
 import { CommonMessageType } from './CommonMessageType'
 
@@ -22,7 +22,7 @@ export interface AckMessageOptions {
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
  */
-export class AckMessage extends AgentMessage {
+export class AckMessage extends DIDCommV1Message {
   /**
    * Create new AckMessage instance.
    * @param options

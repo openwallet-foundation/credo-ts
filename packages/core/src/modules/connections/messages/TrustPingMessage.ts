@@ -1,9 +1,11 @@
+import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
 
-import { Expose } from 'class-transformer'
-import { Equals, IsString, IsBoolean, IsOptional } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
+import { Equals, IsString, IsBoolean, IsOptional, IsNotEmpty, IsObject, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
+import { DIDCommV2Message } from '../../../agent/didcomm/v2/DIDCommV2Message'
 
 export interface TrustPingMessageOptions {
   comment?: string
@@ -17,7 +19,7 @@ export interface TrustPingMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0048-trust-ping/README.md#messages
  */
-export class TrustPingMessage extends AgentMessage {
+export class TrustPingMessage extends DIDCommV1Message {
   /**
    * Create new TrustPingMessage instance.
    * responseRequested will be true if not passed
@@ -52,4 +54,37 @@ export class TrustPingMessage extends AgentMessage {
   @IsBoolean()
   @Expose({ name: 'response_requested' })
   public responseRequested = true
+}
+
+export type TrustPingMessageV2Options = {
+  body: TrustPingBody
+} & DIDCommV2MessageParams
+
+class TrustPingBody {
+  @IsBoolean()
+  @Expose({ name: 'response_requested' })
+  public responseRequested = true
+}
+
+export class TrustPingMessageV2 extends DIDCommV2Message {
+  @IsString()
+  @IsNotEmpty()
+  public from!: string
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => TrustPingBody)
+  public body!: TrustPingBody
+
+  @Equals(TrustPingMessageV2.type)
+  public readonly type = TrustPingMessageV2.type
+  public static readonly type = 'https://didcomm.org/trust-ping/2.0/ping'
+
+  public constructor(options: TrustPingMessageV2Options) {
+    super(options)
+
+    if (options) {
+      this.body = options.body
+    }
+  }
 }
