@@ -21,6 +21,7 @@ import { KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils'
+import { ConnectionType } from '../../connections/models/ConnectionType'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { Key } from '../../dids'
@@ -90,6 +91,9 @@ export class MediationRecipientService {
       role: MediationRole.Recipient,
       connectionId: connection.id,
     })
+    connection.setTag('connectionType', [ConnectionType.Mediator])
+    await this.connectionService.update(connection)
+
     await this.mediationRepository.save(mediationRecord)
     this.emitStateChangedEvent(mediationRecord, null)
 
