@@ -1,19 +1,28 @@
 import type { DIDInformation } from './domain'
 import type { DidRecord } from './repository'
 import type { DidResolutionOptions, DIDMetadata } from './types'
+import type { DependencyManager } from '../../plugins'
+import type { Key } from './domain/Key'
+import type { DidResolutionOptions } from './types'
 
-import { Lifecycle, scoped } from 'tsyringe'
+import { injectable, module } from '../../plugins'
 
+import { DidRepository } from './repository'
+import { DidResolverService } from './services/DidResolverService'
 import { DidService, DidResolverService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class DidsModule {
   private didService: DidService
   private resolverService: DidResolverService
+  private didRepository: DidRepository
 
+  public constructor(resolverService: DidResolverService, didRepository: DidRepository) {
   public constructor(didService: DidService, resolverService: DidResolverService) {
     this.didService = didService
     this.resolverService = resolverService
+    this.didRepository = didRepository
   }
 
   public resolve(didUrl?: string, options?: DidResolutionOptions) {
@@ -55,5 +64,29 @@ export class DidsModule {
 
   public async getDidInfo(did: string): Promise<DIDInformation> {
     return this.didService.getDidInfo(did)
+  }
+
+  public resolveDidDocument(didUrl: string) {
+    return this.resolverService.resolveDidDocument(didUrl)
+  }
+
+  public findByRecipientKey(recipientKey: Key) {
+    return this.didRepository.findByRecipientKey(recipientKey)
+  }
+
+  public findAllByRecipientKey(recipientKey: Key) {
+    return this.didRepository.findAllByRecipientKey(recipientKey)
+  }
+
+  /**
+   * Registers the dependencies of the dids module module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(DidsModule)
+
+    // Services
+    dependencyManager.registerSingleton(DidResolverService)
+    dependencyManager.registerSingleton(DidRepository)
   }
 }

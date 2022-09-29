@@ -1,11 +1,8 @@
-import type { QueryMessage } from '../messages'
-
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { Dispatcher } from '../../../agent/Dispatcher'
-import { DiscloseMessage, QueryMessageV2 } from '../messages'
+import { injectable } from '../../../plugins'
+import { QueryMessage, DiscloseMessage } from '../messages'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DiscoverFeaturesService {
   private dispatcher: Dispatcher
 
@@ -13,11 +10,8 @@ export class DiscoverFeaturesService {
     this.dispatcher = dispatcher
   }
 
-  public async createQuery(did: string, options: { query: string; comment?: string }) {
-    const queryMessage = new QueryMessageV2({
-      from: did,
-      body: options,
-    })
+  public async createQuery(options: { query: string; comment?: string }) {
+    const queryMessage = new QueryMessage(options)
 
     return queryMessage
   }

@@ -1,5 +1,6 @@
 import { DIDCommV1Message } from '@aries-framework/core'
 import { Equals } from 'class-validator'
+import { AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 
 export interface DummyRequestMessageOptions {
   id?: string
@@ -14,7 +15,7 @@ export class DummyRequestMessage extends DIDCommV1Message {
     }
   }
 
-  @Equals(DummyRequestMessage.type)
-  public readonly type = DummyRequestMessage.type
-  public static readonly type = 'https://didcomm.org/dummy/1.0/request'
+  @IsValidMessageType(DummyRequestMessage.type)
+  public readonly type = DummyRequestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/dummy/1.0/request')
 }

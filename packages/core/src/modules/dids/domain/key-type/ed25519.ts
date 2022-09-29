@@ -6,9 +6,6 @@ import { KeyType } from '../../../../crypto'
 import { Key } from '../Key'
 import { VerificationMethod } from '../verificationMethod'
 
-import { getSignatureKeyBase } from './getSignatureKeyBase'
-import { getX25519VerificationMethod } from './x25519'
-
 const VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 = 'Ed25519VerificationKey2018'
 
 export function getEd25519VerificationMethod({ key, id, controller }: { id: string; key: Key; controller: string }) {
@@ -42,7 +39,6 @@ export function getEd25519DidDoc(did: string, key: Key) {
 
 export const keyDidEd25519: KeyDidMapping = {
   supportedVerificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
-  getDidDocument: getEd25519DidDoc,
   getVerificationMethods: (did, key) => [
     getEd25519VerificationMethod({ id: `${did}#${key.fingerprint}`, key, controller: did }),
   ],

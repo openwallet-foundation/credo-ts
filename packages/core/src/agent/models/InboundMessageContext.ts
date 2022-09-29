@@ -1,5 +1,6 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { DIDCommMessage } from '../didcomm'
+import type { Key } from '../../modules/dids'
 
 import { AriesFrameworkError } from '../../error'
 
@@ -7,11 +8,15 @@ export interface MessageContextParams {
   connection?: ConnectionRecord
   sender?: string
   recipient?: string
+  sessionId?: string
+  senderKey?: Key
+  recipientKey?: Key
 }
 
 export class InboundMessageContext<T extends DIDCommMessage = DIDCommMessage> {
   public message: T
   public connection?: ConnectionRecord
+  public sessionId?: string
   public sender?: string
   public recipient?: string
 
@@ -20,6 +25,7 @@ export class InboundMessageContext<T extends DIDCommMessage = DIDCommMessage> {
     this.recipient = context.recipient
     this.sender = context.sender
     this.connection = context.connection
+    this.sessionId = context.sessionId
   }
 
   /**

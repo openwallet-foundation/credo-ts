@@ -17,7 +17,6 @@ import { BasicMessageService } from '../services'
 describe('BasicMessageService', () => {
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
-    verkey: '71X9Y1aSPK11ariWUYQCYMjSewf2Kw2JFGeygEf9uZd9',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
   })
 
@@ -43,8 +42,8 @@ describe('BasicMessageService', () => {
     let eventEmitter: EventEmitter
 
     beforeEach(() => {
-      basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService)
       eventEmitter = new EventEmitter(agentConfig)
+      basicMessageRepository = new Repository<BasicMessageRecord>(BasicMessageRecord, storageService, eventEmitter)
       basicMessageService = new BasicMessageService(basicMessageRepository, eventEmitter)
     })
 
@@ -57,10 +56,7 @@ describe('BasicMessageService', () => {
         content: 'message',
       })
 
-      const messageContext = new InboundMessageContext(basicMessage, {
-        sender: 'senderKey',
-        recipient: 'recipientKey',
-      })
+      const messageContext = new InboundMessageContext(basicMessage)
 
       await basicMessageService.save(messageContext, mockConnectionRecord)
 

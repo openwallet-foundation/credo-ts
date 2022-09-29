@@ -17,9 +17,12 @@ import { DidDocument } from '../modules/dids/domain/DidDocument'
 import { DidCommV2Service } from '../modules/dids/domain/service'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { ForwardMessageV2 } from '../modules/routing/messages'
+import { OutOfBandRepository } from '../modules/oob/repository'
+import { inject, injectable } from '../plugins'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 import { uuid } from '../utils/uuid'
+import { getProtocolScheme } from '../utils/uri'
 
 import { AgentConfig } from './AgentConfig'
 import { TransportService } from './TransportService'
@@ -33,7 +36,7 @@ export interface TransportPriorityOptions {
   restrictive?: boolean
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MessageSender {
   private agentConfig: AgentConfig
   private envelopeService: EnvelopeService
@@ -41,6 +44,8 @@ export class MessageSender {
   private messageRepository: MessageRepository
   private logger: Logger
   private didResolverService: DidResolverService
+  private didCommDocumentService: DidCommDocumentService
+  private outOfBandRepository: OutOfBandRepository
   public readonly outboundTransports: OutboundTransport[] = []
 
   public constructor(
@@ -49,7 +54,9 @@ export class MessageSender {
     transportService: TransportService,
     @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    didResolverService: DidResolverService
+    didResolverService: DidResolverService,
+    didCommDocumentService: DidCommDocumentService,
+    outOfBandRepository: OutOfBandRepository
   ) {
     this.agentConfig = agentConfig
     this.envelopeService = envelopeService
@@ -57,6 +64,8 @@ export class MessageSender {
     this.messageRepository = messageRepository
     this.logger = logger
     this.didResolverService = didResolverService
+    this.didCommDocumentService = didCommDocumentService
+    this.outOfBandRepository = outOfBandRepository
     this.outboundTransports = []
   }
 
@@ -173,8 +182,8 @@ export class MessageSender {
 
       const keys = {
         recipientKeys: queueService.recipientKeys,
-        routingKeys: queueService.routingKeys || [],
-        senderKey: connection.verkey,
+        routingKeys: queueService.routingKeys,
+        senderKey: firstOurAuthenticationKey,
       }
 
       const encryptedMessage = await this.envelopeService.packMessageEncrypted(payload, keys)
@@ -436,7 +445,7 @@ export class MessageSender {
     }
 
     try {
-      await MessageValidator.validate(message)
+      MessageValidator.validateSync(message)
     } catch (error) {
       this.logger.error(`Aborting sending outbound message ${message.type} to ${endpoint}. Message validation failed`, {
         errors: error,
@@ -475,35 +484,38 @@ export class MessageSender {
 
   private async retrieveServicesByConnection(
     connection: ConnectionRecord,
-    transportPriority?: TransportPriorityOptions
+    transportPriority?: TransportPriorityOptions,
+    outOfBand?: OutOfBandRecord
   ) {
     this.logger.debug(`Retrieving services for connection '${connection.id}' (${connection.theirLabel})`, {
       transportPriority,
+      connection,
     })
 
-    let didCommServices: Array<IndyAgentService | DidCommService> = []
+    let didCommServices: ResolvedDidCommService[] = []
 
-    // If theirDid starts with a did: prefix it means we're using the new did syntax
-    // and we should use the did resolver
-    if (connection.theirDid?.startsWith('did:')) {
-      const {
-        didDocument,
-        didResolutionMetadata: { error, message },
-      } = await this.didResolverService.resolve(connection.theirDid)
-
-      if (!didDocument) {
-        throw new AriesFrameworkError(
-          `Unable to resolve did document for did '${connection.theirDid}': ${error} ${message}`
-        )
+    if (connection.theirDid) {
+      this.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
+      didCommServices = await this.didCommDocumentService.resolveServicesFromDid(connection.theirDid)
+    } else if (outOfBand) {
+      this.logger.debug(`Resolving services from out-of-band record ${outOfBand.id}.`)
+      if (connection.isRequester) {
+        for (const service of outOfBand.outOfBandInvitation.getServices()) {
+          // Resolve dids to DIDDocs to retrieve services
+          if (typeof service === 'string') {
+            this.logger.debug(`Resolving services for did ${service}.`)
+            didCommServices.push(...(await this.didCommDocumentService.resolveServicesFromDid(service)))
+          } else {
+            // Out of band inline service contains keys encoded as did:key references
+            didCommServices.push({
+              id: service.id,
+              recipientKeys: service.recipientKeys.map(didKeyToInstanceOfKey),
+              routingKeys: service.routingKeys?.map(didKeyToInstanceOfKey) || [],
+              serviceEndpoint: service.serviceEndpoint,
+            })
+          }
+        }
       }
-
-      didCommServices = didDocument.didCommServices
-    }
-
-    // Old school method, did document is stored inside the connection record
-    if (!didCommServices.length) {
-      // Retrieve DIDComm services
-      didCommServices = this.transportService.findDidCommServices(connection)
     }
 
     const { services, queueService } = await this.retrieveServicesFromDidCommServices(
@@ -529,7 +541,7 @@ export class MessageSender {
     // If restrictive will remove services not listed in schemes list
     if (transportPriority?.restrictive) {
       services = services.filter((service) => {
-        const serviceSchema = service.protocolScheme
+        const serviceSchema = getProtocolScheme(service.serviceEndpoint)
         return transportPriority.schemes.includes(serviceSchema)
       })
     }
@@ -537,16 +549,32 @@ export class MessageSender {
     // If transport priority is set we will sort services by our priority
     if (transportPriority?.schemes) {
       services = services.sort(function (a, b) {
-        const aScheme = a.protocolScheme
-        const bScheme = b.protocolScheme
+        const aScheme = getProtocolScheme(a.serviceEndpoint)
+        const bScheme = getProtocolScheme(b.serviceEndpoint)
         return transportPriority?.schemes.indexOf(aScheme) - transportPriority?.schemes.indexOf(bScheme)
       })
     }
 
+    this.logger.debug(
+      `Retrieved ${services.length} services for message to connection '${connection.id}'(${connection.theirLabel})'`,
+      { hasQueueService: queueService !== undefined }
+    )
     return { services, queueService }
   }
 }
 
 export function isDidCommTransportQueue(serviceEndpoint: string): serviceEndpoint is typeof DID_COMM_TRANSPORT_QUEUE {
   return serviceEndpoint === DID_COMM_TRANSPORT_QUEUE
+}
+
+function getAuthenticationKeys(didDocument: DidDocument) {
+  return (
+    didDocument.authentication?.map((authentication) => {
+      const verificationMethod =
+        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
+      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+      const key = getKeyFromVerificationMethod(verificationMethod)
+      return key
+    }) ?? []
+  )
 }

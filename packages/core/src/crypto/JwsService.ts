@@ -1,10 +1,9 @@
 import type { Buffer } from '../utils'
 import type { Jws, JwsGeneralFormat } from './JwsTypes'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
-
 import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
+import { inject, injectable } from '../plugins'
 import { JsonEncoder, TypedArrayEncoder } from '../utils'
 import { Wallet } from '../wallet'
 import { WalletError } from '../wallet/error'
@@ -14,7 +13,7 @@ const JWS_KEY_TYPE = 'OKP'
 const JWS_CURVE = 'Ed25519'
 const JWS_ALG = 'EdDSA'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class JwsService {
   private wallet: Wallet
 

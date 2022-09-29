@@ -6,6 +6,7 @@ export enum Color {
 }
 
 export enum Output {
+  NoConnectionRecordFromOutOfBand = `\nNo connectionRecord has been created from invitation\n`,
   ConnectionEstablished = `\nConnection established!`,
   PaymentReceived = `\nPayment Received!`,
   PaymentDone = `\nPayment Done!`,
@@ -14,6 +15,7 @@ export enum Output {
   MissingValueTransferRecord = `\nNo valueTransferRecord ID has been set yet\n`,
   ConnectionInvitationSent = `\nConnection invitation sent\n\n`,
   ConnectionLink = `\nRun 'Receive connection invitation' in Faber and paste this invitation link:\n\n`,
+  ConnectionLink = `\nRun 'Receive connection invitation' in Alice and paste this invitation link:\n\n`,
   Exit = 'Shutting down agent...\nExiting...',
 }
 

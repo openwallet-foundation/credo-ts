@@ -16,8 +16,10 @@ import { DidMarker } from '../../dids/domain/Did'
 import { DidService } from '../../dids/services/DidService'
 import { TrustPingEventTypes } from '../ConnectionEvents'
 import { TrustPingResponseMessage, TrustPingResponseMessageV2, TrustPingMessageV2 } from '../messages'
+import { injectable } from '../../../plugins'
+import { TrustPingResponseMessage } from '../messages'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class TrustPingService {
   private config: AgentConfig
   private didService: DidService

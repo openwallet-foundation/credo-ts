@@ -1,27 +1,36 @@
+import type { Logger } from '../../logger'
 import type { AgentMessageProcessedEvent } from '../../agent/Events'
 import type { DIDCommV2Message } from '../../agent/didcomm'
-import type { Logger } from '../../logger'
+import type { DependencyManager } from '../../plugins'
+import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
+import type { OutboundMessage } from '../../types'
+import type { ConnectionRecord } from '../connections'
 import type { OutboundWebSocketClosedEvent } from '../../transport'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './index'
 import type { Subscription } from 'rxjs'
+import type { GetRoutingOptions } from './services/RoutingService'
 
 import { firstValueFrom, interval, of, ReplaySubject, timer } from 'rxjs'
 import { catchError, delayWhen, filter, first, map, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
 import { Lifecycle, scoped } from 'tsyringe'
+import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
+import { filter, first, takeUntil, throttleTime, timeout, tap, delayWhen } from 'rxjs/operators'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
-import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { AriesFrameworkError } from '../../error'
+import { injectable, module } from '../../plugins'
 import { TransportEventTypes } from '../../transport'
 import { parseMessageType } from '../../utils/messageType'
 import { ConnectionService } from '../connections/services'
 import { DidService } from '../dids'
 import { DiscloseMessage, DiscloseMessageV2, DiscoverFeaturesModule } from '../discover-features'
 import { OutOfBandGoalCode, OutOfBandInvitationMessage } from '../out-of-band'
+import { DidsModule } from '../dids'
+import { DiscoverFeaturesModule } from '../discover-features'
 
 import { TrustPingMessageV2 } from './../connections/messages'
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
@@ -31,25 +40,33 @@ import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { BatchPickupMessageV2 } from './messages/BatchPickupMessage'
 import { MediationState } from './models/MediationState'
-import { MediationRepository } from './repository'
+import { BatchPickupMessage, StatusRequestMessage } from './protocol'
+import { MediationRepository, MediatorRoutingRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
 import { Transports } from './types'
+import { RoutingService } from './services/RoutingService'
 
 const DEFAULT_WS_RECONNECTION_INTERVAL = 1500
 const WS_RECONNECTION_INTERVAL_STEP = 500
 const MAX_WS_RECONNECTION_INTERVAL = 5000
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class RecipientModule {
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
   private didService: DidService
   private connectionService: ConnectionService
+  private dids: DidsModule
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
   private discoverFeaturesModule: DiscoverFeaturesModule
   private mediationRepository: MediationRepository
+  private routingService: RoutingService
+
+  // stopMessagePickup$ is used for stop message pickup signal
+  private readonly stopMessagePickup$ = new Subject<boolean>()
 
   public constructor(
     dispatcher: Dispatcher,
@@ -57,20 +74,24 @@ export class RecipientModule {
     mediationRecipientService: MediationRecipientService,
     didService: DidService,
     connectionService: ConnectionService,
+    dids: DidsModule,
     messageSender: MessageSender,
     eventEmitter: EventEmitter,
     discoverFeaturesModule: DiscoverFeaturesModule,
-    mediationRepository: MediationRepository
+    mediationRepository: MediationRepository,
+    routingService: RoutingService
   ) {
     this.agentConfig = agentConfig
     this.didService = didService
     this.connectionService = connectionService
+    this.dids = dids
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.logger = agentConfig.logger
     this.discoverFeaturesModule = discoverFeaturesModule
     this.mediationRepository = mediationRepository
+    this.routingService = routingService
     this.registerHandlers(dispatcher)
   }
 
@@ -143,6 +164,23 @@ export class RecipientModule {
         // Wait for interval time before reconnecting
         delayWhen(() => timer(interval))
       )
+      .subscribe({
+        next: async () => {
+          this.logger.debug(
+            `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
+          )
+          try {
+            if (pickupStrategy === MediatorPickupStrategy.PickUpV2) {
+              // Start Pickup v2 protocol to receive messages received while websocket offline
+              await this.sendStatusRequest({ mediatorId: mediator.id })
+            } else {
+              await this.openMediationWebSocket(mediator)
+            }
+          } catch (error) {
+            this.logger.warn('Unable to re-open websocket connection to mediator', { error })
+          }
+        },
+        complete: () => this.agentConfig.logger.info(`Stopping pickup of messages from mediator '${mediator.id}'`),
       .subscribe(async () => {
         this.logger.warn(
           `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`
@@ -155,6 +193,16 @@ export class RecipientModule {
   }
 
   private async initiateExplicitPickup(mediator: MediationRecord): Promise<Subscription> {
+  /**
+   * Start a Message Pickup flow with a registered Mediator.
+   *
+   * @param mediator optional {MediationRecord} corresponding to the mediator to pick messages from. It will use
+   * default mediator otherwise
+   * @param pickupStrategy optional {MediatorPickupStrategy} to use in the loop. It will use Agent's default
+   * strategy or attempt to find it by Discover Features otherwise
+   * @returns
+   */
+  public async initiateMessagePickup(mediator?: MediationRecord, pickupStrategy?: MediatorPickupStrategy) {
     const { mediatorPollingInterval } = this.agentConfig
     return interval(mediatorPollingInterval)
       .pipe(takeUntil(this.agentConfig.stop$))
@@ -181,6 +229,42 @@ export class RecipientModule {
 
     let pickupSubscription: Subscription | undefined
 
+    const mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))
+    const mediatorConnection = await this.connectionService.getById(mediatorRecord.connectionId)
+
+    switch (mediatorPickupStrategy) {
+      case MediatorPickupStrategy.PickUpV2:
+        this.agentConfig.logger.info(`Starting pickup of messages from mediator '${mediatorRecord.id}'`)
+        await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
+        await this.sendStatusRequest({ mediatorId: mediatorRecord.id })
+        break
+      case MediatorPickupStrategy.PickUpV1: {
+        const stopConditions$ = merge(this.agentConfig.stop$, this.stopMessagePickup$).pipe()
+        // Explicit means polling every X seconds with batch message
+        this.agentConfig.logger.info(
+          `Starting explicit (batch) pickup of messages from mediator '${mediatorRecord.id}'`
+        )
+        const subscription = interval(mediatorPollingInterval)
+          .pipe(takeUntil(stopConditions$))
+          .subscribe({
+            next: async () => {
+              await this.pickupMessages(mediatorConnection)
+            },
+            complete: () =>
+              this.agentConfig.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
+          })
+        return subscription
+      }
+      case MediatorPickupStrategy.Implicit:
+        // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
+        // such as WebSockets to work
+        this.agentConfig.logger.info(`Starting implicit pickup of messages from mediator '${mediatorRecord.id}'`)
+        await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
+        break
+      default:
+        this.agentConfig.logger.info(
+          `Skipping pickup of messages from mediator '${mediatorRecord.id}' due to pickup strategy none`
+        )
     // Explicit means polling every X seconds with batch message
     if (mediatorPickupStrategy === MediatorPickupStrategy.Explicit) {
       this.agentConfig.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediator.id}'`)
@@ -204,6 +288,24 @@ export class RecipientModule {
     }
 
     return pickupSubscription
+  }
+
+  /**
+   * Terminate all ongoing Message Pickup loops
+   */
+  public async stopMessagePickup() {
+    this.stopMessagePickup$.next(true)
+  }
+
+  private async sendStatusRequest(config: { mediatorId: string; recipientKey?: string }) {
+    const mediationRecord = await this.mediationRecipientService.getById(config.mediatorId)
+
+    const statusRequestMessage = await this.mediationRecipientService.createStatusRequest(mediationRecord, {
+      recipientKey: config.recipientKey,
+    })
+
+    const mediatorConnection = await this.connectionService.getById(mediationRecord.connectionId)
+    return this.messageSender.sendMessage(createOutboundMessage(mediatorConnection, statusRequestMessage))
   }
 
   private async getPickupStrategyForMediator(mediator: MediationRecord) {
@@ -328,6 +430,12 @@ export class RecipientModule {
     return event.payload.mediationRecord
   }
 
+        /**
+         * Requests mediation for a given connection and sets that as default mediator.
+         *
+         * @param connection connection record which will be used for mediation
+         * @returns mediation record
+         */
   public async provision(mediatorConnInvite: string) {
     this.logger.debug('Provision Mediation with invitation', { invite: mediatorConnInvite })
     // Connect to mediator through provided invitation
@@ -363,5 +471,21 @@ export class RecipientModule {
     dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
     //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
+  }
+
+  /**
+   * Registers the dependencies of the mediator recipient module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(RecipientModule)
+
+    // Services
+    dependencyManager.registerSingleton(MediationRecipientService)
+    dependencyManager.registerSingleton(RoutingService)
+
+    // Repositories
+    dependencyManager.registerSingleton(MediationRepository)
+    dependencyManager.registerSingleton(MediatorRoutingRepository)
   }
 }

@@ -7,14 +7,18 @@ import type { AutoAcceptCredential } from './modules/credentials/CredentialAutoA
 import type { DidType } from './modules/dids'
 import type { DidProps } from './modules/dids/domain/Did'
 import type { DidCommService } from './modules/dids/domain/service/DidCommService'
+import type { AutoAcceptCredential } from './modules/credentials/models/CredentialAutoAcceptType'
+import type { ResolvedDidCommService } from './modules/didcomm'
+import type { Key } from './modules/dids/domain/Key'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
+import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy, MediatorDeliveryStrategy } from './modules/routing'
 import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
 import type { GossipMetricsInterface, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-export const enum KeyDerivationMethod {
+export enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
   Argon2IMod = 'ARGON2I_MOD',
   /** less secure, but faster */
@@ -27,6 +31,10 @@ export interface WalletConfig {
   id: string
   key: string
   keyDerivationMethod?: KeyDerivationMethod
+  storage?: {
+    type: string
+    [key: string]: unknown
+  }
 }
 
 export interface WalletConfigRekey {
@@ -70,6 +78,11 @@ export interface ValueTransferWitnessConfig {
 export interface ValueTransferConfig {
   party?: ValueTransferPartyConfig
   witness?: ValueTransferWitnessConfig
+export type EncryptedMessage = {
+  protected: string
+  iv: unknown
+  ciphertext: unknown
+  tag: unknown
 }
 
 export enum DidCommMimeType {
@@ -107,6 +120,10 @@ export interface InitConfig {
   mediatorWebHookEndpoint?: string
 
   staticDids?: DidProps[]
+  maximumMessagePickup?: number
+  baseMediatorReconnectionIntervalMs?: number
+  maximumMediatorReconnectionIntervalMs?: number
+  useDidKeyInProtocols?: boolean
 
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string
@@ -114,6 +131,8 @@ export interface InitConfig {
   emulateOfflineCase?: boolean
 
   defaultPingAddress?: string
+
+  autoUpdateStorageOnStartup?: boolean
 }
 
 export type PlaintextMessage = PlaintextMessageV1 | PlaintextMessageV2
@@ -130,6 +149,7 @@ export interface PlaintextMessageV2 {
   [key: string]: unknown
 }
 
+export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
 export interface DecryptedMessageContext {
   plaintextMessage: PlaintextMessage
   senderKey?: string
@@ -139,6 +159,8 @@ export interface DecryptedMessageContext {
 export interface OutboundMessage<T extends DIDCommMessage = DIDCommMessage> {
   payload: T
   connection: ConnectionRecord
+  sessionId?: string
+  outOfBand?: OutOfBandRecord
 }
 
 export interface OutboundPlainMessage<T extends DIDCommMessage = DIDCommMessage> {
@@ -157,7 +179,7 @@ export interface OutboundDIDCommV2Message<T extends DIDCommV2Message = DIDCommV2
 export interface OutboundServiceMessage<T extends DIDCommMessage = DIDCommMessage> {
   payload: T
   service: DidCommService
-  senderKey: string
+  senderKey: Key
 }
 
 export type OutboundPackagePayload = EncryptedMessage | SignedMessage | PlaintextMessage

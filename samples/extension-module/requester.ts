@@ -1,10 +1,10 @@
 import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 
-import { Agent, ConsoleLogger, LogLevel, WsOutboundTransport } from '@aries-framework/core'
+import { Agent, AriesFrameworkError, ConsoleLogger, LogLevel, WsOutboundTransport } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
-import { DummyEventTypes, DummyModule, DummyState } from './dummy'
+import { DummyEventTypes, DummyApi, DummyState, DummyModule } from './dummy'
 
 const run = async () => {
   // Create transports
@@ -25,11 +25,14 @@ const run = async () => {
     agentDependencies
   )
 
+  // Register the DummyModule
+  agent.dependencyManager.registerModules(DummyModule)
+
   // Register transports
   agent.registerOutboundTransport(wsOutboundTransport)
 
-  // Inject DummyModule
-  const dummyModule = agent.injectionContainer.resolve(DummyModule)
+  // Inject DummyApi
+  const dummyApi = agent.dependencyManager.resolve(DummyApi)
 
   // Now agent will handle messages and events from Dummy protocol
 
@@ -38,8 +41,11 @@ const run = async () => {
 
   // Connect to responder using its invitation endpoint
   const invitationUrl = await (await agentDependencies.fetch(`http://localhost:${port}/invitation`)).text()
-  const connection = await agent.connections.receiveInvitationFromUrl(invitationUrl)
-  await agent.connections.returnWhenIsConnected(connection.id)
+  const { connectionRecord } = await agent.oob.receiveInvitationFromUrl(invitationUrl)
+  if (!connectionRecord) {
+    throw new AriesFrameworkError('Connection record for out-of-band invitation was not created.')
+  }
+  await agent.connections.returnWhenIsConnected(connectionRecord.id)
 
   // Create observable for Response Received event
   const observable = agent.events.observable<DummyStateChangedEvent>(DummyEventTypes.StateChanged)
@@ -55,7 +61,7 @@ const run = async () => {
     .subscribe(subject)
 
   // Send a dummy request and wait for response
-  const record = await dummyModule.request(connection)
+  const record = await dummyApi.request(connectionRecord.id)
   agent.config.logger.info(`Request received for Dummy Record: ${record.id}`)
 
   const dummyRecord = await firstValueFrom(subject)

@@ -10,10 +10,9 @@ import type {
   Schema,
 } from 'indy-sdk'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { IndySdkError } from '../../../error/IndySdkError'
+import { injectable } from '../../../plugins'
 import {
   didFromSchemaId,
   didFromCredentialDefinitionId,
@@ -22,10 +21,11 @@ import {
 import { isIndyError } from '../../../utils/indyError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
+import { LedgerError } from '../error/LedgerError'
 
 import { IndyPoolService } from './IndyPoolService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyLedgerService {
   private wallet: IndyWallet
   private indy: typeof Indy
@@ -267,7 +267,7 @@ export class IndyLedgerService {
 
   public async getRevocationRegistryDefinition(
     revocationRegistryDefinitionId: string
-  ): Promise<ParseRevocationRegistryDefitinionTemplate> {
+  ): Promise<ParseRevocationRegistryDefinitionTemplate> {
     const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
     const { pool } = await this.indyPoolService.getPoolForDid(did)
 
@@ -454,18 +454,41 @@ export class IndyLedgerService {
   private async appendTaa(pool: IndyPool, request: Indy.LedgerRequest) {
     try {
       const authorAgreement = await this.getTransactionAuthorAgreement(pool)
+      const taa = pool.config.transactionAuthorAgreement
 
       // If ledger does not have TAA, we can just send request
       if (authorAgreement == null) {
         return request
       }
+      // Ledger has taa but user has not specified which one to use
+      if (!taa) {
+        throw new LedgerError(
+          `Please, specify a transaction author agreement with version and acceptance mechanism. ${JSON.stringify(
+            authorAgreement
+          )}`
+        )
+      }
+
+      // Throw an error if the pool doesn't have the specified version and acceptance mechanism
+      if (
+        authorAgreement.version !== taa.version ||
+        !(taa.acceptanceMechanism in authorAgreement.acceptanceMechanisms.aml)
+      ) {
+        // Throw an error with a helpful message
+        const errMessage = `Unable to satisfy matching TAA with mechanism ${JSON.stringify(
+          taa.acceptanceMechanism
+        )} and version ${JSON.stringify(taa.version)} in pool.\n Found ${JSON.stringify(
+          Object.keys(authorAgreement.acceptanceMechanisms.aml)
+        )} and version ${authorAgreement.version} in pool.`
+        throw new LedgerError(errMessage)
+      }
 
       const requestWithTaa = await this.indy.appendTxnAuthorAgreementAcceptanceToRequest(
         request,
         authorAgreement.text,
-        authorAgreement.version,
+        taa.version,
         authorAgreement.digest,
-        this.getFirstAcceptanceMechanism(authorAgreement),
+        taa.acceptanceMechanism,
         // Current time since epoch
         // We can't use ratification_ts, as it must be greater than 1499906902
         Math.floor(new Date().getTime() / 1000)
@@ -507,11 +530,6 @@ export class IndyLedgerService {
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
-
-  private getFirstAcceptanceMechanism(authorAgreement: AuthorAgreement) {
-    const [firstMechanism] = Object.keys(authorAgreement.acceptanceMechanisms.aml)
-    return firstMechanism
-  }
 }
 
 export interface SchemaTemplate {
@@ -527,7 +545,7 @@ export interface CredentialDefinitionTemplate {
   supportRevocation: boolean
 }
 
-export interface ParseRevocationRegistryDefitinionTemplate {
+export interface ParseRevocationRegistryDefinitionTemplate {
   revocationRegistryDefinition: Indy.RevocRegDef
   revocationRegistryDefinitionTxnTime: number
 }

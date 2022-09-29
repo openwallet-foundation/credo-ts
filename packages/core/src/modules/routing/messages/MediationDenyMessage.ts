@@ -4,6 +4,7 @@ import { Type } from 'class-transformer'
 import { Equals, ValidateNested } from 'class-validator'
 
 import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface MediationDenyMessageOptions {
   id: string
@@ -23,9 +24,9 @@ export class MediationDenyMessage extends DIDCommV1Message {
     }
   }
 
-  @Equals(MediationDenyMessage.type)
-  public readonly type = MediationDenyMessage.type
-  public static readonly type = 'https://didcomm.org/coordinate-mediation/1.0/mediate-deny'
+  @IsValidMessageType(MediationDenyMessage.type)
+  public readonly type = MediationDenyMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/1.0/mediate-deny')
 }
 
 export class MediationDenyMessageV2Body {}

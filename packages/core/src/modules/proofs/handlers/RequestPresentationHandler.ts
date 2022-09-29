@@ -2,6 +2,7 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { MediationRecipientService } from '../../routing'
+import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../ProofResponseCoordinator'
 import type { ProofRecord } from '../repository'
 import type { ProofService } from '../services'
@@ -14,19 +15,19 @@ export class RequestPresentationHandler implements Handler<typeof DIDCommV1Messa
   private proofService: ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   public supportedMessages = [RequestPresentationMessage]
 
   public constructor(
     proofService: ProofService,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
-    mediationRecipientService: MediationRecipientService
+    routingService: RoutingService
   ) {
     this.proofService = proofService
     this.agentConfig = agentConfig
     this.proofResponseCoordinator = proofResponseCoordinator
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
   }
 
   public async handle(messageContext: HandlerInboundMessage<RequestPresentationHandler>) {
@@ -65,11 +66,11 @@ export class RequestPresentationHandler implements Handler<typeof DIDCommV1Messa
       return createOutboundMessage(messageContext.connection, message)
     } else if (proofRecord.requestMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRoutingDid()
+      const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoint,
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        serviceEndpoint: routing.endpoints[0],
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
 
       const recipientService = proofRecord.requestMessage.service
@@ -81,8 +82,8 @@ export class RequestPresentationHandler implements Handler<typeof DIDCommV1Messa
 
       return createOutboundServiceMessage({
         payload: message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
       })
     }
 

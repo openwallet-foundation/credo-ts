@@ -1,8 +1,9 @@
 import { Type, Expose } from 'class-transformer'
-import { Equals, IsInstance, ValidateNested } from 'class-validator'
+import { IsInstance, ValidateNested } from 'class-validator'
 
 import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface ConnectionResponseMessageOptions {
   id?: string
@@ -31,9 +32,9 @@ export class ConnectionResponseMessage extends DIDCommV1Message {
     }
   }
 
-  @Equals(ConnectionResponseMessage.type)
-  public readonly type = ConnectionResponseMessage.type
-  public static readonly type = 'https://didcomm.org/connections/1.0/response'
+  @IsValidMessageType(ConnectionResponseMessage.type)
+  public readonly type = ConnectionResponseMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/response')
 
   @Type(() => SignatureDecorator)
   @ValidateNested()

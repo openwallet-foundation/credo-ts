@@ -1,19 +1,23 @@
-import type { DIDCommV1Message } from '../../agent/didcomm/v1/DIDCommV1Message'
+import type { AgentMessage, ConstructableAgentMessage } from '../../agent/AgentMessage'
 import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
-import { inject, scoped, Lifecycle } from 'tsyringe'
-
+import { EventEmitter } from '../../agent/EventEmitter'
 import { InjectionSymbols } from '../../constants'
+import { inject, injectable } from '../../plugins'
+import { parseMessageType } from '../../utils/messageType'
 import { Repository } from '../Repository'
 import { StorageService } from '../StorageService'
 
 import { DidCommMessageRecord } from './DidCommMessageRecord'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
-  public constructor(@inject(InjectionSymbols.StorageService) storageService: StorageService<DidCommMessageRecord>) {
-    super(DidCommMessageRecord, storageService)
+  public constructor(
+    @inject(InjectionSymbols.StorageService) storageService: StorageService<DidCommMessageRecord>,
+    eventEmitter: EventEmitter
+  ) {
+    super(DidCommMessageRecord, storageService, eventEmitter)
   }
 
   public async saveAgentMessage({ role, agentMessage, associatedRecordId }: SaveAgentMessageOptions) {
@@ -27,9 +31,13 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
   }
 
   public async saveOrUpdateAgentMessage(options: SaveAgentMessageOptions) {
+    const { messageName, protocolName, protocolMajorVersion } = parseMessageType(options.agentMessage.type)
+
     const record = await this.findSingleByQuery({
       associatedRecordId: options.associatedRecordId,
-      messageType: options.agentMessage.type,
+      messageName: messageName,
+      protocolName: protocolName,
+      protocolMajorVersion: String(protocolMajorVersion),
     })
 
     if (record) {
@@ -42,24 +50,28 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
     await this.saveAgentMessage(options)
   }
 
-  public async getAgentMessage<MessageClass extends typeof DIDCommV1Message = typeof DIDCommV1Message>({
+  public async getAgentMessage<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>({
     associatedRecordId,
     messageClass,
   }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass>> {
     const record = await this.getSingleByQuery({
       associatedRecordId,
-      messageType: messageClass.type,
+      messageName: messageClass.type.messageName,
+      protocolName: messageClass.type.protocolName,
+      protocolMajorVersion: String(messageClass.type.protocolMajorVersion),
     })
 
     return record.getMessageInstance(messageClass)
   }
-  public async findAgentMessage<MessageClass extends typeof DIDCommV1Message = typeof DIDCommV1Message>({
+  public async findAgentMessage<MessageClass extends ConstructableAgentMessage = ConstructableAgentMessage>({
     associatedRecordId,
     messageClass,
   }: GetAgentMessageOptions<MessageClass>): Promise<InstanceType<MessageClass> | null> {
     const record = await this.findSingleByQuery({
       associatedRecordId,
-      messageType: messageClass.type,
+      messageName: messageClass.type.messageName,
+      protocolName: messageClass.type.protocolName,
+      protocolMajorVersion: String(messageClass.type.protocolMajorVersion),
     })
 
     return record?.getMessageInstance(messageClass) ?? null
@@ -68,11 +80,11 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
 
 export interface SaveAgentMessageOptions {
   role: DidCommMessageRole
-  agentMessage: DIDCommV1Message
+  agentMessage: AgentMessage
   associatedRecordId: string
 }
 
-export interface GetAgentMessageOptions<MessageClass extends typeof DIDCommV1Message> {
+export interface GetAgentMessageOptions<MessageClass extends typeof AgentMessage> {
   associatedRecordId: string
   messageClass: MessageClass
 }

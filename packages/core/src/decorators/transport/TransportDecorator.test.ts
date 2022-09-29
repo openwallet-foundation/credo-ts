@@ -1,14 +1,14 @@
+import { ClassValidationError } from '../../error/ClassValidationError'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { MessageValidator } from '../../utils/MessageValidator'
 
 import { TransportDecorator, ReturnRouteTypes } from './TransportDecorator'
 
 const validTransport = (transportJson: Record<string, unknown>) =>
-  MessageValidator.validate(JsonTransformer.fromJSON(transportJson, TransportDecorator))
-const expectValid = (transportJson: Record<string, unknown>) =>
-  expect(validTransport(transportJson)).resolves.toBeUndefined()
+  MessageValidator.validateSync(JsonTransformer.fromJSON(transportJson, TransportDecorator))
+const expectValid = (transportJson: Record<string, unknown>) => expect(validTransport(transportJson)).toBeUndefined()
 const expectInvalid = (transportJson: Record<string, unknown>) =>
-  expect(validTransport(transportJson)).rejects.not.toBeNull()
+  expect(() => validTransport(transportJson)).toThrowError(ClassValidationError)
 
 const valid = {
   all: {
@@ -60,18 +60,18 @@ describe('Decorators | TransportDecorator', () => {
     expect(json).toEqual(transformed)
   })
 
-  it('should only allow correct return_route values', async () => {
+  it('should only allow correct return_route values', () => {
     expect.assertions(4)
-    await expectValid(valid.all)
-    await expectValid(valid.none)
-    await expectValid(valid.thread)
-    await expectInvalid(invalid.random)
+    expectValid(valid.all)
+    expectValid(valid.none)
+    expectValid(valid.thread)
+    expectInvalid(invalid.random)
   })
 
   it('should require return_route_thread when return_route is thread', async () => {
     expect.assertions(3)
-    await expectValid(valid.thread)
-    await expectInvalid(invalid.invalidThreadId)
-    await expectInvalid(invalid.missingThreadId)
+    expectValid(valid.thread)
+    expectInvalid(invalid.invalidThreadId)
+    expectInvalid(invalid.missingThreadId)
   })
 })

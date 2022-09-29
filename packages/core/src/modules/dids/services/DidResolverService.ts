@@ -2,19 +2,19 @@ import type { Logger } from '../../../logger'
 import type { DidResolver } from '../domain/DidResolver'
 import type { DIDMetadata, DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { IndyLedgerService } from '../../ledger'
 import { DidType } from '../domain/Did'
 import { parseDid } from '../domain/parse'
-import { IndyDidResolver } from '../methods/indy/IndyDidResolver'
 import { KeyDidResolver } from '../methods/key/KeyDidResolver'
 import { PeerDidResolver } from '../methods/peer/PeerDidResolver'
+import { SovDidResolver } from '../methods/sov/SovDidResolver'
 import { WebDidResolver } from '../methods/web/WebDidResolver'
 import { DidRepository } from '../repository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DidResolverService {
   private logger: Logger
   private resolvers: DidResolver[]
@@ -23,7 +23,7 @@ export class DidResolverService {
     this.logger = agentConfig.logger
 
     this.resolvers = [
-      new IndyDidResolver(indyLedgerService),
+      new SovDidResolver(indyLedgerService),
       new WebDidResolver(),
       new KeyDidResolver(),
       new PeerDidResolver(didRepository),
@@ -65,6 +65,18 @@ export class DidResolverService {
     const resolvedDid = await resolver.resolve(parsed.did, parsed, options)
     resolvedDid.didMeta = await this.resolveDidMetadata(parsed.did)
     return resolvedDid
+  }
+
+  public async resolveDidDocument(did: string) {
+    const {
+      didDocument,
+      didResolutionMetadata: { error, message },
+    } = await this.resolve(did)
+
+    if (!didDocument) {
+      throw new AriesFrameworkError(`Unable to resolve did document for did '${did}': ${error} ${message}`)
+    }
+    return didDocument
   }
 
   private findResolver(parsed: ParsedDid): DidResolver | null {

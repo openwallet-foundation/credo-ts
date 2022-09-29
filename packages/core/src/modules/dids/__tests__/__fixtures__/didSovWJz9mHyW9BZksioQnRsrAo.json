@@ -5,8 +5,6 @@
     "https://w3id.org/security/suites/x25519-2019/v1",
     "https://didcomm.org/messaging/contexts/v2"
   ],
-  "alsoKnownAs": [],
-  "controller": [],
   "id": "did:sov:WJz9mHyW9BZksioQnRsrAo",
   "verificationMethod": [
     {
@@ -22,8 +20,6 @@
       "publicKeyBase58": "S3AQEEKkGYrrszT9D55ozVVX2XixYp8uynqVm4okbud"
     }
   ],
-  "capabilityDelegation": [],
-  "capabilityInvocation": [],
   "authentication": ["did:sov:WJz9mHyW9BZksioQnRsrAo#key-1"],
   "assertionMethod": ["did:sov:WJz9mHyW9BZksioQnRsrAo#key-1"],
   "keyAgreement": ["did:sov:WJz9mHyW9BZksioQnRsrAo#key-agreement-1"],

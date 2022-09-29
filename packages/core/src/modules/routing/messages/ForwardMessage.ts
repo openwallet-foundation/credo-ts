@@ -1,7 +1,10 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm/'
+import { Expose } from 'class-transformer'
+import { IsObject, IsString } from 'class-validator'
 
 import { Expose, Type } from 'class-transformer'
 import { Equals, IsObject, IsString, ValidateNested } from 'class-validator'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm/'
 import { EncryptedMessage } from '../../../agent/didcomm/types'
@@ -31,9 +34,9 @@ export class ForwardMessage extends DIDCommV1Message {
     }
   }
 
-  @Equals(ForwardMessage.type)
-  public readonly type = ForwardMessage.type
-  public static readonly type = 'https://didcomm.org/routing/1.0/forward'
+  @IsValidMessageType(ForwardMessage.type)
+  public readonly type = ForwardMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/routing/1.0/forward')
 
   @IsString()
   public to!: string

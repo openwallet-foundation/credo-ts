@@ -1,10 +1,9 @@
+import type { DependencyManager } from '../../plugins'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { PresentationPreview, RequestPresentationMessage } from './messages'
 import type { RequestedCredentials, RetrievedCredentials } from './models'
 import type { ProofRequestOptions } from './models/ProofRequest'
 import type { ProofRecord } from './repository/ProofRecord'
-
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -12,8 +11,9 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
+import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections/services/ConnectionService'
-import { MediationRecipientService } from '../routing/services/MediationRecipientService'
+import { RoutingService } from '../routing/services/RoutingService'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import { PresentationProblemReportReason } from './errors'
@@ -26,14 +26,16 @@ import {
 } from './handlers'
 import { PresentationProblemReportMessage } from './messages/PresentationProblemReportMessage'
 import { ProofRequest } from './models/ProofRequest'
+import { ProofRepository } from './repository'
 import { ProofService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class ProofsModule {
   private proofService: ProofService
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
 
@@ -41,7 +43,7 @@ export class ProofsModule {
     dispatcher: Dispatcher,
     proofService: ProofService,
     connectionService: ConnectionService,
-    mediationRecipientService: MediationRecipientService,
+    routingService: RoutingService,
     agentConfig: AgentConfig,
     messageSender: MessageSender,
     proofResponseCoordinator: ProofResponseCoordinator
@@ -49,7 +51,7 @@ export class ProofsModule {
     this.proofService = proofService
     this.connectionService = connectionService
     this.messageSender = messageSender
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.agentConfig = agentConfig
     this.proofResponseCoordinator = proofResponseCoordinator
     this.registerHandlers(dispatcher)
@@ -71,6 +73,7 @@ export class ProofsModule {
     config?: {
       comment?: string
       autoAcceptProof?: AutoAcceptProof
+      parentThreadId?: string
     }
   ): Promise<ProofRecord> {
     const connection = await this.connectionService.getById(connectionId)
@@ -196,11 +199,11 @@ export class ProofsModule {
     const { message, proofRecord } = await this.proofService.createRequest(proofRequest, undefined, config)
 
     // Create and set ~service decorator
-    const routing = await this.mediationRecipientService.getRoutingDid()
+    const routing = await this.routingService.getRouting()
     message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoint,
-      recipientKeys: [routing.verkey],
-      routingKeys: routing.routingKeys,
+      serviceEndpoint: routing.endpoints[0],
+      recipientKeys: [routing.recipientKey.publicKeyBase58],
+      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
     })
 
     // Save ~service decorator to record (to remember our verkey)
@@ -242,11 +245,11 @@ export class ProofsModule {
     // Use ~service decorator otherwise
     else if (proofRecord.requestMessage?.service) {
       // Create ~service decorator
-      const routing = await this.mediationRecipientService.getRoutingDid()
+      const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoint,
-        recipientKeys: [routing.verkey],
-        routingKeys: routing.routingKeys,
+        serviceEndpoint: routing.endpoints[0],
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
 
       const recipientService = proofRecord.requestMessage.service
@@ -258,8 +261,8 @@ export class ProofsModule {
 
       await this.messageSender.packAndSendMessage({
         message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
 
@@ -305,12 +308,12 @@ export class ProofsModule {
     // Use ~service decorator otherwise
     else if (proofRecord.requestMessage?.service && proofRecord.presentationMessage?.service) {
       const recipientService = proofRecord.presentationMessage?.service
-      const ourService = proofRecord.requestMessage?.service
+      const ourService = proofRecord.requestMessage.service
 
       await this.messageSender.packAndSendMessage({
         message,
-        service: recipientService.toDidCommService(),
-        senderKey: ourService.recipientKeys[0],
+        service: recipientService.resolvedDidCommService,
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
         returnRoute: true,
       })
     }
@@ -394,6 +397,7 @@ export class ProofsModule {
     })
     presentationProblemReportMessage.setThread({
       threadId: record.threadId,
+      parentThreadId: record.parentThreadId,
     })
     const outboundMessage = createOutboundMessage(connection, presentationProblemReportMessage)
     await this.messageSender.sendDIDCommV1Message(outboundMessage)
@@ -443,6 +447,30 @@ export class ProofsModule {
     return this.proofService.deleteById(proofId)
   }
 
+  /**
+   * Retrieve a proof record by connection id and thread id
+   *
+   * @param connectionId The connection id
+   * @param threadId The thread id
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
+   * @returns The proof record
+   */
+  public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<ProofRecord> {
+    return this.proofService.getByThreadAndConnectionId(threadId, connectionId)
+  }
+
+  /**
+   * Retrieve proof records by connection id and parent thread id
+   *
+   * @param connectionId The connection id
+   * @param parentThreadId The parent thread id
+   * @returns List containing all proof records matching the given query
+   */
+  public async getByParentThreadAndConnectionId(parentThreadId: string, connectionId?: string): Promise<ProofRecord[]> {
+    return this.proofService.getByParentThreadAndConnectionId(parentThreadId, connectionId)
+  }
+
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(
       new ProposePresentationHandler(this.proofService, this.agentConfig, this.proofResponseCoordinator)
@@ -452,7 +480,7 @@ export class ProofsModule {
         this.proofService,
         this.agentConfig,
         this.proofResponseCoordinator,
-        this.mediationRecipientService
+        this.routingService
       )
     )
     dispatcher.registerHandler(
@@ -460,6 +488,20 @@ export class ProofsModule {
     )
     dispatcher.registerHandler(new PresentationAckHandler(this.proofService))
     dispatcher.registerHandler(new PresentationProblemReportHandler(this.proofService))
+  }
+
+  /**
+   * Registers the dependencies of the proofs module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(ProofsModule)
+
+    // Services
+    dependencyManager.registerSingleton(ProofService)
+
+    // Repositories
+    dependencyManager.registerSingleton(ProofRepository)
   }
 }
 
@@ -470,6 +512,7 @@ export type CreateProofRequestOptions = Partial<
 export interface ProofRequestConfig {
   comment?: string
   autoAcceptProof?: AutoAcceptProof
+  parentThreadId?: string
 }
 
 export interface GetRequestedCredentialsConfig {

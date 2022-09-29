@@ -1,3 +1,10 @@
+import type {
+  EncryptedMessage,
+  WalletConfig,
+  WalletExportImportConfig,
+  WalletConfigRekey,
+  PlaintextMessage,
+} from '../types'
 import type { EncryptedMessage } from '../agent/didcomm'
 import type { DecryptedMessageContext, WalletConfig, WalletExportImportConfig, WalletConfigRekey } from '../types'
 import type { Buffer } from '../utils/buffer'
@@ -19,8 +26,8 @@ export interface Wallet {
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>
   createKey(keyConfig?: DidConfig): Promise<string>
-  pack(payload: Buffer, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
-  unpack(encryptedMessage: EncryptedMessage): Promise<DecryptedMessageContext>
+  pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
+  unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
   sign(data: Buffer, verkey: string): Promise<Buffer>
   verify(signerVerkey: string, data: Buffer, signature: Buffer): Promise<boolean>
   generateNonce(): Promise<string>
@@ -33,4 +40,10 @@ export interface DidInfo {
 
 export interface DidConfig {
   seed?: string
+}
+
+export interface UnpackedMessageContext {
+  plaintextMessage: PlaintextMessage
+  senderKey?: string
+  recipientKey?: string
 }

@@ -1,4 +1,5 @@
 import type { Agent } from '../agent/Agent'
+import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
 import type { OutboundTransport } from './OutboundTransport'
@@ -7,6 +8,7 @@ import type WebSocket from 'ws'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { EventEmitter } from '../agent/EventEmitter'
+import { AgentEventTypes } from '../agent/Events'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 
@@ -22,10 +24,10 @@ export class WsOutboundTransport implements OutboundTransport {
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
-    const agentConfig = agent.injectionContainer.resolve(AgentConfig)
+    const agentConfig = agent.dependencyManager.resolve(AgentConfig)
 
     this.logger = agentConfig.logger
-    this.eventEmitter = agent.injectionContainer.resolve(EventEmitter)
+    this.eventEmitter = agent.dependencyManager.resolve(EventEmitter)
     this.logger.debug('Starting WS outbound transport')
     this.WebSocketClass = agentConfig.agentDependencies.WebSocketClass
   }
@@ -98,7 +100,7 @@ export class WsOutboundTransport implements OutboundTransport {
   // so 'this' is scoped to the 'WsOutboundTransport' class instance
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleMessageEvent = (event: any) => {
-    this.logger.trace('WebSocket message event received.', { url: event.target.url, data: event.data })
+    this.logger.trace('WebSocket message event received.', { url: event.target.url })
     const payload = JsonEncoder.fromBuffer(event.data)
     if (!isValidJweStructure(payload)) {
       throw new Error(
@@ -107,6 +109,13 @@ export class WsOutboundTransport implements OutboundTransport {
     }
     this.logger.debug('Payload received from mediator:', payload)
     this.agent.receiveMessage(payload)
+    this.eventEmitter.emit<AgentMessageReceivedEvent>({
+      type: AgentEventTypes.AgentMessageReceived,
+      payload: {
+        message: payload,
+      },
+    })
+
   }
 
   private listenOnWebSocketMessages(socket: WebSocket) {
@@ -152,6 +161,8 @@ export class WsOutboundTransport implements OutboundTransport {
 
       socket.onclose = async (event: WebSocket.CloseEvent) => {
         this.logger.warn(`WebSocket closing to ${endpoint}`, { event })
+      socket.onclose = async () => {
+        this.logger.debug(`WebSocket closing to ${endpoint}`)
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)
 

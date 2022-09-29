@@ -1,9 +1,10 @@
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
 import type { DIDCommMessageClass } from './didcomm'
+import type { ConstructableAgentMessage } from './AgentMessage'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 export interface Handler<T extends DIDCommMessageClass> {
-  readonly supportedMessages: readonly T[]
+  readonly supportedMessages: readonly ConstructableAgentMessage[]
 
   handle(messageContext: InboundMessageContext): Promise<OutboundMessage | OutboundServiceMessage | void>
 }

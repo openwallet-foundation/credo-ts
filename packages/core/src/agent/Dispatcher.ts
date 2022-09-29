@@ -5,10 +5,10 @@ import type { Handler } from './Handler'
 import type { DIDCommMessage, DIDCommMessageClass } from './didcomm'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { injectable } from '../plugins'
+import { canHandleMessageType, parseMessageType } from '../utils/messageType'
 
 import { ProblemReportMessage } from './../modules/problem-reports/messages/ProblemReportMessage'
 import { ProblemReportV2Message } from './../modules/problem-reports/messages/ProblemReportV2Message'
@@ -17,7 +17,7 @@ import { AgentEventTypes } from './Events'
 import { MessageSender } from './MessageSender'
 import { isOutboundServiceMessage } from './helpers'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 class Dispatcher {
   private agentConfig: AgentConfig
   private handlers: Handler<DIDCommMessageClass>[] = []
@@ -92,22 +92,26 @@ class Dispatcher {
       type: AgentEventTypes.AgentMessageProcessed,
       payload: {
         message: messageContext.message,
+        connection: messageContext.connection,
       },
     })
   }
 
   private getHandlerForType(messageType: string): Handler<DIDCommMessageClass> | undefined {
+    const incomingMessageType = parseMessageType(messageType)
+
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type === messageType) return handler
+        if (canHandleMessageType(MessageClass, incomingMessageType)) return handler
       }
     }
   }
 
   public getMessageClassForType(messageType: string): DIDCommMessageClass | undefined {
+    const incomingMessageType = parseMessageType(messageType)
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type === messageType) return MessageClass
+        if (canHandleMessageType(MessageClass, incomingMessageType)) return MessageClass
       }
     }
   }
@@ -127,7 +131,7 @@ class Dispatcher {
    * Protocol ID format is PIURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#piuri.
    */
   public get supportedProtocols() {
-    return Array.from(new Set(this.supportedMessageTypes.map((m) => m.substring(0, m.lastIndexOf('/')))))
+    return Array.from(new Set(this.supportedMessageTypes.map((m) => m.protocolUri)))
   }
 
   public filterSupportedProtocolsByMessageFamilies(messageFamilies: string[]) {

@@ -3,25 +3,28 @@ import type { Logger } from '../logger'
 import type {
   DecryptedMessageContext,
   KeyDerivationMethod,
+  EncryptedMessage,
   WalletConfig,
   WalletConfigRekey,
   WalletExportImportConfig,
 } from '../types'
-import type { DidConfig, DidInfo, Wallet } from './Wallet'
-import type { default as Indy, KeyConfig } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
+import type { Buffer } from '../utils/buffer'
+import type { Wallet, DidInfo, DidConfig, UnpackedMessageContext } from './Wallet'
+import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error'
+import { injectable } from '../plugins'
 import { JsonEncoder } from '../utils/JsonEncoder'
 import { Buffer } from '../utils/buffer'
 import { isIndyError } from '../utils/indyError'
 
-import { WalletDuplicateError, WalletError, WalletNotFoundError } from './error'
+import { WalletDuplicateError, WalletNotFoundError, WalletError } from './error'
 import { WalletInvalidKeyError } from './error/WalletInvalidKeyError'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class IndyWallet implements Wallet {
   private walletConfig?: WalletConfig
   private walletHandle?: number
@@ -67,6 +70,41 @@ export class IndyWallet implements Wallet {
     return this.walletConfig.id
   }
 
+  private walletStorageConfig(walletConfig: WalletConfig): Indy.WalletConfig {
+    const walletStorageConfig: Indy.WalletConfig = {
+      id: walletConfig.id,
+      storage_type: walletConfig.storage?.type,
+    }
+
+    if (walletConfig.storage?.config) {
+      walletStorageConfig.storage_config = walletConfig.storage?.config as WalletStorageConfig
+    }
+
+    return walletStorageConfig
+  }
+
+  private walletCredentials(
+    walletConfig: WalletConfig,
+    rekey?: string,
+    rekeyDerivation?: KeyDerivationMethod
+  ): Indy.OpenWalletCredentials {
+    const walletCredentials: Indy.OpenWalletCredentials = {
+      key: walletConfig.key,
+      key_derivation_method: walletConfig.keyDerivationMethod,
+    }
+    if (rekey) {
+      walletCredentials.rekey = rekey
+    }
+    if (rekeyDerivation) {
+      walletCredentials.rekey_derivation_method = rekeyDerivation
+    }
+    if (walletConfig.storage?.credentials) {
+      walletCredentials.storage_credentials = walletConfig.storage?.credentials as Record<string, unknown>
+    }
+
+    return walletCredentials
+  }
+
   /**
    * @throws {WalletDuplicateError} if the wallet already exists
    * @throws {WalletError} if another error occurs
@@ -84,11 +122,7 @@ export class IndyWallet implements Wallet {
     this.logger.debug(`Creating wallet '${walletConfig.id}' using SQLite storage`)
 
     try {
-      await this.indy.createWallet(
-        { id: walletConfig.id },
-        { key: walletConfig.key, key_derivation_method: walletConfig.keyDerivationMethod }
-      )
-
+      await this.indy.createWallet(this.walletStorageConfig(walletConfig), this.walletCredentials(walletConfig))
       this.walletConfig = walletConfig
 
       // We usually want to create master secret only once, therefore, we can to do so when creating a wallet.
@@ -139,7 +173,11 @@ export class IndyWallet implements Wallet {
       throw new WalletError('Wallet rekey undefined!. Please specify the new wallet key')
     }
     await this._open(
-      { id: walletConfig.id, key: walletConfig.key, keyDerivationMethod: walletConfig.keyDerivationMethod },
+      {
+        id: walletConfig.id,
+        key: walletConfig.key,
+        keyDerivationMethod: walletConfig.keyDerivationMethod,
+      },
       walletConfig.rekey,
       walletConfig.rekeyDerivationMethod
     )
@@ -162,13 +200,8 @@ export class IndyWallet implements Wallet {
 
     try {
       this.walletHandle = await this.indy.openWallet(
-        { id: walletConfig.id },
-        {
-          key: walletConfig.key,
-          rekey: rekey,
-          key_derivation_method: walletConfig.keyDerivationMethod,
-          rekey_derivation_method: rekeyDerivation,
-        }
+        this.walletStorageConfig(walletConfig),
+        this.walletCredentials(walletConfig, rekey, rekeyDerivation)
       )
       if (rekey) {
         this.walletConfig = { ...walletConfig, key: rekey, keyDerivationMethod: rekeyDerivation }
@@ -192,7 +225,7 @@ export class IndyWallet implements Wallet {
           cause: error,
         })
       } else {
-        const errorMessage = `Error opening wallet '${walletConfig.id}'`
+        const errorMessage = `Error opening wallet '${walletConfig.id}': ${error.message}`
         this.logger.error(errorMessage, {
           error,
           errorMessage: error.message,
@@ -224,8 +257,8 @@ export class IndyWallet implements Wallet {
 
     try {
       await this.indy.deleteWallet(
-        { id: this.walletConfig.id },
-        { key: this.walletConfig.key, key_derivation_method: this.walletConfig.keyDerivationMethod }
+        this.walletStorageConfig(this.walletConfig),
+        this.walletCredentials(this.walletConfig)
       )
     } catch (error) {
       if (isIndyError(error, 'WalletNotFoundError')) {
@@ -253,7 +286,7 @@ export class IndyWallet implements Wallet {
       this.logger.debug(`Exporting wallet ${this.walletConfig?.id} to path ${exportConfig.path}`)
       await this.indy.exportWallet(this.handle, exportConfig)
     } catch (error) {
-      const errorMessage = `Error exporting wallet': ${error.message}`
+      const errorMessage = `Error exporting wallet: ${error.message}`
       this.logger.error(errorMessage, {
         error,
       })
@@ -265,7 +298,11 @@ export class IndyWallet implements Wallet {
   public async import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig) {
     try {
       this.logger.debug(`Importing wallet ${walletConfig.id} from path ${importConfig.path}`)
-      await this.indy.importWallet({ id: walletConfig.id }, { key: walletConfig.key }, importConfig)
+      await this.indy.importWallet(
+        { id: walletConfig.id },
+        { key: walletConfig.key, key_derivation_method: walletConfig.keyDerivationMethod },
+        importConfig
+      )
     } catch (error) {
       const errorMessage = `Error importing wallet': ${error.message}`
       this.logger.error(errorMessage, {
@@ -379,9 +416,13 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  public async pack(payload: Buffer, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage> {
+  public async pack(
+    payload: Record<string, unknown>,
+    recipientKeys: string[],
+    senderVerkey?: string
+  ): Promise<EncryptedMessage> {
     try {
-      const messageRaw = Buffer.isBuffer(payload) ? payload : JsonEncoder.toBuffer(payload)
+      const messageRaw = JsonEncoder.toBuffer(payload)
       const packedMessage = await this.indy.packMessage(this.handle, messageRaw, recipientKeys, senderVerkey ?? null)
       return JsonEncoder.fromBuffer(packedMessage)
     } catch (error) {
@@ -389,7 +430,7 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  public async unpack(messagePackage: EncryptedMessage): Promise<DecryptedMessageContext> {
+  public async unpack(messagePackage: EncryptedMessage): Promise<UnpackedMessageContext> {
     try {
       const unpackedMessageBuffer = await this.indy.unpackMessage(this.handle, JsonEncoder.toBuffer(messagePackage))
       const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)

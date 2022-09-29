@@ -6,13 +6,13 @@ import { v4 as uuid } from 'uuid'
 export interface DummyStorageProps {
   id?: string
   createdAt?: Date
-  connectionId?: string
+  connectionId: string
   threadId: string
   state: DummyState
 }
 
 export class DummyRecord extends BaseRecord implements DummyStorageProps {
-  public connectionId?: string
+  public connectionId!: string
   public threadId!: string
   public state!: DummyState
 

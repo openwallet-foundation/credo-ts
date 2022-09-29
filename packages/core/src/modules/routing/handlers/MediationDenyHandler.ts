@@ -13,6 +13,9 @@ export class MediationDenyHandler implements Handler<typeof DIDCommV2Message> {
   }
 
   public async handle(messageContext: HandlerInboundMessage<MediationDenyHandler>) {
+    if (!messageContext.connection) {
+      throw new Error(`Connection for verkey ${messageContext.recipientKey} not found!`)
+    }
     await this.mediationRecipientService.processMediationDeny(messageContext)
   }
 }

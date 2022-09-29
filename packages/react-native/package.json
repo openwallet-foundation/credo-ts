@@ -32,7 +32,7 @@
     "@sicpa-dlab/didcomm-react-native": "0.0.19",
     "@types/indy-sdk-react-native": "npm:@types/indy-sdk@^1.16.16",
     "@types/react-native": "^0.64.10",
-    "indy-sdk-react-native": "^0.1.16",
+    "indy-sdk-react-native": "^0.2.2",
     "react": "17.0.1",
     "react-native": "0.64.2",
     "react-native-fs": "^2.18.0",
