@@ -1,8 +1,11 @@
+/* eslint-disable no-console */
 import type { InitConfig } from '@aries-framework/core'
-import { Agent, ConsoleLogger, DidMarker, HttpOutboundTransport, LogLevel, Transports } from '@aries-framework/core'
 import type { WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
+
+import { Agent, ConsoleLogger, DidMarker, HttpOutboundTransport, LogLevel, Transports } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 import { randomUUID } from 'crypto'
+
 import { MetricsService } from './metrics'
 
 export interface EmulatorWitnessConfig {
@@ -23,8 +26,8 @@ export class Witness {
 
   public constructor(witnessConfig: EmulatorWitnessConfig) {
     const name = witnessConfig.label ?? randomUUID()
-    const endpoint = `${witnessConfig.host}:${witnessConfig.port!}`
-    const wid = witnessConfig.wid ?? witnessConfig.port!.toString()
+    const endpoint = `${witnessConfig.host}:${witnessConfig.port}`
+    const wid = witnessConfig.wid || witnessConfig.port?.toString() || ''
 
     const config: InitConfig = {
       label: name,
@@ -52,7 +55,7 @@ export class Witness {
     }
 
     this.agent = new Agent(config, agentDependencies)
-    this.agent.registerInboundTransport(new HttpInboundTransport({ port: witnessConfig.port! }))
+    this.agent.registerInboundTransport(new HttpInboundTransport({ port: witnessConfig.port || 8000 }))
     this.agent.registerOutboundTransport(new HttpOutboundTransport())
 
     this.config = witnessConfig
@@ -69,7 +72,7 @@ export class Witness {
 export class WitnessEmulator {
   private witnesses: Witness[] = []
 
-  constructor(witnesses: EmulatorWitnessConfig[]) {
+  public constructor(witnesses: EmulatorWitnessConfig[]) {
     this.witnesses = witnesses.map((witnessConfig) => new Witness(witnessConfig))
   }
 

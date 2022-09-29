@@ -1,6 +1,8 @@
-import { InfluxDB, Point, WriteOptions } from '@influxdata/influxdb-client'
+/* eslint-disable no-console */
+import type { WriteOptions } from '@influxdata/influxdb-client'
 import type { GossipMetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
+import { InfluxDB, Point } from '@influxdata/influxdb-client'
 import os from 'os'
 
 const influxDbConfig = {
@@ -72,7 +74,8 @@ export class MetricsService implements GossipMetricsInterface {
     const writeOptions: Partial<WriteOptions> = {
       defaultTags: { machineName, gossipVersion },
       maxRetries: 0,
-      writeFailed: (error: any, lines: Array<string>, attempt: number, expires: number): Promise<void> | void => {
+      // eslint-disable-next-line
+      writeFailed: (error: any, lines: Array<string>): Promise<void> | void => {
         console.log('Write to influxdb failed', { error, lines })
       },
     }

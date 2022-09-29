@@ -2,9 +2,6 @@
 # yarn lockfile v1
 
 
-"@aries-framework/core@../packages/core/build":
-  version "0.0.0"
-
 "@aries-framework/core@npm:@sicpa-dlab/aries-framework-core":
   version "0.1.71"
   resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.1.71/d984ab40769ae9f9156fde498f548638b8a684e6#d984ab40769ae9f9156fde498f548638b8a684e6"
@@ -127,10 +124,10 @@
     iso-639-language "^1.0.1"
     reflect-metadata "^0.1.13"
 
-"@sicpa-dlab/value-transfer-protocol-ts@0.1.6":
-  version "0.1.6"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.1.6/076e124f86cd5d09f72020c5222a5dbe5c777b3e#076e124f86cd5d09f72020c5222a5dbe5c777b3e"
-  integrity sha512-pjdCffoWY62I+EYMEMQ6oBLASX+XQEpHHWxdPsGkSZbU5UQ7v1TPbkRKoDbeokBYhs7rI47nt3t5FLGOSFZNNQ==
+"@sicpa-dlab/value-transfer-protocol-ts@0.1.7":
+  version "0.1.7"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.1.7/abad9d8478a7966eac2a7fbba74948d59a429416#abad9d8478a7966eac2a7fbba74948d59a429416"
+  integrity sha512-oFrBo6z5zScWUwpgp/StE46cERSMQL54IWQk17SBpSAIbxvLWzlP/fNzp7DHZgEh0Yqwsx35hJfCKTKFVjQyOg==
   dependencies:
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"

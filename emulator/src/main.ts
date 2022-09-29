@@ -1,8 +1,10 @@
+/* eslint-disable no-console */
+import { randomString } from '@aries-framework/core'
+
 import { UserEmulator } from './UserEmulator'
 import { WitnessEmulator } from './WitnessEmulator'
-import { createUsersList, createWitnessTable } from './utils'
-import { randomString } from '@sicpa-dlab/aries-framework-core/src/utils/string'
 import { config } from './config'
+import { createUsersList, createWitnessTable } from './utils'
 
 const run = async () => {
   console.log('Emulator: Starting...')
@@ -54,9 +56,9 @@ const run = async () => {
   await userEmulator.run()
 }
 
-const flushAndClose = () => {}
+// const flushAndClose = () => {}
 
 run().catch((e) => {
   console.error(e)
-  return flushAndClose()
+  // return flushAndClose()
 })
