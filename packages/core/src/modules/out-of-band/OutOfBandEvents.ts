@@ -1,5 +1,5 @@
 import type { BaseEvent } from '../../agent/Events'
-import type { DidInfo } from '../dids/domain'
+import type { DIDInformation } from '../dids/domain'
 import type { OutOfBandInvitationMessage } from './messages'
 
 export enum OutOfBandEventTypes {
@@ -9,6 +9,6 @@ export interface OutOfBandEvent extends BaseEvent {
   type: typeof OutOfBandEventTypes.OutOfBandInvitationReceived
   payload: {
     message: OutOfBandInvitationMessage
-    senderInfo: DidInfo
+    senderInfo: DIDInformation
   }
 }

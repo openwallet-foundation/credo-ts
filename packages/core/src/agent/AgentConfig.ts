@@ -200,7 +200,7 @@ export class AgentConfig {
   }
 
   public get pingAddress() {
-    return this.initConfig.mediatorConnectionsInvite || 'https://google.com'
+    return this.initConfig.mediatorConnectionsInvite || this.initConfig.defaultPingAddress || 'https://www.sicpa.com'
   }
 
   public async hasInternetAccess() {

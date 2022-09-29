@@ -1,6 +1,6 @@
 import type { Logger } from '../../../logger'
 import type { DidResolver } from '../domain/DidResolver'
-import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
+import type { DIDMetadata, DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -62,10 +62,20 @@ export class DidResolverService {
       }
     }
 
-    return resolver.resolve(parsed.did, parsed, options)
+    const resolvedDid = await resolver.resolve(parsed.did, parsed, options)
+    resolvedDid.didMeta = await this.resolveDidMetadata(parsed.did)
+    return resolvedDid
   }
 
   private findResolver(parsed: ParsedDid): DidResolver | null {
     return this.resolvers.find((r) => r.supportedMethods.includes(parsed.method)) ?? null
+  }
+
+  private async resolveDidMetadata(did: string): Promise<DIDMetadata> {
+    this.logger.debug(`resolving did metadata  ${did}`)
+    return {
+      label: undefined,
+      logoUrl: undefined,
+    }
   }
 }

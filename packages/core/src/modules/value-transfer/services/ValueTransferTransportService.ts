@@ -27,7 +27,7 @@ export class ValueTransferTransportService implements VtpTransportInterface {
     this.config.logger.debug(` Message: ${JsonEncoder.toString(message)}`)
     const didComMessage = new DIDCommV2Message({ ...message })
     const sendingMessageType = didComMessage.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
-    await this.messageSender.sendDIDCommV2Message(didComMessage, sendingMessageType, undefined, args?.proxy)
+    await this.messageSender.sendDIDCommV2Message(didComMessage, sendingMessageType, undefined, args?.mayProxyVia)
     this.config.logger.info('message sent!')
   }
 }

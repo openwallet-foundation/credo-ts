@@ -111,6 +111,8 @@ export interface InitConfig {
   connectionImageUrl?: string
   valueTransferConfig?: ValueTransferConfig
   emulateOfflineCase?: boolean
+
+  defaultPingAddress?: string
 }
 
 export type PlaintextMessage = PlaintextMessageV1 | PlaintextMessageV2

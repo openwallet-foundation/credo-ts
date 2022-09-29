@@ -195,7 +195,7 @@ export class MessageSender {
     message: DIDCommV2Message,
     sendingMessageType: SendingMessageType = SendingMessageType.Encrypted,
     transports?: Transports[],
-    proxy?: string
+    mayProxyVia?: string
   ) {
     // recipient is not specified -> send to defaultTransport
     if (!message.to?.length && transports?.length) {
@@ -244,12 +244,12 @@ export class MessageSender {
     }
 
     // send message via proxy if specified
-    if (proxy) {
-      return await this.sendMessageViaProxy(message, proxy, sendingMessageType, transports)
+    if (mayProxyVia) {
+      return await this.sendMessageViaProxy(message, mayProxyVia, sendingMessageType, transports)
     }
 
     this.agentConfig.logger.error(
-      `Unable to send message. Unexpected case: sendingMessageType: ${sendingMessageType}, proxy: ${proxy}`
+      `Unable to send message. Unexpected case: sendingMessageType: ${sendingMessageType}, mayProxyVia: ${mayProxyVia}`
     )
   }
 
@@ -309,6 +309,7 @@ export class MessageSender {
   }
 
   private async sendPlaintextMessage(message: DIDCommV2Message, service: DidDocumentService) {
+    this.agentConfig.logger.debug(`Sending plaintext message ${message.id}`)
     const recipientDid = message.recipient()
     const payload = { ...message }
     return this.sendMessage(payload, service, recipientDid)
@@ -318,6 +319,8 @@ export class MessageSender {
     if (!message.from) {
       throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
     }
+
+    this.agentConfig.logger.debug(`Sending JWS message ${message.id}`)
 
     const params = { signByDID: message.from, serviceId: service?.id }
     const recipientDid = message.recipient()
@@ -332,6 +335,7 @@ export class MessageSender {
     if (!recipientDid) {
       throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain recipient DID.`)
     }
+    this.agentConfig.logger.debug(`Sending JWE message ${message.id}`)
     const encryptedMessage = await this.encryptedMessage(message, service)
     return this.sendMessage(encryptedMessage, service, recipientDid)
   }
@@ -344,6 +348,8 @@ export class MessageSender {
   ) {
     // only encrypted message can be sent via proxy
     if (sendingMessageType !== SendingMessageType.Encrypted) return
+
+    this.agentConfig.logger.info(`Sending message ${message.id} using proxy: ${proxy}`)
 
     // Try to use proxy
     // find service transport supported for both proxy and receiver + sender and proxy
@@ -373,8 +379,10 @@ export class MessageSender {
     proxyToRecipientSupportedService: DidCommV2Service,
     senderToProxyService: DidCommV2Service
   ): Promise<EncryptedMessage> {
+    this.agentConfig.logger.debug(`Prepare message ${message.id} for proxy: ${proxy}`)
     let encryptedMessage = await this.encryptedMessage(message, proxyToRecipientSupportedService)
 
+    // if proxy uses mediator -> we need to wrap our encrypted message into additional forward
     if (senderToProxyService.routingKeys?.length) {
       const did = DidDocument.extractDidFromKid(senderToProxyService.routingKeys[0])
       const proxyForwardMessage = new ForwardMessageV2({
@@ -387,6 +395,7 @@ export class MessageSender {
       })
       encryptedMessage = await this.encryptedMessage(proxyForwardMessage, senderToProxyService, false)
     }
+    this.agentConfig.logger.debug(`Prepare message ${message.id} for proxy: ${proxy} completed!`)
     return encryptedMessage
   }
 

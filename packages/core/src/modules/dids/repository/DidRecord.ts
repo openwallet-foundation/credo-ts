@@ -1,4 +1,5 @@
 import type { TagsBase, RecordTags } from '../../../storage/BaseRecord'
+import type { DidConnectivity } from '../domain'
 
 import { Type } from 'class-transformer'
 import { IsBoolean, IsEnum, IsOptional, ValidateNested } from 'class-validator'
@@ -80,6 +81,10 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags> impleme
 
   public get did() {
     return this.id
+  }
+
+  public get connectivity(): DidConnectivity | undefined {
+    return this.didDocument?.connectivity
   }
 
   public getTags() {
