@@ -1,5 +1,6 @@
 import type { ValueTransferMessageParams } from './ValueTransferBaseMessage'
 
+import { RequestAcceptanceWitnessed } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Equals, IsString } from 'class-validator'
 
 import { ValueTransferBaseMessage } from './ValueTransferBaseMessage'
@@ -11,7 +12,7 @@ export class RequestAcceptedWitnessedMessage extends ValueTransferBaseMessage {
 
   @Equals(RequestAcceptedWitnessedMessage.type)
   public readonly type = RequestAcceptedWitnessedMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/step-7'
+  public static readonly type = RequestAcceptanceWitnessed.type
 
   @IsString()
   public thid!: string

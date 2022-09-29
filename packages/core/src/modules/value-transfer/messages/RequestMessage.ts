@@ -1,5 +1,6 @@
 import type { ValueTransferMessageParams } from './ValueTransferBaseMessage'
 
+import { Request } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Equals } from 'class-validator'
 
 import { JsonTransformer } from '../../../utils'
@@ -13,7 +14,7 @@ export class RequestMessage extends ValueTransferBaseMessage {
 
   @Equals(RequestMessage.type)
   public readonly type = RequestMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/step-1'
+  public static readonly type = Request.type
 
   public toLink({ domain }: { domain: string }) {
     return this.toUrl({ domain })

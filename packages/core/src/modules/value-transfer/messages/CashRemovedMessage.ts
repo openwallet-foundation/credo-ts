@@ -1,5 +1,6 @@
 import type { ValueTransferMessageParams } from './ValueTransferBaseMessage'
 
+import { CashRemoval } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Equals, IsString } from 'class-validator'
 
 import { ValueTransferBaseMessage } from './ValueTransferBaseMessage'
@@ -11,7 +12,7 @@ export class CashRemovedMessage extends ValueTransferBaseMessage {
 
   @Equals(CashRemovedMessage.type)
   public readonly type = CashRemovedMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/step-13'
+  public static readonly type = CashRemoval.type
 
   @IsString()
   public thid!: string
