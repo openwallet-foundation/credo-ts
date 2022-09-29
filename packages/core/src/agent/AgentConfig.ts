@@ -89,26 +89,6 @@ export class AgentConfig {
     return this.initConfig.valueTransferConfig?.party?.autoAcceptOfferedPaymentRequest ?? AutoAcceptValueTransfer.Never
   }
 
-  public get witnessTockTime() {
-    return this.initConfig.valueTransferConfig?.witness?.tockTime
-  }
-
-  public get witnessCleanupTime() {
-    return this.initConfig.valueTransferConfig?.witness?.cleanupTime
-  }
-
-  public get witnessRedeliverTime() {
-    return this.initConfig.valueTransferConfig?.witness?.redeliverTime
-  }
-
-  public get witnessHistoryThreshold() {
-    return this.initConfig.valueTransferConfig?.witness?.historyThreshold
-  }
-
-  public get witnessRedeliveryThreshold() {
-    return this.initConfig.valueTransferConfig?.witness?.redeliveryThreshold
-  }
-
   public get witnessIssuerDids() {
     return this.initConfig.valueTransferConfig?.witness?.issuerDids
   }

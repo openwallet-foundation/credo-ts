@@ -55,8 +55,11 @@ export class GossipService {
       },
       {
         label: config.label,
-        redeliveryThreshold: config.witnessRedeliveryThreshold,
-        historyThreshold: config.witnessHistoryThreshold,
+        tockTime: config.valueTransferConfig?.witness?.tockTime,
+        cleanupTime: config.valueTransferConfig?.witness?.cleanupTime,
+        redeliverTime: config.valueTransferConfig?.witness?.redeliverTime,
+        historyThreshold: config.valueTransferConfig?.witness?.historyThreshold,
+        redeliveryThreshold: config.valueTransferConfig?.witness?.redeliveryThreshold,
       }
     )
   }
