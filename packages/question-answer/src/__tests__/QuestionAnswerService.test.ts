@@ -1,27 +1,19 @@
-import type { AgentContext } from '../../../agent'
-import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { Repository } from '../../../storage/Repository'
-import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
-import type { ValidResponse } from '../models'
+import type { AgentConfig, AgentContext, Repository } from '@aries-framework/core'
+import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@aries-framework/question-answer'
 
-import { Subject } from 'rxjs'
-
+import { EventEmitter, IndyWallet, SigningProviderRegistry } from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/node'
 import {
-  agentDependencies,
-  getAgentConfig,
-  getAgentContext,
-  getMockConnection,
-  mockFunction,
-} from '../../../../tests/helpers'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { SigningProviderRegistry } from '../../../crypto/signing-provider'
-import { IndyWallet } from '../../../wallet/IndyWallet'
-import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
-import { QuestionAnswerRole } from '../QuestionAnswerRole'
-import { QuestionMessage } from '../messages'
-import { QuestionAnswerState } from '../models'
-import { QuestionAnswerRecord, QuestionAnswerRepository } from '../repository'
-import { QuestionAnswerService } from '../services'
+  QuestionAnswerRecord,
+  QuestionAnswerRepository,
+  QuestionAnswerEventTypes,
+  QuestionAnswerRole,
+  QuestionAnswerService,
+  QuestionAnswerState,
+  QuestionMessage,
+} from '@aries-framework/question-answer'
+import { Subject } from 'rxjs'
+import { getAgentConfig, getAgentContext, getMockConnection } from './utils'
 
 jest.mock('../repository/QuestionAnswerRepository')
 const QuestionAnswerRepositoryMock = QuestionAnswerRepository as jest.Mock<QuestionAnswerRepository>
@@ -144,7 +136,7 @@ describe('QuestionAnswerService', () => {
         eventListenerMock
       )
 
-      mockFunction(questionAnswerRepository.getSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
+      jest.fn(questionAnswerRepository.getSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
       await questionAnswerService.createAnswer(agentContext, mockRecord, 'Yes')
 

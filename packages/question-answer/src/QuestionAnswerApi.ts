@@ -1,11 +1,13 @@
 import type { ValidResponse } from './models'
 
-import { AgentContext } from '../../agent'
-import { Dispatcher } from '../../agent/Dispatcher'
-import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
-import { injectable } from '../../plugins'
-import { ConnectionService } from '../connections'
+import {
+  AgentContext,
+  ConnectionService,
+  createOutboundMessage,
+  Dispatcher,
+  injectable,
+  MessageSender,
+} from '@aries-framework/core'
 
 import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
 import { QuestionAnswerService } from './services'

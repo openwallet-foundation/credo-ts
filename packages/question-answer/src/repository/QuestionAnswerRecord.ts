@@ -1,10 +1,8 @@
-import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 import type { QuestionAnswerRole } from '../QuestionAnswerRole'
 import type { QuestionAnswerState, ValidResponse } from '../models'
+import type { RecordTags, TagsBase } from '@aries-framework/core'
 
-import { AriesFrameworkError } from '../../../error'
-import { BaseRecord } from '../../../storage/BaseRecord'
-import { uuid } from '../../../utils/uuid'
+import { AriesFrameworkError, utils, BaseRecord } from '@aries-framework/core'
 
 export type CustomQuestionAnswerTags = TagsBase
 export type DefaultQuestionAnswerTags = {
@@ -51,7 +49,7 @@ export class QuestionAnswerRecord extends BaseRecord<DefaultQuestionAnswerTags, 
     super()
 
     if (props) {
-      this.id = props.id ?? uuid()
+      this.id = props.id ?? utils.uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.questionText = props.questionText
       this.questionDetail = props.questionDetail

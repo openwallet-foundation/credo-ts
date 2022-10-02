@@ -1,7 +1,6 @@
-import type { FeatureRegistry } from '../../agent/FeatureRegistry'
-import type { DependencyManager, Module } from '../../plugins'
+import type { DependencyManager, FeatureRegistry, Module } from '@aries-framework/core'
 
-import { Protocol } from '../../agent/models'
+import { Protocol } from '@aries-framework/core'
 
 import { QuestionAnswerApi } from './QuestionAnswerApi'
 import { QuestionAnswerRole } from './QuestionAnswerRole'

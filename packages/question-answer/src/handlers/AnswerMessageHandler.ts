@@ -1,5 +1,5 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { QuestionAnswerService } from '../services'
+import type { Handler, HandlerInboundMessage } from '@aries-framework/core'
 
 import { AnswerMessage } from '../messages'
 
