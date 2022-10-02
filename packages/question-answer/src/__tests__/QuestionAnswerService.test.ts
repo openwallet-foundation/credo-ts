@@ -3,6 +3,10 @@ import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@aries-fram
 
 import { EventEmitter, IndyWallet, SigningProviderRegistry } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, getMockConnection } from './utils'
+
 import {
   QuestionAnswerRecord,
   QuestionAnswerRepository,
@@ -12,8 +16,6 @@ import {
   QuestionAnswerState,
   QuestionMessage,
 } from '@aries-framework/question-answer'
-import { Subject } from 'rxjs'
-import { getAgentConfig, getAgentContext, getMockConnection } from './utils'
 
 jest.mock('../repository/QuestionAnswerRepository')
 const QuestionAnswerRepositoryMock = QuestionAnswerRepository as jest.Mock<QuestionAnswerRepository>

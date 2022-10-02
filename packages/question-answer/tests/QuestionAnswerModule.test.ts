@@ -1,6 +1,7 @@
 import type { DependencyManager, FeatureRegistry } from '@aries-framework/core'
 
 import { Protocol } from '@aries-framework/core'
+
 import {
   QuestionAnswerApi,
   QuestionAnswerModule,

@@ -1,13 +1,14 @@
+import type { ConnectionRecordProps, InitConfig, Wallet } from '@aries-framework/core'
+
 import {
   AgentContext,
-  ConnectionRecordProps,
   DependencyManager,
-  InitConfig,
   InjectionSymbols,
-  Wallet,
+  AgentConfig,
+  ConnectionRecord,
+  DidExchangeRole,
+  DidExchangeState,
 } from '@aries-framework/core'
-
-import { AgentConfig, LogLevel, ConnectionRecord, DidExchangeRole, DidExchangeState } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
 export function getMockConnection({
