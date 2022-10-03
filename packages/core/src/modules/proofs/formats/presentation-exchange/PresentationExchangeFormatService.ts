@@ -268,7 +268,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     agentContext: AgentContext,
     options: FormatCreatePresentationOptions<PresentationExchangeProofFormat>
   ): Promise<ProofAttachmentFormat> {
-
     if (!options.proofFormats.presentationExchange) {
       throw Error('Presentation Exchange format missing while creating presentation in presentation exchange service.')
     }
