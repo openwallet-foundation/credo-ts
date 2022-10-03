@@ -1,6 +1,4 @@
-import { DIDCommV1Message } from '@aries-framework/core'
-import { Equals } from 'class-validator'
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { DIDCommV1Message, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 
 export interface DummyResponseMessageOptions {
   id?: string

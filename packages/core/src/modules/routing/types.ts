@@ -12,19 +12,6 @@ export const onlineTransports = [Transports.HTTP, Transports.HTTPS, Transports.W
 
 export type AcceptProtocol = 'didcomm/aip1' | 'didcomm/v2'
 
-export interface GetRoutingOptions {
-  /**
-   * Identifier of the mediator to use when setting up routing
-   */
-  mediatorId?: string
-
-  /**
-   * Whether to use the default mediator if available and `mediatorId` has not been provided
-   * @default true
-   */
-  useDefaultMediator?: boolean
-}
-
 export const isOnlineTransport = (transport: Transports) =>
   transport === Transports.HTTPS ||
   transport === Transports.HTTP ||
@@ -42,3 +29,16 @@ export const hasOnlineTransport = (transports: Transports[]) =>
 
 export const hasOfflineTransport = (transports: Transports[]) =>
   transports.includes(Transports.NFC) || transports.includes(Transports.Nearby)
+
+export interface GetRoutingOptions {
+  /**
+   * Identifier of the mediator to use when setting up routing
+   */
+  mediatorId?: string
+
+  /**
+   * Whether to use the default mediator if available and `mediatorId` has not been provided
+   * @default true
+   */
+  useDefaultMediator?: boolean
+}

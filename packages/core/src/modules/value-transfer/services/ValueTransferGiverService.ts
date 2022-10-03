@@ -5,11 +5,11 @@ import type { ValueTransferRecord } from '../repository'
 import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { CashAcceptanceWitnessed, Giver, GiverReceipt, Request } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { OfferMessage } from '../messages'
 import { ValueTransferRepository } from '../repository'
 
@@ -18,7 +18,7 @@ import { ValueTransferPartyStateService } from './ValueTransferPartyStateService
 import { ValueTransferService } from './ValueTransferService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferGiverService {
   private config: AgentConfig
   private valueTransferRepository: ValueTransferRepository

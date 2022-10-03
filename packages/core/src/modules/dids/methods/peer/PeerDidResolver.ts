@@ -6,9 +6,9 @@ import type { DidResolutionResult } from '../../types'
 import { AriesFrameworkError } from '../../../../error'
 import { DidType } from '../../domain'
 
-import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './didPeer'
 import { didToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
+import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './utils'
 
 export class PeerDidResolver implements DidResolver {
   public readonly supportedMethods = ['peer']

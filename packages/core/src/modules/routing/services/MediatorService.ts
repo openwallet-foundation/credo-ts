@@ -1,31 +1,24 @@
 import type { EncryptedMessage } from '../../../agent/didcomm/types'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
-import type { ForwardMessage, MediationRequestMessage } from '../messages'
 import type { ForwardMessageV2, DidListUpdateMessage, MediationRequestMessageV2 } from '../messages'
-
-import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
-import { AriesFrameworkError } from '../../../error'
 import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { Wallet } from '../../../wallet/Wallet'
-import { ConnectionService } from '../../connections'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
-import { didKeyToVerkey, isDidKey, verkeyToDidKey } from '../../dids/helpers'
+import { ConnectionService } from '../../connections/services/ConnectionService'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
-  KeylistUpdateMessage,
-  KeylistUpdateAction,
-  KeylistUpdateResult,
-  KeylistUpdated,
-  MediationGrantMessage,
-  KeylistUpdateResponseMessage,
+  DidListUpdated,
+  DidListUpdateResponseMessage,
+  ListUpdateAction,
+  ListUpdateResult,
+  MediationGrantMessageV2,
 } from '../messages'
 import { MediationRole } from '../models/MediationRole'
 import { MediationState } from '../models/MediationState'

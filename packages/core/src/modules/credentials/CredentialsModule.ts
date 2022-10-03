@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../agent/didcomm'
 import type { Logger } from '../../logger'
 import type { DependencyManager } from '../../plugins'
 import type { DeleteCredentialOptions } from './CredentialServiceOptions'
@@ -56,7 +56,7 @@ export interface CredentialsModule<CFs extends CredentialFormat[], CSs extends C
   negotiateOffer(options: NegotiateOfferOptions<CFs>): Promise<CredentialExchangeRecord>
   // out of band
   createOffer(options: CreateOfferOptions<CFs, CSs>): Promise<{
-    message: AgentMessage
+    message: DIDCommV1Message
     credentialRecord: CredentialExchangeRecord
   }>
   // Request
@@ -171,7 +171,7 @@ export class CredentialsModule<
     const outbound = createOutboundMessage(connection, message)
 
     this.logger.debug('In proposeCredential: Send Proposal to Issuer')
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
     return credentialRecord
   }
 
@@ -206,7 +206,7 @@ export class CredentialsModule<
     // send the message
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
     const outbound = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
 
     return credentialRecord
   }
@@ -240,7 +240,7 @@ export class CredentialsModule<
 
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }
@@ -267,7 +267,7 @@ export class CredentialsModule<
 
     this.logger.debug('Offer Message successfully created; message= ', message)
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }
@@ -299,7 +299,7 @@ export class CredentialsModule<
       })
 
       const outboundMessage = createOutboundMessage(connection, message)
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
       return credentialRecord
     }
@@ -308,9 +308,9 @@ export class CredentialsModule<
       // Create ~service decorator
       const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.recipientKey.publicKeyBase58],
-        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+        serviceEndpoint: routing.endpoint,
+        recipientKeys: [routing.verkey],
+        routingKeys: routing.routingKeys,
       })
       const recipientService = offerMessage.service
 
@@ -332,7 +332,7 @@ export class CredentialsModule<
       await this.messageSender.sendMessageToService({
         message,
         service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0].publicKeyBase58,
         returnRoute: true,
       })
 
@@ -376,7 +376,7 @@ export class CredentialsModule<
 
     const connection = await this.connectionService.getById(credentialRecord.connectionId)
     const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }
@@ -388,7 +388,7 @@ export class CredentialsModule<
    * @returns The credential record and credential offer message
    */
   public async createOffer(options: CreateOfferOptions<CFs>): Promise<{
-    message: AgentMessage
+    message: DIDCommV1Message
     credentialRecord: CredentialExchangeRecord
   }> {
     const service = this.getService(options.protocolVersion)
@@ -435,7 +435,7 @@ export class CredentialsModule<
     if (credentialRecord.connectionId) {
       const connection = await this.connectionService.getById(credentialRecord.connectionId)
       const outboundMessage = createOutboundMessage(connection, message)
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
       return credentialRecord
     }
@@ -454,7 +454,7 @@ export class CredentialsModule<
       await this.messageSender.sendMessageToService({
         message,
         service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0].publicKeyBase58,
         returnRoute: true,
       })
 
@@ -495,7 +495,7 @@ export class CredentialsModule<
       const connection = await this.connectionService.getById(credentialRecord.connectionId)
       const outboundMessage = createOutboundMessage(connection, message)
 
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
       return credentialRecord
     }
@@ -507,7 +507,7 @@ export class CredentialsModule<
       await this.messageSender.sendMessageToService({
         message,
         service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0].publicKeyBase58,
         returnRoute: true,
       })
 
@@ -540,7 +540,7 @@ export class CredentialsModule<
       threadId: credentialRecord.threadId,
     })
     const outboundMessage = createOutboundMessage(connection, problemReportMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return credentialRecord
   }

@@ -5,11 +5,11 @@ import type { ValueTransferRecord } from '../repository'
 import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Getter, GetterReceipt, Offer, RequestAcceptanceWitnessed } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { RequestMessage } from '../messages'
 import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
@@ -19,7 +19,7 @@ import { ValueTransferPartyStateService } from './ValueTransferPartyStateService
 import { ValueTransferService } from './ValueTransferService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferGetterService {
   private config: AgentConfig
   private valueTransferRepository: ValueTransferRepository

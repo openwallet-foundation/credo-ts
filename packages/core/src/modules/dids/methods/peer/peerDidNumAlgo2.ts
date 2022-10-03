@@ -3,8 +3,7 @@ import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCo
 import type { DidDocument, VerificationMethod } from '../../domain'
 
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
-import { DidCommV2Service, Key } from '../../domain'
-import { DidCommV1Service, DidDocumentService, Key } from '../../domain'
+import { DidCommV1Service, DidCommV2Service, Key } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { getKeyDidMappingByKeyType, getKeyDidMappingByVerificationMethod } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'

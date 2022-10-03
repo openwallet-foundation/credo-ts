@@ -1,12 +1,11 @@
-import type { EventEmitter } from '../../../agent/EventEmitter'
-import type { AgentMessageReceivedEvent } from '../../../agent/Events'
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
+import type { EventEmitter } from '../../../../../../agent/EventEmitter'
+import type { AgentMessageReceivedEvent } from '../../../../../../agent/Events'
+import type { Handler, HandlerInboundMessage } from '../../../../../../agent/Handler'
 
-import { AgentEventTypes } from '../../../agent/Events'
+import { AgentEventTypes } from '../../../../../../agent/Events'
 import { BatchMessageV2 } from '../messages'
 
-export class BatchHandler implements Handler<typeof DIDCommV2Message> {
+export class BatchHandler implements Handler {
   private eventEmitter: EventEmitter
   public supportedMessages = [BatchMessageV2]
 

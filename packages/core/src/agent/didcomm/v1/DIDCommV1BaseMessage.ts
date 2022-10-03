@@ -1,3 +1,4 @@
+import type { ParsedMessageType } from '../../../utils/messageType'
 import type { Constructor } from '../../../utils/mixins'
 
 import { Expose } from 'class-transformer'

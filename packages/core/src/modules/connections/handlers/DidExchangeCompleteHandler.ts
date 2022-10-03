@@ -1,5 +1,5 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { OutOfBandServiceV2 } from '../../oob/OutOfBandServiceV2'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { AriesFrameworkError } from '../../../error'
@@ -9,10 +9,10 @@ import { HandshakeProtocol } from '../models'
 
 export class DidExchangeCompleteHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
-  private outOfBandService: OutOfBandService
+  private outOfBandService: OutOfBandServiceV2
   public supportedMessages = [DidExchangeCompleteMessage]
 
-  public constructor(didExchangeProtocol: DidExchangeProtocol, outOfBandService: OutOfBandService) {
+  public constructor(didExchangeProtocol: DidExchangeProtocol, outOfBandService: OutOfBandServiceV2) {
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
   }

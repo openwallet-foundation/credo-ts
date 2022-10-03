@@ -14,7 +14,6 @@ export enum Output {
   MissingGiverDid = `\nNo giver DID has been set yet\n`,
   MissingValueTransferRecord = `\nNo valueTransferRecord ID has been set yet\n`,
   ConnectionInvitationSent = `\nConnection invitation sent\n\n`,
-  ConnectionLink = `\nRun 'Receive connection invitation' in Faber and paste this invitation link:\n\n`,
   ConnectionLink = `\nRun 'Receive connection invitation' in Alice and paste this invitation link:\n\n`,
   Exit = 'Shutting down agent...\nExiting...',
 }

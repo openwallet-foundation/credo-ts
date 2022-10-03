@@ -1,7 +1,5 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
-import type { MediationRecipientService } from '../../routing'
 import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../ProofResponseCoordinator'
 import type { ProofRecord } from '../repository'
@@ -11,7 +9,7 @@ import { createOutboundMessage, createOutboundServiceMessage } from '../../../ag
 import { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 import { RequestPresentationMessage } from '../messages'
 
-export class RequestPresentationHandler implements Handler<typeof DIDCommV1Message> {
+export class RequestPresentationHandler implements Handler {
   private proofService: ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
@@ -68,9 +66,9 @@ export class RequestPresentationHandler implements Handler<typeof DIDCommV1Messa
       // Create ~service decorator
       const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.recipientKey.publicKeyBase58],
-        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+        serviceEndpoint: routing.endpoint,
+        recipientKeys: [routing.verkey],
+        routingKeys: routing.routingKeys,
       })
 
       const recipientService = proofRecord.requestMessage.service

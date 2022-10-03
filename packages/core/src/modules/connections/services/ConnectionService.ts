@@ -1,5 +1,4 @@
-import type { DIDCommMessage } from '../../../agent/didcomm'
-import type { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
+import type { DIDCommMessage, DIDCommV1Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { AckMessage } from '../../common'
@@ -22,11 +21,12 @@ import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
 import { Wallet } from '../../../wallet/Wallet'
-import { DidKey, Key, IndyAgentService } from '../../dids'
+import { DidType, IndyAgentService, Key } from '../../dids/domain'
 import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
 import { didKeyToVerkey } from '../../dids/helpers'
+import { DidKey } from '../../dids/methods/key/DidKey'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
-import { DidRepository, DidRecord } from '../../dids/repository'
+import { DidRecord, DidRepository } from '../../dids/repository'
 import { DidRecordMetadataKeys } from '../../dids/repository/didRecordMetadataTypes'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
@@ -34,14 +34,14 @@ import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 import {
-  DidExchangeRole,
-  DidExchangeState,
+  authenticationTypes,
   Connection,
   DidDoc,
+  DidExchangeRole,
+  DidExchangeState,
   Ed25119Sig2018,
   HandshakeProtocol,
   ReferencedAuthentication,
-  authenticationTypes,
 } from '../models'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
@@ -258,22 +258,14 @@ export class ConnectionService {
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${ConnectionResponseMessage.type.messageTypeUri} start`, messageContext)
-    const { connection: connectionRecord, message, recipientKey, senderKey } = messageContext
-    const { message, recipient, sender } = messageContext
+    const { connection: connectionRecord, message, recipient, sender } = messageContext
 
-    if (!recipientKey || !senderKey) {
-      throw new AriesFrameworkError('Unable to process connection request without senderKey or recipientKey')
     if (!recipient || !sender) {
-      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientVerkey')
+      throw new AriesFrameworkError('Unable to process connection request without senderKey or recipientKey')
     }
-
-    const connectionRecord = await this.findByVerkey(recipient)
 
     if (!connectionRecord) {
       throw new AriesFrameworkError('No connection record in message context.')
-      throw new AriesFrameworkError(
-        `Unable to process connection response: connection for verkey ${recipient} not found`
-      )
     }
 
     connectionRecord.assertState(DidExchangeState.RequestSent)
@@ -362,10 +354,12 @@ export class ConnectionService {
    * @returns updated connection record
    */
   public async processAck(messageContext: InboundMessageContext<AckMessage>): Promise<ConnectionRecord> {
-      const { connection, recipient } = messageContext
+    const { connection, recipient } = messageContext
 
     if (!connection) {
-      throw new AriesFrameworkError(`Unable to process connection ack: connection for verkey ${recipient} not found`)
+      throw new AriesFrameworkError(
+        `Unable to process connection ack: connection for recipient key ${recipient} not found`
+      )
     }
 
     // TODO: This is better addressed in a middleware of some kind because
@@ -387,23 +381,23 @@ export class ConnectionService {
   public async processProblemReport(
     messageContext: InboundMessageContext<ConnectionProblemReportMessage>
   ): Promise<ConnectionRecord> {
-    const { message: connectionProblemReportMessage, recipient, senderKey } = messageContext
+    const { message: connectionProblemReportMessage, recipient, sender } = messageContext
 
-    this.logger.debug(`Processing connection problem report for verkey ${recipientKey?.fingerprint}`)
+    this.logger.debug(`Processing connection problem report for verkey ${recipient}`)
 
     if (!recipient) {
       throw new AriesFrameworkError('Unable to process connection problem report without recipientKey')
     }
 
     let connectionRecord
-    const ourDidRecords = await this.didRepository.findAllByRecipientKey(recipientKey)
+    const ourDidRecords = await this.didRepository.findAllByRecipientKey(recipient)
     for (const ourDidRecord of ourDidRecords) {
       connectionRecord = await this.findByOurDid(ourDidRecord.id)
     }
 
     if (!connectionRecord) {
       throw new AriesFrameworkError(
-        `Unable to process connection problem report: connection for verkey ${recipient} not found`
+        `Unable to process connection problem report: connection for recipient key ${recipient} not found`
       )
     }
 
@@ -412,6 +406,11 @@ export class ConnectionService {
       throw new AriesFrameworkError(`Did record with id ${connectionRecord.theirDid} not found.`)
     }
 
+    if (sender) {
+      if (!theirDidRecord?.getTags().recipientKeyFingerprints?.includes(sender)) {
+        throw new AriesFrameworkError("Sender key doesn't match key of connection record")
+      }
+    }
 
     connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
     await this.update(connectionRecord)
@@ -448,8 +447,8 @@ export class ConnectionService {
         type: message.type,
       })
 
-      const recipientKey = messageContext.recipientKey && messageContext.recipientKey.publicKeyBase58
-      const senderKey = messageContext.senderKey && messageContext.senderKey.publicKeyBase58
+      const recipientKey = messageContext.recipient
+      const senderKey = messageContext.sender
 
       if (previousSentMessage) {
         // If we have previously sent a message, it is not allowed to receive an OOB/unpacked message
@@ -486,7 +485,7 @@ export class ConnectionService {
       }
 
       // If message is received unpacked/, we need to make sure it included a ~service decorator
-      if (!message.serviceDecorator() && !messageContext.recipient) {
+      if (!message.serviceDecorator() && !recipientKey) {
         throw new AriesFrameworkError('Message recipientKey must have ~service decorator')
       }
     }
@@ -608,6 +607,7 @@ export class ConnectionService {
     didDocument.id = peerDid
     const didRecord = new DidRecord({
       id: peerDid,
+      didType: DidType.PeerDid,
       role,
       didDocument,
       tags: {
@@ -637,24 +637,24 @@ export class ConnectionService {
   }
 
   private createDidDoc(routing: Routing) {
-    const indyDid = indyDidFromPublicKeyBase58(routing.recipientKey.publicKeyBase58)
+    const indyDid = indyDidFromPublicKeyBase58(routing.verkey)
 
     const publicKey = new Ed25119Sig2018({
       id: `${indyDid}#1`,
       controller: indyDid,
-      publicKeyBase58: routing.recipientKey.publicKeyBase58,
+      publicKeyBase58: routing.verkey,
     })
 
     const auth = new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)
 
     // IndyAgentService is old service type
-    const services = routing.endpoints.map(
+    const services = [routing.endpoint].map(
       (endpoint, index) =>
         new IndyAgentService({
           id: `${indyDid}#IndyAgentService`,
           serviceEndpoint: endpoint,
-          recipientKeys: [routing.recipientKey.publicKeyBase58],
-          routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+          recipientKeys: [routing.verkey],
+          routingKeys: routing.routingKeys,
           // Order of endpoint determines priority
           priority: index,
         })
@@ -697,7 +697,7 @@ export class ConnectionService {
     return new DidDoc({
       id: did,
       authentication: [auth],
-      service: [services],
+      service,
       publicKey: [publicKey],
     })
   }
@@ -729,7 +729,7 @@ export class ConnectionService {
   }
 }
 
-  export interface Routing {
+export interface Routing {
   verkey: string
   did: string
   endpoint: string

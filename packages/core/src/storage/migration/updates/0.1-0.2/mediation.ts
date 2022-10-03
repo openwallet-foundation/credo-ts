@@ -2,7 +2,8 @@ import type { V0_1ToV0_2UpdateConfig } from '.'
 import type { Agent } from '../../../../agent/Agent'
 import type { MediationRecord } from '../../../../modules/routing'
 
-import { MediationRepository, MediationRole } from '../../../../modules/routing'
+import { MediationRole } from '../../../../modules/routing/models/MediationRole'
+import { MediationRepository } from '../../../../modules/routing/repository'
 
 /**
  * Migrates the {@link MediationRecord} to 0.2 compatible format. It fetches all records from storage

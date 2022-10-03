@@ -2,18 +2,19 @@ import type { Agent } from '../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../modules/connections'
 import type { JsonObject } from '../../../../types'
 
+import { ConnectionInvitationMessage } from '../../../../modules/connections/messages'
 import {
-  DidExchangeState,
-  ConnectionState,
-  ConnectionInvitationMessage,
   ConnectionRole,
+  ConnectionState,
   DidDoc,
-  ConnectionRepository,
   DidExchangeRole,
-} from '../../../../modules/connections'
+  DidExchangeState,
+} from '../../../../modules/connections/models'
+import { ConnectionRepository } from '../../../../modules/connections/repository'
 import { convertToNewDidDocument } from '../../../../modules/connections/services/helpers'
-import { DidKey } from '../../../../modules/dids'
+import { DidType } from '../../../../modules/dids/domain/Did'
 import { DidDocumentRole } from '../../../../modules/dids/domain/DidDocumentRole'
+import { DidKey } from '../../../../modules/dids/methods/key/DidKey'
 import { DidRecord, DidRepository } from '../../../../modules/dids/repository'
 import { DidRecordMetadataKeys } from '../../../../modules/dids/repository/didRecordMetadataTypes'
 import { OutOfBandRole } from '../../../../modules/oob/domain/OutOfBandRole'
@@ -168,6 +169,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
       agent.config.logger.debug(`Creating did record for did ${newDidDocument.id}`)
       didRecord = new DidRecord({
         id: newDidDocument.id,
+        didType: DidType.Unknown,
         role: DidDocumentRole.Created,
         didDocument: newDidDocument,
         createdAt: connectionRecord.createdAt,
@@ -215,6 +217,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
 
       didRecord = new DidRecord({
         id: newTheirDidDocument.id,
+        didType: DidType.Unknown,
         role: DidDocumentRole.Received,
         didDocument: newTheirDidDocument,
         createdAt: connectionRecord.createdAt,

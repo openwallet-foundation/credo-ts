@@ -14,15 +14,15 @@ import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
-import { DidDocument, Key } from '../dids'
+import { DidDocument, DidType, Key, PeerDidNumAlgo } from '../dids'
 import { DidDocumentRole } from '../dids/domain/DidDocumentRole'
 import { createDidDocumentFromServices } from '../dids/domain/createPeerDidFromServices'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../dids/helpers'
 import { DidKey } from '../dids/methods/key/DidKey'
-import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../dids/methods/peer/didPeer'
 import { didDocumentJsonToNumAlgo1Did } from '../dids/methods/peer/peerDidNumAlgo1'
-import { DidRepository, DidRecord } from '../dids/repository'
+import { getNumAlgoFromPeerDid } from '../dids/methods/peer/utils'
+import { DidRecord, DidRepository } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
 
@@ -31,8 +31,8 @@ import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from '.
 import { DidExchangeCompleteMessage } from './messages/DidExchangeCompleteMessage'
 import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
-import { HandshakeProtocol, DidExchangeRole, DidExchangeState } from './models'
-import { ConnectionService } from './services'
+import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
+import { ConnectionService } from './services/ConnectionService'
 
 interface DidExchangeRequestParams {
   label?: string
@@ -103,7 +103,7 @@ export class DidExchangeProtocol {
 
     // Create sign attachment containing didDoc
     if (getNumAlgoFromPeerDid(didDocument.id) === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(didDocument, [routing.recipientKey.publicKeyBase58])
+      const didDocAttach = await this.createSignedAttachment(didDocument, [routing.verkey])
       message.didDoc = didDocAttach
     }
 
@@ -165,6 +165,7 @@ export class DidExchangeProtocol {
     const didDocument = await this.extractDidDocument(message)
     const didRecord = new DidRecord({
       id: message.did,
+      didType: DidType.PeerDid,
       role: DidDocumentRole.Received,
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
@@ -302,6 +303,7 @@ export class DidExchangeProtocol {
     )
     const didRecord = new DidRecord({
       id: message.did,
+      didType: DidType.PeerDid,
       role: DidDocumentRole.Received,
       didDocument,
       tags: {
@@ -401,6 +403,7 @@ export class DidExchangeProtocol {
 
     const didRecord = new DidRecord({
       id: peerDid,
+      didType: DidType.PeerDid,
       role: DidDocumentRole.Created,
       didDocument,
       tags: {
@@ -512,11 +515,11 @@ export class DidExchangeProtocol {
   }
 
   private routingToServices(routing: Routing): ResolvedDidCommService[] {
-    return routing.endpoints.map((endpoint, index) => ({
+    return [routing.endpoint].map((endpoint, index) => ({
       id: `#inline-${index}`,
       serviceEndpoint: endpoint,
-      recipientKeys: [routing.recipientKey],
-      routingKeys: routing.routingKeys,
+      recipientKeys: [Key.fromPublicKeyBase58(routing.verkey)],
+      routingKeys: routing.routingKeys.map((key) => Key.fromPublicKeyBase58(key)),
     }))
   }
 }

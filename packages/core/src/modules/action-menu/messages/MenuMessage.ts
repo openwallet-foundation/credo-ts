@@ -3,7 +3,7 @@ import type { ActionMenuOptionOptions } from '../models'
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { ActionMenuOption } from '../models'
 
@@ -16,7 +16,7 @@ export interface MenuMessageOptions {
   threadId?: string
 }
 
-export class MenuMessage extends AgentMessage {
+export class MenuMessage extends DIDCommV1Message {
   public constructor(options: MenuMessageOptions) {
     super()
 

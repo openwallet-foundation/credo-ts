@@ -35,6 +35,7 @@ const encryptedMessage: EncryptedMessage = {
   iv: 'base64url',
   ciphertext: 'base64url',
   tag: 'base64url',
+  recipients: [],
 }
 const queuedMessages = [encryptedMessage, encryptedMessage, encryptedMessage]
 

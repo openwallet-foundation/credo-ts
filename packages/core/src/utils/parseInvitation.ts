@@ -5,7 +5,7 @@ import { AbortController } from 'abort-controller'
 import { parseUrl } from 'query-string'
 
 import { AriesFrameworkError } from '../error'
-import { ConnectionInvitationMessage } from '../modules/connections'
+import { ConnectionInvitationMessage } from '../modules/connections/messages'
 import { convertToNewInvitation } from '../modules/oob/helpers'
 import { OutOfBandInvitation } from '../modules/oob/messages'
 

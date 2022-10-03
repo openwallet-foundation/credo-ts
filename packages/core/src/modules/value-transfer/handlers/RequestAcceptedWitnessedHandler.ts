@@ -1,10 +1,9 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferGetterService } from '../services/ValueTransferGetterService'
 
 import { RequestAcceptedWitnessedMessage } from '../messages'
 
-export class RequestAcceptedWitnessedHandler implements Handler<typeof DIDCommV2Message> {
+export class RequestAcceptedWitnessedHandler implements Handler {
   private valueTransferGetterService: ValueTransferGetterService
 
   public readonly supportedMessages = [RequestAcceptedWitnessedMessage]

@@ -13,7 +13,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
 import { injectable, module } from '../../plugins'
 import { canHandleMessageType, parseMessageType } from '../../utils/messageType'
-import { ConnectionService } from '../connections/services'
+import { ConnectionService } from '../connections/services/ConnectionService'
 
 import { DiscloseMessageHandler, QueryMessageHandler } from './handlers'
 import { DiscloseMessage } from './messages'
@@ -88,7 +88,7 @@ export class DiscoverFeaturesModule {
     const queryMessage = await this.discoverFeaturesService.createQuery(options)
 
     const outbound = createOutboundMessage(connection, queryMessage)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

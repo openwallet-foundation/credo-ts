@@ -1,75 +1,84 @@
 import type { Routing } from '../../connections'
-import type { RoutingCreatedEvent } from '../RoutingEvents'
+import type { MediationRecord } from '../repository'
+import type { GetRoutingOptions } from '@aries-framework/core'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
-import { KeyType } from '../../../crypto'
+import { AriesFrameworkError } from '../../../error'
 import { inject, injectable } from '../../../plugins'
 import { Wallet } from '../../../wallet'
-import { Key } from '../../dids'
-import { RoutingEventTypes } from '../RoutingEvents'
+import { MediationState } from '../models'
+import { MediationRepository } from '../repository'
 
 import { MediationRecipientService } from './MediationRecipientService'
 
 @injectable()
 export class RoutingService {
   private mediationRecipientService: MediationRecipientService
+  private mediatorRepository: MediationRepository
   private agentConfig: AgentConfig
   private wallet: Wallet
   private eventEmitter: EventEmitter
 
   public constructor(
+    mediatorRepository: MediationRepository,
     mediationRecipientService: MediationRecipientService,
     agentConfig: AgentConfig,
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
     eventEmitter: EventEmitter
   ) {
+    this.mediatorRepository = mediatorRepository
     this.mediationRecipientService = mediationRecipientService
     this.agentConfig = agentConfig
     this.wallet = wallet
     this.eventEmitter = eventEmitter
   }
 
-  public async getRouting({ mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}): Promise<Routing> {
-    // Create and store new key
-    const { verkey: publicKeyBase58 } = await this.wallet.createDid()
+  public async getRouting(
+    did = '',
+    { mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}
+  ): Promise<Routing> {
+    let mediationRecord: MediationRecord | null = null
 
-    const recipientKey = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
-
-    let routing: Routing = {
-      endpoints: this.agentConfig.endpoints,
-      routingKeys: [],
-      recipientKey,
+    if (mediatorId) {
+      mediationRecord = await this.getById(mediatorId)
+    } else if (useDefaultMediator) {
+      // If no mediatorId is provided, and useDefaultMediator is true (default)
+      // We use the default mediator if available
+      mediationRecord = await this.findDefaultMediator()
     }
 
-    // Extend routing with mediator keys (if applicable)
-    routing = await this.mediationRecipientService.addMediationRouting(routing, {
-      mediatorId,
-      useDefaultMediator,
-    })
+    if (!mediationRecord) {
+      throw new AriesFrameworkError(`Mediator not found`)
+    }
 
-    // Emit event so other parts of the framework can react on keys created
-    this.eventEmitter.emit<RoutingCreatedEvent>({
-      type: RoutingEventTypes.RoutingCreatedEvent,
-      payload: {
-        routing,
-      },
-    })
+    // Create and store new key
+    // new did has been created and mediator needs to be updated with the public key.
+    mediationRecord = await this.mediationRecipientService.didListUpdateAndAwait(mediationRecord, did)
 
-    return routing
+    return {
+      endpoint: mediationRecord?.endpoint || '',
+      routingKeys: mediationRecord?.routingKeys || [],
+      mediatorId: mediationRecord?.id,
+      did: '',
+      verkey: '',
+    }
   }
-}
 
-export interface GetRoutingOptions {
-  /**
-   * Identifier of the mediator to use when setting up routing
-   */
-  mediatorId?: string
+  public async getById(id: string): Promise<MediationRecord> {
+    return this.mediationRecipientService.getById(id)
+  }
 
-  /**
-   * Whether to use the default mediator if available and `mediatorId` has not been provided
-   * @default true
-   */
-  useDefaultMediator?: boolean
+  public async findGrantedByMediatorDid(did: string): Promise<MediationRecord | null> {
+    return this.mediatorRepository.findSingleByQuery({ mediatorDid: did, state: MediationState.Granted })
+  }
+
+  public async getMediators(): Promise<MediationRecord[]> {
+    return this.mediatorRepository.getAll()
+  }
+
+  public async findDefaultMediator(): Promise<MediationRecord | null> {
+    return this.mediatorRepository.findSingleByQuery({ default: true })
+  }
 }

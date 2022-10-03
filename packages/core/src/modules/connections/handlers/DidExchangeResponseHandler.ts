@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidResolverService } from '../../dids'
-import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { OutOfBandServiceV2 } from '../../oob/OutOfBandServiceV2'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService } from '../services'
 
@@ -15,7 +15,7 @@ import { HandshakeProtocol } from '../models'
 export class DidExchangeResponseHandler implements Handler {
   private agentConfig: AgentConfig
   private didExchangeProtocol: DidExchangeProtocol
-  private outOfBandService: OutOfBandService
+  private outOfBandService: OutOfBandServiceV2
   private connectionService: ConnectionService
   private didResolverService: DidResolverService
   public supportedMessages = [DidExchangeResponseMessage]
@@ -23,7 +23,7 @@ export class DidExchangeResponseHandler implements Handler {
   public constructor(
     agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
-    outOfBandService: OutOfBandService,
+    outOfBandService: OutOfBandServiceV2,
     connectionService: ConnectionService,
     didResolverService: DidResolverService
   ) {
@@ -35,9 +35,9 @@ export class DidExchangeResponseHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeResponseHandler>) {
-    const { recipientKey, senderKey, message } = messageContext
+    const { recipient, sender, message } = messageContext
 
-    if (!recipientKey || !senderKey) {
+    if (!recipient || !sender) {
       throw new AriesFrameworkError('Unable to process connection response without sender key or recipient key')
     }
 
@@ -57,10 +57,8 @@ export class DidExchangeResponseHandler implements Handler {
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
     // connection record did
-    if (!ourDidDocument.recipientKeys.find((key) => key.fingerprint === recipientKey.fingerprint)) {
-      throw new AriesFrameworkError(
-        `Recipient key ${recipientKey.fingerprint} not found in did document recipient keys.`
-      )
+    if (!ourDidDocument.recipientKeys.find((key) => key.fingerprint === recipient)) {
+      throw new AriesFrameworkError(`Recipient key ${recipient} not found in did document recipient keys.`)
     }
 
     const { protocol } = connectionRecord

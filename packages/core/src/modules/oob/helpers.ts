@@ -1,6 +1,7 @@
 import type { OutOfBandInvitationOptions } from './messages'
 
-import { ConnectionInvitationMessage, HandshakeProtocol } from '../connections'
+import { ConnectionInvitationMessage } from '../connections/messages/ConnectionInvitationMessage'
+import { HandshakeProtocol } from '../connections/models/HandshakeProtocol'
 import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'

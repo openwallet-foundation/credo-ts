@@ -1,11 +1,10 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { DiscoverFeaturesService } from '../services/DiscoverFeaturesService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { QueryMessage } from '../messages'
 
-export class QueryMessageHandler implements Handler<typeof DIDCommV1Message> {
+export class QueryMessageHandler implements Handler {
   private discoverFeaturesService: DiscoverFeaturesService
   public supportedMessages = [QueryMessage]
 

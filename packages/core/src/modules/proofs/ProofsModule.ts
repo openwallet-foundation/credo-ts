@@ -201,9 +201,9 @@ export class ProofsModule {
     // Create and set ~service decorator
     const routing = await this.routingService.getRouting()
     message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.recipientKey.publicKeyBase58],
-      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+      serviceEndpoint: routing.endpoint,
+      recipientKeys: [routing.verkey],
+      routingKeys: routing.routingKeys,
     })
 
     // Save ~service decorator to record (to remember our verkey)
@@ -247,9 +247,9 @@ export class ProofsModule {
       // Create ~service decorator
       const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.recipientKey.publicKeyBase58],
-        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+        serviceEndpoint: routing.endpoint,
+        recipientKeys: [routing.verkey],
+        routingKeys: routing.routingKeys,
       })
 
       const recipientService = proofRecord.requestMessage.service
@@ -262,7 +262,7 @@ export class ProofsModule {
       await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0]?.publicKeyBase58,
         returnRoute: true,
       })
 
@@ -313,7 +313,7 @@ export class ProofsModule {
       await this.messageSender.packAndSendMessage({
         message,
         service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        senderKey: ourService.resolvedDidCommService.recipientKeys[0]?.publicKeyBase58,
         returnRoute: true,
       })
     }

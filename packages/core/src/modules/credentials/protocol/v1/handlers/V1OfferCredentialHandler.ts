@@ -56,9 +56,9 @@ export class V1OfferCredentialHandler implements Handler {
     } else if (messageContext.message.service) {
       const routing = await this.routingService.getRouting()
       const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.recipientKey.publicKeyBase58],
-        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+        serviceEndpoint: routing.endpoint,
+        recipientKeys: [routing.verkey],
+        routingKeys: routing.routingKeys,
       })
       const recipientService = messageContext.message.service
 

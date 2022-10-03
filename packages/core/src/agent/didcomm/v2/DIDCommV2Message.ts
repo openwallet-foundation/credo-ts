@@ -6,7 +6,7 @@ import { parseUrl } from 'query-string'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { DIDCommVersion } from '../DIDCommMessage'
+import { DIDCommVersion } from '../types'
 
 import { DIDCommV2BaseMessage } from './DIDCommV2BaseMessage'
 
@@ -48,7 +48,7 @@ export class DIDCommV2Message extends DIDCommV2BaseMessage implements DIDCommMes
   }
 
   public is<C extends typeof DIDCommV2Message>(Class: C): this is InstanceType<C> {
-    return this.type === Class.type
+    return this.type === Class.type.messageTypeUri
   }
 
   public setRecipient(to?: string) {

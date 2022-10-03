@@ -1,28 +1,18 @@
-import type { DidDocument } from './did-doc'
-import type { ParsedDID } from 'did-resolver'
+import type { DidDocument } from '../../domain'
+import type { Key } from '../../domain/Key'
+import type { ParsedDid } from '../../types'
 
 import { instanceToInstance } from 'class-transformer'
 
-import { getKeyDidMappingByKeyType, Key } from './key'
+import { JsonEncoder, MultiBaseEncoder, MultiHashEncoder } from '../../../../utils'
+import { parseDid } from '../../domain/parse'
+
+import { didToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentToNumAlgo2Did, didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
-import { parseDid, JsonEncoder, MultiBaseEncoder, MultiHashEncoder } from './utils'
-
-const PEER_DID_REGEX = new RegExp(
-  '^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{46,47}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{46,47}))+(.(S)[0-9a-zA-Z=]*)?)))$'
-)
-
-export enum PeerDidNumAlgo {
-  InceptionKeyWithoutDoc = 0,
-  GenesisDoc = 1,
-  MultipleInceptionKeyWithoutDoc = 2,
-}
-
-function getNumAlgoFromPeerDid(did: string) {
-  return Number(did[9])
-}
+import { getNumAlgoFromPeerDid, PEER_DID_REGEX, PeerDidNumAlgo } from './utils'
 
 export class PeerDid {
-  private readonly parsedDid: ParsedDID
+  private readonly parsedDid: ParsedDid
 
   // If numAlgo 1 is used, the did always has a did document
   private readonly _didDocument?: DidDocument
@@ -51,7 +41,10 @@ export class PeerDid {
 
   public static fromDidDocument(
     didDocument: DidDocument,
-    numAlgo?: PeerDidNumAlgo.GenesisDoc | PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
+    numAlgo?:
+      | PeerDidNumAlgo.GenesisDoc
+      | PeerDidNumAlgo.InceptionKeyWithoutDoc
+      | PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
   ): PeerDid {
     if (!numAlgo && didDocument.id.startsWith('did:peer:')) {
       numAlgo = getNumAlgoFromPeerDid(didDocument.id)
@@ -102,10 +95,7 @@ export class PeerDid {
   public get didDocument() {
     // Method 1 (numAlgo 0)
     if (this.numAlgo === PeerDidNumAlgo.InceptionKeyWithoutDoc) {
-      const key = Key.fromFingerprint(this.identifierWithoutNumAlgo)
-      const { getDidDocument } = getKeyDidMappingByKeyType(key.keyType)
-
-      return getDidDocument(this.parsedDid.did, key)
+      return didToNumAlgo0DidDocument(this.parsedDid.did)
     }
     // Method 2 (numAlgo 1)
     else if (this.numAlgo === PeerDidNumAlgo.GenesisDoc) {
@@ -121,9 +111,7 @@ export class PeerDid {
     }
     // Method 3 (numAlgo 2)
     else if (this.numAlgo === PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc) {
-      const didDocument = didToNumAlgo2DidDocument(this.parsedDid.did)
-
-      return didDocument
+      return didToNumAlgo2DidDocument(this.parsedDid.did)
     }
 
     throw new Error(`Unsupported numAlgo '${this.numAlgo}'`)

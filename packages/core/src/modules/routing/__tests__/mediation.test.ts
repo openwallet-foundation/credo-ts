@@ -79,7 +79,7 @@ describe('mediator establishment', () => {
 
     const recipientMediator = await recipientAgent.mediationRecipient.findDefaultMediator()
     // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
-    const recipientMediatorConnection = await recipientAgent.connections.getById(recipientMediator!.connectionId)
+    const recipientMediatorConnection = await recipientAgent.connections.getById(recipientMediator!.connectionId!)
 
     expect(recipientMediatorConnection).toBeInstanceOf(ConnectionRecord)
     expect(recipientMediatorConnection?.isReady).toBe(true)
@@ -195,7 +195,7 @@ describe('mediator establishment', () => {
     await recipientAgent.initialize()
 
     const recipientMediator = await recipientAgent.mediationRecipient.findDefaultMediator()
-    const recipientMediatorConnection = await recipientAgent.connections.getById(recipientMediator!.connectionId)
+    const recipientMediatorConnection = await recipientAgent.connections.getById(recipientMediator!.connectionId!)
     expect(recipientMediatorConnection?.isReady).toBe(true)
 
     const [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(

@@ -1,12 +1,6 @@
-const PEER_DID_REGEX = new RegExp(
+export const PEER_DID_REGEX = new RegExp(
   '^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))+(.(S)[0-9a-zA-Z=]*)?)))$'
 )
-
-export function isValidPeerDid(did: string): boolean {
-  const isValid = PEER_DID_REGEX.test(did)
-
-  return isValid
-}
 
 export enum PeerDidNumAlgo {
   InceptionKeyWithoutDoc = 0,
@@ -26,4 +20,10 @@ export function getNumAlgoFromPeerDid(did: string) {
   }
 
   return numAlgo as PeerDidNumAlgo
+}
+
+export function isValidPeerDid(did: string): boolean {
+  const isValid = PEER_DID_REGEX.test(did)
+
+  return isValid
 }

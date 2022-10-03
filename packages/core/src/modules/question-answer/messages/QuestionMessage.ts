@@ -1,11 +1,11 @@
 import { Expose, Type } from 'class-transformer'
 import { IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { ValidResponse } from '../models'
 
-export class QuestionMessage extends AgentMessage {
+export class QuestionMessage extends DIDCommV1Message {
   /**
    * Create new QuestionMessage instance.
    * @param options

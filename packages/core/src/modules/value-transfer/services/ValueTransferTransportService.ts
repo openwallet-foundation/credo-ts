@@ -1,16 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { VtpTransportInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { DIDCommV2Message } from '../../../agent/didcomm/v2/DIDCommV2Message'
+import { injectable } from '../../../plugins'
 import { JsonEncoder } from '../../../utils'
 import { DidResolverService } from '../../dids/services/DidResolverService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferTransportService implements VtpTransportInterface {
   private config: AgentConfig
   private didResolverService: DidResolverService

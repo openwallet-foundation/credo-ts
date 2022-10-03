@@ -1,6 +1,5 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { DIDCommMessage } from '../didcomm'
-import type { Key } from '../../modules/dids'
 
 import { AriesFrameworkError } from '../../error'
 
@@ -9,8 +8,8 @@ export interface MessageContextParams {
   sender?: string
   recipient?: string
   sessionId?: string
-  senderKey?: Key
-  recipientKey?: Key
+  senderKey?: string
+  recipientKey?: string
 }
 
 export class InboundMessageContext<T extends DIDCommMessage = DIDCommMessage> {

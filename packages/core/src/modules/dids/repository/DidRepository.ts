@@ -1,5 +1,3 @@
-import type { Key } from '../domain/Key'
-
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { inject, injectable } from '../../../plugins'
@@ -17,11 +15,11 @@ export class DidRepository extends Repository<DidRecord> {
     super(DidRecord, storageService, eventEmitter)
   }
 
-  public findByRecipientKey(recipientKey: Key) {
-    return this.findSingleByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
+  public findByRecipientKey(recipientKey: string) {
+    return this.findSingleByQuery({ recipientKeyFingerprints: [recipientKey] })
   }
 
-  public findAllByRecipientKey(recipientKey: Key) {
-    return this.findByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
+  public findAllByRecipientKey(recipientKey: string) {
+    return this.findByQuery({ recipientKeyFingerprints: [recipientKey] })
   }
 }

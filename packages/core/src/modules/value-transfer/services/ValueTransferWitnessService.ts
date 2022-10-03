@@ -4,13 +4,13 @@ import type { CashAcceptedMessage, CashRemovedMessage, RequestAcceptedMessage } 
 import type { MintMessage } from '../messages/MintMessage'
 import type { ValueTransferRecord } from '../repository'
 
-import { Witness, RequestAcceptance, CashRemoval, CashAcceptance } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { Lifecycle, scoped } from 'tsyringe'
+import { Witness, RequestAcceptance, CashRemoval, CashAcceptance, Mint } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
-import { GossipService } from '../../gossip/service'
+import { injectable } from '../../../plugins'
+import { GossipService } from '../../gossip/service/GossipService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { MintResponseMessage } from '../messages/MintResponseMessage'
 
@@ -19,7 +19,7 @@ import { ValueTransferService } from './ValueTransferService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
 import { ValueTransferWitnessStateService } from './ValueTransferWitnessStateService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferWitnessService {
   private config: AgentConfig
   private valueTransferService: ValueTransferService
@@ -200,8 +200,9 @@ export class ValueTransferWitnessService {
     const { message: mintMessage } = messageContext
 
     // Call VTP library to handle cash mint
+    const mint = new Mint(mintMessage)
     const operation = async () => {
-      return await this.witness.processCashMint(mintMessage)
+      return await this.witness.processCashMint(mint)
     }
     const { error, message } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
     if (error || !message) {

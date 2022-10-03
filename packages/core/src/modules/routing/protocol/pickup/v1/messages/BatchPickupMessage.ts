@@ -1,9 +1,10 @@
-import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
+import type { DIDCommV2MessageParams } from '../../../../../../agent/didcomm'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInt, ValidateNested } from 'class-validator'
+import { IsInt, ValidateNested } from 'class-validator'
 
-import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm'
+import { DIDCommV1Message, DIDCommV2Message } from '../../../../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
 export interface BatchPickupMessageOptions {
   id?: string
@@ -67,9 +68,9 @@ export class BatchPickupMessageV2 extends DIDCommV2Message {
     }
   }
 
-  @Equals(BatchPickupMessageV2.type)
-  public readonly type = BatchPickupMessageV2.type
-  public static readonly type = 'https://didcomm.org/messagepickup/2.0/batch-pickup'
+  @IsValidMessageType(BatchPickupMessageV2.type)
+  public readonly type = BatchPickupMessageV2.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/2.0/batch-pickup')
 
   @Type(() => BatchPickupMessageV2Body)
   @ValidateNested()

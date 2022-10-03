@@ -1,20 +1,18 @@
 import type { Secret, SecretsResolver } from 'didcomm'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { KeyType } from '../../../crypto'
 import { KeyService } from '../../../modules/keys'
+import { injectable } from '../../../plugins'
 
 const keyTypesMapping = {
   [KeyType.Ed25519]: 'Ed25519VerificationKey2018',
   [KeyType.X25519]: 'X25519KeyAgreementKey2019',
-  [KeyType.Secp256k1]: 'EcdsaSecp256k1VerificationKey2019',
   [KeyType.Bls12381g1g2]: '',
   [KeyType.Bls12381g1]: '',
   [KeyType.Bls12381g2]: '',
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class SecretResolverService implements SecretsResolver {
   private keyService: KeyService
 

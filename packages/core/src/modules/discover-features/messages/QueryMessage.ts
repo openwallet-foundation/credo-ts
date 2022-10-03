@@ -1,5 +1,7 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
-import { IsOptional, IsString } from 'class-validator'
+
+import { Type } from 'class-transformer'
+import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message, DIDCommV1Message } from '../../../agent/didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
@@ -55,9 +57,9 @@ export class QueryMessageV2 extends DIDCommV2Message {
     }
   }
 
-  @Equals(QueryMessageV2.type)
-  public readonly type = QueryMessageV2.type
-  public static readonly type = 'https://didcomm.org/discover-features/1.0/query'
+  @IsValidMessageType(QueryMessageV2.type)
+  public readonly type = QueryMessageV2.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/discover-features/1.0/query')
 
   @Type(() => QueryMessageV2Body)
   @ValidateNested()

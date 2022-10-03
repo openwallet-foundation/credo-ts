@@ -1,8 +1,10 @@
+import type { Verkey } from 'indy-sdk'
+
 import { Expose, Type } from 'class-transformer'
 import { IsArray, ValidateNested, IsString, IsEnum, IsInstance } from 'class-validator'
 
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { DIDCommV1Message } from '../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 import { ListUpdateAction } from './ListUpdateAction'
 

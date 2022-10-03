@@ -4,9 +4,9 @@ import type { ResolvedDidCommService } from '../types'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { KeyType } from '../../../crypto'
 import { injectable } from '../../../plugins'
-import { DidResolverService } from '../../dids'
 import { DidCommV1Service, IndyAgentService, keyReferenceToKey } from '../../dids/domain'
 import { verkeyToInstanceOfKey } from '../../dids/helpers'
+import { DidResolverService } from '../../dids/services/DidResolverService'
 import { findMatchingEd25519Key } from '../util/matchingEd25519Key'
 
 @injectable()
@@ -19,7 +19,8 @@ export class DidCommDocumentService {
     this.didResolverService = didResolverService
   }
 
-  public async resolveServicesFromDid(did: string): Promise<ResolvedDidCommService[]> {
+  public async resolveServicesFromDid(did?: string): Promise<ResolvedDidCommService[]> {
+    if (!did) return []
     const didDocument = await this.didResolverService.resolveDidDocument(did)
 
     const didCommServices: ResolvedDidCommService[] = []

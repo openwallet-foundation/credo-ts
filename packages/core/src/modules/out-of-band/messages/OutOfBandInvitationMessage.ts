@@ -2,10 +2,11 @@ import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 import type { Attachment } from 'didcomm'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 import { JsonTransformer } from '../../../utils'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export enum OutOfBandGoalCode {
   DidExchange = 'did-exchange',
@@ -48,9 +49,9 @@ export class OutOfBandInvitationMessage extends DIDCommV2Message {
   @IsInstance(OutOfBandInvitationBody)
   public body!: OutOfBandInvitationBody
 
-  @Equals(OutOfBandInvitationMessage.type)
-  public readonly type = OutOfBandInvitationMessage.type
-  public static readonly type = 'https://didcomm.org/out-of-band/2.0/invitation'
+  @IsValidMessageType(OutOfBandInvitationMessage.type)
+  public readonly type: string = OutOfBandInvitationMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/out-of-band/2.0/invitation')
 
   public toLink({ domain }: { domain: string }) {
     return this.toUrl({ domain, param: LINK_PARAM })

@@ -1,7 +1,8 @@
 import type { DidDocument, VerificationMethod } from '../../dids'
 
 import { KeyType } from '../../../crypto'
-import { Key, keyReferenceToKey } from '../../dids'
+import { keyReferenceToKey } from '../../dids/domain/DidDocument'
+import { Key } from '../../dids/domain/Key'
 import { convertPublicKeyToX25519 } from '../../dids/domain/key-type/ed25519'
 
 /**

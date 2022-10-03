@@ -1,8 +1,6 @@
-import type { VerificationMethod } from '../../../dids'
-
 import { getAgentConfig, mockFunction } from '../../../../../tests/helpers'
 import { KeyType } from '../../../../crypto'
-import { DidCommV1Service, DidDocument, IndyAgentService, Key } from '../../../dids'
+import { VerificationMethod, DidCommV1Service, DidDocument, IndyAgentService, Key } from '../../../dids'
 import { verkeyToInstanceOfKey } from '../../../dids/helpers'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
 import { DidCommDocumentService } from '../DidCommDocumentService'
@@ -61,18 +59,18 @@ describe('DidCommDocumentService', () => {
       const publicKeyBase58Ed25519 = 'GyYtYWU1vjwd5PFJM4VSX5aUiSV3TyZMuLBJBTQvfdF8'
       const publicKeyBase58X25519 = 'S3AQEEKkGYrrszT9D55ozVVX2XixYp8uynqVm4okbud'
 
-      const Ed25519VerificationMethod: VerificationMethod = {
+      const Ed25519VerificationMethod: VerificationMethod = new VerificationMethod({
         type: 'Ed25519VerificationKey2018',
         controller: 'did:sov:Q4zqM7aXqm7gDQkUVLng9h',
         id: 'did:sov:Q4zqM7aXqm7gDQkUVLng9h#key-1',
         publicKeyBase58: publicKeyBase58Ed25519,
-      }
-      const X25519VerificationMethod: VerificationMethod = {
+      })
+      const X25519VerificationMethod: VerificationMethod = new VerificationMethod({
         type: 'X25519KeyAgreementKey2019',
         controller: 'did:sov:Q4zqM7aXqm7gDQkUVLng9h',
         id: 'did:sov:Q4zqM7aXqm7gDQkUVLng9h#key-agreement-1',
         publicKeyBase58: publicKeyBase58X25519,
-      }
+      })
 
       mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(
         new DidDocument({

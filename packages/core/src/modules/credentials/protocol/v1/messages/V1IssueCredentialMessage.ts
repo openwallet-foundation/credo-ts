@@ -3,10 +3,9 @@ import type { Cred } from 'indy-sdk'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
+import { DIDCommV1Message } from '../../../../../agent/didcomm'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
-import { Attachment } from '../../../decorators/attachment/Attachment'
 
 export const INDY_CREDENTIAL_ATTACHMENT_ID = 'libindy-cred-0'
 
@@ -17,7 +16,7 @@ export interface V1IssueCredentialMessageOptions {
   attachments?: Attachment[]
 }
 
-export class IssueCredentialMessage extends DIDCommV1Message {
+export class V1IssueCredentialMessage extends DIDCommV1Message {
   public constructor(options: V1IssueCredentialMessageOptions) {
     super()
 

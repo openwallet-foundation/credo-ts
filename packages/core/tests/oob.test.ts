@@ -2,7 +2,7 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { CreateOfferOptions } from '../src/modules/credentials'
 import type { IndyCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
+import type { AgentMessageReceivedEvent, DIDCommV1Message } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
 
@@ -10,7 +10,6 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { Key } from '../src/modules/dids'
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
@@ -130,7 +129,7 @@ describe('out of band', () => {
       await expect(
         faberAgent.oob.createInvitation({
           label: 'test-connection',
-          messages: [{} as AgentMessage],
+          messages: [{} as DIDCommV1Message],
           multiUseInvitation: true,
         })
       ).rejects.toEqual(
@@ -334,9 +333,10 @@ describe('out of band', () => {
       const { invitation } = await faberAgent.oob.createLegacyInvitation({
         ...makeConnectionConfig,
         routing: {
-          endpoints: ['https://endpoint-1.com', 'https://endpoint-2.com'],
-          routingKeys: [Key.fromFingerprint('z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE')],
-          recipientKey: Key.fromFingerprint('z6MkuXrzmDjBoy7r9LA1Czjv9eQXMGr9gt6JBH8zPUMKkCQH'),
+          did: '',
+          verkey: 'z6MkuXrzmDjBoy7r9LA1Czjv9eQXMGr9gt6JBH8zPUMKkCQH',
+          endpoint: 'https://endpoint-1.com',
+          routingKeys: ['z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE'],
         },
       })
 

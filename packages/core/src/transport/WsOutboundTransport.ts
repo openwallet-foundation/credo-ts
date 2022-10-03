@@ -108,14 +108,12 @@ export class WsOutboundTransport implements OutboundTransport {
       )
     }
     this.logger.debug('Payload received from mediator:', payload)
-    this.agent.receiveMessage(payload)
     this.eventEmitter.emit<AgentMessageReceivedEvent>({
       type: AgentEventTypes.AgentMessageReceived,
       payload: {
         message: payload,
       },
     })
-
   }
 
   private listenOnWebSocketMessages(socket: WebSocket) {
@@ -161,6 +159,7 @@ export class WsOutboundTransport implements OutboundTransport {
 
       socket.onclose = async (event: WebSocket.CloseEvent) => {
         this.logger.warn(`WebSocket closing to ${endpoint}`, { event })
+      }
       socket.onclose = async () => {
         this.logger.debug(`WebSocket closing to ${endpoint}`)
         socket.removeEventListener('message', this.handleMessageEvent)

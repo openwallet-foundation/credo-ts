@@ -1,3 +1,4 @@
+import { VerificationMethod } from '../../modules/dids/domain'
 import {
   getIndyDidFromVerificationMethod,
   isAbbreviatedVerkey,
@@ -88,20 +89,20 @@ const invalidDidIdentifiers = [
   'deid:ethr:9noxi4nL4SiJAsFcMLp2U4',
 ]
 
-const verificationMethod = {
+const verificationMethod = new VerificationMethod({
   id: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr#z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr',
   type: 'Ed25519VerificationKey2018',
   controller: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr',
   publicKeyBase58: 'VExfvq3kqkbAfCA3PZ8CRbzH2A3HyV9FWwdSq6WhtgU',
-}
+})
 
 const invalidVerificationMethod = [
-  {
+  new VerificationMethod({
     id: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr#z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr',
     type: 'Ed25519VerificationKey2018',
     controller: 'did:key:z6MkewW1GB5V6PF4HA2rixWy3X9z6bRthrjVwXrZH74Xd7Tr',
     publicKeyBase58: '',
-  },
+  }),
 ]
 
 const indyDid = 'tpF86Zd1cf9JdVmqKdMW2'

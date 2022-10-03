@@ -1,11 +1,11 @@
+import type { DependencyManager } from '../../plugins'
 import type { Transports } from '../routing/types'
 import type { RequestMessage, OfferMessage } from './messages'
 import type { ValueTransferRecord, ValueTransferTags } from './repository'
 import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { Dispatcher } from '../../agent/Dispatcher'
+import { module, injectable } from '../../plugins'
 
 import { ValueTransferResponseCoordinator } from './ValueTransferResponseCoordinator'
 import {
@@ -28,7 +28,8 @@ import { ValueTransferGiverService } from './services/ValueTransferGiverService'
 import { ValueTransferIssuerService } from './services/ValueTransferIssuerService'
 import { ValueTransferWitnessService } from './services/ValueTransferWitnessService'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class ValueTransferModule {
   private valueTransferService: ValueTransferService
   private valueTransferGetterService: ValueTransferGetterService
@@ -301,5 +302,19 @@ export class ValueTransferModule {
     dispatcher.registerHandler(new ProblemReportHandler(this.valueTransferService))
     dispatcher.registerHandler(new MintHandler(this.valueTransferWitnessService))
     dispatcher.registerHandler(new MintResponseHandler(this.valueTransferIssuerService))
+  }
+
+  /**
+   * Registers the dependencies of the value transfer module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(ValueTransferModule)
+
+    // Services
+    dependencyManager.registerSingleton(ValueTransferService)
+    dependencyManager.registerSingleton(ValueTransferGiverService)
+    dependencyManager.registerSingleton(ValueTransferGetterService)
+    dependencyManager.registerSingleton(ValueTransferWitnessService)
   }
 }

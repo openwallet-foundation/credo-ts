@@ -1,6 +1,6 @@
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface PerformMessageOptions {
@@ -10,7 +10,7 @@ export interface PerformMessageOptions {
   threadId: string
 }
 
-export class PerformMessage extends AgentMessage {
+export class PerformMessage extends DIDCommV1Message {
   public constructor(options: PerformMessageOptions) {
     super()
 

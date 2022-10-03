@@ -1,10 +1,9 @@
 import type { HandlerInboundMessage, Handler } from '../../../agent/Handler'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferWitnessService } from '../services/ValueTransferWitnessService'
 
 import { MintMessage } from '../messages/MintMessage'
 
-export class MintHandler implements Handler<typeof DIDCommV2Message> {
+export class MintHandler implements Handler {
   private valueTransferWitnessService: ValueTransferWitnessService
   public readonly supportedMessages = [MintMessage]
 

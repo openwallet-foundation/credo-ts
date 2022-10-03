@@ -2,40 +2,41 @@ import type { Handler } from '../Handler'
 
 import { getAgentConfig } from '../../../tests/helpers'
 import { parseMessageType } from '../../utils/messageType'
-import { AgentMessage } from '../AgentMessage'
 import { Dispatcher } from '../Dispatcher'
 import { EventEmitter } from '../EventEmitter'
 import { MessageSender } from '../MessageSender'
-import { DIDCommV1Message } from '../didcomm/v1/DIDCommV1Message'
+import { DIDCommV1Message } from '../didcomm'
 import { InboundMessageContext } from '../models/InboundMessageContext'
 
 class ConnectionInvitationTestMessage extends DIDCommV1Message {
-  public static readonly type = 'https://didcomm.org/connections/1.0/invitation'
+  public readonly type = ConnectionInvitationTestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/invitation')
 }
 class ConnectionRequestTestMessage extends DIDCommV1Message {
-  public static readonly type = 'https://didcomm.org/connections/1.0/request'
+  public readonly type = ConnectionRequestTestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/request')
 }
 
 class ConnectionResponseTestMessage extends DIDCommV1Message {
-  public static readonly type = 'https://didcomm.org/connections/1.0/response'
+  public readonly type = ConnectionResponseTestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/response')
 }
 
 class NotificationAckTestMessage extends DIDCommV1Message {
-  public static readonly type = 'https://didcomm.org/notification/1.0/ack'
+  public readonly type = NotificationAckTestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/notification/1.0/ack')
 }
 class CredentialProposalTestMessage extends DIDCommV1Message {
-  public static readonly type = 'https://didcomm.org/issue-credential/1.0/credential-proposal'
-class CredentialProposalTestMessage extends AgentMessage {
   public readonly type = CredentialProposalTestMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/credential-proposal')
 }
 
-class CustomProtocolMessage extends AgentMessage {
+class CustomProtocolMessage extends DIDCommV1Message {
   public readonly type = CustomProtocolMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/message')
 }
 
-class TestHandler implements Handler<typeof DIDCommV1Message> {
+class TestHandler implements Handler {
   // We want to pass various classes to test various behaviours so we dont need to strictly type it.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public constructor(classes: any[]) {

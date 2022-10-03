@@ -1,8 +1,8 @@
 import type { ProblemReportV2MessageOptions } from '../../problem-reports'
 
 import { ProblemReport } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { Equals } from 'class-validator'
 
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { ProblemReportV2Message } from '../../problem-reports'
 
 export class ProblemReportMessage extends ProblemReportV2Message {
@@ -10,7 +10,7 @@ export class ProblemReportMessage extends ProblemReportV2Message {
     super(options)
   }
 
-  @Equals(ProblemReportMessage.type)
-  public readonly type = ProblemReportMessage.type
-  public static readonly type = ProblemReport.type
+  @IsValidMessageType(ProblemReportMessage.type)
+  public readonly type = ProblemReportMessage.type.messageTypeUri
+  public static readonly type = parseMessageType(ProblemReport.type)
 }

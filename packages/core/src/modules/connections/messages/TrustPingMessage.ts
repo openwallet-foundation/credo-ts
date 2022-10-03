@@ -2,9 +2,7 @@ import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsString, IsBoolean, IsOptional, IsNotEmpty, IsObject, ValidateNested } from 'class-validator'
-import { Expose } from 'class-transformer'
-import { IsString, IsBoolean, IsOptional } from 'class-validator'
+import { IsString, IsBoolean, IsOptional, IsNotEmpty, IsObject, ValidateNested } from 'class-validator'
 
 import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import { DIDCommV2Message } from '../../../agent/didcomm/v2/DIDCommV2Message'
@@ -79,9 +77,9 @@ export class TrustPingMessageV2 extends DIDCommV2Message {
   @Type(() => TrustPingBody)
   public body!: TrustPingBody
 
-  @Equals(TrustPingMessageV2.type)
-  public readonly type = TrustPingMessageV2.type
-  public static readonly type = 'https://didcomm.org/trust-ping/2.0/ping'
+  @IsValidMessageType(TrustPingMessageV2.type)
+  public readonly type = TrustPingMessageV2.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/trust-ping/2.0/ping')
 
   public constructor(options: TrustPingMessageV2Options) {
     super(options)

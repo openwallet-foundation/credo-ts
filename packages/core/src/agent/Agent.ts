@@ -23,21 +23,19 @@ import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidMarker, DidService } from '../modules/dids'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
+import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsModule'
 import { GossipModule } from '../modules/gossip/GossipModule'
 import { GossipService } from '../modules/gossip/service'
-import { KeysModule } from '../modules/keys'
-import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsModule'
 import { IndyModule } from '../modules/indy/module'
+import { KeysModule } from '../modules/keys'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
+import { OutOfBandModuleV2 } from '../modules/oob/OutOfBandModuleV2'
 import { OutOfBandModule } from '../modules/out-of-band'
-import { OutOfBandModule } from '../modules/oob/OutOfBandModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { ValueTransferModule, ValueTransferService } from '../modules/value-transfer'
-import { ValueTransferWitnessService } from '../modules/value-transfer/services/ValueTransferWitnessService'
-import { RoutingService } from '../modules/routing/services/RoutingService'
 import { DependencyManager } from '../plugins'
 import { StorageUpdateService, DidCommMessageRepository, StorageVersionRepository } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
@@ -50,12 +48,12 @@ import { WalletError } from '../wallet/error'
 
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
-import { EnvelopeService } from './EnvelopeService'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
+import { EnvelopeService } from './didcomm/EnvelopeService'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -63,15 +61,12 @@ export class Agent {
   public readonly dependencyManager: DependencyManager
   protected eventEmitter: EventEmitter
   protected messageReceiver: MessageReceiver
-  protected transportService: TransportService
   protected messageSender: MessageSender
   private _isInitialized = false
   public messageSubscription: Subscription
   private walletService: Wallet
-  private routingService: RoutingService
   private didService: DidService
   private valueTransferService: ValueTransferService
-  private valueTransferWitnessService: ValueTransferWitnessService
   private gossipService: GossipService
 
   public readonly connections: ConnectionsModule
@@ -91,7 +86,7 @@ export class Agent {
   public readonly valueTransfer: ValueTransferModule
   public readonly gossip: GossipModule
   public readonly outOfBand: OutOfBandModule
-  public readonly oob!: OutOfBandModule
+  public readonly oob!: OutOfBandModuleV2
 
   public constructor(
     initialConfig: InitConfig,
@@ -127,19 +122,10 @@ export class Agent {
     this.eventEmitter = this.dependencyManager.resolve(EventEmitter)
     this.messageSender = this.dependencyManager.resolve(MessageSender)
     this.messageReceiver = this.dependencyManager.resolve(MessageReceiver)
-    this.transportService = this.dependencyManager.resolve(TransportService)
     this.walletService = this.dependencyManager.resolve(InjectionSymbols.Wallet)
     this.valueTransferService = this.dependencyManager.resolve(ValueTransferService)
-    this.valueTransferWitnessService = this.dependencyManager.resolve(ValueTransferWitnessService)
     this.gossipService = this.dependencyManager.resolve(GossipService)
     this.didService = this.dependencyManager.resolve(DidService)
-
-    this.eventEmitter = this.dependencyManager.resolve(EventEmitter)
-    this.messageSender = this.dependencyManager.resolve(MessageSender)
-    this.messageReceiver = this.dependencyManager.resolve(MessageReceiver)
-    this.transportService = this.dependencyManager.resolve(TransportService)
-    this.walletService = this.dependencyManager.resolve(InjectionSymbols.Wallet)
-    this.routingService = this.dependencyManager.resolve(RoutingService)
 
     // We set the modules in the constructor because that allows to set them as read-only
     this.connections = this.dependencyManager.resolve(ConnectionsModule)
@@ -153,14 +139,13 @@ export class Agent {
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsModule)
     this.ledger = this.dependencyManager.resolve(LedgerModule)
     this.discovery = this.dependencyManager.resolve(DiscoverFeaturesModule)
+    this.keys = this.dependencyManager.resolve(KeysModule)
     this.dids = this.dependencyManager.resolve(DidsModule)
     this.wallet = this.dependencyManager.resolve(WalletModule)
-    this.oob = this.dependencyManager.resolve(OutOfBandModule)
-    this.keys = this.dependencyManager.resolve(KeysModule)
-    this.valueTransfer = this.dependencyManager.resolve(ValueTransferModule)
-    this.gossip = this.dependencyManager.resolve(GossipModule)
     this.outOfBand = this.dependencyManager.resolve(OutOfBandModule)
-
+    this.oob = this.dependencyManager.resolve(OutOfBandModuleV2)
+    this.gossip = this.dependencyManager.resolve(GossipModule)
+    this.valueTransfer = this.dependencyManager.resolve(ValueTransferModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
@@ -251,7 +236,6 @@ export class Agent {
           `You can also downgrade your version of Aries Framework JavaScript.`
       )
     }
-
     if (publicDidSeed) {
       // If an agent has publicDid it will be used as routing key.
       await this.walletService.initPublicDid({ seed: publicDidSeed })
@@ -265,11 +249,13 @@ export class Agent {
     }
 
     for (const transport of this.inboundTransports) {
-      await transport.start(this)
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      transport.start(this)
     }
 
     for (const transport of this.outboundTransports) {
-      await transport.start(this)
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      transport.start(this)
     }
 
     // Mediator provisioning
@@ -369,35 +355,6 @@ export class Agent {
     return this.agentConfig
   }
 
-  private async getMediationConnection(mediatorInvitationUrl: string) {
-    const outOfBandInvitation = this.oob.parseInvitation(mediatorInvitationUrl)
-    const outOfBandRecord = await this.oob.findByInvitationId(outOfBandInvitation.id)
-    const [connection] = outOfBandRecord ? await this.connections.findAllByOutOfBandId(outOfBandRecord.id) : []
-
-    if (!connection) {
-      this.logger.debug('Mediation connection does not exist, creating connection')
-      // We don't want to use the current default mediator when connecting to another mediator
-      const routing = await this.routingService.getRouting({ useDefaultMediator: false })
-
-      this.logger.debug('Routing created', routing)
-      const { connectionRecord: newConnection } = await this.oob.receiveInvitation(outOfBandInvitation, {
-        routing,
-      })
-      this.logger.debug(`Mediation invitation processed`, { outOfBandInvitation })
-
-      if (!newConnection) {
-        throw new AriesFrameworkError('No connection record to provision mediation.')
-      }
-
-      return this.connections.returnWhenIsConnected(newConnection.id)
-    }
-
-    if (!connection.isReady) {
-      return this.connections.returnWhenIsConnected(connection.id)
-    }
-    return connection
-  }
-
   private registerDependencies(dependencyManager: DependencyManager) {
     dependencyManager.registerInstance(AgentConfig, this.agentConfig)
 
@@ -445,8 +402,12 @@ export class Agent {
       DiscoverFeaturesModule,
       DidsModule,
       WalletModule,
+      OutOfBandModuleV2,
       OutOfBandModule,
-      IndyModule
+      IndyModule,
+      GossipModule,
+      ValueTransferModule,
+      KeysModule
     )
   }
 }

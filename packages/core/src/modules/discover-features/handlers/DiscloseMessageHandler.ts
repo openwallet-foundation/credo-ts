@@ -1,9 +1,8 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
 
 import { DiscloseMessage } from '../messages'
 
-export class DiscloseMessageHandler implements Handler<typeof DIDCommV1Message> {
+export class DiscloseMessageHandler implements Handler {
   public supportedMessages = [DiscloseMessage]
 
   public async handle(inboundMessage: HandlerInboundMessage<DiscloseMessageHandler>) {

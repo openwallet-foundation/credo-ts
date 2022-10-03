@@ -8,7 +8,7 @@ import { AriesFrameworkError } from '../../../error'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { DidExchangeState } from '../../connections/models'
 import { Key } from '../../dids'
-import { OutOfBandService } from '../OutOfBandService'
+import { OutOfBandServiceV2 } from '../OutOfBandServiceV2'
 import { OutOfBandEventTypes } from '../domain/OutOfBandEvents'
 import { OutOfBandRole } from '../domain/OutOfBandRole'
 import { OutOfBandState } from '../domain/OutOfBandState'
@@ -25,7 +25,7 @@ describe('OutOfBandService', () => {
   const agentConfig = getAgentConfig('OutOfBandServiceTest')
   let wallet: Wallet
   let outOfBandRepository: OutOfBandRepository
-  let outOfBandService: OutOfBandService
+  let outOfBandService: OutOfBandServiceV2
   let eventEmitter: EventEmitter
 
   beforeAll(async () => {
@@ -41,7 +41,7 @@ describe('OutOfBandService', () => {
   beforeEach(async () => {
     eventEmitter = new EventEmitter(agentConfig)
     outOfBandRepository = new OutOfBandRepositoryMock()
-    outOfBandService = new OutOfBandService(outOfBandRepository, eventEmitter)
+    outOfBandService = new OutOfBandServiceV2(outOfBandRepository, eventEmitter)
   })
 
   describe('processHandshakeReuse', () => {
@@ -55,8 +55,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
       })
 
       await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
@@ -70,8 +70,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
       })
 
       await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
@@ -85,8 +85,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
       })
 
       // Correct state, incorrect role
@@ -113,8 +113,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
       })
 
       const mockOob = getMockOutOfBand({
@@ -135,8 +135,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
       })
 
       const mockOob = getMockOutOfBand({
@@ -159,8 +159,8 @@ describe('OutOfBandService', () => {
 
       const connection = getMockConnection({ state: DidExchangeState.Completed })
       const messageContext = new InboundMessageContext(reuseMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
         connection,
       })
 
@@ -193,8 +193,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
         connection: getMockConnection({ state: DidExchangeState.Completed }),
       })
 
@@ -223,8 +223,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
         connection: getMockConnection({ state: DidExchangeState.Completed }),
       })
 
@@ -256,8 +256,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
       })
 
       await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
@@ -272,8 +272,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
       })
 
       await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
@@ -288,8 +288,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
       })
 
       // Correct state, incorrect role
@@ -317,8 +317,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
       })
 
       const mockOob = getMockOutOfBand({
@@ -339,8 +339,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
         connection: getMockConnection({ state: DidExchangeState.Completed, id: 'connectionId' }),
       })
 
@@ -366,8 +366,8 @@ describe('OutOfBandService', () => {
 
       const connection = getMockConnection({ state: DidExchangeState.Completed, id: 'connectionId' })
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
         connection,
       })
 
@@ -402,8 +402,8 @@ describe('OutOfBandService', () => {
       })
 
       const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
-        senderKey: key,
-        recipientKey: key,
+        senderKey: key.publicKeyBase58,
+        recipientKey: key.publicKeyBase58,
         connection: getMockConnection({ state: DidExchangeState.Completed, id: 'connectionId' }),
       })
 

@@ -71,6 +71,7 @@ export class UserEmulator {
   }
 
   public run = async () => {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     Promise.all(this.users.map((user) => user.run()))
   }
 }

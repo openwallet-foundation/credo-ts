@@ -1,8 +1,9 @@
 import type { Logger } from '../logger'
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
+import type { ParsedMessageType } from '../utils/messageType'
 import type { AgentMessageProcessedEvent } from './Events'
 import type { Handler } from './Handler'
-import type { DIDCommMessage, DIDCommMessageClass } from './didcomm'
+import type { ConstructableDIDCommMessage, DIDCommMessage } from './didcomm'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { AgentConfig } from '../agent/AgentConfig'
@@ -20,7 +21,7 @@ import { isOutboundServiceMessage } from './helpers'
 @injectable()
 class Dispatcher {
   private agentConfig: AgentConfig
-  private handlers: Handler<DIDCommMessageClass>[] = []
+  private handlers: Handler[] = []
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
@@ -32,7 +33,7 @@ class Dispatcher {
     this.logger = agentConfig.logger
   }
 
-  public registerHandler(handler: Handler<DIDCommMessageClass>) {
+  public registerHandler(handler: Handler) {
     this.handlers.push(handler)
   }
 
@@ -80,7 +81,7 @@ class Dispatcher {
       await this.messageSender.packAndSendMessage({
         message: outboundMessage.payload,
         service: outboundMessage.service,
-        senderKey: outboundMessage.senderKey,
+        senderKey: outboundMessage.senderKey.publicKeyBase58,
         returnRoute: true,
       })
     } else if (outboundMessage) {
@@ -97,7 +98,7 @@ class Dispatcher {
     })
   }
 
-  private getHandlerForType(messageType: string): Handler<DIDCommMessageClass> | undefined {
+  private getHandlerForType(messageType: string): Handler | undefined {
     const incomingMessageType = parseMessageType(messageType)
 
     for (const handler of this.handlers) {
@@ -107,7 +108,7 @@ class Dispatcher {
     }
   }
 
-  public getMessageClassForType(messageType: string): DIDCommMessageClass | undefined {
+  public getMessageClassForType(messageType: string): ConstructableDIDCommMessage | undefined {
     const incomingMessageType = parseMessageType(messageType)
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
@@ -120,10 +121,11 @@ class Dispatcher {
    * Returns array of message types that dispatcher is able to handle.
    * Message type format is MTURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#mturi.
    */
-  public get supportedMessageTypes() {
-    return this.handlers
-      .reduce<DIDCommMessageClass[]>((all, cur) => [...all, ...cur.supportedMessages], [])
-      .map((m) => m.type)
+  public get supportedMessageTypes(): ParsedMessageType[] {
+    return this.handlers.reduce<ParsedMessageType[]>(
+      (all, cur) => [...all, ...cur.supportedMessages.map((message) => message.type)],
+      []
+    )
   }
 
   /**

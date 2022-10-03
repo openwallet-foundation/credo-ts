@@ -1,11 +1,10 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
-import { IsInstance, IsOptional, IsString } from 'class-validator'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface DiscloseProtocolOptions {
   protocolId: string
@@ -76,9 +75,9 @@ export class DiscloseMessageV2 extends DIDCommV2Message {
     }
   }
 
-  @Equals(DiscloseMessageV2.type)
-  public readonly type = DiscloseMessageV2.type
-  public static readonly type = 'https://didcomm.org/discover-features/2.0/disclose'
+  @IsValidMessageType(DiscloseMessageV2.type)
+  public readonly type = DiscloseMessageV2.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/discover-features/2.0/disclose')
 
   @Type(() => DiscloseMessageV2Body)
   @ValidateNested()

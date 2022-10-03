@@ -2,8 +2,8 @@
 import { Expose } from 'class-transformer'
 import { IsEnum, IsOptional, IsString } from 'class-validator'
 
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { DIDCommV1Message } from '../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export enum WhoRetriesStatus {
   You = 'YOU',

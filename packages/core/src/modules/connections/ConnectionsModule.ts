@@ -1,7 +1,6 @@
-import type { TrustPingMessageV2 } from './messages'
 import type { DependencyManager } from '../../plugins'
-import type { Key } from '../dids'
 import type { OutOfBandRecord } from '../oob/repository'
+import type { TrustPingMessageV2 } from './messages'
 import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
@@ -15,7 +14,7 @@ import { AriesFrameworkError } from '../../error'
 import { injectable, module } from '../../plugins'
 import { DidResolverService } from '../dids'
 import { DidRepository } from '../dids/repository'
-import { OutOfBandService } from '../oob/OutOfBandService'
+import { OutOfBandServiceV2 } from '../oob/OutOfBandServiceV2'
 import { RoutingService } from '../routing/services/RoutingService'
 
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -42,7 +41,7 @@ export class ConnectionsModule {
   private agentConfig: AgentConfig
   private didExchangeProtocol: DidExchangeProtocol
   private connectionService: ConnectionService
-  private outOfBandService: OutOfBandService
+  private outOfBandService: OutOfBandServiceV2
   private messageSender: MessageSender
   private trustPingService: TrustPingService
   private routingService: RoutingService
@@ -54,7 +53,7 @@ export class ConnectionsModule {
     agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
-    outOfBandService: OutOfBandService,
+    outOfBandService: OutOfBandServiceV2,
     trustPingService: TrustPingService,
     routingService: RoutingService,
     didRepository: DidRepository,
@@ -86,7 +85,8 @@ export class ConnectionsModule {
   ) {
     const { protocol, label, alias, imageUrl, autoAcceptConnection } = config
 
-    const routing = config.routing || (await this.routingService.getRouting({ mediatorId: outOfBandRecord.mediatorId }))
+    const routing =
+      config.routing || (await this.routingService.getRouting('', { mediatorId: outOfBandRecord.mediatorId }))
 
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
@@ -110,7 +110,7 @@ export class ConnectionsModule {
 
     const { message, connectionRecord } = result
     const outboundMessage = createOutboundMessage(connectionRecord, message, outOfBandRecord)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
     return connectionRecord
   }
 
@@ -144,7 +144,7 @@ export class ConnectionsModule {
       outboundMessage = createOutboundMessage(connectionRecord, message)
     }
 
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
     return connectionRecord
   }
 
@@ -184,10 +184,7 @@ export class ConnectionsModule {
       outboundMessage = createOutboundMessage(connectionRecord, message)
     }
 
-    const outbound = createOutboundMessage(connectionRecord, message)
-    await this.messageSender.sendDIDCommV1Message(outbound)
-
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
     return connectionRecord
   }
 
@@ -236,6 +233,29 @@ export class ConnectionsModule {
 
     await this.connectionService.update(record)
   }
+
+  /**
+   * Send Trust Ping message to specified DID
+   *
+   * @param to DID of recipient
+   * @param responseRequested whether recipient should respond
+   *
+   * @returns The sent Trust Ping message
+   */
+  public sendTrustPing(to: string, responseRequested = true): Promise<TrustPingMessageV2> {
+    return this.trustPingService.sendTrustPing(to, responseRequested)
+  }
+
+  /**
+   * Await response on Trust Ping message
+   *
+   * @param id ID of sent Trust Ping message
+   * @param timeoutMs Milliseconds to wait for response
+   */
+  public async awaitTrustPingResponse(id: string, timeoutMs = 20000): Promise<void> {
+    await this.trustPingService.awaitTrustPingResponse(id, timeoutMs)
+  }
+
   /**
    * Gets the known connection types for the record matching the given connectionId
    * @param connectionId
@@ -288,7 +308,7 @@ export class ConnectionsModule {
     return this.connectionService.deleteById(connectionId)
   }
 
-  public async findByKeys({ senderKey, recipientKey }: { senderKey: Key; recipientKey: Key }) {
+  public async findByKeys({ senderKey, recipientKey }: { senderKey: string; recipientKey: string }) {
     const theirDidRecord = await this.didRepository.findByRecipientKey(senderKey)
     if (theirDidRecord) {
       const ourDidRecord = await this.didRepository.findByRecipientKey(recipientKey)
@@ -302,7 +322,7 @@ export class ConnectionsModule {
     }
 
     this.agentConfig.logger.debug(
-      `No connection record found for encrypted message with recipient key ${recipientKey.fingerprint} and sender key ${senderKey.fingerprint}`
+      `No connection record found for encrypted message with recipient key ${recipientKey} and sender key ${senderKey}`
     )
 
     return null

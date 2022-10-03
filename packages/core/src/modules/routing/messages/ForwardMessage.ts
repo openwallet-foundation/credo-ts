@@ -1,13 +1,11 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm/'
-import { Expose } from 'class-transformer'
-import { IsObject, IsString } from 'class-validator'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsObject, IsString, ValidateNested } from 'class-validator'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
+import { IsObject, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm/'
 import { EncryptedMessage } from '../../../agent/didcomm/types'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface ForwardMessageOptions {
   id?: string
@@ -72,9 +70,9 @@ export class ForwardMessageV2 extends DIDCommV2Message {
     }
   }
 
-  @Equals(ForwardMessageV2.type)
-  public readonly type = ForwardMessageV2.type
-  public static readonly type = 'https://didcomm.org/routing/2.0/forward'
+  @IsValidMessageType(ForwardMessageV2.type)
+  public readonly type = ForwardMessageV2.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/routing/2.0/forward')
 
   @Type(() => ForwardMessageV2Body)
   @ValidateNested()

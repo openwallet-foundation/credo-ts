@@ -1,8 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidResolverService } from '../../dids'
-import type { OutOfBandService } from '../../oob/OutOfBandService'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
+import type { OutOfBandServiceV2 } from '../../oob/OutOfBandServiceV2'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
@@ -10,11 +9,10 @@ import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorat
 import { AriesFrameworkError } from '../../../error'
 import { ConnectionResponseMessage } from '../messages'
 
-export class ConnectionResponseHandler implements Handler<typeof DIDCommV1Message> {
+export class ConnectionResponseHandler implements Handler {
   private connectionService: ConnectionService
   private agentConfig: AgentConfig
-  private connectionService: ConnectionService
-  private outOfBandService: OutOfBandService
+  private outOfBandService: OutOfBandServiceV2
   private didResolverService: DidResolverService
 
   public supportedMessages = [ConnectionResponseMessage]
@@ -22,7 +20,7 @@ export class ConnectionResponseHandler implements Handler<typeof DIDCommV1Messag
   public constructor(
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
-    outOfBandService: OutOfBandService,
+    outOfBandService: OutOfBandServiceV2,
     didResolverService: DidResolverService
   ) {
     this.agentConfig = agentConfig
@@ -32,9 +30,9 @@ export class ConnectionResponseHandler implements Handler<typeof DIDCommV1Messag
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionResponseHandler>) {
-    const { recipientKey, senderKey, message } = messageContext
+    const { recipient, sender, message } = messageContext
 
-    if (!recipientKey || !senderKey) {
+    if (!recipient || !sender) {
       throw new AriesFrameworkError('Unable to process connection response without senderKey or recipientKey')
     }
 
@@ -54,10 +52,8 @@ export class ConnectionResponseHandler implements Handler<typeof DIDCommV1Messag
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
     // connection record did
-    if (!ourDidDocument.recipientKeys.find((key) => key.fingerprint === recipientKey.fingerprint)) {
-      throw new AriesFrameworkError(
-        `Recipient key ${recipientKey.fingerprint} not found in did document recipient keys.`
-      )
+    if (!ourDidDocument.recipientKeys.find((key) => key.fingerprint === recipient)) {
+      throw new AriesFrameworkError(`Recipient key ${recipient} not found in did document recipient keys.`)
     }
 
     const outOfBandRecord =

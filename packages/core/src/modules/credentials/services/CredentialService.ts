@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { Dispatcher } from '../../../agent/Dispatcher'
 import type { EventEmitter } from '../../../agent/EventEmitter'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { DidCommMessageRepository } from '../../../storage'
@@ -60,38 +60,46 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
   ): CredentialFormatService<CFs[number]>
 
   // methods for proposal
-  abstract createProposal(options: CreateProposalOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  abstract processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
-  abstract acceptProposal(options: AcceptProposalOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract createProposal(
+    options: CreateProposalOptions<CFs>
+  ): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>>
+  abstract processProposal(messageContext: InboundMessageContext<DIDCommV1Message>): Promise<CredentialExchangeRecord>
+  abstract acceptProposal(
+    options: AcceptProposalOptions<CFs>
+  ): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>>
   abstract negotiateProposal(
     options: NegotiateProposalOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>>
 
   // methods for offer
-  abstract createOffer(options: CreateOfferOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  abstract processOffer(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
-  abstract acceptOffer(options: AcceptOfferOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  abstract negotiateOffer(options: NegotiateOfferOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract createOffer(options: CreateOfferOptions<CFs>): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>>
+  abstract processOffer(messageContext: InboundMessageContext<DIDCommV1Message>): Promise<CredentialExchangeRecord>
+  abstract acceptOffer(options: AcceptOfferOptions<CFs>): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>>
+  abstract negotiateOffer(
+    options: NegotiateOfferOptions<CFs>
+  ): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>>
 
   // methods for request
-  abstract createRequest(options: CreateRequestOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
-  abstract acceptRequest(options: AcceptRequestOptions<CFs>): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract createRequest(options: CreateRequestOptions<CFs>): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>>
+  abstract processRequest(messageContext: InboundMessageContext<DIDCommV1Message>): Promise<CredentialExchangeRecord>
+  abstract acceptRequest(options: AcceptRequestOptions<CFs>): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>>
 
   // methods for issue
-  abstract processCredential(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
-  abstract acceptCredential(options: AcceptCredentialOptions): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  abstract processCredential(messageContext: InboundMessageContext<DIDCommV1Message>): Promise<CredentialExchangeRecord>
+  abstract acceptCredential(
+    options: AcceptCredentialOptions
+  ): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>>
 
   // methods for ack
-  abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  abstract processAck(messageContext: InboundMessageContext<DIDCommV1Message>): Promise<CredentialExchangeRecord>
 
   // methods for problem-report
   abstract createProblemReport(options: CreateProblemReportOptions): ProblemReportMessage
 
-  abstract findProposalMessage(credentialExchangeId: string): Promise<AgentMessage | null>
-  abstract findOfferMessage(credentialExchangeId: string): Promise<AgentMessage | null>
-  abstract findRequestMessage(credentialExchangeId: string): Promise<AgentMessage | null>
-  abstract findCredentialMessage(credentialExchangeId: string): Promise<AgentMessage | null>
+  abstract findProposalMessage(credentialExchangeId: string): Promise<DIDCommV1Message | null>
+  abstract findOfferMessage(credentialExchangeId: string): Promise<DIDCommV1Message | null>
+  abstract findRequestMessage(credentialExchangeId: string): Promise<DIDCommV1Message | null>
+  abstract findCredentialMessage(credentialExchangeId: string): Promise<DIDCommV1Message | null>
   abstract getFormatData(credentialExchangeId: string): Promise<GetFormatDataReturn<CFs>>
 
   /**

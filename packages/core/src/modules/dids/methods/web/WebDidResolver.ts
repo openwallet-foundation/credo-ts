@@ -5,7 +5,6 @@ import { Resolver } from 'did-resolver'
 import * as didWeb from 'web-did-resolver'
 
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../../utils/MessageValidator'
 import { DidDocument, DidType } from '../../domain'
 
 export class WebDidResolver implements DidResolver {

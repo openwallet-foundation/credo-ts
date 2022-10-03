@@ -1,7 +1,7 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Type } from 'class-transformer'
-import { Equals, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
@@ -62,9 +62,9 @@ export class MediationRequestMessageV2 extends DIDCommV2Message {
     super(options)
   }
 
-  @Equals(MediationRequestMessageV2.type)
-  public readonly type = MediationRequestMessageV2.type
-  public static readonly type = 'https://didcomm.org/coordinate-mediation/2.0/mediate-request'
+  @IsValidMessageType(MediationRequestMessageV2.type)
+  public readonly type = MediationRequestMessageV2.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/mediate-request')
 
   @Type(() => MediationRequestMessageV2Body)
   @ValidateNested()

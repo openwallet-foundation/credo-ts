@@ -1,3 +1,5 @@
+import type { Verkey } from 'indy-sdk'
+
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
 

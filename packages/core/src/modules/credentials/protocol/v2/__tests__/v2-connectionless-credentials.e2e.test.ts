@@ -74,8 +74,6 @@ describe('V2 Connectionless Credentials', () => {
     await aliceAgent.wallet.delete()
   })
 
-  test('Faber starts with connection-less credential offer to Getter', async () => {
-    testLogger.test('Faber sends credential offer to Getter')
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 

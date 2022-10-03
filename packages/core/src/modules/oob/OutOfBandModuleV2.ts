@@ -1,11 +1,10 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
+import type { DIDCommV1Message } from '../../agent/didcomm'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Logger } from '../../logger'
 import type { ConnectionRecord, Routing, ConnectionInvitationMessage } from '../../modules/connections'
 import type { DependencyManager } from '../../plugins'
 import type { PlaintextMessage } from '../../types'
-import type { Key } from '../dids'
 import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
@@ -25,11 +24,11 @@ import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
 import { parseInvitationUrl, parseInvitationShortUrl } from '../../utils/parseInvitation'
 import { DidCommDocumentService } from '../didcomm'
-import { DidKey } from '../dids'
+import { Key, DidKey } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
 import { RoutingService } from '../routing/services/RoutingService'
 
-import { OutOfBandService } from './OutOfBandService'
+import { OutOfBandServiceV2 } from './OutOfBandServiceV2'
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from './domain/OutOfBandEvents'
 import { OutOfBandRole } from './domain/OutOfBandRole'
@@ -51,7 +50,7 @@ export interface CreateOutOfBandInvitationConfig {
   goal?: string
   handshake?: boolean
   handshakeProtocols?: HandshakeProtocol[]
-  messages?: AgentMessage[]
+  messages?: DIDCommV1Message[]
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
   routing?: Routing
@@ -79,8 +78,8 @@ export interface ReceiveOutOfBandInvitationConfig {
 
 @module()
 @injectable()
-export class OutOfBandModule {
-  private outOfBandService: OutOfBandService
+export class OutOfBandModuleV2 {
+  private outOfBandService: OutOfBandServiceV2
   private routingService: RoutingService
   private connectionsModule: ConnectionsModule
   private didCommMessageRepository: DidCommMessageRepository
@@ -94,7 +93,7 @@ export class OutOfBandModule {
   public constructor(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
-    outOfBandService: OutOfBandService,
+    outOfBandService: OutOfBandServiceV2,
     routingService: RoutingService,
     connectionsModule: ConnectionsModule,
     didCommMessageRepository: DidCommMessageRepository,
@@ -170,14 +169,14 @@ export class OutOfBandModule {
       }
     }
 
-    const routing = config.routing ?? (await this.routingService.getRouting({}))
+    const routing = config.routing ?? (await this.routingService.getRouting('', {}))
 
-    const services = routing.endpoints.map((endpoint, index) => {
+    const services = [routing.endpoint].map((endpoint, index) => {
       return new OutOfBandDidCommService({
         id: `#inline-${index}`,
         serviceEndpoint: endpoint,
-        recipientKeys: [routing.recipientKey].map((key) => new DidKey(key).did),
-        routingKeys: routing.routingKeys.map((key) => new DidKey(key).did),
+        recipientKeys: [routing.verkey].map((key) => new DidKey(Key.fromPublicKeyBase58(key)).did),
+        routingKeys: routing.routingKeys.map((key) => new DidKey(Key.fromPublicKeyBase58(key)).did),
       })
     })
 
@@ -241,7 +240,7 @@ export class OutOfBandModule {
     return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
   }
 
-  public async createLegacyConnectionlessInvitation<Message extends AgentMessage>(config: {
+  public async createLegacyConnectionlessInvitation<Message extends DIDCommV1Message>(config: {
     recordId: string
     message: Message
     domain: string
@@ -251,9 +250,9 @@ export class OutOfBandModule {
 
     // Set the service on the message
     config.message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.recipientKey].map((key) => key.publicKeyBase58),
-      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+      serviceEndpoint: routing.endpoint,
+      recipientKeys: [routing.verkey],
+      routingKeys: routing.routingKeys,
     })
 
     // We need to update the message with the new service, so we can
@@ -516,10 +515,6 @@ export class OutOfBandModule {
     return { outOfBandRecord }
   }
 
-  public async findByRecipientKey(recipientKey: Key) {
-    return this.outOfBandService.findByRecipientKey(recipientKey)
-  }
-
   public async findByInvitationId(invitationId: string) {
     return this.outOfBandService.findByInvitationId(invitationId)
   }
@@ -629,7 +624,8 @@ export class OutOfBandModule {
   private async emitWithConnection(connectionRecord: ConnectionRecord, messages: PlaintextMessage[]) {
     const supportedMessageTypes = this.dispatcher.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
-      const parsedMessageType = parseMessageType(message['@type'])
+      const type = message['@type'] as string
+      const parsedMessageType = parseMessageType(type)
       return supportedMessageTypes.find((type) => supportsIncomingMessageType(parsedMessageType, type))
     })
 
@@ -655,7 +651,8 @@ export class OutOfBandModule {
 
     const supportedMessageTypes = this.dispatcher.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
-      const parsedMessageType = parseMessageType(message['@type'])
+      const type = message['@type'] as string
+      const parsedMessageType = parseMessageType(type)
       return supportedMessageTypes.find((type) => supportsIncomingMessageType(parsedMessageType, type))
     })
 
@@ -728,7 +725,7 @@ export class OutOfBandModule {
     )
 
     const outbound = createOutboundMessage(connectionRecord, reuseMessage)
-    await this.messageSender.sendMessage(outbound)
+    await this.messageSender.sendDIDCommV1Message(outbound)
 
     return reuseAcceptedEventPromise
   }
@@ -743,10 +740,10 @@ export class OutOfBandModule {
    */
   public static register(dependencyManager: DependencyManager) {
     // Api
-    dependencyManager.registerContextScoped(OutOfBandModule)
+    dependencyManager.registerContextScoped(OutOfBandModuleV2)
 
     // Services
-    dependencyManager.registerSingleton(OutOfBandService)
+    dependencyManager.registerSingleton(OutOfBandServiceV2)
 
     // Repositories
     dependencyManager.registerSingleton(OutOfBandRepository)

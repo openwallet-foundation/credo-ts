@@ -1,5 +1,5 @@
-import type { Key } from '../Key'
 import type { VerificationMethod } from '../verificationMethod'
+import type { KeyDidMapping } from './mapping'
 
 import { KeyType } from '../../../../crypto'
 
@@ -9,12 +9,6 @@ import { keyDidBls12381g2 } from './bls12381g2'
 import { keyDidEd25519 } from './ed25519'
 import { keyDidX25519 } from './x25519'
 
-export interface KeyDidMapping {
-  getVerificationMethods: (did: string, key: Key) => VerificationMethod[]
-  getKeyFromVerificationMethod(verificationMethod: VerificationMethod): Key
-  supportedVerificationMethodTypes: string[]
-}
-
 // TODO: Maybe we should make this dynamically?
 const keyDidMapping: Record<KeyType, KeyDidMapping> = {
   [KeyType.Ed25519]: keyDidEd25519,
@@ -22,7 +16,6 @@ const keyDidMapping: Record<KeyType, KeyDidMapping> = {
   [KeyType.Bls12381g1]: keyDidBls12381g1,
   [KeyType.Bls12381g2]: keyDidBls12381g2,
   [KeyType.Bls12381g1g2]: keyDidBls12381g1g2,
-  [KeyType.Secp256k1]: keyDidX25519, // FIXME Secp256k1
 }
 
 /**

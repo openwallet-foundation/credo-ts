@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidRepository } from '../../dids/repository'
-import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { OutOfBandServiceV2 } from '../../oob/OutOfBandServiceV2'
 import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionService } from '../services/ConnectionService'
 
@@ -9,10 +9,10 @@ import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { ConnectionRequestMessage } from '../messages'
 
-export class ConnectionRequestHandler implements Handler<typeof DIDCommV1Message> {
+export class ConnectionRequestHandler implements Handler {
   private agentConfig: AgentConfig
   private connectionService: ConnectionService
-  private outOfBandService: OutOfBandService
+  private outOfBandService: OutOfBandServiceV2
   private routingService: RoutingService
   private didRepository: DidRepository
   public supportedMessages = [ConnectionRequestMessage]
@@ -20,7 +20,7 @@ export class ConnectionRequestHandler implements Handler<typeof DIDCommV1Message
   public constructor(
     agentConfig: AgentConfig,
     connectionService: ConnectionService,
-    outOfBandService: OutOfBandService,
+    outOfBandService: OutOfBandServiceV2,
     routingService: RoutingService,
     didRepository: DidRepository
   ) {
@@ -32,16 +32,16 @@ export class ConnectionRequestHandler implements Handler<typeof DIDCommV1Message
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionRequestHandler>) {
-    const { connection, recipientKey, senderKey } = messageContext
+    const { connection, recipient, sender } = messageContext
 
-    if (!recipientKey || !senderKey) {
+    if (!recipient || !sender) {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientKey')
     }
 
-    const outOfBandRecord = await this.outOfBandService.findByRecipientKey(recipientKey)
+    const outOfBandRecord = await this.outOfBandService.findByRecipientKey(recipient)
 
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError(`Out-of-band record for recipient key ${recipientKey.fingerprint} was not found.`)
+      throw new AriesFrameworkError(`Out-of-band record for recipient key ${recipient} was not found.`)
     }
 
     if (connection && !outOfBandRecord.reusable) {
@@ -50,9 +50,9 @@ export class ConnectionRequestHandler implements Handler<typeof DIDCommV1Message
       )
     }
 
-    const didRecord = await this.didRepository.findByRecipientKey(senderKey)
+    const didRecord = await this.didRepository.findByRecipientKey(sender)
     if (didRecord) {
-      throw new AriesFrameworkError(`Did record for sender key ${senderKey.fingerprint} already exists.`)
+      throw new AriesFrameworkError(`Did record for sender key ${sender} already exists.`)
     }
 
     const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord)

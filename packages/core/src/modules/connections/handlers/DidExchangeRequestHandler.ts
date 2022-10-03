@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidRepository } from '../../dids/repository'
-import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { OutOfBandServiceV2 } from '../../oob/OutOfBandServiceV2'
 import type { RoutingService } from '../../routing/services/RoutingService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
@@ -12,7 +12,7 @@ import { DidExchangeRequestMessage } from '../messages'
 
 export class DidExchangeRequestHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
-  private outOfBandService: OutOfBandService
+  private outOfBandService: OutOfBandServiceV2
   private agentConfig: AgentConfig
   private routingService: RoutingService
   private didRepository: DidRepository
@@ -21,7 +21,7 @@ export class DidExchangeRequestHandler implements Handler {
   public constructor(
     agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
-    outOfBandService: OutOfBandService,
+    outOfBandService: OutOfBandServiceV2,
     routingService: RoutingService,
     didRepository: DidRepository
   ) {
@@ -33,9 +33,9 @@ export class DidExchangeRequestHandler implements Handler {
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeRequestHandler>) {
-    const { recipientKey, senderKey, message, connection } = messageContext
+    const { recipient, sender, message, connection } = messageContext
 
-    if (!recipientKey || !senderKey) {
+    if (!recipient || !sender) {
       throw new AriesFrameworkError('Unable to process connection request without senderKey or recipientKey')
     }
 
@@ -54,9 +54,9 @@ export class DidExchangeRequestHandler implements Handler {
       )
     }
 
-    const didRecord = await this.didRepository.findByRecipientKey(senderKey)
+    const didRecord = await this.didRepository.findByRecipientKey(sender)
     if (didRecord) {
-      throw new AriesFrameworkError(`Did record for sender key ${senderKey.fingerprint} already exists.`)
+      throw new AriesFrameworkError(`Did record for sender key ${sender} already exists.`)
     }
 
     // TODO Shouldn't we check also if the keys match the keys from oob invitation services?

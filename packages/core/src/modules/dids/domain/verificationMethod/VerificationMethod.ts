@@ -17,13 +17,11 @@ export const verificationKeyTypeToKeyTypeMapping: Record<string, KeyType> = {
   [VerificationKeyType.Ed25519VerificationKey2018]: KeyType.Ed25519,
   [VerificationKeyType.Ed25519VerificationKey2020]: KeyType.Ed25519,
   [VerificationKeyType.X25519KeyAgreementKey2019]: KeyType.X25519,
-  [VerificationKeyType.EcdsaSecp256k1VerificationKey2019]: KeyType.Secp256k1,
 }
 
 export const keyTypeToVerificationKeyTypeMapping: Record<string, VerificationKeyType> = {
   [KeyType.Ed25519]: VerificationKeyType.Ed25519VerificationKey2018,
   [KeyType.X25519]: VerificationKeyType.X25519KeyAgreementKey2019,
-  [KeyType.Secp256k1]: VerificationKeyType.EcdsaSecp256k1VerificationKey2019,
 }
 
 export interface VerificationMethodOptions {

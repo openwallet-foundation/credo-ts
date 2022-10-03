@@ -67,7 +67,7 @@ export class DidResolverService {
     return resolvedDid
   }
 
-  public async resolveDidDocument(did: string) {
+  public async resolveDidDocument(did?: string) {
     const {
       didDocument,
       didResolutionMetadata: { error, message },

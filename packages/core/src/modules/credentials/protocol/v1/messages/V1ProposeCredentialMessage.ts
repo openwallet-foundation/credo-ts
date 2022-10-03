@@ -3,10 +3,9 @@ import type { Attachment } from '../../../../../decorators/attachment/Attachment
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
-import { indyDidRegex, schemaIdRegex, schemaVersionRegex, credDefIdRegex } from '../../../../../utils'
+import { DIDCommV1Message } from '../../../../../agent/didcomm/v1/DIDCommV1Message'
+import { credDefIdRegex, indyDidRegex, schemaIdRegex, schemaVersionRegex } from '../../../../../utils'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
-import { credDefIdRegex, indyDidRegex, schemaIdRegex, schemaVersionRegex } from '../../../utils'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
 

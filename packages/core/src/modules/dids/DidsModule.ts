@@ -1,14 +1,11 @@
+import type { DependencyManager } from '../../plugins'
 import type { DIDInformation } from './domain'
 import type { DidRecord } from './repository'
 import type { DidResolutionOptions, DIDMetadata } from './types'
-import type { DependencyManager } from '../../plugins'
-import type { Key } from './domain/Key'
-import type { DidResolutionOptions } from './types'
 
 import { injectable, module } from '../../plugins'
 
 import { DidRepository } from './repository'
-import { DidResolverService } from './services/DidResolverService'
 import { DidService, DidResolverService } from './services'
 
 @module()
@@ -18,8 +15,7 @@ export class DidsModule {
   private resolverService: DidResolverService
   private didRepository: DidRepository
 
-  public constructor(resolverService: DidResolverService, didRepository: DidRepository) {
-  public constructor(didService: DidService, resolverService: DidResolverService) {
+  public constructor(didService: DidService, resolverService: DidResolverService, didRepository: DidRepository) {
     this.didService = didService
     this.resolverService = resolverService
     this.didRepository = didRepository
@@ -70,14 +66,6 @@ export class DidsModule {
     return this.resolverService.resolveDidDocument(didUrl)
   }
 
-  public findByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findByRecipientKey(recipientKey)
-  }
-
-  public findAllByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findAllByRecipientKey(recipientKey)
-  }
-
   /**
    * Registers the dependencies of the dids module module on the dependency manager.
    */
@@ -87,6 +75,9 @@ export class DidsModule {
 
     // Services
     dependencyManager.registerSingleton(DidResolverService)
+    dependencyManager.registerSingleton(DidService)
+
+    // Repositories
     dependencyManager.registerSingleton(DidRepository)
   }
 }

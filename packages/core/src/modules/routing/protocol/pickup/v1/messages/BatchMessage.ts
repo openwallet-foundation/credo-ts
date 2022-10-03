@@ -1,12 +1,28 @@
-import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
+import type { DIDCommV2MessageParams } from '../../../../../../agent/didcomm'
 
 import { Type, Expose } from 'class-transformer'
-import { Equals, Matches, IsArray, ValidateNested, IsObject, IsInstance } from 'class-validator'
+import { Matches, IsArray, ValidateNested, IsObject, IsInstance } from 'class-validator'
 import { Attachment } from 'didcomm'
 
-import { DIDCommV1Message, DIDCommV2Message, EncryptedMessage } from '../../../agent/didcomm'
-import { MessageIdRegExp } from '../../../agent/didcomm/validation'
-import { uuid } from '../../../utils/uuid'
+import { DIDCommV1Message, DIDCommV2Message, EncryptedMessage } from '../../../../../../agent/didcomm'
+import { MessageIdRegExp } from '../../../../../../agent/didcomm/validation'
+import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
+import { uuid } from '../../../../../../utils/uuid'
+
+export class BatchMessageMessage {
+  public constructor(options: { id?: string; message: EncryptedMessage }) {
+    if (options) {
+      this.id = options.id || uuid()
+      this.message = options.message
+    }
+  }
+
+  @Matches(MessageIdRegExp)
+  public id!: string
+
+  @IsObject()
+  public message!: EncryptedMessage
+}
 
 export class BatchMessageItem {
   public constructor(options: { id?: string; message: EncryptedMessage }) {
@@ -35,7 +51,7 @@ export interface BatchMessageOptions {
  */
 export class BatchMessage extends DIDCommV1Message {
   public constructor(options: BatchMessageOptions) {
-    super(options)
+    super()
 
     if (options) {
       this.id = options.id || this.generateId()
@@ -43,9 +59,9 @@ export class BatchMessage extends DIDCommV1Message {
     }
   }
 
-  @Equals(BatchMessage.type)
-  public readonly type = BatchMessage.type
-  public static readonly type = 'https://didcomm.org/messagepickup/1.0/batch'
+  @IsValidMessageType(BatchMessage.type)
+  public readonly type = BatchMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/1.0/batch')
 
   @Type(() => BatchMessageItem)
   @IsArray()
@@ -95,9 +111,9 @@ export class BatchMessageV2 extends DIDCommV2Message {
     }
   }
 
-  @Equals(BatchMessageV2.type)
-  public readonly type = BatchMessageV2.type
-  public static readonly type = 'https://didcomm.org/messagepickup/2.0/batch'
+  @IsValidMessageType(BatchMessageV2.type)
+  public readonly type = BatchMessageV2.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/2.0/batch')
 
   @Type(() => BatchMessageV2Body)
   @ValidateNested()

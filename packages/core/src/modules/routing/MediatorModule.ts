@@ -1,6 +1,5 @@
-import type { DependencyManager } from '../../plugins'
-import type { EncryptedMessage } from '../../types'
 import type { EncryptedMessage } from '../../agent/didcomm/types'
+import type { DependencyManager } from '../../plugins'
 import type { MediationRecord } from './repository'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -12,9 +11,10 @@ import { createOutboundMessage } from '../../agent/helpers'
 import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
-import { KeylistUpdateHandler, ForwardHandler } from './handlers'
+import { DidListUpdateHandler, ForwardHandler } from './handlers'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
 import { MessagePickupService, V2MessagePickupService } from './protocol'
+import { BatchHandler, BatchPickupHandler } from './protocol/pickup/v1/handlers'
 import { MediatorService } from './services/MediatorService'
 
 @module()
@@ -44,10 +44,6 @@ export class MediatorModule {
     this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.registerHandlers(dispatcher)
-  }
-
-  public async initialize() {
-    await this.mediatorService.initialize()
   }
 
   public async grantRequestedMediation(mediatorId: string): Promise<MediationRecord> {

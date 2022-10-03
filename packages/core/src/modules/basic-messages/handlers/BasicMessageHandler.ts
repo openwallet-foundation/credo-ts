@@ -1,10 +1,9 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { BasicMessageService } from '../services/BasicMessageService'
 
 import { BasicMessage } from '../messages'
 
-export class BasicMessageHandler implements Handler<typeof DIDCommV1Message> {
+export class BasicMessageHandler implements Handler {
   private basicMessageService: BasicMessageService
   public supportedMessages = [BasicMessage]
 

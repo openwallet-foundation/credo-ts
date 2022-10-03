@@ -5,7 +5,7 @@ import { filter, firstValueFrom, Subject, timeout } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { parseMessageType, MessageSender, Dispatcher, AgentMessage, IsValidMessageType } from '../src'
+import { parseMessageType, MessageSender, Dispatcher, IsValidMessageType, DIDCommV1Message } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
 import { createOutboundMessage } from '../src/agent/helpers'
@@ -84,7 +84,7 @@ describe('multi version protocols', () => {
       )
     )
 
-    await bobMessageSender.sendMessage(createOutboundMessage(bobConnection, new TestMessageV11()))
+    await bobMessageSender.sendDIDCommV1Message(createOutboundMessage(bobConnection, new TestMessageV11()))
 
     // Wait for the agent message processed event to be called
     await agentMessageV11ProcessedPromise
@@ -99,14 +99,14 @@ describe('multi version protocols', () => {
       )
     )
 
-    await bobMessageSender.sendMessage(createOutboundMessage(bobConnection, new TestMessageV15()))
+    await bobMessageSender.sendDIDCommV1Message(createOutboundMessage(bobConnection, new TestMessageV15()))
     await agentMessageV15ProcessedPromise
 
     expect(mockHandle).toHaveBeenCalledTimes(2)
   })
 })
 
-class TestMessageV11 extends AgentMessage {
+class TestMessageV11 extends DIDCommV1Message {
   public constructor() {
     super()
     this.id = this.generateId()
@@ -117,7 +117,7 @@ class TestMessageV11 extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/custom-protocol/1.1/test-message')
 }
 
-class TestMessageV13 extends AgentMessage {
+class TestMessageV13 extends DIDCommV1Message {
   public constructor() {
     super()
     this.id = this.generateId()
@@ -128,7 +128,7 @@ class TestMessageV13 extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/custom-protocol/1.3/test-message')
 }
 
-class TestMessageV15 extends AgentMessage {
+class TestMessageV15 extends DIDCommV1Message {
   public constructor() {
     super()
     this.id = this.generateId()

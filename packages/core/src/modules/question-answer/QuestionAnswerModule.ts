@@ -55,7 +55,7 @@ export class QuestionAnswerModule {
       detail: config?.detail,
     })
     const outboundMessage = createOutboundMessage(connection, questionMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return questionAnswerRecord
   }
@@ -78,7 +78,7 @@ export class QuestionAnswerModule {
     const connection = await this.connectionService.getById(questionRecord.connectionId)
 
     const outboundMessage = createOutboundMessage(connection, answerMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    await this.messageSender.sendDIDCommV1Message(outboundMessage)
 
     return questionAnswerRecord
   }

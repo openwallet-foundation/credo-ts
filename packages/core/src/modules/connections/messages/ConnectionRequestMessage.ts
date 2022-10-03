@@ -4,7 +4,6 @@ import { Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator'
 
 import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
-import { AgentMessage } from '../../../agent/AgentMessage'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { Connection } from '../models'
 

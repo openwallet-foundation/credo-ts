@@ -1,17 +1,14 @@
-import type { PlaintextMessage } from '../agent/didcomm/EnvelopeService'
 import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
-import type { PlaintextMessage, EncryptedMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
-import type { DecryptedMessageContext } from './EnvelopeService'
+import type { EncryptedMessage } from '../types'
 import type { TransportSession } from './TransportService'
-import type { DIDCommMessage, EncryptedMessage } from './didcomm'
-import type { DecryptedMessageContext, PackedMessage, SignedMessage } from './didcomm/types'
+import type { DIDCommMessage, SignedMessage } from './didcomm'
+import type { DecryptedMessageContext, PackedMessage, PlaintextMessage } from './didcomm/types'
 
 import { AriesFrameworkError } from '../error'
-import { ConnectionsModule } from '../modules/connections'
-import { ConnectionRepository } from '../modules/connections'
+import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
+import { ConnectionRepository } from '../modules/connections/repository/ConnectionRepository'
 import { DidDocument } from '../modules/dids/domain/DidDocument'
 import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { KeyRepository } from '../modules/keys/repository'
@@ -26,9 +23,8 @@ import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
-import { DIDCommVersion } from './didcomm/DIDCommMessage'
 import { EnvelopeService } from './didcomm/EnvelopeService'
-import { SendingMessageType } from './didcomm/types'
+import { DIDCommVersion, SendingMessageType } from './didcomm/types'
 import { createOutboundMessage } from './helpers'
 import { InboundMessageContext } from './models/InboundMessageContext'
 
@@ -42,7 +38,6 @@ export class MessageReceiver {
   private logger: Logger
   private keyRepository: KeyRepository
   private didRepository: DidRepository
-  private connectionRepository: ConnectionRepository
   private connectionsModule: ConnectionsModule
   public readonly inboundTransports: InboundTransport[] = []
 
@@ -54,9 +49,8 @@ export class MessageReceiver {
     connectionRepository: ConnectionRepository,
     dispatcher: Dispatcher,
     keyRepository: KeyRepository,
-    didRepository: DidRepository
-    connectionsModule: ConnectionsModule,
-    dispatcher: Dispatcher
+    didRepository: DidRepository,
+    connectionsModule: ConnectionsModule
   ) {
     this.config = config
     this.envelopeService = envelopeService
@@ -79,7 +73,10 @@ export class MessageReceiver {
    *
    * @param inboundMessage the message to receive and handle
    */
-  public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
+  public async receiveMessage(
+    inboundMessage: unknown,
+    { session }: { session?: TransportSession; connection?: ConnectionRecord }
+  ) {
     this.logger.debug(`Agent ${this.config.label} received message`)
     try {
       if (this.isEncryptedMessage(inboundMessage)) {
@@ -119,6 +116,7 @@ export class MessageReceiver {
     await this.dispatcher.dispatch(messageContext)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async receivePackedMessage(packedMessage: PackedMessage, session?: TransportSession) {
     if (packedMessage.type === SendingMessageType.Encrypted) {
       const isMessageRecipientExists = await this.checkMessageRecipientExists(packedMessage)
@@ -143,32 +141,13 @@ export class MessageReceiver {
 
     const message = await this.transformAndValidate(plaintextMessage, connection)
 
-    // We want to save a session if there is a chance of returning outbound message via inbound transport.
-    // That can happen when inbound message has `return_route` set to `all` or `thread`.
-    // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
-    if (sender && recipient && message.hasAnyReturnRoute() && session) {
-      this.logger.debug(`Storing session for inbound message '${message.id}'`)
-      const keys = {
-        recipientKeys: [recipient],
-        routingKeys: [],
-        senderKey: sender,
-      }
-      session.keys = keys
-      session.inboundMessage = message
-      // We allow unready connections to be attached to the session as we want to be able to
-      // use return routing to make connections. This is especially useful for creating connections
-      // with mediators when you don't have a public endpoint yet.
-      session.connection = connection ?? undefined
-      this.transportService.saveSession(session)
-    }
-
     const messageContext = new InboundMessageContext(message, {
       // Only make the connection available in message context if the connection is ready
       // To prevent unwanted usage of unready connections. Connections can still be retrieved from
       // Storage if the specific protocol allows an unready connection to be used.
       connection: connection?.isReady ? connection : undefined,
-      sender,
-      recipient,
+      senderKey: sender,
+      recipientKey: recipient,
     })
     await this.dispatcher.dispatch(messageContext)
   }
@@ -288,19 +267,19 @@ export class MessageReceiver {
     return message
   }
 
-private async findConnectionByMessageKeys({
-  recipientKey,
-  senderKey,
-}: DecryptedMessageContext): Promise<ConnectionRecord | null> {
-  // We only fetch connections that are sent in AuthCrypt mode
-  if (!recipientKey || !senderKey) return null
+  private async findConnectionByMessageKeys({
+    recipient,
+    sender,
+  }: DecryptedMessageContext): Promise<ConnectionRecord | null> {
+    // We only fetch connections that are sent in AuthCrypt mode
+    if (!recipient || !sender) return null
 
-// Try to find the did records that holds the sender and recipient keys
-return this.connectionsModule.findByKeys({
-  senderKey,
-  recipientKey,
-})
-}
+    // Try to find the did records that holds the sender and recipient keys
+    return this.connectionsModule.findByKeys({
+      senderKey: sender,
+      recipientKey: recipient,
+    })
+  }
 
   /**
    * Transform an plaintext DIDComm message into it's corresponding message class. Will look at all message types in the registered handlers.
@@ -313,7 +292,7 @@ return this.connectionsModule.findByKeys({
       replaceLegacyDidSovPrefixOnMessage(message)
     }
 
-    const messageType = message['@type'] || message['type']
+    const messageType = message['@type'] || message['type'] || ''
     if (!messageType) {
       throw new AriesFrameworkError(`No type found in the message: ${message}`)
     }
@@ -328,27 +307,6 @@ return this.connectionsModule.findByKeys({
     })
   }
 
-    // Cast the plain JSON object to specific instance of Message extended from AgentMessage
-    let messageTransformed: AgentMessage
-  /**
-   * Validate an AgentMessage instance.
-   * @param message agent message to validate
-   */
-  private async validateMessage(message: DIDCommMessage) {
-    try {
-      messageTransformed = JsonTransformer.fromJSON(message, MessageClass)
-    } catch (error) {
-      this.logger.error(`Error validating message ${message.type}`, {
-        errors: error,
-        message: JSON.stringify(message),
-      })
-      throw new ProblemReportError(`Error validating message ${message.type}`, {
-        problemCode: ProblemReportReason.MessageParseFailure,
-      })
-    }
-    return messageTransformed
-  }
-
   /**
    * Send the problem report message (https://didcomm.org/notification/1.0/problem-report) to the recipient.
    * @param message error message to send
@@ -360,7 +318,7 @@ return this.connectionsModule.findByKeys({
     connection: ConnectionRecord,
     plaintextMessage: PlaintextMessage
   ) {
-    const messageType = parseMessageType(plaintextMessage['@type'])
+    const messageType = parseMessageType(plaintextMessage['@type'] || '')
     if (canHandleMessageType(ProblemReportMessage, messageType)) {
       throw new AriesFrameworkError(`Not sending problem report in response to problem report: {message}`)
     }

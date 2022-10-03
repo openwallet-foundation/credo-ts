@@ -3,8 +3,7 @@ import type { CredReq } from 'indy-sdk'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
-import { Attachment } from '../../../decorators/attachment/Attachment'
+import { DIDCommV1Message } from '../../../../../agent/didcomm/v1/DIDCommV1Message'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 

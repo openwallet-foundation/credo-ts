@@ -1,11 +1,11 @@
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface MenuRequestMessageOptions {
   id?: string
 }
 
-export class MenuRequestMessage extends AgentMessage {
+export class MenuRequestMessage extends DIDCommV1Message {
   public constructor(options: MenuRequestMessageOptions) {
     super()
 

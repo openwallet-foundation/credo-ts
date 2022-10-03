@@ -1,5 +1,5 @@
 import type { DIDCommMessage } from './DIDCommMessage'
-import type { DecryptedMessageContext, EncryptedMessage, ProtectedMessage, PackedMessage, SignedMessage } from './types'
+import type { DecryptedMessageContext, EncryptedMessage, PackedMessage, ProtectedMessage, SignedMessage } from './types'
 import type { PackMessageParams as DIDCommV1PackMessageParams } from './v1/DIDCommV1EnvelopeService'
 import type { DIDCommV1Message } from './v1/DIDCommV1Message'
 import type {
@@ -8,29 +8,19 @@ import type {
 } from './v2/DIDCommV2EnvelopeService'
 import type { DIDCommV2Message } from './v2/DIDCommV2Message'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AriesFrameworkError } from '../../error'
+import { injectable } from '../../plugins'
 import { JsonEncoder } from '../../utils'
 import { AgentConfig } from '../AgentConfig'
 
-import { DIDCommVersion } from './DIDCommMessage'
-import { DidCommV1Algorithms, DidCommV1Types, SendingMessageType } from './types'
+import { DidCommV1Algorithms, DidCommV1Types, DIDCommVersion, SendingMessageType } from './types'
 import { DIDCommV1EnvelopeService } from './v1/DIDCommV1EnvelopeService'
 import { DIDCommV2EnvelopeService } from './v2/DIDCommV2EnvelopeService'
 
 export type PackMessageParams = DIDCommV1PackMessageParams | DIDCommV2PackMessageParams
 export type PackMessageSignedParams = DIDCommV2PackMessageSignedParams
 
-export interface PlaintextMessage {
-  '@type'?: string
-  '@id'?: string
-  type?: string
-  id?: string
-  [key: string]: unknown
-}
-
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class EnvelopeService {
   private didCommV1EnvelopeService: DIDCommV1EnvelopeService
   private didCommV2EnvelopeService: DIDCommV2EnvelopeService

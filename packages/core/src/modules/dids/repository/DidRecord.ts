@@ -1,6 +1,5 @@
 import type { TagsBase, RecordTags } from '../../../storage/BaseRecord'
 import type { DidConnectivity } from '../domain'
-import type { TagsBase } from '../../../storage/BaseRecord'
 import type { DidRecordMetadata } from './didRecordMetadataTypes'
 
 import { Type } from 'class-transformer'

@@ -1,4 +1,4 @@
-import type { KeyDidMapping } from './keyDidMapping'
+import type { KeyDidMapping } from './mapping'
 
 import { KeyType } from '../../../../crypto'
 import { Key } from '../Key'

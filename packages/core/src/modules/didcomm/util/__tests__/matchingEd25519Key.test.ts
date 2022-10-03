@@ -1,25 +1,23 @@
-import type { VerificationMethod } from '../../../dids'
-
 import { KeyType } from '../../../../crypto'
-import { DidDocument, Key } from '../../../dids'
+import { VerificationMethod, DidDocument, Key } from '../../../dids'
 import { findMatchingEd25519Key } from '../matchingEd25519Key'
 
 describe('findMatchingEd25519Key', () => {
   const publicKeyBase58Ed25519 = 'GyYtYWU1vjwd5PFJM4VSX5aUiSV3TyZMuLBJBTQvfdF8'
-  const Ed25519VerificationMethod: VerificationMethod = {
+  const Ed25519VerificationMethod: VerificationMethod = new VerificationMethod({
     type: 'Ed25519VerificationKey2018',
     controller: 'did:sov:WJz9mHyW9BZksioQnRsrAo',
     id: 'did:sov:WJz9mHyW9BZksioQnRsrAo#key-1',
     publicKeyBase58: publicKeyBase58Ed25519,
-  }
+  })
 
   const publicKeyBase58X25519 = 'S3AQEEKkGYrrszT9D55ozVVX2XixYp8uynqVm4okbud'
-  const X25519VerificationMethod: VerificationMethod = {
+  const X25519VerificationMethod: VerificationMethod = new VerificationMethod({
     type: 'X25519KeyAgreementKey2019',
     controller: 'did:sov:WJz9mHyW9BZksioQnRsrAo',
     id: 'did:sov:WJz9mHyW9BZksioQnRsrAo#key-agreement-1',
     publicKeyBase58: publicKeyBase58X25519,
-  }
+  })
 
   describe('referenced verification method', () => {
     const didDocument = new DidDocument({

@@ -1,6 +1,5 @@
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { ConnectionRecord } from '../connections'
-import type { Key } from '../dids/domain/Key'
 import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
 import type { OutOfBandRecord } from './repository'
 
@@ -17,7 +16,7 @@ import { HandshakeReuseAcceptedMessage } from './messages/HandshakeReuseAccepted
 import { OutOfBandRepository } from './repository'
 
 @injectable()
-export class OutOfBandService {
+export class OutOfBandServiceV2 {
   private outOfBandRepository: OutOfBandRepository
   private eventEmitter: EventEmitter
 
@@ -159,8 +158,8 @@ export class OutOfBandService {
     return this.outOfBandRepository.findSingleByQuery({ invitationId })
   }
 
-  public async findByRecipientKey(recipientKey: Key) {
-    return this.outOfBandRepository.findSingleByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
+  public async findByRecipientKey(recipientKey: string) {
+    return this.outOfBandRepository.findSingleByQuery({ recipientKeyFingerprints: [recipientKey] })
   }
 
   public async getAll() {

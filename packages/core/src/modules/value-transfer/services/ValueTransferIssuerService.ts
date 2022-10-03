@@ -5,11 +5,11 @@ import type { MintResponseMessage } from '../messages/MintResponseMessage'
 import { Giver } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, timeout } from 'rxjs/operators'
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
@@ -17,7 +17,7 @@ import { ValueTransferPartyStateService } from './ValueTransferPartyStateService
 import { ValueTransferService } from './ValueTransferService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferIssuerService {
   private config: AgentConfig
   private valueTransferService: ValueTransferService

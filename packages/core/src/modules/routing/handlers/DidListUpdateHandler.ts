@@ -1,11 +1,10 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { MessageSender } from '../../../agent/MessageSender'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { MediatorService } from '../services/MediatorService'
 
 import { DidListUpdateMessage } from '../messages'
 
-export class DidListUpdateHandler implements Handler<typeof DIDCommV2Message> {
+export class DidListUpdateHandler implements Handler {
   private mediatorService: MediatorService
   private messageSender: MessageSender
   public supportedMessages = [DidListUpdateMessage]

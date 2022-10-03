@@ -1,16 +1,13 @@
+import type { AgentMessageReceivedEvent } from '../../../agent/Events'
 import type { DIDCommMessage, DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { Routing } from '../../connections/services'
-import type { DidListUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
-import type { MediationDenyMessageV2, MediationGrantMessageV2, DidListUpdateResponseMessage } from '../messages'
-import type { GetRoutingOptions } from '../types'
 import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
-import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
-import type { MediationDenyMessage } from '../messages'
+import type { DidListUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
+import type { MediationDenyMessageV2, MediationGrantMessageV2, DidListUpdateResponseMessage } from '../messages'
 import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
-import type { GetRoutingOptions } from './RoutingService'
+import type { GetRoutingOptions } from '@aries-framework/core'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
@@ -20,36 +17,25 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
-import { KeyType } from '../../../crypto'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
-import { injectable } from '../../../plugins'
+import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils'
-import { ConnectionType } from '../../connections/models/ConnectionType'
+import { Wallet } from '../../../wallet'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../../connections/services/ConnectionService'
-import { Key } from '../../dids'
-import { didKeyToVerkey, isDidKey, verkeyToDidKey } from '../../dids/helpers'
 import { ProblemReportError } from '../../problem-reports'
-import { Wallet } from '../../../wallet'
 import { RoutingEventTypes } from '../RoutingEvents'
-import { ListUpdateAction, DidListUpdateMessage, MediationRequestMessageV2, DidListUpdate } from '../messages'
 import { RoutingProblemReportReason } from '../error'
-import {
-  KeylistUpdateAction,
-  KeylistUpdateResponseMessage,
-  MediationRequestMessage,
-  MediationGrantMessage,
-} from '../messages'
-import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMessage'
+import { ListUpdateAction, DidListUpdateMessage, MediationRequestMessageV2, DidListUpdate } from '../messages'
 import { MediationRole, MediationState } from '../models'
-import { MediationRecord, MediationRepository } from '../repository'
 import { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from '../protocol/pickup/v2/messages'
 import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
 
 @injectable()
 export class MediationRecipientService {
+  private wallet: Wallet
   private mediationRepository: MediationRepository
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
@@ -57,12 +43,14 @@ export class MediationRecipientService {
   private config: AgentConfig
 
   public constructor(
+    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     connectionService: ConnectionService,
     messageSender: MessageSender,
     config: AgentConfig,
     mediatorRepository: MediationRepository,
     eventEmitter: EventEmitter
   ) {
+    this.wallet = wallet
     this.config = config
     this.mediationRepository = mediatorRepository
     this.eventEmitter = eventEmitter
@@ -107,11 +95,14 @@ export class MediationRecipientService {
       did,
       mediatorDid,
     })
-    connection.setTag('connectionType', [ConnectionType.Mediator])
-    await this.connectionService.update(connection)
-
     await this.mediationRepository.save(mediationRecord)
-    this.emitStateChangedEvent(mediationRecord, null)
+    this.eventEmitter.emit<MediationStateChangedEvent>({
+      type: RoutingEventTypes.MediationStateChanged,
+      payload: {
+        mediationRecord,
+        previousState: null,
+      },
+    })
 
     return { mediationRecord, message }
   }
@@ -149,7 +140,7 @@ export class MediationRecipientService {
       }
     }
 
-    await this.mediatorRepository.update(mediationRecord)
+    await this.mediationRepository.update(mediationRecord)
     this.eventEmitter.emit<DidListUpdatedEvent>({
       type: RoutingEventTypes.RecipientDidListUpdated,
       payload: {
@@ -274,7 +265,7 @@ export class MediationRecipientService {
       })
       const websocketSchemes = ['ws', 'wss']
 
-      await this.messageSender.sendMessage(createOutboundMessage(connectionRecord, message), {
+      await this.messageSender.sendDIDCommV1Message(createOutboundMessage(connectionRecord, message), {
         transportPriority: {
           schemes: websocketSchemes,
           restrictive: true,
@@ -359,7 +350,7 @@ export class MediationRecipientService {
   }
 
   public async findGrantedByMediatorDid(did: string): Promise<MediationRecord | null> {
-    return this.mediatorRepository.findSingleByQuery({ mediatorDid: did, state: MediationState.Granted })
+    return this.mediationRepository.findSingleByQuery({ mediatorDid: did, state: MediationState.Granted })
   }
 
   public async getMediators(): Promise<MediationRecord[]> {
@@ -410,7 +401,6 @@ export class MediationRecipientService {
     }
   }
 
-
   private async updateUseDidKeysFlag(connection: ConnectionRecord, protocolUri: string, connectionUsesDidKey: boolean) {
     const useDidKeysForProtocol = connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol) ?? {}
     useDidKeysForProtocol[protocolUri] = connectionUsesDidKey
@@ -422,7 +412,7 @@ export class MediationRecipientService {
     if (!messageContext.message.to || !messageContext.message.to.length) {
       throw new Error(`No mediation has been requested for this did: ${messageContext.message.to}`)
     }
-    const mediationRecord = await this.mediatorRepository.getByDid(messageContext.message.to[0])
+    const mediationRecord = await this.mediationRepository.getByDid(messageContext.message.to[0])
 
     if (!mediationRecord) {
       throw new Error(`No mediation has been requested for this connection id: ${messageContext.message.from}`)
