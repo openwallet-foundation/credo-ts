@@ -225,9 +225,7 @@ describe('Present Proof', () => {
 
     const acceptPresentationOptions: AcceptPresentationOptions = {
       proofRecordId: aliceProofRecord.id,
-      proofFormats: {
-        requestedCredentials,
-      },
+      proofFormats: { presentationExchange: requestedCredentials.proofFormats.presentationExchange },
     }
 
     const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {

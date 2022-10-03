@@ -16,7 +16,7 @@ import { Agent } from '../src/agent/Agent'
 import { InjectionSymbols } from '../src/constants'
 import { KeyType } from '../src/crypto/KeyType'
 import { HandshakeProtocol } from '../src/modules/connections/models/HandshakeProtocol'
-import { CredentialEventTypes, CredentialState } from '../src/modules/credentials'
+import { AutoAcceptCredential, CredentialEventTypes, CredentialState } from '../src/modules/credentials'
 import { DidKey } from '../src/modules/dids'
 import { ProofEventTypes, ProofState, AutoAcceptProof } from '../src/modules/proofs'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
@@ -292,6 +292,7 @@ describe('Present Proof', () => {
 
     const faberOptions = getAgentOptions(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
+      autoAcceptCredentials: AutoAcceptCredential.Always,
       mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
         domain: 'https://example.com',
       }),
@@ -300,6 +301,7 @@ describe('Present Proof', () => {
 
     const aliceOptions = getAgentOptions(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
+      autoAcceptCredentials: AutoAcceptCredential.Always,
       // logger: new TestLogger(LogLevel.test),
       mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
         domain: 'https://example.com',
@@ -499,8 +501,6 @@ describe('Present Proof', () => {
         serviceEndpoint: mediationRecord.endpoint,
       },
     })
-
-    await aliceAgent.receiveMessage(message.toJSON())
 
     await aliceProofRecordPromise
 

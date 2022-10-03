@@ -910,7 +910,6 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
       credentialRecord.autoAcceptCredential,
       this.credentialsModuleConfig.autoAcceptCredentials
     )
-
     // Handle always / never cases
     if (autoAccept === AutoAcceptCredential.Always) return true
     if (autoAccept === AutoAcceptCredential.Never) return false

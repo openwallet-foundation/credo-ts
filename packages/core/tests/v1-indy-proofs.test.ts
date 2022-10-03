@@ -39,7 +39,7 @@ describe('Present Proof', () => {
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-      await setupIndyProofsTest('Faber agent', 'Alice agent'))
+      await setupIndyProofsTest('Faber agent v1', 'Alice agent v1'))
     testLogger.test('Issuing second credential')
   })
 
