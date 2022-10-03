@@ -56,13 +56,12 @@
   - [ ] I built my code on Linux
 - [ ] I have considered platform differences
   - [ ] I'm using environment-aware scripts (bash, env, build scripts)
+ [ ] I have published a [pre-release package of AFJ](TODO:link-to-readme), installed and tested it in other apps
 
 ### Dependencies (specific to Aries Framework Repo)
 
 - This PR depends on other PRs (check only relevant items)
-  - [ ] [VTP library PR](PR link)
-  - [ ] [Gossip library PR](PR link)
-  - [ ] [Backend apps PR](PR link)
+  - [ ] [VTP/Gossip library PR](PR link)
   - [ ] All the other PR's have been merged in, so it's time to merge Aries Framework too
 - This PR requires us to also update
   - [ ] Update Mobile applications
@@ -75,9 +74,6 @@
   - [ ] This PR breaks compatibility with older version of Aries Framework Javascript
   - [ ] This PR will be compatible with older version of Aries Framework Javascript
 - Do we need to bump major app version?
-  - [ ] Small change, bumping only minor version via CI script is fine (need to be done manuall)
+  - [ ] Small change, bumping only minor version via CI script is fine (need to be done manual)
   - [ ] Larger change, so need to bump major version (need to be done manually)
 
-## Screenshots:
-
-<!--- Attach a screenshot of new screens or UI changes -->
