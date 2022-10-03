@@ -5,34 +5,38 @@ import type { ProofFormat, ProofFormatPayload } from '../ProofFormat'
 import type { ProofRequestOptions } from '../indy/models/ProofRequest'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
 
-export interface CreateRequestAttachmentOptions {
+export interface FormatCreateRequestAttachmentOptions {
   id?: string
   proofRequestOptions: ProofRequestOptions
 }
 
-export interface CreateProofAttachmentOptions {
+export interface FormatCreateProofAttachmentOptions {
   id?: string
   proofProposalOptions: ProofRequestOptions
 }
 
-export interface FormatCreateProposalOptions {
+// export interface FormatCreateProposalOptions {
+//   id?: string
+//   formats: ProposeProofFormats
+// }
+
+export interface FormatCreateProposalOptions<PF extends ProofFormat> {
   id?: string
-  formats: ProposeProofFormats
+  proofFormats: ProofFormatPayload<[PF], 'createProposal'>
 }
 
-export interface ProcessProposalOptions {
+export interface FormatProcessProposalOptions {
   proposal: ProofAttachmentFormat
   record?: ProofRecord
 }
 
-export interface CreateRequestOptions {
+export interface FormatCreateRequestOptions {
   id?: string
   formats: ProposeProofFormats
 }
 
-export interface ProcessRequestOptions {
-  requestAttachment: ProofAttachmentFormat
-  record?: ProofRecord
+export interface FormatProcessRequestOptions<PF extends ProofFormat> {
+  proofFormats: ProofFormatPayload<[PF], 'acceptRequest'>
 }
 
 export interface FormatCreatePresentationOptions<PF extends ProofFormat> {
@@ -41,7 +45,7 @@ export interface FormatCreatePresentationOptions<PF extends ProofFormat> {
   proofFormats: ProofFormatPayload<[PF], 'createPresentation'>
 }
 
-export interface ProcessPresentationOptions {
+export interface FormatProcessPresentationOptions {
   record: ProofRecord
   formatAttachments: {
     request: ProofAttachmentFormat[]
@@ -49,16 +53,16 @@ export interface ProcessPresentationOptions {
   }
 }
 
-export interface VerifyProofOptions {
+export interface FormatVerifyProofOptions {
   request: Attachment
   proof: Attachment
 }
 
-export interface CreateProblemReportOptions {
+export interface FormatCreateProblemReportOptions {
   proofRecord: ProofRecord
   description: string
 }
 
-export interface CreatePresentationFormatsOptions {
+export interface FormatCreatePresentationFormatsOptions {
   presentationAttachment: Attachment
 }

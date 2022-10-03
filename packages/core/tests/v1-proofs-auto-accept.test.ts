@@ -12,7 +12,7 @@ import {
 } from '../src'
 import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
-import { setupProofsTest, waitForProofRecord } from './helpers'
+import { setupIndyProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Auto accept present proof', () => {
@@ -26,7 +26,7 @@ describe('Auto accept present proof', () => {
   describe('Auto accept on `always`', () => {
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-        await setupProofsTest(
+        await setupIndyProofsTest(
           'Faber Auto Accept Always Proofs',
           'Alice Auto Accept Always Proofs',
           AutoAcceptProof.Always
@@ -134,7 +134,7 @@ describe('Auto accept present proof', () => {
     beforeAll(async () => {
       testLogger.test('Initializing the agents')
       ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-        await setupProofsTest(
+        await setupIndyProofsTest(
           'Faber Auto Accept Content Approved Proofs',
           'Alice Auto Accept Content Approved Proofs',
           AutoAcceptProof.ContentApproved

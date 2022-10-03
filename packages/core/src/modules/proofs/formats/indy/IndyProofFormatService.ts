@@ -1,6 +1,7 @@
 import type { AgentContext } from '../../../../agent'
 import type { Logger } from '../../../../logger'
 import type {
+  CreateProposalOptions,
   CreateRequestAsResponseOptions,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
@@ -8,16 +9,16 @@ import type {
 import type { ProofRequestFormats } from '../../models/SharedOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
-  CreatePresentationFormatsOptions,
-  CreateProofAttachmentOptions,
+  FormatCreatePresentationFormatsOptions,
+  FormatCreateProofAttachmentOptions,
   FormatCreateProposalOptions,
-  CreateRequestAttachmentOptions,
-  CreateRequestOptions,
+  FormatCreateRequestAttachmentOptions,
+  FormatCreateRequestOptions,
   FormatCreatePresentationOptions,
-  ProcessPresentationOptions,
-  ProcessProposalOptions,
-  ProcessRequestOptions,
-  VerifyProofOptions,
+  FormatProcessPresentationOptions,
+  FormatProcessProposalOptions,
+  FormatProcessRequestOptions,
+  FormatVerifyProofOptions,
 } from '../models/ProofFormatServiceOptions'
 import type { IndyProofFormat } from './IndyProofFormat'
 import type { GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
@@ -51,6 +52,7 @@ import {
 } from '../ProofFormatConstants'
 import { ProofFormatService } from '../ProofFormatService'
 
+import { IndyProofUtils } from './IndyProofUtils'
 import { InvalidEncodedValueError } from './errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from './errors/MissingIndyProofMessageError'
 import { RequestedAttribute, RequestedPredicate } from './models'
@@ -87,7 +89,15 @@ export class IndyProofFormatService extends ProofFormatService {
   public readonly formatKey = 'indy' as const
   public readonly proofRecordType = 'indy' as const
 
-  private createRequestAttachment(options: CreateRequestAttachmentOptions): ProofAttachmentFormat {
+  public async getProposalFormatOptions(
+    options: CreateProposalOptions<[IndyProofFormat]>
+  ): Promise<FormatCreateProposalOptions<IndyProofFormat>> {
+    return {
+      proofFormats: await IndyProofUtils.createRequestFromPreview(options),
+    }
+  }
+
+  private createRequestAttachment(options: FormatCreateRequestAttachmentOptions): ProofAttachmentFormat {
     const format = new ProofFormatSpec({
       attachmentId: options.id,
       format: V2_INDY_PRESENTATION_REQUEST,
@@ -108,7 +118,7 @@ export class IndyProofFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  private async createProofAttachment(options: CreateProofAttachmentOptions): Promise<ProofAttachmentFormat> {
+  private async createProofAttachment(options: FormatCreateProofAttachmentOptions): Promise<ProofAttachmentFormat> {
     const format = new ProofFormatSpec({
       attachmentId: options.id,
       format: V2_INDY_PRESENTATION_PROPOSAL,
@@ -127,11 +137,11 @@ export class IndyProofFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public async createProposal(options: FormatCreateProposalOptions): Promise<ProofAttachmentFormat> {
-    if (!options.formats.indy) {
+  public async createProposal(options: FormatCreateProposalOptions<IndyProofFormat>): Promise<ProofAttachmentFormat> {
+    if (!options.proofFormats.indy) {
       throw Error('Missing indy format to create proposal attachment format')
     }
-    const indyFormat = options.formats.indy
+    const indyFormat = options.proofFormats.indy
 
     return await this.createProofAttachment({
       id: options.id ?? uuid(),
@@ -139,7 +149,7 @@ export class IndyProofFormatService extends ProofFormatService {
     })
   }
 
-  public async processProposal(options: ProcessProposalOptions): Promise<void> {
+  public async processProposal(options: FormatProcessProposalOptions): Promise<void> {
     const proofProposalJson = options.proposal.attachment.getDataAsJson<ProofRequest>()
 
     // Assert attachment
@@ -178,7 +188,7 @@ export class IndyProofFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public async createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat> {
+  public async createRequest(options: FormatCreateRequestOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.indy) {
       throw new AriesFrameworkError('Missing indy format to create proof request attachment format.')
     }
@@ -189,15 +199,14 @@ export class IndyProofFormatService extends ProofFormatService {
     })
   }
 
-  public async processRequest(options: ProcessRequestOptions): Promise<void> {
-    const proofRequestJson = options.requestAttachment.attachment.getDataAsJson<ProofRequest>()
-
+  public async processRequest(options: FormatProcessRequestOptions<IndyProofFormat>): Promise<void> {
+    const proofRequestJson = options.proofFormats.indy?.formatAttachments.attachment.getDataAsJson<ProofRequest>()
     const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 
     // Assert attachment
     if (!proofRequest) {
       throw new AriesFrameworkError(
-        `Missing required base64 or json encoded attachment data for presentation request with thread id ${options.record?.threadId}`
+        `Missing required base64 or json encoded attachment data for presentation request with thread id ${options.proofFormats.indy?.record?.threadId}`
       )
     }
     await MessageValidator.validateSync(proofRequest)
@@ -244,7 +253,10 @@ export class IndyProofFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public async processPresentation(agentContext: AgentContext, options: ProcessPresentationOptions): Promise<boolean> {
+  public async processPresentation(
+    agentContext: AgentContext,
+    options: FormatProcessPresentationOptions
+  ): Promise<boolean> {
     const requestFormat = options.formatAttachments.request.find(
       (x) => x.format.format === V2_INDY_PRESENTATION_REQUEST
     )
@@ -266,7 +278,7 @@ export class IndyProofFormatService extends ProofFormatService {
     return await this.verifyProof(agentContext, { request: requestFormat.attachment, proof: proofFormat.attachment })
   }
 
-  public async verifyProof(agentContext: AgentContext, options: VerifyProofOptions): Promise<boolean> {
+  public async verifyProof(agentContext: AgentContext, options: FormatVerifyProofOptions): Promise<boolean> {
     if (!options) {
       throw new AriesFrameworkError('No Indy proof was provided.')
     }
@@ -584,7 +596,9 @@ export class IndyProofFormatService extends ProofFormatService {
     })
   }
 
-  public async createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats> {
+  public async createProofRequestFromProposal(
+    options: FormatCreatePresentationFormatsOptions
+  ): Promise<ProofRequestFormats> {
     const proofRequestJson = options.presentationAttachment.getDataAsJson<ProofRequest>()
 
     const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
@@ -642,5 +656,15 @@ export class IndyProofFormatService extends ProofFormatService {
     }
 
     return { revoked: undefined, deltaTimestamp: undefined }
+  }
+
+  public createProcessRequestOptions(request: ProofAttachmentFormat): FormatProcessRequestOptions<IndyProofFormat> {
+    return {
+      proofFormats: {
+        indy: {
+          formatAttachments: request,
+        },
+      },
+    }
   }
 }

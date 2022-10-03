@@ -12,7 +12,7 @@ import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocol
 import { ProofState } from '../src/modules/proofs/models/ProofState'
 import { uuid } from '../src/utils/uuid'
 
-import { setupProofsTest, waitForProofRecord } from './helpers'
+import { setupIndyProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof Subprotocol', () => {
@@ -27,7 +27,7 @@ describe('Present Proof Subprotocol', () => {
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-      await setupProofsTest('Faber agent', 'Alice agent'))
+      await setupIndyProofsTest('Faber agent', 'Alice agent'))
     testLogger.test('Issuing second credential')
   })
 

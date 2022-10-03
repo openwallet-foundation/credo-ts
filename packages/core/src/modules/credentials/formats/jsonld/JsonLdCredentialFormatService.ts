@@ -241,7 +241,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       proofType: credentialData.options.proofType,
       verificationMethod: verificationMethod,
     })
-
     const attachment = this.getFormatData(verifiableCredential, format.attachId)
     return { format, attachment }
   }
@@ -274,7 +273,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     const verificationMethod = await findVerificationMethodByKeyType(keyType, issuerDidDocument)
-
     if (!verificationMethod) {
       throw new AriesFrameworkError(`Missing verification method for key type ${keyType}`)
     }

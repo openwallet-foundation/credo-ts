@@ -11,8 +11,9 @@ import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
 import type { ProofAttributeInfo } from '../../formats/indy/models'
 import type {
-  CreateProblemReportOptions,
+  FormatCreateProblemReportOptions,
   FormatCreatePresentationOptions,
+  FormatProcessRequestOptions,
 } from '../../formats/models/ProofFormatServiceOptions'
 import type {
   CreateAckOptions,
@@ -359,11 +360,15 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     this.logger.debug(`Processing presentation request with id ${proofRequestMessage.id}`)
 
     const requestAttachments = proofRequestMessage.getAttachmentFormats()
-
     for (const attachmentFormat of requestAttachments) {
-      await this.indyProofFormatService.processRequest({
-        requestAttachment: attachmentFormat,
-      })
+      const options: FormatProcessRequestOptions<IndyProofFormat> = {
+        proofFormats: {
+          indy: {
+            formatAttachments: attachmentFormat,
+          },
+        },
+      }
+      await this.indyProofFormatService.processRequest(options)
     }
 
     const proofRequest = proofRequestMessage.indyProofRequest
@@ -608,7 +613,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
 
   public async createProblemReport(
     agentContext: AgentContext,
-    options: CreateProblemReportOptions
+    options: FormatCreateProblemReportOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const msg = new V1PresentationProblemReportMessage({
       description: {

@@ -12,7 +12,7 @@ import type { MediationRecipientService, RoutingService } from '../routing'
 import type { ProofStateChangedEvent } from './ProofEvents'
 import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import type { ProofFormat } from './formats/ProofFormat'
-import type { CreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
+import type { FormatCreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -171,7 +171,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
 
   abstract createProblemReport(
     agentContext: AgentContext,
-    options: CreateProblemReportOptions
+    options: FormatCreateProblemReportOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
 
   abstract processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>

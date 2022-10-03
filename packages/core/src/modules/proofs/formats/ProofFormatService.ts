@@ -2,23 +2,24 @@ import type { AgentContext } from '../../../agent'
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { DidCommMessageRepository } from '../../../storage'
 import type {
+  CreateProposalAsResponseOptions,
+  CreateProposalOptions,
   CreateRequestAsResponseOptions,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
 } from '../models/ProofServiceOptions'
 import type { ProofRequestFormats } from '../models/SharedOptions'
 import type { ProofFormat } from './ProofFormat'
-import type { IndyProofFormat } from './indy/IndyProofFormat'
 import type { GetRequestedCredentialsFormat } from './indy/IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
-  CreatePresentationFormatsOptions,
+  FormatCreatePresentationFormatsOptions,
   FormatCreateProposalOptions,
-  CreateRequestOptions,
+  FormatCreateRequestOptions,
   FormatCreatePresentationOptions,
-  ProcessPresentationOptions,
-  ProcessProposalOptions,
-  ProcessRequestOptions,
+  FormatProcessPresentationOptions,
+  FormatProcessProposalOptions,
+  FormatProcessRequestOptions,
 } from './models/ProofFormatServiceOptions'
 
 /**
@@ -40,22 +41,22 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
     this.agentConfig = agentConfig
   }
 
-  abstract createProposal(options: FormatCreateProposalOptions): Promise<ProofAttachmentFormat>
+  abstract createProposal(options: FormatCreateProposalOptions<PF>): Promise<ProofAttachmentFormat>
 
-  abstract processProposal(options: ProcessProposalOptions): Promise<void>
+  abstract processProposal(options: FormatProcessProposalOptions): Promise<void>
 
-  abstract createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat>
+  abstract createRequest(options: FormatCreateRequestOptions): Promise<ProofAttachmentFormat>
 
-  abstract processRequest(options: ProcessRequestOptions): Promise<void>
+  abstract processRequest(options: FormatProcessRequestOptions<PF>): Promise<void>
 
   abstract createPresentation(
     agentContext: AgentContext,
     options: FormatCreatePresentationOptions<PF>
   ): Promise<ProofAttachmentFormat>
 
-  abstract processPresentation(agentContext: AgentContext, options: ProcessPresentationOptions): Promise<boolean>
+  abstract processPresentation(agentContext: AgentContext, options: FormatProcessPresentationOptions): Promise<boolean>
 
-  abstract createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats>
+  abstract createProofRequestFromProposal(options: FormatCreatePresentationFormatsOptions): Promise<ProofRequestFormats>
 
   public abstract getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
@@ -71,9 +72,13 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
     requestAttachments: ProofAttachmentFormat[]
   ): boolean
 
+  abstract getProposalFormatOptions(
+    options: CreateProposalOptions<[PF]> | CreateProposalAsResponseOptions<[PF]>
+  ): Promise<FormatCreateProposalOptions<PF>>
+
   abstract supportsFormat(formatIdentifier: string): boolean
 
-  abstract createRequestAsResponse(
-    options: CreateRequestAsResponseOptions<[IndyProofFormat]>
-  ): Promise<ProofAttachmentFormat>
+  abstract createRequestAsResponse(options: CreateRequestAsResponseOptions<[PF]>): Promise<ProofAttachmentFormat>
+
+  abstract createProcessRequestOptions(request: ProofAttachmentFormat): FormatProcessRequestOptions<PF>
 }

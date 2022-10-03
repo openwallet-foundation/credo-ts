@@ -42,6 +42,8 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
   }
 
   public async handle(messageContext: HandlerInboundMessage<V2RequestPresentationHandler>) {
+    console.log("GOT REQUEST...")
+
     const proofRecord = await this.proofService.processRequest(messageContext)
     if (this.proofResponseCoordinator.shouldAutoRespondToRequest(messageContext.agentContext, proofRecord)) {
       return await this.createPresentation(proofRecord, messageContext)

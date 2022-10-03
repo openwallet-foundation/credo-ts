@@ -1,5 +1,6 @@
 import type { DidDocumentService } from './service'
 
+import { ProofType } from '@sphereon/pex'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -32,6 +33,22 @@ interface DidDocumentOptions {
   keyAgreement?: Array<string | VerificationMethod>
   capabilityInvocation?: Array<string | VerificationMethod>
   capabilityDelegation?: Array<string | VerificationMethod>
+}
+
+export function keyTypeToProofType(key: Key): ProofType | undefined {
+  if (key.keyType === KeyType.Ed25519) {
+    return ProofType.Ed25519Signature2018
+  } else if (key.keyType === KeyType.Bls12381g2) {
+    return ProofType.BbsBlsSignatureProof2020
+  }
+}
+
+export function proofTypeToKeyType(proofType: ProofType): KeyType | undefined {
+  if (proofType === ProofType.Ed25519Signature2018) {
+    return KeyType.Ed25519
+  } else if (proofType === ProofType.BbsBlsSignatureProof2020) {
+    return KeyType.Bls12381g2
+  }
 }
 
 export class DidDocument {

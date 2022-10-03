@@ -13,6 +13,7 @@ import type {
   Wallet,
 } from '../src'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
+import type { SignCredentialOptionsRFC0593 } from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
 import type { RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
@@ -27,6 +28,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
+  JsonTransformer,
   Agent,
   AgentConfig,
   AgentContext,
@@ -61,6 +63,8 @@ import {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
 } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
+import { Ed25519Signature2018Fixtures } from '../src/modules/vc/__tests__/fixtures'
+import { W3cCredential } from '../src/modules/vc/models'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -699,20 +703,18 @@ export async function setupCredentialTests(
   return { faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection, faberReplay, aliceReplay }
 }
 
-export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
+export async function setupIndyProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
   const credentialPreview = V1CredentialPreview.fromRecord({
     name: 'John',
     age: '99',
   })
 
-  const unique = uuid().substring(0, 4)
-
-  const faberAgentOptions = getAgentOptions(`${faberName}-${unique}`, {
+  const faberAgentOptions = getAgentOptions(faberName, {
     autoAcceptProofs,
     endpoints: ['rxjs:faber'],
   })
 
-  const aliceAgentOptions = getAgentOptions(`${aliceName}-${unique}`, {
+  const aliceAgentOptions = getAgentOptions(aliceName, {
     autoAcceptProofs,
     endpoints: ['rxjs:alice'],
   })
@@ -791,6 +793,186 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
       ],
     },
   })
+  const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
+  const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
+
+  faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
+  aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
+
+  return {
+    faberAgent,
+    aliceAgent,
+    credDefId: definition.id,
+    faberConnection,
+    aliceConnection,
+    presentationPreview,
+    faberReplay,
+    aliceReplay,
+  }
+}
+
+export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
+  const unique = uuid().substring(0, 4)
+
+  const autoAcceptCredentials = AutoAcceptCredential.Always
+  const faberAgentOptions = getAgentOptions(`${faberName}-${unique}`, {
+    autoAcceptProofs,
+    endpoints: ['rxjs:faber'],
+    autoAcceptCredentials,
+  })
+
+  const aliceAgentOptions = getAgentOptions(`${aliceName}-${unique}`, {
+    autoAcceptProofs,
+    endpoints: ['rxjs:alice'],
+    autoAcceptCredentials,
+  })
+
+  const faberMessages = new Subject<SubjectMessage>()
+  const aliceMessages = new Subject<SubjectMessage>()
+
+  const subjectMap = {
+    'rxjs:faber': faberMessages,
+    'rxjs:alice': aliceMessages,
+  }
+  const faberAgent = new Agent(faberAgentOptions)
+  faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+  await faberAgent.initialize()
+
+  const aliceAgent = new Agent(aliceAgentOptions)
+  aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+  await aliceAgent.initialize()
+  const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
+
+  const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
+  expect(agentAConnection.isReady).toBe(true)
+  expect(agentBConnection.isReady).toBe(true)
+
+  const faberConnection = agentAConnection
+  const aliceConnection = agentBConnection
+
+  const presentationPreview = new PresentationPreview({
+    attributes: [
+      new PresentationPreviewAttribute({
+        name: 'name',
+        credentialDefinitionId: definition.id,
+        referent: '0',
+        value: 'John',
+      }),
+      new PresentationPreviewAttribute({
+        name: 'image_0',
+        credentialDefinitionId: definition.id,
+      }),
+    ],
+    predicates: [
+      new PresentationPreviewPredicate({
+        name: 'age',
+        credentialDefinitionId: definition.id,
+        predicate: PredicateType.GreaterThanOrEqualTo,
+        threshold: 50,
+      }),
+    ],
+  })
+
+  const issuerSeed = 'testseed0000000000000000000000I1'
+  const holderSeed = 'testseed0000000000000000000000H1'
+
+  //  create issuer did for test
+
+  const faberWallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+  const aliceWallet = aliceAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+
+  const faberKey = await faberWallet.createKey({ keyType: KeyType.Ed25519, seed: issuerSeed })
+  const issuerDidKey = new DidKey(faberKey)
+
+  const aliceKey = await aliceWallet.createKey({ keyType: KeyType.Ed25519, seed: holderSeed })
+  const holderDidKey = new DidKey(aliceKey)
+
+  const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_2
+  const credentialJsonDL = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_DL
+
+  credentialJson.id = 'https://issuer.oidp.uscis.gov/credentials/83627465dsdsdsd'
+  credentialJson.credentialSubject.id = holderDidKey.did
+  credentialJson.issuer = issuerDidKey.did
+
+  credentialJsonDL.id = 'https://issuer.oidp.uscis.gov/credentials/83627465'
+  credentialJsonDL.credentialSubject.id = holderDidKey.did
+  credentialJsonDL.issuer = issuerDidKey.did
+
+  const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
+  const credentialDL = JsonTransformer.fromJSON(credentialJson, W3cCredential)
+
+  const credentialResidency: W3cCredential = JsonTransformer.fromJSON(credential, W3cCredential)
+  const credentialDriversLicense: W3cCredential = JsonTransformer.fromJSON(credentialDL, W3cCredential)
+
+  const signCredentialOptions: SignCredentialOptionsRFC0593 = {
+    credential: credentialResidency,
+    options: {
+      proofType: 'Ed25519Signature2018',
+      proofPurpose: 'assertionMethod',
+    },
+  }
+
+  const signCredentialOptionsDriversLicense: SignCredentialOptionsRFC0593 = {
+    credential: credentialDriversLicense,
+    options: {
+      proofType: 'Ed25519Signature2018',
+      proofPurpose: 'assertionMethod',
+    },
+  }
+
+  const issuerReplay = new ReplaySubject<CredentialStateChangedEvent>()
+  const holderReplay = new ReplaySubject<CredentialStateChangedEvent>()
+
+  faberAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(issuerReplay)
+  aliceAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(holderReplay)
+
+  let issuerCredentialRecord = await faberAgent.credentials.offerCredential({
+    comment: 'some comment about credential',
+    connectionId: faberConnection.id,
+    credentialFormats: {
+      jsonld: signCredentialOptions,
+    },
+    protocolVersion: ProofProtocolVersion.V2,
+    autoAcceptCredential: AutoAcceptCredential.Always,
+  })
+
+  // console.log(">>>> OFFER DRIVING LICENSE CREDENTIAL")
+  let issuerCredentialRecordDL = await faberAgent.credentials.offerCredential({
+    comment: 'some comment about credential',
+    connectionId: faberConnection.id,
+    credentialFormats: {
+      jsonld: signCredentialOptionsDriversLicense,
+    },
+    protocolVersion: 'v2',
+    autoAcceptCredential: AutoAcceptCredential.Always,
+  })
+
+  await waitForCredentialRecordSubject(holderReplay, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.Done,
+  })
+  issuerCredentialRecord = await waitForCredentialRecordSubject(issuerReplay, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.Done,
+  })
+
+  // Because we use auto-accept it can take a while to have the whole credential flow finished
+  // Both parties need to interact with the ledger and sign/verify the credential
+  await waitForCredentialRecordSubject(holderReplay, {
+    threadId: issuerCredentialRecordDL.threadId,
+    state: CredentialState.Done,
+  })
+  issuerCredentialRecordDL = await waitForCredentialRecordSubject(issuerReplay, {
+    threadId: issuerCredentialRecordDL.threadId,
+    state: CredentialState.Done,
+  })
+
   const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
   const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
 

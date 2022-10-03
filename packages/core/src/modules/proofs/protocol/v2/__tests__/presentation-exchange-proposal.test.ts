@@ -2,12 +2,11 @@ import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { ProposeProofOptions } from '../../../ProofsApiOptions'
 import type { ProofRecord } from '../../../repository'
-import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
-import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormatConstants'
+import { V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormats'
 import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
@@ -16,16 +15,12 @@ describe('Present Proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
   let aliceConnection: ConnectionRecord
-  let presentationPreview: PresentationPreview
-  let faberPresentationRecord: ProofRecord
+  let faberProofRecord: ProofRecord
   let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupProofsTest(
-      'Faber agent',
-      'Alice agent'
-    ))
+    ;({ faberAgent, aliceAgent, aliceConnection } = await setupProofsTest('Faber agent', 'Alice agent'))
   })
 
   afterAll(async () => {
@@ -43,15 +38,51 @@ describe('Present Proof', () => {
       connectionId: aliceConnection.id,
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {
-        indy: {
-          name: 'ProofRequest',
-          nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
-          version: '1.0',
-          attributes: presentationPreview.attributes,
-          predicates: presentationPreview.predicates,
+        presentationExchange: {
+          presentationDefinition: {
+            id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            input_descriptors: [
+              {
+                constraints: {
+                  fields: [
+                    {
+                      path: ['$.credentialSubject.familyName'],
+                      purpose: 'The claim must be from one of the specified issuers',
+                      id: '1f44d55f-f161-4938-a659-f8026467f126',
+                    },
+                    {
+                      path: ['$.credentialSubject.givenName'],
+                      purpose: 'The claim must be from one of the specified issuers',
+                    },
+                  ],
+                  // limit_disclosure: 'required',
+                  // is_holder: [
+                  //   {
+                  //     directive: 'required',
+                  //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
+                  //   },
+                  // ],
+                },
+                schema: [
+                  {
+                    uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+                  },
+                  {
+                    uri: 'https://w3id.org/citizenship#PermanentResident',
+                  },
+                  {
+                    uri: 'https://w3id.org/citizenship/v1',
+                  },
+                ],
+                name: "EU Driver's License",
+                group: ['A'],
+                id: 'citizenship_input_1',
+              },
+            ],
+          },
         },
       },
-      comment: 'V2 propose proof test',
+      comment: 'V2 Presentation Exchange propose proof test',
     }
 
     const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
@@ -61,12 +92,12 @@ describe('Present Proof', () => {
     await aliceAgent.proofs.proposeProof(proposeOptions)
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberPresentationRecord = await faberPresentationRecordPromise
+    faberProofRecord = await faberPresentationRecordPromise
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-      associatedRecordId: faberPresentationRecord.id,
+      associatedRecordId: faberProofRecord.id,
       messageClass: V2ProposalPresentationMessage,
     })
 
@@ -75,7 +106,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2_INDY_PRESENTATION_PROPOSAL,
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
         },
       ],
       proposalsAttach: [
@@ -83,16 +114,18 @@ describe('Present Proof', () => {
           id: expect.any(String),
           mimeType: 'application/json',
           data: {
-            base64: expect.any(String),
+            json: {
+              input_descriptors: expect.any(Array),
+            },
           },
         },
       ],
       id: expect.any(String),
-      comment: 'V2 propose proof test',
+      comment: 'V2 Presentation Exchange propose proof test',
     })
-    expect(faberPresentationRecord).toMatchObject({
-      id: expect.anything(),
-      threadId: faberPresentationRecord.threadId,
+    expect(faberProofRecord.id).not.toBeNull()
+    expect(faberProofRecord).toMatchObject({
+      threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
       protocolVersion: ProofProtocolVersion.V2,
     })

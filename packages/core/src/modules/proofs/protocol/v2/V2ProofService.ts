@@ -7,7 +7,11 @@ import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormat } from '../../formats/ProofFormat'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
-import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
+import type {
+  FormatCreateProblemReportOptions,
+  FormatProcessRequestOptions,
+} from '../../formats/models/ProofFormatServiceOptions'
+import type { PresentationExchangeProofFormat } from '../../formats/presentation-exchange/PresentationExchangeProofFormat'
 import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type {
   CreateAckOptions,
@@ -38,7 +42,7 @@ import { ProofService } from '../../ProofService'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormatConstants'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
-import { IndyProofUtils } from '../../formats/indy/IndyProofUtils'
+import { PresentationExchangeFormatService } from '../../formats/presentation-exchange/PresentationExchangeFormatService'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
@@ -66,12 +70,16 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     didCommMessageRepository: DidCommMessageRepository,
     eventEmitter: EventEmitter,
     indyProofFormatService: IndyProofFormatService,
+    presentationExchangeFormatService: PresentationExchangeFormatService,
+
     @inject(InjectionSymbols.Wallet) wallet: Wallet
   ) {
     super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
     this.wallet = wallet
     this.formatServiceMap = {
       [PresentationRecordType.Indy]: indyProofFormatService,
+      [PresentationRecordType.PresentationExchange]: presentationExchangeFormatService,
+
       // other format services to be added to the map
     }
   }
@@ -89,14 +97,9 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
 
-      formats.push(
-        await service.createProposal({
-          formats:
-            key === PresentationRecordType.Indy
-              ? await IndyProofUtils.createRequestFromPreview(options)
-              : options.proofFormats,
-        })
-      )
+      const formatOptions = await service.getProposalFormatOptions(options)
+
+      formats.push(await service.createProposal(formatOptions))
     }
 
     const proposalMessage = new V2ProposalPresentationMessage({
@@ -140,11 +143,9 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     const formats = []
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
-      formats.push(
-        await service.createProposal({
-          formats: options.proofFormats,
-        })
-      )
+      const formatOptions = await service.getProposalFormatOptions(options)
+
+      formats.push(await service.createProposal(formatOptions))
     }
 
     const proposalMessage = new V2ProposalPresentationMessage({
@@ -340,9 +341,13 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
 
     for (const attachmentFormat of requestAttachments) {
       const service = this.getFormatServiceForFormat(attachmentFormat.format)
-      service?.processRequest({
-        requestAttachment: attachmentFormat,
-      })
+
+      const options = service?.createProcessRequestOptions(attachmentFormat)
+
+      if (!options) {
+        throw new AriesFrameworkError('Missing request attachment')
+      }
+      service?.processRequest(options)
     }
 
     // assert
@@ -428,14 +433,25 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     })
 
     const formats = []
-    for (const key of Object.keys(options.proofFormats)) {
-      const service = this.formatServiceMap[key]
-      formats.push(
-        await service.createPresentation(agentContext, {
-          attachment: proofRequest.getAttachmentByFormatIdentifier(V2_INDY_PRESENTATION_REQUEST),
-          proofFormats: options.proofFormats,
-        })
-      )
+    for (const attachmentFormat of proofRequest.getAttachmentFormats()) {
+      const service = this.getFormatServiceForFormat(attachmentFormat.format)
+      if (service) {
+        try {
+          formats.push(
+            await service.createPresentation(agentContext, {
+              attachment: proofRequest.getAttachmentByFormatIdentifier(attachmentFormat.format.format),
+              proofFormats: options.proofFormats,
+            })
+          )
+        } catch (e) {
+          if (e instanceof AriesFrameworkError) {
+            throw new V2PresentationProblemReportError(e.message, {
+              problemCode: PresentationProblemReportReason.Abandoned,
+            })
+          }
+          throw e
+        }
+      }
     }
 
     const presentationMessage = new V2PresentationMessage({
@@ -591,7 +607,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
 
   public async createProblemReport(
     agentContext: AgentContext,
-    options: CreateProblemReportOptions
+    options: FormatCreateProblemReportOptions
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const msg = new V2PresentationProblemReportMessage({
       description: {

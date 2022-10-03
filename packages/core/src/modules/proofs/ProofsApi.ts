@@ -10,6 +10,7 @@ import type {
 } from './ProofsApiOptions'
 import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
+import type { PresentationExchangeProofFormat } from './formats/presentation-exchange/PresentationExchangeProofFormat'
 import type {
   AutoSelectCredentialsForProofRequestOptions,
   GetRequestedCredentialsForProofRequest,
@@ -89,7 +90,7 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
 
 @injectable()
 export class ProofsApi<
-  PFs extends ProofFormat[] = [IndyProofFormat],
+  PFs extends ProofFormat[] = [IndyProofFormat, PresentationExchangeProofFormat],
   PSs extends ProofService<PFs>[] = [V1ProofService, V2ProofService<PFs>]
 > implements ProofsApi<PFs, PSs>
 {
@@ -267,6 +268,7 @@ export class ProofsApi<
    * @returns Proof record associated with the sent presentation message
    */
   public async acceptRequest(options: AcceptPresentationOptions<PFs>): Promise<ProofRecord> {
+
     const { proofRecordId, proofFormats, comment } = options
 
     const record = await this.getById(proofRecordId)
@@ -278,6 +280,8 @@ export class ProofsApi<
       proofRecord: record,
       comment,
     }
+
+
     const { message, proofRecord } = await service.createPresentation(this.agentContext, presentationOptions)
 
     const requestMessage = await service.findRequestMessage(this.agentContext, proofRecord.id)
