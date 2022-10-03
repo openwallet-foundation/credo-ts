@@ -25,7 +25,7 @@
 
 ### Mgmt (common)
 
-- [ ] I attached Link to related ticket attached
+- [ ] Link to related ticket attached
 - [ ] Added list of _reviewers_ to Github reviewers section
 - [ ] Added at least one (at most two) _assignees_ to the PR (somebody from the reviewers section)
 - [ ] Selected `CBDC DIDComm (Beta)` in `Project` field
