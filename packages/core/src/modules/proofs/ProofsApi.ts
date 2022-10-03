@@ -268,7 +268,6 @@ export class ProofsApi<
    * @returns Proof record associated with the sent presentation message
    */
   public async acceptRequest(options: AcceptPresentationOptions<PFs>): Promise<ProofRecord> {
-
     const { proofRecordId, proofFormats, comment } = options
 
     const record = await this.getById(proofRecordId)
@@ -280,7 +279,6 @@ export class ProofsApi<
       proofRecord: record,
       comment,
     }
-
 
     const { message, proofRecord } = await service.createPresentation(this.agentContext, presentationOptions)
 
