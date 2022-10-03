@@ -3,8 +3,7 @@ import type { EncryptedMessage, SignedMessage } from '../types'
 import type { DIDCommV2Message } from './DIDCommV2Message'
 import type { default as didcomm, IMessage } from 'didcomm'
 
-import { scoped, Lifecycle } from 'tsyringe'
-
+import { injectable } from '../../../plugins'
 import { JsonEncoder } from '../../../utils'
 import { AgentConfig } from '../../AgentConfig'
 
@@ -35,7 +34,7 @@ export interface DecryptedMessageContext {
   recipientKid?: string
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DIDCommV2EnvelopeService {
   private logger: Logger
   private didResolverService: DIDResolverService

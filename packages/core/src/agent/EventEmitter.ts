@@ -3,11 +3,12 @@ import type { EventEmitter as NativeEventEmitter } from 'events'
 
 import { fromEventPattern } from 'rxjs'
 import { takeUntil } from 'rxjs/operators'
-import { Lifecycle, scoped } from 'tsyringe'
+
+import { injectable } from '../plugins'
 
 import { AgentConfig } from './AgentConfig'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class EventEmitter {
   private agentConfig: AgentConfig
   private eventEmitter: NativeEventEmitter

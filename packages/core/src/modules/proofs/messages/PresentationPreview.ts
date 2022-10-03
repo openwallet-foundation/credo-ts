@@ -1,6 +1,5 @@
 import { Expose, Transform, Type } from 'class-transformer'
 import {
-  Equals,
   IsEnum,
   IsInstance,
   IsInt,
@@ -14,7 +13,7 @@ import {
 
 import { credDefIdRegex } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 import { PredicateType } from '../models/PredicateType'
 
 export interface PresentationPreviewAttributeOptions {
@@ -119,12 +118,12 @@ export class PresentationPreview {
   }
 
   @Expose({ name: '@type' })
-  @Equals(PresentationPreview.type)
+  @IsValidMessageType(PresentationPreview.type)
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
     toClassOnly: true,
   })
-  public readonly type = PresentationPreview.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/presentation-preview'
+  public readonly type = PresentationPreview.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/presentation-preview')
 
   @Type(() => PresentationPreviewAttribute)
   @ValidateNested({ each: true })

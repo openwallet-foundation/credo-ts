@@ -3,11 +3,9 @@ import type { PlaintextMessage } from '../../../types'
 import type { EncryptedMessage } from '../types'
 import type { DIDCommV1Message } from './DIDCommV1Message'
 
-import { inject, scoped, Lifecycle } from 'tsyringe'
-
 import { InjectionSymbols } from '../../../constants'
 import { ForwardMessage } from '../../../modules/routing/messages'
-import { JsonEncoder } from '../../../utils'
+import { injectable, inject } from '../../../plugins'
 import { Wallet } from '../../../wallet/Wallet'
 import { AgentConfig } from '../../AgentConfig'
 
@@ -23,7 +21,7 @@ export interface DecryptedMessageContext {
   recipientKey?: string
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 class DIDCommV1EnvelopeService {
   private wallet: Wallet
   private logger: Logger
@@ -41,11 +39,10 @@ class DIDCommV1EnvelopeService {
 
     // pass whether we want to use legacy did sov prefix
     const message = payload.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
-    const messageBuffer = JsonEncoder.toBuffer(payload)
 
     this.logger.debug(`Pack outbound message ${message['@type']}`)
 
-    let encryptedMessage = await this.wallet.pack(messageBuffer, recipientKeys, senderKey ?? undefined)
+    let encryptedMessage = await this.wallet.pack(payload, recipientKeys, senderKey ?? undefined)
 
     // If the record has routing keys (mediator) pack for each mediator
     for (const routingKey of routingKeys) {
@@ -58,10 +55,9 @@ class DIDCommV1EnvelopeService {
       this.logger.debug('Forward record created', forwardMessage)
 
       const forwardJson = forwardMessage.toJSON({ useLegacyDidSovPrefix: this.config.useLegacyDidSovPrefix })
-      const forwardBuffer = JsonEncoder.toBuffer(forwardJson)
 
       // Forward messages are anon packed
-      encryptedMessage = await this.wallet.pack(forwardBuffer, [routingKey], undefined)
+      encryptedMessage = await this.wallet.pack(forwardJson, [routingKey], undefined)
     }
 
     return encryptedMessage

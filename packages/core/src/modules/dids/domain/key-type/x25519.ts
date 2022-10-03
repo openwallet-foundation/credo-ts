@@ -1,7 +1,6 @@
-import type { KeyDidMapping } from './keyDidMapping'
+import type { KeyDidMapping } from './mapping'
 
 import { KeyType } from '../../../../crypto'
-import { DidDocumentBuilder } from '../DidDocumentBuilder'
 import { Key } from '../Key'
 import { VerificationMethod } from '../verificationMethod'
 
@@ -16,18 +15,9 @@ export function getX25519VerificationMethod({ key, id, controller }: { id: strin
   })
 }
 
-export function getX25519DidDoc(did: string, key: Key) {
-  const verificationMethod = getX25519VerificationMethod({ id: `${did}#${key.fingerprint}`, key, controller: did })
-
-  const document = new DidDocumentBuilder(did).addKeyAgreement(verificationMethod).build()
-
-  return document
-}
-
 export const keyDidX25519: KeyDidMapping = {
   supportedVerificationMethodTypes: [VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019],
 
-  getDidDocument: getX25519DidDoc,
   getVerificationMethods: (did, key) => [
     getX25519VerificationMethod({ id: `${did}#${key.fingerprint}`, key, controller: did }),
   ],

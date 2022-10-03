@@ -29,8 +29,8 @@ export class HttpInboundTransport implements InboundTransport {
   }
 
   public async start(agent: Agent) {
-    const transportService = agent.injectionContainer.resolve(TransportService)
-    const config = agent.injectionContainer.resolve(AgentConfig)
+    const transportService = agent.dependencyManager.resolve(TransportService)
+    const config = agent.dependencyManager.resolve(AgentConfig)
 
     config.logger.debug(`Starting HTTP inbound transport`, {
       port: this.port,
@@ -49,7 +49,10 @@ export class HttpInboundTransport implements InboundTransport {
         }
       } catch (error) {
         config.logger.error(`Error processing inbound message: ${error.message}`, error)
-        res.status(500).send('Error processing message')
+
+        if (!res.headersSent) {
+          res.status(500).send('Error processing message')
+        }
       } finally {
         transportService.removeSession(session)
       }
@@ -73,6 +76,12 @@ export class HttpTransportSession implements TransportSession {
     this.id = id
     this.req = req
     this.res = res
+  }
+
+  public async close(): Promise<void> {
+    if (!this.res.headersSent) {
+      this.res.status(200).end()
+    }
   }
 
   public async send(encryptedMessage: EncryptedMessage): Promise<void> {

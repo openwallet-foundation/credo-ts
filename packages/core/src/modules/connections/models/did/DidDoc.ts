@@ -5,7 +5,7 @@ import type { PublicKey } from './publicKey'
 import { Expose } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
 
-import { ServiceTransformer, DidCommService, IndyAgentService } from '../../../dids/domain/service'
+import { ServiceTransformer, DidCommV1Service, IndyAgentService } from '../../../dids/domain/service'
 
 import { AuthenticationTransformer } from './authentication'
 import { PublicKeyTransformer } from './publicKey'
@@ -77,10 +77,10 @@ export class DidDoc {
    * Get all DIDComm services ordered by priority descending. This means the highest
    * priority will be the first entry.
    */
-  public get didCommServices(): Array<IndyAgentService | DidCommService> {
-    const didCommServiceTypes = [IndyAgentService.type, DidCommService.type]
+  public get didCommServices(): Array<IndyAgentService | DidCommV1Service> {
+    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type]
     const services = this.service.filter((service) => didCommServiceTypes.includes(service.type)) as Array<
-      IndyAgentService | DidCommService
+      IndyAgentService | DidCommV1Service
     >
 
     // Sort services based on indicated priority

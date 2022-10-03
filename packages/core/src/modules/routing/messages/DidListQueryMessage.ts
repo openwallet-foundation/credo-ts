@@ -1,9 +1,10 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Type } from 'class-transformer'
-import { Equals, IsNotEmpty, IsObject, IsString, ValidateNested } from 'class-validator'
+import { IsNotEmpty, IsObject, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { PaginationQuery } from '../../common/pagination'
 
 export class DidListQuery {
@@ -35,7 +36,7 @@ export class DidListQueryMessage extends DIDCommV2Message {
   @Type(() => DidListQuery)
   public body!: DidListQuery
 
-  @Equals(DidListQueryMessage.type)
-  public readonly type = DidListQueryMessage.type
-  public static readonly type = 'https://didcomm.org/coordinate-mediation/2.0/didlist-query'
+  @IsValidMessageType(DidListQueryMessage.type)
+  public readonly type = DidListQueryMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/didlist-query')
 }

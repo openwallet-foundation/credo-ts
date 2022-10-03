@@ -1,12 +1,11 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferResponseCoordinator } from '../ValueTransferResponseCoordinator'
 import type { ValueTransferService } from '../services'
 import type { ValueTransferGetterService } from '../services/ValueTransferGetterService'
 
 import { OfferMessage } from '../messages'
 
-export class OfferHandler implements Handler<typeof DIDCommV2Message> {
+export class OfferHandler implements Handler {
   private valueTransferService: ValueTransferService
   private valueTransferGetterService: ValueTransferGetterService
   private valueTransferResponseCoordinator: ValueTransferResponseCoordinator

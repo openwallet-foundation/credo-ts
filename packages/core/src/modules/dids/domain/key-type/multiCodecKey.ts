@@ -2,7 +2,6 @@
 import { KeyType } from '../../../../crypto'
 
 const multiCodecPrefixMap: Record<string, KeyType> = {
-  231: KeyType.Secp256k1,
   234: KeyType.Bls12381g1,
   235: KeyType.Bls12381g2,
   236: KeyType.X25519,

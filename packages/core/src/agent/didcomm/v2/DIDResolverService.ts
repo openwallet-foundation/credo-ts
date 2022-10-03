@@ -1,13 +1,12 @@
-import type { DidDocumentService, VerificationMethod } from '../../../modules/dids/domain'
+import type { VerificationMethod, DidDocumentService } from '../../../modules/dids/domain'
 import type { DIDDoc, DIDResolver } from 'didcomm'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AriesFrameworkError } from '../../../error'
-import { DidCommService, DidCommV2Service, IndyAgentService } from '../../../modules/dids/domain'
+import { DidCommV1Service, DidCommV2Service, IndyAgentService } from '../../../modules/dids/domain'
 import { DidResolverService } from '../../../modules/dids/services/DidResolverService'
+import { injectable } from '../../../plugins'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DIDResolverService implements DIDResolver {
   private resolverService: DidResolverService
 
@@ -21,21 +20,22 @@ export class DIDResolverService implements DIDResolver {
       throw new AriesFrameworkError(`Unable to resolve DIDDoc for ${did}`)
     }
 
-    const verificationMethods = result.didDocument.verificationMethod.map((verificationMethod) =>
+    const verificationMethods = result.didDocument.verificationMethod?.map((verificationMethod) =>
       DIDResolverService.mapVerificationMethod(verificationMethod)
     )
 
-    const services = result.didDocument.service.map((service) => DIDResolverService.mapService(service))
+    const services = result.didDocument.service?.map((service) => DIDResolverService.mapService(service))
 
     const didDod: DIDDoc = {
       did: result.didDocument.id,
-      verification_methods: verificationMethods,
-      services: services,
+      verification_methods: verificationMethods || [],
+      services: services || [],
       key_agreements: [],
       authentications: [],
     }
 
-    for (const keyAgreement of result.didDocument.keyAgreement) {
+    const keyAgreements = result.didDocument.keyAgreement || []
+    for (const keyAgreement of keyAgreements) {
       if (typeof keyAgreement === 'string') {
         didDod.key_agreements.push(keyAgreement)
       } else {
@@ -44,7 +44,8 @@ export class DIDResolverService implements DIDResolver {
       }
     }
 
-    for (const authentication of result.didDocument.authentication) {
+    const authentications = result.didDocument.authentication || []
+    for (const authentication of authentications) {
       if (typeof authentication === 'string') {
         didDod.authentications.push(authentication)
       } else {
@@ -92,12 +93,12 @@ export class DIDResolverService implements DIDResolver {
                 routing_keys: service.routingKeys ?? [],
               },
             }
-          : service instanceof DidCommService
+          : service instanceof DidCommV1Service
           ? {
               Other: {
                 type: service.type,
                 serviceEndpoint: service.serviceEndpoint,
-                recipientKeys: service.recipientKeys,
+                recipientKeys: service.recipientKeys || [],
                 routingKeys: service.routingKeys,
                 accept: service.accept,
                 priority: service.priority,

@@ -1,14 +1,16 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
+import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
 import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import { Attachment } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { ProofRequest } from '../models'
 
 export interface RequestPresentationOptions {
   id?: string
   comment?: string
+  parentThreadId?: string
   requestPresentationAttachments: Attachment[]
 }
 
@@ -27,12 +29,17 @@ export class RequestPresentationMessage extends DIDCommV1Message {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
       this.requestPresentationAttachments = options.requestPresentationAttachments
+      if (options.parentThreadId) {
+        this.setThread({
+          parentThreadId: options.parentThreadId,
+        })
+      }
     }
   }
 
-  @Equals(RequestPresentationMessage.type)
-  public readonly type = RequestPresentationMessage.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/request-presentation'
+  @IsValidMessageType(RequestPresentationMessage.type)
+  public readonly type = RequestPresentationMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/request-presentation')
 
   /**
    *  Provides some human readable information about this request for a presentation.

@@ -44,13 +44,6 @@ describe('bls12381g1', () => {
     expect(key.prefixedPublicKey.equals(TEST_BLS12381G1_PREFIX_BYTES)).toBe(true)
   })
 
-  it('should return a valid did:key did document for the did', async () => {
-    const key = Key.fromFingerprint(TEST_BLS12381G1_FINGERPRINT)
-    const didDocument = keyDidBls12381g1.getDidDocument(TEST_BLS12381G1_DID, key)
-
-    expect(JsonTransformer.toJSON(didDocument)).toMatchObject(keyBls12381g1Fixture)
-  })
-
   it('should return a valid verification method', async () => {
     const key = Key.fromFingerprint(TEST_BLS12381G1_FINGERPRINT)
     const verificationMethods = keyDidBls12381g1.getVerificationMethods(TEST_BLS12381G1_DID, key)

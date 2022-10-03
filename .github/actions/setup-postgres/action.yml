@@ -1,0 +1,12 @@
+name: Setup Postgres
+description: Setup Postgres
+author: 'sairanjit.tummalapalli@ayanworks.com'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Postgres
+      run: |
+        docker pull postgres
+        docker run --name postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+      shell: bash

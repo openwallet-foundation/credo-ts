@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer'
-import { IsInstance, IsString, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
 
 import { ProofAttribute } from './ProofAttribute'
 
@@ -18,6 +18,7 @@ export class RequestedProof {
   public revealedAttributes!: Map<string, ProofAttribute>
 
   @Expose({ name: 'self_attested_attrs' })
-  @IsString({ each: true })
-  public selfAttestedAttributes!: Map<string, string>
+  @IsOptional()
+  // Validation is relaxed/skipped because empty Map validation will fail on JSON transform validation
+  public selfAttestedAttributes: Map<string, string> = new Map<string, string>()
 }

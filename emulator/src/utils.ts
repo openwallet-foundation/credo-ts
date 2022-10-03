@@ -9,7 +9,7 @@ import {
   getEd25519VerificationMethod,
   getX25519VerificationMethod,
   KeyType,
-  DidPeer,
+  PeerDid,
   PeerDidNumAlgo,
 } from '@aries-framework/core'
 import * as ed25519 from '@stablelib/ed25519'
@@ -48,7 +48,7 @@ function createPeerDid(options: CreatePeerDidOptions) {
     )
   }
 
-  const didPeer = DidPeer.fromDidDocument(didDocumentBuilder.build(), PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
+  const didPeer = PeerDid.fromDidDocument(didDocumentBuilder.build(), PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
 
   return {
     did: didPeer.did,

@@ -10,22 +10,17 @@ import { TimingDecorated } from '../../../decorators/timing/TimingDecoratorExten
 import { TransportDecorated } from '../../../decorators/transport/TransportDecoratorExtension'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from '../../../utils/messageType'
-import { Compose } from '../../../utils/mixins'
-import { DIDCommVersion } from '../DIDCommMessage'
+import { DIDCommVersion } from '../types'
 
 import { DIDCommV1BaseMessage } from './DIDCommV1BaseMessage'
 
-const DefaultDecorators = [
-  ThreadDecorated,
-  L10nDecorated,
-  TransportDecorated,
-  TimingDecorated,
-  AckDecorated,
-  AttachmentDecorated,
-  ServiceDecorated,
-]
+const Decorated = ThreadDecorated(
+  L10nDecorated(
+    TransportDecorated(TimingDecorated(AckDecorated(AttachmentDecorated(ServiceDecorated(DIDCommV1BaseMessage)))))
+  )
+)
 
-export class DIDCommV1Message extends Compose(DIDCommV1BaseMessage, DefaultDecorators) implements DIDCommMessage {
+export class DIDCommV1Message extends Decorated implements DIDCommMessage {
   public get version(): DIDCommVersion {
     return DIDCommVersion.V1
   }
@@ -49,6 +44,6 @@ export class DIDCommV1Message extends Compose(DIDCommV1BaseMessage, DefaultDecor
   }
 
   public is<C extends typeof DIDCommV1Message>(Class: C): this is InstanceType<C> {
-    return this.type === Class.type
+    return this.type === Class.type.messageTypeUri
   }
 }

@@ -1,10 +1,9 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { OutOfBandService } from '../services'
 
 import { OutOfBandInvitationMessage } from '../messages'
 
-export class OutOfBandInvitationHandler implements Handler<typeof DIDCommV2Message> {
+export class OutOfBandInvitationHandler implements Handler {
   private outOfBandService: OutOfBandService
 
   public readonly supportedMessages = [OutOfBandInvitationMessage]

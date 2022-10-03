@@ -14,12 +14,12 @@ export class Bob extends BaseAgent {
     super({
       name,
       port,
-      transports: [Transports.NFC, Transports.HTTP, Transports.WS],
-      mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
+      transports: [Transports.NFC, Transports.WS],
+      // mediatorConnectionsInvite: BaseAgent.defaultMediatorConnectionInvite,
       staticDids: [
         {
           seed: '6b8b882e2618fa5d45ee7229ca880074',
-          transports: [Transports.NFC, Transports.HTTP],
+          transports: [Transports.NFC],
           marker: DidMarker.Public,
         },
       ],

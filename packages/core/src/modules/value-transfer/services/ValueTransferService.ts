@@ -18,13 +18,13 @@ import {
 } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { JsonEncoder } from '../../../utils'
 import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
@@ -41,7 +41,7 @@ import { ValueTransferPartyStateService } from './ValueTransferPartyStateService
 import { ValueTransferTransportService } from './ValueTransferTransportService'
 import { ValueTransferWitnessStateService } from './ValueTransferWitnessStateService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferService {
   protected config: AgentConfig
   protected valueTransferRepository: ValueTransferRepository

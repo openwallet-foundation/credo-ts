@@ -18,6 +18,8 @@ import { DIDCommV2Message } from '../DIDCommV2Message'
 import { DIDResolverService } from '../DIDResolverService'
 import { SecretResolverService } from '../SecretResolverService'
 
+import { IsValidMessageType, parseMessageType } from '@aries-framework/core'
+
 jest.mock('../../../../modules/dids/services/DidResolverService')
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 
@@ -69,9 +71,9 @@ class TestMessage extends DIDCommV2Message {
     super(options)
   }
 
-  @Equals(TestMessage.type)
-  public readonly type: string = TestMessage.type
-  public static readonly type: string = 'https://didcomm.org/test/2.0/example'
+  @IsValidMessageType(TestMessage.type)
+  public readonly type = TestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/test/2.0/example')
 }
 
 async function didResolutionSuccessResult(didDocument: DidDocument): Promise<DidResolutionResult> {

@@ -2,11 +2,10 @@
 import type { Logger } from '../../../logger'
 import type { Logger as ValueTransferLogger, LogLevel } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
+import { injectable } from '../../../plugins'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class GossipLoggerService implements ValueTransferLogger {
   public logLevel: LogLevel
   private logger: Logger

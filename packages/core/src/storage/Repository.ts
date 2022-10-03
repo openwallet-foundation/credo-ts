@@ -1,31 +1,78 @@
+import type { EventEmitter } from '../agent/EventEmitter'
 import type { BaseRecord } from './BaseRecord'
+import type { RecordSavedEvent, RecordUpdatedEvent, RecordDeletedEvent } from './RepositoryEvents'
 import type { BaseRecordConstructor, Query, StorageService } from './StorageService'
 
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
+import { JsonTransformer } from '../utils/JsonTransformer'
+
+import { RepositoryEventTypes } from './RepositoryEvents'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class Repository<T extends BaseRecord<any, any, any>> {
   private storageService: StorageService<T>
   private recordClass: BaseRecordConstructor<T>
+  private eventEmitter: EventEmitter
 
-  public constructor(recordClass: BaseRecordConstructor<T>, storageService: StorageService<T>) {
+  public constructor(
+    recordClass: BaseRecordConstructor<T>,
+    storageService: StorageService<T>,
+    eventEmitter: EventEmitter
+  ) {
     this.storageService = storageService
     this.recordClass = recordClass
+    this.eventEmitter = eventEmitter
   }
 
   /** @inheritDoc {StorageService#save} */
   public async save(record: T): Promise<void> {
-    return this.storageService.save(record)
+    await this.storageService.save(record)
+
+    // Record in event should be static
+    const clonedRecord = JsonTransformer.clone(record)
+    this.eventEmitter.emit<RecordSavedEvent<T>>({
+      type: RepositoryEventTypes.RecordSaved,
+      payload: {
+        record: clonedRecord,
+      },
+    })
   }
 
   /** @inheritDoc {StorageService#update} */
   public async update(record: T): Promise<void> {
-    return this.storageService.update(record)
+    await this.storageService.update(record)
+
+    // Record in event should be static
+    const clonedRecord = JsonTransformer.clone(record)
+    this.eventEmitter.emit<RecordUpdatedEvent<T>>({
+      type: RepositoryEventTypes.RecordUpdated,
+      payload: {
+        record: clonedRecord,
+      },
+    })
   }
 
   /** @inheritDoc {StorageService#delete} */
   public async delete(record: T): Promise<void> {
-    return this.storageService.delete(record)
+    await this.storageService.delete(record)
+
+    // Record in event should be static
+    const clonedRecord = JsonTransformer.clone(record)
+    this.eventEmitter.emit<RecordDeletedEvent<T>>({
+      type: RepositoryEventTypes.RecordDeleted,
+      payload: {
+        record: clonedRecord,
+      },
+    })
+  }
+
+  /**
+   * Delete record by id. Returns null if no record is found
+   * @param id the id of the record to delete
+   * @returns
+   */
+  public async deleteById(id: string): Promise<void> {
+    await this.storageService.deleteById(this.recordClass, id)
   }
 
   /** @inheritDoc {StorageService#getById} */

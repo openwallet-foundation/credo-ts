@@ -105,4 +105,4 @@ COPY network/indy-cli-config.json /etc/indy/indy-cli-config.json
 
 EXPOSE 9701 9702 9703 9704 9705 9706 9707 9708
 
-CMD ["/usr/bin/supervisord"]
+CMD ["/usr/bin/supervisord"] 

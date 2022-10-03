@@ -1,6 +1,5 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { ProofResponseCoordinator } from '../ProofResponseCoordinator'
 import type { ProofRecord } from '../repository'
 import type { ProofService } from '../services'
@@ -8,7 +7,7 @@ import type { ProofService } from '../services'
 import { createOutboundMessage } from '../../../agent/helpers'
 import { ProposePresentationMessage } from '../messages'
 
-export class ProposePresentationHandler implements Handler<typeof DIDCommV1Message> {
+export class ProposePresentationHandler implements Handler {
   private proofService: ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator

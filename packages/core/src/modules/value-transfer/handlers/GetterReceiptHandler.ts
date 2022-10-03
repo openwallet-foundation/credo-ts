@@ -1,10 +1,9 @@
 import type { HandlerInboundMessage, Handler } from '../../../agent/Handler'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferGetterService } from '../services/ValueTransferGetterService'
 
 import { GetterReceiptMessage } from '../messages'
 
-export class GetterReceiptHandler implements Handler<typeof DIDCommV2Message> {
+export class GetterReceiptHandler implements Handler {
   private valueTransferGetterService: ValueTransferGetterService
   public readonly supportedMessages = [GetterReceiptMessage]
 

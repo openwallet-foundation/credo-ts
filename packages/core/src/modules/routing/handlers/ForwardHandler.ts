@@ -1,12 +1,11 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { MessageSender } from '../../../agent/MessageSender'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ConnectionService } from '../../connections/services'
 import type { MediatorService } from '../services'
 
 import { ForwardMessageV2 } from '../messages'
 
-export class ForwardHandler implements Handler<typeof DIDCommV2Message> {
+export class ForwardHandler implements Handler {
   private mediatorService: MediatorService
   private connectionService: ConnectionService
   private messageSender: MessageSender

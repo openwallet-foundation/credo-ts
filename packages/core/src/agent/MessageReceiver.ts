@@ -1,36 +1,34 @@
-import type { PlaintextMessage } from '../agent/didcomm/EnvelopeService'
 import type { Logger } from '../logger'
 import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
+import type { EncryptedMessage } from '../types'
 import type { TransportSession } from './TransportService'
-import type { DIDCommMessage, EncryptedMessage } from './didcomm'
-import type { DecryptedMessageContext, PackedMessage, SignedMessage } from './didcomm/types'
-
-import { Lifecycle, scoped } from 'tsyringe'
+import type { DIDCommMessage, SignedMessage } from './didcomm'
+import type { DecryptedMessageContext, PackedMessage, PlaintextMessage } from './didcomm/types'
 
 import { AriesFrameworkError } from '../error'
-import { ConnectionRepository } from '../modules/connections'
+import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
+import { ConnectionRepository } from '../modules/connections/repository/ConnectionRepository'
 import { DidDocument } from '../modules/dids/domain/DidDocument'
 import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { KeyRepository } from '../modules/keys/repository'
 import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
+import { injectable } from '../plugins'
 import { isValidJweStructure } from '../utils/JWE'
 import { isValidJwsStructure } from '../utils/JWS'
 import { JsonTransformer } from '../utils/JsonTransformer'
-import { MessageValidator } from '../utils/MessageValidator'
-import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
+import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
-import { DIDCommVersion } from './didcomm/DIDCommMessage'
 import { EnvelopeService } from './didcomm/EnvelopeService'
-import { SendingMessageType } from './didcomm/types'
+import { DIDCommVersion, SendingMessageType } from './didcomm/types'
 import { createOutboundMessage } from './helpers'
 import { InboundMessageContext } from './models/InboundMessageContext'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MessageReceiver {
   private config: AgentConfig
   private envelopeService: EnvelopeService
@@ -40,7 +38,7 @@ export class MessageReceiver {
   private logger: Logger
   private keyRepository: KeyRepository
   private didRepository: DidRepository
-  private connectionRepository: ConnectionRepository
+  private connectionsModule: ConnectionsModule
   public readonly inboundTransports: InboundTransport[] = []
 
   public constructor(
@@ -51,13 +49,14 @@ export class MessageReceiver {
     connectionRepository: ConnectionRepository,
     dispatcher: Dispatcher,
     keyRepository: KeyRepository,
-    didRepository: DidRepository
+    didRepository: DidRepository,
+    connectionsModule: ConnectionsModule
   ) {
     this.config = config
     this.envelopeService = envelopeService
     this.transportService = transportService
     this.messageSender = messageSender
-    this.connectionRepository = connectionRepository
+    this.connectionsModule = connectionsModule
     this.dispatcher = dispatcher
     this.keyRepository = keyRepository
     this.didRepository = didRepository
@@ -74,7 +73,10 @@ export class MessageReceiver {
    *
    * @param inboundMessage the message to receive and handle
    */
-  public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
+  public async receiveMessage(
+    inboundMessage: unknown,
+    { session }: { session?: TransportSession; connection?: ConnectionRecord }
+  ) {
     this.logger.debug(`Agent ${this.config.label} received message`)
     try {
       if (this.isEncryptedMessage(inboundMessage)) {
@@ -114,6 +116,7 @@ export class MessageReceiver {
     await this.dispatcher.dispatch(messageContext)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async receivePackedMessage(packedMessage: PackedMessage, session?: TransportSession) {
     if (packedMessage.type === SendingMessageType.Encrypted) {
       const isMessageRecipientExists = await this.checkMessageRecipientExists(packedMessage)
@@ -138,32 +141,13 @@ export class MessageReceiver {
 
     const message = await this.transformAndValidate(plaintextMessage, connection)
 
-    // We want to save a session if there is a chance of returning outbound message via inbound transport.
-    // That can happen when inbound message has `return_route` set to `all` or `thread`.
-    // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
-    if (sender && recipient && message.hasAnyReturnRoute() && session) {
-      this.logger.debug(`Storing session for inbound message '${message.id}'`)
-      const keys = {
-        recipientKeys: [recipient],
-        routingKeys: [],
-        senderKey: sender,
-      }
-      session.keys = keys
-      session.inboundMessage = message
-      // We allow unready connections to be attached to the session as we want to be able to
-      // use return routing to make connections. This is especially useful for creating connections
-      // with mediators when you don't have a public endpoint yet.
-      session.connection = connection ?? undefined
-      this.transportService.saveSession(session)
-    }
-
     const messageContext = new InboundMessageContext(message, {
       // Only make the connection available in message context if the connection is ready
       // To prevent unwanted usage of unready connections. Connections can still be retrieved from
       // Storage if the specific protocol allows an unready connection to be used.
       connection: connection?.isReady ? connection : undefined,
-      sender,
-      recipient,
+      senderKey: sender,
+      recipientKey: recipient,
     })
     await this.dispatcher.dispatch(messageContext)
   }
@@ -274,7 +258,6 @@ export class MessageReceiver {
     let message: DIDCommMessage
     try {
       message = await this.transformMessage(plaintextMessage)
-      await this.validateMessage(message)
     } catch (error) {
       if (plaintextMessage['@id']) {
         if (connection) await this.sendProblemReportMessage(error.message, connection, plaintextMessage)
@@ -291,46 +274,11 @@ export class MessageReceiver {
     // We only fetch connections that are sent in AuthCrypt mode
     if (!recipient || !sender) return null
 
-    let connection: ConnectionRecord | null = null
-
-    // Try 1: Find DID base on recipient key
-    const ourDidRecord = await this.didRepository.findByVerkey(recipient)
-
-    // If both our did record and their did record is available we can find a matching did record
-    if (ourDidRecord) {
-      const theirDidRecord = await this.didRepository.findByVerkey(sender)
-
-      if (theirDidRecord) {
-        connection = await this.connectionRepository.findSingleByQuery({
-          did: ourDidRecord.id,
-          theirDid: theirDidRecord.id,
-        })
-      } else {
-        connection = await this.connectionRepository.findSingleByQuery({
-          did: ourDidRecord.id,
-        })
-
-        // If theirDidRecord was not found, and connection.theirDid is set, it means the sender is not authenticated
-        // to send messages to use
-        if (connection && connection.theirDid) {
-          throw new AriesFrameworkError(`Inbound message senderKey '${sender}' is different from connection did`)
-        }
-      }
-    }
-
-    // Try 2: If no connection was found, we search in the connection record, where legacy did documents are stored
-    if (!connection) {
-      connection = await this.connectionRepository.findByVerkey(recipient)
-
-      // Throw error if the recipient key (ourKey) does not match the key of the connection record
-      if (connection && connection.theirKey !== null && connection.theirKey !== sender) {
-        throw new AriesFrameworkError(
-          `Inbound message senderKey '${sender}' is different from connection.theirKey '${connection.theirKey}'`
-        )
-      }
-    }
-
-    return connection
+    // Try to find the did records that holds the sender and recipient keys
+    return this.connectionsModule.findByKeys({
+      senderKey: sender,
+      recipientKey: recipient,
+    })
   }
 
   /**
@@ -344,7 +292,7 @@ export class MessageReceiver {
       replaceLegacyDidSovPrefixOnMessage(message)
     }
 
-    const messageType = message['@type'] || message['type']
+    const messageType = message['@type'] || message['type'] || ''
     if (!messageType) {
       throw new AriesFrameworkError(`No type found in the message: ${message}`)
     }
@@ -360,24 +308,6 @@ export class MessageReceiver {
   }
 
   /**
-   * Validate an AgentMessage instance.
-   * @param message agent message to validate
-   */
-  private async validateMessage(message: DIDCommMessage) {
-    try {
-      await MessageValidator.validate(message)
-    } catch (error) {
-      this.logger.error(`Error validating message ${message.type}`, {
-        errors: error,
-        message: message.toJSON(),
-      })
-      throw new ProblemReportError(`Error validating message ${message.type}`, {
-        problemCode: ProblemReportReason.MessageParseFailure,
-      })
-    }
-  }
-
-  /**
    * Send the problem report message (https://didcomm.org/notification/1.0/problem-report) to the recipient.
    * @param message error message to send
    * @param connection connection to send the message to
@@ -388,8 +318,9 @@ export class MessageReceiver {
     connection: ConnectionRecord,
     plaintextMessage: PlaintextMessage
   ) {
-    if (plaintextMessage['@type'] === ProblemReportMessage.type) {
-      throw new AriesFrameworkError(message)
+    const messageType = parseMessageType(plaintextMessage['@type'] || '')
+    if (canHandleMessageType(ProblemReportMessage, messageType)) {
+      throw new AriesFrameworkError(`Not sending problem report in response to problem report: {message}`)
     }
     const problemReportMessage = new ProblemReportMessage({
       description: {

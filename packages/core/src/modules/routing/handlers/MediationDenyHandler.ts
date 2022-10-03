@@ -1,10 +1,9 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { MediationRecipientService } from '../services'
 
 import { MediationDenyMessageV2 } from '../messages'
 
-export class MediationDenyHandler implements Handler<typeof DIDCommV2Message> {
+export class MediationDenyHandler implements Handler {
   private mediationRecipientService: MediationRecipientService
   public supportedMessages = [MediationDenyMessageV2]
 
@@ -13,6 +12,9 @@ export class MediationDenyHandler implements Handler<typeof DIDCommV2Message> {
   }
 
   public async handle(messageContext: HandlerInboundMessage<MediationDenyHandler>) {
+    if (!messageContext.connection) {
+      throw new Error(`Connection for verkey ${messageContext.recipient} not found!`)
+    }
     await this.mediationRecipientService.processMediationDeny(messageContext)
   }
 }

@@ -2,13 +2,12 @@ import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { Transports } from '../../routing'
 import type { OutOfBandEvent } from '../OutOfBandEvents'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { DidService } from '../../dids'
 import { DidResolverService } from '../../dids/services/DidResolverService'
@@ -17,7 +16,7 @@ import { ValueTransferGiverService } from '../../value-transfer/services/ValueTr
 import { OutOfBandEventTypes } from '../OutOfBandEvents'
 import { AndroidNearbyHandshakeAttachment, OutOfBandGoalCode, OutOfBandInvitationMessage } from '../messages'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class OutOfBandService {
   private agentConfig: AgentConfig
   private didService: DidService

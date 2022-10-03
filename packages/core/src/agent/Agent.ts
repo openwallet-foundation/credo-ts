@@ -12,57 +12,70 @@ import type { DependencyContainer } from 'tsyringe'
 import { concatMap, takeUntil } from 'rxjs/operators'
 import { container as baseContainer } from 'tsyringe'
 
+import { CacheRepository } from '../cache'
 import { InjectionSymbols } from '../constants'
+import { JwsService } from '../crypto/JwsService'
 import { AriesFrameworkError } from '../error'
+import { ActionMenuModule } from '../modules/action-menu'
 import { BasicMessagesModule } from '../modules/basic-messages/BasicMessagesModule'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { CredentialsModule } from '../modules/credentials/CredentialsModule'
 import { DidMarker, DidService } from '../modules/dids'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
+import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsModule'
 import { GossipModule } from '../modules/gossip/GossipModule'
 import { GossipService } from '../modules/gossip/service'
+import { IndyModule } from '../modules/indy/module'
 import { KeysModule } from '../modules/keys'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
+import { OutOfBandModuleV2 } from '../modules/oob/OutOfBandModuleV2'
 import { OutOfBandModule } from '../modules/out-of-band'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
+import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
 import { RecipientModule } from '../modules/routing/RecipientModule'
 import { ValueTransferModule, ValueTransferService } from '../modules/value-transfer'
-import { ValueTransferWitnessService } from '../modules/value-transfer/services/ValueTransferWitnessService'
+import { DependencyManager } from '../plugins'
+import { StorageUpdateService, DidCommMessageRepository, StorageVersionRepository } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
+import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
+import { DEFAULT_UPDATE_CONFIG } from '../storage/migration/updates'
 import { IndyWallet } from '../wallet/IndyWallet'
 import { WalletModule } from '../wallet/WalletModule'
 import { WalletError } from '../wallet/error'
 
 import { AgentConfig } from './AgentConfig'
+import { Dispatcher } from './Dispatcher'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
+import { EnvelopeService } from './didcomm/EnvelopeService'
 
 export class Agent {
   protected agentConfig: AgentConfig
   protected logger: Logger
-  protected container: DependencyContainer
+  public readonly dependencyManager: DependencyManager
   protected eventEmitter: EventEmitter
   protected messageReceiver: MessageReceiver
-  protected transportService: TransportService
   protected messageSender: MessageSender
   private _isInitialized = false
   public messageSubscription: Subscription
   private walletService: Wallet
   private didService: DidService
   private valueTransferService: ValueTransferService
-  private valueTransferWitnessService: ValueTransferWitnessService
   private gossipService: GossipService
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
   public readonly basicMessages: BasicMessagesModule
+  public readonly genericRecords: GenericRecordsModule
   public readonly ledger: LedgerModule
+  public readonly questionAnswer!: QuestionAnswerModule
+  public readonly actionMenu!: ActionMenuModule
   public readonly credentials: CredentialsModule
   public readonly mediationRecipient: RecipientModule
   public readonly mediator: MediatorModule
@@ -73,22 +86,20 @@ export class Agent {
   public readonly valueTransfer: ValueTransferModule
   public readonly gossip: GossipModule
   public readonly outOfBand: OutOfBandModule
+  public readonly oob!: OutOfBandModuleV2
 
-  public constructor(initialConfig: InitConfig, dependencies: AgentDependencies) {
-    // Create child container so we don't interfere with anything outside of this agent
-    this.container = baseContainer.createChildContainer()
+  public constructor(
+    initialConfig: InitConfig,
+    dependencies: AgentDependencies,
+    injectionContainer?: DependencyContainer
+  ) {
+    // Take input container or child container so we don't interfere with anything outside of this agent
+    const container = injectionContainer ?? baseContainer.createChildContainer()
+
+    this.dependencyManager = new DependencyManager(container)
 
     this.agentConfig = new AgentConfig(initialConfig, dependencies)
     this.logger = this.agentConfig.logger
-
-    // Bind class based instances
-    this.container.registerInstance(AgentConfig, this.agentConfig)
-
-    // Based on interfaces. Need to register which class to use
-    this.container.registerInstance(InjectionSymbols.Logger, this.logger)
-    this.container.register(InjectionSymbols.Wallet, { useToken: IndyWallet })
-    this.container.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
-    this.container.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
 
     this.logger.info('Creating agent with config', {
       ...initialConfig,
@@ -105,39 +116,49 @@ export class Agent {
       )
     }
 
+    this.registerDependencies(this.dependencyManager)
+
     // Resolve instances after everything is registered
-    this.eventEmitter = this.container.resolve(EventEmitter)
-    this.messageSender = this.container.resolve(MessageSender)
-    this.messageReceiver = this.container.resolve(MessageReceiver)
-    this.transportService = this.container.resolve(TransportService)
-    this.walletService = this.container.resolve(InjectionSymbols.Wallet)
-    this.valueTransferService = this.container.resolve(ValueTransferService)
-    this.valueTransferWitnessService = this.container.resolve(ValueTransferWitnessService)
-    this.gossipService = this.container.resolve(GossipService)
-    this.didService = this.container.resolve(DidService)
+    this.eventEmitter = this.dependencyManager.resolve(EventEmitter)
+    this.messageSender = this.dependencyManager.resolve(MessageSender)
+    this.messageReceiver = this.dependencyManager.resolve(MessageReceiver)
+    this.walletService = this.dependencyManager.resolve(InjectionSymbols.Wallet)
+    this.valueTransferService = this.dependencyManager.resolve(ValueTransferService)
+    this.gossipService = this.dependencyManager.resolve(GossipService)
+    this.didService = this.dependencyManager.resolve(DidService)
 
     // We set the modules in the constructor because that allows to set them as read-only
-    this.connections = this.container.resolve(ConnectionsModule)
-    this.credentials = this.container.resolve(CredentialsModule)
-    this.proofs = this.container.resolve(ProofsModule)
-    this.mediator = this.container.resolve(MediatorModule)
-    this.mediationRecipient = this.container.resolve(RecipientModule)
-    this.basicMessages = this.container.resolve(BasicMessagesModule)
-    this.ledger = this.container.resolve(LedgerModule)
-    this.discovery = this.container.resolve(DiscoverFeaturesModule)
-    this.keys = this.container.resolve(KeysModule)
-    this.dids = this.container.resolve(DidsModule)
-    this.wallet = this.container.resolve(WalletModule)
-    this.valueTransfer = this.container.resolve(ValueTransferModule)
-    this.gossip = this.container.resolve(GossipModule)
-    this.outOfBand = this.container.resolve(OutOfBandModule)
+    this.connections = this.dependencyManager.resolve(ConnectionsModule)
+    this.credentials = this.dependencyManager.resolve(CredentialsModule) as CredentialsModule
+    this.proofs = this.dependencyManager.resolve(ProofsModule)
+    this.mediator = this.dependencyManager.resolve(MediatorModule)
+    this.mediationRecipient = this.dependencyManager.resolve(RecipientModule)
+    this.basicMessages = this.dependencyManager.resolve(BasicMessagesModule)
+    this.questionAnswer = this.dependencyManager.resolve(QuestionAnswerModule)
+    this.actionMenu = this.dependencyManager.resolve(ActionMenuModule)
+    this.genericRecords = this.dependencyManager.resolve(GenericRecordsModule)
+    this.ledger = this.dependencyManager.resolve(LedgerModule)
+    this.discovery = this.dependencyManager.resolve(DiscoverFeaturesModule)
+    this.keys = this.dependencyManager.resolve(KeysModule)
+    this.dids = this.dependencyManager.resolve(DidsModule)
+    this.wallet = this.dependencyManager.resolve(WalletModule)
+    this.outOfBand = this.dependencyManager.resolve(OutOfBandModule)
+    this.oob = this.dependencyManager.resolve(OutOfBandModuleV2)
+    this.gossip = this.dependencyManager.resolve(GossipModule)
+    this.valueTransfer = this.dependencyManager.resolve(ValueTransferModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     this.messageSubscription = this.eventEmitter
       .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
       .pipe(
         takeUntil(this.agentConfig.stop$),
-        concatMap((e) => this.messageReceiver.receiveMessage(e.payload.message))
+        concatMap((e) =>
+          this.messageReceiver
+            .receiveMessage(e.payload.message, { connection: e.payload.connection })
+            .catch((error) => {
+              this.logger.error('Failed to process message', { error })
+            })
+        )
       )
       .subscribe()
   }
@@ -193,6 +214,33 @@ export class Agent {
       )
     }
 
+    // Make sure the storage is up to date
+    const storageUpdateService = this.dependencyManager.resolve(StorageUpdateService)
+    const isStorageUpToDate = await storageUpdateService.isUpToDate()
+    this.logger.info(`Agent storage is ${isStorageUpToDate ? '' : 'not '}up to date.`)
+
+    if (!isStorageUpToDate && this.agentConfig.autoUpdateStorageOnStartup) {
+      const updateAssistant = new UpdateAssistant(this, DEFAULT_UPDATE_CONFIG)
+
+      await updateAssistant.initialize()
+      await updateAssistant.update()
+    } else if (!isStorageUpToDate) {
+      const currentVersion = await storageUpdateService.getCurrentStorageVersion()
+      // Close wallet to prevent un-initialized agent with initialized wallet
+      await this.wallet.close()
+      throw new AriesFrameworkError(
+        // TODO: add link to where documentation on how to update can be found.
+        `Current agent storage is not up to date. ` +
+          `To prevent the framework state from getting corrupted the agent initialization is aborted. ` +
+          `Make sure to update the agent storage (currently at ${currentVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). ` +
+          `You can also downgrade your version of Aries Framework JavaScript.`
+      )
+    }
+    if (publicDidSeed) {
+      // If an agent has publicDid it will be used as routing key.
+      await this.walletService.initPublicDid({ seed: publicDidSeed })
+    }
+
     // As long as value isn't false we will async connect to all genesis pools on startup
     if (connectToIndyLedgersOnStartup) {
       this.ledger.connectToPools().catch((error) => {
@@ -201,10 +249,12 @@ export class Agent {
     }
 
     for (const transport of this.inboundTransports) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       transport.start(this)
     }
 
     for (const transport of this.outboundTransports) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       transport.start(this)
     }
 
@@ -214,6 +264,7 @@ export class Agent {
     // Also requests mediation and sets as default mediator
     // Because this requires the connections module, we do this in the agent constructor
     if (mediatorConnectionsInvite) {
+      this.logger.debug('Provision mediation with invitation', { mediatorConnectionsInvite })
       await this.mediationRecipient.provision(mediatorConnectionsInvite)
     }
     await this.mediationRecipient.initialize()
@@ -273,12 +324,9 @@ export class Agent {
     this.agentConfig.stop$.next(true)
 
     // Stop transports
-    for (const transport of this.outboundTransports) {
-      transport.stop()
-    }
-    for (const transport of this.inboundTransports) {
-      transport.stop()
-    }
+    const allTransports = [...this.inboundTransports, ...this.outboundTransports]
+    const transportPromises = allTransports.map((transport) => transport.stop())
+    await Promise.all(transportPromises)
 
     // close wallet if still initialized
     if (this.wallet.isInitialized) {
@@ -296,14 +344,70 @@ export class Agent {
   }
 
   public async receiveMessage(inboundMessage: unknown, session?: TransportSession) {
-    return await this.messageReceiver.receiveMessage(inboundMessage, session)
+    return await this.messageReceiver.receiveMessage(inboundMessage, { session })
   }
 
   public get injectionContainer() {
-    return this.container
+    return this.dependencyManager.container
   }
 
   public get config() {
     return this.agentConfig
+  }
+
+  private registerDependencies(dependencyManager: DependencyManager) {
+    dependencyManager.registerInstance(AgentConfig, this.agentConfig)
+
+    // Register internal dependencies
+    dependencyManager.registerSingleton(EventEmitter)
+    dependencyManager.registerSingleton(MessageSender)
+    dependencyManager.registerSingleton(MessageReceiver)
+    dependencyManager.registerSingleton(TransportService)
+    dependencyManager.registerSingleton(Dispatcher)
+    dependencyManager.registerSingleton(EnvelopeService)
+    dependencyManager.registerSingleton(JwsService)
+    dependencyManager.registerSingleton(CacheRepository)
+    dependencyManager.registerSingleton(DidCommMessageRepository)
+    dependencyManager.registerSingleton(StorageVersionRepository)
+    dependencyManager.registerSingleton(StorageUpdateService)
+
+    // Register possibly already defined services
+    if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
+      this.dependencyManager.registerSingleton(IndyWallet)
+      const wallet = this.dependencyManager.resolve(IndyWallet)
+      dependencyManager.registerInstance(InjectionSymbols.Wallet, wallet)
+    }
+    if (!dependencyManager.isRegistered(InjectionSymbols.Logger)) {
+      dependencyManager.registerInstance(InjectionSymbols.Logger, this.logger)
+    }
+    if (!dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
+      dependencyManager.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
+    }
+    if (!dependencyManager.isRegistered(InjectionSymbols.MessageRepository)) {
+      dependencyManager.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
+    }
+
+    // Register all modules
+    dependencyManager.registerModules(
+      ConnectionsModule,
+      CredentialsModule,
+      ProofsModule,
+      MediatorModule,
+      RecipientModule,
+      BasicMessagesModule,
+      QuestionAnswerModule,
+      ActionMenuModule,
+      GenericRecordsModule,
+      LedgerModule,
+      DiscoverFeaturesModule,
+      DidsModule,
+      WalletModule,
+      OutOfBandModuleV2,
+      OutOfBandModule,
+      IndyModule,
+      GossipModule,
+      ValueTransferModule,
+      KeysModule
+    )
   }
 }

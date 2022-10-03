@@ -1,0 +1,92 @@
+{
+  "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd": {
+    "value": {
+      "metadata": {},
+      "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
+      "createdAt": "2022-03-21T22:50:17.132Z",
+      "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "recipientKeys": [],
+      "routingKeys": [],
+      "state": "granted",
+      "role": "MEDIATOR"
+    },
+    "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
+    "type": "MediationRecord",
+    "tags": {
+      "state": "granted",
+      "role": "MEDIATOR",
+      "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "recipientKeys": []
+    }
+  },
+  "802ef124-36b7-490f-b152-e9d090ddf073": {
+    "value": {
+      "metadata": {},
+      "id": "802ef124-36b7-490f-b152-e9d090ddf073",
+      "createdAt": "2022-03-21T22:50:17.161Z",
+      "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "recipientKeys": [],
+      "routingKeys": [],
+      "state": "granted",
+      "role": "MEDIATOR"
+    },
+    "id": "802ef124-36b7-490f-b152-e9d090ddf073",
+    "type": "MediationRecord",
+    "tags": {
+      "state": "granted",
+      "role": "MEDIATOR",
+      "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "recipientKeys": []
+    }
+  },
+  "7f14c1ec-514c-49b2-a00b-04af7e600060": {
+    "value": {
+      "metadata": {},
+      "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
+      "createdAt": "2022-03-21T22:50:17.126Z",
+      "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "recipientKeys": [],
+      "routingKeys": ["D86mPByntjjYMuoaVwxotLY8RMwyRSkRkUL3XPrpwcDu"],
+      "state": "granted",
+      "role": "MEDIATOR",
+      "endpoint": "rxjs:alice"
+    },
+    "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
+    "type": "MediationRecord",
+    "tags": {
+      "state": "granted",
+      "role": "MEDIATOR",
+      "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "recipientKeys": []
+    }
+  },
+  "0b47db94-c0fa-4476-87cf-a5f664440412": {
+    "value": {
+      "metadata": {},
+      "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
+      "createdAt": "2022-03-21T22:50:17.157Z",
+      "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "recipientKeys": [],
+      "routingKeys": ["D86mPByntjjYMuoaVwxotLY8RMwyRSkRkUL3XPrpwcDu"],
+      "state": "granted",
+      "role": "MEDIATOR",
+      "endpoint": "rxjs:alice"
+    },
+    "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
+    "type": "MediationRecord",
+    "tags": {
+      "state": "granted",
+      "role": "MEDIATOR",
+      "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "recipientKeys": []
+    }
+  }
+}

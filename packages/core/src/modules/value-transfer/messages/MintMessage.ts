@@ -2,9 +2,10 @@ import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Mint, transformUint8Array } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Expose, Transform, Type } from 'class-transformer'
-import { Equals, IsArray, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export type MintMessageParams = {
   body: MintMessageBody
@@ -30,9 +31,9 @@ export class MintMessage extends DIDCommV2Message {
   @IsString()
   public from!: string
 
-  @Equals(MintMessage.type)
-  public readonly type = MintMessage.type
-  public static readonly type = Mint.type
+  @IsValidMessageType(MintMessage.type)
+  public readonly type = MintMessage.type.messageTypeUri
+  public static readonly type = parseMessageType(Mint.type)
 
   public constructor(params?: MintMessageParams) {
     super(params)

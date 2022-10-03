@@ -1,11 +1,10 @@
 import type { Transaction, VtpWitnessStorageInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
+import { injectable } from '../../../plugins'
 import { ValueTransferRecord, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferWitnessStateService implements VtpWitnessStorageInterface {
   private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository

@@ -1,14 +1,15 @@
 import type { Logger } from '../logger'
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
+import type { ParsedMessageType } from '../utils/messageType'
 import type { AgentMessageProcessedEvent } from './Events'
 import type { Handler } from './Handler'
-import type { DIDCommMessage, DIDCommMessageClass } from './didcomm'
+import type { ConstructableDIDCommMessage, DIDCommMessage } from './didcomm'
 import type { InboundMessageContext } from './models/InboundMessageContext'
-
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { injectable } from '../plugins'
+import { canHandleMessageType, parseMessageType } from '../utils/messageType'
 
 import { ProblemReportMessage } from './../modules/problem-reports/messages/ProblemReportMessage'
 import { ProblemReportV2Message } from './../modules/problem-reports/messages/ProblemReportV2Message'
@@ -17,10 +18,10 @@ import { AgentEventTypes } from './Events'
 import { MessageSender } from './MessageSender'
 import { isOutboundServiceMessage } from './helpers'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 class Dispatcher {
   private agentConfig: AgentConfig
-  private handlers: Handler<DIDCommMessageClass>[] = []
+  private handlers: Handler[] = []
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
@@ -32,7 +33,7 @@ class Dispatcher {
     this.logger = agentConfig.logger
   }
 
-  public registerHandler(handler: Handler<DIDCommMessageClass>) {
+  public registerHandler(handler: Handler) {
     this.handlers.push(handler)
   }
 
@@ -80,7 +81,7 @@ class Dispatcher {
       await this.messageSender.packAndSendMessage({
         message: outboundMessage.payload,
         service: outboundMessage.service,
-        senderKey: outboundMessage.senderKey,
+        senderKey: outboundMessage.senderKey.publicKeyBase58,
         returnRoute: true,
       })
     } else if (outboundMessage) {
@@ -92,22 +93,26 @@ class Dispatcher {
       type: AgentEventTypes.AgentMessageProcessed,
       payload: {
         message: messageContext.message,
+        connection: messageContext.connection,
       },
     })
   }
 
-  private getHandlerForType(messageType: string): Handler<DIDCommMessageClass> | undefined {
+  private getHandlerForType(messageType: string): Handler | undefined {
+    const incomingMessageType = parseMessageType(messageType)
+
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type === messageType) return handler
+        if (canHandleMessageType(MessageClass, incomingMessageType)) return handler
       }
     }
   }
 
-  public getMessageClassForType(messageType: string): DIDCommMessageClass | undefined {
+  public getMessageClassForType(messageType: string): ConstructableDIDCommMessage | undefined {
+    const incomingMessageType = parseMessageType(messageType)
     for (const handler of this.handlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (MessageClass.type === messageType) return MessageClass
+        if (canHandleMessageType(MessageClass, incomingMessageType)) return MessageClass
       }
     }
   }
@@ -116,10 +121,11 @@ class Dispatcher {
    * Returns array of message types that dispatcher is able to handle.
    * Message type format is MTURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#mturi.
    */
-  public get supportedMessageTypes() {
-    return this.handlers
-      .reduce<DIDCommMessageClass[]>((all, cur) => [...all, ...cur.supportedMessages], [])
-      .map((m) => m.type)
+  public get supportedMessageTypes(): ParsedMessageType[] {
+    return this.handlers.reduce<ParsedMessageType[]>(
+      (all, cur) => [...all, ...cur.supportedMessages.map((message) => message.type)],
+      []
+    )
   }
 
   /**
@@ -127,7 +133,7 @@ class Dispatcher {
    * Protocol ID format is PIURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#piuri.
    */
   public get supportedProtocols() {
-    return Array.from(new Set(this.supportedMessageTypes.map((m) => m.substring(0, m.lastIndexOf('/')))))
+    return Array.from(new Set(this.supportedMessageTypes.map((m) => m.protocolUri)))
   }
 
   public filterSupportedProtocolsByMessageFamilies(messageFamilies: string[]) {

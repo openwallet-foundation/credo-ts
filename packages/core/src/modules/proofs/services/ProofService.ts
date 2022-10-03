@@ -9,21 +9,22 @@ import type { PresentationProblemReportMessage } from './../messages/Presentatio
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { validateOrReject } from 'class-validator'
-import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
-import { checkProofRequestForDuplicates } from '../../../utils'
+import { inject, injectable } from '../../../plugins'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { checkProofRequestForDuplicates } from '../../../utils/indyProofRequest'
 import { uuid } from '../../../utils/uuid'
 import { Wallet } from '../../../wallet/Wallet'
 import { AckStatus } from '../../common'
 import { ConnectionService } from '../../connections'
-import { CredentialUtils, Credential, CredentialRepository, IndyCredentialInfo } from '../../credentials'
+import { IndyCredential, CredentialRepository, IndyCredentialInfo } from '../../credentials'
+import { IndyCredentialUtils } from '../../credentials/formats/indy/IndyCredentialUtils'
 import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '../../indy'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
@@ -56,7 +57,7 @@ import { ProofRecord } from '../repository/ProofRecord'
  * @todo add method to reject / revoke messages
  * @todo validate attachments / messages
  */
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ProofService {
   private proofRepository: ProofRepository
   private credentialRepository: CredentialRepository
@@ -109,6 +110,7 @@ export class ProofService {
     config?: {
       comment?: string
       autoAcceptProof?: AutoAcceptProof
+      parentThreadId?: string
     }
   ): Promise<ProofProtocolMsgReturnType<ProposePresentationMessage>> {
     // Assert
@@ -118,21 +120,20 @@ export class ProofService {
     const proposalMessage = new ProposePresentationMessage({
       comment: config?.comment,
       presentationProposal,
+      parentThreadId: config?.parentThreadId,
     })
 
     // Create record
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord.id,
       threadId: proposalMessage.threadId,
+      parentThreadId: proposalMessage.thread?.parentThreadId,
       state: ProofState.ProposalSent,
       proposalMessage,
       autoAcceptProof: config?.autoAcceptProof,
     })
     await this.proofRepository.save(proofRecord)
-    this.eventEmitter.emit<ProofStateChangedEvent>({
-      type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: null },
-    })
+    this.emitStateChangedEvent(proofRecord, null)
 
     return { message: proposalMessage, proofRecord }
   }
@@ -166,7 +167,7 @@ export class ProofService {
 
     // Update record
     proofRecord.proposalMessage = proposalMessage
-    this.updateState(proofRecord, ProofState.ProposalSent)
+    await this.updateState(proofRecord, ProofState.ProposalSent)
 
     return { message: proposalMessage, proofRecord }
   }
@@ -220,6 +221,7 @@ export class ProofService {
       proofRecord = new ProofRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
+        parentThreadId: proposalMessage.thread?.parentThreadId,
         proposalMessage,
         state: ProofState.ProposalReceived,
       })
@@ -229,13 +231,7 @@ export class ProofService {
 
       // Save record
       await this.proofRepository.save(proofRecord)
-      this.eventEmitter.emit<ProofStateChangedEvent>({
-        type: ProofEventTypes.ProofStateChanged,
-        payload: {
-          proofRecord,
-          previousState: null,
-        },
-      })
+      this.emitStateChangedEvent(proofRecord, null)
     }
 
     return proofRecord
@@ -302,6 +298,7 @@ export class ProofService {
     config?: {
       comment?: string
       autoAcceptProof?: AutoAcceptProof
+      parentThreadId?: string
     }
   ): Promise<ProofProtocolMsgReturnType<RequestPresentationMessage>> {
     this.logger.debug(`Creating proof request`)
@@ -323,22 +320,21 @@ export class ProofService {
     const requestPresentationMessage = new RequestPresentationMessage({
       comment: config?.comment,
       requestPresentationAttachments: [attachment],
+      parentThreadId: config?.parentThreadId,
     })
 
     // Create record
     const proofRecord = new ProofRecord({
       connectionId: connectionRecord?.id,
       threadId: requestPresentationMessage.threadId,
+      parentThreadId: requestPresentationMessage.thread?.parentThreadId,
       requestMessage: requestPresentationMessage,
       state: ProofState.RequestSent,
       autoAcceptProof: config?.autoAcceptProof,
     })
 
     await this.proofRepository.save(proofRecord)
-    this.eventEmitter.emit<ProofStateChangedEvent>({
-      type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: null },
-    })
+    this.emitStateChangedEvent(proofRecord, null)
 
     return { message: requestPresentationMessage, proofRecord }
   }
@@ -394,6 +390,7 @@ export class ProofService {
       proofRecord = new ProofRecord({
         connectionId: connection?.id,
         threadId: proofRequestMessage.threadId,
+        parentThreadId: proofRequestMessage.thread?.parentThreadId,
         requestMessage: proofRequestMessage,
         state: ProofState.RequestReceived,
       })
@@ -403,10 +400,7 @@ export class ProofService {
 
       // Save in repository
       await this.proofRepository.save(proofRecord)
-      this.eventEmitter.emit<ProofStateChangedEvent>({
-        type: ProofEventTypes.ProofStateChanged,
-        payload: { proofRecord, previousState: null },
-      })
+      this.emitStateChangedEvent(proofRecord, null)
     }
 
     return proofRecord
@@ -730,7 +724,7 @@ export class ProofService {
     for (const credentialId of credentialIds) {
       // Get the credentialRecord that matches the ID
 
-      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialId })
+      const credentialRecord = await this.credentialRepository.getSingleByQuery({ credentialIds: [credentialId] })
 
       if (credentialRecord.linkedAttachments) {
         // Get the credentials that have a hashlink as value and are requested
@@ -773,7 +767,7 @@ export class ProofService {
     const retrievedCredentials = new RetrievedCredentials({})
 
     for (const [referent, requestedAttribute] of proofRequest.requestedAttributes.entries()) {
-      let credentialMatch: Credential[] = []
+      let credentialMatch: IndyCredential[] = []
       const credentials = await this.getCredentialsForProofRequest(proofRequest, referent)
 
       // If we have exactly one credential, or no proposal to pick preferences
@@ -802,7 +796,7 @@ export class ProofService {
       }
 
       retrievedCredentials.requestedAttributes[referent] = await Promise.all(
-        credentialMatch.map(async (credential: Credential) => {
+        credentialMatch.map(async (credential: IndyCredential) => {
           const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem({
             proofRequest,
             requestedItem: requestedAttribute,
@@ -908,10 +902,10 @@ export class ProofService {
     const proof = JsonTransformer.fromJSON(proofJson, PartialProof)
 
     for (const [referent, attribute] of proof.requestedProof.revealedAttributes.entries()) {
-      if (!CredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
+      if (!IndyCredentialUtils.checkValidEncoding(attribute.raw, attribute.encoded)) {
         throw new PresentationProblemReportError(
           `The encoded value for '${referent}' is invalid. ` +
-            `Expected '${CredentialUtils.encode(attribute.raw)}'. ` +
+            `Expected '${IndyCredentialUtils.encode(attribute.raw)}'. ` +
             `Actual '${attribute.encoded}'`,
           { problemCode: PresentationProblemReportReason.Abandoned }
         )
@@ -990,6 +984,17 @@ export class ProofService {
     return this.proofRepository.getSingleByQuery({ threadId, connectionId })
   }
 
+  /**
+   * Retrieve proof records by connection id and parent thread id
+   *
+   * @param connectionId The connection id
+   * @param parentThreadId The parent thread id
+   * @returns List containing all proof records matching the given query
+   */
+  public async getByParentThreadAndConnectionId(parentThreadId: string, connectionId?: string): Promise<ProofRecord[]> {
+    return this.proofRepository.findByQuery({ parentThreadId, connectionId })
+  }
+
   public update(proofRecord: ProofRecord) {
     return this.proofRepository.update(proofRecord)
   }
@@ -1034,13 +1039,13 @@ export class ProofService {
   private async getCredentialsForProofRequest(
     proofRequest: ProofRequest,
     attributeReferent: string
-  ): Promise<Credential[]> {
+  ): Promise<IndyCredential[]> {
     const credentialsJson = await this.indyHolderService.getCredentialsForProofRequest({
       proofRequest: proofRequest.toJSON(),
       attributeReferent,
     })
 
-    return JsonTransformer.fromJSON(credentialsJson, Credential) as unknown as Credential[]
+    return JsonTransformer.fromJSON(credentialsJson, IndyCredential) as unknown as IndyCredential[]
   }
 
   private async getRevocationStatusForRequestedItem({
@@ -1050,7 +1055,7 @@ export class ProofService {
   }: {
     proofRequest: ProofRequest
     requestedItem: ProofAttributeInfo | ProofPredicateInfo
-    credential: Credential
+    credential: IndyCredential
   }) {
     const requestNonRevoked = requestedItem.nonRevoked ?? proofRequest.nonRevoked
     const credentialRevocationId = credential.credentialInfo.credentialRevocationId
@@ -1093,9 +1098,18 @@ export class ProofService {
     proofRecord.state = newState
     await this.proofRepository.update(proofRecord)
 
+    this.emitStateChangedEvent(proofRecord, previousState)
+  }
+
+  private emitStateChangedEvent(proofRecord: ProofRecord, previousState: ProofState | null) {
+    const clonedProof = JsonTransformer.clone(proofRecord)
+
     this.eventEmitter.emit<ProofStateChangedEvent>({
       type: ProofEventTypes.ProofStateChanged,
-      payload: { proofRecord, previousState: previousState },
+      payload: {
+        proofRecord: clonedProof,
+        previousState: previousState,
+      },
     })
   }
 

@@ -1,10 +1,9 @@
 import type { HandlerInboundMessage, Handler } from '../../../agent/Handler'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { GossipService } from '../service'
 
 import { WitnessTableMessage } from '../messages'
 
-export class WitnessTableHandler implements Handler<typeof DIDCommV2Message> {
+export class WitnessTableHandler implements Handler {
   private gossipService: GossipService
 
   public readonly supportedMessages = [WitnessTableMessage]

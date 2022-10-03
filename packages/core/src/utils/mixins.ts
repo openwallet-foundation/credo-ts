@@ -5,6 +5,9 @@
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type Constructor<T = {}> = new (...args: any[]) => T
 
+export type NonConstructable<T> = Omit<T, 'new'>
+export type Constructable<T> = T & (new (...args: any) => T)
+
 // Turns A | B | C into A & B & C
 export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never
 

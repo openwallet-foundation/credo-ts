@@ -1,15 +1,18 @@
-import { inject, scoped, Lifecycle } from 'tsyringe'
-
+import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
+import { injectable, inject } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
 
 import { ValueTransferRecord } from './ValueTransferRecord'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferRepository extends Repository<ValueTransferRecord> {
-  public constructor(@inject(InjectionSymbols.StorageService) storageService: StorageService<ValueTransferRecord>) {
-    super(ValueTransferRecord, storageService)
+  public constructor(
+    @inject(InjectionSymbols.StorageService) storageService: StorageService<ValueTransferRecord>,
+    eventEmitter: EventEmitter
+  ) {
+    super(ValueTransferRecord, storageService, eventEmitter)
   }
 
   public async getByThread(threadId: string): Promise<ValueTransferRecord> {

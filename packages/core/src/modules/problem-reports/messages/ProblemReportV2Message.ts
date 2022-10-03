@@ -2,9 +2,10 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Expose } from 'class-transformer'
-import { Equals, IsString } from 'class-validator'
+import { IsString } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export type ProblemReportV2MessageOptions = DIDCommV2MessageParams & {
   pthid: string
@@ -26,9 +27,9 @@ export class ProblemReportV2Message extends DIDCommV2Message {
     }
   }
 
-  @Equals(ProblemReportV2Message.type)
-  public readonly type: string = ProblemReportV2Message.type
-  public static readonly type: string = 'https://didcomm.org/report-problem/2.0/problem-report'
+  @IsValidMessageType(ProblemReportV2Message.type)
+  public readonly type = ProblemReportV2Message.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/report-problem/2.0/problem-report')
 
   @Expose({ name: 'body' })
   public body!: ProblemReportV2

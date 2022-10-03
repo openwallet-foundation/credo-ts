@@ -1,39 +1,46 @@
 import type { ConnectionRecord } from '../modules/connections'
-import type { DidCommService, DidDocumentService, IndyAgentService } from '../modules/dids/domain/service'
+import type { ResolvedDidCommService } from '../modules/didcomm'
+import type { DidDocumentService } from '../modules/dids/domain/service'
+import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { AcceptProtocol, Transports } from '../modules/routing/types'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { OutboundMessage, OutboundPackage, OutboundPackagePayload, SendMessageOptions } from '../types'
+import type {
+  OutboundMessage,
+  OutboundPackage,
+  OutboundPackagePayload,
+  SendMessageOptions,
+  TransportPriorityOptions,
+} from '../types'
 import type { TransportSession } from './TransportService'
-import type { DIDCommMessage, EncryptedMessage } from './didcomm'
+import type { DIDCommMessage, EncryptedMessage, DIDCommV1Message } from './didcomm'
 import type { PackMessageParams } from './didcomm/EnvelopeService'
 
-import { inject, Lifecycle, scoped } from 'tsyringe'
+import { inject, injectable } from 'tsyringe'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
+import { DidCommDocumentService } from '../modules/didcomm/services/DidCommDocumentService'
 import { DidDocument } from '../modules/dids/domain/DidDocument'
+import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
 import { DidCommV2Service } from '../modules/dids/domain/service'
+import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
+import { OutOfBandRepository } from '../modules/oob/repository'
 import { ForwardMessageV2 } from '../modules/routing/messages'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
+import { getProtocolScheme } from '../utils/uri'
 import { uuid } from '../utils/uuid'
 
 import { AgentConfig } from './AgentConfig'
 import { TransportService } from './TransportService'
 import { DIDCommV2Message } from './didcomm'
-import { DIDCommVersion } from './didcomm/DIDCommMessage'
 import { EnvelopeService } from './didcomm/EnvelopeService'
-import { SendingMessageType } from './didcomm/types'
+import { DIDCommVersion, SendingMessageType } from './didcomm/types'
 
-export interface TransportPriorityOptions {
-  schemes: string[]
-  restrictive?: boolean
-}
-
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MessageSender {
   private agentConfig: AgentConfig
   private envelopeService: EnvelopeService
@@ -41,6 +48,8 @@ export class MessageSender {
   private messageRepository: MessageRepository
   private logger: Logger
   private didResolverService: DidResolverService
+  private didCommDocumentService: DidCommDocumentService
+  private outOfBandRepository: OutOfBandRepository
   public readonly outboundTransports: OutboundTransport[] = []
 
   public constructor(
@@ -49,7 +58,9 @@ export class MessageSender {
     transportService: TransportService,
     @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    didResolverService: DidResolverService
+    didResolverService: DidResolverService,
+    didCommDocumentService: DidCommDocumentService,
+    outOfBandRepository: OutOfBandRepository
   ) {
     this.agentConfig = agentConfig
     this.envelopeService = envelopeService
@@ -57,6 +68,8 @@ export class MessageSender {
     this.messageRepository = messageRepository
     this.logger = logger
     this.didResolverService = didResolverService
+    this.didCommDocumentService = didCommDocumentService
+    this.outOfBandRepository = outOfBandRepository
     this.outboundTransports = []
   }
 
@@ -73,7 +86,7 @@ export class MessageSender {
     connection?: ConnectionRecord
     senderKey?: string
     accept?: AcceptProtocol[]
-    service?: DidCommService | IndyAgentService
+    service?: ResolvedDidCommService
     message: DIDCommMessage
   }): Promise<OutboundPackage> {
     let params: PackMessageParams
@@ -94,8 +107,8 @@ export class MessageSender {
         throw new AriesFrameworkError('Service does not contain any recipient!')
       }
       params = {
-        recipientKeys: service.recipientKeys,
-        routingKeys: service.routingKeys || [],
+        recipientKeys: service.recipientKeys.map((key) => key.publicKeyBase58),
+        routingKeys: service.routingKeys.map((key) => key.publicKeyBase58) || [],
         senderKey: senderKey || null,
       }
     }
@@ -118,7 +131,7 @@ export class MessageSender {
   }
 
   public async sendDIDCommV1Message(outboundMessage: OutboundMessage, options?: SendMessageOptions) {
-    const { connection, payload } = outboundMessage
+    const { connection, outOfBand, sessionId, payload } = outboundMessage
     const errors: Error[] = []
 
     this.logger.debug('Send outbound message', {
@@ -126,8 +139,16 @@ export class MessageSender {
       connectionId: connection.id,
     })
 
-    // Try to send to already open session
-    const session = this.transportService.findSessionByConnectionId(connection.id)
+    let session: TransportSession | undefined
+
+    if (sessionId) {
+      session = this.transportService.findSessionById(sessionId)
+    }
+    if (!session) {
+      // Try to send to already open session
+      session = this.transportService.findSessionByConnectionId(connection.id)
+    }
+
     if (session?.inboundMessage?.hasReturnRouting(payload.threadId)) {
       this.logger.debug(`Found session with return routing for message '${payload.id}' (connection '${connection.id}'`)
       try {
@@ -138,20 +159,47 @@ export class MessageSender {
         this.logger.debug(`Sending an outbound message via session failed with error: ${error.message}.`, error)
       }
     }
-    // Retrieve DIDComm services
-    const { services, queueService } = await this.retrieveServicesByConnection(connection, options?.transportPriority)
 
-    // Loop through all available services and try to send the message
+    // Retrieve DIDComm services
+    const { services, queueService } = await this.retrieveServicesByConnection(
+      connection,
+      options?.transportPriority,
+      outOfBand
+    )
+
+    if (!connection.did) {
+      this.logger.error(`Unable to send message using connection '${connection.id}' that doesn't have a did`)
+      throw new AriesFrameworkError(
+        `Unable to send message using connection '${connection.id}' that doesn't have a did`
+      )
+    }
+
+    const ourDidDocument = await this.didResolverService.resolveDidDocument(connection.did)
+    const ourAuthenticationKeys = getAuthenticationKeys(ourDidDocument)
+
+    // TODO We're selecting just the first authentication key. Is it ok?
+    // We can probably learn something from the didcomm-rust implementation, which looks at crypto compatibility to make sure the
+    // other party can decrypt the message. https://github.com/sicpa-dlab/didcomm-rust/blob/9a24b3b60f07a11822666dda46e5616a138af056/src/message/pack_encrypted/mod.rs#L33-L44
+    // This will become more relevant when we support different encrypt envelopes. One thing to take into account though is that currently we only store the recipientKeys
+    // as defined in the didcomm services, while it could be for example that the first authentication key is not defined in the recipientKeys, in which case we wouldn't
+    // even be interoperable between two AFJ agents. So we should either pick the first key that is defined in the recipientKeys, or we should make sure to store all
+    // keys defined in the did document as tags so we can retrieve it, even if it's not defined in the recipientKeys. This, again, will become simpler once we use didcomm v2
+    // as the `from` field in a received message will identity the did used so we don't have to store all keys in tags to be able to find the connections associated with
+    // an incoming message.
+    const [firstOurAuthenticationKey] = ourAuthenticationKeys
+    // If the returnRoute is already set we won't override it. This allows to set the returnRoute manually if this is desired.
+    const shouldAddReturnRoute =
+      payload.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(ourDidDocument)
+
+    // Loop trough all available services and try to send the message
     for await (const service of services) {
       try {
-        // Enable return routing if the
-        const shouldUseReturnRoute = !this.transportService.hasInboundEndpoint(connection.didDoc)
-
+        // Enable return routing if the our did document does not have any inbound endpoint for given sender key
         await this.packAndSendMessage({
           message: payload,
           service,
-          senderKey: connection.verkey,
-          returnRoute: shouldUseReturnRoute,
+          senderKey: firstOurAuthenticationKey.publicKeyBase58,
+          returnRoute: shouldAddReturnRoute,
           connection,
         })
         return
@@ -166,18 +214,20 @@ export class MessageSender {
         )
       }
     }
+
     // We didn't succeed to send the message over open session, or directly to serviceEndpoint
     // If the other party shared a queue service endpoint in their did doc we queue the message
     if (queueService) {
       this.logger.debug(`Queue message for connection ${connection.id} (${connection.theirLabel})`)
 
       const keys = {
-        recipientKeys: queueService.recipientKeys,
-        routingKeys: queueService.routingKeys || [],
-        senderKey: connection.verkey,
+        recipientKeys: queueService.recipientKeys.map((key) => key.publicKeyBase58),
+        routingKeys: queueService.routingKeys.map((key) => key.publicKeyBase58),
+        senderKey: firstOurAuthenticationKey.publicKeyBase58,
       }
 
       const encryptedMessage = await this.envelopeService.packMessageEncrypted(payload, keys)
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
@@ -412,7 +462,7 @@ export class MessageSender {
     connection,
   }: {
     message: DIDCommMessage
-    service?: DidCommService
+    service: ResolvedDidCommService
     senderKey?: string
     returnRoute?: boolean
     connection?: ConnectionRecord
@@ -420,15 +470,11 @@ export class MessageSender {
     if (this.outboundTransports.length === 0) {
       throw new AriesFrameworkError('Agent has no outbound transport!')
     }
-    if (!service && !connection) {
-      throw new AriesFrameworkError('Either Connection or Service must be passed!')
-    }
-    const transport = service?.protocolScheme
-    if (!transport) {
-      throw new AriesFrameworkError('Either Connection or Service must define transport!')
-    }
 
-    const endpoint = service?.serviceEndpoint
+    this.logger.debug(`Sending outbound message to service:`, {
+      messageId: message.id,
+      service: { ...service, recipientKeys: 'omitted...', routingKeys: 'omitted...' },
+    })
 
     // Set return routing for message if requested
     if (returnRoute) {
@@ -436,26 +482,32 @@ export class MessageSender {
     }
 
     try {
-      await MessageValidator.validate(message)
+      MessageValidator.validateSync(message)
     } catch (error) {
-      this.logger.error(`Aborting sending outbound message ${message.type} to ${endpoint}. Message validation failed`, {
-        errors: error,
-        message: message.toJSON(),
-      })
+      this.logger.error(
+        `Aborting sending outbound message ${message.type} to ${service.serviceEndpoint}. Message validation failed`,
+        {
+          errors: error,
+          message: message.toJSON(),
+        }
+      )
 
       throw error
     }
 
-    const outboundPackage = await this.packMessage({
-      connection,
-      service,
-      senderKey,
-      message,
-    })
-
-    outboundPackage.endpoint = endpoint
+    const outboundPackage = await this.packMessage({ connection, message, senderKey, service })
+    outboundPackage.endpoint = service.serviceEndpoint
     outboundPackage.connectionId = connection?.id
-    await this.sendOutboundPackage(outboundPackage, transport)
+    for (const transport of this.outboundTransports) {
+      const protocolScheme = getProtocolScheme(service.serviceEndpoint)
+      if (!protocolScheme) {
+        this.logger.warn('Service does not have valid protocolScheme.')
+      } else if (transport.supportedSchemes.includes(protocolScheme)) {
+        await transport.sendMessage(outboundPackage)
+        return
+      }
+    }
+    throw new AriesFrameworkError(`Unable to send message to service: ${service?.serviceEndpoint}`)
   }
 
   public async sendOutboundPackage(outboundPackage: OutboundPackage, transport?: string) {
@@ -475,53 +527,40 @@ export class MessageSender {
 
   private async retrieveServicesByConnection(
     connection: ConnectionRecord,
-    transportPriority?: TransportPriorityOptions
+    transportPriority?: TransportPriorityOptions,
+    outOfBand?: OutOfBandRecord
   ) {
     this.logger.debug(`Retrieving services for connection '${connection.id}' (${connection.theirLabel})`, {
       transportPriority,
+      connection,
     })
 
-    let didCommServices: Array<IndyAgentService | DidCommService> = []
+    let didCommServices: ResolvedDidCommService[] = []
 
-    // If theirDid starts with a did: prefix it means we're using the new did syntax
-    // and we should use the did resolver
-    if (connection.theirDid?.startsWith('did:')) {
-      const {
-        didDocument,
-        didResolutionMetadata: { error, message },
-      } = await this.didResolverService.resolve(connection.theirDid)
-
-      if (!didDocument) {
-        throw new AriesFrameworkError(
-          `Unable to resolve did document for did '${connection.theirDid}': ${error} ${message}`
-        )
+    if (connection.theirDid) {
+      this.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
+      didCommServices = await this.didCommDocumentService.resolveServicesFromDid(connection.theirDid)
+    } else if (outOfBand) {
+      this.logger.debug(`Resolving services from out-of-band record ${outOfBand.id}.`)
+      if (connection.isRequester) {
+        for (const service of outOfBand.outOfBandInvitation.getServices()) {
+          // Resolve dids to DIDDocs to retrieve services
+          if (typeof service === 'string') {
+            this.logger.debug(`Resolving services for did ${service}.`)
+            didCommServices.push(...(await this.didCommDocumentService.resolveServicesFromDid(service)))
+          } else {
+            // Out of band inline service contains keys encoded as did:key references
+            didCommServices.push({
+              id: service.id,
+              recipientKeys: service.recipientKeys.map(didKeyToInstanceOfKey),
+              routingKeys: service.routingKeys?.map(didKeyToInstanceOfKey) || [],
+              serviceEndpoint: service.serviceEndpoint,
+            })
+          }
+        }
       }
-
-      didCommServices = didDocument.didCommServices
     }
 
-    // Old school method, did document is stored inside the connection record
-    if (!didCommServices.length) {
-      // Retrieve DIDComm services
-      didCommServices = this.transportService.findDidCommServices(connection)
-    }
-
-    const { services, queueService } = await this.retrieveServicesFromDidCommServices(
-      didCommServices,
-      transportPriority
-    )
-
-    this.logger.debug(
-      `Retrieved ${services.length} services for message to connection '${connection.id}'(${connection.theirLabel})'`
-    )
-
-    return { services, queueService }
-  }
-
-  private async retrieveServicesFromDidCommServices(
-    didCommServices: Array<IndyAgentService | DidCommService>,
-    transportPriority?: TransportPriorityOptions
-  ) {
     // Separate queue service out
     let services = didCommServices.filter((s) => !isDidCommTransportQueue(s.serviceEndpoint))
     const queueService = didCommServices.find((s) => isDidCommTransportQueue(s.serviceEndpoint))
@@ -529,7 +568,7 @@ export class MessageSender {
     // If restrictive will remove services not listed in schemes list
     if (transportPriority?.restrictive) {
       services = services.filter((service) => {
-        const serviceSchema = service.protocolScheme
+        const serviceSchema = getProtocolScheme(service.serviceEndpoint)
         return transportPriority.schemes.includes(serviceSchema)
       })
     }
@@ -537,16 +576,94 @@ export class MessageSender {
     // If transport priority is set we will sort services by our priority
     if (transportPriority?.schemes) {
       services = services.sort(function (a, b) {
-        const aScheme = a.protocolScheme
-        const bScheme = b.protocolScheme
+        const aScheme = getProtocolScheme(a.serviceEndpoint)
+        const bScheme = getProtocolScheme(b.serviceEndpoint)
         return transportPriority?.schemes.indexOf(aScheme) - transportPriority?.schemes.indexOf(bScheme)
       })
     }
 
+    this.logger.debug(
+      `Retrieved ${services.length} services for message to connection '${connection.id}'(${connection.theirLabel})'`,
+      { hasQueueService: queueService !== undefined }
+    )
     return { services, queueService }
+  }
+
+  public async sendMessageToService({
+    message,
+    service,
+    senderKey,
+    returnRoute,
+    connectionId,
+  }: {
+    message: DIDCommV1Message
+    service: ResolvedDidCommService
+    senderKey: string
+    returnRoute?: boolean
+    connectionId?: string
+  }) {
+    if (this.outboundTransports.length === 0) {
+      throw new AriesFrameworkError('Agent has no outbound transport!')
+    }
+
+    this.logger.debug(`Sending outbound message to service:`, {
+      messageId: message.id,
+      service: { ...service, recipientKeys: 'omitted...', routingKeys: 'omitted...' },
+    })
+
+    // const keys = {
+    //   recipientKeys: service.recipientKeys,
+    //   routingKeys: service.routingKeys,
+    //   senderKey,
+    // }
+
+    // Set return routing for message if requested
+    if (returnRoute) {
+      message.setReturnRouting(ReturnRouteTypes.all)
+    }
+
+    try {
+      MessageValidator.validateSync(message)
+    } catch (error) {
+      this.logger.error(
+        `Aborting sending outbound message ${message.type} to ${service.serviceEndpoint}. Message validation failed`,
+        {
+          errors: error,
+          message: message.toJSON(),
+        }
+      )
+
+      throw error
+    }
+
+    const outboundPackage = await this.packMessage({ message, senderKey, service })
+    outboundPackage.endpoint = service.serviceEndpoint
+    outboundPackage.connectionId = connectionId
+    for (const transport of this.outboundTransports) {
+      const protocolScheme = getProtocolScheme(service.serviceEndpoint)
+      if (!protocolScheme) {
+        this.logger.warn('Service does not have valid protocolScheme.')
+      } else if (transport.supportedSchemes.includes(protocolScheme)) {
+        await transport.sendMessage(outboundPackage)
+        return
+      }
+    }
+    throw new AriesFrameworkError(`Unable to send message to service: ${service.serviceEndpoint}`)
   }
 }
 
 export function isDidCommTransportQueue(serviceEndpoint: string): serviceEndpoint is typeof DID_COMM_TRANSPORT_QUEUE {
   return serviceEndpoint === DID_COMM_TRANSPORT_QUEUE
+}
+
+function getAuthenticationKeys(didDocument: DidDocument) {
+  return (
+    didDocument.authentication?.map((authentication) => {
+      const verificationMethod =
+        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
+      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+      const key = getKeyFromVerificationMethod(verificationMethod)
+      return key
+    }) ?? []
+  )
 }

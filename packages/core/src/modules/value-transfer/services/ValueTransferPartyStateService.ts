@@ -1,16 +1,13 @@
-import type { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import type { PartyState, Transaction, VtpPartyStorageInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
+import { injectable } from '../../../plugins'
 import { ValueTransferRecord, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferPartyStateService implements VtpPartyStorageInterface {
   private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository
-  private valueTransferStateRecord?: ValueTransferStateRecord
 
   public constructor(
     valueTransferRepository: ValueTransferRepository,
@@ -21,17 +18,14 @@ export class ValueTransferPartyStateService implements VtpPartyStorageInterface 
   }
 
   public async getPartyState(): Promise<PartyState> {
-    if (!this.valueTransferStateRecord) {
-      this.valueTransferStateRecord = await this.valueTransferStateRepository.getSingleByQuery({})
-    }
-    return this.valueTransferStateRecord.partyState
+    const state = await this.valueTransferStateRepository.getSingleByQuery({})
+    return state.partyState
   }
 
   public async storePartyState(partyState: PartyState): Promise<void> {
     const record = await this.valueTransferStateRepository.getSingleByQuery({})
     record.partyState = partyState
     await this.valueTransferStateRepository.update(record)
-    this.valueTransferStateRecord = record
   }
 
   public async addTransaction(transaction: Transaction): Promise<void> {

@@ -20,7 +20,8 @@ export class FileOutboundTransport implements OutboundTransport {
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
-    this.agentConfig = agent.injectionContainer.resolve(AgentConfig)
+    this.agentConfig = agent.dependencyManager.resolve(AgentConfig)
+
     this.logger = this.agentConfig.logger
     this.FileSystem = new this.agentConfig.agentDependencies.FileSystem()
     this.logger.debug('Starting File outbound transport')

@@ -1,10 +1,9 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { TrustPingService } from '../services/TrustPingService'
 
 import { TrustPingResponseMessageV2 } from '../messages'
 
-export class TrustPingResponseMessageV2Handler implements Handler<typeof DIDCommV2Message> {
+export class TrustPingResponseMessageV2Handler implements Handler {
   private trustPingService: TrustPingService
   public supportedMessages = [TrustPingResponseMessageV2]
 

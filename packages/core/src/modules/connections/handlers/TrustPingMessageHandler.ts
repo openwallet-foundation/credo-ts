@@ -1,13 +1,12 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { ConnectionService } from '../services/ConnectionService'
 import type { TrustPingService } from '../services/TrustPingService'
 
 import { AriesFrameworkError } from '../../../error'
 import { TrustPingMessage } from '../messages'
-import { ConnectionState } from '../models'
+import { DidExchangeState } from '../models'
 
-export class TrustPingMessageHandler implements Handler<typeof DIDCommV1Message> {
+export class TrustPingMessageHandler implements Handler {
   private trustPingService: TrustPingService
   private connectionService: ConnectionService
   public supportedMessages = [TrustPingMessage]
@@ -25,8 +24,8 @@ export class TrustPingMessageHandler implements Handler<typeof DIDCommV1Message>
 
     // TODO: This is better addressed in a middleware of some kind because
     // any message can transition the state to complete, not just an ack or trust ping
-    if (connection.state === ConnectionState.Responded) {
-      await this.connectionService.updateState(connection, ConnectionState.Complete)
+    if (connection.state === DidExchangeState.ResponseSent) {
+      await this.connectionService.updateState(connection, DidExchangeState.Completed)
     }
 
     return this.trustPingService.processPing(messageContext, connection)
