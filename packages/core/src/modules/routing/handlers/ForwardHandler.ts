@@ -1,12 +1,11 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { MessageSender } from '../../../agent/MessageSender'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ConnectionService } from '../../connections/services'
 import type { MediatorService } from '../services'
 
 import { ForwardMessageV2 } from '../messages'
 
-export class ForwardHandler implements Handler<typeof DIDCommV2Message> {
+export class ForwardHandler implements Handler {
   private mediatorService: MediatorService
   private connectionService: ConnectionService
   private messageSender: MessageSender
@@ -28,6 +27,9 @@ export class ForwardHandler implements Handler<typeof DIDCommV2Message> {
 
     // The message inside the forward message is packed so we just send the packed
     // message to the connection associated with it
-    await this.messageSender.sendDIDCommV2EncryptedMessage(messageContext.message.body.next, encryptedMessage)
+    const service = await this.messageSender.findCommonSupportedService(undefined, messageContext.message.body.next)
+    if (service) {
+      await this.messageSender.sendMessage(encryptedMessage, service, messageContext.message.body.next)
+    }
   }
 }

@@ -1,45 +1,78 @@
+import type { AgentMessageReceivedEvent } from '../../../agent/Events'
 import type { DIDCommMessage, DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { Routing } from '../../connections/services'
+import type { EncryptedMessage } from '../../../types'
+import type { ConnectionRecord } from '../../connections'
+import type { Routing } from '../../connections/services/ConnectionService'
 import type { DidListUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
 import type { MediationDenyMessageV2, MediationGrantMessageV2, DidListUpdateResponseMessage } from '../messages'
-import type { GetRoutingOptions } from '../types'
+import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
+import type { GetRoutingOptions } from '@aries-framework/core'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
-import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
+import { createOutboundMessage } from '../../../agent/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
+import { inject, injectable } from '../../../plugins'
+import { JsonTransformer } from '../../../utils'
 import { Wallet } from '../../../wallet'
+import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
+import { ConnectionService } from '../../connections/services/ConnectionService'
+import { ProblemReportError } from '../../problem-reports'
 import { RoutingEventTypes } from '../RoutingEvents'
+import { RoutingProblemReportReason } from '../error'
 import { ListUpdateAction, DidListUpdateMessage, MediationRequestMessageV2, DidListUpdate } from '../messages'
 import { MediationRole, MediationState } from '../models'
-import { MediationRecord, MediationRepository } from '../repository'
+import { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from '../protocol/pickup/v2/messages'
+import { MediationRecord } from '../repository/MediationRecord'
+import { MediationRepository } from '../repository/MediationRepository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MediationRecipientService {
   private wallet: Wallet
-  private mediatorRepository: MediationRepository
+  private mediationRepository: MediationRepository
   private eventEmitter: EventEmitter
+  private connectionService: ConnectionService
   private messageSender: MessageSender
   private config: AgentConfig
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
+    connectionService: ConnectionService,
     messageSender: MessageSender,
     config: AgentConfig,
     mediatorRepository: MediationRepository,
     eventEmitter: EventEmitter
   ) {
-    this.config = config
     this.wallet = wallet
-    this.mediatorRepository = mediatorRepository
+    this.config = config
+    this.mediationRepository = mediatorRepository
     this.eventEmitter = eventEmitter
+    this.connectionService = connectionService
     this.messageSender = messageSender
+  }
+
+  public async createStatusRequest(
+    mediationRecord: MediationRecord,
+    config: {
+      recipientKey?: string
+    } = {}
+  ) {
+    mediationRecord.assertRole(MediationRole.Recipient)
+    mediationRecord.assertReady()
+
+    const { recipientKey } = config
+    const statusRequest = new StatusRequestMessage({
+      recipientKey,
+    })
+
+    return statusRequest
   }
 
   public async createRequest(
@@ -62,7 +95,7 @@ export class MediationRecipientService {
       did,
       mediatorDid,
     })
-    await this.mediatorRepository.save(mediationRecord)
+    await this.mediationRepository.save(mediationRecord)
     this.eventEmitter.emit<MediationStateChangedEvent>({
       type: RoutingEventTypes.MediationStateChanged,
       payload: {
@@ -107,7 +140,7 @@ export class MediationRecipientService {
       }
     }
 
-    await this.mediatorRepository.update(mediationRecord)
+    await this.mediationRepository.update(mediationRecord)
     this.eventEmitter.emit<DidListUpdatedEvent>({
       type: RoutingEventTypes.RecipientDidListUpdated,
       payload: {
@@ -220,49 +253,118 @@ export class MediationRecipientService {
     return mediationRecord
   }
 
+  public async processStatus(messageContext: InboundMessageContext<StatusMessage>) {
+    const connection = messageContext.assertReadyConnection()
+    const { message: statusMessage } = messageContext
+    const { messageCount, recipientKey } = statusMessage
+
+    //No messages to be sent
+    if (messageCount === 0) {
+      const { message, connectionRecord } = await this.connectionService.createTrustPing(connection, {
+        responseRequested: false,
+      })
+      const websocketSchemes = ['ws', 'wss']
+
+      await this.messageSender.sendDIDCommV1Message(createOutboundMessage(connectionRecord, message), {
+        transportPriority: {
+          schemes: websocketSchemes,
+          restrictive: true,
+          // TODO: add keepAlive: true to enforce through the public api
+          // we need to keep the socket alive. It already works this way, but would
+          // be good to make more explicit from the public facing API.
+          // This would also make it easier to change the internal API later on.
+          // keepAlive: true,
+        },
+      })
+
+      return null
+    }
+    const { maximumMessagePickup } = this.config
+    const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
+
+    const deliveryRequestMessage = new DeliveryRequestMessage({
+      limit,
+      recipientKey,
+    })
+
+    return deliveryRequestMessage
+  }
+
+  public async processDelivery(messageContext: InboundMessageContext<MessageDeliveryMessage>) {
+    messageContext.assertReadyConnection()
+
+    const { appendedAttachments } = messageContext.message
+
+    if (!appendedAttachments)
+      throw new ProblemReportError('Error processing attachments', {
+        problemCode: RoutingProblemReportReason.ErrorProcessingAttachments,
+      })
+
+    const ids: string[] = []
+    for (const attachment of appendedAttachments) {
+      ids.push(attachment.id)
+
+      this.eventEmitter.emit<AgentMessageReceivedEvent>({
+        type: AgentEventTypes.AgentMessageReceived,
+        payload: {
+          message: attachment.getDataAsJson<EncryptedMessage>(),
+        },
+      })
+    }
+
+    return new MessagesReceivedMessage({
+      messageIdList: ids,
+    })
+  }
+
   /**
    * Update the record to a new state and emit an state changed event. Also updates the record
    * in storage.
    *
-   * @param mediationRecord The proof record to update the state for
+   * @param MediationRecord The proof record to update the state for
    * @param newState The state to update to
    *
    */
   private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
     const previousState = mediationRecord.state
     mediationRecord.state = newState
-    await this.mediatorRepository.update(mediationRecord)
+    await this.mediationRepository.update(mediationRecord)
 
-    this.eventEmitter.emit<MediationStateChangedEvent>({
-      type: RoutingEventTypes.MediationStateChanged,
-      payload: {
-        mediationRecord,
-        previousState,
-      },
-    })
+    this.emitStateChangedEvent(mediationRecord, previousState)
     return mediationRecord
   }
 
+  private emitStateChangedEvent(mediationRecord: MediationRecord, previousState: MediationState | null) {
+    const clonedMediationRecord = JsonTransformer.clone(mediationRecord)
+    this.eventEmitter.emit<MediationStateChangedEvent>({
+      type: RoutingEventTypes.MediationStateChanged,
+      payload: {
+        mediationRecord: clonedMediationRecord,
+        previousState,
+      },
+    })
+  }
+
   public async getById(id: string): Promise<MediationRecord> {
-    return this.mediatorRepository.getById(id)
+    return this.mediationRepository.getById(id)
   }
 
   public async findGrantedByMediatorDid(did: string): Promise<MediationRecord | null> {
-    return this.mediatorRepository.findSingleByQuery({ mediatorDid: did, state: MediationState.Granted })
+    return this.mediationRepository.findSingleByQuery({ mediatorDid: did, state: MediationState.Granted })
   }
 
   public async getMediators(): Promise<MediationRecord[]> {
-    return this.mediatorRepository.getAll()
+    return this.mediationRepository.getAll()
   }
 
   public async findDefaultMediator(): Promise<MediationRecord | null> {
-    return this.mediatorRepository.findSingleByQuery({ default: true })
+    return this.mediationRepository.findSingleByQuery({ default: true })
   }
 
   public async discoverMediation(mediatorId?: string): Promise<MediationRecord | undefined> {
     // If mediatorId is passed, always use it (and error if it is not found)
     if (mediatorId) {
-      return this.mediatorRepository.getById(mediatorId)
+      return this.mediationRepository.getById(mediatorId)
     }
 
     const defaultMediator = await this.findDefaultMediator()
@@ -278,16 +380,16 @@ export class MediationRecipientService {
   }
 
   public async setDefaultMediator(mediator: MediationRecord) {
-    const mediationRecords = await this.mediatorRepository.findByQuery({ default: true })
+    const mediationRecords = await this.mediationRepository.findByQuery({ default: true })
 
     for (const record of mediationRecords) {
       record.setTag('default', false)
-      await this.mediatorRepository.update(record)
+      await this.mediationRepository.update(record)
     }
 
     // Set record coming in tag to true and then update.
     mediator.setTag('default', true)
-    await this.mediatorRepository.update(mediator)
+    await this.mediationRepository.update(mediator)
   }
 
   public async clearDefaultMediator() {
@@ -295,15 +397,22 @@ export class MediationRecipientService {
 
     if (mediationRecord) {
       mediationRecord.setTag('default', false)
-      await this.mediatorRepository.update(mediationRecord)
+      await this.mediationRepository.update(mediationRecord)
     }
+  }
+
+  private async updateUseDidKeysFlag(connection: ConnectionRecord, protocolUri: string, connectionUsesDidKey: boolean) {
+    const useDidKeysForProtocol = connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol) ?? {}
+    useDidKeysForProtocol[protocolUri] = connectionUsesDidKey
+    connection.metadata.set(ConnectionMetadataKeys.UseDidKeysForProtocol, useDidKeysForProtocol)
+    await this.connectionService.update(connection)
   }
 
   private async getMediationRecord(messageContext: InboundMessageContext<DIDCommV2Message>): Promise<MediationRecord> {
     if (!messageContext.message.to || !messageContext.message.to.length) {
       throw new Error(`No mediation has been requested for this did: ${messageContext.message.to}`)
     }
-    const mediationRecord = await this.mediatorRepository.getByDid(messageContext.message.to[0])
+    const mediationRecord = await this.mediationRepository.getByDid(messageContext.message.to[0])
 
     if (!mediationRecord) {
       throw new Error(`No mediation has been requested for this connection id: ${messageContext.message.from}`)

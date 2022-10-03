@@ -3,13 +3,20 @@ import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } f
 import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
 import type { TransactionRecord } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Gossip, WitnessGossipInfo, WitnessState, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { Lifecycle, scoped } from 'tsyringe'
+import {
+  Gossip,
+  WitnessGossipInfo,
+  WitnessState,
+  WitnessDetails,
+  WitnessTableQuery,
+} from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
-import { DidMarker, DidService } from '../../dids'
+import { injectable } from '../../../plugins'
+import { DidMarker } from '../../dids/domain'
+import { DidService } from '../../dids/services/DidService'
 import { ValueTransferEventTypes } from '../../value-transfer/ValueTransferEvents'
 import { WitnessTableMessage } from '../messages'
 import { WitnessStateRecord, WitnessStateRepository } from '../repository'
@@ -19,7 +26,7 @@ import { GossipLoggerService } from './GossipLoggerService'
 import { WitnessGossipStateService } from './GossipStateService'
 import { GossipTransportService } from './GossipTransportService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class GossipService {
   private gossip: Gossip
   private config: AgentConfig
@@ -51,11 +58,15 @@ export class GossipService {
         crypto: gossipCryptoService,
         storage: gossipStateService,
         transport: gossipTransportService,
+        metrics: config.witnessGossipMetrics,
       },
       {
         label: config.label,
-        redeliveryThreshold: config.witnessRedeliveryThreshold,
-        historyThreshold: config.witnessHistoryThreshold,
+        tockTime: config.valueTransferConfig?.witness?.tockTime,
+        cleanupTime: config.valueTransferConfig?.witness?.cleanupTime,
+        redeliverTime: config.valueTransferConfig?.witness?.redeliverTime,
+        historyThreshold: config.valueTransferConfig?.witness?.historyThreshold,
+        redeliveryThreshold: config.valueTransferConfig?.witness?.redeliveryThreshold,
       }
     )
   }
@@ -165,8 +176,9 @@ export class GossipService {
   }> {
     this.config.logger.info('> Witness process witness table query message')
 
-    const { message: witnessTableQuery } = messageContext
+    const { message: witnessTableQueryMessage } = messageContext
 
+    const witnessTableQuery = new WitnessTableQuery(witnessTableQueryMessage)
     const { message, error } = await this.gossip.processWitnessTableQuery(witnessTableQuery)
     if (error || !message) {
       this.config.logger.error(`  Witness: Failed to process table query: ${error?.message}`)

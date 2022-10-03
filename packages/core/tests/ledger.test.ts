@@ -65,7 +65,7 @@ describe('ledger', () => {
       throw new Error('Agent does not have public did.')
     }
 
-    const faberWallet = faberAgent.injectionContainer.resolve(IndyWallet)
+    const faberWallet = faberAgent.dependencyManager.resolve(IndyWallet)
     const didInfo = await faberWallet.createDid()
 
     const result = await faberAgent.ledger.registerPublicDid(didInfo.did, didInfo.verkey, 'alias', 'TRUST_ANCHOR')

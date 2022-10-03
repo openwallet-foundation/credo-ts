@@ -1,9 +1,6 @@
 {
   "@context": ["https://w3id.org/did/v1"],
-  "id": "did:peer:1zQmYtsAsQhwEjjFkcJ2zpbHuE1ESuDkTEwm6KQd65HRNtAq",
-  "alsoKnownAs": [],
-  "controller": [],
-  "verificationMethod": [],
+  "id": "did:peer:1zQmchWGXSsHohSMrgts5oxG76zAfG49RkMZbhrYqPJeVXc1",
   "service": [
     {
       "id": "#service-0",
@@ -25,7 +22,6 @@
       "publicKeyBase58": "CQZzRfoJMRzoESU2VtWrgx3rTsk9yjrjqXL2UdxWjX2q"
     }
   ],
-  "assertionMethod": [],
   "keyAgreement": [
     {
       "id": "#08673492-3c44-47fe-baa4-a1780c585d75",
@@ -33,7 +29,5 @@
       "controller": "#id",
       "publicKeyBase58": "7SbWSgJgjSvSTc7ZAKHJiaZbTBwNM9TdFUAU1UyZfJn8"
     }
-  ],
-  "capabilityInvocation": [],
-  "capabilityDelegation": []
+  ]
 }

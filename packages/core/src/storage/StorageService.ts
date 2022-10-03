@@ -1,7 +1,16 @@
 import type { Constructor } from '../utils/mixins'
-import type { BaseRecord } from './BaseRecord'
+import type { BaseRecord, TagsBase } from './BaseRecord'
 
-export type Query<T extends BaseRecord> = Partial<ReturnType<T['getTags']>>
+// https://stackoverflow.com/questions/51954558/how-can-i-remove-a-wider-type-from-a-union-type-without-removing-its-subtypes-in/51955852#51955852
+export type SimpleQuery<T extends BaseRecord> = Partial<ReturnType<T['getTags']>> & TagsBase
+
+interface AdvancedQuery<T extends BaseRecord> {
+  $and?: Query<T>[]
+  $or?: Query<T>[]
+  $not?: Query<T>
+}
+
+export type Query<T extends BaseRecord> = AdvancedQuery<T> | SimpleQuery<T>
 
 export interface BaseRecordConstructor<T> extends Constructor<T> {
   type: string
@@ -32,6 +41,15 @@ export interface StorageService<T extends BaseRecord<any, any, any>> {
    * @throws {RecordNotFoundError} if a record with this id and type does not exist
    */
   delete(record: T): Promise<void>
+
+  /**
+   * Delete record by id.
+   *
+   * @param recordClass the record class to delete the record for
+   * @param id the id of the record to delete from storage
+   * @throws {RecordNotFoundError} if a record with this id and type does not exist
+   */
+  deleteById(recordClass: BaseRecordConstructor<T>, id: string): Promise<void>
 
   /**
    * Get record by id.

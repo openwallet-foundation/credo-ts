@@ -17,4 +17,8 @@ export class DummyTransportSession implements TransportSession {
   public send(): Promise<void> {
     throw new Error('Method not implemented.')
   }
+
+  public close(): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
 }

@@ -1,12 +1,11 @@
 import type { Buffer } from '../../../utils'
 import type { GossipCryptoInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
+import { injectable } from '../../../plugins'
 import { DidService } from '../../dids/services/DidService'
 import { KeyService } from '../../keys'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class GossipCryptoService implements GossipCryptoInterface {
   private didService: DidService
   private keysService: KeyService

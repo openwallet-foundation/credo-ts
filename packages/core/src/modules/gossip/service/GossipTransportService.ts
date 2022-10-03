@@ -1,14 +1,13 @@
 import type { GossipTransportInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { DIDCommV2Message } from '../../../agent/didcomm/v2/DIDCommV2Message'
+import { injectable } from '../../../plugins'
 import { JsonEncoder } from '../../../utils'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class GossipTransportService implements GossipTransportInterface {
   private config: AgentConfig
   private messageSender: MessageSender
@@ -23,7 +22,7 @@ export class GossipTransportService implements GossipTransportInterface {
     this.config.logger.info(`Sending Gossip message with type '${message.type}' to DID ${message?.to}`)
     this.config.logger.debug(` Message: ${JsonEncoder.toString(message)}`)
     const didcomMessage = new DIDCommV2Message({ ...message })
-    const sendingMessageType = didcomMessage.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
+    const sendingMessageType = SendingMessageType.Signed
     await this.messageSender.sendDIDCommV2Message(didcomMessage, sendingMessageType)
   }
 }

@@ -1,9 +1,10 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsNotEmpty, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsNotEmpty, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV1Message, DIDCommV2Message } from '../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface MediationGrantMessageOptions {
   id?: string
@@ -32,9 +33,9 @@ export class MediationGrantMessage extends DIDCommV1Message {
     }
   }
 
-  @Equals(MediationGrantMessage.type)
-  public readonly type = MediationGrantMessage.type
-  public static readonly type = 'https://didcomm.org/coordinate-mediation/1.0/mediate-grant'
+  @IsValidMessageType(MediationGrantMessage.type)
+  public readonly type = MediationGrantMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/1.0/mediate-grant')
 
   @IsNotEmpty()
   @IsArray()
@@ -75,9 +76,9 @@ export class MediationGrantMessageV2 extends DIDCommV2Message {
     }
   }
 
-  @Equals(MediationGrantMessageV2.type)
-  public readonly type = MediationGrantMessageV2.type
-  public static readonly type = 'https://didcomm.org/coordinate-mediation/2.0/mediate-grant'
+  @IsValidMessageType(MediationGrantMessageV2.type)
+  public readonly type = MediationGrantMessageV2.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/mediate-grant')
 
   @Type(() => MediationGrantMessageV2Body)
   @ValidateNested()

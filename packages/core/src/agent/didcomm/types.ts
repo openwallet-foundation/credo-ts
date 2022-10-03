@@ -1,8 +1,3 @@
-import type { DIDCommVersion } from './DIDCommMessage'
-import type { PlaintextMessage } from './EnvelopeService'
-import type { DIDCommV1Message } from './v1/DIDCommV1Message'
-import type { DIDCommV2Message } from './v2/DIDCommV2Message'
-
 export enum SendingMessageType {
   Plain = 'plain',
   Signed = 'signed',
@@ -21,9 +16,27 @@ export type ReceivedSignedMessage = {
   message: SignedMessage
 }
 
+export interface PlaintextMessage {
+  '@type'?: string
+  '@id'?: string
+  type?: string
+  id?: string
+
+  [key: string]: unknown
+}
+
 export type ReceivedPlainMessage = {
   type: SendingMessageType.Plain
   message: PlaintextMessage
+}
+
+export type EncryptedMessageRecipientHeader = {
+  kid: string
+}
+
+export type EncryptedMessageRecipient = {
+  encrypted_key: string
+  header: EncryptedMessageRecipientHeader
 }
 
 export type EncryptedMessage = {
@@ -31,6 +44,7 @@ export type EncryptedMessage = {
   iv: string
   ciphertext: string
   tag: string
+  recipients: EncryptedMessageRecipient[]
 }
 
 export type SignedMessage = {
@@ -53,6 +67,11 @@ export type ProtectedMessage = {
   alg: string
 }
 
+export enum DIDCommVersion {
+  V1 = 'DIDCommV1',
+  V2 = 'DIDCommV2',
+}
+
 export interface DecryptedMessageContext {
   plaintextMessage: PlaintextMessage
   sender?: string
@@ -68,5 +87,3 @@ export enum DidCommV1Algorithms {
   Authcrypt = 'Authcrypt',
   Anoncrypt = 'Anoncrypt',
 }
-
-export type DIDCommMessageClass = typeof DIDCommV1Message | typeof DIDCommV2Message

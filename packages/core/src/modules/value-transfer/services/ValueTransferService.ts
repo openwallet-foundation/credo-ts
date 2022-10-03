@@ -18,13 +18,13 @@ import {
 } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
-import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { JsonEncoder } from '../../../utils'
 import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
@@ -41,7 +41,7 @@ import { ValueTransferPartyStateService } from './ValueTransferPartyStateService
 import { ValueTransferTransportService } from './ValueTransferTransportService'
 import { ValueTransferWitnessStateService } from './ValueTransferWitnessStateService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferService {
   protected config: AgentConfig
   protected valueTransferRepository: ValueTransferRepository
@@ -169,7 +169,8 @@ export class ValueTransferService {
       await this.giver.processProblemReport(new ProblemReport(problemReportMessage))
     }
 
-    return { record }
+    const updatedRecord = await this.emitStateChangedEvent(record.transaction.id)
+    return { record: updatedRecord }
   }
 
   public async abortTransaction(
@@ -195,7 +196,9 @@ export class ValueTransferService {
     if (record.transaction.role === TransactionRole.Giver) {
       await this.giver.abortTransaction(record.id, code, reason, send)
     }
-    return { record }
+
+    const updatedRecord = await this.emitStateChangedEvent(record.transaction.id)
+    return { record: updatedRecord }
   }
 
   public async getPendingTransactions(): Promise<{
@@ -307,12 +310,8 @@ export class ValueTransferService {
     return this.valueTransferStateRepository.findSingleByQuery({})
   }
 
-  public async getPartyState(): Promise<ValueTransferStateRecord> {
-    return this.valueTransferStateRepository.getSingleByQuery({})
-  }
-
-  public async getTransactionDid(usePublicDid?: boolean) {
-    return this.didService.getPublicDidOrCreateNew(usePublicDid)
+  public async getPartyPublicDid() {
+    return this.didService.getPublicDid()
   }
 
   public async emitStateChangedEvent(id: string): Promise<ValueTransferRecord> {

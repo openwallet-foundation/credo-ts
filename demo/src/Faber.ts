@@ -1,15 +1,21 @@
-import type { ConnectionRecord } from '@aries-framework/core'
-import type { CredDef, Schema } from 'indy-sdk-react-native'
+import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
+import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { AttributeFilter, CredentialPreview, ProofAttributeInfo, utils } from '@aries-framework/core'
+import {
+  V1CredentialPreview,
+  AttributeFilter,
+  ProofAttributeInfo,
+  utils,
+  ConnectionEventTypes,
+} from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
 import { Color, greenText, Output, purpleText, redText } from './OutputClass'
 
 export class Faber extends BaseAgent {
-  public connectionRecordAliceId?: string
+  public outOfBandId?: string
   public credentialDefinition?: CredDef
   public ui: BottomBar
   public static seed = '6b8b882e2618fa5d45ee7229ca880083'
@@ -30,25 +36,73 @@ export class Faber extends BaseAgent {
   }
 
   private async getConnectionRecord() {
-    if (!this.connectionRecordAliceId) {
+    if (!this.outOfBandId) {
       throw Error(redText(Output.MissingConnectionRecord))
     }
-    return await this.agent.connections.getById(this.connectionRecordAliceId)
+
+    const [connection] = await this.agent.connections.findAllByOutOfBandId(this.outOfBandId)
+
+    if (!connection) {
+      throw Error(redText(Output.MissingConnectionRecord))
+    }
+
+    return connection
   }
 
-  private async receiveConnectionRequest(invitationUrl: string) {
-    return await this.agent.connections.receiveInvitationFromUrl(invitationUrl)
+  private async printConnectionInvite() {
+    const outOfBand = await this.agent.oob.createInvitation()
+    this.outOfBandId = outOfBand.id
+
+    console.log(
+      Output.ConnectionLink,
+      outOfBand.outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }),
+      '\n'
+    )
   }
 
-  private async waitForConnection(connectionRecord: ConnectionRecord) {
-    connectionRecord = await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
+  private async waitForConnection() {
+    if (!this.outOfBandId) {
+      throw new Error(redText(Output.MissingConnectionRecord))
+    }
+
+    console.log('Waiting for Alice to finish connection...')
+
+    const getConnectionRecord = (outOfBandId: string) =>
+      new Promise<ConnectionRecord>((resolve, reject) => {
+        // Timeout of 20 seconds
+        const timeoutId = setTimeout(() => reject(new Error(redText(Output.MissingConnectionRecord))), 20000)
+
+        // Start listener
+        this.agent.events.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, (e) => {
+          if (e.payload.connectionRecord.outOfBandId !== outOfBandId) return
+
+          clearTimeout(timeoutId)
+          resolve(e.payload.connectionRecord)
+        })
+
+        // Also retrieve the connection record by invitation if the event has already fired
+        void this.agent.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {
+          if (connectionRecord) {
+            clearTimeout(timeoutId)
+            resolve(connectionRecord)
+          }
+        })
+      })
+
+    const connectionRecord = await getConnectionRecord(this.outOfBandId)
+
+    try {
+      await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
+    } catch (e) {
+      console.log(redText(`\nTimeout of 20 seconds reached.. Returning to home screen.\n`))
+      return
+    }
     console.log(greenText(Output.ConnectionEstablished))
-    return connectionRecord.id
   }
 
-  public async acceptConnection(invitation_url: string) {
-    const connectionRecord = await this.receiveConnectionRequest(invitation_url)
-    this.connectionRecordAliceId = await this.waitForConnection(connectionRecord)
+  public async setupConnection() {
+    await this.printConnectionInvite()
+    await this.waitForConnection()
   }
 
   private printSchema(name: string, version: string, attributes: string[]) {
@@ -67,23 +121,23 @@ export class Faber extends BaseAgent {
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attributes)
     this.ui.updateBottomBar(greenText('\nRegistering schema...\n', false))
     const schema = await this.agent.ledger.registerSchema(schemaTemplate)
-    this.ui.updateBottomBar('\nSchema registerd!\n')
+    this.ui.updateBottomBar('\nSchema registered!\n')
     return schema
   }
 
-  private async registerCredentialDefiniton(schema: Schema) {
+  private async registerCredentialDefinition(schema: Schema) {
     this.ui.updateBottomBar('\nRegistering credential definition...\n')
     this.credentialDefinition = await this.agent.ledger.registerCredentialDefinition({
       schema,
       tag: 'latest',
       supportRevocation: false,
     })
-    this.ui.updateBottomBar('\nCredential definition registerd!!\n')
+    this.ui.updateBottomBar('\nCredential definition registered!!\n')
     return this.credentialDefinition
   }
 
   private getCredentialPreview() {
-    const credentialPreview = CredentialPreview.fromRecord({
+    const credentialPreview = V1CredentialPreview.fromRecord({
       name: 'Alice Smith',
       degree: 'Computer Science',
       date: '01/01/2022',
@@ -93,14 +147,21 @@ export class Faber extends BaseAgent {
 
   public async issueCredential() {
     const schema = await this.registerSchema()
-    const credDef = await this.registerCredentialDefiniton(schema)
+    const credDef = await this.registerCredentialDefinition(schema)
     const credentialPreview = this.getCredentialPreview()
     const connectionRecord = await this.getConnectionRecord()
 
     this.ui.updateBottomBar('\nSending credential offer...\n')
-    await this.agent.credentials.offerCredential(connectionRecord.id, {
-      credentialDefinitionId: credDef.id,
-      preview: credentialPreview,
+
+    await this.agent.credentials.offerCredential({
+      connectionId: connectionRecord.id,
+      protocolVersion: 'v1',
+      credentialFormats: {
+        indy: {
+          attributes: credentialPreview.attributes,
+          credentialDefinitionId: credDef.id,
+        },
+      },
     })
     this.ui.updateBottomBar(
       `\nCredential offer sent!\n\nGo to the Alice agent to accept the credential offer\n\n${Color.Reset}`

@@ -1,14 +1,14 @@
 import type { AgentMessageProcessedEvent } from '../../agent/Events'
 import type { DIDCommV2Message } from '../../agent/didcomm'
 import type { Logger } from '../../logger'
+import type { DependencyManager } from '../../plugins'
 import type { OutboundWebSocketClosedEvent } from '../../transport'
 import type { MediationStateChangedEvent } from './RoutingEvents'
-import type { MediationRecord } from './index'
+import type { MediationRecord } from './repository'
 import type { Subscription } from 'rxjs'
 
-import { firstValueFrom, interval, of, ReplaySubject, timer } from 'rxjs'
-import { catchError, delayWhen, filter, first, map, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
-import { Lifecycle, scoped } from 'tsyringe'
+import { of, firstValueFrom, interval, ReplaySubject, Subject, timer } from 'rxjs'
+import { catchError, map, filter, first, takeUntil, throttleTime, timeout, tap, delayWhen } from 'rxjs/operators'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -16,11 +16,12 @@ import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { AriesFrameworkError } from '../../error'
+import { injectable, module } from '../../plugins'
 import { TransportEventTypes } from '../../transport'
-import { parseMessageType } from '../../utils/messageType'
-import { ConnectionService } from '../connections/services'
-import { DidService } from '../dids'
-import { DiscloseMessage, DiscloseMessageV2, DiscoverFeaturesModule } from '../discover-features'
+import { ConnectionService } from '../connections/services/ConnectionService'
+import { DidService, DidsModule } from '../dids'
+import { DiscoverFeaturesModule } from '../discover-features/DiscoverFeaturesModule'
+import { DiscloseMessage, DiscloseMessageV2 } from '../discover-features/messages'
 import { OutOfBandGoalCode, OutOfBandInvitationMessage } from '../out-of-band'
 
 import { TrustPingMessageV2 } from './../connections/messages'
@@ -29,27 +30,34 @@ import { RoutingEventTypes } from './RoutingEvents'
 import { DidListUpdateResponseHandler } from './handlers/DidListUpdateResponseHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
-import { BatchPickupMessageV2 } from './messages/BatchPickupMessage'
 import { MediationState } from './models/MediationState'
-import { MediationRepository } from './repository'
+import { BatchPickupMessageV2 } from './protocol/pickup/v1/messages'
+import { MediationRepository, MediatorRoutingRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
+import { RoutingService } from './services/RoutingService'
 import { Transports } from './types'
 
 const DEFAULT_WS_RECONNECTION_INTERVAL = 1500
 const WS_RECONNECTION_INTERVAL_STEP = 500
 const MAX_WS_RECONNECTION_INTERVAL = 5000
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class RecipientModule {
   private agentConfig: AgentConfig
   private mediationRecipientService: MediationRecipientService
   private didService: DidService
   private connectionService: ConnectionService
+  private dids: DidsModule
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
   private discoverFeaturesModule: DiscoverFeaturesModule
   private mediationRepository: MediationRepository
+  private routingService: RoutingService
+
+  // stopMessagePickup$ is used for stop message pickup signal
+  private readonly stopMessagePickup$ = new Subject<boolean>()
 
   public constructor(
     dispatcher: Dispatcher,
@@ -57,20 +65,24 @@ export class RecipientModule {
     mediationRecipientService: MediationRecipientService,
     didService: DidService,
     connectionService: ConnectionService,
+    dids: DidsModule,
     messageSender: MessageSender,
     eventEmitter: EventEmitter,
     discoverFeaturesModule: DiscoverFeaturesModule,
-    mediationRepository: MediationRepository
+    mediationRepository: MediationRepository,
+    routingService: RoutingService
   ) {
     this.agentConfig = agentConfig
     this.didService = didService
     this.connectionService = connectionService
+    this.dids = dids
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.logger = agentConfig.logger
     this.discoverFeaturesModule = discoverFeaturesModule
     this.mediationRepository = mediationRepository
+    this.routingService = routingService
     this.registerHandlers(dispatcher)
   }
 
@@ -148,7 +160,7 @@ export class RecipientModule {
           `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`
         )
         // Try to reconnect to WebSocket and reset retry interval if successful
-        this.openMediationWebSocket(mediator).then(() => (interval = DEFAULT_WS_RECONNECTION_INTERVAL))
+        await this.openMediationWebSocket(mediator).then(() => (interval = DEFAULT_WS_RECONNECTION_INTERVAL))
       })
 
     await this.openMediationWebSocket(mediator)
@@ -228,7 +240,7 @@ export class RecipientModule {
   }
 
   private async isBatchPickupSupportedByMediator(mediator: MediationRecord) {
-    const { protocolUri } = parseMessageType(BatchPickupMessageV2.type)
+    const { protocolUri } = BatchPickupMessageV2.type
 
     // Listen for response to our feature query
     const replaySubject = new ReplaySubject(1)
@@ -240,8 +252,10 @@ export class RecipientModule {
         // filter by mediator connection id and query disclose message type
         filter(
           (e) =>
-            (e.payload.message?.sender === mediator.did && e.payload.message.type === DiscloseMessageV2.type) ||
-            (e.payload.connection?.id === mediator.connectionId && e.payload.message.type === DiscloseMessage.type)
+            (e.payload.message?.sender === mediator.did &&
+              e.payload.message.type === DiscloseMessageV2.type.messageTypeUri) ||
+            (e.payload.connection?.id === mediator.connectionId &&
+              e.payload.message.type === DiscloseMessage.type.messageTypeUri)
         ),
         // Return whether the protocol is supported
         map((e) => {
@@ -357,11 +371,31 @@ export class RecipientModule {
     await this.setDefaultMediator(mediationRecord)
   }
 
+  public async stopMessagePickup() {
+    this.stopMessagePickup$.next(true)
+  }
+
   // Register handlers for the several messages for the mediator.
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new DidListUpdateResponseHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
     dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
     //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
+  }
+
+  /**
+   * Registers the dependencies of the mediator recipient module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(RecipientModule)
+
+    // Services
+    dependencyManager.registerSingleton(MediationRecipientService)
+    dependencyManager.registerSingleton(RoutingService)
+
+    // Repositories
+    dependencyManager.registerSingleton(MediationRepository)
+    dependencyManager.registerSingleton(MediatorRoutingRepository)
   }
 }

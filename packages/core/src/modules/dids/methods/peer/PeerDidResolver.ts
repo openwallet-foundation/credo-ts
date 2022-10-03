@@ -6,7 +6,9 @@ import type { DidResolutionResult } from '../../types'
 import { AriesFrameworkError } from '../../../../error'
 import { DidType } from '../../domain'
 
-import { DidPeer, PeerDidNumAlgo } from './DidPeer'
+import { didToNumAlgo0DidDocument } from './peerDidNumAlgo0'
+import { didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
+import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './utils'
 
 export class PeerDidResolver implements DidResolver {
   public readonly supportedMethods = ['peer']
@@ -21,12 +23,20 @@ export class PeerDidResolver implements DidResolver {
     const didDocumentMetadata = {}
 
     try {
-      const didPeer = DidPeer.fromDid(did)
-
       let didDocument: DidDocument
 
+      if (!isValidPeerDid(did)) {
+        throw new AriesFrameworkError(`did ${did} is not a valid peer did`)
+      }
+
+      const numAlgo = getNumAlgoFromPeerDid(did)
+
+      // For method 0, generate from did
+      if (numAlgo === PeerDidNumAlgo.InceptionKeyWithoutDoc) {
+        didDocument = didToNumAlgo0DidDocument(did)
+      }
       // For Method 1, retrieve from storage
-      if (didPeer.numAlgo === PeerDidNumAlgo.GenesisDoc) {
+      else if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
         const didDocumentRecord = await this.didRepository.getById(did)
 
         if (!didDocumentRecord.didDocument) {
@@ -34,8 +44,10 @@ export class PeerDidResolver implements DidResolver {
         }
 
         didDocument = didDocumentRecord.didDocument
-      } else {
-        didDocument = didPeer.didDocument
+      }
+      // For Method 2, generate from did
+      else {
+        didDocument = didToNumAlgo2DidDocument(did)
       }
 
       return {

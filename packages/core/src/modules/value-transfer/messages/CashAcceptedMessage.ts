@@ -1,6 +1,9 @@
 import type { ValueTransferMessageParams } from './ValueTransferBaseMessage'
 
-import { Equals, IsString } from 'class-validator'
+import { CashAcceptance } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { IsString } from 'class-validator'
+
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 import { ValueTransferBaseMessage } from './ValueTransferBaseMessage'
 
@@ -9,9 +12,9 @@ export class CashAcceptedMessage extends ValueTransferBaseMessage {
     super(options)
   }
 
-  @Equals(CashAcceptedMessage.type)
-  public readonly type = CashAcceptedMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/step-9'
+  @IsValidMessageType(CashAcceptedMessage.type)
+  public readonly type = CashAcceptedMessage.type.messageTypeUri
+  public static readonly type = parseMessageType(CashAcceptance.type)
 
   @IsString()
   public thid!: string

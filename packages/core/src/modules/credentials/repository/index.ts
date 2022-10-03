@@ -1,3 +1,3 @@
-export * from './CredentialRecord'
+export * from './CredentialExchangeRecord'
 export * from './CredentialRepository'
-export * from './credentialMetadataTypes'
+export * from './CredentialMetadataTypes'

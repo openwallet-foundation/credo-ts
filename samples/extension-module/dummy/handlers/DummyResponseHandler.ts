@@ -1,9 +1,9 @@
 import type { DummyService } from '../services'
-import type { Handler, HandlerInboundMessage, DIDCommV1Message } from '@aries-framework/core'
+import type { Handler, HandlerInboundMessage } from '@aries-framework/core'
 
 import { DummyResponseMessage } from '../messages'
 
-export class DummyResponseHandler implements Handler<typeof DIDCommV1Message> {
+export class DummyResponseHandler implements Handler {
   public supportedMessages = [DummyResponseMessage]
   private dummyService: DummyService
 

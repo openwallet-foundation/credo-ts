@@ -15,7 +15,9 @@
     "types",
     "tests",
     "samples",
-    "demo"
+    "demo",
+    "emulator",
+    "scripts"
   ],
   "exclude": ["node_modules", "build"]
 }

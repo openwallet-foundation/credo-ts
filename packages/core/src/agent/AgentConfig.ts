@@ -8,7 +8,7 @@ import { Subject } from 'rxjs'
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
-import { AutoAcceptCredential } from '../modules/credentials/CredentialAutoAcceptType'
+import { AutoAcceptCredential } from '../modules/credentials/models/CredentialAutoAcceptType'
 import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
 import { offlineTransports, onlineTransports } from '../modules/routing/types'
 import { AutoAcceptValueTransfer } from '../modules/value-transfer/ValueTransferAutoAcceptType'
@@ -89,28 +89,12 @@ export class AgentConfig {
     return this.initConfig.valueTransferConfig?.party?.autoAcceptOfferedPaymentRequest ?? AutoAcceptValueTransfer.Never
   }
 
-  public get witnessTockTime() {
-    return this.initConfig.valueTransferConfig?.witness?.tockTime
-  }
-
-  public get witnessCleanupTime() {
-    return this.initConfig.valueTransferConfig?.witness?.cleanupTime
-  }
-
-  public get witnessRedeliverTime() {
-    return this.initConfig.valueTransferConfig?.witness?.redeliverTime
-  }
-
-  public get witnessHistoryThreshold() {
-    return this.initConfig.valueTransferConfig?.witness?.historyThreshold
-  }
-
-  public get witnessRedeliveryThreshold() {
-    return this.initConfig.valueTransferConfig?.witness?.redeliveryThreshold
-  }
-
   public get witnessIssuerDids() {
     return this.initConfig.valueTransferConfig?.witness?.issuerDids
+  }
+
+  public get witnessGossipMetrics() {
+    return this.initConfig.valueTransferConfig?.witness?.gossipMetricsService
   }
 
   public get valueTransferWitnessDid() {
@@ -141,8 +125,30 @@ export class AgentConfig {
     return this.initConfig.mediatorPushToken
   }
 
+  public get maximumMessagePickup() {
+    return this.initConfig.maximumMessagePickup ?? 10
+  }
+
+  public get baseMediatorReconnectionIntervalMs() {
+    return this.initConfig.baseMediatorReconnectionIntervalMs ?? 100
+  }
+
+  public get maximumMediatorReconnectionIntervalMs() {
+    return this.initConfig.maximumMediatorReconnectionIntervalMs ?? Number.POSITIVE_INFINITY
+  }
+
+  /**
+   * Encode keys in did:key format instead of 'naked' keys, as stated in Aries RFC 0360.
+   *
+   * This setting will not be taken into account if the other party has previously used naked keys
+   * in a given protocol (i.e. it does not support Aries RFC 0360).
+   */
+  public get useDidKeyInProtocols() {
+    return this.initConfig.useDidKeyInProtocols ?? false
+  }
+
   public get endpoints(): [string, ...string[]] {
-    // if endpoint is not set, return queue endpoint
+    // if endpoints is not set, return queue endpoint
     // https://github.com/hyperledger/aries-rfcs/issues/405#issuecomment-582612875
     if (!this.initConfig.endpoints || this.initConfig.endpoints.length === 0) {
       return [DID_COMM_TRANSPORT_QUEUE]
@@ -175,8 +181,26 @@ export class AgentConfig {
     return this.initConfig.connectionImageUrl
   }
 
-  public get supportOffline() {
-    return this.initConfig.supportOffline
+  public get autoUpdateStorageOnStartup() {
+    return this.initConfig.autoUpdateStorageOnStartup ?? false
+  }
+
+  public extend(config: Partial<InitConfig>): AgentConfig {
+    return new AgentConfig(
+      { ...this.initConfig, logger: this.logger, label: this.label, ...config },
+      this.agentDependencies
+    )
+  }
+
+  public toString() {
+    const config = {
+      ...this.initConfig,
+      logger: this.logger !== undefined,
+      agentDependencies: this.agentDependencies != undefined,
+      label: this.label,
+    }
+
+    return JSON.stringify(config, null, 2)
   }
 
   public get valueTransferConfig() {
@@ -203,11 +227,15 @@ export class AgentConfig {
     return this.transports.filter((transport) => offlineTransports.includes(transport))
   }
 
+  public get pingAddress() {
+    return this.initConfig.mediatorConnectionsInvite || this.initConfig.defaultPingAddress || 'https://www.sicpa.com'
+  }
+
   public async hasInternetAccess() {
-    if (!this.initConfig.supportOffline) return true
+    if (this.initConfig.emulateOfflineCase) return false
 
     return this.agentDependencies
-      .fetch('https://google.com') // FIXME: find better way to detect internet connectivity status
+      .fetch(this.pingAddress)
       .then(() => true)
       .catch(() => false)
   }

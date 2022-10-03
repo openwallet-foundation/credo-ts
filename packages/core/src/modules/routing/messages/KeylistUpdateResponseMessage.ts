@@ -1,8 +1,10 @@
+import type { Verkey } from 'indy-sdk'
+
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
-import { Verkey } from 'indy-sdk'
+import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV1Message } from '../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 import { ListUpdateAction, ListUpdateResult } from './ListUpdateAction'
 
@@ -17,7 +19,7 @@ export class KeylistUpdated {
 
   @IsString()
   @Expose({ name: 'recipient_key' })
-  public recipientKey!: Verkey
+  public recipientKey!: string
 
   @IsEnum(ListUpdateAction)
   public action!: ListUpdateAction
@@ -50,9 +52,9 @@ export class KeylistUpdateResponseMessage extends DIDCommV1Message {
     }
   }
 
-  @Equals(KeylistUpdateResponseMessage.type)
-  public readonly type = KeylistUpdateResponseMessage.type
-  public static readonly type = 'https://didcomm.org/coordinate-mediation/1.0/keylist-update-response'
+  @IsValidMessageType(KeylistUpdateResponseMessage.type)
+  public readonly type = KeylistUpdateResponseMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/1.0/keylist-update-response')
 
   @Type(() => KeylistUpdated)
   @IsArray()

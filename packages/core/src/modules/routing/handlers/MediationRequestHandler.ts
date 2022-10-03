@@ -1,12 +1,11 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { MessageSender } from '../../../agent/MessageSender'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { MediatorService } from '../services/MediatorService'
 
 import { MediationRequestMessageV2 } from '../messages/MediationRequestMessage'
 
-export class MediationRequestHandler implements Handler<typeof DIDCommV2Message> {
+export class MediationRequestHandler implements Handler {
   private mediatorService: MediatorService
   private agentConfig: AgentConfig
   private messageSender: MessageSender

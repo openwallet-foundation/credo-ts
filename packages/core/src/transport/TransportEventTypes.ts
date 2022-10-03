@@ -1,8 +1,8 @@
 import type { BaseEvent } from '../agent/Events'
 
 export enum TransportEventTypes {
-  OutboundWebSocketOpenedEvent = 'OutboundWebSocketOpenedEvent',
   OutboundWebSocketClosedEvent = 'OutboundWebSocketClosedEvent',
+  OutboundWebSocketOpenedEvent = 'OutboundWebSocketOpenedEvent',
 }
 
 export interface OutboundWebSocketOpenedEvent extends BaseEvent {

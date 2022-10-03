@@ -1,18 +1,20 @@
+import type { Attachment } from '../../../decorators/attachment/Attachment'
+
 import { Transform } from 'class-transformer'
-import { ArrayNotEmpty, Equals, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
+import { ArrayNotEmpty, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
 import { parseUrl } from 'query-string'
 
 import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../utils/MessageValidator'
-import { replaceLegacyDidSovPrefix } from '../../../utils/messageType'
+import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../utils/messageType'
 
 export interface BaseInvitationOptions {
   id?: string
   label: string
   imageUrl?: string
+  appendedAttachments?: Attachment[]
 }
 
 export interface InlineInvitationOptions {
@@ -42,6 +44,7 @@ export class ConnectionInvitationMessage extends DIDCommV1Message {
       this.id = options.id || this.generateId()
       this.label = options.label
       this.imageUrl = options.imageUrl
+      this.appendedAttachments = options.appendedAttachments
 
       if (isDidInvitation(options)) {
         this.did = options.did
@@ -61,12 +64,12 @@ export class ConnectionInvitationMessage extends DIDCommV1Message {
     }
   }
 
-  @Equals(ConnectionInvitationMessage.type)
+  @IsValidMessageType(ConnectionInvitationMessage.type)
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
     toClassOnly: true,
   })
-  public readonly type = ConnectionInvitationMessage.type
-  public static readonly type = 'https://didcomm.org/connections/1.0/invitation'
+  public readonly type = ConnectionInvitationMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/invitation')
 
   @IsString()
   public label!: string
@@ -118,24 +121,18 @@ export class ConnectionInvitationMessage extends DIDCommV1Message {
    *
    * @param invitationUrl invitation url containing c_i or d_m parameter
    *
-   * @throws Error when url can not be decoded to JSON, or decoded message is not a valid `ConnectionInvitationMessage`
-   * @throws Error when the url does not contain c_i or d_m as parameter
+   * @throws Error when the url can not be decoded to JSON, or decoded message is not a valid 'ConnectionInvitationMessage'
    */
-  public static async fromUrl(invitationUrl: string) {
+  public static fromUrl(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl['c_i'] ?? parsedUrl['d_m']
-
     if (typeof encodedInvitation === 'string') {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
       const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
 
-      await MessageValidator.validate(invitation)
-
       return invitation
     } else {
-      throw new AriesFrameworkError(
-        'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters; `c_i` or `d_m`'
-      )
+      throw new AriesFrameworkError('InvitationUrl is invalid. Needs to be encoded with either c_i, d_m, or oob')
     }
   }
 }

@@ -92,6 +92,7 @@ export class BaseAgent {
     valueTransferConfig?: ValueTransferConfig
     mediatorConnectionsInvite?: string
     endpoints?: string[]
+    emulateOfflineCase?: boolean
   }) {
     this.name = props.name
     this.port = props.port
@@ -122,7 +123,7 @@ export class BaseAgent {
       transports: props.transports,
       mediatorConnectionsInvite: props.mediatorConnectionsInvite,
       mediatorDeliveryStrategy: MediatorDeliveryStrategy.WebSocket,
-      supportOffline: true,
+      emulateOfflineCase: props.emulateOfflineCase,
       logger,
     }
 

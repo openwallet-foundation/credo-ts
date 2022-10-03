@@ -1,9 +1,10 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 import { ListUpdateAction, ListUpdateResult } from './ListUpdateAction'
 
@@ -51,9 +52,9 @@ export class DidListUpdateResponseMessage extends DIDCommV2Message {
     }
   }
 
-  @Equals(DidListUpdateResponseMessage.type)
-  public readonly type = DidListUpdateResponseMessage.type
-  public static readonly type = 'https://didcomm.org/coordinate-mediation/2.0/didlist-update-response'
+  @IsValidMessageType(DidListUpdateResponseMessage.type)
+  public readonly type = DidListUpdateResponseMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/didlist-update-response')
 
   @Type(() => DidListUpdateResponseMessageBody)
   @ValidateNested()

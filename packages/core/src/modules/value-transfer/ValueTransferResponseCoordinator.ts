@@ -1,6 +1,5 @@
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../agent/AgentConfig'
+import { injectable } from '../../plugins'
 
 import { AutoAcceptValueTransfer } from './ValueTransferAutoAcceptType'
 
@@ -8,7 +7,7 @@ import { AutoAcceptValueTransfer } from './ValueTransferAutoAcceptType'
  * This class handles all the automation with all the messages in the value transfer protocol
  * Every function returns `true` if it should automate the flow and `false` if not
  */
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferResponseCoordinator {
   private agentConfig: AgentConfig
 

@@ -11,7 +11,7 @@ const PEER_DID_REGEX = new RegExp(
   '^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{46,47}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{46,47}))+(.(S)[0-9a-zA-Z=]*)?)))$'
 )
 
-export const enum PeerDidNumAlgo {
+export enum PeerDidNumAlgo {
   InceptionKeyWithoutDoc = 0,
   GenesisDoc = 1,
   MultipleInceptionKeyWithoutDoc = 2,

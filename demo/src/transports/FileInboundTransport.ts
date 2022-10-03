@@ -13,7 +13,8 @@ export class FileInboundTransport implements InboundTransport {
   }
 
   public async start(agent: Agent) {
-    const config = agent.injectionContainer.resolve(AgentConfig)
+    const config = agent.dependencyManager.resolve(AgentConfig)
+
     this.FileSystem = new config.agentDependencies.FileSystem()
 
     // eslint-disable-next-line no-constant-condition

@@ -1,10 +1,9 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { ProofService } from '../services'
 
 import { PresentationProblemReportMessage } from '../messages'
 
-export class PresentationProblemReportHandler implements Handler<typeof DIDCommV1Message> {
+export class PresentationProblemReportHandler implements Handler {
   private proofService: ProofService
   public supportedMessages = [PresentationProblemReportMessage]
 

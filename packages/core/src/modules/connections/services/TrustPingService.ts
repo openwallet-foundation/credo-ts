@@ -5,19 +5,19 @@ import type { ConnectionRecord } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, timeout } from 'rxjs/operators'
-import { Lifecycle, scoped } from 'tsyringe'
 import { v4 } from 'uuid'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { createOutboundMessage } from '../../../agent/helpers'
+import { injectable } from '../../../plugins'
 import { DidMarker } from '../../dids/domain/Did'
 import { DidService } from '../../dids/services/DidService'
 import { TrustPingEventTypes } from '../ConnectionEvents'
 import { TrustPingResponseMessage, TrustPingResponseMessageV2, TrustPingMessageV2 } from '../messages'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class TrustPingService {
   private config: AgentConfig
   private didService: DidService

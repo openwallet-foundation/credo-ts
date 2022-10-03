@@ -2,15 +2,14 @@ import type { KeyPair } from '../../../crypto'
 import type { Buffer } from '../../../utils'
 import type { VerificationMethod } from '../../dids'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { CryptoService, KeyFormat, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { TypedArrayEncoder } from '../../../utils'
 import { verificationKeyTypeToKeyTypeMapping } from '../../dids/domain/verificationMethod/VerificationMethod'
 import { KeyRecord, KeyRepository } from '../repository'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class KeyService {
   private cryptoService: CryptoService
   private keyRepository: KeyRepository

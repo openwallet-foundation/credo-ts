@@ -1,5 +1,5 @@
 import { Key } from '../../domain/Key'
-import { getKeyDidMappingByKeyType } from '../../domain/key-type'
+import { getDidDocumentForKey } from '../../domain/keyDidDocument'
 import { parseDid } from '../../domain/parse'
 
 export class DidKey {
@@ -21,8 +21,6 @@ export class DidKey {
   }
 
   public get didDocument() {
-    const { getDidDocument } = getKeyDidMappingByKeyType(this.key.keyType)
-
-    return getDidDocument(this.did, this.key)
+    return getDidDocumentForKey(this.did, this.key)
   }
 }

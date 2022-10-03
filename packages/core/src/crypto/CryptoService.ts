@@ -1,11 +1,11 @@
 import type { KeyPair } from './types'
 
 import * as ed25519 from '@stablelib/ed25519'
-import { inject, Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../agent/AgentConfig'
 import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
+import { injectable, inject } from '../plugins'
 import { Buffer } from '../utils'
 import { encodeToBase58 } from '../utils/base58'
 import { randomString } from '../utils/string'
@@ -48,7 +48,7 @@ export interface DecryptParams {
   keyType?: KeyType
 }
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class CryptoService {
   private agentConfig: AgentConfig
   private wallet: Wallet

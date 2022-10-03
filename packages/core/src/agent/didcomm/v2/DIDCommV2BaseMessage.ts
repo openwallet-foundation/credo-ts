@@ -1,3 +1,4 @@
+import type { ParsedMessageType } from '../../../utils/messageType'
 import type { Attachment } from 'didcomm'
 
 import { Expose } from 'class-transformer'
@@ -31,7 +32,7 @@ export class DIDCommV2BaseMessage {
   @Expose({ name: 'type' })
   @Matches(MessageTypeRegExp)
   public readonly type!: string
-  public static readonly type: string
+  public static readonly type: ParsedMessageType
 
   @Expose({ name: 'typ' })
   public readonly typ = DIDCommV2BaseMessage.typ

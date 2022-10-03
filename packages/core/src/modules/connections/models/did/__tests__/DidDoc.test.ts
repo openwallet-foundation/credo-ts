@@ -1,6 +1,6 @@
 import { instanceToPlain, plainToInstance } from 'class-transformer'
 
-import { DidCommService, DidDocumentService, IndyAgentService } from '../../../../dids'
+import { DidCommV1Service, DidDocumentService, IndyAgentService } from '../../../../dids'
 import { DidDoc } from '../DidDoc'
 import { ReferencedAuthentication, EmbeddedAuthentication } from '../authentication'
 import { Ed25119Sig2018, EddsaSaSigSecp256k1, RsaSig2018 } from '../publicKey'
@@ -56,7 +56,7 @@ const didDoc = new DidDoc({
       routingKeys: ['Q4zqM7aXqm7gDQkUVLng9h'],
       priority: 5,
     }),
-    new DidCommService({
+    new DidCommV1Service({
       id: '7',
       serviceEndpoint: 'https://agent.com/did-comm',
       recipientKeys: ['DADEajsDSaksLng9h'],
@@ -89,7 +89,7 @@ describe('Did | DidDoc', () => {
     // Check Service
     expect(didDoc.service[0]).toBeInstanceOf(DidDocumentService)
     expect(didDoc.service[1]).toBeInstanceOf(IndyAgentService)
-    expect(didDoc.service[2]).toBeInstanceOf(DidCommService)
+    expect(didDoc.service[2]).toBeInstanceOf(DidCommV1Service)
 
     // Check Authentication
     expect(didDoc.authentication[0]).toBeInstanceOf(ReferencedAuthentication)

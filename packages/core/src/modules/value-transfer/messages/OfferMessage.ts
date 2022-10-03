@@ -1,8 +1,9 @@
 import type { ValueTransferMessageParams } from './ValueTransferBaseMessage'
 
-import { Equals } from 'class-validator'
+import { Offer } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { JsonTransformer } from '../../../utils'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 import { ValueTransferBaseMessage } from './ValueTransferBaseMessage'
 
@@ -11,9 +12,9 @@ export class OfferMessage extends ValueTransferBaseMessage {
     super(options)
   }
 
-  @Equals(OfferMessage.type)
-  public readonly type = OfferMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/step-0.1'
+  @IsValidMessageType(OfferMessage.type)
+  public readonly type = OfferMessage.type.messageTypeUri
+  public static readonly type = parseMessageType(Offer.type)
 
   public toLink({ domain }: { domain: string }) {
     return this.toUrl({ domain })

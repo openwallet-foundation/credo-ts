@@ -13,8 +13,8 @@
     "responder": "ts-node responder.ts"
   },
   "devDependencies": {
-    "@aries-framework/core": "^0.1.0",
-    "@aries-framework/node": "^0.1.0",
+    "@aries-framework/core": "*",
+    "@aries-framework/node": "*",
     "ts-node": "^10.4.0"
   },
   "dependencies": {
@@ -22,8 +22,6 @@
     "@types/uuid": "^8.3.1",
     "@types/ws": "^7.4.6",
     "class-validator": "0.13.1",
-    "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.2.0",
-    "tsyringe": "^4.5.0"
+    "rxjs": "^7.2.0"
   }
 }

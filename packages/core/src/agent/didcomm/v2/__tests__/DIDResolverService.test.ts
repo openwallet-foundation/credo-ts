@@ -3,7 +3,6 @@ import type { DIDDoc } from 'didcomm'
 import { mockFunction } from '../../../../../tests/helpers'
 import { DidType } from '../../../../modules/dids/domain/Did'
 import { DidDocument } from '../../../../modules/dids/domain/DidDocument'
-import { DidCommService } from '../../../../modules/dids/domain/service/DidCommService'
 import { DidCommV2Service } from '../../../../modules/dids/domain/service/DidCommV2Service'
 import { DidDocumentService } from '../../../../modules/dids/domain/service/DidDocumentService'
 import { IndyAgentService } from '../../../../modules/dids/domain/service/IndyAgentService'
@@ -42,14 +41,6 @@ const didDocument = new DidDocument({
       recipientKeys: ['did:sov:WJz9mHyW9BZksioQnRsrAo#key-agreement-1'],
       routingKeys: ['did:sov:mediator1#key-agreement-1', 'did:sov:mediator2#key-agreement-2'],
       priority: 5,
-    }),
-    new DidCommService({
-      id: 'did:example:alice#did-comm',
-      serviceEndpoint: 'https://agent.com/did-comm',
-      recipientKeys: ['did:sov:C2SsBf5QUQpqSAQfhu3sd2#key-1'],
-      routingKeys: ['did:sov:mediator1#key-1', 'did:sov:mediator2#key-2'],
-      accept: ['didcomm/aip2;env=rfc19'],
-      priority: 10,
     }),
     new DidCommV2Service({
       id: 'did:example:alice#did-comm-v2',

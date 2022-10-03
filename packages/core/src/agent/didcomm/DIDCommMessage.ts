@@ -1,13 +1,10 @@
 import type { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
-import type { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-
-export enum DIDCommVersion {
-  V1 = 'DIDCommV1',
-  V2 = 'DIDCommV2',
-}
+import type { ReturnRouteTypes, TransportDecorator } from '../../decorators/transport/TransportDecorator'
+import type { DIDCommVersion } from './types'
 
 export interface DIDCommMessage {
   readonly type: string
+  readonly transport?: TransportDecorator | undefined
 
   get version(): DIDCommVersion
   get id(): string

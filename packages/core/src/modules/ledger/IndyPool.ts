@@ -9,11 +9,17 @@ import { isIndyError } from '../../utils/indyError'
 import { LedgerError } from './error/LedgerError'
 import { isLedgerRejectResponse, isLedgerReqnackResponse } from './ledgerUtil'
 
+export interface TransactionAuthorAgreement {
+  version: `${number}.${number}` | `${number}`
+  acceptanceMechanism: string
+}
+
 export interface IndyPoolConfig {
   genesisPath?: string
   genesisTransactions?: string
   id: string
   isProduction: boolean
+  transactionAuthorAgreement?: TransactionAuthorAgreement
 }
 
 export class IndyPool {
@@ -55,6 +61,7 @@ export class IndyPool {
     }
 
     this._poolHandle = undefined
+    this.poolConnected = undefined
 
     await this.indy.closePoolLedger(poolHandle)
   }
@@ -132,7 +139,7 @@ export class IndyPool {
   public async submitWriteRequest(request: Indy.LedgerRequest) {
     const response = await this.submitRequest(request)
 
-    if (isLedgerRejectResponse(response)) {
+    if (isLedgerRejectResponse(response) || isLedgerReqnackResponse(response)) {
       throw new LedgerError(`Ledger '${this.id}' rejected write transaction request: ${response.reason}`)
     }
 

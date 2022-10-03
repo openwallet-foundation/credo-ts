@@ -14,6 +14,7 @@ export interface DidResolutionResult {
   didDocument: DidDocument | null
   didDocumentMetadata: DidDocumentMetadata
   didType: DidType
+  didMeta?: DIDMetadata
 }
 
 export interface DIDMetadata {

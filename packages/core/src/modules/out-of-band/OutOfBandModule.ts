@@ -1,14 +1,15 @@
+import type { DependencyManager } from '../../plugins'
 import type { Transports } from '../routing/types'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { Dispatcher } from '../../agent/Dispatcher'
+import { module, injectable } from '../../plugins'
 
 import { OutOfBandInvitationHandler } from './handlers/OutOfBandInvitationHandler'
 import { OutOfBandInvitationMessage } from './messages'
 import { OutOfBandService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class OutOfBandModule {
   private outOfBandService: OutOfBandService
 
@@ -42,5 +43,16 @@ export class OutOfBandModule {
 
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new OutOfBandInvitationHandler(this.outOfBandService))
+  }
+
+  /**
+   * Registers the dependencies of the gossip module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(OutOfBandModule)
+
+    // Services
+    dependencyManager.registerSingleton(OutOfBandService)
   }
 }

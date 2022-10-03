@@ -1,10 +1,9 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { ConnectionService } from '../services'
 
 import { ConnectionProblemReportMessage } from '../messages'
 
-export class ConnectionProblemReportHandler implements Handler<typeof DIDCommV1Message> {
+export class ConnectionProblemReportHandler implements Handler {
   private connectionService: ConnectionService
   public supportedMessages = [ConnectionProblemReportMessage]
 

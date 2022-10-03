@@ -1,15 +1,16 @@
+import type { DependencyManager } from '../../plugins'
 import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
 import type { NymRole } from 'indy-sdk'
 
-import { inject, scoped, Lifecycle } from 'tsyringe'
-
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
+import { injectable, module, inject } from '../../plugins'
 import { Wallet } from '../../wallet/Wallet'
 
-import { IndyLedgerService } from './services'
+import { IndyPoolService, IndyLedgerService } from './services'
 
-@scoped(Lifecycle.ContainerScoped)
+@module()
+@injectable()
 export class LedgerModule {
   private ledgerService: IndyLedgerService
   private wallet: Wallet
@@ -83,5 +84,17 @@ export class LedgerModule {
     toSeconds = new Date().getTime()
   ) {
     return this.ledgerService.getRevocationRegistryDelta(revocationRegistryDefinitionId, fromSeconds, toSeconds)
+  }
+
+  /**
+   * Registers the dependencies of the ledger module on the dependency manager.
+   */
+  public static register(dependencyManager: DependencyManager) {
+    // Api
+    dependencyManager.registerContextScoped(LedgerModule)
+
+    // Services
+    dependencyManager.registerSingleton(IndyLedgerService)
+    dependencyManager.registerSingleton(IndyPoolService)
   }
 }

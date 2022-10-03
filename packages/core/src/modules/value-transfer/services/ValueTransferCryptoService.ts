@@ -1,15 +1,14 @@
 import type { Buffer } from '../../../utils'
 import type { VtpCryptoInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { KeyType } from '../../../crypto'
+import { injectable } from '../../../plugins'
 import { Key } from '../../dids'
 import { getEd25519VerificationMethod } from '../../dids/domain/key-type/ed25519'
 import { DidService } from '../../dids/services/DidService'
 import { KeyService } from '../../keys'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class ValueTransferCryptoService implements VtpCryptoInterface {
   private didService: DidService
   private keysService: KeyService
@@ -73,8 +72,8 @@ export class ValueTransferCryptoService implements VtpCryptoInterface {
     return this.keysService.randomBytes(size)
   }
 
-  public async checkDidExists(did: string): Promise<string | undefined> {
-    const didRecord = await this.didService.findById(did)
-    return didRecord?.did
+  public async createDid(): Promise<string> {
+    const didRecord = await this.didService.createDID()
+    return didRecord.did
   }
 }

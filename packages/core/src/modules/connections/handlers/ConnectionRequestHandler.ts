@@ -1,52 +1,68 @@
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
-import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
-import type { ConnectionService, Routing } from '../services/ConnectionService'
+import type { DidRepository } from '../../dids/repository'
+import type { OutOfBandServiceV2 } from '../../oob/OutOfBandServiceV2'
+import type { RoutingService } from '../../routing/services/RoutingService'
+import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { ConnectionRequestMessage } from '../messages'
 
-export class ConnectionRequestHandler implements Handler<typeof DIDCommV1Message> {
-  private connectionService: ConnectionService
+export class ConnectionRequestHandler implements Handler {
   private agentConfig: AgentConfig
-  private mediationRecipientService: MediationRecipientService
+  private connectionService: ConnectionService
+  private outOfBandService: OutOfBandServiceV2
+  private routingService: RoutingService
+  private didRepository: DidRepository
   public supportedMessages = [ConnectionRequestMessage]
 
   public constructor(
-    connectionService: ConnectionService,
     agentConfig: AgentConfig,
-    mediationRecipientService: MediationRecipientService
+    connectionService: ConnectionService,
+    outOfBandService: OutOfBandServiceV2,
+    routingService: RoutingService,
+    didRepository: DidRepository
   ) {
-    this.connectionService = connectionService
     this.agentConfig = agentConfig
-    this.mediationRecipientService = mediationRecipientService
+    this.connectionService = connectionService
+    this.outOfBandService = outOfBandService
+    this.routingService = routingService
+    this.didRepository = didRepository
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionRequestHandler>) {
-    if (!messageContext.recipient || !messageContext.sender) {
-      throw new AriesFrameworkError('Unable to process connection request without senderKid or recipientKid')
+    const { connection, recipient, sender } = messageContext
+
+    if (!recipient || !sender) {
+      throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientKey')
     }
 
-    let connectionRecord = await this.connectionService.findByVerkey(messageContext.recipient)
-    if (!connectionRecord) {
-      throw new AriesFrameworkError(`Connection for verkey ${messageContext.recipient} not found!`)
+    const outOfBandRecord = await this.outOfBandService.findByRecipientKey(recipient)
+
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError(`Out-of-band record for recipient key ${recipient} was not found.`)
     }
 
-    let routing: Routing | undefined
-
-    // routing object is required for multi use invitation, because we're creating a
-    // new keypair that possibly needs to be registered at a mediator
-    if (connectionRecord.multiUseInvitation) {
-      routing = await this.mediationRecipientService.getRoutingDid()
+    if (connection && !outOfBandRecord.reusable) {
+      throw new AriesFrameworkError(
+        `Connection record for non-reusable out-of-band ${outOfBandRecord.id} already exists.`
+      )
     }
 
-    connectionRecord = await this.connectionService.processRequest(messageContext, routing)
+    const didRecord = await this.didRepository.findByRecipientKey(sender)
+    if (didRecord) {
+      throw new AriesFrameworkError(`Did record for sender key ${sender} already exists.`)
+    }
+
+    const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord)
 
     if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const { message } = await this.connectionService.createResponse(connectionRecord.id)
-      return createOutboundMessage(connectionRecord, message)
+      // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
+      const routing = outOfBandRecord.reusable ? await this.routingService.getRouting() : undefined
+
+      const { message } = await this.connectionService.createResponse(connectionRecord, outOfBandRecord, routing)
+      return createOutboundMessage(connectionRecord, message, outOfBandRecord)
     }
   }
 }

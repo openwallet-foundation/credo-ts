@@ -1,13 +1,17 @@
 import type { DidDocumentService } from './service'
 
-import { Expose, Transform, Type } from 'class-transformer'
-import { IsArray, IsString, ValidateNested } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
+import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { TypedArrayEncoder } from '../../../utils'
+import { KeyType } from '../../../crypto'
+import { isDid, TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { IsStringOrStringArray } from '../../../utils/transformers'
 import { onlineTransports } from '../../routing/types'
 
-import { IndyAgentService, ServiceTransformer, DidCommService } from './service'
+import { Key } from './Key'
+import { getKeyDidMappingByVerificationMethod } from './key-type'
+import { IndyAgentService, ServiceTransformer, DidCommV1Service } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
 
 export enum DidConnectivity {
@@ -15,8 +19,17 @@ export enum DidConnectivity {
   Offline = 'offline',
 }
 
+type DidPurpose =
+  | 'authentication'
+  | 'keyAgreement'
+  | 'assertionMethod'
+  | 'capabilityInvocation'
+  | 'capabilityDelegation'
+
+type DidVerificationMethods = DidPurpose | 'verificationMethod'
+
 interface DidDocumentOptions {
-  context?: string[]
+  context?: string | string[]
   id: string
   alsoKnownAs?: string[]
   controller?: string[]
@@ -31,129 +44,173 @@ interface DidDocumentOptions {
 
 export class DidDocument {
   @Expose({ name: '@context' })
-  @IsArray()
-  @Transform((o) => (typeof o.value === 'string' ? [o.value] : o.value), { toClassOnly: true })
-  public context = ['https://w3id.org/did/v1']
+  @IsStringOrStringArray()
+  public context: string | string[] = ['https://w3id.org/did/v1']
 
   @IsString()
   public id!: string
 
   @IsArray()
   @IsString({ each: true })
-  public alsoKnownAs: string[] = []
+  @IsOptional()
+  public alsoKnownAs?: string[]
 
-  @IsArray()
-  @IsString({ each: true })
-  @Transform((o) => (typeof o.value === 'string' ? [o.value] : o.value), { toClassOnly: true })
-  public controller: string[] = []
+  @IsStringOrStringArray()
+  @IsOptional()
+  public controller?: string | string[]
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => VerificationMethod)
-  public verificationMethod: VerificationMethod[] = []
+  @IsOptional()
+  public verificationMethod?: VerificationMethod[]
 
   @IsArray()
   @ServiceTransformer()
-  public service: DidDocumentService[] = []
+  @IsOptional()
+  public service?: DidDocumentService[]
 
   @IsArray()
   @VerificationMethodTransformer()
   @IsStringOrVerificationMethod({ each: true })
-  public authentication: Array<string | VerificationMethod> = []
+  @IsOptional()
+  public authentication?: Array<string | VerificationMethod>
 
   @IsArray()
   @VerificationMethodTransformer()
   @IsStringOrVerificationMethod({ each: true })
-  public assertionMethod: Array<string | VerificationMethod> = []
+  @IsOptional()
+  public assertionMethod?: Array<string | VerificationMethod>
 
   @IsArray()
   @VerificationMethodTransformer()
   @IsStringOrVerificationMethod({ each: true })
-  public keyAgreement: Array<string | VerificationMethod> = []
+  @IsOptional()
+  public keyAgreement?: Array<string | VerificationMethod>
 
   @IsArray()
   @VerificationMethodTransformer()
   @IsStringOrVerificationMethod({ each: true })
-  public capabilityInvocation: Array<string | VerificationMethod> = []
+  @IsOptional()
+  public capabilityInvocation?: Array<string | VerificationMethod>
 
   @IsArray()
   @VerificationMethodTransformer()
   @IsStringOrVerificationMethod({ each: true })
-  public capabilityDelegation: Array<string | VerificationMethod> = []
+  @IsOptional()
+  public capabilityDelegation?: Array<string | VerificationMethod>
 
   public constructor(options: DidDocumentOptions) {
     if (options) {
       this.context = options.context ?? this.context
       this.id = options.id
-      this.alsoKnownAs = options.alsoKnownAs ?? this.alsoKnownAs
-      this.controller = options.controller ?? this.controller
-      this.verificationMethod = options.verificationMethod ?? this.verificationMethod
-      this.service = options.service ?? this.service
-      this.authentication = options.authentication ?? this.authentication
-      this.assertionMethod = options.assertionMethod ?? this.assertionMethod
-      this.keyAgreement = options.keyAgreement ?? this.keyAgreement
-      this.capabilityInvocation = options.capabilityInvocation ?? this.capabilityInvocation
-      this.capabilityDelegation = options.capabilityDelegation ?? this.capabilityDelegation
+      this.alsoKnownAs = options.alsoKnownAs
+      this.controller = options.controller
+      this.verificationMethod = options.verificationMethod
+      this.service = options.service
+      this.authentication = options.authentication
+      this.assertionMethod = options.assertionMethod
+      this.keyAgreement = options.keyAgreement
+      this.capabilityInvocation = options.capabilityInvocation
+      this.capabilityDelegation = options.capabilityDelegation
     }
   }
 
-  public dereferenceKey(keyId: string) {
+  public dereferenceVerificationMethod(keyId: string) {
     // TODO: once we use JSON-LD we should use that to resolve references in did documents.
     // for now we check whether the key id ends with the keyId.
     // so if looking for #123 and key.id is did:key:123#123, it is valid. But #123 as key.id is also valid
-    const verificationMethod = this.verificationMethod.find((key) => key.id.endsWith(keyId))
+    const verificationMethod = this.verificationMethod?.find((key) => key.id.endsWith(keyId))
 
     if (!verificationMethod) {
-      throw new Error(`Unable to locate verification with id '${keyId}'`)
+      throw new Error(`Unable to locate verification method with id '${keyId}'`)
     }
 
     return verificationMethod
   }
 
+  public dereferenceKey(keyId: string, allowedPurposes?: DidPurpose[]) {
+    const allPurposes: DidPurpose[] = [
+      'authentication',
+      'keyAgreement',
+      'assertionMethod',
+      'capabilityInvocation',
+      'capabilityDelegation',
+    ]
+
+    const purposes = allowedPurposes ?? allPurposes
+
+    for (const purpose of purposes) {
+      for (const key of this[purpose] ?? []) {
+        if (typeof key === 'string' && key.endsWith(keyId)) {
+          return this.dereferenceVerificationMethod(key)
+        } else if (typeof key !== 'string' && key.id.endsWith(keyId)) {
+          return key
+        }
+      }
+    }
+
+    throw new Error(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
+  }
+
   /**
-   * Returns all of the service endpoint matching the given type.
+   * Returns all of the service endpoints matching the given type.
    *
    * @param type The type of service(s) to query.
    */
   public getServicesByType<S extends DidDocumentService = DidDocumentService>(type: string): S[] {
-    return this.service.filter((service) => service.type === type) as S[]
+    return (this.service?.filter((service) => service.type === type) ?? []) as S[]
   }
 
   /**
-   * Returns all of the service endpoint matching the given class
+   * Returns all of the service endpoints matching the given class
    *
    * @param classType The class to query services.
    */
   public getServicesByClassType<S extends DidDocumentService = DidDocumentService>(
     classType: new (...args: never[]) => S
   ): S[] {
-    return this.service.filter((service) => service instanceof classType) as S[]
+    return (this.service?.filter((service) => service instanceof classType) ?? []) as S[]
   }
 
   /**
    * Get all DIDComm services ordered by priority descending. This means the highest
    * priority will be the first entry.
    */
-  public get didCommServices(): Array<IndyAgentService | DidCommService> {
-    const didCommServiceTypes = [IndyAgentService.type, DidCommService.type]
-    const services = this.service.filter((service) => didCommServiceTypes.includes(service.type)) as Array<
-      IndyAgentService | DidCommService
+  public get didCommServices(): Array<IndyAgentService | DidCommV1Service> {
+    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type]
+    const services = (this.service?.filter((service) => didCommServiceTypes.includes(service.type)) ?? []) as Array<
+      IndyAgentService | DidCommV1Service
     >
 
     // Sort services based on indicated priority
     return services.sort((a, b) => b.priority - a.priority)
   }
 
-  public get recipientKeys(): string[] {
-    // Get a `recipientKeys` entries from the did document
-    return this.didCommServices.reduce<string[]>(
-      (recipientKeys, service) => recipientKeys.concat(service.recipientKeys),
-      []
-    )
+  // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
+  public get recipientKeys(): Key[] {
+    let recipientKeys: Key[] = []
+
+    for (const service of this.didCommServices) {
+      if (service instanceof IndyAgentService) {
+        recipientKeys = [
+          ...recipientKeys,
+          ...service.recipientKeys.map((publicKeyBase58) => Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)),
+        ]
+      } else if (service instanceof DidCommV1Service) {
+        recipientKeys = [
+          ...recipientKeys,
+          ...service.recipientKeys.map((recipientKey) => keyReferenceToKey(this, recipientKey)),
+        ]
+      }
+    }
+
+    return recipientKeys
   }
 
-  public get verificationKey(): string {
+  public get verificationKey(): string | undefined {
     // get first available verification key
+    if (!this.verificationMethod?.length) return undefined
     return TypedArrayEncoder.toBase58(this.verificationMethod[0].keyBytes)
   }
 
@@ -167,43 +224,12 @@ export class DidDocument {
     return this.verificationMethod && this.verificationMethod[0] ? this.verificationMethod[0].id : undefined
   }
 
-  public getKeyAgreement(): VerificationMethod | undefined {
-    const keyAgreement = this.keyAgreement[0]
-    if (keyAgreement) {
-      if (typeof keyAgreement === 'string') {
-        const verificationMethod = this.verificationMethod.find(
-          (verificationMethod) => keyAgreement === verificationMethod.id
-        )
-        if (!verificationMethod) {
-          throw new Error(`Unable to locate verification with id '${keyAgreement}'`)
-        }
-        return verificationMethod
-      } else {
-        return keyAgreement
-      }
-    }
-    return this.getVerificationMethod()
-  }
-
-  public get agreementKeyId(): string | undefined {
-    // get id of first available agreement key
-    const keyAgreement = this.keyAgreement[0]
-    if (keyAgreement) {
-      if (typeof keyAgreement === 'string') {
-        return keyAgreement
-      } else {
-        return keyAgreement.id
-      }
-    }
-    // else return id of verification key
-    return this.verificationKeyId
-  }
-
   public getAuthentication(): VerificationMethod | undefined {
+    if (!this.authentication?.length) return undefined
     const authentication = this.authentication[0]
     if (authentication) {
       if (typeof authentication === 'string') {
-        const verificationMethod = this.verificationMethod.find(
+        const verificationMethod = this.verificationMethod?.find(
           (verificationMethod) => authentication === verificationMethod.id
         )
         if (!verificationMethod) {
@@ -219,6 +245,7 @@ export class DidDocument {
 
   public get authenticationKeyId(): string | undefined {
     // get id of first available agreement key
+    if (!this.authentication?.length) return undefined
     const authentication = this.authentication[0]
     if (authentication) {
       if (typeof authentication === 'string') {
@@ -235,9 +262,60 @@ export class DidDocument {
     return JsonTransformer.toJSON(this)
   }
 
+  public static extractDidFromKid(kid: string): string | undefined {
+    const did = kid.includes('#') ? kid.split('#')[0] : kid
+    return isDid(did) ? did : undefined
+  }
+
   public get connectivity() {
     const transports = onlineTransports.map((transport) => transport.toString())
-    const service = this.service.find((service) => transports.includes(service.protocolScheme))
+    const service = this.service?.find((service) => transports.includes(service.protocolScheme))
     return service ? DidConnectivity.Online : DidConnectivity.Offline
   }
+}
+
+export function keyReferenceToKey(didDocument: DidDocument, keyId: string) {
+  // FIXME: we allow authentication keys as historically ed25519 keys have been used in did documents
+  // for didcomm. In the future we should update this to only be allowed for IndyAgent and DidCommV1 services
+  // as didcomm v2 doesn't have this issue anymore
+  const verificationMethod = didDocument.dereferenceKey(keyId, ['authentication', 'keyAgreement'])
+  const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+  const key = getKeyFromVerificationMethod(verificationMethod)
+
+  return key
+}
+
+/**
+ * Extracting the verification method for signature type
+ * @param type Signature type
+ * @param didDocument DidDocument
+ * @returns verification method
+ */
+export async function findVerificationMethodByKeyType(
+  keyType: string,
+  didDocument: DidDocument
+): Promise<VerificationMethod | null> {
+  const didVerificationMethods: DidVerificationMethods[] = [
+    'verificationMethod',
+    'authentication',
+    'keyAgreement',
+    'assertionMethod',
+    'capabilityInvocation',
+    'capabilityDelegation',
+  ]
+
+  for await (const purpose of didVerificationMethods) {
+    const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
+    if (key instanceof Array) {
+      for await (const method of key) {
+        if (typeof method !== 'string') {
+          if (method.type === keyType) {
+            return method
+          }
+        }
+      }
+    }
+  }
+
+  return null
 }

@@ -1,6 +1,9 @@
 import type { ValueTransferMessageParams } from './ValueTransferBaseMessage'
 
-import { Equals, IsString } from 'class-validator'
+import { GiverReceipt } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { IsString } from 'class-validator'
+
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 import { ValueTransferBaseMessage } from './ValueTransferBaseMessage'
 
@@ -9,9 +12,9 @@ export class GiverReceiptMessage extends ValueTransferBaseMessage {
     super(options)
   }
 
-  @Equals(GiverReceiptMessage.type)
-  public readonly type = GiverReceiptMessage.type
-  public static readonly type = 'https://didcomm.org/vtp/1.0/step-15'
+  @IsValidMessageType(GiverReceiptMessage.type)
+  public readonly type = GiverReceiptMessage.type.messageTypeUri
+  public static readonly type = parseMessageType(GiverReceipt.type)
 
   @IsString()
   public thid!: string

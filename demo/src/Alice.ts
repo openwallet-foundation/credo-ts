@@ -1,19 +1,16 @@
-/*eslint import/no-cycle: [2, { maxDepth: 1 }]*/
-import type { CredentialRecord, ProofRecord } from '@aries-framework/core'
+import type { ConnectionRecord, CredentialExchangeRecord, ProofRecord } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class Alice extends BaseAgent {
-  public connectionRecordFaberId?: string
   public connected: boolean
-  public static seed = '6b8b882e2618fa5d45ee7229ca880083'
+  public connectionRecordFaberId?: string
 
   public constructor(port: number, name: string) {
     super({
       port,
       name,
-      publicDidSeed: Alice.seed,
     })
     this.connected = false
   }
@@ -31,36 +28,30 @@ export class Alice extends BaseAgent {
     return await this.agent.connections.getById(this.connectionRecordFaberId)
   }
 
-  private async printConnectionInvite() {
-    const invite = await this.agent.connections.createConnection()
-    this.connectionRecordFaberId = invite.connectionRecord.id
-
-    console.log(Output.ConnectionLink, invite.invitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')
-    return invite.connectionRecord
-  }
-
-  private async waitForConnection() {
-    const connectionRecord = await this.getConnectionRecord()
-
-    console.log('Waiting for Faber to finish connection...')
-    try {
-      await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
-    } catch (e) {
-      console.log(redText(`\nTimeout of 20 seconds reached.. Returning to home screen.\n`))
-      return
+  private async receiveConnectionRequest(invitationUrl: string) {
+    const { connectionRecord } = await this.agent.oob.receiveInvitationFromUrl(invitationUrl)
+    if (!connectionRecord) {
+      throw new Error(redText(Output.NoConnectionRecordFromOutOfBand))
     }
-    console.log(greenText(Output.ConnectionEstablished))
+    return connectionRecord
+  }
+
+  private async waitForConnection(connectionRecord: ConnectionRecord) {
+    connectionRecord = await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
     this.connected = true
+    console.log(greenText(Output.ConnectionEstablished))
+    return connectionRecord.id
   }
 
-  public async setupConnection() {
-    await this.printConnectionInvite()
-    await this.waitForConnection()
+  public async acceptConnection(invitation_url: string) {
+    const connectionRecord = await this.receiveConnectionRequest(invitation_url)
+    this.connectionRecordFaberId = await this.waitForConnection(connectionRecord)
   }
 
-  public async acceptCredentialOffer(credentialRecord: CredentialRecord) {
-    await this.agent.credentials.acceptOffer(credentialRecord.id)
-    console.log(greenText('\nCredential offer accepted!\n'))
+  public async acceptCredentialOffer(credentialRecord: CredentialExchangeRecord) {
+    await this.agent.credentials.acceptOffer({
+      credentialRecordId: credentialRecord.id,
+    })
   }
 
   public async acceptProofRequest(proofRecord: ProofRecord) {

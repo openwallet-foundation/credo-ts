@@ -1,30 +1,30 @@
 import type { Logger } from '../../../logger'
-import type { DidInfo, DidDocument, DidProps } from '../../dids/domain'
+import type { DIDInformation, DidDocument, DidProps } from '../../dids/domain'
 import type { MediationRecord } from '../../routing/repository'
 import type { DidMetadataChangedEvent, DidReceivedEvent } from '../DidEvents'
 import type { DidTags } from '../repository'
 import type { DIDMetadata } from '../types'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
+import { injectable } from '../../../plugins'
 import { KeyService } from '../../keys'
-import { MediationRecipientService } from '../../routing/services'
+import { MediationRecipientService } from '../../routing/services/MediationRecipientService'
 import { hasOnlineTransport, Transports } from '../../routing/types'
 import { DidEventTypes } from '../DidEvents'
 import { DidCommV2Service, DidDocumentBuilder, DidMarker, DidType, Key } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { getEd25519VerificationMethod } from '../domain/key-type/ed25519'
 import { getX25519VerificationMethod } from '../domain/key-type/x25519'
-import { DidPeer, PeerDidNumAlgo } from '../methods/peer/DidPeer'
+import { PeerDid } from '../methods/peer/PeerDid'
+import { PeerDidNumAlgo } from '../methods/peer/utils'
 import { DidRecord, DidRepository } from '../repository'
 
 import { DidResolverService } from './DidResolverService'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DidService {
   private agentConfig: AgentConfig
   private logger: Logger
@@ -124,7 +124,7 @@ export class DidService {
     transports: Transports[]
     ed25519Key: Key
     x25519Key: Key
-  }): Promise<{ didPeer: DidPeer; mediator?: MediationRecord | null }> {
+  }): Promise<{ didPeer: PeerDid; mediator?: MediationRecord | null }> {
     let mediator: MediationRecord | null = null
 
     const didDocumentBuilder = new DidDocumentBuilder('')
@@ -171,9 +171,9 @@ export class DidService {
 
     const didDocument = didDocumentBuilder.build()
     const didPeer =
-      didDocument.service.length > 0
-        ? DidPeer.fromDidDocument(didDocument, PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
-        : DidPeer.fromKey(params.ed25519Key)
+      didDocument.service && didDocument.service?.length > 0
+        ? PeerDid.fromDidDocument(didDocument, PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc)
+        : PeerDid.fromKey(params.ed25519Key)
 
     return { didPeer, mediator }
   }
@@ -204,7 +204,7 @@ export class DidService {
     return didDoc.didDocument
   }
 
-  public async storeRemoteDid({ did, label, logoUrl }: DidInfo) {
+  public async storeRemoteDid({ did, label, logoUrl }: DIDInformation) {
     const didDocument = await this.didResolverService.resolve(did)
     if (!didDocument.didDocument) {
       throw new AriesFrameworkError(`Unable to resolve DidDoc for the DID: ${did}`)
@@ -239,6 +239,44 @@ export class DidService {
       type: DidEventTypes.DidMetadataChanged,
       payload: { record: record },
     })
+  }
+
+  public async getDidMetadata(did: string): Promise<DIDMetadata> {
+    const didRecord = await this.getById(did)
+    return {
+      label: didRecord.label,
+      logoUrl: didRecord.logoUrl,
+    }
+  }
+
+  public async getDidInfo(did: string): Promise<DIDInformation> {
+    const didRecord = await this.findById(did)
+    if (didRecord) {
+      // did was stored before
+      return {
+        did: didRecord.did,
+        didDocument: didRecord.didDocument,
+        didType: didRecord.didType,
+        connectivity: didRecord.didDocument?.connectivity,
+        label: didRecord.label,
+        logoUrl: didRecord.logoUrl,
+      }
+    }
+
+    // resolve did information
+    const resolvedDid = await this.didResolverService.resolve(did)
+    if (!resolvedDid || !resolvedDid.didDocument) {
+      throw new AriesFrameworkError(`Unable to resolve DIDDocument for did: ${did}`)
+    }
+
+    return {
+      did: resolvedDid.didDocument?.id,
+      didDocument: resolvedDid.didDocument,
+      didType: resolvedDid.didType,
+      connectivity: resolvedDid.didDocument?.connectivity,
+      label: resolvedDid.didMeta?.label,
+      logoUrl: resolvedDid.didMeta?.logoUrl,
+    }
   }
 
   public async getAll(): Promise<DidRecord[]> {

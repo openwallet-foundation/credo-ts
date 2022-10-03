@@ -12,7 +12,7 @@ import type { FaberInquirer } from './FaberInquirer'
 import type {
   Agent,
   BasicMessageStateChangedEvent,
-  CredentialRecord,
+  CredentialExchangeRecord,
   CredentialStateChangedEvent,
   ProofRecord,
   ProofStateChangedEvent,
@@ -54,7 +54,7 @@ export class Listener {
     this.on = false
   }
 
-  private printCredentialAttributes(credentialRecord: CredentialRecord) {
+  private printCredentialAttributes(credentialRecord: CredentialExchangeRecord) {
     if (credentialRecord.credentialAttributes) {
       const attribute = credentialRecord.credentialAttributes
       console.log('\n\nCredential preview:')
@@ -64,7 +64,7 @@ export class Listener {
     }
   }
 
-  private async newCredentialPrompt(credentialRecord: CredentialRecord, aliceInquirer: AliceInquirer) {
+  private async newCredentialPrompt(credentialRecord: CredentialExchangeRecord, aliceInquirer: AliceInquirer) {
     this.printCredentialAttributes(credentialRecord)
     this.turnListenerOn()
     await aliceInquirer.acceptCredentialOffer(credentialRecord)
@@ -88,7 +88,10 @@ export class Listener {
     console.log(purpleText(JsonEncoder.toString(valueTransferRecord.receipt)))
   }
 
-  private async newPaymentRequestPrompt(valueTransferRecord: ValueTransferRecord, giverInquirer: AnnaInquirer) {
+  private async newPaymentRequestPrompt(
+    valueTransferRecord: ValueTransferRecord,
+    giverInquirer: AnnaInquirer | BobInquirer
+  ) {
     this.printRequest(valueTransferRecord)
     this.turnListenerOn()
     await giverInquirer.acceptPaymentRequest(valueTransferRecord)
@@ -107,7 +110,7 @@ export class Listener {
     await getterInquirer.processAnswer()
   }
 
-  public paymentRequestListener(giver: Anna, giverInquirer: AnnaInquirer) {
+  public paymentRequestListener(giver: Anna | Bob, giverInquirer: AnnaInquirer | BobInquirer) {
     giver.agent.events.on(
       ValueTransferEventTypes.ValueTransferStateChanged,
       async ({ payload }: ValueTransferStateChangedEvent) => {

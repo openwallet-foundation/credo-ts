@@ -1,9 +1,11 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
+import { WitnessTable } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export type WitnessDataParams = {
   did: string
@@ -52,9 +54,9 @@ export class WitnessTableMessageBody {
 }
 
 export class WitnessTableMessage extends DIDCommV2Message {
-  @Equals(WitnessTableMessage.type)
-  public readonly type = WitnessTableMessage.type
-  public static readonly type = 'https://didcomm.org/wgp/1.0/witness-table'
+  @IsValidMessageType(WitnessTableMessage.type)
+  public readonly type: string = WitnessTableMessage.type.messageTypeUri
+  public static readonly type = parseMessageType(WitnessTable.type)
 
   @Type(() => WitnessTableMessageBody)
   @ValidateNested()

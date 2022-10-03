@@ -17,6 +17,7 @@ export interface ProofRecordProps {
   state: ProofState
   connectionId?: string
   threadId: string
+  parentThreadId?: string
   presentationId?: string
   tags?: CustomProofTags
   autoAcceptProof?: AutoAcceptProof
@@ -31,6 +32,7 @@ export interface ProofRecordProps {
 export type CustomProofTags = TagsBase
 export type DefaultProofTags = {
   threadId: string
+  parentThreadId?: string
   connectionId?: string
   state: ProofState
 }
@@ -38,6 +40,7 @@ export type DefaultProofTags = {
 export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public connectionId?: string
   public threadId!: string
+  public parentThreadId?: string
   public isVerified?: boolean
   public presentationId?: string
   public state!: ProofState
@@ -68,6 +71,7 @@ export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
       this.state = props.state
       this.connectionId = props.connectionId
       this.threadId = props.threadId
+      this.parentThreadId = props.parentThreadId
       this.presentationId = props.presentationId
       this.autoAcceptProof = props.autoAcceptProof
       this._tags = props.tags ?? {}
@@ -79,6 +83,7 @@ export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
     return {
       ...this._tags,
       threadId: this.threadId,
+      parentThreadId: this.parentThreadId,
       connectionId: this.connectionId,
       state: this.state,
     }

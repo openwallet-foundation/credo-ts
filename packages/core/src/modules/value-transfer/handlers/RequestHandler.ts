@@ -1,5 +1,4 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { ValueTransferResponseCoordinator } from '../ValueTransferResponseCoordinator'
 import type { ValueTransferService } from '../services'
 import type { ValueTransferGiverService } from '../services/ValueTransferGiverService'
@@ -8,7 +7,7 @@ import { TransactionState } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { RequestMessage } from '../messages'
 
-export class RequestHandler implements Handler<typeof DIDCommV2Message> {
+export class RequestHandler implements Handler {
   private valueTransferService: ValueTransferService
   private valueTransferGiverService: ValueTransferGiverService
   private valueTransferResponseCoordinator: ValueTransferResponseCoordinator

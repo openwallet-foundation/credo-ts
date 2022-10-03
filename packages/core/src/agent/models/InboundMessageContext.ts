@@ -7,11 +7,15 @@ export interface MessageContextParams {
   connection?: ConnectionRecord
   sender?: string
   recipient?: string
+  sessionId?: string
+  senderKey?: string
+  recipientKey?: string
 }
 
 export class InboundMessageContext<T extends DIDCommMessage = DIDCommMessage> {
   public message: T
   public connection?: ConnectionRecord
+  public sessionId?: string
   public sender?: string
   public recipient?: string
 
@@ -20,6 +24,7 @@ export class InboundMessageContext<T extends DIDCommMessage = DIDCommMessage> {
     this.recipient = context.recipient
     this.sender = context.sender
     this.connection = context.connection
+    this.sessionId = context.sessionId
   }
 
   /**

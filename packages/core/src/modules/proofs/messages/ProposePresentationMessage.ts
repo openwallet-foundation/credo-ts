@@ -1,13 +1,15 @@
 import { Expose, Type } from 'class-transformer'
-import { Equals, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV1Message } from '../../../agent/didcomm/v1/DIDCommV1Message'
+import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 import { PresentationPreview } from './PresentationPreview'
 
 export interface ProposePresentationMessageOptions {
   id?: string
   comment?: string
+  parentThreadId?: string
   presentationProposal: PresentationPreview
 }
 
@@ -23,13 +25,18 @@ export class ProposePresentationMessage extends DIDCommV1Message {
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
+      if (options.parentThreadId) {
+        this.setThread({
+          parentThreadId: options.parentThreadId,
+        })
+      }
       this.presentationProposal = options.presentationProposal
     }
   }
 
-  @Equals(ProposePresentationMessage.type)
-  public readonly type = ProposePresentationMessage.type
-  public static readonly type = 'https://didcomm.org/present-proof/1.0/propose-presentation'
+  @IsValidMessageType(ProposePresentationMessage.type)
+  public readonly type = ProposePresentationMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/propose-presentation')
 
   /**
    * Provides some human readable information about the proposed presentation.

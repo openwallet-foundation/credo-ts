@@ -54,19 +54,21 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ✅ Node.JS
 - ✅ Report Problem Protocol ([RFC 0035](https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md))
 - ✅ Issue Credential Protocol ([RFC 0036](https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md))
+- ✅ Issue Credential Protocol V2 ([RFC 0453](https://github.com/hyperledger/aries-rfcs/blob/master/features/0453-issue-credential-v2/README.md))
 - ✅ Present Proof Protocol ([RFC 0037](https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof/README.md))
 - ✅ Basic Message Protocol ([RFC 0095](https://github.com/hyperledger/aries-rfcs/blob/master/features/0095-basic-message/README.md))
 - ✅ Connection Protocol ([RFC 0160](https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md))
+- ✅ Out of Band Protocol ([RFC 0434](https://github.com/hyperledger/aries-rfcs/blob/main/features/0434-outofband/README.md))
+- ✅ DID Exchange Protocol ([RFC 0023](https://github.com/hyperledger/aries-rfcs/tree/main/features/0023-did-exchange))
 - ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
 - ✅ Indy Credentials (with `did:sov` support)
 - ✅ HTTP & WebSocket Transport
 - ✅ Connection-less Issuance and Verification
 - ✅ Smart Auto Acceptance of Connections, Credentials and Proofs
-- 🚧 Revocation of Indy Credentials
-- 🚧 Electron
+- 🚧 Receiving and Verifying revocable Indy Credentials
+- 🚧 W3C Linked Data VCs, BBS+ Signatures
+- 🚧 Multi Tenancy
 - ❌ Browser
-- ❌ Issue Credential V2, Present Proof V2, DID Exchange Protocol, Out-Of-Band
-- ❌ W3C Linked Data VCs, BBS+ Signatures
 
 ### Packages
 
@@ -92,7 +94,7 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/react-Native</td>
+    <td>@aries-framework/react-native</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/react-native">
         <img alt="@aries-framework/react-native version" src="https://img.shields.io/npm/v/@aries-framework/react-native"/>
@@ -103,13 +105,7 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 
 ## Getting Started
 
-### Platform Specific Setup
-
-In order to use Aries Framework JavaScript some platform specific dependencies and setup is required. See our guides below to quickly set up you project with Aries Framework JavaScript for NodeJS, React Native and Electron.
-
-- [React Native](/docs/setup-react-native.md)
-- [NodeJS](/docs/setup-nodejs.md)
-- [Electron](/docs/setup-electron.md)
+Documentation on how to get started with Aries Framework JavaScript can be found at https://aries.js.org
 
 ### Demo
 
@@ -117,29 +113,14 @@ To get to know the AFJ flow, we built a demo to walk through it yourself togethe
 
 - [Demo](/demo)
 
-### Usage
-
-Now that your project is setup and everything seems to be working, it is time to start building! Follow these guides below to get started!
-
-0. [Overview](/docs/getting-started/overview.md)
-1. [Agent](/docs/getting-started/0-agent.md)
-2. [Transports](/docs/getting-started/1-transports.md)
-3. [Connections](/docs/getting-started/2-connections.md)
-4. [Routing](/docs/getting-started/3-routing.md)
-5. [Ledger](/docs/getting-started/4-ledger.md)
-6. [Credentials](/docs/getting-started/5-credentials.md)
-7. [Proofs](/docs/getting-started/6-proofs.md)
-8. [Logging](/docs/getting-started/7-logging.md)
-
-Also check out [Aries Framework JavaScript Extensions](https://github.com/hyperledger/aries-framework-javascript-ext), for several useful wrappers and plugins.
-
 ### Divergence from Aries RFCs
 
 Although Aries Framework JavaScript tries to follow the standards as described in the Aries RFCs as much as possible, some features in AFJ slightly diverge from the written spec. Below is an overview of the features that diverge from the spec, their impact and the reasons for diverging.
 
-| Feature                                                                          | Impact                                                                                                                                                                                                                                                                               | Reason                                                                                                                                                                  |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Support for `imageUrl` attribute in connection invitation and connection request | Properties that are not recognized should be ignored, meaning this shouldn't limit interoperability between agents. As the image url is self-attested it could give a false sense of trust. Better, credential based, method for visually identifying an entity are not present yet. | Even though not documented, almost all agents support this feature. Not including this feature means AFJ is lacking in features in comparison to other implementations. |
+| Feature                                                                                                                                                        | Impact                                                                                                                                                                                                                                                                                                                                                                                                                          | Reason                                                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Support for `imageUrl` attribute in connection invitation and connection request                                                                               | Properties that are not recognized should be ignored, meaning this shouldn't limit interoperability between agents. As the image url is self-attested it could give a false sense of trust. Better, credential based, method for visually identifying an entity are not present yet.                                                                                                                                            | Even though not documented, almost all agents support this feature. Not including this feature means AFJ is lacking in features in comparison to other implementations. |
+| Revocation Notification v1 uses a different `thread_id` format ( `indy::<revocation_registry_id>::<credential_revocation_id>`) than specified in the Aries RFC | Any agents adhering to the [revocation notification v1 RFC](https://github.com/hyperledger/aries-rfcs/tree/main/features/0183-revocation-notification) will not be interoperable with Aries Framework Javascript. However, revocation notification is considered an optional portion of revocation, therefore this will not break core revocation behavior. Ideally agents should use and implement revocation notification v2. | Actual implementations (ACA-Py) of revocation notification v1 so far have implemented this different format, so this format change was made to remain interoperable.    |
 
 ## Contributing
 
