@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
+import type { AgentDependencies } from '../../../agent/AgentDependencies'
+import type { InitConfig } from '../../../types'
 
 import { Subject } from 'rxjs'
 
@@ -39,14 +41,16 @@ describe('mediator establishment', () => {
     await senderAgent?.wallet.delete()
   })
 
-  test(`Mediation end-to-end flow
-        1. Start mediator agent and create invitation
-        2. Start recipient agent with mediatorConnectionsInvite from mediator
-        3. Assert mediator and recipient are connected and mediation state is Granted
-        4. Start sender agent and create connection with recipient
-        5. Assert endpoint in recipient invitation for sender is mediator endpoint
-        6. Send basic message from sender to recipient and assert it is received on the recipient side
-`, async () => {
+  const e2eMediationTest = async (
+    mediatorAgentOptions: {
+      readonly config: InitConfig
+      readonly dependencies: AgentDependencies
+    },
+    recipientAgentOptions: {
+      config: InitConfig
+      dependencies: AgentDependencies
+    }
+  ) => {
     const mediatorMessages = new Subject<SubjectMessage>()
     const recipientMessages = new Subject<SubjectMessage>()
     const senderMessages = new Subject<SubjectMessage>()
@@ -66,7 +70,7 @@ describe('mediator establishment', () => {
     const mediatorOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
     // Initialize recipient with mediation connections invitation
@@ -77,7 +81,6 @@ describe('mediator establishment', () => {
         mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
           domain: 'https://example.com/ssi',
         }),
-        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
       },
     })
     recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
@@ -136,6 +139,40 @@ describe('mediator establishment', () => {
     })
 
     expect(basicMessage.content).toBe(message)
+  }
+
+  test(`Mediation end-to-end flow
+        1. Start mediator agent and create invitation
+        2. Start recipient agent with mediatorConnectionsInvite from mediator
+        3. Assert mediator and recipient are connected and mediation state is Granted
+        4. Start sender agent and create connection with recipient
+        5. Assert endpoint in recipient invitation for sender is mediator endpoint
+        6. Send basic message from sender to recipient and assert it is received on the recipient side
+`, async () => {
+    await e2eMediationTest(mediatorAgentOptions, {
+      config: {
+        ...recipientAgentOptions.config,
+        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      },
+      dependencies: recipientAgentOptions.dependencies,
+    })
+  })
+
+  test('Mediation end-to-end flow (use did:key in both sides)', async () => {
+    await e2eMediationTest(
+      {
+        config: { ...mediatorAgentOptions.config, useDidKeyInProtocols: true },
+        dependencies: mediatorAgentOptions.dependencies,
+      },
+      {
+        config: {
+          ...recipientAgentOptions.config,
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+          useDidKeyInProtocols: true,
+        },
+        dependencies: recipientAgentOptions.dependencies,
+      }
+    )
   })
 
   test('restart recipient agent and create connection through mediator after recipient agent is restarted', async () => {

@@ -6,6 +6,7 @@ import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommS
 import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
+import type { ConnectionType } from '../models'
 import type { ConnectionRecordProps } from '../repository/ConnectionRecord'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -596,6 +597,10 @@ export class ConnectionService {
 
   public async findAllByOutOfBandId(agentContext: AgentContext, outOfBandId: string) {
     return this.connectionRepository.findByQuery(agentContext, { outOfBandId })
+  }
+
+  public async findAllByConnectionType(agentContext: AgentContext, connectionType: [ConnectionType | string]) {
+    return this.connectionRepository.findByQuery(agentContext, { connectionType })
   }
 
   public async findByInvitationDid(agentContext: AgentContext, invitationDid: string) {
