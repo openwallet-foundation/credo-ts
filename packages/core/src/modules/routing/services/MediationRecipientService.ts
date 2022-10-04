@@ -4,10 +4,10 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
+import type { GetRoutingOptions } from '../../routing'
 import type { DidListUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
 import type { MediationDenyMessageV2, MediationGrantMessageV2, DidListUpdateResponseMessage } from '../messages'
 import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
-import type { GetRoutingOptions } from '@aries-framework/core'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'

@@ -1,6 +1,7 @@
 import type { ParsedMessageType } from '../../utils/messageType'
 import type { Constructor } from '../../utils/mixins'
-import type { DIDCommV1Message, DIDCommV2Message } from '@aries-framework/core'
+import type { DIDCommV1Message } from './v1/DIDCommV1Message'
+import type { DIDCommV2Message } from './v2/DIDCommV2Message'
 
 export { DIDCommMessage } from './DIDCommMessage'
 export { DIDCommV1Message } from './v1/DIDCommV1Message'
