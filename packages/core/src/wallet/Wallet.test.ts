@@ -11,13 +11,9 @@ describe('Wallet', () => {
 
   beforeEach(() => {
     config = getAgentConfig('WalletTest')
-    configWithMasterSecretId = getAgentConfig(
-        'WalletTestWithMasterSecretId',
-        {},
-        {
-          masterSecretId: 'main'
-        }
-    )
+    configWithMasterSecretId = getAgentConfig('WalletTestWithMasterSecretId')
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    configWithMasterSecretId.walletConfig!.masterSecretId = 'main'
   })
 
   test('initialize public did', async () => {
@@ -34,7 +30,7 @@ describe('Wallet', () => {
     })
   })
 
-  test('initializing of configs without masterSecretId', async () => {
+  test('masterSecretId is equal to wallet ID by default', async () => {
     wallet = new IndyWallet(config)
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -43,7 +39,7 @@ describe('Wallet', () => {
     expect(wallet.masterSecretId).toEqual(config.walletConfig!.id)
   })
 
-  test('initialize masterSecretId', async () => {
+  test('masterSecretId is set by config', async () => {
     wallet = new IndyWallet(configWithMasterSecretId)
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
