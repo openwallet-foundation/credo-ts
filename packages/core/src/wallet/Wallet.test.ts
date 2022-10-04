@@ -13,7 +13,7 @@ describe('Wallet', () => {
     config = getAgentConfig('WalletTest')
     configWithMasterSecretId = getAgentConfig('WalletTestWithMasterSecretId')
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    configWithMasterSecretId.walletConfig!.masterSecretId = 'main'
+    configWithMasterSecretId.walletConfig!.masterSecretId = 'customMasterSecretId'
   })
 
   test('initialize public did', async () => {
