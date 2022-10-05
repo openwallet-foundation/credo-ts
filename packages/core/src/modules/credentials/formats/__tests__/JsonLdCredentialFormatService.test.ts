@@ -533,7 +533,13 @@ describe('JsonLd CredentialFormatService', () => {
           base64: JsonEncoder.toBase64(inputDoc),
         }),
       })
-      let areCredentialsEqual = jsonldFormatService.areCredentialsEqual(message1, message2)
+
+      // indirectly test areCredentialsEqual as black box rather than expose that method in the API
+      let areCredentialsEqual = jsonldFormatService.shouldAutoRespondToProposal(agentContext, {
+        credentialRecord,
+        proposalAttachment: message1,
+        offerAttachment: message2,
+      })
       expect(areCredentialsEqual).toBe(true)
 
       const inputDoc2 = {
@@ -546,7 +552,12 @@ describe('JsonLd CredentialFormatService', () => {
       message2.data = new AttachmentData({
         base64: JsonEncoder.toBase64(inputDoc2),
       })
-      areCredentialsEqual = jsonldFormatService.areCredentialsEqual(message1, message2)
+
+      areCredentialsEqual = jsonldFormatService.shouldAutoRespondToProposal(agentContext, {
+        credentialRecord,
+        proposalAttachment: message1,
+        offerAttachment: message2,
+      })
       expect(areCredentialsEqual).toBe(false)
     })
   })

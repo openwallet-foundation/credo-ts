@@ -1,4 +1,5 @@
 import type { AgentContext } from '../../../../agent'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import type {
   FormatAcceptOfferOptions,
@@ -353,6 +354,14 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
   public async deleteCredentialById(): Promise<void> {
     throw new Error('Method not implemented.')
+  }
+
+  public areCredentialsEqual = (message1: Attachment, message2: Attachment): boolean => {
+    // FIXME: this implementation doesn't make sense. We can't loop over stringified objects...
+    const obj1 = message1.getDataAsJson()
+    const obj2 = message2.getDataAsJson()
+
+    return deepEqual(obj1, obj2)
   }
 
   public shouldAutoRespondToProposal(
