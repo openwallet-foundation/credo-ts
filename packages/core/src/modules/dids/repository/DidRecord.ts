@@ -60,6 +60,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
   @IsBoolean()
   public isStatic!: boolean
 
+  @IsOptional()
   @IsEnum(DidMarker)
   public marker?: DidMarker
 

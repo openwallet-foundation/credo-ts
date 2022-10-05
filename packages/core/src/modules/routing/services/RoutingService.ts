@@ -1,6 +1,6 @@
 import type { Routing } from '../../connections'
+import type { GetRoutingOptions } from '../../routing'
 import type { MediationRecord } from '../repository'
-import type { GetRoutingOptions } from '@aries-framework/core'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
