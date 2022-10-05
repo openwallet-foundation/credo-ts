@@ -7,6 +7,8 @@ import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
 import type { PresentationProblemReportMessage } from './../messages/PresentationProblemReportMessage'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
+// eslint-disable-next-line no-restricted-imports
+import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { validateOrReject } from 'class-validator'
 
@@ -936,6 +938,15 @@ export class ProofService {
    */
   public async getAll(): Promise<ProofRecord[]> {
     return this.proofRepository.getAll()
+  }
+
+  /**
+   * Retrieve all proof records
+   *
+   * @returns List containing all proof records
+   */
+  public async findByQuery(query: Query<ProofRecord>): Promise<ProofRecord[]> {
+    return this.proofRepository.findByQuery({ ...query })
   }
 
   /**

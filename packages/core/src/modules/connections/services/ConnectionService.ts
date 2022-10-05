@@ -8,6 +8,8 @@ import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
 import type { ConnectionType } from '../models'
 import type { ConnectionRecordProps } from '../repository/ConnectionRecord'
+// eslint-disable-next-line no-restricted-imports
+import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
@@ -590,6 +592,10 @@ export class ConnectionService {
 
   public async findByInvitationDid(invitationDid: string) {
     return this.connectionRepository.findByQuery({ invitationDid })
+  }
+
+  public async findByQuery(query: Query<ConnectionRecord>): Promise<ConnectionRecord[]> {
+    return this.connectionRepository.findByQuery({ ...query })
   }
 
   public async createConnection(options: ConnectionRecordProps): Promise<ConnectionRecord> {

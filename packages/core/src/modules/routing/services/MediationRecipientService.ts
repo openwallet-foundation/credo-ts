@@ -8,6 +8,8 @@ import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../Routing
 import type { MediationDenyMessage } from '../messages'
 import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
 import type { GetRoutingOptions } from './RoutingService'
+// eslint-disable-next-line no-restricted-imports
+import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
@@ -363,6 +365,10 @@ export class MediationRecipientService {
 
   public async getMediators(): Promise<MediationRecord[]> {
     return this.mediationRepository.getAll()
+  }
+
+  public async getMediatorsByQuery(query: Query<MediationRecord>): Promise<MediationRecord[]> {
+    return await this.mediationRepository.findByQuery({ ...query })
   }
 
   public async findDefaultMediator(): Promise<MediationRecord | null> {

@@ -24,6 +24,8 @@ import type {
 } from '../CredentialServiceOptions'
 import type { CredentialFormat, CredentialFormatService } from '../formats'
 import type { CredentialExchangeRecord, CredentialRepository } from './../repository'
+// eslint-disable-next-line no-restricted-imports
+import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { JsonTransformer } from '../../../utils'
 import { CredentialState } from '../models/CredentialState'
@@ -183,6 +185,10 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
    */
   public getAll(): Promise<CredentialExchangeRecord[]> {
     return this.credentialRepository.getAll()
+  }
+
+  public async findByQuery(query: Query<CredentialExchangeRecord>): Promise<CredentialExchangeRecord[]> {
+    return this.credentialRepository.findByQuery({ ...query })
   }
 
   /**

@@ -1,5 +1,7 @@
 import type { DummyStateChangedEvent } from './DummyEvents'
 import type { ConnectionRecord, InboundMessageContext } from '@aries-framework/core'
+// eslint-disable-next-line no-restricted-imports
+import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { injectable, JsonTransformer, EventEmitter } from '@aries-framework/core'
 
@@ -117,6 +119,15 @@ export class DummyService {
    */
   public getAll(): Promise<DummyRecord[]> {
     return this.dummyRepository.getAll()
+  }
+
+  /**
+   * Retrieve dummy records by query
+   *
+   * @returns List containing all dummy records matching query
+   */
+  public findByQuery(query: Query<DummyRecord>): Promise<DummyRecord[]> {
+    return this.dummyRepository.findByQuery({ ...query })
   }
 
   /**

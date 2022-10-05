@@ -3,6 +3,8 @@ import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
 import type { ForwardMessage, MediationRequestMessage } from '../messages'
+// eslint-disable-next-line no-restricted-imports
+import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -199,6 +201,10 @@ export class MediatorService {
 
   public async getAll(): Promise<MediationRecord[]> {
     return await this.mediationRepository.getAll()
+  }
+
+  public async findByQuery(query: Query<MediationRecord>): Promise<MediationRecord[]> {
+    return await this.mediationRepository.findByQuery({ ...query })
   }
 
   private async updateState(mediationRecord: MediationRecord, newState: MediationState) {

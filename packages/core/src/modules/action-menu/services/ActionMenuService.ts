@@ -9,6 +9,8 @@ import type {
   CreateRequestOptions,
   FindMenuOptions,
 } from './ActionMenuServiceOptions'
+// eslint-disable-next-line no-restricted-imports
+import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -343,6 +345,12 @@ export class ActionMenuService {
       connectionId: options.connectionId,
       role: options.role,
       threadId: options.threadId,
+    })
+  }
+
+  public async findByQuery(options: Query<ActionMenuRecord>) {
+    return await this.actionMenuRepository.findByQuery({
+      ...options,
     })
   }
 
