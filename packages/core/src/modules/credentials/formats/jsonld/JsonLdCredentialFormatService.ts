@@ -108,8 +108,15 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     })
 
     const jsonLdFormat = credentialFormats?.jsonld
+    if (jsonLdFormat) {
+      // if there is an offer, validate
+      const jsonLdCredentialOffer = new JsonLdCredential(jsonLdFormat)
+      MessageValidator.validateSync(jsonLdCredentialOffer)
+    }
 
     const credentialProposal = proposalAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+    const jsonLdCredentialProposal = new JsonLdCredential(credentialProposal)
+    MessageValidator.validateSync(jsonLdCredentialProposal)
 
     const offerData = jsonLdFormat ?? credentialProposal
 
@@ -136,7 +143,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     })
 
     const jsonLdFormat = credentialFormats?.jsonld
+    if (!jsonLdFormat) {
+      throw new AriesFrameworkError('Missing jsonld payload in createOffer')
+    }
 
+    const jsonLdCredential = new JsonLdCredential(jsonLdFormat)
+
+    MessageValidator.validateSync(jsonLdCredential)
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
 
     return { format, attachment }
@@ -161,6 +174,9 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     const credentialOffer = offerAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
     const requestData = jsonLdFormat ?? credentialOffer
+
+    const jsonLdCredential = new JsonLdCredential(requestData)
+    MessageValidator.validateSync(jsonLdCredential)
 
     const format = new CredentialFormatSpec({
       attachId,
