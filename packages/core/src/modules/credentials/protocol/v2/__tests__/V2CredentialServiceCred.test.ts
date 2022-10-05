@@ -756,7 +756,7 @@ describe('CredentialService', () => {
       expect(result).toEqual(expect.arrayContaining(expected))
     })
 
-    it('findByQuery should return value from credentialRepository.findByQuery', async () => {
+    it('findAllByQuery should return value from credentialRepository.findByQuery', async () => {
       const expected = [mockCredentialRecord(), mockCredentialRecord()]
 
       mockFunction(credentialRepository.findByQuery).mockReturnValue(Promise.resolve(expected))

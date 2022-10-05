@@ -1,10 +1,9 @@
+import type { Query } from '../../../../src/storage/StorageService'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
 import type { ForwardMessage, MediationRequestMessage } from '../messages'
-// eslint-disable-next-line no-restricted-imports
-import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'

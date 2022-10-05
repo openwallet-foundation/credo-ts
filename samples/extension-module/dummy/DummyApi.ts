@@ -1,3 +1,4 @@
+import type { Query } from '../../../../aries-framework-javascript/packages/core/src/storage/StorageService'
 import type { DummyRecord } from './repository/DummyRecord'
 
 import { injectable, ConnectionService, Dispatcher, MessageSender } from '@aries-framework/core'
@@ -67,6 +68,15 @@ export class DummyApi {
    */
   public getAll(): Promise<DummyRecord[]> {
     return this.dummyService.getAll()
+  }
+
+  /**
+   * Retrieve all dummy records
+   *
+   * @returns List containing all records
+   */
+  public findAllByQuery(query: Query<DummyRecord>): Promise<DummyRecord[]> {
+    return this.dummyService.findAllByQuery(query)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

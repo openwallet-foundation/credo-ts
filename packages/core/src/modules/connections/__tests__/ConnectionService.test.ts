@@ -898,7 +898,7 @@ describe('ConnectionService', () => {
       expect(result).toEqual(expect.arrayContaining(expected))
     })
 
-    it('findByQuery should return value from connectionRepository.findByQuery', async () => {
+    it('findAllByQuery should return value from connectionRepository.findByQuery', async () => {
       const expected = [getMockConnection(), getMockConnection()]
 
       mockFunction(connectionRepository.findByQuery).mockReturnValue(Promise.resolve(expected))

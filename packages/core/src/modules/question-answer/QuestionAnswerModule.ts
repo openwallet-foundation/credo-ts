@@ -1,4 +1,6 @@
 import type { DependencyManager } from '../../plugins'
+import type { QuestionAnswerRole } from './QuestionAnswerRole'
+import type { QuestionAnswerState } from './models'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
@@ -90,6 +92,17 @@ export class QuestionAnswerModule {
    */
   public getAll() {
     return this.questionAnswerService.getAll()
+  }
+
+  /**
+   * Get all QuestionAnswer records by specified query params
+   *
+   * @returns list containing all QuestionAnswer records matching specified query params
+   */
+  public findAllByQuery(
+    query: Partial<{ connectionId: string; role: QuestionAnswerRole; state: QuestionAnswerState; threadId: string }>
+  ) {
+    return this.questionAnswerService.findAllByQuery(query)
   }
 
   /**

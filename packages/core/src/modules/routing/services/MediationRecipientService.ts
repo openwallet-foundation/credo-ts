@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../../agent/Events'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Query } from '../../../storage/StorageService'
 import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
@@ -8,8 +9,6 @@ import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../Routing
 import type { MediationDenyMessage } from '../messages'
 import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
 import type { GetRoutingOptions } from './RoutingService'
-// eslint-disable-next-line no-restricted-imports
-import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'

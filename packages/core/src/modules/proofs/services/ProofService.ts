@@ -1,14 +1,13 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { Query } from '../../../storage/StorageService'
 import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { PresentationPreview, PresentationPreviewAttribute } from '../messages'
 import type { PresentationProblemReportMessage } from './../messages/PresentationProblemReportMessage'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
-// eslint-disable-next-line no-restricted-imports
-import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { validateOrReject } from 'class-validator'
 

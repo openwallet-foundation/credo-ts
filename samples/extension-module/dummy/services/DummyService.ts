@@ -1,7 +1,6 @@
+import type { Query } from '../../../../../aries-framework-javascript/packages/core/src/storage/StorageService'
 import type { DummyStateChangedEvent } from './DummyEvents'
 import type { ConnectionRecord, InboundMessageContext } from '@aries-framework/core'
-// eslint-disable-next-line no-restricted-imports
-import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { injectable, JsonTransformer, EventEmitter } from '@aries-framework/core'
 

@@ -5,6 +5,7 @@ import type { EventEmitter } from '../../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { DidCommMessageRepository } from '../../../storage'
+import type { Query } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type {
@@ -24,8 +25,6 @@ import type {
 } from '../CredentialServiceOptions'
 import type { CredentialFormat, CredentialFormatService } from '../formats'
 import type { CredentialExchangeRecord, CredentialRepository } from './../repository'
-// eslint-disable-next-line no-restricted-imports
-import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { JsonTransformer } from '../../../utils'
 import { CredentialState } from '../models/CredentialState'
