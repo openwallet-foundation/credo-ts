@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Constructor } from '../utils/mixins'
 import type { BaseRecord, TagsBase } from './BaseRecord'
 
@@ -10,7 +11,7 @@ interface AdvancedQuery<T extends BaseRecord> {
   $not?: Query<T>
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export type Query<T extends BaseRecord<any, any, any>> = AdvancedQuery<T> | SimpleQuery<T>
 
 export interface BaseRecordConstructor<T> extends Constructor<T> {
