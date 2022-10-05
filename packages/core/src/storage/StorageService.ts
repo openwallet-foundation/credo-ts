@@ -11,7 +11,6 @@ interface AdvancedQuery<T extends BaseRecord> {
   $not?: Query<T>
 }
 
-
 export type Query<T extends BaseRecord<any, any, any>> = AdvancedQuery<T> | SimpleQuery<T>
 
 export interface BaseRecordConstructor<T> extends Constructor<T> {
