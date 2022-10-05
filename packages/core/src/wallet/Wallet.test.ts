@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { AgentConfig } from '../../src'
 
 import { getAgentConfig } from '../../tests/helpers'
@@ -12,14 +13,12 @@ describe('Wallet', () => {
   beforeEach(() => {
     config = getAgentConfig('WalletTest')
     configWithMasterSecretId = getAgentConfig('WalletTestWithMasterSecretId')
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     configWithMasterSecretId.walletConfig!.masterSecretId = 'customMasterSecretId'
   })
 
   test('initialize public did', async () => {
     wallet = new IndyWallet(config)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
 
     await wallet.initPublicDid({ seed: '00000000000000000000000Forward01' })
@@ -33,7 +32,6 @@ describe('Wallet', () => {
   test('masterSecretId is equal to wallet ID by default', async () => {
     wallet = new IndyWallet(config)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
 
     expect(wallet.masterSecretId).toEqual(config.walletConfig!.id)
@@ -42,7 +40,6 @@ describe('Wallet', () => {
   test('masterSecretId is set by config', async () => {
     wallet = new IndyWallet(configWithMasterSecretId)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(configWithMasterSecretId.walletConfig!)
 
     expect(wallet.masterSecretId).toEqual(configWithMasterSecretId.walletConfig!.masterSecretId)
