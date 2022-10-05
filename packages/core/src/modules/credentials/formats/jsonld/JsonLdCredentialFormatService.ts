@@ -318,6 +318,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     if (Array.isArray(credential.proof)) {
       // question: what do we compare here, each element of the proof array with the request???
+      throw new AriesFrameworkError('Credential arrays are not supported')
     } else {
       // do checks here
       this.compareCredentialSubject(credential, request.credential)
@@ -369,7 +370,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   }
 
   public async deleteCredentialById(): Promise<void> {
-    throw new Error('Method not implemented.')
+    throw new Error('Not implemented.')
   }
 
   public areCredentialsEqual = (message1: Attachment, message2: Attachment): boolean => {
@@ -408,15 +409,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     const credentialAsJson = credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
 
-    const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-    const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
-
     if (Array.isArray(credential.proof)) {
-      // question: what do we compare here, each element of the proof array with the request???
-      return true
+      throw new AriesFrameworkError('Credential arrays are not supported')
     } else {
       // do checks here
       try {
+        const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+        const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
         this.compareCredentialSubject(credential, request.credential)
         this.compareProofs(credential.proof, request.options)
         return true

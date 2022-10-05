@@ -96,7 +96,6 @@ export interface FormatAcceptRequestOptions<CF extends CredentialFormat> {
 export interface FormatAcceptCredentialOptions {
   credentialRecord: CredentialExchangeRecord
   attachId?: string
-
   requestAttachment: Attachment
   offerAttachment?: Attachment
 }
