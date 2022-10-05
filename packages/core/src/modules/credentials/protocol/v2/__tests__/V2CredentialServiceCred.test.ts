@@ -760,7 +760,7 @@ describe('CredentialService', () => {
       const expected = [mockCredentialRecord(), mockCredentialRecord()]
 
       mockFunction(credentialRepository.findByQuery).mockReturnValue(Promise.resolve(expected))
-      const result = await credentialService.findByQuery({ state: CredentialState.OfferSent })
+      const result = await credentialService.findAllByQuery({ state: CredentialState.OfferSent })
       expect(credentialRepository.findByQuery).toBeCalledWith({ state: CredentialState.OfferSent })
 
       expect(result).toEqual(expect.arrayContaining(expected))

@@ -1,5 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { Query } from '../../../storage/StorageService'
 import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
 import type { ActionMenuProblemReportMessage } from '../messages'
 import type {
@@ -9,7 +10,6 @@ import type {
   CreateRequestOptions,
   FindMenuOptions,
 } from './ActionMenuServiceOptions'
-import type { Query } from '../../../storage/StorageService'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -347,10 +347,8 @@ export class ActionMenuService {
     })
   }
 
-  public async findByQuery(options: Query<ActionMenuRecord>) {
-    return await this.actionMenuRepository.findByQuery({
-      ...options,
-    })
+  public async findAllByQuery(options: Query<ActionMenuRecord>) {
+    return await this.actionMenuRepository.findByQuery(options)
   }
 
   private emitStateChangedEvent(actionMenuRecord: ActionMenuRecord, previousState: ActionMenuState | null) {

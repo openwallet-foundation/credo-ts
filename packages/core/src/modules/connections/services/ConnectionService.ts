@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { Query } from '../../../storage/StorageService'
 import type { AckMessage } from '../../common'
 import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../../oob/repository'
@@ -8,8 +9,6 @@ import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
 import type { ConnectionType } from '../models'
 import type { ConnectionRecordProps } from '../repository/ConnectionRecord'
-// eslint-disable-next-line no-restricted-imports
-import type { Query } from 'packages/core/src/storage/StorageService'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
@@ -594,8 +593,8 @@ export class ConnectionService {
     return this.connectionRepository.findByQuery({ invitationDid })
   }
 
-  public async findByQuery(query: Query<ConnectionRecord>): Promise<ConnectionRecord[]> {
-    return this.connectionRepository.findByQuery({ ...query })
+  public async findAllByQuery(query: Query<ConnectionRecord>): Promise<ConnectionRecord[]> {
+    return this.connectionRepository.findByQuery(query)
   }
 
   public async createConnection(options: ConnectionRecordProps): Promise<ConnectionRecord> {

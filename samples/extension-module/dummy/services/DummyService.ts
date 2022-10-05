@@ -126,8 +126,8 @@ export class DummyService {
    *
    * @returns List containing all dummy records matching query
    */
-  public findByQuery(query: Query<DummyRecord>): Promise<DummyRecord[]> {
-    return this.dummyRepository.findByQuery({ ...query })
+  public findAllByQuery(query: Query<DummyRecord>): Promise<DummyRecord[]> {
+    return this.dummyRepository.findByQuery(query)
   }
 
   /**

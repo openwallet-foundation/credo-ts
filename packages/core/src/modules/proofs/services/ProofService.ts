@@ -945,8 +945,8 @@ export class ProofService {
    *
    * @returns List containing all proof records
    */
-  public async findByQuery(query: Query<ProofRecord>): Promise<ProofRecord[]> {
-    return this.proofRepository.findByQuery({ ...query })
+  public async findAllByQuery(query: Query<ProofRecord>): Promise<ProofRecord[]> {
+    return this.proofRepository.findByQuery(query)
   }
 
   /**

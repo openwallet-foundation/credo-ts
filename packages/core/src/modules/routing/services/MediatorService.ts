@@ -203,8 +203,8 @@ export class MediatorService {
     return await this.mediationRepository.getAll()
   }
 
-  public async findByQuery(query: Query<MediationRecord>): Promise<MediationRecord[]> {
-    return await this.mediationRepository.findByQuery({ ...query })
+  public async findAllByQuery(query: Query<MediationRecord>): Promise<MediationRecord[]> {
+    return await this.mediationRepository.findByQuery(query)
   }
 
   private async updateState(mediationRecord: MediationRecord, newState: MediationState) {

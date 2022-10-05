@@ -168,8 +168,8 @@ export class OutOfBandService {
     return this.outOfBandRepository.getAll()
   }
 
-  public async findByQuery(query: Query<OutOfBandRecord>) {
-    return this.outOfBandRepository.findByQuery({ ...query })
+  public async findAllByQuery(query: Query<OutOfBandRecord>) {
+    return this.outOfBandRepository.findByQuery(query)
   }
 
   public async deleteById(outOfBandId: string) {

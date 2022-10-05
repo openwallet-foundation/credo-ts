@@ -368,7 +368,7 @@ export class MediationRecipientService {
   }
 
   public async getMediatorsByQuery(query: Query<MediationRecord>): Promise<MediationRecord[]> {
-    return await this.mediationRepository.findByQuery({ ...query })
+    return await this.mediationRepository.findByQuery(query)
   }
 
   public async findDefaultMediator(): Promise<MediationRecord | null> {
