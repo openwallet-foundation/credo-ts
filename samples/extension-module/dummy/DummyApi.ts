@@ -1,5 +1,5 @@
-import type { Query } from '../../../../aries-framework-javascript/packages/core/src/storage/StorageService'
 import type { DummyRecord } from './repository/DummyRecord'
+import type { Query } from '@aries-framework/core'
 
 import { injectable, ConnectionService, Dispatcher, MessageSender } from '@aries-framework/core'
 
