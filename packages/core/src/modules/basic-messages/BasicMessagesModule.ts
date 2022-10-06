@@ -1,5 +1,6 @@
 import type { DependencyManager } from '../../plugins'
-import type { BasicMessageTags } from './repository/BasicMessageRecord'
+import type { Query } from '../../storage/StorageService'
+import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
@@ -38,7 +39,7 @@ export class BasicMessagesModule {
     await this.messageSender.sendMessage(outboundMessage)
   }
 
-  public async findAllByQuery(query: Partial<BasicMessageTags>) {
+  public async findAllByQuery(query: Query<BasicMessageRecord>) {
     return this.basicMessageService.findAllByQuery(query)
   }
 

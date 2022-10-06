@@ -1,7 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Query } from '../../../storage/StorageService'
 import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import type { BasicMessageStateChangedEvent } from '../BasicMessageEvents'
-import type { BasicMessageTags } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { injectable } from '../../../plugins'
@@ -61,7 +61,7 @@ export class BasicMessageService {
     })
   }
 
-  public async findAllByQuery(query: Partial<BasicMessageTags>) {
+  public async findAllByQuery(query: Query<BasicMessageRecord>) {
     return this.basicMessageRepository.findByQuery(query)
   }
 }

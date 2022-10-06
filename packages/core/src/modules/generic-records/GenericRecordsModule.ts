@@ -1,6 +1,7 @@
 import type { Logger } from '../../logger'
 import type { DependencyManager } from '../../plugins'
-import type { GenericRecord, GenericRecordTags, SaveGenericRecordOption } from './repository/GenericRecord'
+import type { Query } from '../../storage/StorageService'
+import type { GenericRecord, SaveGenericRecordOption } from './repository/GenericRecord'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { injectable, module } from '../../plugins'
@@ -74,7 +75,7 @@ export class GenericRecordsModule {
     return this.genericRecordsService.findById(id)
   }
 
-  public async findAllByQuery(query: Partial<GenericRecordTags>): Promise<GenericRecord[]> {
+  public async findAllByQuery(query: Query<GenericRecord>): Promise<GenericRecord[]> {
     return this.genericRecordsService.findAllByQuery(query)
   }
 
