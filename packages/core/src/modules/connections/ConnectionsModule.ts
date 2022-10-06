@@ -1,4 +1,5 @@
 import type { DependencyManager } from '../../plugins'
+import type { Query } from '../../storage/StorageService'
 import type { Key } from '../dids'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionType } from './models'
@@ -196,6 +197,15 @@ export class ConnectionsModule {
    */
   public getAll() {
     return this.connectionService.getAll()
+  }
+
+  /**
+   * Retrieve all connections records by specified query params
+   *
+   * @returns List containing all connection records matching specified query paramaters
+   */
+  public findAllByQuery(query: Query<ConnectionRecord>) {
+    return this.connectionService.findAllByQuery(query)
   }
 
   /**

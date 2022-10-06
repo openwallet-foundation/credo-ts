@@ -495,5 +495,15 @@ describe('OutOfBandService', () => {
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })
+
+    it('findAllByQuery should return value from outOfBandRepository.findByQuery', async () => {
+      const expected = [getMockOutOfBand(), getMockOutOfBand()]
+
+      mockFunction(outOfBandRepository.findByQuery).mockReturnValue(Promise.resolve(expected))
+      const result = await outOfBandService.findAllByQuery({ state: OutOfBandState.Initial })
+      expect(outOfBandRepository.findByQuery).toBeCalledWith({ state: OutOfBandState.Initial })
+
+      expect(result).toEqual(expect.arrayContaining(expected))
+    })
   })
 })

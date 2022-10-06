@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Logger } from '../../logger'
 import type { DependencyManager } from '../../plugins'
+import type { Query } from '../../storage/StorageService'
 import type { DeleteCredentialOptions } from './CredentialServiceOptions'
 import type {
   AcceptCredentialOptions,
@@ -73,6 +74,7 @@ export interface CredentialsModule<CFs extends CredentialFormat[], CSs extends C
 
   // Record Methods
   getAll(): Promise<CredentialExchangeRecord[]>
+  findAllByQuery(query: Query<CredentialExchangeRecord>): Promise<CredentialExchangeRecord[]>
   getById(credentialRecordId: string): Promise<CredentialExchangeRecord>
   findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
   deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void>
@@ -571,6 +573,15 @@ export class CredentialsModule<
    */
   public getAll(): Promise<CredentialExchangeRecord[]> {
     return this.credentialRepository.getAll()
+  }
+
+  /**
+   * Retrieve all credential records by specified query params
+   *
+   * @returns List containing all credential records matching specified query paramaters
+   */
+  public findAllByQuery(query: Query<CredentialExchangeRecord>) {
+    return this.credentialRepository.findByQuery(query)
   }
 
   /**

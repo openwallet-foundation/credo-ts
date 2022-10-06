@@ -1,4 +1,5 @@
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
+import type { Query } from '../../storage/StorageService'
 import type { ConnectionRecord } from '../connections'
 import type { Key } from '../dids/domain/Key'
 import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
@@ -165,6 +166,10 @@ export class OutOfBandService {
 
   public async getAll() {
     return this.outOfBandRepository.getAll()
+  }
+
+  public async findAllByQuery(query: Query<OutOfBandRecord>) {
+    return this.outOfBandRepository.findByQuery(query)
   }
 
   public async deleteById(outOfBandId: string) {

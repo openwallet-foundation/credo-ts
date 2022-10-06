@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { Query } from '../../../storage/StorageService'
 import type { AckMessage } from '../../common'
 import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../../oob/repository'
@@ -590,6 +591,10 @@ export class ConnectionService {
 
   public async findByInvitationDid(invitationDid: string) {
     return this.connectionRepository.findByQuery({ invitationDid })
+  }
+
+  public async findAllByQuery(query: Query<ConnectionRecord>): Promise<ConnectionRecord[]> {
+    return this.connectionRepository.findByQuery(query)
   }
 
   public async createConnection(options: ConnectionRecordProps): Promise<ConnectionRecord> {

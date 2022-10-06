@@ -4,6 +4,7 @@ import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Logger } from '../../logger'
 import type { ConnectionRecord, Routing, ConnectionInvitationMessage } from '../../modules/connections'
 import type { DependencyManager } from '../../plugins'
+import type { Query } from '../../storage/StorageService'
 import type { PlaintextMessage } from '../../types'
 import type { Key } from '../dids'
 import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
@@ -531,6 +532,15 @@ export class OutOfBandModule {
    */
   public getAll() {
     return this.outOfBandService.getAll()
+  }
+
+  /**
+   * Retrieve all out of bands records by specified query param
+   *
+   * @returns List containing all out of band records matching specified query params
+   */
+  public findAllByQuery(query: Query<OutOfBandRecord>) {
+    return this.outOfBandService.findAllByQuery(query)
   }
 
   /**
