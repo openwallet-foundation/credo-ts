@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/module-bbs",
+  "name": "@aries-framework/bbs-signatures",
   "main": "build/index",
   "types": "build/index",
   "version": "0.2.2",
@@ -25,10 +25,12 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.2.2",
     "@mattrglobal/bbs-signatures": "^1.0.0",
     "@mattrglobal/bls12381-key-pair": "^1.0.0",
     "@stablelib/random": "^1.0.2"
+  },
+  "peerDependencies": {
+    "@aries-framework/core": "0.2.2"
   },
   "devDependencies": {
     "@aries-framework/node": "0.2.2",

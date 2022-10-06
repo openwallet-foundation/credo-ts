@@ -18,8 +18,8 @@ const dependencyManager = {
 
 describe('BbsModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    const tenantsModule = new BbsModule()
-    tenantsModule.register(dependencyManager)
+    const bbsModule = new BbsModule()
+    bbsModule.register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(SigningProviderToken, Bls12381g2SigningProvider)

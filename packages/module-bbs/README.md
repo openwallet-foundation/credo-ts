@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/module-bbs"
+    <a href="https://www.npmjs.com/package/@aries-framework/bbs-signatures"
     ><img
-      alt="@aries-framework/module-bbs version"
-      src="https://img.shields.io/npm/v/@aries-framework/module-bbs"
+      alt="@aries-framework/bbs-signatures version"
+      src="https://img.shields.io/npm/v/@aries-framework/bbs-signatures"
   /></a>
 
 </p>
