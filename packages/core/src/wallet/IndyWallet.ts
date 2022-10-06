@@ -56,13 +56,13 @@ export class IndyWallet implements Wallet {
   }
 
   public get masterSecretId() {
-    if (!this.isInitialized) {
+    if (!this.isInitialized || !(this.walletConfig?.id || this.walletConfig?.masterSecretId)) {
       throw new AriesFrameworkError(
         'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
       )
     }
 
-    return this.walletConfig?.masterSecretId ?? this.walletConfig?.id
+    return this.walletConfig?.masterSecretId ?? this.walletConfig.id
   }
 
   private walletStorageConfig(walletConfig: WalletConfig): Indy.WalletConfig {

@@ -12,8 +12,13 @@ describe('Wallet', () => {
 
   beforeEach(() => {
     config = getAgentConfig('WalletTest')
-    configWithMasterSecretId = getAgentConfig('WalletTestWithMasterSecretId')
-    configWithMasterSecretId.walletConfig!.masterSecretId = 'customMasterSecretId'
+    configWithMasterSecretId = getAgentConfig(
+      'WalletTestWithMasterSecretId',
+      {},
+      {
+        masterSecretId: 'customMasterSecretId'
+      }
+    )
   })
 
   test('initialize public did', async () => {
