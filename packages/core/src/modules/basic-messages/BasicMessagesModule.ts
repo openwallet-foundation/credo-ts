@@ -4,6 +4,7 @@ import type { BasicMessageTags } from './repository/BasicMessageRecord'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
+import { MessageSendingError } from '../../error/MessageSendingError'
 import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections'
 
@@ -30,16 +31,65 @@ export class BasicMessagesModule {
     this.registerHandlers(dispatcher)
   }
 
+  /**
+   * Send a message to an active connection
+   *
+   * @param connectionId Connection Id
+   * @param message Message contents
+   * @throws {RecordNotFoundError} If connection is not found
+   * @throws {MessageSendingError} If message is undeliverable
+   * @returns the created record
+   */
   public async sendMessage(connectionId: string, message: string) {
     const connection = await this.connectionService.getById(connectionId)
 
-    const basicMessage = await this.basicMessageService.createMessage(message, connection)
+    const { message: basicMessage, record: basicMessageRecord } = await this.basicMessageService.createMessage(
+      message,
+      connection
+    )
     const outboundMessage = createOutboundMessage(connection, basicMessage)
-    await this.messageSender.sendMessage(outboundMessage)
+    try {
+      await this.messageSender.sendMessage(outboundMessage)
+    } catch (error) {
+      throw new MessageSendingError(`Error sending basic message: ${error.message}`, {
+        agentMessage: basicMessage,
+        associatedRecord: basicMessageRecord,
+        cause: error,
+      })
+    }
+    return basicMessageRecord
   }
 
+  /**
+   * Retrieve all basic messages matching a given query
+   *
+   * @param query The query
+   * @returns array containing all matching records
+   */
   public async findAllByQuery(query: Partial<BasicMessageTags>) {
     return this.basicMessageService.findAllByQuery(query)
+  }
+
+  /**
+   * Retrieve a basic message record by id
+   *
+   * @param basicMessageRecordId The basic message record id
+   * @throws {RecordNotFoundError} If no record is found
+   * @return The basic message record
+   *
+   */
+  public async getById(basicMessageRecordId: string) {
+    return this.basicMessageService.getById(basicMessageRecordId)
+  }
+
+  /**
+   * Delete a basic message record by id
+   *
+   * @param connectionId the basic message record id
+   * @throws {RecordNotFoundError} If no record is found
+   */
+  public async deleteById(basicMessageRecordId: string) {
+    await this.basicMessageService.deleteById(basicMessageRecordId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
