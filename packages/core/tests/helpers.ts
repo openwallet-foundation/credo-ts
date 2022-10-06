@@ -12,7 +12,6 @@ import type {
   ProofPredicateInfo,
   ProofStateChangedEvent,
   SchemaTemplate,
-  WalletConfig,
 } from '../src'
 import type { AcceptOfferOptions } from '../src/modules/credentials'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
@@ -66,17 +65,12 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 export { agentDependencies }
 
-export function getBaseConfig(
-    name: string,
-    extraConfig: Partial<InitConfig> = {},
-    extraWalletConfig: Partial<WalletConfig> = {}
-) {
+export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
       id: `Wallet: ${name}`,
       key: `Key: ${name}`,
-      ...extraWalletConfig,
     },
     publicDidSeed,
     autoAcceptConnections: true,
@@ -135,12 +129,8 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
   return { config, agentDependencies } as const
 }
 
-export function getAgentConfig(
-    name: string,
-    extraConfig: Partial<InitConfig> = {},
-    extraWalletConfig: Partial<WalletConfig> = {}
-) {
-  const { config, agentDependencies } = getBaseConfig(name, extraConfig, extraWalletConfig)
+export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
+  const { config, agentDependencies } = getBaseConfig(name, extraConfig)
   return new AgentConfig(config, agentDependencies)
 }
 
