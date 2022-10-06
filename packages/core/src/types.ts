@@ -8,6 +8,7 @@ import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
+import type { BaseRecord } from './storage/BaseRecord'
 
 export enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -96,7 +97,7 @@ export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   connection: ConnectionRecord
   sessionId?: string
   outOfBand?: OutOfBandRecord
-  associatedRecordId?: string
+  associatedRecord?: BaseRecord
 }
 
 export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {

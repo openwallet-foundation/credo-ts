@@ -91,18 +91,18 @@ describe('Basic Messages E2E', () => {
         `Message is undeliverable to connection ${aliceConnection.id} (${aliceConnection.theirLabel})`
       )
       testLogger.test('Error thrown includes the outbound message and recently created record id')
-      expect(thrownError.outboundMessage.associatedRecordId).toBeDefined()
+      expect(thrownError.outboundMessage.associatedRecord).toBeInstanceOf(BasicMessageRecord)
       expect(thrownError.outboundMessage.payload).toBeInstanceOf(BasicMessage)
       expect((thrownError.outboundMessage.payload as BasicMessage).content).toBe('Hello undeliverable')
 
       testLogger.test('Created record can be found and deleted by id')
-      const storedRecord = await aliceAgent.basicMessages.getById(thrownError.outboundMessage.associatedRecordId!)
+      const storedRecord = await aliceAgent.basicMessages.getById(thrownError.outboundMessage.associatedRecord!.id)
       expect(storedRecord).toBeInstanceOf(BasicMessageRecord)
       expect(storedRecord.content).toBe('Hello undeliverable')
 
       await aliceAgent.basicMessages.deleteById(storedRecord.id)
       await expect(
-        aliceAgent.basicMessages.getById(thrownError.outboundMessage.associatedRecordId!)
+        aliceAgent.basicMessages.getById(thrownError.outboundMessage.associatedRecord!.id)
       ).rejects.toThrowError(RecordNotFoundError)
     }
     spy.mockClear()

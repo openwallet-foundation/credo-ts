@@ -47,7 +47,7 @@ export class BasicMessagesModule {
       connection
     )
     const outboundMessage = createOutboundMessage(connection, basicMessage)
-    outboundMessage.associatedRecordId = basicMessageRecord.id
+    outboundMessage.associatedRecord = basicMessageRecord
 
     await this.messageSender.sendMessage(outboundMessage)
     return basicMessageRecord
