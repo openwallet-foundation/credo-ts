@@ -1,4 +1,5 @@
 import type { DependencyManager } from '../../plugins'
+import type { Query } from '../../storage/StorageService'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { PresentationPreview, RequestPresentationMessage } from './messages'
 import type { RequestedCredentials, RetrievedCredentials } from './models'
@@ -412,6 +413,15 @@ export class ProofsModule {
    */
   public getAll(): Promise<ProofRecord[]> {
     return this.proofService.getAll()
+  }
+
+  /**
+   * Retrieve all proof records by specified query params
+   *
+   * @returns List containing all proof records matching specified params
+   */
+  public findAllByQuery(query: Query<ProofRecord>): Promise<ProofRecord[]> {
+    return this.proofService.findAllByQuery(query)
   }
 
   /**

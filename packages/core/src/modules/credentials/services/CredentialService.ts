@@ -5,6 +5,7 @@ import type { EventEmitter } from '../../../agent/EventEmitter'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { DidCommMessageRepository } from '../../../storage'
+import type { Query } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type {
@@ -183,6 +184,10 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
    */
   public getAll(): Promise<CredentialExchangeRecord[]> {
     return this.credentialRepository.getAll()
+  }
+
+  public async findAllByQuery(query: Query<CredentialExchangeRecord>): Promise<CredentialExchangeRecord[]> {
+    return this.credentialRepository.findByQuery(query)
   }
 
   /**

@@ -1,4 +1,5 @@
-import type { GenericRecordTags, SaveGenericRecordOption } from '../repository/GenericRecord'
+import type { Query } from '../../../storage/StorageService'
+import type { SaveGenericRecordOption } from '../repository/GenericRecord'
 
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
@@ -50,7 +51,7 @@ export class GenericRecordService {
     }
   }
 
-  public async findAllByQuery(query: Partial<GenericRecordTags>) {
+  public async findAllByQuery(query: Query<GenericRecord>) {
     return this.genericRecordsRepository.findByQuery(query)
   }
 

@@ -1,6 +1,7 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { Query } from '../../../storage/StorageService'
 import type { ConnectionRecord } from '../../connections'
 import type { AutoAcceptProof } from '../ProofAutoAcceptType'
 import type { ProofStateChangedEvent } from '../ProofEvents'
@@ -936,6 +937,15 @@ export class ProofService {
    */
   public async getAll(): Promise<ProofRecord[]> {
     return this.proofRepository.getAll()
+  }
+
+  /**
+   * Retrieve all proof records
+   *
+   * @returns List containing all proof records
+   */
+  public async findAllByQuery(query: Query<ProofRecord>): Promise<ProofRecord[]> {
+    return this.proofRepository.findByQuery(query)
   }
 
   /**

@@ -1,8 +1,8 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { Query } from '../../../storage/StorageService'
 import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import type { ValidResponse } from '../models'
-import type { QuestionAnswerTags } from '../repository'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -269,7 +269,7 @@ export class QuestionAnswerService {
     return this.questionAnswerRepository.getAll()
   }
 
-  public async findAllByQuery(query: Partial<QuestionAnswerTags>) {
+  public async findAllByQuery(query: Query<QuestionAnswerRecord>) {
     return this.questionAnswerRepository.findByQuery(query)
   }
 }

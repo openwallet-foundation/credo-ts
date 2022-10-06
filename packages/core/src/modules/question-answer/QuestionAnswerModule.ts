@@ -1,4 +1,6 @@
 import type { DependencyManager } from '../../plugins'
+import type { Query } from '../../storage/StorageService'
+import type { QuestionAnswerRecord } from './repository'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
@@ -90,6 +92,15 @@ export class QuestionAnswerModule {
    */
   public getAll() {
     return this.questionAnswerService.getAll()
+  }
+
+  /**
+   * Get all QuestionAnswer records by specified query params
+   *
+   * @returns list containing all QuestionAnswer records matching specified query params
+   */
+  public findAllByQuery(query: Query<QuestionAnswerRecord>) {
+    return this.questionAnswerService.findAllByQuery(query)
   }
 
   /**
