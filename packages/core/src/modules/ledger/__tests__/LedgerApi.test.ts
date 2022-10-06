@@ -6,6 +6,7 @@ import type * as Indy from 'indy-sdk'
 import { getAgentConfig, getAgentContext, mockFunction, mockProperty } from '../../../../tests/helpers'
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { getLegacySchemaId, getLegacyCredentialDefinitionId } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AnonCredsCredentialDefinitionRecord } from '../../indy/repository/AnonCredsCredentialDefinitionRecord'
 import { AnonCredsCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
@@ -13,7 +14,6 @@ import { AnonCredsSchemaRecord } from '../../indy/repository/AnonCredsSchemaReco
 import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { LedgerApi } from '../LedgerApi'
 import { LedgerModuleConfig } from '../LedgerModuleConfig'
-import { generateCredentialDefinitionId, generateSchemaId } from '../ledgerUtil'
 import { IndyLedgerService } from '../services/IndyLedgerService'
 
 jest.mock('../services/IndyLedgerService')
@@ -46,7 +46,7 @@ const credentialDefinition = {
 }
 
 const schemaIdQualified = 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx/anoncreds/v0/SCHEMA/awesomeSchema/1'
-const schemaIdGenerated = generateSchemaId(did, schema.name, schema.version)
+const schemaIdGenerated = getLegacySchemaId(did, schema.name, schema.version)
 const qualifiedDidCred = 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx/anoncreds/v0/CLAIM_DEF/99/someTag'
 
 const credDef: Indy.CredDef = {
@@ -82,7 +82,7 @@ const revocRegDef: Indy.RevocRegDef = {
   ver: 'abcde',
 }
 
-const credentialDefinitionId = generateCredentialDefinitionId(
+const credentialDefinitionId = getLegacyCredentialDefinitionId(
   did,
   credentialDefinitionTemplate.schema.seqNo,
   credentialDefinitionTemplate.tag
@@ -216,7 +216,7 @@ describe('LedgerApi', () => {
         mockFunction(anonCredsSchemaRepository.findById).mockResolvedValueOnce(
           new AnonCredsSchemaRecord({ schema: { ...schema, id: schemaIdQualified } })
         )
-        mockFunction(ledgerService.getDidIndyNamespace).mockReturnValueOnce(pools[0].indyNamespace)
+        mockFunction(ledgerService.getDidIndyWriteNamespace).mockReturnValueOnce(pools[0].indyNamespace)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { id, ...schemaWithoutId } = schema
         await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toMatchObject({
@@ -280,7 +280,7 @@ describe('LedgerApi', () => {
           connectToIndyLedgersOnStartup: true,
           indyLedgers: pools,
         } as LedgerModuleConfig)
-        mockFunction(ledgerService.getDidIndyNamespace).mockReturnValueOnce(pools[0].indyNamespace)
+        mockFunction(ledgerService.getDidIndyWriteNamespace).mockReturnValueOnce(pools[0].indyNamespace)
         await expect(ledgerApi.registerCredentialDefinition(credentialDefinitionTemplate)).resolves.toHaveProperty(
           'value.primary',
           credentialDefinition

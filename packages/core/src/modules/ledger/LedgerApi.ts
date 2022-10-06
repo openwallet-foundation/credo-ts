@@ -8,10 +8,10 @@ import { IndySdkError } from '../../error/IndySdkError'
 import { injectable } from '../../plugins'
 import { isIndyError } from '../../utils/indyError'
 import {
-  getQualifiedIdentifierCredentialDefinition,
-  getQualifiedIdentifierSchema,
-  getLegacyIndyCredentialDefinitionId,
-  getLegacyIndySchemaId,
+  getLegacyCredentialDefinitionId,
+  getLegacySchemaId,
+  getQualifiedIndyCredentialDefinitionId,
+  getQualifiedIndySchemaId,
 } from '../../utils/indyIdentifiers'
 import { AnonCredsCredentialDefinitionRecord } from '../indy/repository/AnonCredsCredentialDefinitionRecord'
 import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
@@ -19,7 +19,6 @@ import { AnonCredsSchemaRecord } from '../indy/repository/AnonCredsSchemaRecord'
 import { AnonCredsSchemaRepository } from '../indy/repository/AnonCredsSchemaRepository'
 
 import { LedgerModuleConfig } from './LedgerModuleConfig'
-import { generateCredentialDefinitionId, generateSchemaId } from './ledgerUtil'
 import { IndyLedgerService } from './services'
 
 @injectable()
@@ -81,10 +80,10 @@ export class LedgerApi {
       throw new AriesFrameworkError('Agent has no public DID.')
     }
 
-    const schemaId = generateSchemaId(did, schema.name, schema.version)
+    const schemaId = getLegacySchemaId(did, schema.name, schema.version)
 
     // Generate the qualified ID
-    const qualifiedIdentifier = getQualifiedIdentifierSchema(this.ledgerService.getDidIndyNamespace(), schema, schemaId)
+    const qualifiedIdentifier = getQualifiedIndySchemaId(this.ledgerService.getDidIndyWriteNamespace(), schemaId)
 
     // Try find the schema in the wallet
     const schemaRecord = await this.anonCredsSchemaRepository.findById(this.agentContext, qualifiedIdentifier)
@@ -93,7 +92,7 @@ export class LedgerApi {
       // Transform qualified to unqualified
       return {
         ...schemaRecord.schema,
-        id: getLegacyIndySchemaId(schemaRecord.schema.id),
+        id: schemaId,
       }
     }
 
@@ -140,17 +139,16 @@ export class LedgerApi {
     }
 
     // Construct credential definition ID
-    const credentialDefinitionId = generateCredentialDefinitionId(
+    const credentialDefinitionId = getLegacyCredentialDefinitionId(
       did,
       credentialDefinitionTemplate.schema.seqNo,
       credentialDefinitionTemplate.tag
     )
 
     // Construct qualified identifier
-    const qualifiedIdentifier = getQualifiedIdentifierCredentialDefinition(
-      this.ledgerService.getDidIndyNamespace(),
-      credentialDefinitionId,
-      credentialDefinitionTemplate
+    const qualifiedIdentifier = getQualifiedIndyCredentialDefinitionId(
+      this.ledgerService.getDidIndyWriteNamespace(),
+      credentialDefinitionId
     )
 
     // Check if the credential exists in wallet. If so, return it
@@ -164,7 +162,7 @@ export class LedgerApi {
       // Transform qualified to unqualified
       return {
         ...credentialDefinitionRecord.credentialDefinition,
-        id: getLegacyIndyCredentialDefinitionId(credentialDefinitionRecord.credentialDefinition.id),
+        id: credentialDefinitionId,
       }
     }
 
