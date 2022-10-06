@@ -189,6 +189,7 @@ export class DidExchangeProtocol {
       protocol: HandshakeProtocol.DidExchange,
       role: DidExchangeRole.Responder,
       state: DidExchangeState.RequestReceived,
+      alias: outOfBandRecord.alias,
       theirDid: message.did,
       theirLabel: message.label,
       threadId: message.threadId,

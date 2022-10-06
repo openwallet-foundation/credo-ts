@@ -173,6 +173,7 @@ export class ConnectionService {
       protocol: HandshakeProtocol.Connections,
       role: DidExchangeRole.Responder,
       state: DidExchangeState.RequestReceived,
+      alias: outOfBandRecord.alias,
       theirLabel: message.label,
       imageUrl: message.imageUrl,
       outOfBandId: outOfBandRecord.id,
