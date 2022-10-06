@@ -35,7 +35,7 @@ export class BasicMessageService {
     await this.basicMessageRepository.save(basicMessageRecord)
     this.emitStateChangedEvent(basicMessageRecord, basicMessage)
 
-    return basicMessage
+    return { message: basicMessage, record: basicMessageRecord }
   }
 
   /**
@@ -63,5 +63,14 @@ export class BasicMessageService {
 
   public async findAllByQuery(query: Partial<BasicMessageTags>) {
     return this.basicMessageRepository.findByQuery(query)
+  }
+
+  public async getById(basicMessageRecordId: string) {
+    return this.basicMessageRepository.getById(basicMessageRecordId)
+  }
+
+  public async deleteById(basicMessageRecordId: string) {
+    const basicMessageRecord = await this.getById(basicMessageRecordId)
+    return this.basicMessageRepository.delete(basicMessageRecord)
   }
 }
