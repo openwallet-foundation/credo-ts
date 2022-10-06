@@ -10,6 +10,7 @@ import { getBaseConfig, makeConnection, waitForBasicMessage } from '../../../../
 import testLogger from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
 import { MessageSendingError, RecordNotFoundError } from '../../../error'
+import { BasicMessage } from '../messages'
 import { BasicMessageRecord } from '../repository'
 
 const faberConfig = getBaseConfig('Faber Basic Messages', {
@@ -87,20 +88,22 @@ describe('Basic Messages E2E', () => {
     } catch (error) {
       const thrownError = error as MessageSendingError
       expect(thrownError.message).toEqual(
-        `Error sending basic message: Message is undeliverable to connection ${aliceConnection.id} (${aliceConnection.theirLabel})`
+        `Message is undeliverable to connection ${aliceConnection.id} (${aliceConnection.theirLabel})`
       )
-      testLogger.test('Error thrown includes the message and recently created record')
-      expect(thrownError.associatedRecord).toBeInstanceOf(BasicMessageRecord)
-      expect((thrownError.associatedRecord as BasicMessageRecord).content).toBe('Hello undeliverable')
+      testLogger.test('Error thrown includes the outbound message and recently created record id')
+      expect(thrownError.outboundMessage.associatedRecordId).toBeDefined()
+      expect(thrownError.outboundMessage.payload).toBeInstanceOf(BasicMessage)
+      expect((thrownError.outboundMessage.payload as BasicMessage).content).toBe('Hello undeliverable')
 
       testLogger.test('Created record can be found and deleted by id')
-      const storedRecord = await aliceAgent.basicMessages.getById(thrownError.associatedRecord!.id)
-      expect(storedRecord).toMatchObject(thrownError.associatedRecord!)
+      const storedRecord = await aliceAgent.basicMessages.getById(thrownError.outboundMessage.associatedRecordId!)
+      expect(storedRecord).toBeInstanceOf(BasicMessageRecord)
+      expect(storedRecord.content).toBe('Hello undeliverable')
 
       await aliceAgent.basicMessages.deleteById(storedRecord.id)
-      await expect(aliceAgent.basicMessages.getById(thrownError.associatedRecord!.id)).rejects.toThrowError(
-        RecordNotFoundError
-      )
+      await expect(
+        aliceAgent.basicMessages.getById(thrownError.outboundMessage.associatedRecordId!)
+      ).rejects.toThrowError(RecordNotFoundError)
     }
     spy.mockClear()
   })

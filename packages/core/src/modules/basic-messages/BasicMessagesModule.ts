@@ -4,7 +4,6 @@ import type { BasicMessageTags } from './repository/BasicMessageRecord'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { createOutboundMessage } from '../../agent/helpers'
-import { MessageSendingError } from '../../error/MessageSendingError'
 import { injectable, module } from '../../plugins'
 import { ConnectionService } from '../connections'
 
@@ -48,15 +47,9 @@ export class BasicMessagesModule {
       connection
     )
     const outboundMessage = createOutboundMessage(connection, basicMessage)
-    try {
-      await this.messageSender.sendMessage(outboundMessage)
-    } catch (error) {
-      throw new MessageSendingError(`Error sending basic message: ${error.message}`, {
-        agentMessage: basicMessage,
-        associatedRecord: basicMessageRecord,
-        cause: error,
-      })
-    }
+    outboundMessage.associatedRecordId = basicMessageRecord.id
+
+    await this.messageSender.sendMessage(outboundMessage)
     return basicMessageRecord
   }
 

@@ -96,6 +96,7 @@ export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   connection: ConnectionRecord
   sessionId?: string
   outOfBand?: OutOfBandRecord
+  associatedRecordId?: string
 }
 
 export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {

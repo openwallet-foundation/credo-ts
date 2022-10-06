@@ -1,21 +1,14 @@
-import type { AgentMessage } from '../agent/AgentMessage'
-import type { BaseRecord } from '../storage/BaseRecord'
+import type { OutboundMessage } from '../types'
 
 import { AriesFrameworkError } from './AriesFrameworkError'
 
 export class MessageSendingError extends AriesFrameworkError {
-  public agentMessage: AgentMessage
-  public associatedRecord?: BaseRecord
+  public outboundMessage: OutboundMessage
   public constructor(
     message: string,
-    {
-      agentMessage,
-      associatedRecord,
-      cause,
-    }: { agentMessage: AgentMessage; associatedRecord?: BaseRecord; cause?: Error }
+    { outboundMessage, cause }: { outboundMessage: OutboundMessage; associatedRecordId?: string; cause?: Error }
   ) {
     super(message, { cause })
-    this.agentMessage = agentMessage
-    this.associatedRecord = associatedRecord
+    this.outboundMessage = outboundMessage
   }
 }
