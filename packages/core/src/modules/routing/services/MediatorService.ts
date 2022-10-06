@@ -1,5 +1,5 @@
-import type { Query } from '../../../../src/storage/StorageService'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Query } from '../../../storage/StorageService'
 import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { MediationStateChangedEvent } from '../RoutingEvents'

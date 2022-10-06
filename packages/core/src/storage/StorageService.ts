@@ -17,7 +17,6 @@ export interface BaseRecordConstructor<T> extends Constructor<T> {
   type: string
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface StorageService<T extends BaseRecord<any, any, any>> {
   /**
    * Save record in storage
