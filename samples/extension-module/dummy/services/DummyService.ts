@@ -1,4 +1,4 @@
-import type { Query } from '../../../../../aries-framework-javascript/packages/core/src/storage/StorageService'
+import type { Query } from '@aries-framework/core'
 import type { DummyStateChangedEvent } from './DummyEvents'
 import type { ConnectionRecord, InboundMessageContext } from '@aries-framework/core'
 
