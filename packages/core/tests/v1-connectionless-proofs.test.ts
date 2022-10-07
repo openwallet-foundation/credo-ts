@@ -25,7 +25,6 @@ import {
 } from '../src/modules/proofs'
 import { MediatorPickupStrategy } from '../src/modules/routing'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
-import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 
 import {

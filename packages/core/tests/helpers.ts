@@ -218,7 +218,7 @@ export function waitForCredentialRecordSubject(
     threadId,
     state,
     previousState,
-    timeoutMs = 20000,
+    timeoutMs = 10000,
   }: {
     threadId?: string
     state?: CredentialState

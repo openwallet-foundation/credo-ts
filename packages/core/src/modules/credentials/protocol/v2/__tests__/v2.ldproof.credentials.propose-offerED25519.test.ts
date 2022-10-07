@@ -327,6 +327,44 @@ describe('credentials', () => {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2OfferCredentialMessage,
     })
+
+    const credOfferJson = offerMessage?.offerAttachments[1].getDataAsJson<SignCredentialOptionsRFC0593>()
+
+    expect(credOfferJson).toMatchObject({
+      credential: {
+        context: [
+          'https://www.w3.org/2018/credentials/v1',
+          'https://w3id.org/citizenship/v1',
+          'https://w3id.org/security/bbs/v1',
+        ],
+        id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+        type: ['VerifiableCredential', 'PermanentResidentCard'],
+        issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        identifier: '83627465',
+        name: 'Permanent Resident Card',
+        description: 'Government of Example Permanent Resident Card.',
+        issuanceDate: '2019-12-03T12:19:52Z',
+        expirationDate: '2029-12-03T12:19:52Z',
+        credentialSubject: {
+          id: 'did:example:b34ca6cd37bbf23',
+          // type: [Array],
+          givenName: 'JOHN',
+          familyName: 'SMITH',
+          gender: 'Male',
+          image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+          residentSince: '2015-01-01',
+          lprCategory: 'C09',
+          lprNumber: '999-999-999',
+          commuterClassification: 'C1',
+          birthCountry: 'Bahamas',
+          birthDate: '1958-07-17',
+        },
+      },
+      options: {
+        proofType: 'Ed25519Signature2018',
+        proofPurpose: 'assertionMethod',
+      },
+    })
     expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
       '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
       '@id': expect.any(String),
