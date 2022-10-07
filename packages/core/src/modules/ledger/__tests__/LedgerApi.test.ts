@@ -6,6 +6,7 @@ import type * as Indy from 'indy-sdk'
 import { getAgentConfig, getAgentContext, mockFunction, mockProperty } from '../../../../tests/helpers'
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { getLegacySchemaId, getLegacyCredentialDefinitionId } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AnonCredsCredentialDefinitionRecord } from '../../indy/repository/AnonCredsCredentialDefinitionRecord'
 import { AnonCredsCredentialDefinitionRepository } from '../../indy/repository/AnonCredsCredentialDefinitionRepository'
@@ -13,7 +14,6 @@ import { AnonCredsSchemaRecord } from '../../indy/repository/AnonCredsSchemaReco
 import { AnonCredsSchemaRepository } from '../../indy/repository/AnonCredsSchemaRepository'
 import { LedgerApi } from '../LedgerApi'
 import { LedgerModuleConfig } from '../LedgerModuleConfig'
-import { generateCredentialDefinitionId, generateSchemaId } from '../ledgerUtil'
 import { IndyLedgerService } from '../services/IndyLedgerService'
 
 jest.mock('../services/IndyLedgerService')
@@ -27,7 +27,7 @@ const AnonCredsSchemaRepositoryMock = AnonCredsSchemaRepository as jest.Mock<Ano
 
 const did = 'Y5bj4SjCiTM9PgeheKAiXx'
 
-const schemaId = 'abcd'
+const schemaId = 'Y5bj4SjCiTM9PgeheKAiXx:2:awesomeSchema:1'
 
 const schema: Indy.Schema = {
   id: schemaId,
@@ -39,15 +39,19 @@ const schema: Indy.Schema = {
 }
 
 const credentialDefinition = {
-  schema: 'abcde',
+  schema: schema,
   tag: 'someTag',
   signatureType: 'CL',
   supportRevocation: true,
 }
 
+const schemaIdQualified = 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx/anoncreds/v0/SCHEMA/awesomeSchema/1'
+const schemaIdGenerated = getLegacySchemaId(did, schema.name, schema.version)
+const qualifiedDidCred = 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx/anoncreds/v0/CLAIM_DEF/99/someTag'
+
 const credDef: Indy.CredDef = {
-  id: 'abcde',
-  schemaId: schema.id,
+  id: qualifiedDidCred,
+  schemaId: schemaIdQualified,
   type: 'CL',
   tag: 'someTag',
   value: {
@@ -58,7 +62,7 @@ const credDef: Indy.CredDef = {
 }
 
 const credentialDefinitionTemplate: Omit<CredentialDefinitionTemplate, 'signatureType'> = {
-  schema: schema,
+  schema: { ...schema, id: schemaIdQualified },
   tag: 'someTag',
   supportRevocation: true,
 }
@@ -78,9 +82,7 @@ const revocRegDef: Indy.RevocRegDef = {
   ver: 'abcde',
 }
 
-const schemaIdGenerated = generateSchemaId(did, schema.name, schema.version)
-
-const credentialDefinitionId = generateCredentialDefinitionId(
+const credentialDefinitionId = getLegacyCredentialDefinitionId(
   did,
   credentialDefinitionTemplate.schema.seqNo,
   credentialDefinitionTemplate.tag
@@ -88,7 +90,8 @@ const credentialDefinitionId = generateCredentialDefinitionId(
 
 const pools: IndyPoolConfig[] = [
   {
-    id: 'sovrinMain',
+    id: '7Tqg6BwSSWapxgUDm9KKgg',
+    indyNamespace: 'sovrin',
     isProduction: true,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
@@ -210,11 +213,17 @@ describe('LedgerApi', () => {
 
       it('should return the schema from anonCreds when it already exists', async () => {
         mockProperty(wallet, 'publicDid', { did: did, verkey: 'abcde' })
-        mockFunction(anonCredsSchemaRepository.findBySchemaId).mockResolvedValueOnce(
-          new AnonCredsSchemaRecord({ schema: schema })
+        mockFunction(anonCredsSchemaRepository.findById).mockResolvedValueOnce(
+          new AnonCredsSchemaRecord({ schema: { ...schema, id: schemaIdQualified } })
         )
-        await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toEqual(schema)
-        expect(anonCredsSchemaRepository.findBySchemaId).toHaveBeenCalledWith(agentContext, schemaIdGenerated)
+        mockFunction(ledgerService.getDidIndyWriteNamespace).mockReturnValueOnce(pools[0].indyNamespace)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...schemaWithoutId } = schema
+        await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toMatchObject({
+          ...schema,
+          id: schema.id,
+        })
+        expect(anonCredsSchemaRepository.findById).toHaveBeenCalledWith(agentContext, schemaIdQualified)
       })
 
       it('should return the schema from the ledger when it already exists', async () => {
@@ -223,9 +232,13 @@ describe('LedgerApi', () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .spyOn(LedgerApi.prototype as any, 'findBySchemaIdOnLedger')
           .mockResolvedValueOnce(new AnonCredsSchemaRecord({ schema: schema }))
+        mockProperty(ledgerApi, 'config', {
+          connectToIndyLedgersOnStartup: true,
+          indyLedgers: pools,
+        } as LedgerModuleConfig)
         await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toHaveProperty(
           'schema',
-          schema
+          { ...schema }
         )
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         expect(jest.spyOn(LedgerApi.prototype as any, 'findBySchemaIdOnLedger')).toHaveBeenCalledWith(schemaIdGenerated)
@@ -234,6 +247,10 @@ describe('LedgerApi', () => {
       it('should return the schema after registering it', async () => {
         mockProperty(wallet, 'publicDid', { did: did, verkey: 'abcde' })
         mockFunction(ledgerService.registerSchema).mockResolvedValueOnce(schema)
+        mockProperty(ledgerApi, 'config', {
+          connectToIndyLedgersOnStartup: true,
+          indyLedgers: pools,
+        } as LedgerModuleConfig)
         await expect(ledgerApi.registerSchema({ ...schema, attributes: ['hello', 'world'] })).resolves.toEqual(schema)
         expect(ledgerService.registerSchema).toHaveBeenCalledWith(agentContext, did, {
           ...schema,
@@ -256,17 +273,19 @@ describe('LedgerApi', () => {
           new AnonCredsCredentialDefinitionRecord({
             credentialDefinition: credDef,
           })
-        mockFunction(anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId).mockResolvedValueOnce(
+        mockFunction(anonCredsCredentialDefinitionRepository.findById).mockResolvedValueOnce(
           anonCredsCredentialDefinitionRecord
         )
+        mockProperty(ledgerApi, 'config', {
+          connectToIndyLedgersOnStartup: true,
+          indyLedgers: pools,
+        } as LedgerModuleConfig)
+        mockFunction(ledgerService.getDidIndyWriteNamespace).mockReturnValueOnce(pools[0].indyNamespace)
         await expect(ledgerApi.registerCredentialDefinition(credentialDefinitionTemplate)).resolves.toHaveProperty(
           'value.primary',
           credentialDefinition
         )
-        expect(anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId).toHaveBeenCalledWith(
-          agentContext,
-          credentialDefinitionId
-        )
+        expect(anonCredsCredentialDefinitionRepository.findById).toHaveBeenCalledWith(agentContext, qualifiedDidCred)
       })
 
       it('should throw an exception if the definition already exists on the ledger', async () => {
@@ -275,6 +294,10 @@ describe('LedgerApi', () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .spyOn(LedgerApi.prototype as any, 'findByCredentialDefinitionIdOnLedger')
           .mockResolvedValueOnce({ credentialDefinition: credentialDefinition })
+        mockProperty(ledgerApi, 'config', {
+          connectToIndyLedgersOnStartup: true,
+          indyLedgers: pools,
+        } as LedgerModuleConfig)
         await expect(ledgerApi.registerCredentialDefinition(credentialDefinitionTemplate)).rejects.toThrowError(
           AriesFrameworkError
         )
@@ -287,6 +310,10 @@ describe('LedgerApi', () => {
       it('should register the credential successfully if it is neither in the wallet and neither on the ledger', async () => {
         mockProperty(wallet, 'publicDid', { did: did, verkey: 'abcde' })
         mockFunction(ledgerService.registerCredentialDefinition).mockResolvedValueOnce(credDef)
+        mockProperty(ledgerApi, 'config', {
+          connectToIndyLedgersOnStartup: true,
+          indyLedgers: pools,
+        } as LedgerModuleConfig)
         await expect(ledgerApi.registerCredentialDefinition(credentialDefinitionTemplate)).resolves.toEqual(credDef)
         expect(ledgerService.registerCredentialDefinition).toHaveBeenCalledWith(agentContext, did, {
           ...credentialDefinitionTemplate,
