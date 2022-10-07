@@ -11,23 +11,6 @@
  * limitations under the License.
  */
 
-import type { DocumentLoader } from '../../../jsonldUtil'
-
-/**
- * Options for canonizing a document
- */
-export interface CanonizeOptions {
-  /**
-   * Optional custom document loader
-   */
-  documentLoader?: DocumentLoader
-  /**
-   * Optional expansion map
-   */
-  // eslint-disable-next-line
-  expansionMap?: () => void
-  /**
-   * Indicates whether to skip expansion during canonization
-   */
-  readonly skipExpansion?: boolean
-}
+export { Bls12381G2KeyPair } from '@mattrglobal/bls12381-key-pair'
+export { BbsBlsSignature2020 } from './BbsBlsSignature2020'
+export { BbsBlsSignatureProof2020 } from './BbsBlsSignatureProof2020'
