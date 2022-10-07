@@ -59,6 +59,7 @@ export * from './wallet/error'
 export { parseMessageType, IsValidMessageType } from './utils/messageType'
 export type { Constructor } from './utils/mixins'
 export * from './agent/Events'
+export * from './crypto/signing-provider'
 
 import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid } from './utils/uuid'
