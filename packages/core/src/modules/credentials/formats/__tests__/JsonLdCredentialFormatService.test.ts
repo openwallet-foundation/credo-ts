@@ -14,12 +14,11 @@ import { Attachment, AttachmentData } from '../../../../decorators/attachment/At
 import { JsonTransformer } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
-import { W3cCredentialService } from '../../../vc'
+import { W3cCredentialRecord, W3cCredentialService } from '../../../vc'
 import { Ed25519Signature2018Fixtures } from '../../../vc/__tests__/fixtures'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../vc/constants'
 import { W3cVerifiableCredential } from '../../../vc/models'
 import { W3cCredential } from '../../../vc/models/credential/W3cCredential'
-import { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
 import { JsonLdCredentialFormatService } from '../../formats/jsonld/JsonLdCredentialFormatService'
 import { CredentialState } from '../../models'
 import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID } from '../../protocol/v1/messages'
@@ -299,7 +298,8 @@ describe('JsonLd CredentialFormatService', () => {
       const service = jsonldFormatService as JsonLdCredentialFormatService
       const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
-      const verificationMethod = await service.deriveVerificationMethod(
+      // calls private method in the format service
+      const verificationMethod = await service['deriveVerificationMethod'](
         agentContext,
         signCredentialOptions.credential,
         credentialRequest

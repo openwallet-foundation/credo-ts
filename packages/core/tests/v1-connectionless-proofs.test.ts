@@ -405,6 +405,5 @@ describe('Present Proof', () => {
     const aliceStop$ = aliceAgent.injectionContainer.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
     faberStop$.next(true)
     aliceStop$.next(true)
-    await sleep(2000)
   })
 })

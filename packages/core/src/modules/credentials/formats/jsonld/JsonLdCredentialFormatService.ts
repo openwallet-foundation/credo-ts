@@ -268,7 +268,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    * @param credential the verifiable credential we want to sign
    * @return the verification method derived from this credential and its associated issuer did, keys etc.
    */
-  public async deriveVerificationMethod(
+  private async deriveVerificationMethod(
     agentContext: AgentContext,
     credential: W3cCredential,
     credentialRequest: SignCredentialOptionsRFC0593
@@ -286,12 +286,15 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     const proofType = credentialRequest.options.proofType
 
     const keyType: string | undefined = proofTypeKeyTypeMapping[proofType]
+
+    // const keyType = this.w3cCredentialService.getKeyTypesByProofType(proofType)
     if (!keyType) {
       throw new AriesFrameworkError(`No Key Type found for proofType ${proofType}`)
     }
 
+    // const verificationMethodType = this.w3cCredentialService.getVerificationMethodTypesByProofType(proofType)
     const verificationMethod = await findVerificationMethodByKeyType(keyType, issuerDidDocument)
-
+    // const verificationMethod = await findVerificationMethodByVerificationMethodType(verificationMethodType)
     if (!verificationMethod) {
       throw new AriesFrameworkError(`Missing verification method for key type ${keyType}`)
     }
