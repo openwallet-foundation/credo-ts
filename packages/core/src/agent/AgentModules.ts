@@ -116,7 +116,6 @@ function getDefaultAgentModules(agentConfig: AgentConfig) {
         mediatorPollingInterval: agentConfig.mediatorPollingInterval,
       }),
     basicMessages: () => new BasicMessagesModule(),
-    // questionAnswer: () => new QuestionAnswerModule(),
     genericRecords: () => new GenericRecordsModule(),
     ledger: () =>
       new LedgerModule({
