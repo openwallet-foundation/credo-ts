@@ -20,6 +20,7 @@ const agentOptions = getAgentOptions('Faber Dids Registrar', {
       id: `localhost`,
       isProduction: false,
       genesisPath,
+      indyNamespace: 'localhost',
       transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
     },
   ],
@@ -200,7 +201,7 @@ describe('dids', () => {
         qualifiedIndyDid: `did:indy:localhost:${indyDid}`,
       },
       didRegistrationMetadata: {
-        indyNamespace: 'localhost',
+        didIndyNamespace: 'localhost',
       },
       didState: {
         state: 'finished',
