@@ -56,13 +56,13 @@ export class IndyWallet implements Wallet {
   }
 
   public get masterSecretId() {
-    if (!this.isInitialized || !this.walletConfig?.id) {
+    if (!this.isInitialized || !(this.walletConfig?.id || this.walletConfig?.masterSecretId)) {
       throw new AriesFrameworkError(
         'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
       )
     }
 
-    return this.walletConfig.id
+    return this.walletConfig?.masterSecretId ?? this.walletConfig.id
   }
 
   private walletStorageConfig(walletConfig: WalletConfig): Indy.WalletConfig {
@@ -124,7 +124,7 @@ export class IndyWallet implements Wallet {
       await this.open(walletConfig)
 
       // We need to open wallet before creating master secret because we need wallet handle here.
-      await this.createMasterSecret(this.handle, walletConfig.id)
+      await this.createMasterSecret(this.handle, this.masterSecretId)
     } catch (error) {
       // If an error ocurred while creating the master secret, we should close the wallet
       if (this.isInitialized) await this.close()

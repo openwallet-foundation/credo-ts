@@ -27,6 +27,7 @@ export interface WalletConfig {
     type: string
     [key: string]: unknown
   }
+  masterSecretId?: string
 }
 
 export interface WalletConfigRekey {
