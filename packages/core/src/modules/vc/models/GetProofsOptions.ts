@@ -11,32 +11,31 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../../types'
-import type { DocumentLoader } from '../../../jsonldUtil'
-import type { ProofPurpose } from '../../../proof-purposes/ProofPurpose'
+import type { JsonObject } from '../../../types'
+import type { DocumentLoader } from '../jsonldUtil'
 
 /**
- * Options for creating a proof
+ * Options for getting a proof from a JSON-LD document
  */
-export interface CreateProofOptions {
+export interface GetProofsOptions {
   /**
-   * Document to create the proof for
+   * The JSON-LD document to extract the proofs from.
    */
   readonly document: JsonObject
   /**
-   * The proof purpose to specify for the generated proof
+   * Optional the proof type(s) to filter the returned proofs by
    */
-  readonly purpose: ProofPurpose
+  readonly proofType?: string | readonly string[]
   /**
    * Optional custom document loader
    */
-  documentLoader?: DocumentLoader
+  documentLoader?(): DocumentLoader
   /**
    * Optional expansion map
    */
-  expansionMap?: () => void
+  expansionMap?(): () => void
   /**
-   * Indicates whether to compact the resulting proof
+   * Optional property to indicate whether to skip compacting the resulting proof
    */
-  readonly compactProof: boolean
+  readonly skipProofCompaction?: boolean
 }

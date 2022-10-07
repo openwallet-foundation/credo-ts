@@ -5,7 +5,7 @@
 //@ts-ignore
 import jsonld from '@digitalcredentials/jsonld'
 
-interface JsonLd {
+export interface JsonLd {
   compact(document: any, context: any, options?: any): any
   fromRDF(document: any): any
   frame(document: any, revealDocument: any, options?: any): any
