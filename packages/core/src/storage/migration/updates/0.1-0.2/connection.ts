@@ -337,6 +337,7 @@ export async function migrateToOobRecord(
       oobRecord = new OutOfBandRecord({
         role: oobRole,
         state: oobState,
+        alias: connectionRecord.alias,
         autoAcceptConnection: connectionRecord.autoAcceptConnection,
         outOfBandInvitation,
         reusable: oldMultiUseInvitation,

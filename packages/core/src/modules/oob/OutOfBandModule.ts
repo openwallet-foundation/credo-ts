@@ -46,7 +46,7 @@ const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
 export interface CreateOutOfBandInvitationConfig {
   label?: string
-  alias?: string
+  alias?: string // alias for a connection record to be created
   imageUrl?: string
   goalCode?: string
   goal?: string
@@ -61,7 +61,7 @@ export interface CreateOutOfBandInvitationConfig {
 
 export interface CreateLegacyInvitationConfig {
   label?: string
-  alias?: string
+  alias?: string // alias for a connection record to be created
   imageUrl?: string
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
@@ -208,6 +208,7 @@ export class OutOfBandModule {
       mediatorId: routing.mediatorId,
       role: OutOfBandRole.Sender,
       state: OutOfBandState.AwaitResponse,
+      alias: config.alias,
       outOfBandInvitation: outOfBandInvitation,
       reusable: multiUseInvitation,
       autoAcceptConnection,

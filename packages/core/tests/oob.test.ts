@@ -42,6 +42,7 @@ describe('out of band', () => {
     goal: 'To make a connection',
     goalCode: 'p2p-messaging',
     label: 'Faber College',
+    alias: `Faber's connection with Alice`,
   }
 
   const issueCredentialConfig = {
@@ -158,10 +159,11 @@ describe('out of band', () => {
       expect(outOfBandRecord.autoAcceptConnection).toBe(true)
       expect(outOfBandRecord.role).toBe(OutOfBandRole.Sender)
       expect(outOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
+      expect(outOfBandRecord.alias).toBe(makeConnectionConfig.alias)
       expect(outOfBandRecord.reusable).toBe(false)
-      expect(outOfBandRecord.outOfBandInvitation.goal).toBe('To make a connection')
-      expect(outOfBandRecord.outOfBandInvitation.goalCode).toBe('p2p-messaging')
-      expect(outOfBandRecord.outOfBandInvitation.label).toBe('Faber College')
+      expect(outOfBandRecord.outOfBandInvitation.goal).toBe(makeConnectionConfig.goal)
+      expect(outOfBandRecord.outOfBandInvitation.goalCode).toBe(makeConnectionConfig.goalCode)
+      expect(outOfBandRecord.outOfBandInvitation.label).toBe(makeConnectionConfig.label)
     })
 
     test('create OOB message only with handshake', async () => {
@@ -290,6 +292,7 @@ describe('out of band', () => {
 
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection!)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+      expect(faberAliceConnection.alias).toBe(makeConnectionConfig.alias)
     })
 
     test(`make a connection with ${HandshakeProtocol.Connections} based on OOB invitation encoded in URL`, async () => {
@@ -311,6 +314,7 @@ describe('out of band', () => {
 
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+      expect(faberAliceConnection.alias).toBe(makeConnectionConfig.alias)
     })
 
     test('make a connection based on old connection invitation encoded in URL', async () => {
