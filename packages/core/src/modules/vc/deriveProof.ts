@@ -11,13 +11,14 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../types'
+import type { JsonObject } from '../../types'
 
-import { JsonTransformer } from '../../../../utils'
-import { SECURITY_PROOF_URL } from '../../constants'
-import { getProofs, getTypeInfo } from '../../jsonldUtil'
-import jsonld from '../../libraries/jsonld'
-import { W3cVerifiableCredential } from '../../models'
+import { JsonTransformer } from '../../utils'
+
+import { SECURITY_PROOF_URL } from './constants'
+import { getProofs, getTypeInfo } from './jsonldUtil'
+import jsonld from './libraries/jsonld'
+import { W3cVerifiableCredential } from './models'
 
 /**
  * Derives a proof from a document featuring a supported linked data proof
@@ -51,9 +52,8 @@ export const deriveProof = async (
   if (proofs.length === 0) {
     throw new Error(`There were not any proofs provided that can be used to derive a proof with this suite.`)
   }
-  let derivedProof
 
-  derivedProof = await suite.deriveProof({
+  let derivedProof = await suite.deriveProof({
     document,
     proof: proofs[0],
     revealDocument,

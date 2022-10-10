@@ -11,33 +11,40 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../../../types'
-import type { DocumentLoader } from '../../../jsonldUtil'
+import type { JsonObject, DocumentLoader, Proof } from '@aries-framework/core'
 
 /**
  * Options for creating a proof
  */
-export interface CreateVerifyDataOptions {
+export interface DeriveProofOptions {
   /**
-   * Document to create the proof for
+   * Document outlining what statements to reveal
+   */
+  readonly revealDocument: JsonObject
+  /**
+   * The document featuring the proof to derive from
    */
   readonly document: JsonObject
   /**
-   * The proof
+   * The proof for the document
    */
-  readonly proof: JsonObject
+  readonly proof: Proof
   /**
    * Optional custom document loader
    */
-
+  // eslint-disable-next-line
   documentLoader?: DocumentLoader
   /**
    * Optional expansion map
    */
-
+  // eslint-disable-next-line
   expansionMap?: () => void
   /**
-   * Indicates whether to compact the proof
+   * Nonce to include in the derived proof
    */
-  readonly compactProof: boolean
+  readonly nonce?: Uint8Array
+  /**
+   * Indicates whether to compact the resulting proof
+   */
+  readonly skipProofCompaction?: boolean
 }

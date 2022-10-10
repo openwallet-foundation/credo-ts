@@ -88,6 +88,7 @@ export function getAgentOptions(name: string, extraConfig: Partial<InitConfig> =
         id: `pool-${name}`,
         isProduction: false,
         genesisPath,
+        indyNamespace: `pool:localtest`,
         transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
       },
     ],
@@ -126,6 +127,7 @@ export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitC
     indyLedgers: [
       {
         id: `pool-${name}`,
+        indyNamespace: `pool:localtest`,
         isProduction: false,
         genesisPath,
       },

@@ -51,6 +51,10 @@ export class IndyLedgerService {
     return this.indyPoolService.setPools(poolConfigs)
   }
 
+  public getDidIndyWriteNamespace(): string {
+    return this.indyPoolService.ledgerWritePool.config.indyNamespace
+  }
+
   public async connectToPools() {
     return this.indyPoolService.connectToPools()
   }
