@@ -80,7 +80,7 @@ export class DummyApi {
    * @returns List containing all records
    */
   public findAllByQuery(query: Query<DummyRecord>): Promise<DummyRecord[]> {
-    return this.dummyService.findAllByQuery(query)
+    return this.dummyService.findAllByQuery(this.agentContext, query)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
