@@ -1,3 +1,6 @@
+import type { Query } from '../../storage/StorageService'
+import type { QuestionAnswerRecord } from './repository'
+
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
@@ -95,6 +98,15 @@ export class QuestionAnswerApi {
    */
   public getAll() {
     return this.questionAnswerService.getAll(this.agentContext)
+  }
+
+  /**
+   * Get all QuestionAnswer records by specified query params
+   *
+   * @returns list containing all QuestionAnswer records matching specified query params
+   */
+  public findAllByQuery(query: Query<QuestionAnswerRecord>) {
+    return this.questionAnswerService.findAllByQuery(this.agentContext, query)
   }
 
   /**

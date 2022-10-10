@@ -1,5 +1,5 @@
 import type { DummyStateChangedEvent } from './DummyEvents'
-import type { AgentContext, ConnectionRecord, InboundMessageContext } from '@aries-framework/core'
+import type { Query, AgentContext, ConnectionRecord, InboundMessageContext } from '@aries-framework/core'
 
 import { injectable, JsonTransformer, EventEmitter } from '@aries-framework/core'
 
@@ -117,6 +117,15 @@ export class DummyService {
    */
   public getAll(agentContext: AgentContext): Promise<DummyRecord[]> {
     return this.dummyRepository.getAll(agentContext)
+  }
+
+  /**
+   * Retrieve dummy records by query
+   *
+   * @returns List containing all dummy records matching query
+   */
+  public findAllByQuery(agentContext: AgentContext, query: Query<DummyRecord>): Promise<DummyRecord[]> {
+    return this.dummyRepository.findByQuery(agentContext, query)
   }
 
   /**

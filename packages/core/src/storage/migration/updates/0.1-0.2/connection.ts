@@ -340,6 +340,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
       oobRecord = new OutOfBandRecord({
         role: oobRole,
         state: oobState,
+        alias: connectionRecord.alias,
         autoAcceptConnection: connectionRecord.autoAcceptConnection,
         outOfBandInvitation,
         reusable: oldMultiUseInvitation,

@@ -1,6 +1,7 @@
 import type { AgentContext } from '../../../agent'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { Query } from '../../../storage/StorageService'
 import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
 import type { ActionMenuProblemReportMessage } from '../messages'
 import type {
@@ -345,6 +346,10 @@ export class ActionMenuService {
       role: options.role,
       threadId: options.threadId,
     })
+  }
+
+  public async findAllByQuery(agentContext: AgentContext, options: Query<ActionMenuRecord>) {
+    return await this.actionMenuRepository.findByQuery(agentContext, options)
   }
 
   private emitStateChangedEvent(

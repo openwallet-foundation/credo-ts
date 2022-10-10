@@ -12,7 +12,7 @@ import type { AgentContext } from './context'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
-import { AriesFrameworkError } from '../error'
+import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
@@ -223,8 +223,9 @@ export class MessageSender {
 
     if (!connection.did) {
       this.logger.error(`Unable to send message using connection '${connection.id}' that doesn't have a did`)
-      throw new AriesFrameworkError(
-        `Unable to send message using connection '${connection.id}' that doesn't have a did`
+      throw new MessageSendingError(
+        `Unable to send message using connection '${connection.id}' that doesn't have a did`,
+        { outboundMessage }
       )
     }
 
@@ -291,7 +292,10 @@ export class MessageSender {
       errors,
       connection,
     })
-    throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
+    throw new MessageSendingError(
+      `Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`,
+      { outboundMessage }
+    )
   }
 
   public async sendMessageToService(
