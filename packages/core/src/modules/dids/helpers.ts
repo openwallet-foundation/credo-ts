@@ -2,8 +2,12 @@ import { KeyType, Key } from '../../crypto'
 
 import { DidKey } from './methods/key'
 
+export function isDidKey(key: string) {
+  return key.startsWith('did:key')
+}
+
 export function didKeyToVerkey(key: string) {
-  if (key.startsWith('did:key')) {
+  if (isDidKey(key)) {
     const publicKeyBase58 = DidKey.fromDid(key).key.publicKeyBase58
     return publicKeyBase58
   }
@@ -11,7 +15,7 @@ export function didKeyToVerkey(key: string) {
 }
 
 export function verkeyToDidKey(key: string) {
-  if (key.startsWith('did:key')) {
+  if (isDidKey(key)) {
     return key
   }
   const publicKeyBase58 = key

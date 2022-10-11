@@ -1,9 +1,17 @@
 import type { AgentConfig, AgentContext, Repository } from '@aries-framework/core'
 import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@aries-framework/question-answer'
 
-import { EventEmitter, IndyWallet, SigningProviderRegistry } from '@aries-framework/core'
+import {
+  EventEmitter,
+  IndyWallet,
+  SigningProviderRegistry,
+  InboundMessageContext,
+  DidExchangeState,
+} from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 import { Subject } from 'rxjs'
+
+import { mockFunction } from '../../../core/tests/helpers'
 
 import { getAgentConfig, getAgentContext, getMockConnection } from './utils'
 
@@ -15,6 +23,7 @@ import {
   QuestionAnswerService,
   QuestionAnswerState,
   QuestionMessage,
+  AnswerMessage,
 } from '@aries-framework/question-answer'
 
 jest.mock('../repository/QuestionAnswerRepository')
@@ -24,6 +33,7 @@ describe('QuestionAnswerService', () => {
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
+    state: DidExchangeState.Completed,
   })
 
   let wallet: IndyWallet
@@ -138,7 +148,7 @@ describe('QuestionAnswerService', () => {
         eventListenerMock
       )
 
-      jest.fn(questionAnswerRepository.getSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
+      mockFunction(questionAnswerRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
       await questionAnswerService.createAnswer(agentContext, mockRecord, 'Yes')
 
@@ -158,5 +168,166 @@ describe('QuestionAnswerService', () => {
         },
       })
     })
+  })
+
+  describe('processReceiveQuestion', () => {
+    let mockRecord: QuestionAnswerRecord
+
+    beforeAll(() => {
+      mockRecord = mockQuestionAnswerRecord({
+        questionText: 'Alice, are you on the phone with Bob?',
+        connectionId: mockConnectionRecord.id,
+        role: QuestionAnswerRole.Responder,
+        signatureRequired: false,
+        state: QuestionAnswerState.QuestionReceived,
+        threadId: '123',
+        validResponses: [{ text: 'Yes' }, { text: 'No' }],
+      })
+    })
+
+    it('creates record when no previous question with that thread exists', async () => {
+      const questionMessage = new QuestionMessage({
+        questionText: 'Alice, are you on the phone with Bob?',
+        validResponses: [{ text: 'Yes' }, { text: 'No' }],
+      })
+
+      const messageContext = new InboundMessageContext(questionMessage, {
+        agentContext,
+        connection: mockConnectionRecord,
+      })
+
+      const questionAnswerRecord = await questionAnswerService.processReceiveQuestion(messageContext)
+
+      expect(questionAnswerRecord).toMatchObject(
+        expect.objectContaining({
+          role: QuestionAnswerRole.Responder,
+          state: QuestionAnswerState.QuestionReceived,
+          threadId: questionMessage.id,
+          questionText: 'Alice, are you on the phone with Bob?',
+          validResponses: [{ text: 'Yes' }, { text: 'No' }],
+        })
+      )
+    })
+
+    it(`throws an error when question from the same thread exists `, async () => {
+      mockFunction(questionAnswerRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
+
+      const questionMessage = new QuestionMessage({
+        id: '123',
+        questionText: 'Alice, are you on the phone with Bob?',
+        validResponses: [{ text: 'Yes' }, { text: 'No' }],
+      })
+
+      const messageContext = new InboundMessageContext(questionMessage, {
+        agentContext,
+        connection: mockConnectionRecord,
+      })
+
+      expect(questionAnswerService.processReceiveQuestion(messageContext)).rejects.toThrowError(
+        `Question answer record with thread Id ${questionMessage.id} already exists.`
+      )
+      jest.resetAllMocks()
+    })
+  })
+
+  describe('receiveAnswer', () => {
+    let mockRecord: QuestionAnswerRecord
+
+    beforeAll(() => {
+      mockRecord = mockQuestionAnswerRecord({
+        questionText: 'Alice, are you on the phone with Bob?',
+        connectionId: mockConnectionRecord.id,
+        role: QuestionAnswerRole.Questioner,
+        signatureRequired: false,
+        state: QuestionAnswerState.QuestionReceived,
+        threadId: '123',
+        validResponses: [{ text: 'Yes' }, { text: 'No' }],
+      })
+    })
+
+    it('updates state and emits event when valid response is received', async () => {
+      mockRecord.state = QuestionAnswerState.QuestionSent
+      mockFunction(questionAnswerRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
+
+      const answerMessage = new AnswerMessage({
+        response: 'Yes',
+        threadId: '123',
+      })
+
+      const messageContext = new InboundMessageContext(answerMessage, {
+        agentContext,
+        connection: mockConnectionRecord,
+      })
+
+      const questionAnswerRecord = await questionAnswerService.receiveAnswer(messageContext)
+
+      expect(questionAnswerRecord).toMatchObject(
+        expect.objectContaining({
+          role: QuestionAnswerRole.Questioner,
+          state: QuestionAnswerState.AnswerReceived,
+          threadId: '123',
+          questionText: 'Alice, are you on the phone with Bob?',
+          validResponses: [{ text: 'Yes' }, { text: 'No' }],
+        })
+      )
+      jest.resetAllMocks()
+    })
+
+    it(`throws an error when no existing question is found`, async () => {
+      const answerMessage = new AnswerMessage({
+        response: 'Yes',
+        threadId: '123',
+      })
+
+      const messageContext = new InboundMessageContext(answerMessage, {
+        agentContext,
+        connection: mockConnectionRecord,
+      })
+
+      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrowError(
+        `Question Answer record with thread Id ${answerMessage.threadId} not found.`
+      )
+    })
+
+    it(`throws an error when record is in invalid state`, async () => {
+      mockRecord.state = QuestionAnswerState.AnswerReceived
+      mockFunction(questionAnswerRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
+
+      const answerMessage = new AnswerMessage({
+        response: 'Yes',
+        threadId: '123',
+      })
+
+      const messageContext = new InboundMessageContext(answerMessage, {
+        agentContext,
+        connection: mockConnectionRecord,
+      })
+
+      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrowError(
+        `Question answer record is in invalid state ${mockRecord.state}. Valid states are: ${QuestionAnswerState.QuestionSent}`
+      )
+      jest.resetAllMocks()
+    })
+
+    it(`throws an error when record is in invalid role`, async () => {
+      mockRecord.state = QuestionAnswerState.QuestionSent
+      mockRecord.role = QuestionAnswerRole.Responder
+      mockFunction(questionAnswerRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
+
+      const answerMessage = new AnswerMessage({
+        response: 'Yes',
+        threadId: '123',
+      })
+
+      const messageContext = new InboundMessageContext(answerMessage, {
+        agentContext,
+        connection: mockConnectionRecord,
+      })
+
+      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrowError(
+        `Invalid question answer record role ${mockRecord.role}, expected is ${QuestionAnswerRole.Questioner}`
+      )
+    })
+    jest.resetAllMocks()
   })
 })

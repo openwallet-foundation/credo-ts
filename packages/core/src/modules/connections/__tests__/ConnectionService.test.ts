@@ -953,5 +953,19 @@ describe('ConnectionService', () => {
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })
+
+    it('findAllByQuery should return value from connectionRepository.findByQuery', async () => {
+      const expected = [getMockConnection(), getMockConnection()]
+
+      mockFunction(connectionRepository.findByQuery).mockReturnValue(Promise.resolve(expected))
+      const result = await connectionService.findAllByQuery(agentContext, {
+        state: DidExchangeState.InvitationReceived,
+      })
+      expect(connectionRepository.findByQuery).toBeCalledWith(agentContext, {
+        state: DidExchangeState.InvitationReceived,
+      })
+
+      expect(result).toEqual(expect.arrayContaining(expected))
+    })
   })
 })
